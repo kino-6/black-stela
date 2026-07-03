@@ -77,6 +77,9 @@ Release and packaging references:
 - [Windows build notes](docs/windows-build.md)
 - [Release readiness checklist](docs/release-checklist.md)
 - [ADR-001: Game events and persistence](docs/decisions/ADR-001-game-events-and-persistence.md)
+- [Current plan](Plan.md)
+- [Current tasks](Tasks.md)
+- [Completed modernization task archive](docs/archive/Tasks.completed-modernization.md)
 
 If Playwright browsers are missing, install Chromium once:
 
