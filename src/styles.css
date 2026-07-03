@@ -1,0 +1,380 @@
+:root {
+  color-scheme: dark;
+  font-family:
+    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: #080908;
+  color: #e5e0d2;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background:
+    linear-gradient(180deg, rgba(8, 9, 8, 0.92), rgba(8, 9, 8, 0.98)),
+    repeating-linear-gradient(90deg, #11140f 0 1px, transparent 1px 72px);
+}
+
+button,
+input,
+textarea {
+  font: inherit;
+}
+
+button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 2.5rem;
+  border: 1px solid #4b5148;
+  border-radius: 6px;
+  padding: 0.55rem 0.85rem;
+  background: #222820;
+  color: #f2efe5;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #2d342a;
+  border-color: #77705c;
+}
+
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid #d5b56d;
+  outline-offset: 2px;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.app-shell {
+  min-height: 100vh;
+  padding: 1rem;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  max-width: 1480px;
+  margin: 0 auto 1rem;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #2f352d;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+
+h1 {
+  font-size: clamp(1.5rem, 4vw, 2.15rem);
+  line-height: 1;
+  letter-spacing: 0;
+}
+
+h2 {
+  font-size: 1rem;
+  letter-spacing: 0;
+}
+
+h3 {
+  font-size: 0.95rem;
+  letter-spacing: 0;
+}
+
+.topbar p,
+.party-member p,
+.room-copy,
+.empty-state,
+small {
+  color: #a9aa9f;
+}
+
+.ai-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  white-space: nowrap;
+}
+
+.game-grid {
+  display: grid;
+  grid-template-columns: minmax(260px, 0.8fr) minmax(360px, 1.5fr) minmax(280px, 0.9fr);
+  gap: 1rem;
+  max-width: 1480px;
+  margin: 0 auto;
+}
+
+.debug-panel {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  max-width: 1480px;
+  margin: 0 auto 1rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid #6e623f;
+  border-radius: 8px;
+  background: #181710;
+}
+
+.debug-panel label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #cfcec2;
+}
+
+.debug-panel select {
+  min-height: 2.5rem;
+  border: 1px solid #3b4438;
+  border-radius: 6px;
+  padding: 0.45rem 0.65rem;
+  background: #0b0d0b;
+  color: #f2efe5;
+}
+
+.debug-panel strong {
+  color: #d5b56d;
+}
+
+.panel {
+  min-width: 0;
+  border: 1px solid #2f352d;
+  border-radius: 8px;
+  background: rgba(15, 17, 14, 0.9);
+}
+
+.party-panel,
+.log-panel {
+  padding: 1rem;
+}
+
+.play-panel {
+  padding: 1rem;
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.section-title span {
+  color: #d5b56d;
+  font-size: 0.85rem;
+}
+
+.roster,
+.creator,
+.log-list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.party-member {
+  display: grid;
+  grid-template-columns: 3.5rem 1fr;
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.75rem;
+  border: 1px solid #30372f;
+  border-radius: 6px;
+  background: #121611;
+}
+
+.portrait {
+  display: grid;
+  place-items: center;
+  width: 3.5rem;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border: 1px solid #555846;
+  border-radius: 4px;
+  background: #252a22;
+  color: #d5b56d;
+  font-weight: 700;
+}
+
+.portrait img,
+.portrait-preview {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.creator {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #2f352d;
+}
+
+.creator label {
+  display: grid;
+  gap: 0.35rem;
+  color: #cfcec2;
+  font-size: 0.9rem;
+}
+
+input,
+textarea {
+  width: 100%;
+  border: 1px solid #3b4438;
+  border-radius: 6px;
+  padding: 0.65rem;
+  background: #0b0d0b;
+  color: #f2efe5;
+}
+
+textarea {
+  min-height: 5rem;
+  resize: vertical;
+}
+
+.portrait-preview {
+  max-width: 7rem;
+  aspect-ratio: 1;
+  border-radius: 4px;
+  border: 1px solid #555846;
+}
+
+.town-view {
+  display: grid;
+  gap: 1rem;
+}
+
+.town-scene {
+  min-height: 24rem;
+  border: 1px solid #30372f;
+  border-radius: 6px;
+  background:
+    linear-gradient(180deg, rgba(8, 9, 8, 0.1), rgba(8, 9, 8, 0.96)),
+    radial-gradient(circle at 50% 42%, rgba(203, 149, 72, 0.28), transparent 26%),
+    linear-gradient(90deg, transparent 0 45%, #050505 45% 55%, transparent 55%),
+    repeating-linear-gradient(90deg, #171b16 0 10px, #10130f 10px 20px);
+}
+
+.primary-action {
+  justify-self: start;
+  background: #6a4d25;
+  border-color: #b28b4a;
+}
+
+.dungeon-view {
+  min-height: 26rem;
+  overflow: hidden;
+  border: 1px solid #30372f;
+  border-radius: 6px;
+  background: #050605;
+}
+
+.dungeon-canvas {
+  width: 100%;
+  height: 26rem;
+}
+
+.room-copy {
+  min-height: 3.25rem;
+  padding: 0.9rem 0 0.25rem;
+  line-height: 1.55;
+}
+
+.command-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  padding-top: 0.75rem;
+  border-top: 1px solid #2f352d;
+}
+
+.enemy-meter {
+  color: #d5b56d;
+  margin-left: auto;
+}
+
+.log-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 34rem;
+  overflow: auto;
+}
+
+.log-list li {
+  padding: 0.75rem;
+  border: 1px solid #30372f;
+  border-radius: 6px;
+  background: #121611;
+}
+
+.log-list p {
+  margin-top: 0.25rem;
+  line-height: 1.45;
+}
+
+.narration-box {
+  min-height: 5rem;
+  margin-top: 1rem;
+  padding: 0.75rem;
+  border: 1px solid #3b4438;
+  border-radius: 6px;
+  background: #0b0d0b;
+}
+
+.narration-box p {
+  margin-top: 0.5rem;
+  line-height: 1.5;
+}
+
+@media (max-width: 1100px) {
+  .game-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .play-panel {
+    grid-column: 1 / -1;
+    grid-row: 1;
+  }
+}
+
+@media (max-width: 720px) {
+  .app-shell {
+    padding: 0.75rem;
+  }
+
+  .topbar,
+  .game-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .topbar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .dungeon-view,
+  .dungeon-canvas,
+  .town-scene {
+    min-height: 18rem;
+    height: 18rem;
+  }
+}
