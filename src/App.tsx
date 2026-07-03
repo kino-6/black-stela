@@ -16,6 +16,7 @@ import { DungeonView } from "./components/DungeonView";
 import { MapPanel } from "./components/MapPanel";
 import { AiProposalPanel } from "./components/AiProposalPanel";
 import { AiSettingsPanel } from "./components/AiSettingsPanel";
+import { ScenarioValidationPanel } from "./components/ScenarioValidationPanel";
 import { createCharacter, createInitialGameState, addCharacter } from "./domain/gameState";
 import { getLocalizedRoomText } from "./domain/scenario";
 import { executeCommand } from "./domain/rulesEngine";
@@ -31,6 +32,7 @@ import { LocalStorageSaveRepository, type SaveSlotSummary } from "./services/sav
 import { createTranslator, type Locale, type Translator } from "./i18n";
 import { loadLocale, saveLocale as persistLocale } from "./services/settingsRepository";
 import { loadAiSettings, saveAiSettings, type AiSettings } from "./services/aiSettings";
+import type { ScenarioValidationError } from "./domain/scenarioPack";
 
 interface CharacterDraft {
   name: string;
@@ -59,6 +61,7 @@ export function App() {
   const [saveSlotId, setSaveSlotId] = useState("autosave");
   const [saveSlots, setSaveSlots] = useState<SaveSlotSummary[]>(() => createBrowserSaveRepository()?.list() ?? []);
   const [saveStatus, setSaveStatus] = useState("");
+  const scenarioValidationErrors = useMemo(() => getScenarioValidationErrorsFromLocation(), []);
 
   const roomText = useMemo(() => {
     if (!state.position) {
@@ -207,6 +210,10 @@ export function App() {
         </div>
       </header>
 
+      {scenarioValidationErrors.length > 0 ? (
+        <ScenarioValidationPanel errors={scenarioValidationErrors} t={t} />
+      ) : (
+        <>
       {debugMode && (
         <section className="debug-panel" aria-labelledby="debug-heading">
           <div>
@@ -398,6 +405,8 @@ export function App() {
           <AiSettingsPanel settings={aiSettings} t={t} onChange={updateAiSettings} />
         </aside>
       </section>
+        </>
+      )}
     </main>
   );
 }
@@ -443,4 +452,22 @@ function withAiEnabled(state: GameState, enabled: boolean): GameState {
     ...state,
     aiEnabled: enabled
   };
+}
+
+function getScenarioValidationErrorsFromLocation(): ScenarioValidationError[] {
+  if (typeof window === "undefined") {
+    return [];
+  }
+
+  if (new URLSearchParams(window.location.search).get("scenario") !== "invalid") {
+    return [];
+  }
+
+  return [
+    {
+      filePath: "dungeons/b1f.md",
+      fieldPath: "rooms[0].exits.east",
+      reason: "Exit references unknown room: room.missing"
+    }
+  ];
 }

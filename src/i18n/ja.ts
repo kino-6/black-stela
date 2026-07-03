@@ -113,5 +113,12 @@ export const ja = {
     east: "東",
     south: "南",
     west: "西"
+  },
+  scenario: {
+    validation: "シナリオ検証",
+    blocked: "シナリオを開始できません。",
+    file: "ファイル",
+    field: "項目",
+    reason: "理由"
   }
 } as const satisfies Dictionary;

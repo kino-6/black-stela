@@ -934,7 +934,7 @@ Parent: [Plan.md - Phase 5](./Plan.md#phase-5-scenario-repository)
 
 ### BS-025: Define Scenario Pack Manifest
 
-Status: [ ]  
+Status: [x]
 Priority: P1  
 Parent plan task: Task 13, Scenario Pack Loader
 
@@ -943,13 +943,13 @@ Define a manifest schema for scenario pack metadata, version, supported language
 
 Acceptance criteria:
 
-- [ ] Manifest schema exists.
-- [ ] Default scenario has a manifest.
-- [ ] Missing/invalid manifest fails validation clearly.
+- [x] Manifest schema exists.
+- [x] Default scenario has a manifest.
+- [x] Missing/invalid manifest fails validation clearly.
 
 Verification:
 
-- [ ] `npm test`
+- [x] `npm test`
 
 Dependencies:
 
@@ -967,7 +967,7 @@ Estimated scope:
 
 ### BS-026: Implement Scenario Pack Loader
 
-Status: [ ]  
+Status: [x]
 Priority: P1  
 Parent plan task: Task 13, Scenario Pack Loader
 
@@ -976,13 +976,13 @@ Create a loader that reads a scenario pack structure and returns validated world
 
 Acceptance criteria:
 
-- [ ] Valid pack loads successfully.
-- [ ] Missing required files are reported.
-- [ ] YAML parse errors include file context.
+- [x] Valid pack loads successfully.
+- [x] Missing required files are reported.
+- [x] YAML parse errors include file context.
 
 Verification:
 
-- [ ] `npm test`
+- [x] `npm test`
 
 Dependencies:
 
@@ -999,7 +999,7 @@ Estimated scope:
 
 ### BS-027: Add Invalid Scenario Fixtures
 
-Status: [ ]  
+Status: [x]
 Priority: P1  
 Parent plan task: Task 13, Scenario Pack Loader
 
@@ -1008,13 +1008,13 @@ Add test fixtures for broken scenario packs to prevent silent failures.
 
 Acceptance criteria:
 
-- [ ] Missing dungeon fixture exists.
-- [ ] Invalid exit reference fixture exists.
-- [ ] Invalid AI policy fixture exists.
+- [x] Missing dungeon fixture exists.
+- [x] Invalid exit reference fixture exists.
+- [x] Invalid AI policy fixture exists.
 
 Verification:
 
-- [ ] `npm test`
+- [x] `npm test`
 
 Dependencies:
 
@@ -1031,7 +1031,7 @@ Estimated scope:
 
 ### BS-028: Build Scenario Validation UI
 
-Status: [ ]  
+Status: [x]
 Priority: P1  
 Parent plan task: Task 14, Scenario Validation UI
 
@@ -1040,13 +1040,13 @@ Display scenario validation errors with file path, field path, and actionable re
 
 Acceptance criteria:
 
-- [ ] Validation errors are visible in UI.
-- [ ] Invalid scenario cannot start.
-- [ ] Error UI supports Japanese labels once i18n is enabled.
+- [x] Validation errors are visible in UI.
+- [x] Invalid scenario cannot start.
+- [x] Error UI supports Japanese labels once i18n is enabled.
 
 Verification:
 
-- [ ] `npm run test:e2e`
+- [x] `npm run test:e2e`
 
 Dependencies:
 
@@ -1065,19 +1065,19 @@ Estimated scope:
 
 ### Checkpoint 5: Scenario Authoring
 
-Status: [ ]
+Status: [x]
 
 Required verification:
 
-- [ ] `npm test`
-- [ ] `npm run build`
-- [ ] `npm run test:e2e`
+- [x] `npm test`
+- [x] `npm run build`
+- [x] `npm run test:e2e`
 
 Exit criteria:
 
-- [ ] Default scenario loads through pack loader.
-- [ ] Invalid packs produce actionable errors.
-- [ ] Existing MVP and Headless flows still pass.
+- [x] Default scenario loads through pack loader.
+- [x] Invalid packs produce actionable errors.
+- [x] Existing MVP and Headless flows still pass.
 
 ## Phase 6: Game Loop Depth
 

@@ -206,6 +206,51 @@ small {
   background: rgba(15, 17, 14, 0.9);
 }
 
+.scenario-validation-panel {
+  max-width: 1480px;
+  margin: 0 auto;
+  padding: 1rem;
+  border: 1px solid #7f4a43;
+  border-radius: 8px;
+  background: #181110;
+}
+
+.scenario-validation-panel ul {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.scenario-validation-panel li {
+  border: 1px solid #7f4a43;
+  border-radius: 6px;
+  padding: 0.75rem;
+  background: #0b0d0b;
+}
+
+.scenario-validation-panel dl {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0.5rem 0 0;
+}
+
+.scenario-validation-panel div {
+  display: grid;
+  grid-template-columns: 5rem minmax(0, 1fr);
+  gap: 0.5rem;
+}
+
+.scenario-validation-panel dt {
+  color: #a9aa9f;
+}
+
+.scenario-validation-panel dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
 .party-panel,
 .log-panel {
   padding: 1rem;

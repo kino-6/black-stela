@@ -111,6 +111,13 @@ export const en = {
     east: "east",
     south: "south",
     west: "west"
+  },
+  scenario: {
+    validation: "Scenario Validation",
+    blocked: "Scenario cannot start.",
+    file: "File",
+    field: "Field",
+    reason: "Reason"
   }
 } as const;
 
