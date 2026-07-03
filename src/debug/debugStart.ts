@@ -20,6 +20,15 @@ export function createDebugStateFromProgress(world: ScenarioWorld, progress: Deb
     defeatedEnemies: [],
     resolvedTraps: [],
     discoveredSecrets: [],
+    inventory: [
+      {
+        id: "item.healing-draught",
+        name: "Healing Draught",
+        kind: "healing",
+        quantity: 1,
+        healAmount: 6
+      }
+    ],
     map: {
       floorId: null,
       currentRoomId: null,
@@ -113,7 +122,8 @@ function createExpectedParty(): Character[] {
       portraitRef: "debug://portrait/mira",
       hp: 12,
       maxHp: 12,
-      attack: 4
+      attack: 4,
+      injury: undefined
     },
     {
       id: "debug.sei",
@@ -122,7 +132,8 @@ function createExpectedParty(): Character[] {
       portraitRef: "debug://portrait/sei",
       hp: 11,
       maxHp: 11,
-      attack: 3
+      attack: 3,
+      injury: undefined
     },
     {
       id: "debug.rook",
@@ -131,7 +142,8 @@ function createExpectedParty(): Character[] {
       portraitRef: "debug://portrait/rook",
       hp: 14,
       maxHp: 14,
-      attack: 5
+      attack: 5,
+      injury: undefined
     },
     {
       id: "debug.vale",
@@ -140,7 +152,8 @@ function createExpectedParty(): Character[] {
       portraitRef: "debug://portrait/vale",
       hp: 10,
       maxHp: 10,
-      attack: 3
+      attack: 3,
+      injury: undefined
     }
   ];
 }

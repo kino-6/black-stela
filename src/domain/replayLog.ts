@@ -73,6 +73,14 @@ export function projectEventToLog(event: GameEvent, locale = "en", world?: Scena
       return { text: `${event.enemyName} falls. The route is clear.`, tags: ["combat"] };
     case "party_wounded":
       return { text: `${event.enemyName} reels, then wounds the front line.`, tags: ["combat"] };
+    case "character_injured":
+      return { text: `${event.characterName} is wounded but remains in the party.`, tags: ["injury"] };
+    case "party_defended":
+      return { text: `${event.enemyName} presses in, but the party holds formation.`, tags: ["combat", "defend"] };
+    case "item_used":
+      return { text: `${event.targetName} uses ${event.itemName} and recovers ${event.healAmount} HP.`, tags: ["item"] };
+    case "party_recovered":
+      return { text: "The party rests in town. Wounds are cleaned and strength returns.", tags: ["town", "recovery"] };
     case "party_retreated":
       return { text: "The party retreats and regroups without losing anyone.", tags: ["combat", "retreat"] };
     case "returned_to_town":
@@ -123,6 +131,14 @@ function projectEventToJapaneseLog(event: GameEvent, world?: ScenarioWorld): Log
       return { text: `${event.enemyName} は倒れた。道は開けた。`, tags: ["combat"] };
     case "party_wounded":
       return { text: `${event.enemyName} は前衛に傷を負わせた。`, tags: ["combat"] };
+    case "character_injured":
+      return { text: `${event.characterName} は負傷したが、隊列には残っている。`, tags: ["injury"] };
+    case "party_defended":
+      return { text: `${event.enemyName} が迫るが、隊列は防御の構えを保った。`, tags: ["combat", "defend"] };
+    case "item_used":
+      return { text: `${event.targetName} は ${event.itemName} を使い、HPを ${event.healAmount} 回復した。`, tags: ["item"] };
+    case "party_recovered":
+      return { text: "隊列は街で休んだ。傷は清められ、力が戻った。", tags: ["town", "recovery"] };
     case "party_retreated":
       return { text: "隊列は退却し、誰も失わずに立て直した。", tags: ["combat", "retreat"] };
     case "returned_to_town":

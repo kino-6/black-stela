@@ -84,8 +84,21 @@ export const ja = {
     listen: "聞く",
     return: "帰還",
     attack: "攻撃",
+    defend: "防御",
+    useItem: "道具を使う",
     retreat: "退却",
     enemyHp: "敵HP {hp}"
+  },
+  town: {
+    guild: "ギルド",
+    recovery: "回復",
+    records: "記録",
+    entry: "迷宮入口",
+    recoveryHeading: "回復",
+    recordsHeading: "記録",
+    recoverParty: "隊列を回復",
+    logCount: "{count} 件の記録",
+    inventory: "所持品"
   },
   map: {
     heading: "地図",

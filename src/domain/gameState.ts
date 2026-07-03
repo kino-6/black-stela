@@ -10,6 +10,15 @@ export function createInitialGameState(): GameState {
     defeatedEnemies: [],
     resolvedTraps: [],
     discoveredSecrets: [],
+    inventory: [
+      {
+        id: "item.healing-draught",
+        name: "Healing Draught",
+        kind: "healing",
+        quantity: 1,
+        healAmount: 6
+      }
+    ],
     map: {
       floorId: null,
       currentRoomId: null,
@@ -39,7 +48,8 @@ export function createCharacter(input: { name: string; notes: string; portraitRe
     portraitRef: input.portraitRef,
     hp: 12,
     maxHp: 12,
-    attack: 4
+    attack: 4,
+    injury: undefined
   };
 }
 

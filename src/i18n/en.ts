@@ -82,8 +82,21 @@ export const en = {
     listen: "Listen",
     return: "Return",
     attack: "Attack",
+    defend: "Defend",
+    useItem: "Use item",
     retreat: "Retreat",
     enemyHp: "Enemy HP {hp}"
+  },
+  town: {
+    guild: "Guild",
+    recovery: "Recovery",
+    records: "Records",
+    entry: "Dungeon Entry",
+    recoveryHeading: "Recovery",
+    recordsHeading: "Records",
+    recoverParty: "Recover party",
+    logCount: "{count} records",
+    inventory: "Inventory"
   },
   map: {
     heading: "Map",

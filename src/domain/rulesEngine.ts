@@ -47,8 +47,14 @@ export function resolveCommand(state: GameState, world: ScenarioWorld, command: 
       return disarmTrap(state, world);
     case "attack":
       return attack(state);
+    case "defend":
+      return defend(state);
+    case "use_item":
+      return useItem(state, command.itemId, command.targetCharacterId);
     case "retreat":
       return retreat(state);
+    case "recover_party":
+      return recoverParty(state);
     case "return_to_town":
       return returnToTown(state);
     default:
@@ -263,16 +269,32 @@ function attack(state: GameState): CommandResult {
     hp: enemyHp
   };
 
+  const injuredEvents: GameEvent[] = [];
+  const nextParty = state.party.map((member) => {
+    const hp = member.hp - state.combat!.enemy.attack;
+    if (hp <= 0) {
+      injuredEvents.push({
+        type: "character_injured",
+        characterId: member.id,
+        characterName: member.name,
+        injury: "wounded"
+      });
+      return { ...member, hp: 1, injury: "wounded" as const };
+    }
+
+    return {
+      ...member,
+      hp
+    };
+  });
+
   const next: GameState = {
     ...state,
     combat: {
       ...state.combat,
       enemy
     },
-    party: state.party.map((member) => ({
-      ...member,
-      hp: Math.max(1, member.hp - state.combat!.enemy.attack)
-    })),
+    party: nextParty,
     turn: state.turn + 1
   };
 
@@ -282,6 +304,59 @@ function attack(state: GameState): CommandResult {
       enemyId: enemy.id,
       enemyName: enemy.name,
       remainingHp: enemy.hp
+    },
+    ...injuredEvents
+  ]);
+}
+
+function defend(state: GameState): CommandResult {
+  if (state.phase !== "combat" || !state.combat) {
+    return noChange(state);
+  }
+
+  const damage = Math.max(0, state.combat.enemy.attack - 2);
+  const next: GameState = {
+    ...state,
+    party: state.party.map((member) => ({ ...member, hp: Math.max(1, member.hp - damage) })),
+    turn: state.turn + 1
+  };
+
+  return withEvents(next, [
+    {
+      type: "party_defended",
+      enemyId: state.combat.enemy.id,
+      enemyName: state.combat.enemy.name,
+      damage
+    }
+  ]);
+}
+
+function useItem(state: GameState, itemId: string, targetCharacterId: string): CommandResult {
+  const item = state.inventory.find((candidate) => candidate.id === itemId && candidate.quantity > 0);
+  const target = state.party.find((member) => member.id === targetCharacterId);
+  if (!item || !target || item.kind !== "healing") {
+    return noChange(state);
+  }
+
+  const next: GameState = {
+    ...state,
+    party: state.party.map((member) =>
+      member.id === target.id ? { ...member, hp: Math.min(member.maxHp, member.hp + item.healAmount) } : member
+    ),
+    inventory: state.inventory.map((candidate) =>
+      candidate.id === item.id ? { ...candidate, quantity: Math.max(0, candidate.quantity - 1) } : candidate
+    ),
+    turn: state.turn + 1
+  };
+
+  return withEvents(next, [
+    {
+      type: "item_used",
+      itemId: item.id,
+      itemName: item.name,
+      targetCharacterId: target.id,
+      targetName: target.name,
+      healAmount: item.healAmount
     }
   ]);
 }
@@ -317,6 +392,20 @@ function returnToTown(state: GameState): CommandResult {
   };
 
   return withEvents(next, [{ type: "returned_to_town" }]);
+}
+
+function recoverParty(state: GameState): CommandResult {
+  if (state.phase !== "town") {
+    return noChange(state);
+  }
+
+  const next: GameState = {
+    ...state,
+    party: state.party.map((member) => ({ ...member, hp: member.maxHp, injury: undefined })),
+    turn: state.turn + 1
+  };
+
+  return withEvents(next, [{ type: "party_recovered" }]);
 }
 
 function logOnly(state: GameState, event: GameEvent): CommandResult {

@@ -40,6 +40,8 @@ interface CharacterDraft {
   portraitRef?: string;
 }
 
+type TownMode = "guild" | "recovery" | "records" | "entry";
+
 export function App() {
   const [debugMode] = useState(() => isDebugModeEnabled());
   const [debugProgress, setDebugProgress] = useState<DebugProgress>(() => getDebugProgressFromLocation());
@@ -51,6 +53,7 @@ export function App() {
     )
   );
   const [draft, setDraft] = useState<CharacterDraft>({ name: "", notes: "" });
+  const [townMode, setTownMode] = useState<TownMode>("guild");
   const [narration, setNarration] = useState("");
   const [narrationStatus, setNarrationStatus] = useState("");
   const [narrationRejected, setNarrationRejected] = useState(false);
@@ -323,7 +326,30 @@ export function App() {
 
           {state.phase === "town" ? (
             <div className="town-view">
+              <div className="town-mode-tabs" aria-label="Town modes">
+                <button type="button" onClick={() => setTownMode("guild")}>{t("town.guild")}</button>
+                <button type="button" onClick={() => setTownMode("recovery")}>{t("town.recovery")}</button>
+                <button type="button" onClick={() => setTownMode("records")}>{t("town.records")}</button>
+                <button type="button" onClick={() => setTownMode("entry")}>{t("town.entry")}</button>
+              </div>
               <div className="town-scene" aria-hidden="true" />
+              {townMode === "recovery" && (
+                <section className="town-service" aria-labelledby="recovery-heading">
+                  <h3 id="recovery-heading">{t("town.recoveryHeading")}</h3>
+                  <ul>
+                    {state.party.map((member) => (
+                      <li key={member.id}>{member.name}: {member.hp}/{member.maxHp}{member.injury ? ` · ${member.injury}` : ""}</li>
+                    ))}
+                  </ul>
+                  <button type="button" onClick={() => run({ type: "recover_party" })}>{t("town.recoverParty")}</button>
+                </section>
+              )}
+              {townMode === "records" && (
+                <section className="town-service" aria-labelledby="records-heading">
+                  <h3 id="records-heading">{t("town.recordsHeading")}</h3>
+                  <p>{t("town.logCount", { count: state.log.length })}</p>
+                </section>
+              )}
               <p>
                 {t("play.townCopy")}
               </p>
@@ -345,6 +371,25 @@ export function App() {
                     <Swords size={18} />
                     {t("play.attack")}
                   </button>
+                  <button type="button" onClick={() => run({ type: "defend" })}>
+                    <ShieldCheck size={18} />
+                    {t("play.defend")}
+                  </button>
+                  {state.inventory.some((item) => item.kind === "healing" && item.quantity > 0) && state.party[0] && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        run({
+                          type: "use_item",
+                          itemId: state.inventory.find((item) => item.kind === "healing" && item.quantity > 0)!.id,
+                          targetCharacterId: state.party[0].id
+                        })
+                      }
+                    >
+                      <ShieldCheck size={18} />
+                      {t("play.useItem")}
+                    </button>
+                  )}
                   <button type="button" onClick={() => run({ type: "retreat" })}>
                     <ShieldCheck size={18} />
                     {t("play.retreat")}

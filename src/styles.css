@@ -352,6 +352,28 @@ textarea {
   gap: 1rem;
 }
 
+.town-mode-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.town-service {
+  display: grid;
+  gap: 0.6rem;
+  border: 1px solid #30372f;
+  border-radius: 6px;
+  padding: 0.75rem;
+  background: #121611;
+}
+
+.town-service ul {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0;
+  padding-left: 1.2rem;
+}
+
 .town-scene {
   min-height: 24rem;
   border: 1px solid #30372f;

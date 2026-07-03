@@ -1085,7 +1085,7 @@ Parent: [Plan.md - Phase 6](./Plan.md#phase-6-game-loop-depth)
 
 ### BS-029: Split Town Into Menu Modes
 
-Status: [ ]  
+Status: [x]
 Priority: P2  
 Parent plan task: Task 15, Town Menu
 
@@ -1094,13 +1094,13 @@ Replace the single town panel with navigable town modes: Guild, Recovery, Record
 
 Acceptance criteria:
 
-- [ ] Town mode navigation is visible and keyboard accessible.
-- [ ] Existing party creation is available under Guild.
-- [ ] Dungeon entry remains one click from the appropriate mode.
+- [x] Town mode navigation is visible and keyboard accessible.
+- [x] Existing party creation is available under Guild.
+- [x] Dungeon entry remains one click from the appropriate mode.
 
 Verification:
 
-- [ ] `npm run test:e2e`
+- [x] `npm run test:e2e`
 
 Dependencies:
 
@@ -1120,7 +1120,7 @@ Estimated scope:
 
 ### BS-030: Add Recovery Town Service
 
-Status: [ ]  
+Status: [x]
 Priority: P2  
 Parent plan task: Task 15, Town Menu
 
@@ -1129,14 +1129,14 @@ Add a recovery service screen that restores HP and later handles injuries/costs.
 
 Acceptance criteria:
 
-- [ ] Recovery shows party health.
-- [ ] Recovery restores HP deterministically.
-- [ ] Recovery creates canonical events/log entries.
+- [x] Recovery shows party health.
+- [x] Recovery restores HP deterministically.
+- [x] Recovery creates canonical events/log entries.
 
 Verification:
 
-- [ ] `npm test`
-- [ ] `npm run test:e2e`
+- [x] `npm test`
+- [x] `npm run test:e2e`
 
 Dependencies:
 
@@ -1156,7 +1156,7 @@ Estimated scope:
 
 ### BS-031: Add Injury State
 
-Status: [ ]  
+Status: [x]
 Priority: P2  
 Parent plan task: Task 16, Injury and Recovery
 
@@ -1165,14 +1165,14 @@ Introduce non-deletion consequences for severe damage: injury state, recovery st
 
 Acceptance criteria:
 
-- [ ] Characters are not deleted at 0 HP.
-- [ ] Injury state is persisted in save data.
-- [ ] Recovery service can clear basic injury state.
+- [x] Characters are not deleted at 0 HP.
+- [x] Injury state is persisted in save data.
+- [x] Recovery service can clear basic injury state.
 
 Verification:
 
-- [ ] `npm test`
-- [ ] Headless injury flow test
+- [x] `npm test`
+- [x] Injury unit flow test
 
 Dependencies:
 
@@ -1192,7 +1192,7 @@ Estimated scope:
 
 ### BS-032: Add Defensive Combat Command
 
-Status: [ ]  
+Status: [x]
 Priority: P2  
 Parent plan task: Task 17, Combat Choices
 
@@ -1201,14 +1201,14 @@ Add a deterministic `defend` command that reduces incoming damage and tests comb
 
 Acceptance criteria:
 
-- [ ] `defend` command exists.
-- [ ] Damage reduction is deterministic.
-- [ ] AI does not choose combat commands.
+- [x] `defend` command exists.
+- [x] Damage reduction is deterministic.
+- [x] AI does not choose combat commands.
 
 Verification:
 
-- [ ] `npm test`
-- [ ] Combat E2E smoke test
+- [x] `npm test`
+- [x] Combat E2E smoke test
 
 Dependencies:
 
@@ -1227,7 +1227,7 @@ Estimated scope:
 
 ### BS-033: Add Consumable Item Skeleton
 
-Status: [ ]  
+Status: [x]
 Priority: P2  
 Parent plan task: Task 17, Combat Choices
 
@@ -1236,14 +1236,14 @@ Add a minimal consumable item model and one healing item to prove inventory/acti
 
 Acceptance criteria:
 
-- [ ] Party inventory can hold a healing item.
-- [ ] Item use changes state deterministically.
-- [ ] Item use is saved and logged.
+- [x] Party inventory can hold a healing item.
+- [x] Item use changes state deterministically.
+- [x] Item use is saved and logged.
 
 Verification:
 
-- [ ] `npm test`
-- [ ] `npm run headless:clear`
+- [x] `npm test`
+- [x] `npm run headless:clear`
 
 Dependencies:
 
@@ -1263,20 +1263,20 @@ Estimated scope:
 
 ### Checkpoint 6: Playable Loop Depth
 
-Status: [ ]
+Status: [x]
 
 Required verification:
 
-- [ ] `npm test`
-- [ ] `npm run build`
-- [ ] `npm run headless:clear`
-- [ ] `npm run test:e2e`
+- [x] `npm test`
+- [x] `npm run build`
+- [x] `npm run headless:clear`
+- [x] `npm run test:e2e`
 
 Exit criteria:
 
-- [ ] Town loop has meaningful services.
-- [ ] Injury/recovery exists without character deletion.
-- [ ] Combat has at least one real player choice beyond attack/retreat.
+- [x] Town loop has meaningful services.
+- [x] Injury/recovery exists without character deletion.
+- [x] Combat has at least one real player choice beyond attack/retreat.
 
 ## Phase 7: Desktop Packaging
 

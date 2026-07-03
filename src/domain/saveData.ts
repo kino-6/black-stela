@@ -12,7 +12,16 @@ const CharacterSchema = z.object({
   portraitRef: z.string().optional(),
   hp: z.number().int().nonnegative(),
   maxHp: z.number().int().positive(),
-  attack: z.number().int().nonnegative()
+  attack: z.number().int().nonnegative(),
+  injury: z.enum(["wounded"]).optional()
+});
+
+const InventoryItemSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  kind: z.literal("healing"),
+  quantity: z.number().int().nonnegative(),
+  healAmount: z.number().int().positive()
 });
 
 const EnemySchema = z.object({
@@ -58,6 +67,7 @@ export const GameStateSchema = z.object({
   defeatedEnemies: z.array(z.string()),
   resolvedTraps: z.array(z.string()),
   discoveredSecrets: z.array(z.string()),
+  inventory: z.array(InventoryItemSchema).default([]),
   map: DungeonMapStateSchema,
   log: z.array(AdventureLogEntrySchema),
   turn: z.number().int().nonnegative(),

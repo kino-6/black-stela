@@ -11,7 +11,10 @@ export type Command =
   | { type: "open_door" }
   | { type: "disarm_trap" }
   | { type: "attack" }
+  | { type: "defend" }
+  | { type: "use_item"; itemId: string; targetCharacterId: string }
   | { type: "retreat" }
+  | { type: "recover_party" }
   | { type: "return_to_town" };
 
 export interface Character {
@@ -22,6 +25,15 @@ export interface Character {
   hp: number;
   maxHp: number;
   attack: number;
+  injury?: "wounded";
+}
+
+export interface InventoryItem {
+  id: string;
+  name: string;
+  kind: "healing";
+  quantity: number;
+  healAmount: number;
 }
 
 export interface AdventureLogEntry {
@@ -54,6 +66,10 @@ export type GameEvent =
   | { type: "enemy_damaged"; enemyId: string; enemyName: string; remainingHp: number }
   | { type: "enemy_defeated"; enemyId: string; enemyName: string }
   | { type: "party_wounded"; enemyId: string; enemyName: string; damage: number }
+  | { type: "character_injured"; characterId: string; characterName: string; injury: "wounded" }
+  | { type: "party_defended"; enemyId: string; enemyName: string; damage: number }
+  | { type: "item_used"; itemId: string; itemName: string; targetCharacterId: string; targetName: string; healAmount: number }
+  | { type: "party_recovered" }
   | { type: "party_retreated" }
   | { type: "returned_to_town" }
   | { type: "debug_started"; text: string };
@@ -100,6 +116,7 @@ export interface GameState {
   defeatedEnemies: string[];
   resolvedTraps: string[];
   discoveredSecrets: string[];
+  inventory: InventoryItem[];
   map: DungeonMapState;
   log: AdventureLogEntry[];
   turn: number;
