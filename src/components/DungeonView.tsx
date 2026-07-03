@@ -1,15 +1,17 @@
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
 import { getRoom } from "../domain/scenario";
-import type { GameState, ScenarioWorld } from "../domain/types";
+import type { Direction, GameState, ScenarioWorld } from "../domain/types";
+import type { Translator } from "../i18n";
 
 interface DungeonViewProps {
   state: GameState;
   world: ScenarioWorld;
   label: string;
+  t: Translator;
 }
 
-export function DungeonView({ state, world, label }: DungeonViewProps) {
+export function DungeonView({ state, world, label, t }: DungeonViewProps) {
   const mountRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -21,10 +23,10 @@ export function DungeonView({ state, world, label }: DungeonViewProps) {
     const width = mount.clientWidth;
     const height = mount.clientHeight;
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color("#070807");
-    scene.fog = new THREE.Fog("#070807", 5, 16);
+    scene.background = new THREE.Color("#11120f");
+    scene.fog = new THREE.Fog("#11120f", 8, 22);
 
-    const camera = new THREE.PerspectiveCamera(58, width / height, 0.1, 100);
+    const camera = new THREE.PerspectiveCamera(62, width / height, 0.1, 100);
     camera.position.set(0, 1.5, 4.5);
     camera.lookAt(0, 1.3, -4);
 
@@ -34,28 +36,46 @@ export function DungeonView({ state, world, label }: DungeonViewProps) {
     renderer.shadowMap.enabled = true;
     mount.appendChild(renderer.domElement);
 
-    const ambient = new THREE.AmbientLight("#6f776c", 1.1);
-    const torch = new THREE.PointLight("#d2a25f", 26, 18);
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.45;
+    const ambient = new THREE.AmbientLight("#9a9383", 1.8);
+    const torch = new THREE.PointLight("#f0b76c", 58, 26);
     torch.position.set(-1.5, 2.4, 2.2);
-    scene.add(ambient, torch);
+    const frontLight = new THREE.SpotLight("#ffe0a0", 34, 18, Math.PI / 6, 0.4, 1);
+    frontLight.position.set(0, 2.8, 2.8);
+    frontLight.target.position.set(0, 1.1, -5.4);
+    scene.add(ambient, torch, frontLight, frontLight.target);
 
     const wallMaterial = new THREE.MeshStandardMaterial({
-      color: "#343a36",
-      roughness: 0.86,
+      color: "#59615a",
+      roughness: 0.78,
       metalness: 0.02
     });
     const floorMaterial = new THREE.MeshStandardMaterial({
-      color: "#151814",
-      roughness: 0.9
+      color: "#2a2418",
+      roughness: 0.86
     });
     const doorMaterial = new THREE.MeshStandardMaterial({
-      color: "#6a5640",
-      roughness: 0.72
+      color: "#9a6b35",
+      roughness: 0.62,
+      metalness: 0.08
     });
     const stelaMaterial = new THREE.MeshStandardMaterial({
-      color: "#050505",
+      color: "#101010",
       roughness: 0.5,
       metalness: 0.12
+    });
+    const edgeMaterial = new THREE.LineBasicMaterial({ color: "#c69a58", transparent: true, opacity: 0.78 });
+    const hazardMaterial = new THREE.MeshStandardMaterial({
+      color: "#b64b35",
+      emissive: "#3a0905",
+      roughness: 0.5
+    });
+    const enemyMaterial = new THREE.MeshStandardMaterial({
+      color: "#7b8f72",
+      emissive: "#1f2e18",
+      roughness: 0.56
     });
 
     const floor = new THREE.Mesh(new THREE.BoxGeometry(8, 0.2, 12), floorMaterial);
@@ -79,10 +99,48 @@ export function DungeonView({ state, world, label }: DungeonViewProps) {
     scene.add(backWall);
 
     const room = getRoom(world, state.position.roomId);
-    if (room.doors?.includes(state.position.facing)) {
-      const door = new THREE.Mesh(new THREE.BoxGeometry(2.1, 2.5, 0.18), doorMaterial);
-      door.position.set(0, 1.15, -6.85);
+    const currentExit = room.exits[state.position.facing];
+    const hasFrontDoor = Boolean(currentExit) || room.doors?.includes(state.position.facing);
+    if (hasFrontDoor) {
+      const door = createDoor(doorMaterial, edgeMaterial);
+      door.position.set(0, 1.15, -6.75);
       scene.add(door);
+    }
+
+    const leftDirection = turn(state.position.facing, "left");
+    const rightDirection = turn(state.position.facing, "right");
+    if (room.exits[leftDirection] || room.doors?.includes(leftDirection)) {
+      const sideDoor = createSideDoor(doorMaterial, edgeMaterial);
+      sideDoor.position.set(-3.86, 1.06, -2.7);
+      sideDoor.rotation.y = Math.PI / 2;
+      scene.add(sideDoor);
+    }
+    if (room.exits[rightDirection] || room.doors?.includes(rightDirection)) {
+      const sideDoor = createSideDoor(doorMaterial, edgeMaterial);
+      sideDoor.position.set(3.86, 1.06, -2.7);
+      sideDoor.rotation.y = -Math.PI / 2;
+      scene.add(sideDoor);
+    }
+
+    if (state.phase === "combat" && state.combat) {
+      const enemy = new THREE.Group();
+      const body = new THREE.Mesh(new THREE.SphereGeometry(0.82, 24, 16), enemyMaterial);
+      body.scale.set(1.25, 0.72, 0.92);
+      body.position.set(0, 0.78, -4.15);
+      const eyeMaterial = new THREE.MeshBasicMaterial({ color: "#f1d68b" });
+      const leftEye = new THREE.Mesh(new THREE.SphereGeometry(0.08, 12, 8), eyeMaterial);
+      leftEye.position.set(-0.28, 0.96, -3.55);
+      const rightEye = leftEye.clone();
+      rightEye.position.x = 0.28;
+      enemy.add(body, leftEye, rightEye);
+      scene.add(enemy);
+    }
+
+    if (room.trap && !state.resolvedTraps.includes(room.trap.id)) {
+      const trap = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 0.04, 3), hazardMaterial);
+      trap.position.set(0, 0.04, -2.15);
+      trap.rotation.y = Math.PI / 3;
+      scene.add(trap);
     }
 
     if (room.stairsToTown) {
@@ -97,17 +155,85 @@ export function DungeonView({ state, world, label }: DungeonViewProps) {
     stela.position.set(2.55, 0.95, -4.9);
     scene.add(stela);
 
+    addStoneCourses(scene, wallMaterial);
+
     renderer.render(scene, camera);
 
     return () => {
       renderer.dispose();
       mount.removeChild(renderer.domElement);
     };
-  }, [state.position, world]);
+  }, [state.position, state.phase, state.combat?.enemy.id, state.resolvedTraps, world]);
+
+  const cues = state.position ? getVisualCues(state, world, t) : [];
 
   return (
     <div className="dungeon-view" aria-label={label}>
       <div ref={mountRef} className="dungeon-canvas" data-testid="dungeon-canvas" />
+      {cues.length > 0 && (
+        <div className="dungeon-cues" aria-label={t("visual.visible")}>
+          {cues.map((cue) => (
+            <span key={cue}>{cue}</span>
+          ))}
+        </div>
+      )}
     </div>
   );
+}
+
+function createDoor(material: THREE.Material, edgeMaterial: THREE.Material) {
+  const group = new THREE.Group();
+  const slab = new THREE.Mesh(new THREE.BoxGeometry(2.15, 2.62, 0.2), material);
+  const frame = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(2.25, 2.72, 0.24)), edgeMaterial);
+  const handle = new THREE.Mesh(
+    new THREE.TorusGeometry(0.16, 0.025, 8, 18),
+    new THREE.MeshBasicMaterial({ color: "#efc16d" })
+  );
+  handle.position.set(0.62, 0.05, 0.14);
+  group.add(slab, frame, handle);
+  return group;
+}
+
+function createSideDoor(material: THREE.Material, edgeMaterial: THREE.Material) {
+  const group = new THREE.Group();
+  const slab = new THREE.Mesh(new THREE.BoxGeometry(1.35, 2.2, 0.16), material);
+  const frame = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(1.45, 2.3, 0.2)), edgeMaterial);
+  group.add(slab, frame);
+  return group;
+}
+
+function addStoneCourses(scene: THREE.Scene, material: THREE.Material) {
+  for (let index = 0; index < 5; index += 1) {
+    const line = new THREE.Mesh(new THREE.BoxGeometry(7.8, 0.025, 0.035), material);
+    line.position.set(0, 0.62 + index * 0.48, -6.84);
+    scene.add(line);
+  }
+}
+
+function turn(facing: Direction, side: "left" | "right"): Direction {
+  const directions: Direction[] = ["north", "east", "south", "west"];
+  const index = directions.indexOf(facing);
+  return directions[(index + (side === "left" ? 3 : 1)) % directions.length];
+}
+
+function getVisualCues(state: GameState, world: ScenarioWorld, t: Translator) {
+  if (!state.position) {
+    return [];
+  }
+
+  const room = getRoom(world, state.position.roomId);
+  const cues = new Set<string>();
+  if (state.phase === "combat" && state.combat) {
+    cues.add(state.combat.enemy.name);
+  }
+  if (room.doors?.length || Object.keys(room.exits).length > 0) {
+    cues.add(t("visual.door"));
+  }
+  if (room.trap && !state.resolvedTraps.includes(room.trap.id)) {
+    cues.add(t("visual.trap"));
+  }
+  if (room.stairsToTown) {
+    cues.add(t("visual.stairs"));
+  }
+  return Array.from(cues);
 }

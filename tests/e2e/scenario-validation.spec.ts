@@ -11,8 +11,8 @@ test("blocks start and shows actionable scenario validation errors", async ({ pa
 });
 
 test("scenario validation UI supports Japanese labels", async ({ page }) => {
+  await page.addInitScript(() => window.localStorage.setItem("black-stela:settings:locale", "ja"));
   await page.goto("/?scenario=invalid");
-  await page.getByLabel("Language").selectOption("ja");
 
   await expect(page.getByRole("heading", { name: "シナリオ検証" })).toBeVisible();
   await expect(page.getByText("シナリオを開始できません。")).toBeVisible();

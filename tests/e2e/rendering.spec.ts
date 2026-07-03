@@ -1,7 +1,8 @@
 import { expect, test } from "@playwright/test";
+import { startNewExpedition } from "./helpers";
 
 async function enterDungeon(page: import("@playwright/test").Page) {
-  await page.goto("/");
+  await startNewExpedition(page);
   await page.getByLabel("Name").fill("Vale");
   await page.getByRole("button", { name: "Add adventurer" }).click();
   await page.getByRole("button", { name: "Enter dungeon" }).click();
@@ -17,6 +18,7 @@ for (const viewport of [
 
     const canvas = page.getByTestId("dungeon-canvas").locator("canvas");
     await expect(canvas).toBeVisible();
+    await expect(page.getByLabel("Visible dungeon features")).toContainText("Door");
 
     const screenshot = await canvas.screenshot();
     expect(screenshot.byteLength).toBeGreaterThan(1_000);
@@ -54,5 +56,8 @@ for (const viewport of [
 
     expect(pixels).not.toBeNull();
     expect(pixels!.flatMap((pixel) => pixel.slice(0, 3)).some((channel) => channel > 8)).toBe(true);
+
+    await page.getByRole("button", { name: "Move" }).click();
+    await expect(page.getByLabel("Visible dungeon features")).toContainText("Ash Slime");
   });
 }

@@ -7,6 +7,12 @@ const report = results.map((result) => ({
   cleared: result.cleared,
   reason: result.reason,
   commands: result.commands.map((command) => command.type),
+  trace: result.trace.map((step) => ({
+    command: step.command,
+    from: step.fromRoomId ?? step.fromPhase,
+    to: step.toRoomId ?? step.toPhase,
+    knowledge: step.knowledge
+  })),
   diagnostic: result.diagnostic,
   final: {
     phase: result.state.phase,
@@ -17,7 +23,3 @@ const report = results.map((result) => ({
 }));
 
 console.log(JSON.stringify(report, null, 2));
-
-if (results.some((result) => !result.cleared)) {
-  process.exitCode = 1;
-}

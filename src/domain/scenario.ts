@@ -26,6 +26,24 @@ const enemySchema = z.object({
   name: z.string().min(1),
   hp: z.number().int().positive(),
   attack: z.number().int().nonnegative(),
+  armor: z.number().int().nonnegative().optional(),
+  accuracy: z.number().int().min(0).max(100).optional(),
+  damageMin: z.number().int().nonnegative().optional(),
+  damageMax: z.number().int().nonnegative().optional(),
+  speed: z.number().int().nonnegative().optional(),
+  morale: z.number().int().min(0).max(12).optional(),
+  xp: z.number().int().nonnegative().optional(),
+  gold: z.number().int().nonnegative().optional(),
+  resistances: z
+    .object({
+      poison: z.number().int().min(0).max(100).optional(),
+      fear: z.number().int().min(0).max(100).optional(),
+      silence: z.number().int().min(0).max(100).optional(),
+      sleep: z.number().int().min(0).max(100).optional(),
+      ward: z.number().int().min(0).max(100).optional()
+    })
+    .optional(),
+  drops: z.array(z.string().min(1)).optional(),
   role: enemyRoleSchema.optional(),
   dangerTier: z.number().int().positive().optional(),
   tags: z.array(z.string().min(1)).default([]),

@@ -10,12 +10,12 @@ describe("narrator providers", () => {
     vi.restoreAllMocks();
   });
 
-  it("uses the none provider when AI is disabled", async () => {
+  it("uses the none provider when local narration is bypassed by dev input", async () => {
     const proposal = await requestNarration(state, defaultWorld, { enabled: false });
 
     expect(proposal).toEqual({
       source: "fallback",
-      prose: "AI narration is disabled. The canonical log remains the complete record."
+      prose: "Local narration is bypassed. The canonical log remains the complete record."
     });
   });
 

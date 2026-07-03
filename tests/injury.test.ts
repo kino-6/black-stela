@@ -12,12 +12,33 @@ function combatState(enemyAttack = 5): GameState {
     position: { roomId: "room.b1f.002", facing: "east" },
     combat: {
       roomId: "room.b1f.002",
+      round: 1,
       enemy: {
         id: "enemy.test",
         name: "Test Brute",
         hp: 20,
         attack: enemyAttack
-      }
+      },
+      enemyGroups: [
+        {
+          id: "group.test",
+          enemyId: "enemy.test",
+          name: "Test Brute",
+          count: 1,
+          hpEach: 20,
+          maxHpEach: 20,
+          attack: enemyAttack,
+          armor: 0,
+          accuracy: 100,
+          damageMin: enemyAttack,
+          damageMax: enemyAttack,
+          speed: 4,
+          morale: 8,
+          xp: 1,
+          gold: 0
+        }
+      ],
+      pendingActions: []
     }
   };
 }

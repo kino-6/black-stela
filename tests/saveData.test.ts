@@ -21,7 +21,7 @@ describe("save data", () => {
     expect(save.schemaVersion).toBe(1);
     expect(save.savedAt).toBe("2026-07-03T00:00:00.000Z");
     expect(save.scenario.worldId).toBe(defaultWorld.id);
-    expect(save.settings).toEqual({ aiEnabled: false, locale: "en" });
+    expect(save.settings).toEqual({ aiEnabled: true, locale: "en" });
   });
 
   it("round trips the current GameState exactly enough to resume", () => {
@@ -41,7 +41,7 @@ describe("save data", () => {
       state: save.state
     });
 
-    expect(parsed.settings).toEqual({ aiEnabled: false, locale: "en" });
+    expect(parsed.settings).toEqual({ aiEnabled: true, locale: "en" });
   });
 
   it("rejects unknown future versions clearly", () => {

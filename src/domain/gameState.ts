@@ -30,7 +30,7 @@ export function createInitialGameState(): GameState {
     },
     log: [],
     turn: 0,
-    aiEnabled: false
+    aiEnabled: true
   };
 }
 
@@ -46,9 +46,18 @@ export function createCharacter(input: { name: string; notes: string; portraitRe
     name: trimmedName,
     notes: input.notes.trim(),
     portraitRef: input.portraitRef,
+    row: "front",
     hp: 12,
     maxHp: 12,
     attack: 4,
+    damageMin: 3,
+    damageMax: 5,
+    accuracy: 80,
+    armor: 1,
+    speed: 8,
+    xp: 0,
+    gold: 0,
+    status: [],
     injury: undefined
   };
 }

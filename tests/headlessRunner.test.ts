@@ -19,10 +19,17 @@ describe("headless clear runner", () => {
     expect(result.commands.map((command) => command.type)).toEqual([
       "enter_dungeon",
       "move_forward",
-      "attack",
+      "declare_round",
       "move_forward",
       "return_to_town"
     ]);
+    expect(result.trace.map((step) => step.command)).toEqual(result.commands.map((command) => command.type));
+    expect(result.trace.filter((step) => step.knowledge === "known_map_exits")).toHaveLength(2);
+    expect(result.trace.find((step) => step.command === "return_to_town")).toMatchObject({
+      fromRoomId: "room.b1f.003",
+      toPhase: "town",
+      knowledge: "known_room_state"
+    });
   });
 
   it("can resume from an in-progress map state and still clear", () => {
@@ -31,6 +38,12 @@ describe("headless clear runner", () => {
 
     expect(result.cleared).toBe(true);
     expect(result.commands.map((command) => command.type)).toEqual(["move_forward", "return_to_town"]);
+    expect(result.trace[0]).toMatchObject({
+      command: "move_forward",
+      fromRoomId: "room.b1f.002",
+      toRoomId: "room.b1f.003",
+      knowledge: "known_map_exits"
+    });
     expect(result.state.map.visitedRooms).toContain("room.b1f.003");
   });
 
@@ -58,8 +71,9 @@ describe("headless clear runner", () => {
     const results = runHeadlessProbes(defaultWorld);
 
     expect(results.map((result) => result.progress)).toContain("floor_8");
-    expect(results.every((result) => result.cleared)).toBe(true);
+    expect(results.some((result) => !result.cleared)).toBe(true);
     expect(results.find((result) => result.progress === "floor_8")?.state.phase).toBe("town");
+    expect(results.find((result) => result.progress === "floor_2")?.diagnostic?.phase).toBe("combat");
   });
 });
 

@@ -16,6 +16,7 @@ export interface HeadlessClearResult {
   reason: "clear" | "stuck" | "max_steps";
   state: GameState;
   commands: Command[];
+  trace: HeadlessStepTrace[];
   diagnostic?: HeadlessDiagnostic;
 }
 
@@ -23,28 +24,55 @@ export interface HeadlessProbeResult extends HeadlessClearResult {
   progress: DebugProgress;
 }
 
+export type HeadlessKnowledge =
+  | "town_state"
+  | "combat_state"
+  | "known_room_state"
+  | "known_map_exits";
+
+export interface HeadlessStepTrace {
+  command: Command["type"];
+  fromPhase: GameState["phase"];
+  toPhase: GameState["phase"];
+  fromRoomId?: string;
+  toRoomId?: string;
+  floorId?: string | null;
+  knowledge: HeadlessKnowledge;
+}
+
 export function runHeadlessClear(initialState: GameState, world: ScenarioWorld, maxSteps = 20): HeadlessClearResult {
   let state = initialState;
   const commands: Command[] = [];
+  const trace: HeadlessStepTrace[] = [];
 
   for (let step = 0; step < maxSteps; step += 1) {
     if (isMvpCleared(state)) {
-      return { cleared: true, reason: "clear", state, commands };
+      return { cleared: true, reason: "clear", state, commands, trace };
     }
 
     const decision = chooseNextCommand(state, world);
     if (!decision.command) {
-      return { cleared: false, reason: "stuck", state, commands, diagnostic: decision.diagnostic };
+      return { cleared: false, reason: "stuck", state, commands, trace, diagnostic: decision.diagnostic };
     }
 
     commands.push(decision.command);
     const nextState = executeCommand(state, world, decision.command);
+    trace.push({
+      command: decision.command.type,
+      fromPhase: state.phase,
+      toPhase: nextState.phase,
+      fromRoomId: state.position?.roomId,
+      toRoomId: nextState.position?.roomId,
+      floorId: state.map.floorId ?? nextState.map.floorId,
+      knowledge: decision.knowledge
+    });
     if (nextState === state) {
       return {
         cleared: false,
         reason: "stuck",
         state,
         commands,
+        trace,
         diagnostic: { ...describeState(state, "no_route"), command: decision.command.type }
       };
     }
@@ -57,6 +85,7 @@ export function runHeadlessClear(initialState: GameState, world: ScenarioWorld, 
     reason: cleared ? "clear" : "max_steps",
     state,
     commands,
+    trace,
     diagnostic: cleared ? undefined : describeState(state, "max_steps")
   };
 }
@@ -81,6 +110,7 @@ export function isMvpCleared(state: GameState): boolean {
 
 interface HeadlessDecision {
   command: Command | null;
+  knowledge: HeadlessKnowledge;
   diagnostic?: HeadlessDiagnostic;
 }
 
@@ -101,40 +131,52 @@ const leftOf: Record<Direction, Direction> = {
 function chooseNextCommand(state: GameState, world: ScenarioWorld): HeadlessDecision {
   if (state.phase === "town") {
     return state.party.length > 0
-      ? { command: { type: "enter_dungeon" } }
-      : { command: null, diagnostic: describeState(state, "no_party") };
+      ? { command: { type: "enter_dungeon" }, knowledge: "town_state" }
+      : { command: null, knowledge: "town_state", diagnostic: describeState(state, "no_party") };
   }
 
   if (state.phase === "combat") {
-    return { command: { type: "attack" } };
+    const target = state.combat?.enemyGroups.find((group) => group.count > 0);
+    const frontActors = state.party.filter((member) => member.row === "front" && !member.injury && member.hp > 0);
+    const actors = frontActors.length > 0 ? frontActors : state.party.filter((member) => !member.injury && member.hp > 0);
+    return target && actors.length > 0
+      ? {
+          command: {
+            type: "declare_round",
+            actions: actors.map((actor) => ({ actorId: actor.id, action: "attack", targetGroupId: target.id }))
+          },
+          knowledge: "combat_state"
+        }
+      : { command: null, knowledge: "combat_state", diagnostic: describeState(state, "no_route") };
   }
 
   if (!state.position) {
-    return { command: null, diagnostic: describeState(state, "no_position") };
+    return { command: null, knowledge: "known_room_state", diagnostic: describeState(state, "no_position") };
   }
 
   const room = getRoom(world, state.position.roomId);
   if (room.stairsToTown && state.defeatedEnemies.length > 0) {
-    return { command: { type: "return_to_town" } };
+    return { command: { type: "return_to_town" }, knowledge: "known_room_state" };
   }
 
-  const direction = chooseExplorationDirection(state, room.exits);
+  const direction = chooseExplorationDirection(state, room.exits, state.map.knownExits[state.position.roomId] ?? []);
   if (!direction) {
-    return { command: null, diagnostic: describeState(state, "no_route") };
+    return { command: null, knowledge: "known_map_exits", diagnostic: describeState(state, "no_route") };
   }
 
   if (state.position.facing === direction) {
-    return { command: { type: "move_forward" } };
+    return { command: { type: "move_forward" }, knowledge: "known_map_exits" };
   }
 
-  return { command: turnToward(state.position.facing, direction) };
+  return { command: turnToward(state.position.facing, direction), knowledge: "known_map_exits" };
 }
 
 function chooseExplorationDirection(
   state: GameState,
-  exits: Partial<Record<Direction, string>>
+  exits: Partial<Record<Direction, string>>,
+  knownDirections: Direction[]
 ): Direction | null {
-  const directions = directionOrder.filter((direction) => exits[direction]);
+  const directions = directionOrder.filter((direction) => knownDirections.includes(direction) && exits[direction]);
   const unexplored = directions.find((direction) => {
     const roomId = exits[direction];
     return roomId ? !state.map.visitedRooms.includes(roomId) : false;

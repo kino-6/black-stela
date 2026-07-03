@@ -19,6 +19,15 @@ const report = {
   reason: result.reason,
   progress,
   commands: result.commands.map((command) => command.type),
+  trace: result.trace.map((step) => ({
+    command: step.command,
+    from: step.fromRoomId ?? step.fromPhase,
+    to: step.toRoomId ?? step.toPhase,
+    phase: `${step.fromPhase}->${step.toPhase}`,
+    floorId: step.floorId,
+    knowledge: step.knowledge
+  })),
+  diagnostic: result.diagnostic,
   final: {
     phase: result.state.phase,
     visitedRooms: result.state.map.visitedRooms,

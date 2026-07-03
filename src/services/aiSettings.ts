@@ -1,8 +1,8 @@
 import { z } from "zod";
 
 export const AiSettingsSchema = z.object({
-  enabled: z.boolean().default(false),
-  provider: z.enum(["none", "ollama", "openai-compatible"]).default("none"),
+  enabled: z.boolean().default(true),
+  provider: z.enum(["none", "ollama", "openai-compatible"]).default("ollama"),
   endpoint: z.string().url().default("http://127.0.0.1:11434/api/generate"),
   model: z.string().min(1).default("llama3.2"),
   apiKey: z.string().optional(),
@@ -27,16 +27,24 @@ export function loadAiSettings(storage: Storage | null = getBrowserStorage()): A
   }
 
   try {
-    return parseAiSettings(JSON.parse(raw));
+    return normalizeRuntimeAiSettings(parseAiSettings(JSON.parse(raw)));
   } catch {
     return defaultAiSettings;
   }
 }
 
 export function saveAiSettings(settings: AiSettings, storage: Storage | null = getBrowserStorage()): void {
-  storage?.setItem(SETTINGS_KEY, JSON.stringify(AiSettingsSchema.parse(settings)));
+  storage?.setItem(SETTINGS_KEY, JSON.stringify(normalizeRuntimeAiSettings(AiSettingsSchema.parse(settings))));
 }
 
 function getBrowserStorage() {
   return typeof window === "undefined" ? null : window.localStorage;
+}
+
+function normalizeRuntimeAiSettings(settings: AiSettings): AiSettings {
+  return {
+    ...settings,
+    enabled: true,
+    provider: settings.provider === "none" ? "ollama" : settings.provider
+  };
 }

@@ -13,18 +13,32 @@ export type Command =
   | { type: "attack" }
   | { type: "defend" }
   | { type: "use_item"; itemId: string; targetCharacterId: string }
+  | { type: "declare_round"; actions: CombatActionDeclaration[] }
   | { type: "retreat" }
   | { type: "recover_party" }
   | { type: "return_to_town" };
+
+export type CombatRow = "front" | "back";
+export type CombatActionKind = "attack" | "defend" | "use_item" | "cast";
 
 export interface Character {
   id: string;
   name: string;
   notes: string;
   portraitRef?: string;
+  row: CombatRow;
   hp: number;
   maxHp: number;
   attack: number;
+  damageMin: number;
+  damageMax: number;
+  accuracy: number;
+  armor: number;
+  speed: number;
+  resistance?: Partial<Record<CombatStatus, number>>;
+  xp: number;
+  gold: number;
+  status?: CombatStatus[];
   injury?: "wounded";
 }
 
@@ -46,7 +60,7 @@ export interface AdventureLogEntry {
 
 export type GameEvent =
   | { type: "party_member_joined"; characterId: string; characterName: string }
-  | { type: "command_blocked"; reason: "party_required"; command: Command["type"] }
+  | { type: "command_blocked"; reason: "party_required" | "town_return_unavailable"; command: Command["type"] }
   | { type: "dungeon_entered"; roomId: string; facing: Direction }
   | { type: "party_turned"; side: "left" | "right"; facing: Direction }
   | { type: "movement_blocked"; reason: "wall"; roomId: string; facing: Direction }
@@ -65,6 +79,9 @@ export type GameEvent =
   | { type: "trap_disarmed"; trapId: string; trapName: string }
   | { type: "enemy_damaged"; enemyId: string; enemyName: string; remainingHp: number }
   | { type: "enemy_defeated"; enemyId: string; enemyName: string }
+  | { type: "combat_action_blocked"; reason: "back_row_blocked" | "invalid_actor" | "invalid_target"; actorName?: string }
+  | { type: "combat_round_resolved"; round: number; summaries: string[] }
+  | { type: "combat_rewards"; xp: number; gold: number; enemyNames: string[] }
   | { type: "party_wounded"; enemyId: string; enemyName: string; damage: number }
   | { type: "character_injured"; characterId: string; characterName: string; injury: "wounded" }
   | { type: "party_defended"; enemyId: string; enemyName: string; damage: number }
@@ -79,6 +96,16 @@ export interface Enemy {
   name: string;
   hp: number;
   attack: number;
+  armor?: number;
+  accuracy?: number;
+  damageMin?: number;
+  damageMax?: number;
+  speed?: number;
+  morale?: number;
+  xp?: number;
+  gold?: number;
+  resistances?: Partial<Record<CombatStatus, number>>;
+  drops?: string[];
   role?: EnemyRole;
   dangerTier?: number;
   tags?: string[];
@@ -96,6 +123,43 @@ export interface Trap {
 export interface CombatState {
   enemy: Enemy;
   roomId: string;
+  round: number;
+  enemyGroups: CombatEnemyGroup[];
+  pendingActions: CombatActionDeclaration[];
+  selectedActorId?: string;
+  selectedTargetId?: string;
+  surprise?: "party" | "enemy";
+}
+
+export type CombatStatus = "poison" | "fear" | "silence" | "sleep" | "ward";
+
+export interface CombatEnemyGroup {
+  id: string;
+  enemyId: string;
+  name: string;
+  count: number;
+  hpEach: number;
+  maxHpEach: number;
+  attack: number;
+  armor: number;
+  accuracy: number;
+  damageMin: number;
+  damageMax: number;
+  speed: number;
+  morale: number;
+  xp: number;
+  gold: number;
+  role?: EnemyRole;
+  status?: CombatStatus[];
+}
+
+export interface CombatActionDeclaration {
+  actorId: string;
+  action: CombatActionKind;
+  targetGroupId?: string;
+  targetCharacterId?: string;
+  itemId?: string;
+  spellId?: "heal" | "ward" | "sleep";
 }
 
 export interface DungeonPosition {

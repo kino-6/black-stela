@@ -5,9 +5,10 @@ their own adventurers into a dangerous labyrinth beneath an ancient black stela.
 
 The MVP is a small playable loop: create a party in town, import a character
 portrait, enter a 3D grid dungeon, trigger a trap and a deterministic combat,
-return to town, and review the canonical adventure log.
+return to town, and review canonical records from town.
 
-AI is optional, local-only, and never controls player characters.
+Local AI narration is enabled internally by default, stays local-only, and never
+controls player characters.
 
 ## Current MVP
 
@@ -18,8 +19,8 @@ AI is optional, local-only, and never controls player characters.
 - First-person Three.js dungeon view
 - Deterministic commands for movement, search, listening, combat, retreat, and return
 - Trap, fixed event, simple enemy encounter, and recovery on return to town
-- Adventure log for canonical events
-- Optional Ollama-compatible local narration proposal
+- Town records for canonical adventure events
+- Internal Ollama-compatible local narration proposal with deterministic fallback
 - AI policy guard that rejects player-character speech, player-character action, and game-truth mutation
 - Vitest unit coverage and Playwright browser smoke tests
 - Tauri v2 desktop shell scaffold
@@ -67,7 +68,8 @@ npm run tauri dev
 | `npm run build` | Type-check and build the web frontend |
 | `npm test` | Run Vitest unit tests |
 | `npm run test:e2e` | Run Playwright browser smoke tests |
-| `npm run headless:clear` | Run a deterministic headless clear simulation |
+| `npm run headless:clear` | Run a deterministic reachability probe |
+| `npm run headless:combat` | Run deterministic tactical-combat balance probes |
 | `npm audit --audit-level=moderate` | Check npm dependency advisories |
 | `npm run tauri dev` | Run the Tauri desktop app |
 | `cargo check` from `src-tauri/` | Verify the Rust/Tauri shell |
@@ -77,6 +79,8 @@ Release and packaging references:
 - [Windows build notes](docs/windows-build.md)
 - [Release readiness checklist](docs/release-checklist.md)
 - [ADR-001: Game events and persistence](docs/decisions/ADR-001-game-events-and-persistence.md)
+- [Human Requirement Gate](docs/gates/human-requirement-gate.md)
+- [Player-facing red flags](docs/gates/player-facing-red-flags.md)
 - [Current plan](Plan.md)
 - [Current tasks](Tasks.md)
 - [Completed modernization task archive](docs/archive/Tasks.completed-modernization.md)
@@ -95,7 +99,7 @@ src/domain/                  GameState, commands, rules, scenario validation
 src/services/                Portrait import, narration, AI policy guard
 src/components/              Three.js dungeon renderer
 src/debug/                   Debug progress start-state builders
-src/headless/                Headless deterministic clear runner
+src/headless/                Deterministic reachability probe runner
 src/App.tsx                  MVP game UI shell
 tests/                       Vitest unit tests
 tests/e2e/                   Playwright smoke tests
@@ -105,7 +109,7 @@ src-tauri/                   Tauri v2 desktop shell
 ## Architecture
 
 The implementation keeps a hard boundary between scenario truth, deterministic
-rules, user interface, and optional narration.
+rules, user interface, and local narration.
 
 - `GameState` is the canonical game state.
 - `Command` is the player-selected deterministic action.
@@ -113,7 +117,7 @@ rules, user interface, and optional narration.
 - `WorldRepository` is represented by Markdown/YAML loading plus Zod validation.
 - `PortraitManager` imports local portraits and binds them to characters.
 - `DungeonRenderer` renders the first-person grid scene with Three.js.
-- `ReplayLog` is the canonical adventure log stored in `GameState.log`.
+- `ReplayLog` is the canonical record stream stored in `GameState.log`.
 - `NarratorService` can request local Ollama-compatible flavor text.
 - `AiPolicyGuard` rejects narration that attempts to speak for PCs, move PCs, or mutate truth.
 
@@ -134,19 +138,40 @@ Supported progress values:
 | `clear_ready` | Party in B1F room 003 with full MVP dungeon progress, ready to return |
 
 The debug panel shows visited-room map progress and can reload a selected
-progress state. Its `Headless clear` button runs the same deterministic clear
-runner used by automated checks and applies the resulting `GameState`.
+progress state. Its `Headless clear` button is debug-only. It runs the same
+deterministic reachability probe used by automated checks and applies the
+resulting `GameState`.
 
-Run the headless clear from the terminal:
+Run the reachability probe from the terminal:
 
 ```sh
 npm run headless:clear
 npm run headless:clear -- after_encounter
 ```
 
-The command prints JSON containing the command sequence, final phase, visited
-rooms, defeated enemies, and resolved traps. It exits non-zero if the clear
-runner gets stuck or exceeds its step limit.
+The command prints JSON containing the command sequence, room-by-room trace,
+knowledge source, final phase, visited rooms, defeated enemies, and resolved
+traps. It exits non-zero if the probe gets stuck or exceeds its step limit.
+
+Headless output proves deterministic reachability only. It is not proof that
+the player can understand the route, see the enemy, see the map, find a stair,
+or enjoy the UX. Browser-visible player proof lives in Playwright, especially:
+
+```sh
+npm run test:e2e -- tests/e2e/player-clear.spec.ts
+```
+
+That test clears through visible controls only and fails if `Return` appears
+before the party reaches a room with a return stair.
+
+Run tactical-combat balance probes separately:
+
+```sh
+npm run headless:combat
+```
+
+Combat probes cover authored enemy roles and report injuries, HP pressure, and
+clearability. They are balance signals, not proof of player UX.
 
 ## Scenario Data
 
@@ -187,7 +212,7 @@ systems can validate them before play.
 
 ## AI Policy
 
-The game must remain fully playable with AI disabled.
+The game must remain fully playable when the local narrator is unavailable.
 
 AI may help with:
 
@@ -218,7 +243,8 @@ Unit tests cover:
 - Command-to-state transitions
 - Recovery instead of irreversible character deletion
 - Debug progress start-state construction
-- Headless deterministic clear simulation
+- Headless deterministic reachability probe and room trace
+- Tactical combat round resolution and balance probes
 - AI narration guard behavior
 - Portrait reference binding
 
@@ -231,9 +257,11 @@ E2E tests cover:
 - Move into combat
 - Resolve combat
 - Return to town
+- Browser-visible clear using only player controls
+- Tactical combat actor/target/round controls
 - View the adventure log
 - Debug URL start at an in-progress map state
-- Browser-triggered headless clear
+- Debug-only browser-triggered reachability probe
 
 Run the full current check set:
 

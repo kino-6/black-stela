@@ -1,15 +1,21 @@
 export const en = {
   app: {
-    title: "Black Stela",
-    subtitle: "Town, party, dungeon, combat, return. AI is off by default."
+    title: "Black Stela"
   },
   locale: {
     label: "Language",
     en: "English",
     ja: "Japanese"
   },
+  title: {
+    menu: "Title menu",
+    newGame: "New expedition",
+    continue: "Continue",
+    config: "Config"
+  },
   save: {
     controls: "Save controls",
+    devControls: "Developer save controls",
     slot: "Slot",
     slotInput: "Save slot",
     save: "Save game",
@@ -20,28 +26,9 @@ export const en = {
     slots: "{count} slots",
     corrupt: "Corrupt save"
   },
-  ai: {
-    local: "Local AI",
-    settings: "AI Settings",
-    enabled: "Enable AI",
-    disabled: "AI off",
-    provider: "Provider",
-    none: "None",
-    ollama: "Ollama",
-    openAiCompatible: "LocalAI compatible",
-    endpoint: "Endpoint",
-    model: "Model",
-    apiKey: "API key",
-    invalidEndpoint: "Invalid endpoint URL.",
-    settingsSaved: "AI settings updated.",
-    proposal: "AI Proposal",
-    noProposal: "No proposal",
-    rejected: "Rejected",
-    accepted: "Accepted"
-  },
   debug: {
     heading: "Debug Start",
-    visited: "Visited {visited}/{total} · Phase {phase}",
+    visited: "Mapped {visited}/{total} · Phase {phase}",
     progress: "Progress",
     ready: "Ready in town",
     afterEncounter: "After encounter",
@@ -66,6 +53,7 @@ export const en = {
   },
   play: {
     town: "Town",
+    dungeon: "Dungeon",
     combat: "Combat",
     safe: "Safe",
     facing: "Facing {direction}",
@@ -74,6 +62,18 @@ export const en = {
     enterDungeon: "Enter dungeon",
     combatDescription: "{enemy} stands in the party's path.",
     combatCommands: "Combat commands",
+    battleScreen: "Battle screen",
+    round: "Round {round}",
+    enemyGroups: "Enemy groups",
+    partyFormation: "Party formation",
+    frontRow: "Front row",
+    backRow: "Back row",
+    selectOrder: "Select an actor and target.",
+    selectedOrder: "{actor} targets {target}.",
+    enemyGroupStatus: "{count} left · HP {hp}",
+    actorStatus: "HP {hp}/{maxHp} · {row}",
+    resolveRound: "Resolve round",
+    sleep: "Sleep",
     dungeonCommands: "Dungeon commands",
     dungeonView: "First-person dungeon view",
     turnLeft: "Turn left",
@@ -97,9 +97,6 @@ export const en = {
     recordsHeading: "Records",
     recoverParty: "Recover party",
     recoverAll: "Recover all",
-    quickSave: "Quick save",
-    quickLoad: "Quick load",
-    shortcuts: "Town shortcuts",
     logCount: "{count} records",
     inventory: "Inventory"
   },
@@ -107,11 +104,6 @@ export const en = {
     repeat: "Repeat",
     autoCombat: "Auto combat",
     autoMove: "Auto explore",
-    compactLog: "Compact log",
-    confirmHighImpact: "Confirm retreat/return",
-    shortcuts: "Shortcuts: W/A/D move, S search, F attack, G defend, Space/R repeat",
-    confirmAction: "Confirm this high-impact action?",
-    cancelled: "Action cancelled.",
     noRepeat: "No command to repeat.",
     repeatBlocked: "The last command cannot be repeated here.",
     repeated: "Repeated last command.",
@@ -123,25 +115,27 @@ export const en = {
     autoMoveStoppedBranch: "Auto move stopped: branch or unknown route."
   },
   map: {
-    heading: "Map",
+    heading: "Area",
     noFloor: "No floor",
-    current: "Current",
+    current: "Current room",
     town: "Town",
-    visited: "Visited",
-    none: "None",
-    exits: "Exits",
-    knownExits: "Known exits"
+    miniMap: "Mini-map",
+    paths: "Ways",
+    visited: "Mapped",
+    open: "Open",
+    unseen: "Unseen",
+    wall: "Wall",
+    unknown: "Unknown"
+  },
+  visual: {
+    visible: "Visible dungeon features",
+    door: "Door",
+    trap: "Trap",
+    stairs: "Stairs"
   },
   log: {
-    heading: "Adventure Log",
-    replay: "Replay prose",
     empty: "Canonical events will appear here.",
-    turn: "Turn {turn}",
-    narratorIdle: "Narrator idle",
-    requesting: "Requesting local narrator...",
-    rejected: "Narration rejected.",
-    localProposal: "Local narration proposal",
-    fallbackProposal: "Fallback narration"
+    turn: "Turn {turn}"
   },
   direction: {
     north: "north",

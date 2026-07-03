@@ -24,13 +24,13 @@ export interface NarratorProvider {
 export const noneNarratorProvider: NarratorProvider = {
   metadata: {
     kind: "none",
-    label: "AI disabled"
+    label: "Local narrator bypassed"
   },
   async narrate() {
     return {
       status: "unavailable",
       provider: "none",
-      message: "AI narration is disabled. The canonical log remains the complete record."
+      message: "Local narration is bypassed. The canonical log remains the complete record."
     };
   }
 };

@@ -2,16 +2,22 @@ import type { Dictionary } from "./en";
 
 export const ja = {
   app: {
-    title: "Black Stela",
-    subtitle: "街、隊列、迷宮、戦闘、帰還。AIは標準でオフです。"
+    title: "Black Stela"
   },
   locale: {
     label: "言語",
     en: "英語",
     ja: "日本語"
   },
+  title: {
+    menu: "タイトルメニュー",
+    newGame: "新たな探索",
+    continue: "続きから",
+    config: "設定"
+  },
   save: {
     controls: "保存操作",
+    devControls: "開発用保存操作",
     slot: "スロット",
     slotInput: "保存スロット",
     save: "保存",
@@ -22,28 +28,9 @@ export const ja = {
     slots: "{count} 件",
     corrupt: "破損した保存"
   },
-  ai: {
-    local: "ローカルAI",
-    settings: "AI設定",
-    enabled: "AIを有効化",
-    disabled: "AIオフ",
-    provider: "プロバイダー",
-    none: "なし",
-    ollama: "Ollama",
-    openAiCompatible: "LocalAI互換",
-    endpoint: "エンドポイント",
-    model: "モデル",
-    apiKey: "APIキー",
-    invalidEndpoint: "エンドポイントURLが不正です。",
-    settingsSaved: "AI設定を更新しました。",
-    proposal: "AI提案",
-    noProposal: "提案なし",
-    rejected: "拒否",
-    accepted: "採用可能"
-  },
   debug: {
     heading: "デバッグ開始",
-    visited: "踏破 {visited}/{total} · 状態 {phase}",
+    visited: "探索 {visited}/{total} · 状態 {phase}",
     progress: "進捗",
     ready: "街で準備済み",
     afterEncounter: "初戦後",
@@ -68,6 +55,7 @@ export const ja = {
   },
   play: {
     town: "街",
+    dungeon: "迷宮",
     combat: "戦闘",
     safe: "安全",
     facing: "{direction}向き",
@@ -76,6 +64,18 @@ export const ja = {
     enterDungeon: "迷宮に入る",
     combatDescription: "{enemy} が行く手を塞いでいる。",
     combatCommands: "戦闘コマンド",
+    battleScreen: "戦闘画面",
+    round: "ラウンド {round}",
+    enemyGroups: "敵群",
+    partyFormation: "隊列",
+    frontRow: "前衛",
+    backRow: "後衛",
+    selectOrder: "行動者と対象を選択。",
+    selectedOrder: "{actor} → {target}",
+    enemyGroupStatus: "残り {count} · HP {hp}",
+    actorStatus: "HP {hp}/{maxHp} · {row}",
+    resolveRound: "ラウンド解決",
+    sleep: "睡眠",
     dungeonCommands: "迷宮コマンド",
     dungeonView: "一人称迷宮ビュー",
     turnLeft: "左を向く",
@@ -99,9 +99,6 @@ export const ja = {
     recordsHeading: "記録",
     recoverParty: "隊列を回復",
     recoverAll: "全員回復",
-    quickSave: "クイック保存",
-    quickLoad: "クイック読込",
-    shortcuts: "街ショートカット",
     logCount: "{count} 件の記録",
     inventory: "所持品"
   },
@@ -109,11 +106,6 @@ export const ja = {
     repeat: "リピート",
     autoCombat: "自動戦闘",
     autoMove: "自動探索",
-    compactLog: "記録を圧縮",
-    confirmHighImpact: "退却/帰還を確認",
-    shortcuts: "ショートカット: W/A/D 移動、S 探索、F 攻撃、G 防御、Space/R リピート",
-    confirmAction: "影響の大きい行動を実行しますか？",
-    cancelled: "行動を取り消しました。",
     noRepeat: "繰り返すコマンドがありません。",
     repeatBlocked: "ここでは直前のコマンドを繰り返せません。",
     repeated: "直前のコマンドを繰り返しました。",
@@ -125,25 +117,27 @@ export const ja = {
     autoMoveStoppedBranch: "自動移動停止: 分岐または未知の経路です。"
   },
   map: {
-    heading: "地図",
+    heading: "周辺",
     noFloor: "階層なし",
     current: "現在地",
     town: "街",
-    visited: "踏破済み",
-    none: "なし",
-    exits: "出口",
-    knownExits: "既知の出口"
+    miniMap: "ミニマップ",
+    paths: "通路",
+    visited: "記録済み",
+    open: "通路",
+    unseen: "未確認",
+    wall: "壁",
+    unknown: "不明"
+  },
+  visual: {
+    visible: "見えているもの",
+    door: "扉",
+    trap: "罠",
+    stairs: "階段"
   },
   log: {
-    heading: "冒険記録",
-    replay: "描写を生成",
     empty: "確定イベントがここに表示されます。",
-    turn: "ターン {turn}",
-    narratorIdle: "語り手は待機中",
-    requesting: "ローカル語り手に要求中...",
-    rejected: "描写は拒否されました。",
-    localProposal: "ローカル描写案",
-    fallbackProposal: "代替描写"
+    turn: "ターン {turn}"
   },
   direction: {
     north: "北",

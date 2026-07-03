@@ -33,7 +33,7 @@ export function guardNarration(
     return {
       accepted: false,
       prose: "",
-      reason: "AI narration attempted to speak for or act as a player character."
+      reason: "Narration attempted to speak for or act as a player character."
     };
   }
 
@@ -41,7 +41,7 @@ export function guardNarration(
     return {
       accepted: false,
       prose: "",
-      reason: "AI narration violated the scenario AI policy."
+      reason: "Narration violated the scenario AI policy."
     };
   }
 

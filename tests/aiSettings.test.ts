@@ -1,11 +1,22 @@
 import { describe, expect, it } from "vitest";
-import { defaultAiSettings, parseAiSettings } from "../src/services/aiSettings";
+import { defaultAiSettings, loadAiSettings, parseAiSettings } from "../src/services/aiSettings";
 
 describe("AI settings", () => {
-  it("defaults to AI off", () => {
+  it("defaults to internal local AI on", () => {
     expect(defaultAiSettings).toMatchObject({
-      enabled: false,
-      provider: "none"
+      enabled: true,
+      provider: "ollama"
+    });
+  });
+
+  it("normalizes persisted runtime settings so users cannot disable the concept path", () => {
+    const storage = new MapStorage({
+      "black-stela:settings:ai": JSON.stringify({ enabled: false, provider: "none" })
+    });
+
+    expect(loadAiSettings(storage)).toMatchObject({
+      enabled: true,
+      provider: "ollama"
     });
   });
 
@@ -18,3 +29,31 @@ describe("AI settings", () => {
     expect(parseAiSettings({ enabled: true, provider: "ollama", endpoint: "not a url" })).toEqual(defaultAiSettings);
   });
 });
+
+class MapStorage implements Storage {
+  readonly length: number;
+
+  constructor(private values: Record<string, string>) {
+    this.length = Object.keys(values).length;
+  }
+
+  clear(): void {
+    this.values = {};
+  }
+
+  getItem(key: string): string | null {
+    return this.values[key] ?? null;
+  }
+
+  key(index: number): string | null {
+    return Object.keys(this.values)[index] ?? null;
+  }
+
+  removeItem(key: string): void {
+    delete this.values[key];
+  }
+
+  setItem(key: string, value: string): void {
+    this.values[key] = value;
+  }
+}

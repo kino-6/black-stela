@@ -2,12 +2,21 @@ import { describe, expect, it } from "vitest";
 import { addCharacter, createCharacter, createInitialGameState } from "../src/domain/gameState";
 import { executeCommand, resolveCommand } from "../src/domain/rulesEngine";
 import { defaultWorld } from "../src/data/defaultWorld";
+import type { GameState } from "../src/domain/types";
 
 function stateWithParty() {
   return addCharacter(
     createInitialGameState(),
     createCharacter({ name: "Mira", notes: "Mapper", portraitRef: "data:image/png;base64,AAA" })
   );
+}
+
+function resolveCombat(state: GameState) {
+  let current = state;
+  for (let round = 0; round < 6 && current.phase === "combat"; round += 1) {
+    current = executeCommand(current, defaultWorld, { type: "attack" });
+  }
+  return current;
 }
 
 describe("rules engine", () => {
@@ -76,14 +85,20 @@ describe("rules engine", () => {
     );
   });
 
-  it("resolves combat and allows a recovery return to town without deleting characters", () => {
+  it("blocks return to town until the party reaches a return stair", () => {
     const entered = executeCommand(stateWithParty(), defaultWorld, { type: "enter_dungeon" });
     const moved = executeCommand(entered, defaultWorld, { type: "move_forward" });
-    const afterAttack = executeCommand(moved, defaultWorld, { type: "attack" });
-    const town = executeCommand(afterAttack, defaultWorld, { type: "return_to_town" });
+    const afterAttack = resolveCombat(moved);
+    const blocked = executeCommand(afterAttack, defaultWorld, { type: "return_to_town" });
+    const marker = executeCommand(afterAttack, defaultWorld, { type: "move_forward" });
+    const town = executeCommand(marker, defaultWorld, { type: "return_to_town" });
 
     expect(afterAttack.phase).toBe("dungeon");
     expect(afterAttack.defeatedEnemies).toContain("enemy.b1f.ash-slime");
+    expect(blocked.phase).toBe("dungeon");
+    expect(blocked.position?.roomId).toBe("room.b1f.002");
+    expect(blocked.log.at(-1)?.text).toBe("There is no stair or return seal here.");
+    expect(marker.position?.roomId).toBe("room.b1f.003");
     expect(town.phase).toBe("town");
     expect(town.party).toHaveLength(1);
     expect(town.party[0].hp).toBe(town.party[0].maxHp);

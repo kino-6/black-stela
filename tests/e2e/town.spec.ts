@@ -1,7 +1,8 @@
 import { expect, test } from "@playwright/test";
+import { startNewExpedition } from "./helpers";
 
 test("town modes expose guild, recovery, records, and dungeon entry", async ({ page }) => {
-  await page.goto("/");
+  await startNewExpedition(page);
 
   await expect(page.getByRole("button", { name: "Guild" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Recovery" })).toBeVisible();
@@ -25,7 +26,7 @@ test("town modes expose guild, recovery, records, and dungeon entry", async ({ p
 });
 
 test("combat exposes defend and item use choices", async ({ page }) => {
-  await page.goto("/");
+  await startNewExpedition(page);
 
   await page.getByLabel("Name").fill("Mira");
   await page.getByRole("button", { name: "Add adventurer" }).click();

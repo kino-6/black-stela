@@ -4,6 +4,14 @@ enemies:
     name: Ash Slime
     hp: 4
     attack: 1
+    armor: 0
+    accuracy: 70
+    damageMin: 1
+    damageMax: 2
+    speed: 4
+    morale: 7
+    xp: 3
+    gold: 2
     role: attrition
     dangerTier: 1
     tags: [tutorial, slime]
@@ -11,6 +19,14 @@ enemies:
     name: Hook Rat
     hp: 5
     attack: 2
+    armor: 0
+    accuracy: 75
+    damageMin: 1
+    damageMax: 3
+    speed: 8
+    morale: 6
+    xp: 5
+    gold: 3
     role: ambusher
     dangerTier: 2
     tags: [beast]
@@ -18,6 +34,14 @@ enemies:
     name: Bitter Mote
     hp: 6
     attack: 2
+    armor: 0
+    accuracy: 70
+    damageMin: 1
+    damageMax: 2
+    speed: 6
+    morale: 8
+    xp: 7
+    gold: 4
     role: status
     dangerTier: 3
     tags: [status]
@@ -25,6 +49,14 @@ enemies:
     name: Lantern Ward
     hp: 8
     attack: 3
+    armor: 2
+    accuracy: 70
+    damageMin: 2
+    damageMax: 4
+    speed: 3
+    morale: 10
+    xp: 9
+    gold: 6
     role: blocker
     dangerTier: 3
     tags: [construct]
@@ -32,6 +64,14 @@ enemies:
     name: Cinder Keeper
     hp: 14
     attack: 4
+    armor: 2
+    accuracy: 80
+    damageMin: 3
+    damageMax: 5
+    speed: 5
+    morale: 11
+    xp: 18
+    gold: 12
     role: miniboss
     dangerTier: 4
     isBoss: true
@@ -40,6 +80,14 @@ enemies:
     name: Oath Cutter
     hp: 10
     attack: 4
+    armor: 1
+    accuracy: 80
+    damageMin: 2
+    damageMax: 5
+    speed: 9
+    morale: 8
+    xp: 12
+    gold: 8
     role: ambusher
     dangerTier: 4
     tags: [blade]
@@ -47,6 +95,14 @@ enemies:
     name: Vault Husk
     hp: 12
     attack: 4
+    armor: 3
+    accuracy: 70
+    damageMin: 3
+    damageMax: 5
+    speed: 3
+    morale: 10
+    xp: 14
+    gold: 10
     role: blocker
     dangerTier: 5
     tags: [optional]
@@ -54,6 +110,14 @@ enemies:
     name: Ash Votary
     hp: 22
     attack: 5
+    armor: 3
+    accuracy: 82
+    damageMin: 4
+    damageMax: 6
+    speed: 6
+    morale: 12
+    xp: 32
+    gold: 20
     role: boss
     dangerTier: 5
     isBoss: true

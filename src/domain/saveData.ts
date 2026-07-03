@@ -10,9 +10,27 @@ const CharacterSchema = z.object({
   name: z.string().min(1),
   notes: z.string(),
   portraitRef: z.string().optional(),
+  row: z.enum(["front", "back"]).default("front"),
   hp: z.number().int().nonnegative(),
   maxHp: z.number().int().positive(),
   attack: z.number().int().nonnegative(),
+  damageMin: z.number().int().nonnegative().default(1),
+  damageMax: z.number().int().nonnegative().default(4),
+  accuracy: z.number().int().min(0).max(100).default(80),
+  armor: z.number().int().nonnegative().default(0),
+  speed: z.number().int().nonnegative().default(6),
+  resistance: z
+    .object({
+      poison: z.number().int().min(0).max(100).optional(),
+      fear: z.number().int().min(0).max(100).optional(),
+      silence: z.number().int().min(0).max(100).optional(),
+      sleep: z.number().int().min(0).max(100).optional(),
+      ward: z.number().int().min(0).max(100).optional()
+    })
+    .optional(),
+  xp: z.number().int().nonnegative().default(0),
+  gold: z.number().int().nonnegative().default(0),
+  status: z.array(z.enum(["poison", "fear", "silence", "sleep", "ward"])).default([]),
   injury: z.enum(["wounded"]).optional()
 });
 
@@ -29,15 +47,68 @@ const EnemySchema = z.object({
   name: z.string().min(1),
   hp: z.number().int().nonnegative(),
   attack: z.number().int().nonnegative(),
+  armor: z.number().int().nonnegative().optional(),
+  accuracy: z.number().int().min(0).max(100).optional(),
+  damageMin: z.number().int().nonnegative().optional(),
+  damageMax: z.number().int().nonnegative().optional(),
+  speed: z.number().int().nonnegative().optional(),
+  morale: z.number().int().min(0).max(12).optional(),
+  xp: z.number().int().nonnegative().optional(),
+  gold: z.number().int().nonnegative().optional(),
+  resistances: z
+    .object({
+      poison: z.number().int().min(0).max(100).optional(),
+      fear: z.number().int().min(0).max(100).optional(),
+      silence: z.number().int().min(0).max(100).optional(),
+      sleep: z.number().int().min(0).max(100).optional(),
+      ward: z.number().int().min(0).max(100).optional()
+    })
+    .optional(),
+  drops: z.array(z.string()).optional(),
   role: z.enum(["attrition", "blocker", "status", "ambusher", "caster", "miniboss", "boss"]).optional(),
   dangerTier: z.number().int().positive().optional(),
   tags: z.array(z.string()).optional(),
   isBoss: z.boolean().optional()
 });
 
+const CombatActionDeclarationSchema = z.object({
+  actorId: z.string().min(1),
+  action: z.enum(["attack", "defend", "use_item", "cast"]),
+  targetGroupId: z.string().min(1).optional(),
+  targetCharacterId: z.string().min(1).optional(),
+  itemId: z.string().min(1).optional(),
+  spellId: z.enum(["heal", "ward", "sleep"]).optional()
+});
+
+const CombatEnemyGroupSchema = z.object({
+  id: z.string().min(1),
+  enemyId: z.string().min(1),
+  name: z.string().min(1),
+  count: z.number().int().nonnegative(),
+  hpEach: z.number().int().nonnegative(),
+  maxHpEach: z.number().int().positive(),
+  attack: z.number().int().nonnegative(),
+  armor: z.number().int().nonnegative().default(0),
+  accuracy: z.number().int().min(0).max(100).default(70),
+  damageMin: z.number().int().nonnegative().default(1),
+  damageMax: z.number().int().nonnegative().default(1),
+  speed: z.number().int().nonnegative().default(4),
+  morale: z.number().int().min(0).max(12).default(7),
+  xp: z.number().int().nonnegative().default(0),
+  gold: z.number().int().nonnegative().default(0),
+  role: z.enum(["attrition", "blocker", "status", "ambusher", "caster", "miniboss", "boss"]).optional(),
+  status: z.array(z.enum(["poison", "fear", "silence", "sleep", "ward"])).default([])
+});
+
 const CombatStateSchema = z.object({
   enemy: EnemySchema,
-  roomId: z.string().min(1)
+  roomId: z.string().min(1),
+  round: z.number().int().positive().default(1),
+  enemyGroups: z.array(CombatEnemyGroupSchema).default([]),
+  pendingActions: z.array(CombatActionDeclarationSchema).default([]),
+  selectedActorId: z.string().optional(),
+  selectedTargetId: z.string().optional(),
+  surprise: z.enum(["party", "enemy"]).optional()
 });
 
 const DungeonPositionSchema = z.object({
@@ -87,10 +158,10 @@ export const SaveDataV1Schema = z.object({
   }),
   settings: z
     .object({
-      aiEnabled: z.boolean().default(false),
+      aiEnabled: z.boolean().default(true),
       locale: LocaleSchema.default("en")
     })
-    .default({ aiEnabled: false, locale: "en" }),
+    .default({ aiEnabled: true, locale: "en" }),
   state: GameStateSchema
 });
 

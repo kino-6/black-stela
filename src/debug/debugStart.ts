@@ -61,7 +61,7 @@ export function createDebugStateFromProgress(world: ScenarioWorld, progress: Deb
     },
     log: [],
     turn: 0,
-    aiEnabled: false
+    aiEnabled: true
   };
 
   if (progress === "ready") {
@@ -186,9 +186,18 @@ function createExpectedParty(): Character[] {
       name: "Mira",
       notes: "Mapper. Tracks visited rooms and return routes.",
       portraitRef: "debug://portrait/mira",
+      row: "back",
       hp: 12,
       maxHp: 12,
       attack: 4,
+      damageMin: 3,
+      damageMax: 5,
+      accuracy: 82,
+      armor: 0,
+      speed: 7,
+      xp: 0,
+      gold: 0,
+      status: [],
       injury: undefined
     },
     {
@@ -196,9 +205,18 @@ function createExpectedParty(): Character[] {
       name: "Sei",
       notes: "Lamp bearer. Keeps the party calm in fixed events.",
       portraitRef: "debug://portrait/sei",
+      row: "back",
       hp: 11,
       maxHp: 11,
       attack: 3,
+      damageMin: 2,
+      damageMax: 4,
+      accuracy: 78,
+      armor: 0,
+      speed: 6,
+      xp: 0,
+      gold: 0,
+      status: [],
       injury: undefined
     },
     {
@@ -206,9 +224,18 @@ function createExpectedParty(): Character[] {
       name: "Rook",
       notes: "Front line. Tests recovery instead of irreversible loss.",
       portraitRef: "debug://portrait/rook",
+      row: "front",
       hp: 14,
       maxHp: 14,
       attack: 5,
+      damageMin: 4,
+      damageMax: 6,
+      accuracy: 78,
+      armor: 2,
+      speed: 5,
+      xp: 0,
+      gold: 0,
+      status: [],
       injury: undefined
     },
     {
@@ -216,9 +243,18 @@ function createExpectedParty(): Character[] {
       name: "Vale",
       notes: "Scout. Represents search and trap progress.",
       portraitRef: "debug://portrait/vale",
+      row: "front",
       hp: 10,
       maxHp: 10,
       attack: 3,
+      damageMin: 2,
+      damageMax: 4,
+      accuracy: 84,
+      armor: 1,
+      speed: 9,
+      xp: 0,
+      gold: 0,
+      status: [],
       injury: undefined
     }
   ];

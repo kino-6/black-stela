@@ -37,7 +37,7 @@ export function projectEventToLog(event: GameEvent, locale = "en", world?: Scena
     case "party_member_joined":
       return { text: `${event.characterName} joined the roster.`, tags: ["party"] };
     case "command_blocked":
-      return { text: "A party is required before entering the labyrinth.", tags: ["blocked"] };
+      return projectBlockedCommand(event.reason);
     case "dungeon_entered":
       return { text: "The party descends beneath the black stela.", tags: ["dungeon"] };
     case "party_turned":
@@ -71,6 +71,18 @@ export function projectEventToLog(event: GameEvent, locale = "en", world?: Scena
       return { text: `${event.enemyName} reels, then wounds the front line.`, tags: ["combat"] };
     case "enemy_defeated":
       return { text: `${event.enemyName} falls. The route is clear.`, tags: ["combat"] };
+    case "combat_action_blocked":
+      return {
+        text:
+          event.reason === "back_row_blocked"
+            ? `${event.actorName ?? "The back row"} cannot reach past the front row.`
+            : "The battle order cannot be completed.",
+        tags: ["combat", "blocked"]
+      };
+    case "combat_round_resolved":
+      return { text: `Round ${event.round}: ${event.summaries.join(" ")}`, tags: ["combat", "round"] };
+    case "combat_rewards":
+      return { text: `Victory. The party earns ${event.xp} XP and ${event.gold} gold.`, tags: ["combat", "reward"] };
     case "party_wounded":
       return { text: `${event.enemyName} reels, then wounds the front line.`, tags: ["combat"] };
     case "character_injured":
@@ -95,7 +107,7 @@ function projectEventToJapaneseLog(event: GameEvent, world?: ScenarioWorld): Log
     case "party_member_joined":
       return { text: `${event.characterName} が隊列に加わった。`, tags: ["party"] };
     case "command_blocked":
-      return { text: "迷宮に入るには隊列が必要だ。", tags: ["blocked"] };
+      return projectJapaneseBlockedCommand(event.reason);
     case "dungeon_entered":
       return { text: "隊列は黒い石碑の下へ降りた。", tags: ["dungeon"] };
     case "party_turned":
@@ -129,6 +141,18 @@ function projectEventToJapaneseLog(event: GameEvent, world?: ScenarioWorld): Log
       return { text: `${event.enemyName} はよろめき、前衛に傷を負わせた。`, tags: ["combat"] };
     case "enemy_defeated":
       return { text: `${event.enemyName} は倒れた。道は開けた。`, tags: ["combat"] };
+    case "combat_action_blocked":
+      return {
+        text:
+          event.reason === "back_row_blocked"
+            ? `${event.actorName ?? "後衛"} は前衛を越えて攻撃できない。`
+            : "戦闘指示を完了できない。",
+        tags: ["combat", "blocked"]
+      };
+    case "combat_round_resolved":
+      return { text: `ラウンド ${event.round}: ${event.summaries.join(" ")}`, tags: ["combat", "round"] };
+    case "combat_rewards":
+      return { text: `勝利。隊列は ${event.xp} XP と ${event.gold} gold を得た。`, tags: ["combat", "reward"] };
     case "party_wounded":
       return { text: `${event.enemyName} は前衛に傷を負わせた。`, tags: ["combat"] };
     case "character_injured":
@@ -154,6 +178,22 @@ function roomName(world: ScenarioWorld | undefined, roomId: string, fallback: st
 
 function translateDirection(direction: "north" | "east" | "south" | "west") {
   return { north: "北", east: "東", south: "南", west: "西" }[direction];
+}
+
+function projectBlockedCommand(reason: "party_required" | "town_return_unavailable"): LogProjection {
+  if (reason === "party_required") {
+    return { text: "A party is required before entering the labyrinth.", tags: ["blocked"] };
+  }
+
+  return { text: "There is no stair or return seal here.", tags: ["blocked"] };
+}
+
+function projectJapaneseBlockedCommand(reason: "party_required" | "town_return_unavailable"): LogProjection {
+  if (reason === "party_required") {
+    return { text: "迷宮に入るには隊列が必要だ。", tags: ["blocked"] };
+  }
+
+  return { text: "ここには街へ戻る階段も帰還印もない。", tags: ["blocked"] };
 }
 
 function projectJapaneseInspection(mode: "inspect_wall" | "listen" | "open_door"): LogProjection {

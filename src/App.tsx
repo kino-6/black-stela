@@ -9,21 +9,18 @@ import {
   LogOut,
   Repeat2,
   Save,
-  Swords,
   Volume2,
   Search,
   ShieldCheck
 } from "lucide-react";
 import { DungeonView } from "./components/DungeonView";
 import { MapPanel } from "./components/MapPanel";
-import { AiProposalPanel } from "./components/AiProposalPanel";
-import { AiSettingsPanel } from "./components/AiSettingsPanel";
 import { ScenarioValidationPanel } from "./components/ScenarioValidationPanel";
 import { createCharacter, createInitialGameState, addCharacter } from "./domain/gameState";
 import { getLocalizedRoomText, getRoom } from "./domain/scenario";
 import { executeCommand } from "./domain/rulesEngine";
 import { projectEventToLog } from "./domain/replayLog";
-import type { AdventureLogEntry, Command, GameState } from "./domain/types";
+import type { Command, GameState } from "./domain/types";
 import {
   createDebugStateFromProgress,
   debugProgressValues,
@@ -32,13 +29,10 @@ import {
 } from "./debug/debugStart";
 import { runHeadlessClear } from "./headless/headlessRunner";
 import { defaultWorld } from "./data/defaultWorld";
-import { guardNarration } from "./services/aiPolicyGuard";
-import { requestNarration } from "./services/narratorService";
 import { fromSaveDataV1, toSaveDataV1 } from "./domain/saveData";
 import { LocalStorageSaveRepository, type SaveSlotSummary } from "./services/saveRepository";
 import { createTranslator, type Locale, type Translator } from "./i18n";
 import { loadLocale, saveLocale as persistLocale } from "./services/settingsRepository";
-import { loadAiSettings, saveAiSettings, type AiSettings } from "./services/aiSettings";
 import type { ScenarioValidationError } from "./domain/scenarioPack";
 
 interface CharacterDraft {
@@ -48,36 +42,36 @@ interface CharacterDraft {
 }
 
 type TownMode = "guild" | "recovery" | "records" | "entry";
+type AppScreen = "title" | "config" | "game";
+
+const AUTO_SAVE_SLOT = "autosave";
 
 export function App() {
   const [debugMode] = useState(() => isDebugModeEnabled());
   const [debugProgress, setDebugProgress] = useState<DebugProgress>(() => getDebugProgressFromLocation());
-  const [aiSettings, setAiSettings] = useState<AiSettings>(() => loadAiSettings());
+  const scenarioValidationErrors = useMemo(() => getScenarioValidationErrorsFromLocation(), []);
   const [state, setState] = useState<GameState>(() =>
-    withAiEnabled(
-      debugMode ? createDebugStateFromProgress(defaultWorld, getDebugProgressFromLocation()) : createInitialGameState(),
-      aiSettings.enabled
-    )
+    debugMode ? createDebugStateFromProgress(defaultWorld, getDebugProgressFromLocation()) : createInitialGameState()
+  );
+  const [screen, setScreen] = useState<AppScreen>(() =>
+    debugMode || scenarioValidationErrors.length > 0 ? "game" : "title"
   );
   const [draft, setDraft] = useState<CharacterDraft>({ name: "", notes: "" });
   const [townMode, setTownMode] = useState<TownMode>("guild");
-  const [narration, setNarration] = useState("");
-  const [narrationStatus, setNarrationStatus] = useState("");
-  const [narrationRejected, setNarrationRejected] = useState(false);
   const [headlessStatus, setHeadlessStatus] = useState("");
   const saveRepository = useMemo(() => createBrowserSaveRepository(), []);
   const [locale, setLocale] = useState<Locale>(() => loadLocale());
   const t = useMemo(() => createTranslator(locale), [locale]);
-  const [saveSlotId, setSaveSlotId] = useState("autosave");
+  const [saveSlotId, setSaveSlotId] = useState(AUTO_SAVE_SLOT);
   const [saveSlots, setSaveSlots] = useState<SaveSlotSummary[]>(() => createBrowserSaveRepository()?.list() ?? []);
   const [saveStatus, setSaveStatus] = useState("");
   const [lastCommand, setLastCommand] = useState<Command | null>(null);
   const [tempoStatus, setTempoStatus] = useState("");
-  const [compactLog, setCompactLog] = useState(() => loadBooleanSetting("black-stela.compactLog", false));
-  const [confirmHighImpact, setConfirmHighImpact] = useState(() =>
-    loadBooleanSetting("black-stela.confirmHighImpact", false)
-  );
-  const scenarioValidationErrors = useMemo(() => getScenarioValidationErrorsFromLocation(), []);
+  const [selectedActorId, setSelectedActorId] = useState<string | null>(null);
+  const [selectedTargetId, setSelectedTargetId] = useState<string | null>(null);
+  const autosaveSummary = saveSlots.find((slot) => slot.slotId === AUTO_SAVE_SLOT);
+  const hasAutosave = autosaveSummary?.status === "valid";
+  const hasCorruptAutosave = autosaveSummary?.status === "corrupt";
 
   const roomText = useMemo(() => {
     if (!state.position) {
@@ -86,21 +80,79 @@ export function App() {
 
     return getLocalizedRoomText(defaultWorld, state.position.roomId, locale);
   }, [locale, state.position]);
+  const currentRoom = useMemo(() => (state.position ? getRoom(defaultWorld, state.position.roomId) : null), [state.position]);
+  const canReturnToTown = Boolean(currentRoom?.stairsToTown);
 
-  function run(command: Command, options: { remember?: boolean; confirm?: boolean } = {}) {
-    if (options.confirm !== false && confirmHighImpact && isHighImpactCommand(command)) {
-      const confirmed = window.confirm(t("tempo.confirmAction"));
-      if (!confirmed) {
-        setTempoStatus(t("tempo.cancelled"));
-        return;
-      }
+  const latestLogText = useMemo(() => {
+    const entry = state.log.at(-1);
+    if (!entry) {
+      return "";
     }
 
+    return entry.event ? projectEventToLog(entry.event, locale, defaultWorld)?.text ?? entry.text : entry.text;
+  }, [locale, state.log]);
+
+  const livingEnemyGroups = state.combat?.enemyGroups.filter((group) => group.count > 0) ?? [];
+  const activeParty = state.party.filter((member) => member.hp > 0 && !member.injury);
+  const selectedActor = activeParty.find((member) => member.id === selectedActorId) ?? activeParty[0] ?? null;
+  const selectedTarget = livingEnemyGroups.find((group) => group.id === selectedTargetId) ?? livingEnemyGroups[0] ?? null;
+
+  useEffect(() => {
+    if (state.phase !== "combat") {
+      setSelectedActorId(null);
+      setSelectedTargetId(null);
+      return;
+    }
+
+    if (!selectedActor && activeParty[0]) {
+      setSelectedActorId(activeParty[0].id);
+    }
+
+    if (!selectedTarget && livingEnemyGroups[0]) {
+      setSelectedTargetId(livingEnemyGroups[0].id);
+    }
+  }, [activeParty, livingEnemyGroups, selectedActor, selectedTarget, state.phase]);
+
+  function run(command: Command, options: { remember?: boolean; confirm?: boolean } = {}) {
     setState((current) => executeCommand(current, defaultWorld, command));
     if (options.remember !== false && isRepeatableCommand(command)) {
       setLastCommand(command);
     }
     setTempoStatus("");
+  }
+
+  function resolveSelectedRound(action: "attack" | "defend" = "attack") {
+    if (!selectedActor) {
+      return;
+    }
+
+    run(
+      {
+        type: "declare_round",
+        actions: [
+          {
+            actorId: selectedActor.id,
+            action,
+            targetGroupId: action === "attack" ? selectedTarget?.id : undefined
+          }
+        ]
+      },
+      { remember: false }
+    );
+  }
+
+  function castSelectedSleep() {
+    if (!selectedActor || !selectedTarget) {
+      return;
+    }
+
+    run(
+      {
+        type: "declare_round",
+        actions: [{ actorId: selectedActor.id, action: "cast", spellId: "sleep", targetGroupId: selectedTarget.id }]
+      },
+      { remember: false }
+    );
   }
 
   function repeatLastCommand() {
@@ -119,7 +171,7 @@ export function App() {
   }
 
   function loadDebugProgress() {
-    setState(withAiEnabled(createDebugStateFromProgress(defaultWorld, debugProgress), aiSettings.enabled));
+    setState(createDebugStateFromProgress(defaultWorld, debugProgress));
     setHeadlessStatus("");
   }
 
@@ -150,42 +202,37 @@ export function App() {
     setDraft((current) => ({ ...current, portraitRef: dataUrl }));
   }
 
-  async function narrate() {
-    setNarrationStatus(t("log.requesting"));
-    setNarrationRejected(false);
-    const proposal = await requestNarration(state, defaultWorld, aiSettings);
-    const guarded = guardNarration(state, defaultWorld, proposal);
-
-    if (!guarded.accepted) {
-      setNarration("");
-      setNarrationStatus(guarded.reason ?? t("log.rejected"));
-      setNarrationRejected(true);
-      return;
-    }
-
-    setNarration(guarded.prose);
-    setNarrationStatus(proposal.source === "local_ai" ? t("log.localProposal") : t("log.fallbackProposal"));
+  function startNewGame() {
+    setState(createInitialGameState());
+    setDraft({ name: "", notes: "" });
+    setTownMode("guild");
+    setTempoStatus("");
+    setLastCommand(null);
+    setSaveStatus("");
+    setScreen("game");
   }
 
-  function saveGame() {
+  function saveGame(slotId = saveSlotId, announce = true) {
     if (!saveRepository) {
       setSaveStatus(t("save.unavailable"));
       return;
     }
 
     const save = toSaveDataV1(state, defaultWorld, { locale });
-    saveRepository.write(saveSlotId, save);
+    saveRepository.write(slotId, save);
     setSaveSlots(saveRepository.list());
-    setSaveStatus(t("save.saved", { slot: saveSlotId }));
+    if (announce) {
+      setSaveStatus(t("save.saved", { slot: slotId }));
+    }
   }
 
-  function loadGame() {
+  function loadGame(slotId = saveSlotId, enterGame = true) {
     if (!saveRepository) {
       setSaveStatus(t("save.unavailable"));
       return;
     }
 
-    const result = saveRepository.read(saveSlotId);
+    const result = saveRepository.read(slotId);
     if (!result.ok) {
       setSaveStatus(result.message);
       return;
@@ -193,19 +240,15 @@ export function App() {
 
     setState(fromSaveDataV1(result.save));
     changeLocale(result.save.settings.locale);
-    setSaveStatus(createTranslator(result.save.settings.locale)("save.loaded", { slot: saveSlotId }));
+    setSaveStatus(createTranslator(result.save.settings.locale)("save.loaded", { slot: slotId }));
+    if (enterGame) {
+      setScreen("game");
+    }
   }
 
   function changeLocale(nextLocale: Locale) {
     setLocale(nextLocale);
     persistLocale(nextLocale);
-  }
-
-  function updateAiSettings(nextSettings: AiSettings) {
-    setAiSettings(nextSettings);
-    saveAiSettings(nextSettings);
-    setState((current) => withAiEnabled(current, nextSettings.enabled));
-    setNarrationStatus(t("ai.settingsSaved"));
   }
 
   function runAutoCombat() {
@@ -224,16 +267,6 @@ export function App() {
     if (result.lastCommand) {
       setLastCommand(result.lastCommand);
     }
-  }
-
-  function toggleCompactLog(nextValue: boolean) {
-    setCompactLog(nextValue);
-    saveBooleanSetting("black-stela.compactLog", nextValue);
-  }
-
-  function toggleConfirmHighImpact(nextValue: boolean) {
-    setConfirmHighImpact(nextValue);
-    saveBooleanSetting("black-stela.confirmHighImpact", nextValue);
   }
 
   useEffect(() => {
@@ -260,65 +293,66 @@ export function App() {
         run({ type: "search" });
       } else if (state.phase === "combat" && key === "f") {
         event.preventDefault();
-        run({ type: "attack" });
+        resolveSelectedRound("attack");
       } else if (state.phase === "combat" && key === "g") {
         event.preventDefault();
-        run({ type: "defend" });
+        resolveSelectedRound("defend");
       }
     }
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [lastCommand, state, confirmHighImpact, t]);
+  }, [lastCommand, selectedActor, selectedTarget, state, t]);
+
+  useEffect(() => {
+    if (!saveRepository || debugMode || scenarioValidationErrors.length > 0 || screen !== "game") {
+      return;
+    }
+
+    saveRepository.write(AUTO_SAVE_SLOT, toSaveDataV1(state, defaultWorld, { locale }));
+    setSaveSlots(saveRepository.list());
+  }, [debugMode, locale, saveRepository, scenarioValidationErrors.length, screen, state]);
 
   return (
-    <main className="app-shell">
-      <header className="topbar">
-        <div>
-          <h1>{t("app.title")}</h1>
-          <p>{t("app.subtitle")}</p>
-        </div>
-        <div className="topbar-tools">
-          <label className="locale-control">
-            {t("locale.label")}
-            <select value={locale} onChange={(event) => changeLocale(event.target.value as Locale)}>
-              <option value="en">{t("locale.en")}</option>
-              <option value="ja">{t("locale.ja")}</option>
-            </select>
-          </label>
-          <div className="save-controls" aria-label={t("save.controls")}>
-            <label>
-              {t("save.slot")}
-              <input
-                list="save-slots"
-                value={saveSlotId}
-                onChange={(event) => setSaveSlotId(event.target.value)}
-                aria-label={t("save.slotInput")}
-              />
-            </label>
-            <datalist id="save-slots">
-              {saveSlots.map((slot) => (
-                <option key={slot.slotId} value={slot.slotId}>
-                  {slot.status === "valid" ? slot.savedAt : t("save.corrupt")}
-                </option>
-              ))}
-            </datalist>
-            <button type="button" onClick={saveGame}>
-              <Save size={18} />
-              {t("save.save")}
-            </button>
-            <button type="button" onClick={loadGame}>
-              <FolderOpen size={18} />
-              {t("save.load")}
-            </button>
-            <small aria-live="polite">{saveStatus || t("save.slots", { count: saveSlots.length })}</small>
+    <main className={screen === "game" ? "app-shell" : "app-shell title-shell"}>
+      {screen !== "game" && (
+        <section className="title-screen" aria-labelledby="title-heading">
+          <div className="title-mark">
+            <span className="title-rule" />
+            <h1 id="title-heading">{t("app.title")}</h1>
           </div>
-        </div>
-      </header>
+          <nav className="title-menu" aria-label={t("title.menu")}>
+            <button type="button" className="primary-action" onClick={startNewGame}>
+              {t("title.newGame")}
+            </button>
+            <button type="button" disabled={!hasAutosave} onClick={() => loadGame(AUTO_SAVE_SLOT)}>
+              {t("title.continue")}
+            </button>
+            <button type="button" onClick={() => setScreen(screen === "config" ? "title" : "config")}>
+              {t("title.config")}
+            </button>
+          </nav>
+          {screen === "config" && (
+            <section className="title-config" aria-labelledby="title-config-heading">
+              <h2 id="title-config-heading">{t("title.config")}</h2>
+              <label>
+                {t("locale.label")}
+                <select value={locale} onChange={(event) => changeLocale(event.target.value as Locale)}>
+                  <option value="en">{t("locale.en")}</option>
+                  <option value="ja">{t("locale.ja")}</option>
+                </select>
+              </label>
+            </section>
+          )}
+          {(saveStatus || hasCorruptAutosave) && (
+            <p className="title-status" aria-live="polite">{saveStatus || t("save.corrupt")}</p>
+          )}
+        </section>
+      )}
 
-      {scenarioValidationErrors.length > 0 ? (
+      {screen === "game" && scenarioValidationErrors.length > 0 ? (
         <ScenarioValidationPanel errors={scenarioValidationErrors} t={t} />
-      ) : (
+      ) : screen === "game" ? (
         <>
       {debugMode && (
         <section className="debug-panel" aria-labelledby="debug-heading">
@@ -347,7 +381,34 @@ export function App() {
           </label>
           <button type="button" onClick={loadDebugProgress}>{t("debug.loadProgress")}</button>
           <button type="button" onClick={runHeadless}>{t("debug.headlessClear")}</button>
+          <div className="dev-save-controls" aria-label={t("save.devControls")}>
+            <label>
+              {t("save.slot")}
+              <input
+                list="save-slots"
+                value={saveSlotId}
+                onChange={(event) => setSaveSlotId(event.target.value)}
+                aria-label={t("save.slotInput")}
+              />
+            </label>
+            <datalist id="save-slots">
+              {saveSlots.map((slot) => (
+                <option key={slot.slotId} value={slot.slotId}>
+                  {slot.status === "valid" ? slot.savedAt : t("save.corrupt")}
+                </option>
+              ))}
+            </datalist>
+            <button type="button" onClick={() => saveGame(saveSlotId)}>
+              <Save size={18} />
+              {t("save.save")}
+            </button>
+            <button type="button" onClick={() => loadGame(saveSlotId, false)}>
+              <FolderOpen size={18} />
+              {t("save.load")}
+            </button>
+          </div>
           {headlessStatus && <strong>{headlessStatus}</strong>}
+          {saveStatus && <strong>{saveStatus}</strong>}
         </section>
       )}
 
@@ -437,7 +498,15 @@ export function App() {
                 <button type="button" onClick={() => setTownMode("records")}>{t("town.records")}</button>
                 <button type="button" onClick={() => setTownMode("entry")}>{t("town.entry")}</button>
               </div>
-              <div className="town-scene" aria-hidden="true" />
+              <div className="town-scene" aria-hidden="true">
+                <div className="town-skyline" />
+                <div className="town-gate">
+                  <span className="town-lantern left" />
+                  <span className="town-stela" />
+                  <span className="town-lantern right" />
+                </div>
+                <div className="town-steps" />
+              </div>
               {townMode === "recovery" && (
                 <section className="town-service" aria-labelledby="recovery-heading">
                   <h3 id="recovery-heading">{t("town.recoveryHeading")}</h3>
@@ -453,67 +522,131 @@ export function App() {
                 <section className="town-service" aria-labelledby="records-heading">
                   <h3 id="records-heading">{t("town.recordsHeading")}</h3>
                   <p>{t("town.logCount", { count: state.log.length })}</p>
+                  {state.log.length > 0 && (
+                    <ol className="records-list">
+                      {state.log.slice().reverse().slice(0, 8).map((entry) => (
+                        <li key={entry.id}>
+                          <small>{t("log.turn", { turn: entry.turn })}</small>
+                          <p>{entry.event ? projectEventToLog(entry.event, locale, defaultWorld)?.text ?? entry.text : entry.text}</p>
+                        </li>
+                      ))}
+                    </ol>
+                  )}
                 </section>
               )}
-              <section className="town-service town-shortcuts" aria-label={t("town.shortcuts")}>
-                <button type="button" onClick={() => run({ type: "recover_party" })}>{t("town.recoverAll")}</button>
-                <button type="button" onClick={saveGame}>{t("town.quickSave")}</button>
-                <button type="button" onClick={loadGame}>{t("town.quickLoad")}</button>
-              </section>
               <p>
                 {t("play.townCopy")}
               </p>
-              <button type="button" className="primary-action" onClick={() => run({ type: "enter_dungeon" })}>
+              {latestLogText && <p className="event-window" aria-live="polite">{latestLogText}</p>}
+              <button
+                type="button"
+                className="primary-action"
+                disabled={state.party.length === 0}
+                onClick={() => run({ type: "enter_dungeon" })}
+              >
                 <DoorOpen size={18} />
                 {t("play.enterDungeon")}
               </button>
             </div>
           ) : (
             <>
-              <DungeonView state={state} world={defaultWorld} label={t("play.dungeonView")} />
+              <DungeonView state={state} world={defaultWorld} label={t("play.dungeonView")} t={t} />
               <MapPanel state={state} world={defaultWorld} locale={locale} t={t} />
               <div className="room-copy">
                 <p>{state.phase === "combat" ? t("play.combatDescription", { enemy: state.combat?.enemy.name ?? "" }) : roomText?.description}</p>
               </div>
+              {(latestLogText || tempoStatus) && (
+                <p className="event-window" aria-live="polite">{tempoStatus || latestLogText}</p>
+              )}
               {state.phase === "combat" ? (
-                <div className="command-bar" aria-label={t("play.combatCommands")}>
-                  <button type="button" onClick={repeatLastCommand}>
-                    <Repeat2 size={18} />
-                    {t("tempo.repeat")}
-                  </button>
-                  <button type="button" onClick={() => run({ type: "attack" })}>
-                    <Swords size={18} />
-                    {t("play.attack")}
-                  </button>
-                  <button type="button" onClick={() => run({ type: "defend" })}>
-                    <ShieldCheck size={18} />
-                    {t("play.defend")}
-                  </button>
-                  {state.inventory.some((item) => item.kind === "healing" && item.quantity > 0) && state.party[0] && (
-                    <button
-                      type="button"
-                      onClick={() =>
-                        run({
-                          type: "use_item",
-                          itemId: state.inventory.find((item) => item.kind === "healing" && item.quantity > 0)!.id,
-                          targetCharacterId: state.party[0].id
-                        })
-                      }
-                    >
-                      <ShieldCheck size={18} />
-                      {t("play.useItem")}
+                <section className="battle-screen" aria-label={t("play.battleScreen")}>
+                  <div className="battle-header">
+                    <strong>{t("play.round", { round: state.combat?.round ?? 1 })}</strong>
+                    <span>{selectedActor && selectedTarget ? t("play.selectedOrder", { actor: selectedActor.name, target: selectedTarget.name }) : t("play.selectOrder")}</span>
+                  </div>
+
+                  <div className="battle-grid">
+                    <div className="battle-side" aria-label={t("play.enemyGroups")}>
+                      <h3>{t("play.enemyGroups")}</h3>
+                      {livingEnemyGroups.map((group) => (
+                        <button
+                          type="button"
+                          key={group.id}
+                          className={group.id === selectedTarget?.id ? "battle-choice selected" : "battle-choice"}
+                          data-testid="combat-enemy-group"
+                          onClick={() => setSelectedTargetId(group.id)}
+                        >
+                          <strong>{group.name}</strong>
+                          <span>{t("play.enemyGroupStatus", { count: group.count, hp: group.hpEach })}</span>
+                        </button>
+                      ))}
+                    </div>
+
+                    <div className="battle-side" aria-label={t("play.partyFormation")}>
+                      <h3>{t("play.partyFormation")}</h3>
+                      {(["front", "back"] as const).map((row) => (
+                        <div className="battle-row" key={row}>
+                          <span>{row === "front" ? t("play.frontRow") : t("play.backRow")}</span>
+                          {state.party.filter((member) => member.row === row).map((member) => (
+                            <button
+                              type="button"
+                              key={member.id}
+                              className={member.id === selectedActor?.id ? "battle-choice selected" : "battle-choice"}
+                              data-testid="combat-actor"
+                              onClick={() => setSelectedActorId(member.id)}
+                              disabled={Boolean(member.injury)}
+                            >
+                              <strong>{member.name}</strong>
+                              <span>{t("play.actorStatus", { hp: member.hp, maxHp: member.maxHp, row: member.row })}</span>
+                            </button>
+                          ))}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="command-bar" aria-label={t("play.combatCommands")}>
+                    <button type="button" onClick={repeatLastCommand}>
+                      <Repeat2 size={18} />
+                      {t("tempo.repeat")}
                     </button>
-                  )}
-                  <button type="button" onClick={() => run({ type: "retreat" })}>
-                    <ShieldCheck size={18} />
-                    {t("play.retreat")}
-                  </button>
-                  <button type="button" onClick={runAutoCombat}>
-                    <FastForward size={18} />
-                    {t("tempo.autoCombat")}
-                  </button>
-                  <span className="enemy-meter">{t("play.enemyHp", { hp: state.combat?.enemy.hp ?? 0 })}</span>
-                </div>
+                    <button type="button" disabled={!selectedActor || !selectedTarget} onClick={() => resolveSelectedRound("attack")}>
+                      <ShieldCheck size={18} />
+                      {t("play.resolveRound")}
+                    </button>
+                    <button type="button" disabled={!selectedActor} onClick={() => resolveSelectedRound("defend")}>
+                      <ShieldCheck size={18} />
+                      {t("play.defend")}
+                    </button>
+                    <button type="button" disabled={!selectedActor || !selectedTarget} onClick={castSelectedSleep}>
+                      <ShieldCheck size={18} />
+                      {t("play.sleep")}
+                    </button>
+                    {state.inventory.some((item) => item.kind === "healing" && item.quantity > 0) && selectedActor && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          run({
+                            type: "use_item",
+                            itemId: state.inventory.find((item) => item.kind === "healing" && item.quantity > 0)!.id,
+                            targetCharacterId: selectedActor.id
+                          })
+                        }
+                      >
+                        <ShieldCheck size={18} />
+                        {t("play.useItem")}
+                      </button>
+                    )}
+                    <button type="button" onClick={() => run({ type: "retreat" })}>
+                      <ShieldCheck size={18} />
+                      {t("play.retreat")}
+                    </button>
+                    <button type="button" onClick={runAutoCombat}>
+                      <FastForward size={18} />
+                      {t("tempo.autoCombat")}
+                    </button>
+                  </div>
+                </section>
               ) : (
                 <div className="command-bar" aria-label={t("play.dungeonCommands")}>
                   <button type="button" onClick={repeatLastCommand}>
@@ -538,60 +671,24 @@ export function App() {
                     <Volume2 size={18} />
                     {t("play.listen")}
                   </button>
-                  <button type="button" onClick={() => run({ type: "return_to_town" })}>
-                    <LogOut size={18} />
-                    {t("play.return")}
-                  </button>
+                  {canReturnToTown && (
+                    <button type="button" onClick={() => run({ type: "return_to_town" })}>
+                      <LogOut size={18} />
+                      {t("play.return")}
+                    </button>
+                  )}
                   <button type="button" onClick={runAutoMove}>
                     <FastForward size={18} />
                     {t("tempo.autoMove")}
                   </button>
                 </div>
               )}
-              {tempoStatus && <p className="tempo-status" aria-live="polite">{tempoStatus}</p>}
             </>
           )}
         </section>
-
-        <aside className="panel log-panel" aria-labelledby="log-heading">
-          <div className="section-title">
-            <h2 id="log-heading">{t("log.heading")}</h2>
-            <button type="button" onClick={narrate}>{t("log.replay")}</button>
-          </div>
-          <div className="tempo-settings">
-            <label>
-              <input type="checkbox" checked={compactLog} onChange={(event) => toggleCompactLog(event.target.checked)} />
-              {t("tempo.compactLog")}
-            </label>
-            <label>
-              <input
-                type="checkbox"
-                checked={confirmHighImpact}
-                onChange={(event) => toggleConfirmHighImpact(event.target.checked)}
-              />
-              {t("tempo.confirmHighImpact")}
-            </label>
-            <small>{t("tempo.shortcuts")}</small>
-          </div>
-          <ol className="log-list">
-            {state.log.length === 0 ? (
-              <li className="empty-state">{t("log.empty")}</li>
-            ) : (
-              getVisibleLogEntries(state, compactLog)
-                .map((entry) => (
-                  <li key={entry.id}>
-                    <small>{t("log.turn", { turn: entry.turn })}</small>
-                    <p>{entry.event ? projectEventToLog(entry.event, locale, defaultWorld)?.text ?? entry.text : entry.text}</p>
-                  </li>
-                ))
-            )}
-          </ol>
-          <AiProposalPanel status={narrationStatus} prose={narration} rejected={narrationRejected} t={t} />
-          <AiSettingsPanel settings={aiSettings} t={t} onChange={updateAiSettings} />
-        </aside>
       </section>
         </>
-      )}
+      ) : null}
     </main>
   );
 }
@@ -629,14 +726,7 @@ function formatPhase(phase: GameState["phase"], t: Translator) {
     return t("play.combat");
   }
 
-  return t("map.heading");
-}
-
-function withAiEnabled(state: GameState, enabled: boolean): GameState {
-  return {
-    ...state,
-    aiEnabled: enabled
-  };
+  return t("play.dungeon");
 }
 
 function formatDebugProgress(progress: DebugProgress, t: Translator) {
@@ -659,10 +749,6 @@ function isRepeatableCommand(command: Command) {
   return ["move_forward", "turn_left", "turn_right", "inspect_wall", "listen", "search", "attack", "defend", "use_item"].includes(
     command.type
   );
-}
-
-function isHighImpactCommand(command: Command) {
-  return command.type === "retreat" || command.type === "return_to_town";
 }
 
 function isCommandValidForState(command: Command, state: GameState) {
@@ -739,33 +825,6 @@ function runAutoMoveLoop(state: GameState, t: Translator) {
   }
 
   return { state: current, lastCommand, status: t("tempo.autoStoppedLimit") };
-}
-
-function getVisibleLogEntries(state: GameState, compactLog: boolean): AdventureLogEntry[] {
-  const entries = state.log.slice().reverse();
-  if (!compactLog) {
-    return entries;
-  }
-
-  return entries.filter((entry, index) => {
-    const previous = entries[index - 1];
-    return !previous || previous.text !== entry.text || previous.turn !== entry.turn;
-  });
-}
-
-function loadBooleanSetting(key: string, fallback: boolean) {
-  if (typeof window === "undefined") {
-    return fallback;
-  }
-
-  const value = window.localStorage.getItem(key);
-  return value === null ? fallback : value === "true";
-}
-
-function saveBooleanSetting(key: string, value: boolean) {
-  if (typeof window !== "undefined") {
-    window.localStorage.setItem(key, String(value));
-  }
 }
 
 function isTypingTarget(target: EventTarget | null) {

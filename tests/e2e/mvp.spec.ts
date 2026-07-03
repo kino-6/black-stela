@@ -1,7 +1,8 @@
 import { expect, test } from "@playwright/test";
+import { resolveVisibleCombat, startNewExpedition } from "./helpers";
 
 test("create party, import portrait, enter dungeon, fight, return, and view log", async ({ page }) => {
-  await page.goto("/");
+  await startNewExpedition(page);
 
   await page.getByLabel("Name").fill("Mira");
   await page.getByLabel("Notes").fill("Maps every room by hand.");
@@ -21,8 +22,12 @@ test("create party, import portrait, enter dungeon, fight, return, and view log"
 
   await page.getByRole("button", { name: "Move" }).click();
   await expect(page.getByText("Ash Slime stands in the party's path.")).toBeVisible();
-  await page.getByRole("button", { name: "Attack" }).click();
+  await resolveVisibleCombat(page);
   await expect(page.getByRole("heading", { name: "Hall of Old Dust" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Return" })).toHaveCount(0);
+
+  await page.getByRole("button", { name: "Move" }).click();
+  await expect(page.getByRole("heading", { name: "Black Marker" })).toBeVisible();
 
   await page.getByRole("button", { name: "Return" }).click();
   await expect(page.getByRole("heading", { name: "Town" })).toBeVisible();
