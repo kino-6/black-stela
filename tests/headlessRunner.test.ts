@@ -5,8 +5,8 @@ import { addCharacter, createCharacter, createInitialGameState } from "../src/do
 import type { ScenarioWorld } from "../src/domain/types";
 import { runHeadlessClear, runHeadlessProbes } from "../src/headless/headlessRunner";
 
-describe("headless clear runner", () => {
-  it("clears the MVP dungeon deterministically from a fresh debug party", () => {
+describe("headless reachability runner", () => {
+  it("reaches the MVP return condition deterministically from a fresh debug party", () => {
     const initialState = createDebugStateFromProgress(defaultWorld, "ready");
     const result = runHeadlessClear(initialState, defaultWorld);
 
@@ -32,7 +32,7 @@ describe("headless clear runner", () => {
     });
   });
 
-  it("can resume from an in-progress map state and still clear", () => {
+  it("can resume from an in-progress map state and still reach the return condition", () => {
     const initialState = createDebugStateFromProgress(defaultWorld, "after_encounter");
     const result = runHeadlessClear(initialState, defaultWorld);
 

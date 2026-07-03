@@ -22,7 +22,7 @@ export async function resolveVisibleCombat(page: Page) {
       return;
     }
 
-    await page.getByRole("button", { name: "Resolve round" }).click();
+    await page.getByRole("button", { name: "Attack" }).click();
   }
 
   await expect(page.getByRole("heading", { name: "Combat" })).toHaveCount(0);

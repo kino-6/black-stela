@@ -1,11 +1,12 @@
 import { appendEventLogs } from "../domain/replayLog";
 import { getRoom } from "../domain/scenario";
 import type { Character, Direction, GameState, ScenarioWorld } from "../domain/types";
+import { createGuildCharacter } from "../domain/characterCreation";
 
 export type DebugProgress =
   | "ready"
   | "after_encounter"
-  | "clear_ready"
+  | "return_ready"
   | "floor_2"
   | "floor_3"
   | "floor_4"
@@ -17,7 +18,7 @@ export type DebugProgress =
 export const debugProgressValues: DebugProgress[] = [
   "ready",
   "after_encounter",
-  "clear_ready",
+  "return_ready",
   "floor_2",
   "floor_3",
   "floor_4",
@@ -28,6 +29,10 @@ export const debugProgressValues: DebugProgress[] = [
 ];
 
 export function parseDebugProgress(value: string | null): DebugProgress {
+  if (value === "clear_ready") {
+    return "return_ready";
+  }
+
   return debugProgressValues.includes(value as DebugProgress) ? (value as DebugProgress) : "ready";
 }
 
@@ -182,10 +187,16 @@ function getFloorIdForRoom(world: ScenarioWorld, roomId: string) {
 function createExpectedParty(): Character[] {
   return [
     {
+      ...createGuildCharacter({
+        name: "Mira",
+        notes: "Mapper. Tracks visited rooms and return routes.",
+        classId: "occultist",
+        backgroundId: "cartographer",
+        traitIds: ["curious"],
+        portraitRef: "debug://portrait/mira",
+        method: "debug"
+      }),
       id: "debug.mira",
-      name: "Mira",
-      notes: "Mapper. Tracks visited rooms and return routes.",
-      portraitRef: "debug://portrait/mira",
       row: "back",
       hp: 12,
       maxHp: 12,
@@ -194,17 +205,19 @@ function createExpectedParty(): Character[] {
       damageMax: 5,
       accuracy: 82,
       armor: 0,
-      speed: 7,
-      xp: 0,
-      gold: 0,
-      status: [],
-      injury: undefined
+      speed: 7
     },
     {
+      ...createGuildCharacter({
+        name: "Sei",
+        notes: "Lamp bearer. Keeps the party calm in fixed events.",
+        classId: "mender",
+        backgroundId: "apothecary",
+        traitIds: ["steady"],
+        portraitRef: "debug://portrait/sei",
+        method: "debug"
+      }),
       id: "debug.sei",
-      name: "Sei",
-      notes: "Lamp bearer. Keeps the party calm in fixed events.",
-      portraitRef: "debug://portrait/sei",
       row: "back",
       hp: 11,
       maxHp: 11,
@@ -213,17 +226,19 @@ function createExpectedParty(): Character[] {
       damageMax: 4,
       accuracy: 78,
       armor: 0,
-      speed: 6,
-      xp: 0,
-      gold: 0,
-      status: [],
-      injury: undefined
+      speed: 6
     },
     {
+      ...createGuildCharacter({
+        name: "Rook",
+        notes: "Front line. Tests recovery instead of irreversible loss.",
+        classId: "vanguard",
+        backgroundId: "watch",
+        traitIds: ["scarred"],
+        portraitRef: "debug://portrait/rook",
+        method: "debug"
+      }),
       id: "debug.rook",
-      name: "Rook",
-      notes: "Front line. Tests recovery instead of irreversible loss.",
-      portraitRef: "debug://portrait/rook",
       row: "front",
       hp: 14,
       maxHp: 14,
@@ -232,17 +247,19 @@ function createExpectedParty(): Character[] {
       damageMax: 6,
       accuracy: 78,
       armor: 2,
-      speed: 5,
-      xp: 0,
-      gold: 0,
-      status: [],
-      injury: undefined
+      speed: 5
     },
     {
+      ...createGuildCharacter({
+        name: "Vale",
+        notes: "Scout. Represents search and trap progress.",
+        classId: "seeker",
+        backgroundId: "ruinborn",
+        traitIds: ["lucky"],
+        portraitRef: "debug://portrait/vale",
+        method: "debug"
+      }),
       id: "debug.vale",
-      name: "Vale",
-      notes: "Scout. Represents search and trap progress.",
-      portraitRef: "debug://portrait/vale",
       row: "front",
       hp: 10,
       maxHp: 10,
@@ -251,11 +268,7 @@ function createExpectedParty(): Character[] {
       damageMax: 4,
       accuracy: 84,
       armor: 1,
-      speed: 9,
-      xp: 0,
-      gold: 0,
-      status: [],
-      injury: undefined
+      speed: 9
     }
   ];
 }

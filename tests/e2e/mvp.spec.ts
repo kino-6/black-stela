@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { resolveVisibleCombat, startNewExpedition } from "./helpers";
 
-test("create party, import portrait, enter dungeon, fight, return, and view log", async ({ page }) => {
+test("create party, import portrait, enter dungeon, fight, use stairs, and view log", async ({ page }) => {
   await startNewExpedition(page);
 
   await page.getByLabel("Name").fill("Mira");
@@ -14,22 +14,25 @@ test("create party, import portrait, enter dungeon, fight, return, and view log"
       "base64"
     )
   });
-  await page.getByRole("button", { name: "Add adventurer" }).click();
+  await page.getByRole("button", { name: "Register adventurer" }).click();
 
   await expect(page.getByRole("heading", { name: "Mira" })).toBeVisible();
   await page.getByRole("button", { name: "Enter dungeon" }).click();
   await expect(page.getByTestId("dungeon-canvas").locator("canvas")).toBeVisible();
 
   await page.getByRole("button", { name: "Move" }).click();
-  await expect(page.getByText("Ash Slime stands in the party's path.")).toBeVisible();
+  await expect(page.getByLabel("Battle screen")).toBeVisible();
+  await expect(page.getByTestId("combat-enemy-group")).toContainText("Ash Slime");
   await resolveVisibleCombat(page);
   await expect(page.getByRole("heading", { name: "Hall of Old Dust" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Return" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Use stairs" })).toHaveCount(0);
 
   await page.getByRole("button", { name: "Move" }).click();
   await expect(page.getByRole("heading", { name: "Black Marker" })).toBeVisible();
 
-  await page.getByRole("button", { name: "Return" }).click();
+  await expect(page.getByRole("button", { name: "Return" })).toHaveCount(0);
+  await page.getByRole("button", { name: "Use stairs" }).click();
   await expect(page.getByRole("heading", { name: "Town" })).toBeVisible();
   await expect(page.getByText("The party returns to town.")).toBeVisible();
 });

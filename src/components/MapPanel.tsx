@@ -9,7 +9,7 @@ interface MapPanelProps {
   t: Translator;
 }
 
-const directions: Direction[] = ["north", "east", "south", "west"];
+const MINI_MAP_RADIUS = 2;
 const directionOffsets: Record<Direction, { x: number; y: number }> = {
   north: { x: 0, y: -1 },
   east: { x: 1, y: 0 },
@@ -28,10 +28,8 @@ interface MiniMapCell {
 
 export function MapPanel({ state, world, locale, t }: MapPanelProps) {
   const currentRoomId = state.map.currentRoomId ?? state.position?.roomId ?? null;
-  const currentRoom = currentRoomId ? getRoom(world, currentRoomId) : null;
-  const currentExits = currentRoomId ? state.map.knownExits[currentRoomId] ?? [] : [];
-  const blockedExits = currentRoomId ? state.map.blockedExits[currentRoomId] ?? [] : [];
   const miniMap = buildMiniMap(state, world, locale, currentRoomId);
+  const facing = state.position?.facing ?? state.map.currentFacing ?? null;
 
   return (
     <section className="map-panel" aria-labelledby="map-heading">
@@ -48,8 +46,8 @@ export function MapPanel({ state, world, locale, t }: MapPanelProps) {
           <div
             className="mini-map-grid"
             style={{
-              gridTemplateColumns: `repeat(${miniMap.width}, minmax(0, 1fr))`,
-              gridTemplateRows: `repeat(${miniMap.height}, minmax(0, 1fr))`
+              gridTemplateColumns: `repeat(${miniMap.width}, 1.1rem)`,
+              gridTemplateRows: `repeat(${miniMap.height}, 1.1rem)`
             }}
           >
             {miniMap.cells.map((cell) => (
@@ -64,47 +62,20 @@ export function MapPanel({ state, world, locale, t }: MapPanelProps) {
                 {cell.exits.map((direction) => (
                   <i aria-hidden="true" className={`mini-map-link link-${direction}`} key={direction} />
                 ))}
+                {cell.status === "current" && facing && (
+                  <b
+                    aria-label={t(`direction.${facing}`)}
+                    className={`mini-map-facing facing-${facing}`}
+                    data-testid="minimap-facing"
+                  />
+                )}
               </span>
             ))}
           </div>
         </div>
       )}
-      <div className="map-compass" aria-label={t("map.paths")} data-testid="map-directions">
-        {directions.map((direction) => {
-          const status = getDirectionStatus(direction, currentRoom, currentExits, blockedExits, state.map.visitedRooms);
-          return (
-            <div
-              className={`map-direction ${status}`}
-              data-testid={`map-direction-${direction}`}
-              key={direction}
-            >
-              <strong>{t(`direction.${direction}`)}</strong>
-              <span>{t(`map.${status}`)}</span>
-            </div>
-          );
-        })}
-      </div>
     </section>
   );
-}
-
-function getDirectionStatus(
-  direction: Direction,
-  currentRoom: ReturnType<typeof getRoom> | null,
-  currentExits: Direction[],
-  blockedExits: Direction[],
-  visitedRooms: string[]
-) {
-  if (blockedExits.includes(direction)) {
-    return "wall" as const;
-  }
-
-  if (!currentRoom || !currentExits.includes(direction)) {
-    return "unknown" as const;
-  }
-
-  const targetRoomId = currentRoom.exits[direction];
-  return targetRoomId && visitedRooms.includes(targetRoomId) ? ("open" as const) : ("unseen" as const);
 }
 
 function buildMiniMap(state: GameState, world: ScenarioWorld, locale: Locale, currentRoomId: string | null) {
@@ -174,9 +145,17 @@ function buildMiniMap(state: GameState, world: ScenarioWorld, locale: Locale, cu
     };
   });
 
-  const minX = Math.min(...rawCells.map((cell) => cell.x));
-  const minY = Math.min(...rawCells.map((cell) => cell.y));
-  const cells = rawCells.map((cell) => ({ ...cell, x: cell.x - minX, y: cell.y - minY }));
+  const currentCoordinate = currentRoomId ? coordinates.get(currentRoomId) : null;
+  const visibleRawCells = currentCoordinate
+    ? rawCells.filter(
+        (cell) =>
+          Math.abs(cell.x - currentCoordinate.x) <= MINI_MAP_RADIUS &&
+          Math.abs(cell.y - currentCoordinate.y) <= MINI_MAP_RADIUS
+      )
+    : rawCells;
+  const minX = Math.min(...visibleRawCells.map((cell) => cell.x));
+  const minY = Math.min(...visibleRawCells.map((cell) => cell.y));
+  const cells = visibleRawCells.map((cell) => ({ ...cell, x: cell.x - minX, y: cell.y - minY }));
   const width = Math.max(...cells.map((cell) => cell.x)) + 1;
   const height = Math.max(...cells.map((cell) => cell.y)) + 1;
   return { width, height, cells };

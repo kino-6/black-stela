@@ -90,6 +90,7 @@ function enterDungeon(state: GameState, world: ScenarioWorld): CommandResult {
       facing: "east"
     },
     combat: null,
+    party: markExpeditionStarted(state.party, roomVisit.map.floorId ?? world.startDungeon, state.turn + 1),
     map: roomVisit.map,
     turn: state.turn + 1
   };
@@ -169,6 +170,7 @@ function moveForward(state: GameState, world: ScenarioWorld): CommandResult {
       ...state.position,
       roomId: exit
     },
+    party: markDeepestFloor(state.party, roomVisit.map.floorId ?? state.map.floorId),
     map: roomVisit.map,
     turn: state.turn + 1
   };
@@ -352,7 +354,15 @@ function declareRound(state: GameState, actions: CombatActionDeclaration[]): Com
       ...state,
       phase: "dungeon",
       combat: null,
-      party: party.map((member) => ({ ...member, xp: member.xp + xp, gold: member.gold + gold })),
+      party: party.map((member) => ({
+        ...member,
+        xp: member.xp + xp,
+        gold: member.gold + gold,
+        memory: {
+          ...member.memory,
+          notableVictories: Array.from(new Set([...member.memory.notableVictories, ...defeatedNames]))
+        }
+      })),
       inventory,
       defeatedEnemies: Array.from(new Set([...state.defeatedEnemies, ...defeatedEnemyIds])),
       turn: state.turn + 1
@@ -401,7 +411,13 @@ function declareRound(state: GameState, actions: CombatActionDeclaration[]): Com
           characterName: member.name,
           injury: "wounded"
         });
-        return { ...member, hp: 1, injury: "wounded" as const, status: clearRoundStatuses(member.status) };
+        return {
+          ...member,
+          hp: 1,
+          injury: "wounded" as const,
+          status: clearRoundStatuses(member.status),
+          memory: { ...member.memory, injuries: member.memory.injuries + 1 }
+        };
       }
       return { ...member, hp, status: clearRoundStatuses(member.status) };
     });
@@ -492,6 +508,10 @@ function retreat(state: GameState): CommandResult {
     ...state,
     phase: "dungeon",
     combat: null,
+    party: state.party.map((member) => ({
+      ...member,
+      memory: { ...member.memory, retreats: member.memory.retreats + 1 }
+    })),
     turn: state.turn + 1
   };
 
@@ -742,6 +762,46 @@ function recoverParty(state: GameState): CommandResult {
   };
 
   return withEvents(next, [{ type: "party_recovered" }]);
+}
+
+function markExpeditionStarted(party: Character[], floorId: string | null, turn: number) {
+  return markDeepestFloor(
+    party.map((member) => ({
+      ...member,
+      memory: {
+        ...member.memory,
+        firstExpeditionTurn: member.memory.firstExpeditionTurn ?? turn
+      }
+    })),
+    floorId
+  );
+}
+
+function markDeepestFloor(party: Character[], floorId: string | null) {
+  if (!floorId) {
+    return party;
+  }
+
+  return party.map((member) => ({
+    ...member,
+    memory: {
+      ...member.memory,
+      deepestFloorId: chooseDeeperFloor(member.memory.deepestFloorId, floorId)
+    }
+  }));
+}
+
+function chooseDeeperFloor(current: string | undefined, next: string) {
+  if (!current) {
+    return next;
+  }
+
+  return floorRank(next) > floorRank(current) ? next : current;
+}
+
+function floorRank(floorId: string) {
+  const match = floorId.match(/b(\d+)f/i);
+  return match ? Number(match[1]) : 0;
 }
 
 function logOnly(state: GameState, event: GameEvent): CommandResult {

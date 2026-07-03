@@ -1,9 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowLeft,
   ArrowRight,
   DoorOpen,
-  FastForward,
   Footprints,
   FolderOpen,
   LogOut,
@@ -11,12 +10,28 @@ import {
   Save,
   Volume2,
   Search,
-  ShieldCheck
+  ShieldCheck,
+  Square,
+  Sword
 } from "lucide-react";
 import { DungeonView } from "./components/DungeonView";
 import { MapPanel } from "./components/MapPanel";
 import { ScenarioValidationPanel } from "./components/ScenarioValidationPanel";
-import { createCharacter, createInitialGameState, addCharacter } from "./domain/gameState";
+import { createInitialGameState, addCharacter } from "./domain/gameState";
+import {
+  analyzePartyCoverage,
+  backgroundCatalog,
+  classCatalog,
+  createGuildCharacter,
+  createQuickRecruit,
+  createStarterParty,
+  findBackground,
+  findClass,
+  findTrait,
+  starterTemplates,
+  traitCatalog,
+  type StarterTemplateId
+} from "./domain/characterCreation";
 import { getLocalizedRoomText, getRoom } from "./domain/scenario";
 import { executeCommand } from "./domain/rulesEngine";
 import { projectEventToLog } from "./domain/replayLog";
@@ -38,13 +53,30 @@ import type { ScenarioValidationError } from "./domain/scenarioPack";
 interface CharacterDraft {
   name: string;
   notes: string;
+  title: string;
+  classId: "vanguard" | "seeker" | "mender" | "occultist";
+  backgroundId: "watch" | "ruinborn" | "apothecary" | "debtor" | "cartographer";
+  traitId: "steady" | "scarred" | "lucky" | "grim" | "curious";
+  aptitudeFocus: "balanced" | "might" | "agility" | "spirit" | "wit" | "luck";
+  accentColor: string;
   portraitRef?: string;
 }
 
 type TownMode = "guild" | "recovery" | "records" | "entry";
 type AppScreen = "title" | "config" | "game";
+type TempoMode = "idle" | "dungeon" | "combat";
 
 const AUTO_SAVE_SLOT = "autosave";
+const defaultDraft: CharacterDraft = {
+  name: "",
+  notes: "",
+  title: "",
+  classId: "vanguard",
+  backgroundId: "watch",
+  traitId: "steady",
+  aptitudeFocus: "balanced",
+  accentColor: "#c9a765"
+};
 
 export function App() {
   const [debugMode] = useState(() => isDebugModeEnabled());
@@ -53,10 +85,11 @@ export function App() {
   const [state, setState] = useState<GameState>(() =>
     debugMode ? createDebugStateFromProgress(defaultWorld, getDebugProgressFromLocation()) : createInitialGameState()
   );
+  const stateRef = useRef(state);
   const [screen, setScreen] = useState<AppScreen>(() =>
     debugMode || scenarioValidationErrors.length > 0 ? "game" : "title"
   );
-  const [draft, setDraft] = useState<CharacterDraft>({ name: "", notes: "" });
+  const [draft, setDraft] = useState<CharacterDraft>(defaultDraft);
   const [townMode, setTownMode] = useState<TownMode>("guild");
   const [headlessStatus, setHeadlessStatus] = useState("");
   const saveRepository = useMemo(() => createBrowserSaveRepository(), []);
@@ -65,8 +98,8 @@ export function App() {
   const [saveSlotId, setSaveSlotId] = useState(AUTO_SAVE_SLOT);
   const [saveSlots, setSaveSlots] = useState<SaveSlotSummary[]>(() => createBrowserSaveRepository()?.list() ?? []);
   const [saveStatus, setSaveStatus] = useState("");
-  const [lastCommand, setLastCommand] = useState<Command | null>(null);
   const [tempoStatus, setTempoStatus] = useState("");
+  const [tempoMode, setTempoMode] = useState<TempoMode>("idle");
   const [selectedActorId, setSelectedActorId] = useState<string | null>(null);
   const [selectedTargetId, setSelectedTargetId] = useState<string | null>(null);
   const autosaveSummary = saveSlots.find((slot) => slot.slotId === AUTO_SAVE_SLOT);
@@ -89,13 +122,24 @@ export function App() {
       return "";
     }
 
+    if (state.phase === "combat" && entry.event?.type === "enemy_encountered") {
+      return "";
+    }
+
     return entry.event ? projectEventToLog(entry.event, locale, defaultWorld)?.text ?? entry.text : entry.text;
-  }, [locale, state.log]);
+  }, [locale, state.log, state.phase]);
 
   const livingEnemyGroups = state.combat?.enemyGroups.filter((group) => group.count > 0) ?? [];
   const activeParty = state.party.filter((member) => member.hp > 0 && !member.injury);
   const selectedActor = activeParty.find((member) => member.id === selectedActorId) ?? activeParty[0] ?? null;
   const selectedTarget = livingEnemyGroups.find((group) => group.id === selectedTargetId) ?? livingEnemyGroups[0] ?? null;
+  const showGuildPanel = state.phase === "town" && townMode === "guild";
+  const isTempoRunning = tempoMode !== "idle";
+  const partyCoverage = useMemo(() => analyzePartyCoverage(state.party), [state.party]);
+
+  useEffect(() => {
+    stateRef.current = state;
+  }, [state]);
 
   useEffect(() => {
     if (state.phase !== "combat") {
@@ -114,10 +158,11 @@ export function App() {
   }, [activeParty, livingEnemyGroups, selectedActor, selectedTarget, state.phase]);
 
   function run(command: Command, options: { remember?: boolean; confirm?: boolean } = {}) {
-    setState((current) => executeCommand(current, defaultWorld, command));
-    if (options.remember !== false && isRepeatableCommand(command)) {
-      setLastCommand(command);
+    if (isTempoRunning) {
+      setTempoMode("idle");
     }
+    setState((current) => executeCommand(current, defaultWorld, command));
+    void options;
     setTempoStatus("");
   }
 
@@ -155,19 +200,20 @@ export function App() {
     );
   }
 
-  function repeatLastCommand() {
-    if (!lastCommand) {
-      setTempoStatus(t("tempo.noRepeat"));
+  function toggleTempoMode(preferredMode: TempoMode = getTempoModeForPhase(state.phase)) {
+    if (tempoMode !== "idle") {
+      setTempoMode("idle");
+      setTempoStatus(t("tempo.repeatStopped"));
       return;
     }
 
-    if (!isCommandValidForState(lastCommand, state)) {
-      setTempoStatus(t("tempo.repeatBlocked"));
+    if (preferredMode === "idle") {
+      setTempoStatus(t("tempo.repeatUnavailable"));
       return;
     }
 
-    run(lastCommand, { remember: false, confirm: false });
-    setTempoStatus(t("tempo.repeated"));
+    setTempoStatus("");
+    setTempoMode(preferredMode);
   }
 
   function loadDebugProgress() {
@@ -178,13 +224,37 @@ export function App() {
   function runHeadless() {
     const result = runHeadlessClear(state, defaultWorld);
     setState(result.state);
-    setHeadlessStatus(t("debug.headlessStatus", { reason: result.reason, count: result.commands.length }));
+    setHeadlessStatus(
+      t("debug.headlessReachabilityStatus", {
+        reason: result.cleared ? t("debug.reached") : result.reason,
+        count: result.commands.length
+      })
+    );
   }
 
   function addDraftCharacter() {
-    const character = createCharacter(draft);
+    const character = createGuildCharacter({
+      ...draft,
+      traitIds: [draft.traitId],
+      method: "detailed",
+      registeredAtTurn: state.turn
+    });
     setState((current) => addCharacter(current, character));
-    setDraft({ name: "", notes: "" });
+    setDraft({ ...defaultDraft, classId: draft.classId, backgroundId: draft.backgroundId, traitId: draft.traitId });
+  }
+
+  function addQuickRecruit() {
+    setState((current) =>
+      addCharacter(current, createQuickRecruit(`quick:${current.turn}:${current.party.length}`, current.turn))
+    );
+  }
+
+  function applyStarterTemplate(templateId: StarterTemplateId) {
+    setState((current) => {
+      const party = createStarterParty(templateId, current.turn);
+      const emptiedState: GameState = { ...current, party: [] };
+      return party.reduce<GameState>((next, character) => addCharacter(next, character), emptiedState);
+    });
   }
 
   async function importPortrait(file: File | undefined) {
@@ -204,10 +274,10 @@ export function App() {
 
   function startNewGame() {
     setState(createInitialGameState());
-    setDraft({ name: "", notes: "" });
+    setDraft(defaultDraft);
     setTownMode("guild");
     setTempoStatus("");
-    setLastCommand(null);
+    setTempoMode("idle");
     setSaveStatus("");
     setScreen("game");
   }
@@ -251,23 +321,24 @@ export function App() {
     persistLocale(nextLocale);
   }
 
-  function runAutoCombat() {
-    const result = runAutoCombatLoop(state, t);
-    setState(result.state);
-    setTempoStatus(result.status);
-    if (result.lastCommand) {
-      setLastCommand(result.lastCommand);
+  useEffect(() => {
+    if (tempoMode === "idle") {
+      return;
     }
-  }
 
-  function runAutoMove() {
-    const result = runAutoMoveLoop(state, t);
-    setState(result.state);
-    setTempoStatus(result.status);
-    if (result.lastCommand) {
-      setLastCommand(result.lastCommand);
-    }
-  }
+    const timer = window.setInterval(() => {
+      const result = runTempoStep(stateRef.current, tempoMode, t);
+      stateRef.current = result.state;
+      setState(result.state);
+
+      if (!result.keepRunning) {
+        setTempoMode("idle");
+        setTempoStatus(result.status);
+      }
+    }, 320);
+
+    return () => window.clearInterval(timer);
+  }, [tempoMode, t]);
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
@@ -278,7 +349,7 @@ export function App() {
       const key = event.key.toLowerCase();
       if (key === " " || key === "r") {
         event.preventDefault();
-        repeatLastCommand();
+        toggleTempoMode();
       } else if (state.phase === "dungeon" && key === "w") {
         event.preventDefault();
         run({ type: "move_forward" });
@@ -302,7 +373,7 @@ export function App() {
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [lastCommand, selectedActor, selectedTarget, state, t]);
+  }, [isTempoRunning, selectedActor, selectedTarget, state, t, tempoMode]);
 
   useEffect(() => {
     if (!saveRepository || debugMode || scenarioValidationErrors.length > 0 || screen !== "game") {
@@ -380,7 +451,7 @@ export function App() {
             </select>
           </label>
           <button type="button" onClick={loadDebugProgress}>{t("debug.loadProgress")}</button>
-          <button type="button" onClick={runHeadless}>{t("debug.headlessClear")}</button>
+          <button type="button" onClick={runHeadless}>{t("debug.headlessReachability")}</button>
           <div className="dev-save-controls" aria-label={t("save.devControls")}>
             <label>
               {t("save.slot")}
@@ -412,19 +483,45 @@ export function App() {
         </section>
       )}
 
-      <section className="game-grid">
+      <section className={showGuildPanel ? "game-grid with-guild" : "game-grid single-panel"}>
+        {showGuildPanel && (
         <aside className="panel party-panel" aria-labelledby="party-heading">
           <div className="section-title">
             <h2 id="party-heading">{t("party.heading")}</h2>
             <span>{state.party.length}/4</span>
           </div>
 
+          <div className="guild-actions" aria-label={t("party.quickActions")}>
+            <button type="button" onClick={addQuickRecruit} disabled={state.party.length >= 4}>
+              {t("party.quickRecruit")}
+            </button>
+            <div className="template-row" aria-label={t("party.templates")}>
+              {(Object.keys(starterTemplates) as StarterTemplateId[]).map((templateId) => (
+                <button type="button" key={templateId} onClick={() => applyStarterTemplate(templateId)}>
+                  {starterTemplates[templateId].label[locale]}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <section className="coverage-panel" aria-label={t("party.coverage")}>
+            <h3>{t("party.coverage")}</h3>
+            <ul>
+              {partyCoverage.map((item) => (
+                <li className={`coverage-${item.status}`} key={item.id}>
+                  <span>{t(`coverage.${item.id}` as Parameters<Translator>[0])}</span>
+                  <strong>{t(`coverage.${item.status}` as Parameters<Translator>[0])}</strong>
+                </li>
+              ))}
+            </ul>
+          </section>
+
           <div className="roster" aria-live="polite">
             {state.party.length === 0 ? (
               <p className="empty-state">{t("party.empty")}</p>
             ) : (
               state.party.map((member) => (
-                <article className="party-member" key={member.id}>
+                <article className="party-member" key={member.id} style={{ borderColor: member.accentColor }}>
                   <div className="portrait">
                     {member.portraitRef && !member.portraitRef.startsWith("debug://") ? (
                       <img src={member.portraitRef} alt="" />
@@ -434,10 +531,14 @@ export function App() {
                   </div>
                   <div>
                     <h3>{member.name}</h3>
-                    <p>{member.notes || t("party.noNotes")}</p>
+                    <p>
+                      {member.title} / {findClass(member.classId).label[locale]} / {findBackground(member.backgroundId).label[locale]}
+                    </p>
+                    <small>{member.traitIds.map((traitId) => findTrait(traitId).label[locale]).join(" · ")}</small>
                     <small>
                       {t("party.hpAtk", { hp: member.hp, maxHp: member.maxHp, attack: member.attack })}
                     </small>
+                    <small>{member.startingEquipment.join(" / ")}</small>
                   </div>
                 </article>
               ))
@@ -462,6 +563,64 @@ export function App() {
                 />
               </label>
               <label>
+                {t("party.title")}
+                <input
+                  value={draft.title}
+                  onChange={(event) => setDraft((current) => ({ ...current, title: event.target.value }))}
+                  placeholder={t("party.titlePlaceholder")}
+                />
+              </label>
+              <div className="creator-grid">
+                <label>
+                  {t("party.class")}
+                  <select
+                    aria-label={t("party.class")}
+                    value={draft.classId}
+                    onChange={(event) => setDraft((current) => ({ ...current, classId: event.target.value as CharacterDraft["classId"] }))}
+                  >
+                    {classCatalog.map((classDef) => (
+                      <option key={classDef.id} value={classDef.id}>{classDef.label[locale]}</option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  {t("party.background")}
+                  <select
+                    aria-label={t("party.background")}
+                    value={draft.backgroundId}
+                    onChange={(event) => setDraft((current) => ({ ...current, backgroundId: event.target.value as CharacterDraft["backgroundId"] }))}
+                  >
+                    {backgroundCatalog.map((background) => (
+                      <option key={background.id} value={background.id}>{background.label[locale]}</option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  {t("party.trait")}
+                  <select
+                    aria-label={t("party.trait")}
+                    value={draft.traitId}
+                    onChange={(event) => setDraft((current) => ({ ...current, traitId: event.target.value as CharacterDraft["traitId"] }))}
+                  >
+                    {traitCatalog.map((trait) => (
+                      <option key={trait.id} value={trait.id}>{trait.label[locale]}</option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  {t("party.aptitude")}
+                  <select
+                    aria-label={t("party.aptitude")}
+                    value={draft.aptitudeFocus}
+                    onChange={(event) => setDraft((current) => ({ ...current, aptitudeFocus: event.target.value as CharacterDraft["aptitudeFocus"] }))}
+                  >
+                    {(["balanced", "might", "agility", "spirit", "wit", "luck"] as const).map((focus) => (
+                      <option key={focus} value={focus}>{t(`aptitude.${focus}` as Parameters<Translator>[0])}</option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+              <label>
                 {t("party.notes")}
                 <textarea
                   value={draft.notes}
@@ -469,6 +628,18 @@ export function App() {
                   placeholder={t("party.notesPlaceholder")}
                 />
               </label>
+              <div className="accent-row" aria-label={t("party.accent")}>
+                {["#c9a765", "#8ea87a", "#b66f4d", "#7a9bbd", "#a784b8"].map((color) => (
+                  <button
+                    type="button"
+                    className={draft.accentColor === color ? "selected" : ""}
+                    key={color}
+                    aria-label={color}
+                    onClick={() => setDraft((current) => ({ ...current, accentColor: color }))}
+                    style={{ backgroundColor: color }}
+                  />
+                ))}
+              </div>
               <label>
                 {t("party.portrait")}
                 <input
@@ -479,10 +650,15 @@ export function App() {
                 />
               </label>
               {draft.portraitRef && <img className="portrait-preview" src={draft.portraitRef} alt={t("party.portraitPreview")} />}
-              <button type="submit">{t("party.add")}</button>
+              <div className="recruit-review" aria-label={t("party.review")}>
+                <strong>{draft.name || t("party.namePlaceholder")}</strong>
+                <span>{findClass(draft.classId).label[locale]} · {findBackground(draft.backgroundId).label[locale]} · {findTrait(draft.traitId).label[locale]}</span>
+              </div>
+              <button type="submit" disabled={state.party.length >= 4}>{t("party.add")}</button>
             </form>
           )}
         </aside>
+        )}
 
         <section className="panel play-panel" aria-labelledby="location-heading">
           <div className="section-title">
@@ -549,14 +725,52 @@ export function App() {
               </button>
             </div>
           ) : (
-            <>
-              <DungeonView state={state} world={defaultWorld} label={t("play.dungeonView")} t={t} />
-              <MapPanel state={state} world={defaultWorld} locale={locale} t={t} />
-              <div className="room-copy">
-                <p>{state.phase === "combat" ? t("play.combatDescription", { enemy: state.combat?.enemy.name ?? "" }) : roomText?.description}</p>
+            <div className={`adventure-cockpit ${state.phase === "combat" ? "combat-cockpit" : "dungeon-cockpit"}`}>
+              <div className="scene-deck">
+                <DungeonView state={state} world={defaultWorld} label={t("play.dungeonView")} />
+                <aside className="navigation-board" aria-label={t("map.heading")}>
+                  <MapPanel state={state} world={defaultWorld} locale={locale} t={t} />
+                </aside>
               </div>
+
+              {state.phase === "dungeon" && (
+                <div className="party-hud" data-testid="party-hud" aria-label={t("play.partyStatus")}>
+                  {state.party.map((member) => (
+                    <div
+                      className={`party-token ${member.row} ${
+                        member.injury || member.hp <= 0
+                          ? "down"
+                          : member.hp <= Math.ceil(member.maxHp * 0.35)
+                            ? "danger"
+                            : ""
+                      }`}
+                      key={member.id}
+                      style={{ borderColor: member.accentColor }}
+                    >
+                      <strong>{member.name}</strong>
+                      <span>
+                        {member.hp}/{member.maxHp} · {formatCombatRow(member.row, t)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {state.phase === "dungeon" && (
+                <div className="room-copy cockpit-copy">
+                  <p>{roomText?.description}</p>
+                </div>
+              )}
               {(latestLogText || tempoStatus) && (
                 <p className="event-window" aria-live="polite">{tempoStatus || latestLogText}</p>
+              )}
+              {canReturnToTown && state.phase === "dungeon" && (
+                <div className="location-actions" aria-label={t("play.useStairs")}>
+                  <button type="button" className="primary-action" onClick={() => run({ type: "return_to_town" })}>
+                    <LogOut size={18} />
+                    {t("play.useStairs")}
+                  </button>
+                </div>
               )}
               {state.phase === "combat" ? (
                 <section className="battle-screen" aria-label={t("play.battleScreen")}>
@@ -582,37 +796,39 @@ export function App() {
                       ))}
                     </div>
 
-                    <div className="battle-side" aria-label={t("play.partyFormation")}>
+                    <div className="battle-side formation-side" aria-label={t("play.partyFormation")}>
                       <h3>{t("play.partyFormation")}</h3>
                       {(["front", "back"] as const).map((row) => (
                         <div className="battle-row" key={row}>
                           <span>{row === "front" ? t("play.frontRow") : t("play.backRow")}</span>
-                          {state.party.filter((member) => member.row === row).map((member) => (
-                            <button
-                              type="button"
-                              key={member.id}
-                              className={member.id === selectedActor?.id ? "battle-choice selected" : "battle-choice"}
-                              data-testid="combat-actor"
-                              onClick={() => setSelectedActorId(member.id)}
-                              disabled={Boolean(member.injury)}
-                            >
-                              <strong>{member.name}</strong>
-                              <span>{t("play.actorStatus", { hp: member.hp, maxHp: member.maxHp, row: member.row })}</span>
-                            </button>
-                          ))}
+                          <div className="formation-slots">
+                            {state.party.filter((member) => member.row === row).map((member) => (
+                              <button
+                                type="button"
+                                key={member.id}
+                                className={member.id === selectedActor?.id ? "battle-choice selected" : "battle-choice"}
+                                data-testid="combat-actor"
+                                onClick={() => setSelectedActorId(member.id)}
+                                disabled={Boolean(member.injury)}
+                              >
+                                <strong>{member.name}</strong>
+                                <span>{t("play.actorStatus", { hp: member.hp, maxHp: member.maxHp, row: formatCombatRow(member.row, t) })}</span>
+                              </button>
+                            ))}
+                          </div>
                         </div>
                       ))}
                     </div>
                   </div>
 
-                  <div className="command-bar" aria-label={t("play.combatCommands")}>
-                    <button type="button" onClick={repeatLastCommand}>
-                      <Repeat2 size={18} />
-                      {t("tempo.repeat")}
+                  <div className="command-bar command-dock" aria-label={t("play.combatCommands")}>
+                    <button type="button" aria-pressed={isTempoRunning} onClick={() => toggleTempoMode("combat")}>
+                      {isTempoRunning ? <Square size={18} /> : <Repeat2 size={18} />}
+                      {isTempoRunning ? t("tempo.stop") : t("tempo.repeat")}
                     </button>
                     <button type="button" disabled={!selectedActor || !selectedTarget} onClick={() => resolveSelectedRound("attack")}>
-                      <ShieldCheck size={18} />
-                      {t("play.resolveRound")}
+                      <Sword size={18} />
+                      {t("play.attack")}
                     </button>
                     <button type="button" disabled={!selectedActor} onClick={() => resolveSelectedRound("defend")}>
                       <ShieldCheck size={18} />
@@ -641,17 +857,13 @@ export function App() {
                       <ShieldCheck size={18} />
                       {t("play.retreat")}
                     </button>
-                    <button type="button" onClick={runAutoCombat}>
-                      <FastForward size={18} />
-                      {t("tempo.autoCombat")}
-                    </button>
                   </div>
                 </section>
               ) : (
-                <div className="command-bar" aria-label={t("play.dungeonCommands")}>
-                  <button type="button" onClick={repeatLastCommand}>
-                    <Repeat2 size={18} />
-                    {t("tempo.repeat")}
+                <div className="command-bar command-dock" aria-label={t("play.dungeonCommands")}>
+                  <button type="button" aria-pressed={isTempoRunning} onClick={() => toggleTempoMode("dungeon")}>
+                    {isTempoRunning ? <Square size={18} /> : <Repeat2 size={18} />}
+                    {isTempoRunning ? t("tempo.stop") : t("tempo.repeat")}
                   </button>
                   <button type="button" aria-label={t("play.turnLeft")} onClick={() => run({ type: "turn_left" })}>
                     <ArrowLeft size={18} />
@@ -671,19 +883,9 @@ export function App() {
                     <Volume2 size={18} />
                     {t("play.listen")}
                   </button>
-                  {canReturnToTown && (
-                    <button type="button" onClick={() => run({ type: "return_to_town" })}>
-                      <LogOut size={18} />
-                      {t("play.return")}
-                    </button>
-                  )}
-                  <button type="button" onClick={runAutoMove}>
-                    <FastForward size={18} />
-                    {t("tempo.autoMove")}
-                  </button>
                 </div>
               )}
-            </>
+            </div>
           )}
         </section>
       </section>
@@ -729,6 +931,10 @@ function formatPhase(phase: GameState["phase"], t: Translator) {
   return t("play.dungeon");
 }
 
+function formatCombatRow(row: GameState["party"][number]["row"], t: Translator) {
+  return row === "front" ? t("play.frontRow") : t("play.backRow");
+}
+
 function formatDebugProgress(progress: DebugProgress, t: Translator) {
   if (progress === "ready") {
     return t("debug.ready");
@@ -738,93 +944,99 @@ function formatDebugProgress(progress: DebugProgress, t: Translator) {
     return t("debug.afterEncounter");
   }
 
-  if (progress === "clear_ready") {
-    return t("debug.clearReady");
+  if (progress === "return_ready") {
+    return t("debug.returnReady");
   }
 
   return t("debug.floorStart", { floor: progress.replace("floor_", "B") + "F" });
 }
 
-function isRepeatableCommand(command: Command) {
-  return ["move_forward", "turn_left", "turn_right", "inspect_wall", "listen", "search", "attack", "defend", "use_item"].includes(
-    command.type
-  );
+function getTempoModeForPhase(phase: GameState["phase"]): TempoMode {
+  if (phase === "combat") {
+    return "combat";
+  }
+
+  if (phase === "dungeon") {
+    return "dungeon";
+  }
+
+  return "idle";
 }
 
-function isCommandValidForState(command: Command, state: GameState) {
-  if (state.phase === "combat") {
-    return ["attack", "defend", "use_item", "retreat"].includes(command.type);
+function runTempoStep(state: GameState, mode: Exclude<TempoMode, "idle">, t: Translator) {
+  if (mode === "combat") {
+    return runTempoCombatStep(state, t);
   }
 
-  if (state.phase === "dungeon") {
-    return ["move_forward", "turn_left", "turn_right", "inspect_wall", "listen", "search", "open_door", "disarm_trap", "return_to_town"].includes(
-      command.type
-    );
-  }
-
-  return ["recover_party", "enter_dungeon"].includes(command.type);
+  return runTempoDungeonStep(state, t);
 }
 
-function runAutoCombatLoop(state: GameState, t: Translator) {
-  let current = state;
-  let lastCommand: Command | null = null;
-  for (let step = 0; step < 12; step += 1) {
-    if (current.phase !== "combat" || !current.combat) {
-      return { state: current, lastCommand, status: t("tempo.autoStoppedClear") };
-    }
-
-    if (current.combat.enemy.isBoss || current.combat.enemy.role === "boss" || current.combat.enemy.role === "miniboss") {
-      return { state: current, lastCommand, status: t("tempo.autoStoppedBoss") };
-    }
-
-    if (current.party.some((member) => member.injury || member.hp <= Math.ceil(member.maxHp * 0.35))) {
-      return { state: current, lastCommand, status: t("tempo.autoStoppedDanger") };
-    }
-
-    const command: Command = { type: "attack" };
-    current = executeCommand(current, defaultWorld, command);
-    lastCommand = command;
+function runTempoCombatStep(state: GameState, t: Translator) {
+  if (state.phase !== "combat" || !state.combat) {
+    return { state, keepRunning: false, status: t("tempo.autoStoppedClear") };
   }
 
-  return { state: current, lastCommand, status: t("tempo.autoStoppedLimit") };
+  if (state.combat.enemy.isBoss || state.combat.enemy.role === "boss" || state.combat.enemy.role === "miniboss") {
+    return { state, keepRunning: false, status: t("tempo.autoStoppedBoss") };
+  }
+
+  if (state.party.some((member) => member.injury || member.hp <= Math.ceil(member.maxHp * 0.35))) {
+    return { state, keepRunning: false, status: t("tempo.autoStoppedDanger") };
+  }
+
+  const actor = state.party.find((member) => member.hp > 0 && !member.injury && member.row === "front") ?? state.party[0];
+  const target = state.combat.enemyGroups.find((group) => group.count > 0);
+  if (!actor || !target) {
+    return { state, keepRunning: false, status: t("tempo.autoStoppedDanger") };
+  }
+
+  const next = executeCommand(state, defaultWorld, {
+    type: "declare_round",
+    actions: [{ actorId: actor.id, action: "attack", targetGroupId: target.id }]
+  });
+
+  if (next.phase !== "combat") {
+    return { state: next, keepRunning: false, status: t("tempo.autoStoppedClear") };
+  }
+
+  if (next.party.some((member) => member.injury || member.hp <= Math.ceil(member.maxHp * 0.35))) {
+    return { state: next, keepRunning: false, status: t("tempo.autoStoppedDanger") };
+  }
+
+  return { state: next, keepRunning: true, status: "" };
 }
 
-function runAutoMoveLoop(state: GameState, t: Translator) {
-  let current = state;
-  let lastCommand: Command | null = null;
-  for (let step = 0; step < 12; step += 1) {
-    if (current.phase !== "dungeon" || !current.position) {
-      return { state: current, lastCommand, status: t("tempo.autoMoveStoppedEvent") };
-    }
-
-    if (current.party.some((member) => member.injury || member.hp <= Math.ceil(member.maxHp * 0.35))) {
-      return { state: current, lastCommand, status: t("tempo.autoStoppedDanger") };
-    }
-
-    const room = getRoom(defaultWorld, current.position.roomId);
-    const exits = Object.entries(room.exits).filter(([, target]) => Boolean(target));
-    const currentExit = room.exits[current.position.facing];
-    const unknownExit = exits.find(([, target]) => target && !current.map.visitedRooms.includes(target));
-
-    if (room.trap || room.encounter || room.event || room.gates?.length || room.stairsToTown || exits.length !== 2) {
-      return { state: current, lastCommand, status: t("tempo.autoMoveStoppedEvent") };
-    }
-
-    if (!currentExit || (unknownExit && unknownExit[0] !== current.position.facing)) {
-      return { state: current, lastCommand, status: t("tempo.autoMoveStoppedBranch") };
-    }
-
-    const command: Command = { type: "move_forward" };
-    const next = executeCommand(current, defaultWorld, command);
-    if (next === current || next.phase !== "dungeon") {
-      return { state: next, lastCommand: command, status: t("tempo.autoMoveStoppedEvent") };
-    }
-
-    current = next;
-    lastCommand = command;
+function runTempoDungeonStep(state: GameState, t: Translator) {
+  if (state.phase !== "dungeon" || !state.position) {
+    return { state, keepRunning: false, status: t("tempo.autoMoveStoppedEvent") };
   }
 
-  return { state: current, lastCommand, status: t("tempo.autoStoppedLimit") };
+  if (state.party.some((member) => member.injury || member.hp <= Math.ceil(member.maxHp * 0.35))) {
+    return { state, keepRunning: false, status: t("tempo.autoStoppedDanger") };
+  }
+
+  const room = getRoom(defaultWorld, state.position.roomId);
+  const exits = Object.entries(room.exits).filter(([, target]) => Boolean(target));
+  const currentExit = room.exits[state.position.facing];
+  if (room.trap || room.encounter || room.event || room.gates?.length || room.stairsToTown) {
+    return { state, keepRunning: false, status: t("tempo.autoMoveStoppedEvent") };
+  }
+
+  if (!currentExit || exits.length > 2) {
+    return { state, keepRunning: false, status: t("tempo.autoMoveStoppedBranch") };
+  }
+
+  const next = executeCommand(state, defaultWorld, { type: "move_forward" });
+  if (next === state || next.phase !== "dungeon") {
+    return { state: next, keepRunning: false, status: t("tempo.autoMoveStoppedEvent") };
+  }
+
+  const nextRoom = next.position ? getRoom(defaultWorld, next.position.roomId) : null;
+  if (nextRoom?.trap || nextRoom?.encounter || nextRoom?.event || nextRoom?.gates?.length || nextRoom?.stairsToTown) {
+    return { state: next, keepRunning: false, status: t("tempo.autoMoveStoppedEvent") };
+  }
+
+  return { state: next, keepRunning: true, status: "" };
 }
 
 function isTypingTarget(target: EventTarget | null) {

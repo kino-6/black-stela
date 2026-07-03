@@ -9,6 +9,40 @@ const CharacterSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
   notes: z.string(),
+  title: z.string().default("Vanguard"),
+  classId: z.enum(["vanguard", "seeker", "mender", "occultist"]).default("vanguard"),
+  roleTags: z.array(z.string().min(1)).default(["front_line", "damage", "retreat_guard"]),
+  rowPreference: z.enum(["front", "back"]).default("front"),
+  backgroundId: z.enum(["watch", "ruinborn", "apothecary", "debtor", "cartographer"]).default("watch"),
+  aptitude: z
+    .object({
+      might: z.number().int().nonnegative().default(2),
+      agility: z.number().int().nonnegative().default(2),
+      spirit: z.number().int().nonnegative().default(2),
+      wit: z.number().int().nonnegative().default(2),
+      luck: z.number().int().nonnegative().default(2)
+    })
+    .default({ might: 2, agility: 2, spirit: 2, wit: 2, luck: 2 }),
+  traitIds: z.array(z.enum(["steady", "scarred", "lucky", "grim", "curious"])).default(["steady"]),
+  accentColor: z.string().default("#c9a765"),
+  startingEquipment: z.array(z.string().min(1)).default(["worn mail", "short sword"]),
+  creation: z
+    .object({
+      method: z.enum(["legacy", "quick", "detailed", "template", "debug"]).default("legacy"),
+      seed: z.string().optional(),
+      registeredAtTurn: z.number().int().nonnegative().default(0)
+    })
+    .default({ method: "legacy", registeredAtTurn: 0 }),
+  memory: z
+    .object({
+      firstExpeditionTurn: z.number().int().nonnegative().optional(),
+      deepestFloorId: z.string().optional(),
+      injuries: z.number().int().nonnegative().default(0),
+      retreats: z.number().int().nonnegative().default(0),
+      notableVictories: z.array(z.string()).default([]),
+      deeds: z.array(z.string()).default([])
+    })
+    .default({ injuries: 0, retreats: 0, notableVictories: [], deeds: [] }),
   portraitRef: z.string().optional(),
   row: z.enum(["front", "back"]).default("front"),
   hp: z.number().int().nonnegative(),

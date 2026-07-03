@@ -20,11 +20,49 @@ export type Command =
 
 export type CombatRow = "front" | "back";
 export type CombatActionKind = "attack" | "defend" | "use_item" | "cast";
+export type CharacterClassId = "vanguard" | "seeker" | "mender" | "occultist";
+export type CharacterBackgroundId = "watch" | "ruinborn" | "apothecary" | "debtor" | "cartographer";
+export type CharacterTraitId = "steady" | "scarred" | "lucky" | "grim" | "curious";
+export type CharacterCreationMethod = "legacy" | "quick" | "detailed" | "template" | "debug";
+
+export interface CharacterAptitudes {
+  might: number;
+  agility: number;
+  spirit: number;
+  wit: number;
+  luck: number;
+}
+
+export interface CharacterCreationHistory {
+  method: CharacterCreationMethod;
+  seed?: string;
+  registeredAtTurn: number;
+}
+
+export interface RosterMemory {
+  firstExpeditionTurn?: number;
+  deepestFloorId?: string;
+  injuries: number;
+  retreats: number;
+  notableVictories: string[];
+  deeds: string[];
+}
 
 export interface Character {
   id: string;
   name: string;
   notes: string;
+  title: string;
+  classId: CharacterClassId;
+  roleTags: string[];
+  rowPreference: CombatRow;
+  backgroundId: CharacterBackgroundId;
+  aptitude: CharacterAptitudes;
+  traitIds: CharacterTraitId[];
+  accentColor: string;
+  startingEquipment: string[];
+  creation: CharacterCreationHistory;
+  memory: RosterMemory;
   portraitRef?: string;
   row: CombatRow;
   hp: number;

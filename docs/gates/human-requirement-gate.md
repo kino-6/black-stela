@@ -71,7 +71,7 @@ Use this block when adding or taking a player-facing task:
 - [ ] `npm test`
 - [ ] `npm run build`
 - [ ] `npm run test:e2e`
-- [ ] `npm run headless:clear`
+- [ ] `npm run headless:reachability`
 - [ ] `git diff --check`
 - [ ] Player-facing copy contains no AI/provider/debug setup leakage.
 - [ ] Browser tests cover visible controls for the changed flow.

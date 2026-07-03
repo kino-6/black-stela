@@ -10,12 +10,13 @@ test("town modes expose guild, recovery, records, and dungeon entry", async ({ p
   await expect(page.getByRole("button", { name: "Dungeon Entry" })).toBeVisible();
 
   await page.getByLabel("Name").fill("Mira");
-  await page.getByRole("button", { name: "Add adventurer" }).click();
+  await page.getByRole("button", { name: "Register adventurer" }).click();
   await expect(page.getByRole("heading", { name: "Mira" })).toBeVisible();
 
   await page.getByRole("button", { name: "Recovery" }).click();
   await expect(page.getByRole("heading", { name: "Recovery" })).toBeVisible();
-  await expect(page.getByText("Mira: 12/12")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Guild Registry" })).toHaveCount(0);
+  await expect(page.getByText(/Mira: \d+\/\d+/)).toBeVisible();
 
   await page.getByRole("button", { name: "Records" }).click();
   await expect(page.getByRole("heading", { name: "Records" })).toBeVisible();
@@ -29,7 +30,7 @@ test("combat exposes defend and item use choices", async ({ page }) => {
   await startNewExpedition(page);
 
   await page.getByLabel("Name").fill("Mira");
-  await page.getByRole("button", { name: "Add adventurer" }).click();
+  await page.getByRole("button", { name: "Register adventurer" }).click();
   await page.getByRole("button", { name: "Enter dungeon" }).click();
   await page.getByRole("button", { name: "Move" }).click();
 

@@ -6,7 +6,7 @@ test("autosaves current state and continues from the title screen", async ({ pag
 
   await page.getByLabel("Name").fill("Mira");
   await page.getByLabel("Notes").fill("Maps every room by hand.");
-  await page.getByRole("button", { name: "Add adventurer" }).click();
+  await page.getByRole("button", { name: "Register adventurer" }).click();
   await expect(page.getByRole("heading", { name: "Mira" })).toBeVisible();
 
   await page.reload();

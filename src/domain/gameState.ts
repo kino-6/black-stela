@@ -1,5 +1,6 @@
 import type { Character, GameState } from "./types";
 import { appendEventLogs } from "./replayLog";
+import { createLegacyGuildCharacter } from "./characterCreation";
 
 export function createInitialGameState(): GameState {
   return {
@@ -35,31 +36,7 @@ export function createInitialGameState(): GameState {
 }
 
 export function createCharacter(input: { name: string; notes: string; portraitRef?: string }): Character {
-  const trimmedName = input.name.trim();
-
-  if (!trimmedName) {
-    throw new Error("Character name is required.");
-  }
-
-  return {
-    id: crypto.randomUUID(),
-    name: trimmedName,
-    notes: input.notes.trim(),
-    portraitRef: input.portraitRef,
-    row: "front",
-    hp: 12,
-    maxHp: 12,
-    attack: 4,
-    damageMin: 3,
-    damageMax: 5,
-    accuracy: 80,
-    armor: 1,
-    speed: 8,
-    xp: 0,
-    gold: 0,
-    status: [],
-    injury: undefined
-  };
+  return createLegacyGuildCharacter(input);
 }
 
 export function addCharacter(state: GameState, character: Character): GameState {

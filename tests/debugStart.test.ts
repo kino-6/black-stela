@@ -6,7 +6,8 @@ describe("debug start state", () => {
   it("parses supported progress inputs with a safe default", () => {
     expect(parseDebugProgress("ready")).toBe("ready");
     expect(parseDebugProgress("after_encounter")).toBe("after_encounter");
-    expect(parseDebugProgress("clear_ready")).toBe("clear_ready");
+    expect(parseDebugProgress("return_ready")).toBe("return_ready");
+    expect(parseDebugProgress("clear_ready")).toBe("return_ready");
     expect(parseDebugProgress("floor_8")).toBe("floor_8");
     expect(parseDebugProgress("unknown")).toBe("ready");
     expect(parseDebugProgress(null)).toBe("ready");

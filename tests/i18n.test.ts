@@ -10,8 +10,8 @@ describe("i18n", () => {
   });
 
   it("translates typed keys", () => {
-    expect(createTranslator("en")("party.heading")).toBe("Party Roster");
-    expect(createTranslator("ja")("party.heading")).toBe("隊列");
+    expect(createTranslator("en")("party.heading")).toBe("Guild Registry");
+    expect(createTranslator("ja")("party.heading")).toBe("ギルド登録");
   });
 
   it("keeps English and Japanese dictionary keys aligned", () => {

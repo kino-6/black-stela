@@ -4,7 +4,7 @@ import { startNewExpedition } from "./helpers";
 async function enterDungeon(page: import("@playwright/test").Page) {
   await startNewExpedition(page);
   await page.getByLabel("Name").fill("Vale");
-  await page.getByRole("button", { name: "Add adventurer" }).click();
+  await page.getByRole("button", { name: "Register adventurer" }).click();
   await page.getByRole("button", { name: "Enter dungeon" }).click();
 }
 
@@ -18,7 +18,7 @@ for (const viewport of [
 
     const canvas = page.getByTestId("dungeon-canvas").locator("canvas");
     await expect(canvas).toBeVisible();
-    await expect(page.getByLabel("Visible dungeon features")).toContainText("Door");
+    await expect(page.getByLabel("Visible dungeon features")).toHaveCount(0);
 
     const screenshot = await canvas.screenshot();
     expect(screenshot.byteLength).toBeGreaterThan(1_000);
@@ -58,6 +58,9 @@ for (const viewport of [
     expect(pixels!.flatMap((pixel) => pixel.slice(0, 3)).some((channel) => channel > 8)).toBe(true);
 
     await page.getByRole("button", { name: "Move" }).click();
-    await expect(page.getByLabel("Visible dungeon features")).toContainText("Ash Slime");
+    await expect(page.getByLabel("Battle screen")).toBeVisible();
+    await expect(page.getByTestId("combat-enemy-group")).toContainText("Ash Slime");
+    await expect(page.getByText("Ash Slime blocks the passage.")).toHaveCount(0);
+    await expect(page.getByLabel("Visible dungeon features")).toHaveCount(0);
   });
 }

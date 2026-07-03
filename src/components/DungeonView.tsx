@@ -2,16 +2,14 @@ import { useEffect, useRef } from "react";
 import * as THREE from "three";
 import { getRoom } from "../domain/scenario";
 import type { Direction, GameState, ScenarioWorld } from "../domain/types";
-import type { Translator } from "../i18n";
 
 interface DungeonViewProps {
   state: GameState;
   world: ScenarioWorld;
   label: string;
-  t: Translator;
 }
 
-export function DungeonView({ state, world, label, t }: DungeonViewProps) {
+export function DungeonView({ state, world, label }: DungeonViewProps) {
   const mountRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -165,18 +163,9 @@ export function DungeonView({ state, world, label, t }: DungeonViewProps) {
     };
   }, [state.position, state.phase, state.combat?.enemy.id, state.resolvedTraps, world]);
 
-  const cues = state.position ? getVisualCues(state, world, t) : [];
-
   return (
     <div className="dungeon-view" aria-label={label}>
       <div ref={mountRef} className="dungeon-canvas" data-testid="dungeon-canvas" />
-      {cues.length > 0 && (
-        <div className="dungeon-cues" aria-label={t("visual.visible")}>
-          {cues.map((cue) => (
-            <span key={cue}>{cue}</span>
-          ))}
-        </div>
-      )}
     </div>
   );
 }
@@ -214,26 +203,4 @@ function turn(facing: Direction, side: "left" | "right"): Direction {
   const directions: Direction[] = ["north", "east", "south", "west"];
   const index = directions.indexOf(facing);
   return directions[(index + (side === "left" ? 3 : 1)) % directions.length];
-}
-
-function getVisualCues(state: GameState, world: ScenarioWorld, t: Translator) {
-  if (!state.position) {
-    return [];
-  }
-
-  const room = getRoom(world, state.position.roomId);
-  const cues = new Set<string>();
-  if (state.phase === "combat" && state.combat) {
-    cues.add(state.combat.enemy.name);
-  }
-  if (room.doors?.length || Object.keys(room.exits).length > 0) {
-    cues.add(t("visual.door"));
-  }
-  if (room.trap && !state.resolvedTraps.includes(room.trap.id)) {
-    cues.add(t("visual.trap"));
-  }
-  if (room.stairsToTown) {
-    cues.add(t("visual.stairs"));
-  }
-  return Array.from(cues);
 }

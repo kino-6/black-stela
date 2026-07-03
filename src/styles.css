@@ -224,6 +224,69 @@ small {
   gap: 0.75rem;
 }
 
+.guild-actions {
+  display: grid;
+  gap: 0.55rem;
+  margin-bottom: 0.75rem;
+}
+
+.template-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.4rem;
+}
+
+.template-row button,
+.guild-actions > button {
+  min-height: 2.35rem;
+}
+
+.coverage-panel {
+  display: grid;
+  gap: 0.45rem;
+  margin-bottom: 0.75rem;
+  padding: 0.65rem;
+  border: 1px solid #30372f;
+  border-radius: 4px;
+  background: #10140f;
+}
+
+.coverage-panel h3 {
+  margin: 0;
+  color: #eee8d8;
+  font-size: 0.82rem;
+  text-transform: uppercase;
+}
+
+.coverage-panel ul {
+  display: grid;
+  gap: 0.3rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.coverage-panel li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  font-size: 0.78rem;
+}
+
+.coverage-panel strong {
+  color: #d5b56d;
+  font-weight: 600;
+}
+
+.coverage-missing strong {
+  color: #d4876a;
+}
+
+.coverage-thin strong {
+  color: #c9a765;
+}
+
 .party-member {
   display: grid;
   grid-template-columns: 3.5rem 1fr;
@@ -233,6 +296,19 @@ small {
   border: 1px solid #30372f;
   border-radius: 6px;
   background: #121611;
+}
+
+.party-member div:last-child {
+  display: grid;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.party-member h3,
+.party-member p,
+.party-member small {
+  margin: 0;
+  overflow-wrap: anywhere;
 }
 
 .portrait {
@@ -259,6 +335,12 @@ small {
   margin-top: 1rem;
   padding-top: 1rem;
   border-top: 1px solid #2f352d;
+}
+
+.creator-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem;
 }
 
 .creator label {
@@ -289,6 +371,38 @@ textarea {
   aspect-ratio: 1;
   border-radius: 4px;
   border: 1px solid #555846;
+}
+
+.accent-row {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.accent-row button {
+  width: 2rem;
+  min-height: 2rem;
+  padding: 0;
+  border-color: #2f352d;
+}
+
+.accent-row button.selected {
+  outline: 2px solid #f2efe5;
+  outline-offset: 2px;
+}
+
+.recruit-review {
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.65rem;
+  border: 1px solid #3b4438;
+  border-radius: 4px;
+  background: #11150f;
+}
+
+.recruit-review span {
+  color: #c7c3b5;
+  font-size: 0.82rem;
 }
 
 .town-view {
@@ -543,6 +657,12 @@ textarea {
   line-height: 1.45;
 }
 
+.location-actions {
+  display: flex;
+  justify-content: flex-start;
+  padding: 0.25rem 0 0.75rem;
+}
+
 .panel-error {
   color: #e3a19a;
   font-size: 0.9rem;
@@ -619,12 +739,22 @@ textarea {
 }
 
 .game-grid {
-  grid-template-columns: minmax(250px, 0.58fr) minmax(560px, 1.42fr);
+  grid-template-columns: minmax(0, min(100%, 72rem));
+  justify-content: center;
   gap: 0.75rem;
   width: 100%;
   max-width: none;
   height: 100%;
   min-height: 0;
+}
+
+.game-grid.with-guild {
+  grid-template-columns: minmax(250px, 0.58fr) minmax(560px, 1.42fr);
+  justify-content: stretch;
+}
+
+.game-grid.single-panel .play-panel {
+  width: 100%;
 }
 
 .panel {
@@ -648,6 +778,7 @@ textarea {
 .play-panel {
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
+  overflow: auto;
   border-color: #5f5139;
   background: #0b0c0b;
 }
@@ -822,39 +953,18 @@ textarea {
   height: 100%;
 }
 
-.dungeon-cues {
-  position: absolute;
-  left: 0.75rem;
-  bottom: 0.75rem;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-  max-width: calc(100% - 1.5rem);
-  pointer-events: none;
-}
-
-.dungeon-cues span {
-  min-height: 1.75rem;
-  border: 1px solid rgba(213, 181, 109, 0.78);
-  border-radius: 3px;
-  padding: 0.28rem 0.5rem;
-  background: rgba(8, 9, 8, 0.78);
-  color: #f0d58e;
-  font-size: 0.8rem;
-  line-height: 1.2;
-  box-shadow: 0 0 18px rgba(213, 181, 109, 0.12);
-}
-
 .map-panel {
   margin-top: 0.65rem;
   padding-top: 0.65rem;
 }
 
 .mini-map {
-  width: min(18rem, 100%);
+  width: max-content;
+  max-width: 100%;
   border: 1px solid #292e28;
   border-radius: 3px;
-  padding: 0.5rem;
+  padding: 0.55rem;
+  overflow: hidden;
   background:
     linear-gradient(180deg, rgba(17, 19, 16, 0.92), rgba(6, 7, 6, 0.96)),
     repeating-linear-gradient(0deg, rgba(213, 181, 109, 0.08) 0 1px, transparent 1px 1.5rem),
@@ -863,9 +973,7 @@ textarea {
 
 .mini-map-grid {
   display: grid;
-  gap: 0.42rem;
-  min-height: 4.1rem;
-  aspect-ratio: 2.8 / 1;
+  gap: 0.36rem;
   align-items: center;
   justify-items: center;
 }
@@ -873,7 +981,7 @@ textarea {
 .mini-map-cell {
   position: relative;
   display: block;
-  width: 1.05rem;
+  width: 1.1rem;
   aspect-ratio: 1;
   border: 1px solid #4e5548;
   border-radius: 2px;
@@ -929,55 +1037,35 @@ textarea {
   background: transparent;
 }
 
-.map-compass {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 0.4rem;
+.mini-map-facing {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 0;
+  height: 0;
+  transform: translate(-50%, -50%);
+  border-style: solid;
+  filter: drop-shadow(0 0 4px rgba(7, 8, 7, 0.8));
 }
 
-.map-direction {
-  display: grid;
-  gap: 0.15rem;
-  min-height: 3rem;
-  border: 1px solid #30372f;
-  border-radius: 3px;
-  padding: 0.45rem 0.5rem;
-  background: #0d0f0d;
+.mini-map-facing.facing-north {
+  border-width: 0 0.24rem 0.42rem;
+  border-color: transparent transparent #15130e;
 }
 
-.map-direction strong {
-  color: #eee8d8;
-  font-size: 0.78rem;
+.mini-map-facing.facing-east {
+  border-width: 0.24rem 0 0.24rem 0.42rem;
+  border-color: transparent transparent transparent #15130e;
 }
 
-.map-direction span {
-  color: #aaa99d;
-  font-size: 0.72rem;
+.mini-map-facing.facing-south {
+  border-width: 0.42rem 0.24rem 0;
+  border-color: #15130e transparent transparent;
 }
 
-.map-direction.open {
-  border-color: #5d654f;
-}
-
-.map-direction.unseen {
-  border-color: #b28b4a;
-  background: #15130e;
-}
-
-.map-direction.unseen span {
-  color: #f0d58e;
-}
-
-.map-direction.wall {
-  border-color: #5a3b36;
-}
-
-.map-direction.wall span {
-  color: #d99a90;
-}
-
-.map-direction.unknown {
-  opacity: 0.58;
+.mini-map-facing.facing-west {
+  border-width: 0.24rem 0.42rem 0.24rem 0;
+  border-color: transparent #15130e transparent transparent;
 }
 
 .command-bar {
@@ -999,6 +1087,10 @@ textarea {
     grid-template-columns: 1fr;
     height: auto;
   }
+
+  .game-grid.with-guild {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 720px) {
@@ -1013,6 +1105,11 @@ textarea {
     grid-template-columns: 1fr;
   }
 
+  .template-row,
+  .creator-grid {
+    grid-template-columns: 1fr;
+  }
+
   .town-scene,
   .dungeon-view,
   .dungeon-canvas {
@@ -1020,12 +1117,8 @@ textarea {
     height: 18rem;
   }
 
-  .map-compass {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
   .mini-map {
-    width: 100%;
+    width: max-content;
   }
 }
 
@@ -1180,5 +1273,237 @@ textarea {
 
   .battle-header span {
     text-align: left;
+  }
+}
+
+/* DRPG cockpit UI pass */
+.adventure-cockpit {
+  display: grid;
+  grid-template-rows: minmax(0, auto) auto auto auto minmax(0, 1fr);
+  gap: 0.6rem;
+  min-height: 0;
+  height: 100%;
+}
+
+.scene-deck {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(14rem, 18rem);
+  align-items: start;
+  gap: 0.6rem;
+  min-height: 0;
+}
+
+.navigation-board {
+  min-width: 0;
+  align-self: start;
+}
+
+.scene-deck .dungeon-view {
+  min-height: 20rem;
+}
+
+.scene-deck .dungeon-canvas {
+  height: min(45vh, 30rem);
+  min-height: 20rem;
+}
+
+.navigation-board .map-panel {
+  display: grid;
+  gap: 0.55rem;
+  margin: 0;
+  padding: 0.65rem;
+  border: 1px solid #343126;
+  border-radius: 4px;
+  background: #0c0d0b;
+}
+
+.navigation-board .section-title {
+  margin: 0;
+}
+
+.navigation-board .map-current {
+  display: grid;
+  gap: 0.15rem;
+  padding-bottom: 0.45rem;
+  border-bottom: 1px solid #262923;
+}
+
+.navigation-board .map-current strong {
+  color: #eee8d8;
+  font-size: 0.92rem;
+}
+
+.party-hud {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(7.5rem, 1fr));
+  gap: 0.35rem;
+  padding: 0.35rem;
+  border: 1px solid #2e332b;
+  border-radius: 4px;
+  background: #080a08;
+}
+
+.party-token {
+  display: grid;
+  gap: 0.1rem;
+  min-width: 0;
+  min-height: 2.6rem;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid #4b5148;
+  border-left-width: 3px;
+  border-radius: 3px;
+  background: #111410;
+}
+
+.party-token strong {
+  overflow: hidden;
+  color: #eee8d8;
+  font-size: 0.85rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.party-token span {
+  color: #aaa99d;
+  font-size: 0.74rem;
+}
+
+.party-token.danger {
+  background: #1a1410;
+}
+
+.party-token.down {
+  opacity: 0.62;
+  background: #120d0d;
+}
+
+.cockpit-copy {
+  min-height: 2.4rem;
+  padding: 0.35rem 0;
+  line-height: 1.45;
+}
+
+.battle-screen {
+  align-self: start;
+  gap: 0.6rem;
+  min-height: 0;
+  padding: 0.7rem;
+}
+
+.battle-header {
+  align-items: center;
+  min-height: 2rem;
+  padding-bottom: 0.45rem;
+  border-bottom: 1px solid #2f352d;
+}
+
+.battle-grid {
+  grid-template-columns: minmax(14rem, 0.85fr) minmax(22rem, 1.15fr);
+  align-items: start;
+}
+
+.battle-side {
+  gap: 0.45rem;
+  padding: 0.55rem;
+  border: 1px solid #2e332b;
+  border-radius: 4px;
+  background: #0b0d0b;
+}
+
+.battle-side h3 {
+  padding-bottom: 0.35rem;
+  border-bottom: 1px solid #252921;
+}
+
+.battle-row {
+  grid-template-columns: 4.25rem minmax(0, 1fr);
+  align-items: start;
+}
+
+.battle-row > span {
+  padding-top: 0.45rem;
+  color: #c9a765;
+  font-size: 0.78rem;
+}
+
+.formation-slots {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.35rem;
+}
+
+.battle-choice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.45rem;
+  min-width: 0;
+  min-height: 2.65rem;
+  padding: 0.4rem 0.55rem;
+}
+
+.battle-choice strong,
+.battle-choice span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.battle-choice strong {
+  font-size: 0.92rem;
+}
+
+.battle-choice span {
+  flex: 0 0 auto;
+  font-size: 0.74rem;
+}
+
+.command-dock {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  margin-top: 0.1rem;
+  padding: 0.5rem;
+  border: 1px solid #36322b;
+  border-radius: 4px;
+  background: rgba(8, 9, 8, 0.96);
+}
+
+.command-dock button {
+  min-width: 5.4rem;
+}
+
+@media (max-width: 1100px) {
+  .scene-deck {
+    grid-template-columns: 1fr;
+  }
+
+  .battle-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .adventure-cockpit {
+    height: auto;
+  }
+
+  .scene-deck .dungeon-canvas {
+    height: 18rem;
+    min-height: 18rem;
+  }
+
+  .party-hud,
+  .formation-slots {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .battle-row {
+    grid-template-columns: 1fr;
+  }
+
+  .command-dock {
+    position: static;
   }
 }

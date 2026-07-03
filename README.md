@@ -3,22 +3,26 @@
 Black Stela is a first-person grid dungeon RPG prototype where players bring
 their own adventurers into a dangerous labyrinth beneath an ancient black stela.
 
-The MVP is a small playable loop: create a party in town, import a character
-portrait, enter a 3D grid dungeon, trigger a trap and a deterministic combat,
-return to town, and review canonical records from town.
+The MVP is a small playable loop: register a party at the guild, choose quick
+or detailed recruits, import a character portrait, enter a 3D grid dungeon,
+trigger a trap and deterministic combat, use a discovered return stair, and
+review canonical records from town.
 
 Local AI narration is enabled internally by default, stays local-only, and never
 controls player characters.
 
 ## Current MVP
 
-- Town screen with party creation
-- Player-authored character names and notes
+- Town screen with guild registration
+- Quick recruits, detailed recruits, and starter party templates
+- Player-authored character names, titles, notes, portraits, and party identity
+- Class, background, trait, aptitude, role coverage, starting equipment, and roster memory
 - Custom portrait import from local image files
 - One editable dungeon floor in Markdown with YAML front matter
 - First-person Three.js dungeon view
-- Deterministic commands for movement, search, listening, combat, retreat, and return
-- Trap, fixed event, simple enemy encounter, and recovery on return to town
+- Deterministic commands for movement, search, listening, combat, and retreat
+- Contextual return-stair action instead of an always-available return command
+- Trap, fixed event, simple enemy encounter, and recovery after reaching town
 - Town records for canonical adventure events
 - Internal Ollama-compatible local narration proposal with deterministic fallback
 - AI policy guard that rejects player-character speech, player-character action, and game-truth mutation
@@ -68,7 +72,8 @@ npm run tauri dev
 | `npm run build` | Type-check and build the web frontend |
 | `npm test` | Run Vitest unit tests |
 | `npm run test:e2e` | Run Playwright browser smoke tests |
-| `npm run headless:clear` | Run a deterministic reachability probe |
+| `npm run headless:reachability` | Run a deterministic reachability probe |
+| `npm run headless:clear` | Legacy alias for `headless:reachability` |
 | `npm run headless:combat` | Run deterministic tactical-combat balance probes |
 | `npm audit --audit-level=moderate` | Check npm dependency advisories |
 | `npm run tauri dev` | Run the Tauri desktop app |
@@ -81,6 +86,7 @@ Release and packaging references:
 - [ADR-001: Game events and persistence](docs/decisions/ADR-001-game-events-and-persistence.md)
 - [Human Requirement Gate](docs/gates/human-requirement-gate.md)
 - [Player-facing red flags](docs/gates/player-facing-red-flags.md)
+- [Screenshot review protocol](docs/gates/screenshot-review.md)
 - [Current plan](Plan.md)
 - [Current tasks](Tasks.md)
 - [Completed modernization task archive](docs/archive/Tasks.completed-modernization.md)
@@ -114,6 +120,7 @@ rules, user interface, and local narration.
 - `GameState` is the canonical game state.
 - `Command` is the player-selected deterministic action.
 - `RulesEngine` applies commands and returns the next state.
+- `CharacterCreation` derives guild recruits, templates, coverage, stats, and roster memory.
 - `WorldRepository` is represented by Markdown/YAML loading plus Zod validation.
 - `PortraitManager` imports local portraits and binds them to characters.
 - `DungeonRenderer` renders the first-person grid scene with Three.js.
@@ -135,23 +142,33 @@ Supported progress values:
 | --- | --- |
 | `ready` | Expected debug party in town, no dungeon progress |
 | `after_encounter` | Party in B1F room 002, first trap resolved, Ash Slime defeated, 2/3 rooms visited |
-| `clear_ready` | Party in B1F room 003 with full MVP dungeon progress, ready to return |
+| `return_ready` | Party in B1F room 003 with full MVP dungeon progress, ready to return |
+| `floor_2`..`floor_8` | Party starts at the first authored room of that floor with expected map and inventory context |
 
 The debug panel shows visited-room map progress and can reload a selected
-progress state. Its `Headless clear` button is debug-only. It runs the same
-deterministic reachability probe used by automated checks and applies the
+progress state. Its `Headless reachability` button is debug-only. It runs the
+same deterministic reachability probe used by automated checks and applies the
 resulting `GameState`.
 
 Run the reachability probe from the terminal:
 
 ```sh
-npm run headless:clear
-npm run headless:clear -- after_encounter
+npm run headless:reachability
+npm run headless:reachability -- --progress after_encounter
+npm run headless:reachability -- --progress floor_8
+npm run headless:reachability -- --progress return_ready
 ```
 
-The command prints JSON containing the command sequence, room-by-room trace,
-knowledge source, final phase, visited rooms, defeated enemies, and resolved
-traps. It exits non-zero if the probe gets stuck or exceeds its step limit.
+`npm run headless:clear` remains as a legacy alias, but "clear" is not the
+intended meaning. This probe checks deterministic reachability from a selected
+debug progress state. It does not prove a player-facing clear.
+
+The command prints JSON containing `reachable`, `outcome`, selected progress,
+max step budget, command sequence, room-by-room trace, knowledge source, final
+phase, visited rooms, defeated enemies, and resolved traps. `engineReason`
+keeps the internal runner reason for debugging. It exits non-zero if the probe
+gets stuck or exceeds its step limit. You can also pass `--max-steps` when
+checking longer routes.
 
 Headless output proves deterministic reachability only. It is not proof that
 the player can understand the route, see the enemy, see the map, find a stair,
@@ -256,7 +273,7 @@ E2E tests cover:
 - Render a nonblank Three.js canvas on desktop and mobile viewports
 - Move into combat
 - Resolve combat
-- Return to town
+- Use a discovered stair to return to town
 - Browser-visible clear using only player controls
 - Tactical combat actor/target/round controls
 - View the adventure log
@@ -268,7 +285,7 @@ Run the full current check set:
 ```sh
 npm test
 npm run build
-npm run headless:clear
+npm run headless:reachability
 npm run test:e2e
 npm audit --audit-level=moderate
 (cd src-tauri && cargo check)

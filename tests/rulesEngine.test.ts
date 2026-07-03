@@ -74,7 +74,7 @@ describe("rules engine", () => {
     expect(moved.phase).toBe("combat");
     expect(moved.position?.roomId).toBe("room.b1f.002");
     expect(moved.resolvedTraps).toContain("trap.b1f.needle");
-    expect(moved.party[0].hp).toBe(10);
+    expect(moved.party[0].hp).toBe(moved.party[0].maxHp - 2);
     expect(moved.combat?.enemy.name).toBe("Ash Slime");
     expect(moved.log.map((entry) => entry.text)).toEqual(
       expect.arrayContaining([
