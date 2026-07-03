@@ -40,14 +40,22 @@ describe("rules engine", () => {
       floorId: "dungeon.b1f",
       roomId: "room.b1f.001"
     });
+    expect(result.state.log).toContainEqual(
+      expect.objectContaining({
+        text: "The party descends beneath the black stela.",
+        tags: ["dungeon"]
+      })
+    );
     expect(result.state.log.at(-1)).toMatchObject({
-      text: "The party descends beneath the black stela.",
-      tags: ["dungeon"]
+      text: "Found Healing Draught x1.",
+      tags: ["item", "treasure"]
     });
     expect(result.state.map).toMatchObject({
       floorId: "dungeon.b1f",
       currentRoomId: "room.b1f.001",
+      currentCellId: "cell.b1f.001",
       currentFacing: "east",
+      visitedCells: ["cell.b1f.001"],
       knownExits: { "room.b1f.001": ["east"] }
     });
   });
@@ -73,6 +81,8 @@ describe("rules engine", () => {
 
     expect(moved.phase).toBe("combat");
     expect(moved.position?.roomId).toBe("room.b1f.002");
+    expect(moved.position?.cellId).toBe("cell.b1f.002");
+    expect(moved.map.currentCellId).toBe("cell.b1f.002");
     expect(moved.resolvedTraps).toContain("trap.b1f.needle");
     expect(moved.party[0].hp).toBe(moved.party[0].maxHp - 2);
     expect(moved.combat?.enemy.name).toBe("Ash Slime");
@@ -101,6 +111,7 @@ describe("rules engine", () => {
     expect(marker.position?.roomId).toBe("room.b1f.003");
     expect(town.phase).toBe("town");
     expect(town.party).toHaveLength(1);
-    expect(town.party[0].hp).toBe(town.party[0].maxHp);
+    expect(town.party[0].hp).toBeGreaterThan(0);
+    expect(town.party[0].hp).toBeLessThanOrEqual(town.party[0].maxHp);
   });
 });

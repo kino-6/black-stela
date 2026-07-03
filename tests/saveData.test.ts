@@ -34,14 +34,35 @@ describe("save data", () => {
 
   it("uses safe defaults for missing optional future fields", () => {
     const save = toSaveDataV1(progressedState(), defaultWorld, { savedAt: "2026-07-03T00:00:00.000Z" });
+    const { partyGold, claimedTreasures, ...legacyState } = save.state;
     const parsed = parseSaveDataV1({
       schemaVersion: save.schemaVersion,
       savedAt: save.savedAt,
       scenario: save.scenario,
-      state: save.state
+      state: legacyState
     });
 
     expect(parsed.settings).toEqual({ aiEnabled: true, locale: "en" });
+    expect(parsed.state.partyGold).toBeGreaterThan(0);
+    expect(parsed.state.claimedTreasures).toEqual([]);
+  });
+
+  it("round trips economy and equipment state", () => {
+    const bought = executeCommand(
+      addCharacter(createInitialGameState(), createCharacter({ name: "Mira", notes: "Mapper" })),
+      defaultWorld,
+      {
+      type: "buy_item",
+      shopId: "shop.stela-general",
+      itemId: "equip.iron-knife"
+      }
+    );
+    const save = toSaveDataV1(bought, defaultWorld, { savedAt: "2026-07-03T00:00:00.000Z" });
+    const restored = fromSaveDataV1(save);
+
+    expect(restored.partyGold).toBe(bought.partyGold);
+    expect(restored.claimedTreasures).toEqual(bought.claimedTreasures);
+    expect(restored.inventory.find((item) => item.id === "equip.iron-knife")?.quantity).toBe(1);
   });
 
   it("rejects unknown future versions clearly", () => {

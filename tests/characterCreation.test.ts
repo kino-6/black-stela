@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { createGuildCharacter, createQuickRecruit } from "../src/domain/characterCreation";
+import { createGuildCharacter, createQuickRecruit, createStarterParty, PARTY_SIZE_LIMIT } from "../src/domain/characterCreation";
+import { addCharacter, createInitialGameState } from "../src/domain/gameState";
 
 describe("character creation", () => {
   it("creates a guild recruit with class, aptitude, equipment, and creation history", () => {
@@ -44,5 +45,22 @@ describe("character creation", () => {
     expect(left.backgroundId).toBe(right.backgroundId);
     expect(left.traitIds).toEqual(right.traitIds);
     expect(left.creation).toEqual({ method: "quick", seed: "guild-seed", registeredAtTurn: 1 });
+  });
+
+  it("starter templates create a six-member front/back formation", () => {
+    const party = createStarterParty("balanced", 2);
+
+    expect(party).toHaveLength(PARTY_SIZE_LIMIT);
+    expect(party.filter((member) => member.row === "front")).toHaveLength(3);
+    expect(party.filter((member) => member.row === "back")).toHaveLength(3);
+  });
+
+  it("does not add a seventh party member", () => {
+    const party = createStarterParty("balanced", 2);
+    const fullState = party.reduce((state, member) => addCharacter(state, member), createInitialGameState());
+    const overflow = addCharacter(fullState, createQuickRecruit("overflow", 2));
+
+    expect(fullState.party).toHaveLength(PARTY_SIZE_LIMIT);
+    expect(overflow.party).toHaveLength(PARTY_SIZE_LIMIT);
   });
 });

@@ -1,5 +1,6 @@
 import {
   getExit,
+  getGridCellForRoom,
   parseScenarioEnemies,
   parseScenarioEncounters,
   parseScenarioItems,
@@ -9,6 +10,7 @@ import {
 } from "../domain/scenario";
 import { parseScenarioPackManifest, type ScenarioPackManifest, type ScenarioValidationError } from "../domain/scenarioPack";
 import type { ScenarioWorld } from "../domain/types";
+import type { Direction, DungeonGridCell, DungeonGridEdge } from "../domain/types";
 
 export interface ScenarioPackFiles {
   [path: string]: string;
@@ -166,6 +168,8 @@ export function validateScenarioGraph(world: ScenarioWorld, filePath = "world.md
       errors.push({ filePath, fieldPath: `${dungeon.id}.startRoom`, reason: `Unknown start room: ${dungeon.startRoom}` });
     }
 
+    errors.push(...validateGridTopology(world, dungeon.id, filePath));
+
     for (const room of dungeon.rooms) {
       for (const direction of ["north", "east", "south", "west"] as const) {
         const target = getExit(world, room.id, direction);
@@ -176,6 +180,15 @@ export function validateScenarioGraph(world: ScenarioWorld, filePath = "world.md
             reason: `Exit references unknown room: ${target}`
           });
         }
+      }
+
+      const cell = getGridCellForRoom(world, room.id);
+      if (dungeon.grid && !cell) {
+        errors.push({
+          filePath,
+          fieldPath: `${room.id}.grid`,
+          reason: `Room has no grid cell: ${room.id}`
+        });
       }
 
       if (room.encounter && world.enemies.length > 0 && !enemyIds.has(room.encounter.id)) {
@@ -244,6 +257,29 @@ export function validateScenarioGraph(world: ScenarioWorld, filePath = "world.md
     }
   }
 
+  const returnableRooms = collectRoomsThatCanReachTownReturn(world);
+  for (const roomId of reachableRooms) {
+    if (!roomIds.has(roomId)) {
+      continue;
+    }
+
+    if (!returnableRooms.has(roomId)) {
+      errors.push({
+        filePath,
+        fieldPath: `${roomId}.returnability`,
+        reason: `Reachable room cannot route back to an authored town return: ${roomId}`
+      });
+    }
+  }
+
+  for (const missingProgression of findMissingFloorProgression(world)) {
+    errors.push({
+      filePath,
+      fieldPath: `${missingProgression.floorId}.floorProgression`,
+      reason: `No authored route from ${missingProgression.floorId} to ${missingProgression.nextFloorId}.`
+    });
+  }
+
   for (const table of world.encounterTables) {
     if (table.floorId && !floorIds.has(table.floorId)) {
       errors.push({
@@ -299,6 +335,117 @@ export function validateScenarioGraph(world: ScenarioWorld, filePath = "world.md
   return errors;
 }
 
+function validateGridTopology(world: ScenarioWorld, floorId: string, filePath: string): ScenarioValidationError[] {
+  const errors: ScenarioValidationError[] = [];
+  const floor = world.dungeons.find((candidate) => candidate.id === floorId);
+  if (!floor?.grid) {
+    return errors;
+  }
+
+  const floorRoomIds = new Set(floor.rooms.map((room) => room.id));
+  const allRoomIds = new Set(world.dungeons.flatMap((dungeon) => dungeon.rooms.map((room) => room.id)));
+  const cellsByRoom = new Map(floor.grid.cells.map((cell) => [cell.roomId, cell]));
+  const cellsById = new Map(floor.grid.cells.map((cell) => [cell.id, cell]));
+  const coordinateKeys = new Set<string>();
+
+  for (const cell of floor.grid.cells) {
+    const coordinateKey = `${cell.x},${cell.y}`;
+    if (coordinateKeys.has(coordinateKey)) {
+      errors.push({
+        filePath,
+        fieldPath: `${cell.id}.grid.coordinate`,
+        reason: `Duplicate grid coordinate on ${floor.id}: ${coordinateKey}`
+      });
+    }
+    coordinateKeys.add(coordinateKey);
+
+    if (!floorRoomIds.has(cell.roomId)) {
+      errors.push({
+        filePath,
+        fieldPath: `${cell.id}.grid.roomId`,
+        reason: `Grid cell references a room outside its floor: ${cell.roomId}`
+      });
+    }
+
+    for (const direction of ["north", "east", "south", "west"] as const) {
+      const edge = cell.edges[direction];
+      if (!edge) {
+        continue;
+      }
+
+      if (edge.targetRoomId && !allRoomIds.has(edge.targetRoomId)) {
+        errors.push({
+          filePath,
+          fieldPath: `${cell.id}.edges.${direction}.targetRoomId`,
+          reason: `Grid edge references unknown room: ${edge.targetRoomId}`
+        });
+      }
+
+      if (edge.targetCellId && !cellsById.has(edge.targetCellId) && edge.targetFloorId === floor.id) {
+        errors.push({
+          filePath,
+          fieldPath: `${cell.id}.edges.${direction}.targetCellId`,
+          reason: `Grid edge references unknown cell: ${edge.targetCellId}`
+        });
+      }
+
+      if (edge.targetRoomId && floorRoomIds.has(edge.targetRoomId)) {
+        const targetCell = cellsByRoom.get(edge.targetRoomId);
+        if (targetCell && !isDeclaredSpecial(edge) && !isAdjacent(cell, targetCell, direction)) {
+          errors.push({
+            filePath,
+            fieldPath: `${cell.roomId}.grid.${direction}`,
+            reason: `Grid movement must be adjacent unless declared special: ${cell.roomId} -> ${edge.targetRoomId}`
+          });
+        }
+      }
+
+      const roomExit = floor.rooms.find((room) => room.id === cell.roomId)?.exits[direction];
+      if (roomExit && edge.targetRoomId !== roomExit) {
+        errors.push({
+          filePath,
+          fieldPath: `${cell.roomId}.exits.${direction}`,
+          reason: `Room exit and grid edge disagree: ${roomExit} vs ${edge.targetRoomId ?? "none"}`
+        });
+      }
+    }
+  }
+
+  for (const room of floor.rooms) {
+    const cell = cellsByRoom.get(room.id);
+    if (!cell) {
+      continue;
+    }
+
+    for (const direction of Object.keys(room.exits) as Direction[]) {
+      if (!cell.edges[direction]?.targetRoomId) {
+        errors.push({
+          filePath,
+          fieldPath: `${room.id}.grid.${direction}`,
+          reason: `Room exit must be represented as a grid edge: ${room.id}.${direction}`
+        });
+      }
+    }
+  }
+
+  return errors;
+}
+
+function isDeclaredSpecial(edge: DungeonGridEdge) {
+  return ["stairs", "shortcut", "one_way"].includes(edge.kind) || Boolean(edge.targetFloorId);
+}
+
+function isAdjacent(source: DungeonGridCell, target: DungeonGridCell, direction: Direction) {
+  const offsets: Record<Direction, { x: number; y: number }> = {
+    north: { x: 0, y: -1 },
+    east: { x: 1, y: 0 },
+    south: { x: 0, y: 1 },
+    west: { x: -1, y: 0 }
+  };
+  const offset = offsets[direction];
+  return target.x === source.x + offset.x && target.y === source.y + offset.y;
+}
+
 function collectReachableRooms(world: ScenarioWorld) {
   const reachable = new Set<string>();
   const pending = [world.startRoom];
@@ -323,6 +470,58 @@ function collectReachableRooms(world: ScenarioWorld) {
   }
 
   return reachable;
+}
+
+function collectRoomsThatCanReachTownReturn(world: ScenarioWorld) {
+  const rooms = world.dungeons.flatMap((dungeon) => dungeon.rooms);
+  const reverseExits = new Map<string, string[]>();
+  const returnable = new Set<string>();
+  const pending: string[] = [];
+
+  for (const room of rooms) {
+    if (room.stairsToTown) {
+      returnable.add(room.id);
+      pending.push(room.id);
+    }
+
+    for (const target of Object.values(room.exits)) {
+      if (!target) {
+        continue;
+      }
+
+      reverseExits.set(target, [...(reverseExits.get(target) ?? []), room.id]);
+    }
+  }
+
+  while (pending.length > 0) {
+    const roomId = pending.shift()!;
+    for (const source of reverseExits.get(roomId) ?? []) {
+      if (returnable.has(source)) {
+        continue;
+      }
+
+      returnable.add(source);
+      pending.push(source);
+    }
+  }
+
+  return returnable;
+}
+
+function findMissingFloorProgression(world: ScenarioWorld) {
+  return world.dungeons.flatMap((dungeon, index) => {
+    const next = world.dungeons[index + 1];
+    if (!next) {
+      return [];
+    }
+
+    const nextRoomIds = new Set(next.rooms.map((room) => room.id));
+    const hasNextFloorExit = dungeon.rooms.some((room) =>
+      Object.values(room.exits).some((target) => target ? nextRoomIds.has(target) : false)
+    );
+
+    return hasNextFloorExit ? [] : [{ floorId: dungeon.id, nextFloorId: next.id }];
+  });
 }
 
 function parseOptionalDataFile<T>(

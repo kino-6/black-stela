@@ -28,3 +28,50 @@ test("resolves tactical combat through visible actor, target, and combat command
   await expect(page.getByRole("heading", { name: "Hall of Old Dust" })).toBeVisible();
   await expect(page.getByText(/Victory.*XP.*gold/i)).toBeVisible();
 });
+
+test("six-member party keeps front and back rows visible in combat", async ({ page }) => {
+  await startNewExpedition(page);
+
+  await page.getByRole("button", { name: "Beginner Safe" }).click();
+  await page.getByRole("button", { name: "Enter dungeon" }).click();
+
+  await expect(page.getByTestId("party-front-row")).toContainText("Rook");
+  await expect(page.getByTestId("party-back-row")).toContainText("Sei");
+  await page.getByRole("button", { name: "Move" }).click();
+
+  await expect(page.getByLabel("Battle screen")).toBeVisible();
+  await expect(page.getByTestId("combat-front-row")).toContainText("Front row");
+  await expect(page.getByTestId("combat-back-row")).toContainText("Back row");
+  await expect(page.getByTestId("combat-actor")).toHaveCount(6);
+
+  const commandDockBefore = await page.getByLabel("Combat commands").evaluate((element) => element.getBoundingClientRect().top);
+  await page.getByRole("button", { name: "Defend" }).click();
+  const commandDockAfter = await page.getByLabel("Combat commands").evaluate((element) => element.getBoundingClientRect().top);
+  expect(Math.abs(commandDockAfter - commandDockBefore)).toBeLessThan(2);
+});
+
+test("keyboard-only command flow keeps command windows stable", async ({ page }) => {
+  await startNewExpedition(page);
+
+  await page.getByRole("button", { name: "Beginner Safe" }).click();
+  await page.getByRole("button", { name: "Enter dungeon" }).click();
+
+  const dungeonDockBefore = await page
+    .getByTestId("dungeon-command-window")
+    .evaluate((element) => element.getBoundingClientRect().top);
+  await page.keyboard.press("Enter");
+  await expect(page.getByLabel("Battle screen")).toBeVisible();
+
+  const combatDockBefore = await page
+    .getByTestId("combat-command-window")
+    .evaluate((element) => element.getBoundingClientRect().top);
+  await page.keyboard.press("ArrowDown");
+  await page.keyboard.press("g");
+  await expect(page.getByText("Round 2")).toBeVisible();
+  const combatDockAfter = await page
+    .getByTestId("combat-command-window")
+    .evaluate((element) => element.getBoundingClientRect().top);
+
+  expect(Math.abs(combatDockAfter - combatDockBefore)).toBeLessThan(2);
+  expect(dungeonDockBefore).toBeGreaterThan(0);
+});

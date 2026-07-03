@@ -36,13 +36,13 @@ test("combat and town recovery keep the loop playable", async ({ page }) => {
 
   await resolveVisibleCombat(page);
   await expect(page.getByRole("heading", { name: "Hall of Old Dust" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Return" })).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "Use stairs" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Return", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Use return marker" })).toHaveCount(0);
 
   await page.getByRole("button", { name: "Move" }).click();
   await expect(page.getByRole("heading", { name: "Black Marker" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Return" })).toHaveCount(0);
-  await page.getByRole("button", { name: "Use stairs" }).click();
+  await expect(page.getByRole("button", { name: "Return", exact: true })).toHaveCount(0);
+  await page.getByRole("button", { name: "Use return marker" }).click();
   await expect(page.getByRole("heading", { name: "Town" })).toBeVisible();
   await page.getByRole("button", { name: "Recovery" }).click();
   await expect(page.getByRole("button", { name: "Recover party" })).toBeVisible();

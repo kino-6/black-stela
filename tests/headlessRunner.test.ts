@@ -13,6 +13,9 @@ describe("headless reachability runner", () => {
     expect(result.cleared).toBe(true);
     expect(result.reason).toBe("clear");
     expect(result.state.phase).toBe("town");
+    expect(result.state.partyGold).toBeGreaterThan(initialState.partyGold);
+    expect(result.state.inventory.find((item) => item.id === "item.healing-draught")?.quantity).toBeGreaterThan(0);
+    expect(result.state.claimedTreasures).toContain("room.b1f.001");
     expect(result.state.defeatedEnemies).toContain("enemy.b1f.ash-slime");
     expect(result.state.resolvedTraps).toContain("trap.b1f.needle");
     expect(result.state.map.visitedRooms).toEqual(["room.b1f.001", "room.b1f.002", "room.b1f.003"]);

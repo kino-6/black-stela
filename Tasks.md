@@ -2,95 +2,77 @@
 
 ## Archive
 
-- BS-001..BS-040:
+- [x] BS-001..BS-040:
   [docs/archive/Tasks.completed-modernization.md](docs/archive/Tasks.completed-modernization.md)
-- BS-041..BS-061:
+- [x] BS-041..BS-061:
   [docs/archive/Tasks.completed-scenario-tempo.md](docs/archive/Tasks.completed-scenario-tempo.md)
-- BS-062, BS-063, BS-068..BS-070, BS-072, BS-073:
+- [x] BS-062, BS-063, BS-068..BS-070, BS-072, BS-073:
   [docs/archive/Tasks.completed-play-parity-gate.md](docs/archive/Tasks.completed-play-parity-gate.md)
-- BS-074..BS-084:
+- [x] BS-074..BS-084:
   [docs/archive/Tasks.completed-tactical-combat.md](docs/archive/Tasks.completed-tactical-combat.md)
-- BS-067:
+- [x] BS-067:
   [docs/archive/Tasks.completed-character-creation-planning.md](docs/archive/Tasks.completed-character-creation-planning.md)
-- BS-097:
+- [x] BS-097:
   [docs/archive/Tasks.completed-reachability-terminology.md](docs/archive/Tasks.completed-reachability-terminology.md)
-- BS-064..BS-066, BS-071, BS-085..BS-096:
+- [x] BS-064..BS-066, BS-071, BS-085..BS-096:
   [docs/archive/Tasks.completed-guild-registration.md](docs/archive/Tasks.completed-guild-registration.md)
-- BS-098..BS-103:
+- [x] BS-098..BS-103:
   [docs/archive/Tasks.completed-drpg-cockpit-ui.md](docs/archive/Tasks.completed-drpg-cockpit-ui.md)
+- [x] BS-104..BS-113:
+  [docs/archive/Tasks.completed-playable-depth.md](docs/archive/Tasks.completed-playable-depth.md)
+- [x] BS-123:
+  [docs/archive/Tasks.completed-stair-progression-gate.md](docs/archive/Tasks.completed-stair-progression-gate.md)
+- [x] BS-114..BS-122, BS-124..BS-127:
+  [docs/archive/Tasks.completed-character-authoring-scenario-authoring.md](docs/archive/Tasks.completed-character-authoring-scenario-authoring.md)
+- [x] BS-136..BS-140:
+  [docs/archive/Tasks.completed-drpg-ux-formation.md](docs/archive/Tasks.completed-drpg-ux-formation.md)
+- [x] BS-128..BS-135, BS-141..BS-144:
+  [docs/archive/Tasks.completed-grid-prose-command.md](docs/archive/Tasks.completed-grid-prose-command.md)
 
-## Active Milestone
+## Active Milestones
 
-Lane E: Playable Depth. Goal: make character choices matter after guild
-registration through inventory, equipment, treasure, shops, recovery costs, and
-early dungeon pressure.
+No active milestones. Add the next slice only after mapping it from `Plan.md`
+with human expectation, red flags, browser evidence, and automated regression.
 
-Scope boundary:
-
-- In scope: item/equipment data, currency, loot, recovery cost, town shop UI,
-  save migration, combat/dungeon integration, Japanese UI, browser/headless
-  verification.
-- Out of scope: full late-game economy, crafting, scenario import UI, Tauri file
-  saves, paid/online services, and new non-original reference content.
-
-Checkpoint commands:
-
-- [x] `npm test`
-- [x] `npm run build`
-- [x] `npm run test:e2e`
-- [x] `npm run headless:reachability`
-- [x] `git diff --check`
+Checkpoint commands: `npm test`, `npm run build`, `npm run test:e2e`,
+`npm run headless:reachability`, `git diff --check`.
 
 ## Gate Definition
 
-Every player-facing task must answer:
-
-- [ ] What human expectation or complaint does this satisfy?
-- [ ] What would feel wrong, cheap, web-app-like, or non-DRPG?
-- [ ] What visible browser evidence proves it works?
-- [ ] What automated test prevents regression?
-- [ ] Does headless prove only reachability, or real player UX?
-
-## Active Backlog
-
-| ID | Priority | Task | Acceptance | Verification |
-|---|---|---|---|---|
-| BS-104 | P0 | Item/equipment/currency domain | Item catalog, equipment slots, party gold, quantities, and `SaveDataV2` migration exist without breaking old saves | Unit tests for catalog, migration, and inventory invariants |
-| BS-105 | P0 | Equipment affects combat | Weapon/armor stats modify damage, accuracy, armor, and row pressure without bypassing tactical combat | Rules tests plus combat E2E still pass |
-| BS-106 | P0 | Treasure and loot rewards | Encounters and authored rooms can grant gold/items through data-driven reward tables; rewards are logged once | Unit tests for deterministic rewards; browser clear sees reward feedback |
-| BS-107 | P1 | Town shop service | Player can buy/sell basic gear and consumables from town without a generic admin-table feel | Shop E2E desktop/mobile; Japanese labels fit |
-| BS-108 | P1 | Recovery costs and attrition | Recovery consumes gold, blocks when unaffordable, and preserves early dungeon pressure | Rules tests and town E2E |
-| BS-109 | P1 | Inventory/equipment UI | Guild/town expose equipment decisions; dungeon/combat show only compact carried-item state | Screenshot review and no sidebar regression |
-| BS-110 | P1 | Scenario data pass | Starter equipment, early loot, shop stock, and recovery prices are authored for the MVP route | Scenario validation and data summary tests |
-| BS-111 | P1 | Economy balance probes | Headless/browser probes report gold, consumables, HP pressure, loot, and return outcome separately from UX claims | `npm run headless:reachability`; browser clear E2E |
-| BS-112 | P2 | Docs and Japanese coverage | README documents economy/debug behavior; Japanese UI and save migration are covered | `npm run test:e2e -- tests/e2e/i18n.spec.ts`; README review |
-| BS-113 | P2 | Human Requirement Gate update | Gate rejects free recovery, free escape/save leakage, generic shop admin UI, and invisible rewards | Gate doc updated; screenshot-review covers shop/reward states |
+Every player-facing task must state the human expectation, red flags, browser
+evidence, automated regression test, and what headless does or does not prove.
 
 ## Plan To Task Traceability
 
 | Plan Lane | Task Coverage | Status |
 |---|---|---|
-| Lane A: DRPG Presentation and UX | BS-064..BS-066, BS-098..BS-103 archived | Completed current presentation gate and cockpit pass |
+| Lane D2: Character Authorship Recovery | BS-114..BS-120 archived | Completed current recovery pass |
+| Lane F: Scenario Authoring and Content QA | BS-121..BS-127 archived | Completed current authoring QA pass |
+| Lane A: DRPG Presentation and UX | BS-064..BS-066, BS-098..BS-103 archived | Completed current presentation gate |
 | Lane B: Honest Simulation and Play Parity | BS-070, BS-071, BS-097 archived | Completed current play-parity gate |
 | Lane C: Human Requirement Gate | BS-071, BS-096 plus gate docs archived | Completed current gate coverage |
-| Lane D: Character Creation and Roster Identity | BS-085..BS-096 archived | Completed guild registration milestone |
-| Lane E: Playable Depth | BS-104..BS-113 active | Active milestone |
-| Lane E2: Tactical DRPG Combat | BS-074..BS-084 archived | Completed vertical slice; future balance can add new IDs |
-| Lane F: Scenario Authoring and Content QA | BS-041..BS-061 archived; no active new tasks | Deferred |
+| Lane D: Character Creation and Roster Identity | BS-085..BS-096 archived | Superseded by D2 recovery pass |
+| Lane E: Playable Depth | BS-104..BS-113 archived | Completed current playable-depth slice |
+| Lane E2: Tactical DRPG Combat | BS-074..BS-084 archived | Completed vertical slice |
+| Lane J: Grid Labyrinth Topology Recovery | BS-128..BS-135 archived | Completed current grid pass |
+| Lane F2: Scenario Prose and Localization Quality | BS-141..BS-142 archived | Completed current prose gate pass |
+| Lane I: Controller-First Command UI Reconstruction | BS-143..BS-144 archived | Completed current command gate pass |
+| Lane K: DRPG UX Autonomy and Six-Person Formation | BS-136..BS-140 archived | Completed current pass |
 | Lane G: Desktop Productization | BS-034..BS-037 archived; no active new tasks | Deferred |
 | Lane H: Hidden Local Narration Operations | BS-019..BS-024 archived; no active new tasks | Deferred |
-
-## Gate Artifacts To Create
-
-- [x] `docs/gates/human-requirement-gate.md`
-- [x] `docs/gates/player-facing-red-flags.md`
-- [x] `tests/e2e/player-clear.spec.ts`
-- [x] Screenshot output convention for title/dungeon/combat/map/town checks.
 
 ## Execution Rules
 
 - Keep completed tasks archived, not mixed into active backlog.
+- Do D2 before broad F implementation unless the task is a blocking QA gate.
 - Do not mark headless reachability as proof of player UX.
+- Do not accept arbitrary room graphs as DRPG dungeon topology.
+- Use Grid Labyrinth Skill/Gate for movement, minimap, stairs, return, and
+  first-person dungeon rendering work.
+- Use DRPG UX Skill/Gate for party formation, command surfaces, and normal-play
+  UI review before claiming player-facing work is done.
+- Use Black Stela Gate Review Skill and Past Trouble Regression Gate before
+  player-facing implementation or completion claims.
 - A player-facing change is not done until its human expectation and red flags
   are explicit.
 - Prefer unit tests for domain rules and Playwright for visible player flows.

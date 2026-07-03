@@ -41,6 +41,8 @@ export const en = {
   },
   party: {
     heading: "Guild Registry",
+    studioHeading: "Character Studio",
+    studioCopy: "Shape the party before the stair: portrait, past, role, and pressure coverage.",
     empty: "Register adventurers before entering the labyrinth.",
     quickActions: "Guild registration shortcuts",
     quickRecruit: "Quick recruit",
@@ -58,6 +60,17 @@ export const en = {
     notes: "Notes",
     portrait: "Portrait",
     portraitPreview: "Selected portrait preview",
+    profile: "Adventurer profile",
+    statPreview: "Ability preview",
+    damage: "Damage",
+    accuracy: "Accuracy",
+    armor: "Armor",
+    speed: "Speed",
+    row: "Row",
+    equipment: "Equipment",
+    deepestFloor: "Deepest floor",
+    victories: "Victories",
+    injuries: "Injuries",
     namePlaceholder: "A player-authored adventurer",
     notesPlaceholder: "Background, vows, scars, table notes",
     noNotes: "No notes yet.",
@@ -91,7 +104,7 @@ export const en = {
     safe: "Safe",
     facing: "Facing {direction}",
     townCopy:
-      "Lanterns burn low around the guild hall. The stair beneath the ancient black stela waits for a party that can return with a story.",
+      "The guild lamps gutter over worn stone. Cold air rises from the stair beneath the black stela.",
     enterDungeon: "Enter dungeon",
     combatDescription: "{enemy} stands in the party's path.",
     combatCommands: "Combat commands",
@@ -114,6 +127,7 @@ export const en = {
     search: "Search",
     listen: "Listen",
     useStairs: "Use stairs",
+    useReturnMarker: "Use return marker",
     partyStatus: "Party status",
     attack: "Attack",
     defend: "Defend",
@@ -123,6 +137,7 @@ export const en = {
   },
   town: {
     guild: "Guild",
+    shop: "Shop",
     recovery: "Recovery",
     records: "Records",
     entry: "Dungeon Entry",
@@ -131,7 +146,17 @@ export const en = {
     recoverParty: "Recover party",
     recoverAll: "Recover all",
     logCount: "{count} records",
-    inventory: "Inventory"
+    inventory: "Inventory",
+    inventoryEmpty: "No carried items.",
+    gold: "{gold} gold",
+    recoveryCost: "Recovery cost: {gold}",
+    shopStock: "Stock",
+    price: "{gold} gold",
+    quantity: "x{count}",
+    buy: "Buy",
+    sell: "Sell",
+    equipment: "Equipment",
+    equipmentSummary: "Weapon {weapon} · Armor {armor} · DMG {attack} · ARM {armorValue}"
   },
   tempo: {
     repeat: "Repeat",
@@ -178,7 +203,19 @@ export const en = {
     warning: "Warning",
     file: "File",
     field: "Field",
-    reason: "Reason"
+    reason: "Reason",
+    category: "Impact",
+    importPack: "Import scenario pack",
+    importLoaded: "Loaded {title} ({floors} floors).",
+    importFailed: "Scenario import failed ({count} issues).",
+    issues: "{count} issues",
+    categoryReachability: "Route",
+    categoryProgression: "Progression",
+    categoryLocale: "Localization",
+    categoryCatalog: "Data reference",
+    categoryPolicy: "AI policy",
+    categorySchema: "Schema",
+    categoryUnknown: "General"
   }
 } as const;
 

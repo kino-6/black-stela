@@ -1,4 +1,6 @@
 import { expect, test } from "@playwright/test";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { resolveVisibleCombat, setTitleLanguage, startNewExpedition } from "./helpers";
 
 test("captures desktop screenshot review states", async ({ page }) => {
@@ -19,15 +21,20 @@ test("captures desktop screenshot review states", async ({ page }) => {
 
   await resolveVisibleCombat(page);
   await expect(page.getByRole("heading", { name: "Hall of Old Dust" })).toBeVisible();
+  await expect(page.getByText(/Victory.*XP.*gold/i)).toBeVisible();
   await page.screenshot({ path: "test-results/screenshot-review/desktop-map-after-move.png", fullPage: true });
 
   await page.getByRole("button", { name: "Move" }).click();
   await expect(page.getByRole("heading", { name: "Black Marker" })).toBeVisible();
   await page.screenshot({ path: "test-results/screenshot-review/desktop-return-stair.png", fullPage: true });
 
-  await page.getByRole("button", { name: "Use stairs" }).click();
+  await page.getByRole("button", { name: "Use return marker" }).click();
   await expect(page.getByRole("heading", { name: "Town" })).toBeVisible();
   await page.screenshot({ path: "test-results/screenshot-review/desktop-post-return-town.png", fullPage: true });
+
+  await page.getByRole("button", { name: "Shop" }).click();
+  await expect(page.getByRole("heading", { name: "Stela Gate General Store" })).toBeVisible();
+  await page.screenshot({ path: "test-results/screenshot-review/desktop-shop.png", fullPage: true });
 });
 
 test("captures mobile Japanese guild screenshot review state", async ({ page }) => {
@@ -36,6 +43,29 @@ test("captures mobile Japanese guild screenshot review state", async ({ page }) 
   await page.getByRole("button", { name: "新たな探索" }).click();
   await page.getByRole("button", { name: "初心者向け" }).click();
 
-  await expect(page.getByRole("heading", { name: "ギルド登録" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "冒険者登録" })).toBeVisible();
   await page.screenshot({ path: "test-results/screenshot-review/mobile-ja-guild.png", fullPage: true });
 });
+
+test("captures authoring and B2F screenshot review states", async ({ page }) => {
+  await page.goto("/?scenario=invalid");
+  await expect(page.getByRole("heading", { name: "Scenario Validation" })).toBeVisible();
+  await page.screenshot({ path: "test-results/screenshot-review/scenario-validation-error.png", fullPage: true });
+
+  await page.goto("/?debug=1");
+  await page.getByTestId("scenario-pack-input").setInputFiles(defaultPackFiles(["manifest.md", "world.md", "items.md", "enemies.md", "encounters.md", "treasure.md", "progression.md", "dungeons/b1f.md", "dungeons/b2f.md", "dungeons/b3f.md", "dungeons/b4f.md", "dungeons/b5f.md", "dungeons/b6f.md", "dungeons/b7f.md", "dungeons/b8f.md"]));
+  await expect(page.getByText("Loaded Black Stela - Gate of Ash (8 floors).")).toBeVisible();
+  await page.screenshot({ path: "test-results/screenshot-review/scenario-import-success.png", fullPage: true });
+
+  await page.goto("/?debug=1&progress=floor_2");
+  await expect(page.getByRole("heading", { name: /Landing of Split Dust/ })).toBeVisible();
+  await page.screenshot({ path: "test-results/screenshot-review/desktop-b2f-entry.png", fullPage: true });
+});
+
+function defaultPackFiles(relativePaths: string[]) {
+  return relativePaths.map((relativePath) => ({
+    name: relativePath.replaceAll("/", "__"),
+    mimeType: "text/markdown",
+    buffer: readFileSync(join(process.cwd(), "content/worlds/default", relativePath))
+  }));
+}

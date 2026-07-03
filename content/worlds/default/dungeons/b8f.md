@@ -10,6 +10,43 @@ tags:
   - boss
 authorNotes: Final commitment area and return-path pressure.
 startRoom: room.b8f.001
+grid:
+  cells:
+    - id: cell.b8f.001
+      roomId: room.b8f.001
+      x: 0
+      y: 0
+      edges:
+        west:
+          kind: stairs
+          targetRoomId: room.b7f.001
+          targetFloorId: dungeon.b7f
+        east:
+          kind: open
+          targetRoomId: room.b8f.002
+          targetCellId: cell.b8f.002
+    - id: cell.b8f.002
+      roomId: room.b8f.002
+      x: 1
+      y: 0
+      edges:
+        west:
+          kind: open
+          targetRoomId: room.b8f.001
+          targetCellId: cell.b8f.001
+        east:
+          kind: open
+          targetRoomId: room.b8f.003
+          targetCellId: cell.b8f.003
+    - id: cell.b8f.003
+      roomId: room.b8f.003
+      x: 2
+      y: 0
+      edges:
+        west:
+          kind: open
+          targetRoomId: room.b8f.002
+          targetCellId: cell.b8f.002
 rooms:
   - id: room.b8f.001
     name: Ash Gate Approach

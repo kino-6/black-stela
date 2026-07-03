@@ -59,6 +59,8 @@ export interface PartyCoverageItem {
 
 export type StarterTemplateId = "balanced" | "cautious" | "treasure" | "aggressive" | "beginner";
 
+export const PARTY_SIZE_LIMIT = 6;
+
 export const classCatalog: CharacterClassDefinition[] = [
   {
     id: "vanguard",
@@ -140,9 +142,11 @@ export const starterTemplates: Record<StarterTemplateId, { label: LocalizedLabel
     label: { en: "Balanced", ja: "均衡" },
     members: [
       { name: "Rook", classId: "vanguard", backgroundId: "watch", traitIds: ["steady"], method: "template" },
+      { name: "Bran", classId: "vanguard", backgroundId: "debtor", traitIds: ["scarred"], method: "template" },
       { name: "Vale", classId: "seeker", backgroundId: "ruinborn", traitIds: ["curious"], method: "template" },
       { name: "Sei", classId: "mender", backgroundId: "apothecary", traitIds: ["steady"], method: "template" },
-      { name: "Mira", classId: "occultist", backgroundId: "cartographer", traitIds: ["lucky"], method: "template" }
+      { name: "Mira", classId: "occultist", backgroundId: "cartographer", traitIds: ["lucky"], method: "template" },
+      { name: "Lio", classId: "mender", backgroundId: "cartographer", traitIds: ["curious"], method: "template" }
     ]
   },
   cautious: {
@@ -150,8 +154,10 @@ export const starterTemplates: Record<StarterTemplateId, { label: LocalizedLabel
     members: [
       { name: "Rook", classId: "vanguard", backgroundId: "watch", traitIds: ["scarred"], method: "template" },
       { name: "Bran", classId: "vanguard", backgroundId: "debtor", traitIds: ["steady"], method: "template" },
+      { name: "Kest", classId: "seeker", backgroundId: "cartographer", traitIds: ["curious"], method: "template" },
       { name: "Sei", classId: "mender", backgroundId: "apothecary", traitIds: ["steady"], method: "template" },
-      { name: "Mira", classId: "occultist", backgroundId: "cartographer", traitIds: ["grim"], method: "template" }
+      { name: "Mira", classId: "occultist", backgroundId: "cartographer", traitIds: ["grim"], method: "template" },
+      { name: "Nera", classId: "mender", backgroundId: "watch", traitIds: ["steady"], method: "template" }
     ]
   },
   treasure: {
@@ -160,7 +166,9 @@ export const starterTemplates: Record<StarterTemplateId, { label: LocalizedLabel
       { name: "Vale", classId: "seeker", backgroundId: "ruinborn", traitIds: ["lucky"], method: "template" },
       { name: "Kest", classId: "seeker", backgroundId: "cartographer", traitIds: ["curious"], method: "template" },
       { name: "Rook", classId: "vanguard", backgroundId: "debtor", traitIds: ["grim"], method: "template" },
-      { name: "Sei", classId: "mender", backgroundId: "apothecary", traitIds: ["steady"], method: "template" }
+      { name: "Sei", classId: "mender", backgroundId: "apothecary", traitIds: ["steady"], method: "template" },
+      { name: "Mira", classId: "occultist", backgroundId: "cartographer", traitIds: ["lucky"], method: "template" },
+      { name: "Lio", classId: "mender", backgroundId: "watch", traitIds: ["curious"], method: "template" }
     ]
   },
   aggressive: {
@@ -169,7 +177,9 @@ export const starterTemplates: Record<StarterTemplateId, { label: LocalizedLabel
       { name: "Rook", classId: "vanguard", backgroundId: "debtor", traitIds: ["scarred"], method: "template" },
       { name: "Ash", classId: "vanguard", backgroundId: "watch", traitIds: ["grim"], method: "template" },
       { name: "Vale", classId: "seeker", backgroundId: "ruinborn", traitIds: ["curious"], method: "template" },
-      { name: "Mira", classId: "occultist", backgroundId: "cartographer", traitIds: ["lucky"], method: "template" }
+      { name: "Mira", classId: "occultist", backgroundId: "cartographer", traitIds: ["lucky"], method: "template" },
+      { name: "Sei", classId: "mender", backgroundId: "apothecary", traitIds: ["steady"], method: "template" },
+      { name: "Nera", classId: "occultist", backgroundId: "watch", traitIds: ["grim"], method: "template" }
     ]
   },
   beginner: {
@@ -177,8 +187,10 @@ export const starterTemplates: Record<StarterTemplateId, { label: LocalizedLabel
     members: [
       { name: "Rook", classId: "vanguard", backgroundId: "watch", traitIds: ["steady"], method: "template" },
       { name: "Vale", classId: "seeker", backgroundId: "ruinborn", traitIds: ["lucky"], method: "template" },
+      { name: "Bran", classId: "vanguard", backgroundId: "debtor", traitIds: ["steady"], method: "template" },
       { name: "Sei", classId: "mender", backgroundId: "apothecary", traitIds: ["steady"], method: "template" },
-      { name: "Lio", classId: "mender", backgroundId: "cartographer", traitIds: ["curious"], method: "template" }
+      { name: "Lio", classId: "mender", backgroundId: "cartographer", traitIds: ["curious"], method: "template" },
+      { name: "Mira", classId: "occultist", backgroundId: "cartographer", traitIds: ["lucky"], method: "template" }
     ]
   }
 };
@@ -214,6 +226,7 @@ export function createGuildCharacter(input: GuildCharacterInput): Character {
     traitIds,
     accentColor: input.accentColor ?? accentColors[hashSeed(trimmedName) % accentColors.length],
     startingEquipment: equipment,
+    equipment: {},
     creation: {
       method: input.method ?? "detailed",
       seed: input.seed,

@@ -13,6 +13,9 @@ export type Command =
   | { type: "attack" }
   | { type: "defend" }
   | { type: "use_item"; itemId: string; targetCharacterId: string }
+  | { type: "buy_item"; shopId: string; itemId: string }
+  | { type: "sell_item"; itemId: string }
+  | { type: "equip_item"; characterId: string; equipmentId: string }
   | { type: "declare_round"; actions: CombatActionDeclaration[] }
   | { type: "retreat" }
   | { type: "recover_party" }
@@ -20,6 +23,7 @@ export type Command =
 
 export type CombatRow = "front" | "back";
 export type CombatActionKind = "attack" | "defend" | "use_item" | "cast";
+export type EquipmentSlot = "weapon" | "armor" | "accessory";
 export type CharacterClassId = "vanguard" | "seeker" | "mender" | "occultist";
 export type CharacterBackgroundId = "watch" | "ruinborn" | "apothecary" | "debtor" | "cartographer";
 export type CharacterTraitId = "steady" | "scarred" | "lucky" | "grim" | "curious";
@@ -61,6 +65,7 @@ export interface Character {
   traitIds: CharacterTraitId[];
   accentColor: string;
   startingEquipment: string[];
+  equipment: Partial<Record<EquipmentSlot, string>>;
   creation: CharacterCreationHistory;
   memory: RosterMemory;
   portraitRef?: string;
@@ -83,9 +88,13 @@ export interface Character {
 export interface InventoryItem {
   id: string;
   name: string;
-  kind: "healing" | "utility";
+  kind: "healing" | "utility" | "key" | "treasure" | "equipment";
   quantity: number;
   healAmount?: number;
+  slot?: EquipmentSlot;
+  attackBonus?: number;
+  defenseBonus?: number;
+  sellValue?: number;
 }
 
 export interface AdventureLogEntry {
@@ -124,7 +133,12 @@ export type GameEvent =
   | { type: "character_injured"; characterId: string; characterName: string; injury: "wounded" }
   | { type: "party_defended"; enemyId: string; enemyName: string; damage: number }
   | { type: "item_used"; itemId: string; itemName: string; targetCharacterId: string; targetName: string; healAmount: number }
-  | { type: "party_recovered" }
+  | { type: "inventory_item_gained"; itemId: string; itemName: string; quantity: number; source: "treasure" | "reward" }
+  | { type: "item_bought"; itemId: string; itemName: string; gold: number }
+  | { type: "item_sold"; itemId: string; itemName: string; gold: number }
+  | { type: "equipment_changed"; itemId: string; characterName: string; itemName: string; slot: EquipmentSlot }
+  | { type: "party_recovered"; gold: number }
+  | { type: "recovery_blocked"; goldRequired: number; goldAvailable: number }
   | { type: "party_retreated" }
   | { type: "returned_to_town" }
   | { type: "debug_started"; text: string };
@@ -202,14 +216,17 @@ export interface CombatActionDeclaration {
 
 export interface DungeonPosition {
   roomId: string;
+  cellId?: string;
   facing: Direction;
 }
 
 export interface DungeonMapState {
   floorId: string | null;
   currentRoomId: string | null;
+  currentCellId?: string | null;
   currentFacing: Direction | null;
   visitedRooms: string[];
+  visitedCells?: string[];
   knownExits: Partial<Record<string, Direction[]>>;
   blockedExits: Partial<Record<string, Direction[]>>;
   secretCandidates: Partial<Record<string, Direction[]>>;
@@ -224,6 +241,8 @@ export interface GameState {
   resolvedTraps: string[];
   discoveredSecrets: string[];
   inventory: InventoryItem[];
+  partyGold: number;
+  claimedTreasures: string[];
   map: DungeonMapState;
   log: AdventureLogEntry[];
   turn: number;
@@ -255,6 +274,7 @@ export interface DungeonFloor {
   id: string;
   name: string;
   startRoom: string;
+  grid?: DungeonGrid;
   rooms: DungeonRoom[];
   level?: number;
   role?: FloorRole;
@@ -262,6 +282,25 @@ export interface DungeonFloor {
   recommendedPartyLevel?: number;
   tags?: string[];
   authorNotes?: string;
+}
+
+export interface DungeonGrid {
+  cells: DungeonGridCell[];
+}
+
+export interface DungeonGridCell {
+  id: string;
+  roomId: string;
+  x: number;
+  y: number;
+  edges: Partial<Record<Direction, DungeonGridEdge>>;
+}
+
+export interface DungeonGridEdge {
+  kind: "open" | "wall" | "door" | "locked" | "secret" | "one_way" | "shortcut" | "stairs";
+  targetRoomId?: string;
+  targetCellId?: string;
+  targetFloorId?: string;
 }
 
 export interface DungeonRoom {

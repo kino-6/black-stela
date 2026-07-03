@@ -1,6 +1,7 @@
 import type { Character, GameState } from "./types";
 import { appendEventLogs } from "./replayLog";
-import { createLegacyGuildCharacter } from "./characterCreation";
+import { createLegacyGuildCharacter, PARTY_SIZE_LIMIT } from "./characterCreation";
+import { STARTING_PARTY_GOLD } from "./economy";
 
 export function createInitialGameState(): GameState {
   return {
@@ -20,11 +21,15 @@ export function createInitialGameState(): GameState {
         healAmount: 6
       }
     ],
+    partyGold: STARTING_PARTY_GOLD,
+    claimedTreasures: [],
     map: {
       floorId: null,
       currentRoomId: null,
+      currentCellId: null,
       currentFacing: null,
       visitedRooms: [],
+      visitedCells: [],
       knownExits: {},
       blockedExits: {},
       secretCandidates: {}
@@ -40,6 +45,10 @@ export function createCharacter(input: { name: string; notes: string; portraitRe
 }
 
 export function addCharacter(state: GameState, character: Character): GameState {
+  if (state.party.length >= PARTY_SIZE_LIMIT) {
+    return state;
+  }
+
   const next = {
     ...state,
     party: [...state.party, character]

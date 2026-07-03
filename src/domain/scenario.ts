@@ -1,6 +1,6 @@
 import yaml from "js-yaml";
 import { z } from "zod";
-import type { Direction, DungeonFloor, ScenarioWorld } from "./types";
+import type { Direction, DungeonFloor, DungeonGridCell, DungeonGridEdge, ScenarioWorld } from "./types";
 
 const directionSchema = z.enum(["north", "east", "south", "west"]);
 const floorRoleSchema = z.enum([
@@ -141,6 +141,21 @@ const explorationGateSchema = z.object({
   locales: z.record(z.object({ clue: z.string().min(1).optional() })).optional()
 });
 
+const gridEdgeSchema = z.object({
+  kind: z.enum(["open", "wall", "door", "locked", "secret", "one_way", "shortcut", "stairs"]),
+  targetRoomId: z.string().min(1).optional(),
+  targetCellId: z.string().min(1).optional(),
+  targetFloorId: z.string().min(1).optional()
+});
+
+const gridCellSchema = z.object({
+  id: z.string().min(1),
+  roomId: z.string().min(1),
+  x: z.number().int(),
+  y: z.number().int(),
+  edges: z.record(directionSchema, gridEdgeSchema).default({})
+});
+
 const roomSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
@@ -170,6 +185,7 @@ export const dungeonFloorSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
   startRoom: z.string().min(1),
+  grid: z.object({ cells: z.array(gridCellSchema).min(1) }).optional(),
   level: z.number().int().positive().optional(),
   role: floorRoleSchema.optional(),
   dangerTier: z.number().int().positive().optional(),
@@ -319,5 +335,43 @@ export function getLocalizedRoomText(world: ScenarioWorld, roomId: string, local
 }
 
 export function getExit(world: ScenarioWorld, roomId: string, direction: Direction) {
+  const edge = getGridEdge(world, roomId, direction);
+  if (edge) {
+    return isTraversableEdge(edge) ? edge.targetRoomId : undefined;
+  }
+
   return getRoom(world, roomId).exits[direction];
+}
+
+export function getFloorForRoom(world: ScenarioWorld, roomId: string) {
+  return world.dungeons.find((dungeon) => dungeon.rooms.some((room) => room.id === roomId)) ?? null;
+}
+
+export function getFloorIdForRoom(world: ScenarioWorld, roomId: string) {
+  return getFloorForRoom(world, roomId)?.id ?? null;
+}
+
+export function getGridCellForRoom(world: ScenarioWorld, roomId: string) {
+  const floor = getFloorForRoom(world, roomId);
+  return floor?.grid?.cells.find((cell) => cell.roomId === roomId) ?? null;
+}
+
+export function getGridEdge(world: ScenarioWorld, roomId: string, direction: Direction) {
+  return getGridCellForRoom(world, roomId)?.edges[direction] ?? null;
+}
+
+export function isTraversableEdge(edge: DungeonGridEdge) {
+  return ["open", "door", "one_way", "shortcut", "stairs"].includes(edge.kind) && Boolean(edge.targetRoomId);
+}
+
+export function getKnownGridDirections(world: ScenarioWorld, roomId: string) {
+  const cell = getGridCellForRoom(world, roomId);
+  if (!cell) {
+    return Object.keys(getRoom(world, roomId).exits) as Direction[];
+  }
+
+  return (Object.keys(cell.edges) as Direction[]).filter((direction) => {
+    const edge = cell.edges[direction];
+    return edge ? edge.kind !== "wall" : false;
+  });
 }

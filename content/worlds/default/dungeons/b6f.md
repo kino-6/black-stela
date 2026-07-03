@@ -10,6 +10,47 @@ tags:
   - traps
 authorNotes: Stronger traps and role checks without hard-locking party builds.
 startRoom: room.b6f.001
+grid:
+  cells:
+    - id: cell.b6f.001
+      roomId: room.b6f.001
+      x: 0
+      y: 0
+      edges:
+        west:
+          kind: stairs
+          targetRoomId: room.b5f.003
+          targetFloorId: dungeon.b5f
+        east:
+          kind: open
+          targetRoomId: room.b6f.002
+          targetCellId: cell.b6f.002
+    - id: cell.b6f.002
+      roomId: room.b6f.002
+      x: 1
+      y: 0
+      edges:
+        west:
+          kind: open
+          targetRoomId: room.b6f.001
+          targetCellId: cell.b6f.001
+        south:
+          kind: open
+          targetRoomId: room.b6f.003
+          targetCellId: cell.b6f.003
+    - id: cell.b6f.003
+      roomId: room.b6f.003
+      x: 1
+      y: 1
+      edges:
+        north:
+          kind: open
+          targetRoomId: room.b6f.002
+          targetCellId: cell.b6f.002
+        east:
+          kind: stairs
+          targetRoomId: room.b7f.001
+          targetFloorId: dungeon.b7f
 rooms:
   - id: room.b6f.001
     name: Vow Passage

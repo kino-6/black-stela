@@ -4,6 +4,10 @@ Use this checklist before shipping normal-play UI, copy, controls, or DRPG
 presentation. Any blocking red flag must be fixed or explicitly moved behind
 debug mode.
 
+Also check [`past-trouble-regression-gate.md`](past-trouble-regression-gate.md)
+before claiming done. Repeating a recorded trouble is a blocking failure even if
+new tests pass.
+
 ## Blocking
 
 - Title screen contains explanatory product copy, AI copy, provider names,
@@ -15,6 +19,11 @@ debug mode.
 - A clear path depends on hidden commands, scenario truth, or debug state that a
   player cannot see.
 - `Return` appears before the room has an authored stair or return seal.
+- `Return` is hidden correctly, but the authored stair/return seal or next-floor
+  descent is not visible and usable through normal controls.
+- A reachable room cannot route back to town without debug knowledge.
+- A multi-floor scenario claims depth but has no player-visible route to the
+  next floor.
 - Enemy, door, stair, trap, wall, or side opening exists only in text/logs and
   is not visually signaled in the dungeon view.
 - Minimap reveals rooms the party has not discovered through known exits.
@@ -24,6 +33,9 @@ debug mode.
   form chrome instead of diegetic game surfaces.
 - Character creation is only a name/notes form when the task promises guild
   registration, roles, identity, or party coverage.
+- Scenario or UI prose sounds like translated English, explains theme directly,
+  or uses abstract fantasy filler instead of concrete scene detail.
+- The task does not state which past trouble was considered.
 
 ## Advisory
 
@@ -34,6 +46,8 @@ debug mode.
 - Headless success is used as evidence for visual affordance or UX quality.
 - The feature is explained by prose instead of being visible through layout,
   art, state, or control behavior.
+- Town, room, or event copy tells the player what the party feels or what story
+  they should imagine.
 
 ## Required Evidence
 

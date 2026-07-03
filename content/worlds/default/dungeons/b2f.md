@@ -10,6 +10,55 @@ tags:
   - shortcut
 authorNotes: Introduces branch choice, locked shortcut, and a stronger hallway mix.
 startRoom: room.b2f.001
+grid:
+  cells:
+    - id: cell.b2f.001
+      roomId: room.b2f.001
+      x: 0
+      y: 0
+      edges:
+        west:
+          kind: stairs
+          targetRoomId: room.b1f.003
+          targetFloorId: dungeon.b1f
+        east:
+          kind: open
+          targetRoomId: room.b2f.002
+          targetCellId: cell.b2f.002
+        south:
+          kind: shortcut
+          targetRoomId: room.b2f.003
+          targetCellId: cell.b2f.003
+    - id: cell.b2f.002
+      roomId: room.b2f.002
+      x: 1
+      y: 0
+      edges:
+        west:
+          kind: open
+          targetRoomId: room.b2f.001
+          targetCellId: cell.b2f.001
+        south:
+          kind: open
+          targetRoomId: room.b2f.003
+          targetCellId: cell.b2f.003
+    - id: cell.b2f.003
+      roomId: room.b2f.003
+      x: 1
+      y: 1
+      edges:
+        north:
+          kind: open
+          targetRoomId: room.b2f.002
+          targetCellId: cell.b2f.002
+        east:
+          kind: stairs
+          targetRoomId: room.b3f.001
+          targetFloorId: dungeon.b3f
+        west:
+          kind: shortcut
+          targetRoomId: room.b2f.001
+          targetCellId: cell.b2f.001
 rooms:
   - id: room.b2f.001
     name: Landing of Split Dust

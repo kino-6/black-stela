@@ -10,10 +10,55 @@ tags:
   - shortcut
 authorNotes: Midpoint gate, miniboss, and economy pressure.
 startRoom: room.b5f.001
+grid:
+  cells:
+    - id: cell.b5f.001
+      roomId: room.b5f.001
+      x: 0
+      y: 0
+      edges:
+        west:
+          kind: stairs
+          targetRoomId: room.b4f.003
+          targetFloorId: dungeon.b4f
+        east:
+          kind: open
+          targetRoomId: room.b5f.002
+          targetCellId: cell.b5f.002
+    - id: cell.b5f.002
+      roomId: room.b5f.002
+      x: 1
+      y: 0
+      edges:
+        west:
+          kind: open
+          targetRoomId: room.b5f.001
+          targetCellId: cell.b5f.001
+        east:
+          kind: open
+          targetRoomId: room.b5f.003
+          targetCellId: cell.b5f.003
+    - id: cell.b5f.003
+      roomId: room.b5f.003
+      x: 2
+      y: 0
+      edges:
+        west:
+          kind: open
+          targetRoomId: room.b5f.002
+          targetCellId: cell.b5f.002
+        north:
+          kind: shortcut
+          targetRoomId: room.b2f.001
+          targetFloorId: dungeon.b2f
+        east:
+          kind: stairs
+          targetRoomId: room.b6f.001
+          targetFloorId: dungeon.b6f
 rooms:
   - id: room.b5f.001
     name: Cinder Toll Hall
-    description: A stone bowl waits on a pedestal, full of gray finger bones.
+    description: A stone bowl sits on a pedestal, full of gray finger bones.
     locales:
       ja:
         name: 灰税の広間

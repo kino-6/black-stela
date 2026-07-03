@@ -26,6 +26,13 @@ const CharacterSchema = z.object({
   traitIds: z.array(z.enum(["steady", "scarred", "lucky", "grim", "curious"])).default(["steady"]),
   accentColor: z.string().default("#c9a765"),
   startingEquipment: z.array(z.string().min(1)).default(["worn mail", "short sword"]),
+  equipment: z
+    .object({
+      weapon: z.string().min(1).optional(),
+      armor: z.string().min(1).optional(),
+      accessory: z.string().min(1).optional()
+    })
+    .default({}),
   creation: z
     .object({
       method: z.enum(["legacy", "quick", "detailed", "template", "debug"]).default("legacy"),
@@ -71,9 +78,13 @@ const CharacterSchema = z.object({
 const InventoryItemSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
-  kind: z.enum(["healing", "utility"]),
+  kind: z.enum(["healing", "utility", "key", "treasure", "equipment"]),
   quantity: z.number().int().nonnegative(),
-  healAmount: z.number().int().positive().optional()
+  healAmount: z.number().int().positive().optional(),
+  slot: z.enum(["weapon", "armor", "accessory"]).optional(),
+  attackBonus: z.number().int().optional(),
+  defenseBonus: z.number().int().optional(),
+  sellValue: z.number().int().nonnegative().optional()
 });
 
 const EnemySchema = z.object({
@@ -147,14 +158,17 @@ const CombatStateSchema = z.object({
 
 const DungeonPositionSchema = z.object({
   roomId: z.string().min(1),
+  cellId: z.string().min(1).optional(),
   facing: DirectionSchema
 });
 
 const DungeonMapStateSchema = z.object({
   floorId: z.string().nullable().default(null),
   currentRoomId: z.string().nullable().default(null),
+  currentCellId: z.string().nullable().default(null),
   currentFacing: DirectionSchema.nullable().default(null),
   visitedRooms: z.array(z.string().min(1)),
+  visitedCells: z.array(z.string().min(1)).default([]),
   knownExits: z.record(z.array(DirectionSchema)),
   blockedExits: z.record(z.array(DirectionSchema)).default({}),
   secretCandidates: z.record(z.array(DirectionSchema)).default({})
@@ -177,6 +191,8 @@ export const GameStateSchema = z.object({
   resolvedTraps: z.array(z.string()),
   discoveredSecrets: z.array(z.string()),
   inventory: z.array(InventoryItemSchema).default([]),
+  partyGold: z.number().int().nonnegative().default(75),
+  claimedTreasures: z.array(z.string()).default([]),
   map: DungeonMapStateSchema,
   log: z.array(AdventureLogEntrySchema),
   turn: z.number().int().nonnegative(),

@@ -10,14 +10,55 @@ tags:
   - rare-reward
 authorNotes: Optional high-risk side objective before the finale.
 startRoom: room.b7f.001
+grid:
+  cells:
+    - id: cell.b7f.001
+      roomId: room.b7f.001
+      x: 0
+      y: 0
+      edges:
+        west:
+          kind: stairs
+          targetRoomId: room.b6f.003
+          targetFloorId: dungeon.b6f
+        east:
+          kind: stairs
+          targetRoomId: room.b8f.001
+          targetFloorId: dungeon.b8f
+        south:
+          kind: door
+          targetRoomId: room.b7f.002
+          targetCellId: cell.b7f.002
+    - id: cell.b7f.002
+      roomId: room.b7f.002
+      x: 0
+      y: 1
+      edges:
+        north:
+          kind: door
+          targetRoomId: room.b7f.001
+          targetCellId: cell.b7f.001
+        east:
+          kind: locked
+          targetRoomId: room.b7f.003
+          targetCellId: cell.b7f.003
+    - id: cell.b7f.003
+      roomId: room.b7f.003
+      x: 1
+      y: 1
+      edges:
+        west:
+          kind: door
+          targetRoomId: room.b7f.002
+          targetCellId: cell.b7f.002
 rooms:
   - id: room.b7f.001
     name: Fork of Quiet Vaults
-    description: A lower passage continues east; a sealed vault waits south.
+    description: A lower passage continues east; a sealed vault lies south.
     locales:
       ja:
         name: 静かな納骨庫の分岐
-        description: 低い通路は東へ続き、封じた納骨庫が南で待つ。
+        description: 低い通路は東へ続き、南の封じ石から冷気がにじむ。
     exits:
       west: room.b6f.003
       east: room.b8f.001

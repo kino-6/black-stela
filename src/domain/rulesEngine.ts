@@ -1,5 +1,14 @@
 import { appendEventLogs } from "./replayLog";
-import { getExit, getRoom } from "./scenario";
+import { getExit, getFloorIdForRoom, getGridCellForRoom, getKnownGridDirections, getRoom } from "./scenario";
+import {
+  addInventoryItem,
+  calculateRecoveryCost,
+  createInventoryItemFromCatalog,
+  findEquipment,
+  getEffectiveCharacterStats,
+  getEquipmentSlot,
+  removeInventoryItem
+} from "./economy";
 import type {
   Character,
   CombatActionDeclaration,
@@ -58,13 +67,19 @@ export function resolveCommand(state: GameState, world: ScenarioWorld, command: 
     case "disarm_trap":
       return disarmTrap(state, world);
     case "attack":
-      return attack(state);
+      return attack(state, world);
     case "defend":
       return defend(state);
     case "use_item":
       return useItem(state, command.itemId, command.targetCharacterId);
+    case "buy_item":
+      return buyItem(state, world, command.shopId, command.itemId);
+    case "sell_item":
+      return sellItem(state, world, command.itemId);
+    case "equip_item":
+      return equipItem(state, world, command.characterId, command.equipmentId);
     case "declare_round":
-      return declareRound(state, command.actions);
+      return declareRound(state, world, command.actions);
     case "retreat":
       return retreat(state);
     case "recover_party":
@@ -82,11 +97,13 @@ function enterDungeon(state: GameState, world: ScenarioWorld): CommandResult {
   }
 
   const roomVisit = visitRoom(state, world, world.startRoom, "east");
-  const next: GameState = {
+  const startCell = getGridCellForRoom(world, world.startRoom);
+  let next: GameState = {
     ...state,
     phase: "dungeon",
     position: {
       roomId: world.startRoom,
+      cellId: startCell?.id,
       facing: "east"
     },
     combat: null,
@@ -94,6 +111,9 @@ function enterDungeon(state: GameState, world: ScenarioWorld): CommandResult {
     map: roomVisit.map,
     turn: state.turn + 1
   };
+  const startRoom = getRoom(world, world.startRoom);
+  const treasure = collectRoomTreasure(next, world, startRoom.id, startRoom.treasureTable);
+  next = treasure.state;
 
   return withEvents(next, [
     {
@@ -101,7 +121,8 @@ function enterDungeon(state: GameState, world: ScenarioWorld): CommandResult {
       roomId: world.startRoom,
       facing: "east"
     },
-    ...roomVisit.events
+    ...roomVisit.events,
+    ...treasure.events
   ]);
 }
 
@@ -163,17 +184,23 @@ function moveForward(state: GameState, world: ScenarioWorld): CommandResult {
 
   const room = getRoom(world, exit);
   const roomVisit = visitRoom(state, world, exit, state.position.facing);
+  const targetCell = getGridCellForRoom(world, exit);
   const events: GameEvent[] = [{ type: "room_entered", roomId: room.id, roomName: room.name }, ...roomVisit.events];
   let next: GameState = {
     ...state,
     position: {
       ...state.position,
-      roomId: exit
+      roomId: exit,
+      cellId: targetCell?.id
     },
     party: markDeepestFloor(state.party, roomVisit.map.floorId ?? state.map.floorId),
     map: roomVisit.map,
     turn: state.turn + 1
   };
+
+  const treasure = collectRoomTreasure(next, world, room.id, room.treasureTable);
+  next = treasure.state;
+  events.push(...treasure.events);
 
   if (room.trap && !state.resolvedTraps.includes(room.trap.id)) {
     next = {
@@ -257,7 +284,7 @@ function disarmTrap(state: GameState, world: ScenarioWorld): CommandResult {
   return withEvents(next, [{ type: "trap_disarmed", trapId: room.trap.id, trapName: room.trap.name }]);
 }
 
-function attack(state: GameState): CommandResult {
+function attack(state: GameState, world: ScenarioWorld): CommandResult {
   if (state.phase !== "combat" || !state.combat) {
     return noChange(state);
   }
@@ -269,10 +296,10 @@ function attack(state: GameState): CommandResult {
     return noChange(state);
   }
 
-  return declareRound({ ...state, combat }, [{ actorId: actor.id, action: "attack", targetGroupId: target.id }]);
+  return declareRound({ ...state, combat }, world, [{ actorId: actor.id, action: "attack", targetGroupId: target.id }]);
 }
 
-function declareRound(state: GameState, actions: CombatActionDeclaration[]): CommandResult {
+function declareRound(state: GameState, world: ScenarioWorld, actions: CombatActionDeclaration[]): CommandResult {
   if (state.phase !== "combat" || !state.combat) {
     return noChange(state);
   }
@@ -332,13 +359,14 @@ function declareRound(state: GameState, actions: CombatActionDeclaration[]): Com
       continue;
     }
 
+    const actorStats = getEffectiveCharacterStats(actor, world);
     const hitRoll = rollPercent(`${state.turn}:${combat.round}:${actor.id}:${group.id}:hit`);
-    if (hitRoll > actor.accuracy) {
+    if (hitRoll > actorStats.accuracy) {
       summaries.push(`${actor.name} misses ${group.name}.`);
       continue;
     }
 
-    const damage = rollDamage(`${state.turn}:${combat.round}:${actor.id}:${group.id}:damage`, actor.damageMin, actor.damageMax, group.armor);
+    const damage = rollDamage(`${state.turn}:${combat.round}:${actor.id}:${group.id}:damage`, actorStats.damageMin, actorStats.damageMax, group.armor);
     enemyGroups = damageGroup(enemyGroups, group.id, damage);
     const updated = enemyGroups.find((candidate) => candidate.id === group.id);
     summaries.push(`${actor.name} hits ${group.name} for ${damage}. ${updated?.count ?? 0} remain.`);
@@ -363,6 +391,7 @@ function declareRound(state: GameState, actions: CombatActionDeclaration[]): Com
           notableVictories: Array.from(new Set([...member.memory.notableVictories, ...defeatedNames]))
         }
       })),
+      partyGold: state.partyGold + gold,
       inventory,
       defeatedEnemies: Array.from(new Set([...state.defeatedEnemies, ...defeatedEnemyIds])),
       turn: state.turn + 1
@@ -396,8 +425,9 @@ function declareRound(state: GameState, actions: CombatActionDeclaration[]): Com
       continue;
     }
 
+    const targetStats = getEffectiveCharacterStats(target, world);
     const guarded = target.status?.includes("ward");
-    const armor = target.armor + (guarded ? 2 : 0);
+    const armor = targetStats.armor + (guarded ? 2 : 0);
     const damage = rollDamage(`${state.turn}:${combat.round}:${group.id}:${target.id}:damage`, group.damageMin, group.damageMax, armor);
     party = party.map((member) => {
       if (member.id !== target.id) {
@@ -499,6 +529,102 @@ function useItem(state: GameState, itemId: string, targetCharacterId: string): C
   ]);
 }
 
+function buyItem(state: GameState, world: ScenarioWorld, shopId: string, itemId: string): CommandResult {
+  if (state.phase !== "town") {
+    return noChange(state);
+  }
+
+  const shop = world.shops.find((candidate) => candidate.id === shopId);
+  const stock = shop?.stock?.find((candidate) => candidate.itemId === itemId);
+  if (!shop || !stock || !isStockAvailable(stock, state)) {
+    return noChange(state);
+  }
+
+  if (state.partyGold < stock.price) {
+    return noChange(state);
+  }
+
+  const item = createInventoryItemFromCatalog(world, itemId, 1);
+  if (!item) {
+    return noChange(state);
+  }
+
+  const next: GameState = {
+    ...state,
+    partyGold: state.partyGold - stock.price,
+    inventory: addInventoryItem(state.inventory, item),
+    turn: state.turn + 1
+  };
+
+  return withEvents(next, [{ type: "item_bought", itemId, itemName: item.name, gold: stock.price }]);
+}
+
+function sellItem(state: GameState, world: ScenarioWorld, itemId: string): CommandResult {
+  if (state.phase !== "town") {
+    return noChange(state);
+  }
+
+  const item = state.inventory.find((candidate) => candidate.id === itemId && candidate.quantity > 0);
+  if (!item) {
+    return noChange(state);
+  }
+  if (state.party.some((member) => Object.values(member.equipment).includes(itemId))) {
+    return noChange(state);
+  }
+
+  const catalogValue =
+    item.sellValue ??
+    world.items.find((candidate) => candidate.id === itemId)?.sellValue ??
+    world.equipment.find((candidate) => candidate.id === itemId)?.sellValue ??
+    0;
+  if (catalogValue <= 0) {
+    return noChange(state);
+  }
+
+  const next: GameState = {
+    ...state,
+    partyGold: state.partyGold + catalogValue,
+    inventory: removeInventoryItem(state.inventory, itemId, 1),
+    turn: state.turn + 1
+  };
+
+  return withEvents(next, [{ type: "item_sold", itemId, itemName: item.name, gold: catalogValue }]);
+}
+
+function equipItem(state: GameState, world: ScenarioWorld, characterId: string, equipmentId: string): CommandResult {
+  if (state.phase !== "town") {
+    return noChange(state);
+  }
+
+  const item = state.inventory.find((candidate) => candidate.id === equipmentId && candidate.quantity > 0);
+  const equipment = findEquipment(world, equipmentId);
+  const slot = getEquipmentSlot(world, equipmentId);
+  const character = state.party.find((member) => member.id === characterId);
+  if (!item || item.kind !== "equipment" || !equipment || !slot || !character) {
+    return noChange(state);
+  }
+
+  const next: GameState = {
+    ...state,
+    party: state.party.map((member) =>
+      member.id === characterId
+        ? {
+            ...member,
+            equipment: {
+              ...member.equipment,
+              [slot]: equipmentId
+            }
+          }
+        : member
+    ),
+    turn: state.turn + 1
+  };
+
+  return withEvents(next, [
+    { type: "equipment_changed", itemId: equipmentId, characterName: character.name, itemName: equipment.name, slot }
+  ]);
+}
+
 function retreat(state: GameState): CommandResult {
   if (state.phase !== "combat") {
     return noChange(state);
@@ -573,6 +699,66 @@ function createEnemyGroup(enemy: Enemy, count: number): CombatEnemyGroup {
     role: enemy.role,
     status: []
   };
+}
+
+function collectRoomTreasure(
+  state: GameState,
+  world: ScenarioWorld,
+  roomId: string,
+  treasureTableId: string | undefined
+): { state: GameState; events: GameEvent[] } {
+  if (!treasureTableId || state.claimedTreasures.includes(roomId)) {
+    return { state, events: [] };
+  }
+
+  const entry = resolveTreasureTable(world, treasureTableId, `${roomId}:${state.turn}`);
+  if (!entry) {
+    return { state, events: [] };
+  }
+
+  const item = createInventoryItemFromCatalog(world, entry.itemId, entry.quantity ?? 1);
+  if (!item) {
+    return { state, events: [] };
+  }
+
+  return {
+    state: {
+      ...state,
+      inventory: addInventoryItem(state.inventory, item),
+      claimedTreasures: [...state.claimedTreasures, roomId]
+    },
+    events: [
+      {
+        type: "inventory_item_gained",
+        itemId: item.id,
+        itemName: item.name,
+        quantity: item.quantity,
+        source: "treasure"
+      }
+    ]
+  };
+}
+
+function resolveTreasureTable(world: ScenarioWorld, tableId: string, seed: string) {
+  const table = world.treasureTables.find((candidate) => candidate.id === tableId);
+  if (!table || table.entries.length === 0) {
+    return null;
+  }
+
+  const totalWeight = table.entries.reduce((total, entry) => total + entry.weight, 0);
+  let roll = hashSeed(seed) % totalWeight;
+  return table.entries.find((entry) => {
+    roll -= entry.weight;
+    return roll < 0;
+  }) ?? table.entries[0];
+}
+
+function isStockAvailable(stock: NonNullable<ScenarioWorld["shops"][number]["stock"]>[number], state: GameState) {
+  if (stock.availability === "unlocked" && stock.unlockFlag) {
+    return state.discoveredSecrets.includes(stock.unlockFlag);
+  }
+
+  return stock.availability !== "unlocked";
 }
 
 function normalizeCombat(combat: CombatState): CombatState {
@@ -741,9 +927,9 @@ function returnToTown(state: GameState, world: ScenarioWorld): CommandResult {
     map: {
       ...state.map,
       currentRoomId: null,
+      currentCellId: null,
       currentFacing: null
     },
-    party: state.party.map((member) => ({ ...member, hp: member.maxHp })),
     turn: state.turn + 1
   };
 
@@ -755,13 +941,25 @@ function recoverParty(state: GameState): CommandResult {
     return noChange(state);
   }
 
+  const cost = calculateRecoveryCost(state.party);
+  if (state.partyGold < cost) {
+    return withEvents(
+      {
+        ...state,
+        turn: state.turn + 1
+      },
+      [{ type: "recovery_blocked", goldRequired: cost, goldAvailable: state.partyGold }]
+    );
+  }
+
   const next: GameState = {
     ...state,
     party: state.party.map((member) => ({ ...member, hp: member.maxHp, injury: undefined })),
+    partyGold: state.partyGold - cost,
     turn: state.turn + 1
   };
 
-  return withEvents(next, [{ type: "party_recovered" }]);
+  return withEvents(next, [{ type: "party_recovered", gold: cost }]);
 }
 
 function markExpeditionStarted(party: Character[], floorId: string | null, turn: number) {
@@ -830,10 +1028,10 @@ function noChange(state: GameState): CommandResult {
 function visitRoom(state: GameState, world: ScenarioWorld, roomId: string, facing: Direction) {
   const room = getRoom(world, roomId);
   const floorId = getFloorIdForRoom(world, roomId) ?? world.startDungeon;
-  const visitedRooms = state.map.visitedRooms.includes(roomId)
-    ? state.map.visitedRooms
-    : [...state.map.visitedRooms, roomId];
-  const exits = Object.keys(room.exits) as Direction[];
+  const cell = getGridCellForRoom(world, roomId);
+  const visitedRooms = appendUnique(state.map.visitedRooms, roomId);
+  const visitedCells = cell ? appendUnique(state.map.visitedCells ?? [], cell.id) : (state.map.visitedCells ?? []);
+  const exits = getKnownGridDirections(world, room.id);
 
   return {
     events: [
@@ -844,14 +1042,20 @@ function visitRoom(state: GameState, world: ScenarioWorld, roomId: string, facin
       ...state.map,
       floorId,
       currentRoomId: roomId,
+      currentCellId: cell?.id ?? null,
       currentFacing: facing,
       visitedRooms,
+      visitedCells,
       knownExits: {
         ...state.map.knownExits,
         [roomId]: exits
       }
     }
   };
+}
+
+function appendUnique<T>(items: T[], item: T): T[] {
+  return items.includes(item) ? items : [...items, item];
 }
 
 function appendDirection(
@@ -868,8 +1072,4 @@ function appendDirection(
     ...current,
     [roomId]: [...directions, direction]
   };
-}
-
-function getFloorIdForRoom(world: ScenarioWorld, roomId: string) {
-  return world.dungeons.find((dungeon) => dungeon.rooms.some((room) => room.id === roomId))?.id ?? null;
 }

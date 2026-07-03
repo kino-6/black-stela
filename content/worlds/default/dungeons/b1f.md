@@ -10,14 +10,51 @@ tags:
   - mapping
 authorNotes: Teaches movement, map reading, first trap, combat, and safe retreat.
 startRoom: room.b1f.001
+grid:
+  cells:
+    - id: cell.b1f.001
+      roomId: room.b1f.001
+      x: 0
+      y: 0
+      edges:
+        east:
+          kind: door
+          targetRoomId: room.b1f.002
+          targetCellId: cell.b1f.002
+    - id: cell.b1f.002
+      roomId: room.b1f.002
+      x: 1
+      y: 0
+      edges:
+        west:
+          kind: door
+          targetRoomId: room.b1f.001
+          targetCellId: cell.b1f.001
+        east:
+          kind: open
+          targetRoomId: room.b1f.003
+          targetCellId: cell.b1f.003
+    - id: cell.b1f.003
+      roomId: room.b1f.003
+      x: 2
+      y: 0
+      edges:
+        west:
+          kind: open
+          targetRoomId: room.b1f.002
+          targetCellId: cell.b1f.002
+        east:
+          kind: stairs
+          targetRoomId: room.b2f.001
+          targetFloorId: dungeon.b2f
 rooms:
   - id: room.b1f.001
     name: Silent Stone Chamber
-    description: Cold fitted blocks surround the party. A narrow door waits to the east.
+    description: Cold fitted blocks press close. A narrow east door leaks dry air.
     locales:
       ja:
         name: 静まり返った石室
-        description: 冷たい切石が隊列を囲む。東には細い扉が待っている。
+        description: 冷たい切石が近く迫る。東の細い扉から乾いた空気が漏れる。
     exits:
       east: room.b1f.002
     doors:

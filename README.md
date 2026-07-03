@@ -20,9 +20,11 @@ controls player characters.
 - Custom portrait import from local image files
 - One editable dungeon floor in Markdown with YAML front matter
 - First-person Three.js dungeon view
-- Deterministic commands for movement, search, listening, combat, and retreat
+- Deterministic commands for movement, search, listening, combat, shop, equipment, and contextual return
 - Contextual return-stair action instead of an always-available return command
-- Trap, fixed event, simple enemy encounter, and recovery after reaching town
+- Trap, fixed event, tactical enemy encounter, treasure, shared party gold, and paid recovery
+- Town shop for basic consumables and starter equipment
+- Equipment that changes combat damage and armor through deterministic rules
 - Town records for canonical adventure events
 - Internal Ollama-compatible local narration proposal with deterministic fallback
 - AI policy guard that rejects player-character speech, player-character action, and game-truth mutation
@@ -165,7 +167,8 @@ debug progress state. It does not prove a player-facing clear.
 
 The command prints JSON containing `reachable`, `outcome`, selected progress,
 max step budget, command sequence, room-by-room trace, knowledge source, final
-phase, visited rooms, defeated enemies, and resolved traps. `engineReason`
+phase, return outcome, shared party gold, consumables, loot/reward logs, HP
+pressure, visited rooms, defeated enemies, and resolved traps. `engineReason`
 keeps the internal runner reason for debugging. It exits non-zero if the probe
 gets stuck or exceeds its step limit. You can also pass `--max-steps` when
 checking longer routes.
@@ -180,6 +183,16 @@ npm run test:e2e -- tests/e2e/player-clear.spec.ts
 
 That test clears through visible controls only and fails if `Return` appears
 before the party reaches a room with a return stair.
+
+Economy rules are intentionally conservative for the MVP:
+
+- Returning to town is not a free heal. It only works from authored return
+  stairs/seals.
+- Recovery is a town service that spends shared party gold and is blocked when
+  the party cannot pay.
+- Treasure tables and combat rewards update canonical state once; browser tests
+  assert visible reward feedback.
+- Shops expose authored stock and equipment choices, not a debug/admin editor.
 
 Run tactical-combat balance probes separately:
 
@@ -227,6 +240,12 @@ rooms:
 Keep exits, traps, enemies, events, and AI permissions in YAML so deterministic
 systems can validate them before play.
 
+Authoring references:
+
+- `docs/scenario/authoring.md` - pack structure, debug import, validation gates
+- `docs/scenario/first-scenario-bible.md` - current eight-floor scenario intent
+- `docs/playtest/first-scenario-notes.md` - manual B1F-B8F review checklist
+
 ## AI Policy
 
 The game must remain fully playable when the local narrator is unavailable.
@@ -259,6 +278,7 @@ Unit tests cover:
 - Scenario schema validation
 - Command-to-state transitions
 - Recovery instead of irreversible character deletion
+- Inventory, equipment, treasure, shared gold, shop, and paid recovery rules
 - Debug progress start-state construction
 - Headless deterministic reachability probe and room trace
 - Tactical combat round resolution and balance probes
@@ -274,6 +294,7 @@ E2E tests cover:
 - Move into combat
 - Resolve combat
 - Use a discovered stair to return to town
+- Buy, sell, equip, and pay recovery in town
 - Browser-visible clear using only player controls
 - Tactical combat actor/target/round controls
 - View the adventure log

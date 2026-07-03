@@ -5,7 +5,7 @@ test("switches to Japanese from title config and persists the selected language"
   await setTitleLanguage(page, "ja");
   await page.getByRole("button", { name: "新たな探索" }).click();
 
-  await expect(page.getByRole("heading", { name: "ギルド登録" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "冒険者登録" })).toBeVisible();
   await expect(page.getByRole("button", { name: "迷宮に入る" })).toBeVisible();
 
   await page.reload();
@@ -21,7 +21,7 @@ test("plays the MVP flow with Japanese room text and log projection", async ({ p
   await page.getByRole("button", { name: "迷宮に入る" }).click();
 
   await expect(page.getByRole("heading", { name: "静まり返った石室" })).toBeVisible();
-  await expect(page.getByText("隊列は黒い石碑の下へ降りた。")).toBeVisible();
+  await expect(page.getByText("治癒の水薬 を 1 個見つけた。")).toBeVisible();
 
   await page.getByRole("button", { name: "進む" }).click();
   await expect(page.getByRole("heading", { name: "戦闘" })).toBeVisible();
@@ -47,7 +47,7 @@ test("keeps Japanese layout usable on mobile", async ({ page }) => {
   await page.getByRole("button", { name: "冒険者を登録" }).click();
   await page.getByRole("button", { name: "迷宮に入る" }).click();
 
-  await expect(page.getByText("冷たい切石が隊列を囲む。東には細い扉が待っている。")).toBeVisible();
+  await expect(page.getByText("冷たい切石が近く迫る。東の細い扉から乾いた空気が漏れる。")).toBeVisible();
   const horizontalOverflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth);
   expect(horizontalOverflow).toBe(false);
 });

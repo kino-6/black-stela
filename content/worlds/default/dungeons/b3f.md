@@ -10,6 +10,47 @@ tags:
   - status
 authorNotes: Adds resource pressure and the first status-oriented enemy family.
 startRoom: room.b3f.001
+grid:
+  cells:
+    - id: cell.b3f.001
+      roomId: room.b3f.001
+      x: 0
+      y: 0
+      edges:
+        west:
+          kind: stairs
+          targetRoomId: room.b2f.003
+          targetFloorId: dungeon.b2f
+        east:
+          kind: open
+          targetRoomId: room.b3f.002
+          targetCellId: cell.b3f.002
+    - id: cell.b3f.002
+      roomId: room.b3f.002
+      x: 1
+      y: 0
+      edges:
+        west:
+          kind: open
+          targetRoomId: room.b3f.001
+          targetCellId: cell.b3f.001
+        south:
+          kind: open
+          targetRoomId: room.b3f.003
+          targetCellId: cell.b3f.003
+    - id: cell.b3f.003
+      roomId: room.b3f.003
+      x: 1
+      y: 1
+      edges:
+        north:
+          kind: open
+          targetRoomId: room.b3f.002
+          targetCellId: cell.b3f.002
+        east:
+          kind: stairs
+          targetRoomId: room.b4f.001
+          targetFloorId: dungeon.b4f
 rooms:
   - id: room.b3f.001
     name: Dry Cistern Mouth

@@ -2,141 +2,145 @@
 
 ## Archive
 
-- BS-001..BS-040 modernization detail:
+- [x] BS-001..BS-040 modernization detail:
   [docs/archive/Plan.completed-modernization.md](docs/archive/Plan.completed-modernization.md)
-- BS-041..BS-061 scenario/schema/tempo detail:
+- [x] BS-041..BS-061 scenario/schema/tempo detail:
   [docs/archive/Plan.completed-scenario-tempo.md](docs/archive/Plan.completed-scenario-tempo.md)
-- BS-064..BS-066, BS-071, BS-085..BS-096 guild registration detail:
+- [x] BS-064..BS-066, BS-071, BS-085..BS-096 guild registration detail:
   [docs/archive/Plan.completed-guild-registration.md](docs/archive/Plan.completed-guild-registration.md)
-- BS-098..BS-103 cockpit UI implementation detail:
+- [x] BS-098..BS-103 cockpit UI implementation detail:
   [docs/archive/Tasks.completed-drpg-cockpit-ui.md](docs/archive/Tasks.completed-drpg-cockpit-ui.md)
+- [x] BS-104..BS-113 playable depth detail:
+  [docs/archive/Plan.completed-playable-depth.md](docs/archive/Plan.completed-playable-depth.md)
+- [x] BS-114..BS-122, BS-124..BS-127 character authorship/scenario authoring:
+  [docs/archive/Tasks.completed-character-authoring-scenario-authoring.md](docs/archive/Tasks.completed-character-authoring-scenario-authoring.md)
+- [x] BS-136..BS-140 DRPG UX formation:
+  [docs/archive/Tasks.completed-drpg-ux-formation.md](docs/archive/Tasks.completed-drpg-ux-formation.md)
 
 ## Current Baseline
 
-Black Stela now has deterministic rules, save/load, debug starts, headless
-probes, English/Japanese UI, scenario validation, authored multi-floor data,
-repeat/auto commands, hidden local narration plumbing, first-person dungeon
-rendering, minimap, browser-visible MVP clear coverage, and a Human Requirement
-Gate. Combat has tactical rows/enemy groups/declared actions; guild registration
-has quick/detailed recruits, starter templates, coverage feedback, save
-migration, roster memory, and Japanese/mobile verification.
+Black Stela has deterministic rules, save/load, debug starts, headless probes,
+English/Japanese UI, scenario validation, authored multi-floor data, tactical
+combat, guild character authorship, economy, first-person rendering, minimap,
+and browser-visible clear coverage.
 
-The remaining problem is not "can the engine clear"; it is "does the player see
-and understand a DRPG worth playing." Headless runs are useful for reachability,
-but they are not proof of UX, fun, fairness, or visual legibility.
+The remaining problem is not engine reachability. It is whether the player feels
+they brought their own adventurers into a real labyrinth. Headless runs are not
+proof of UX, fun, fairness, visual legibility, or grid-maze honesty.
 
 ## UI Reference Findings
 
-- Wizardry-style play is a town/prep/labyrinth/return/heal loop. Full roster
-  management belongs in town/guild screens.
-- Front/back rows are tactical state, shown compactly during exploration/combat.
+- Wizardry-style play is a town/prep/labyrinth/return/heal loop.
 - Etrian Odyssey-style exploration pairs first-person view and readable mapping.
-- Normal play avoids debug copy, oversized cards, duplicate logs, and free
-  escape/save implications.
+- Classic console RPG input uses fixed command windows, cursor movement,
+  confirm/cancel, message advance, and stable command positions.
+- Normal play avoids debug copy, oversized cards, duplicate logs, free escape,
+  and web-app/admin-panel residue.
 
 ## Product Guardrails
 
-- Title/startup UI must preserve mood. No explanatory product copy, AI copy, or
-  developer language on the player-facing title screen.
-- Player character speech, inner life, and decisions remain player-authored.
+- Startup, AI, save/debug, and configuration affordances must not break mood.
+- Player characters' speech, inner life, portraits, profiles, notes, classes,
+  traits, aptitude, stats, and memory remain player-authored fantasy.
+- Scenario prose must read as native Japanese: concrete object, sensory/spatial
+  cue, short line, no theme explanation or translated-English syntax.
 - Local narration stays hidden, local-first, non-canonical, and unable to mutate
   `GameState`.
-- Return/escape, save, automation, and debug affordances must respect DRPG
-  rules. Development convenience belongs behind debug mode.
-- Japanese support is first-class and must be verified with layout tests.
-- Classic DRPGs are references for structure only. Do not copy maps, names,
-  prose, monsters, puzzles, or proprietary progression.
+- Return/escape, save, automation, and debug affordances must respect DRPG rules.
+- Dungeon topology is a continuous grid of cells, walls, doors, stairs, and edge
+  rules. Arbitrary linked rooms are not a DRPG maze.
+- Party formation is six-member, row-visible, and reviewed in browser before
+  player-facing work is called done.
+- Stairs, return seals, and next-floor progression must be browser-visible.
+- Past user-visible failures are recorded in
+  [Past Trouble Regression Gate](docs/gates/past-trouble-regression-gate.md)
+  and must be checked before player-facing work is called done.
+- Classic DRPGs are structure references only. Do not copy proprietary content.
 
-## Planning Lanes
+## Lane Status
 
-These lanes describe the roadmap; `Tasks.md` selects the active milestone.
+- [x] Lane A: DRPG Presentation and UX.
+- [x] Lane B: Honest Simulation and Play Parity.
+- [x] Lane C: Human Requirement Gate.
+- [x] Lane D: Character Creation and Roster Identity.
+- [x] Lane D2: Character Authorship Recovery.
+- [x] Lane E: Playable Depth.
+- [x] Lane E2: Tactical DRPG Combat vertical slice.
+- [x] Lane F: Scenario Authoring and Content QA.
+- [x] Lane F2: Scenario Prose and Localization Quality. Guardrail active.
+- [x] Lane I: Controller-First Command UI Reconstruction. Guardrail active.
+- [x] Lane J: Grid Labyrinth Topology Recovery. Guardrail active.
+- [x] Lane K: DRPG UX Autonomy and Six-Person Formation. Guardrail active.
+- [x] Lane L: Past Trouble Regression Gate. Guardrail active.
+- [ ] Lane G: Desktop Productization. Deferred.
+- [ ] Lane H: Hidden Local Narration Operations. Deferred.
 
-### Lane A: DRPG Presentation and UX
+### [x] Lane K: DRPG UX Autonomy and Six-Person Formation
 
-- Make the first-person dungeon view communicate walls, doors, stairs, enemies,
-  traps, and interactable features clearly.
-- Keep the minimap compact, readable, and honest to discovered information.
-- Remove web-app/admin-panel residue from normal play.
-- Rebuild exploration/combat as a DRPG cockpit: viewport, compact map, short
-  context, condition/row state, selected actor/target, and command dock.
-- Verify visual changes with Playwright screenshots on desktop and mobile.
+Goal: stop shipping player-facing UI that is merely functional but visibly weak.
 
-### Lane B: Honest Simulation and Play Parity
+- Use [DRPG UX Review Skill](docs/skills/drpg-ux-review-skill.md) before UI,
+  party, combat, town, dungeon, command, or automation changes.
+- Enforce [DRPG UX Gate](docs/gates/drpg-ux-gate.md): six-member party, visible
+  front/back rows, stable command surfaces, browser review, mobile/Japanese
+  checks, and explicit remaining UX risk.
+- Make guild templates, debug starts, exploration HUD, and combat formation
+  consistently support three-front/three-back party presentation.
 
-- Separate headless reachability tests from browser/player clear tests.
-- Maintain browser clear runs that use only visible controls and observed UI.
-- Ensure domain rules reject commands the player should not be able to perform.
-- Track what headless is allowed to know and report when it uses scenario truth.
+### [x] Lane J: Grid Labyrinth Topology Recovery
 
-### Lane C: Human Requirement Gate
+Goal: replace room-link graphs with grid cells and edge metadata.
 
-- Use the Human Requirement Gate before coding player-facing work.
-- Maintain a player-facing red-flag checklist for DRPG mood, visible
-  affordances, non-diegetic controls, AI leakage, and web-app residue.
-- Keep automated gates for title copy, hidden AI/provider controls, browser
-  clear, minimap honesty, return-stair rules, and screenshot-visible dungeon
-  features.
-- Require a short "what human expectation does this satisfy?" note for each
-  player-facing task.
+- Use [Grid Labyrinth Skill](docs/skills/grid-labyrinth-skill.md) before any
+  dungeon, map, movement, stair, or rendering change.
+- Enforce [Grid Labyrinth Gate](docs/gates/grid-labyrinth-gate.md): explicit
+  cell coordinates, cell-edge walls/doors, adjacent movement, current-cell
+  stairs/return, and browser-visible proof.
+- Add scenario schema support for grid cells and edge metadata while migrating
+  the current room graph only as a temporary compatibility source.
+- Convert B1F first into a compact continuous grid with entrance, branch, door,
+  trap/combat cell, return mark, and downstairs cell; then expand B2F-B8F.
+- Rebuild minimap and first-person render from grid coordinates, not inferred
+  room graph coordinates.
+- Reject non-adjacent arbitrary exits in validation unless declared as stairs,
+  one-way edge, shortcut, or floor transition.
+- Add Playwright coverage for normal controls reaching lower-floor stairs and
+  returning to town from the correct current cell.
 
-### Lane D: Character Creation and Roster Identity
+### [x] Lane F2: Scenario Prose and Localization Quality
 
-Completed current guild registration baseline. Future work can deepen class
-balance, retirement, memorials, and editable deed history after economy and
-equipment exist.
+Goal: remove translated-English mood text and make scenario prose support play.
 
-### Lane E: Playable Depth
+- Use [Scenario Prose Skill](docs/skills/scenario-prose-skill.md) and
+  [Scenario Prose Gate](docs/gates/scenario-prose-gate.md).
+- Rewrite Japanese first; add QA for abstract filler and translated syntax.
 
-- Expand town services beyond recovery.
-- Implement inventory, equipment, shops, treasure rewards, currency, and
-  recovery costs.
-- Tie early dungeon pressure to party roles so character choices matter.
+### [x] Lane I: Controller-First Command UI Reconstruction
 
-### Lane E2: Tactical DRPG Combat
+Goal: stop log growth from moving commands and rebuild combat/exploration input
+as a classic RPG command surface.
 
-- Use classic party DRPGs as structural references only: formation, declared
-  rounds, uncertain hit rates, enemy groups, attrition, status, loot, and risk.
-- Keep a readable round loop with party rows, enemy groups, per-character
-  actions, initiative, target limits, and results.
-- Make combat data-driven across roles, armor, accuracy, damage, speed,
-  resistance, morale, XP, gold, drops, and encounter budgets.
-- Keep the browser battle screen diegetic and visual. Enemy presence, party
-  danger, target choice, and round results must be visible without reading logs.
-- Balance first for a small vertical slice, not a full RPG rules encyclopedia.
-
-### Lane F: Scenario Authoring and Content QA
-
-- Add scenario pack picker/import flow.
-- Improve author validation reports with severity, file grouping, localization
-  coverage, reachability, locks, loot references, and encounter budgets.
-- Maintain the 6-10 floor target with manual playtest notes in English and
-  Japanese.
-- Keep data summaries reviewable without opening every Markdown file.
-
-### Lane G: Desktop Productization
-
-- Wire the Tauri save adapter to real filesystem APIs.
-- Persist portrait assets as app data files instead of only inline references.
-- Run platform smoke builds, especially Windows.
-- Define `SaveDataV2` migration policy before breaking save compatibility.
-
-### Lane H: Hidden Local Narration Operations
-
-- Add provider health checks and debug diagnostics that never surface in normal
-  play.
-- Track prompt/version metadata for reproducibility.
-- Keep rejected narration inspectable in debug mode only.
+- Replace action-button rows with a fixed command window, cursor highlight,
+  confirm/cancel bindings, and controller/keyboard navigation.
+- Separate interaction states: command select, target select, message/result
+  advance, submenu select, auto/repeat running, and disabled/unsafe states.
+- Keep logs in a fixed message window with bounded height and explicit advance;
+  combat resolution must never shift command positions.
+- Add command memory/defaults: Attack/Defend/Item/Spell/Retreat as menu items,
+  target defaults, Take Back before round resolve, and repeat only as a held
+  mode that can stop on cancel/danger/branch/boss.
+- Verification: Playwright presses keyboard only through a combat round,
+  asserts command-window bounding box is stable before/after attack, verifies
+  cancel/back behavior, target selection, message advance, Japanese/mobile fit,
+  and no button displacement from logs.
 
 ## Current Milestone Recommendation
 
-Lane E is selected in `Tasks.md`: playable depth. The cockpit pass now gives
-dungeon/combat a clearer play surface, so this slice should make character
-choices matter after registration through inventory, equipment, treasure, shops,
-recovery costs, and early dungeon pressure.
+Lane J/F2/I current passes are complete; keep their gates active for future UI,
+dungeon, prose, and command work.
 
-Keep Lane A, Lane B, and Lane C as gates around the work. Playable depth is not
-done if it looks like a shop admin panel, bypasses browser-visible verification,
-or lets economy/equipment ignore tactical combat and dungeon pressure.
+Use [Black Stela Gate Review Skill](docs/skills/black-stela-gate-review-skill.md)
+before any player-facing implementation or completion claim.
 
 ## Planning Rule
 

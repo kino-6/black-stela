@@ -17,8 +17,15 @@ for (const viewport of [
     await expect(page.getByTestId("map-current")).toContainText("Silent Stone Chamber");
     await expect(page.getByLabel("Mini-map")).toBeVisible();
     await expect(page.getByTestId("minimap-current")).toHaveCount(1);
-    await expect(page.getByTestId("minimap-unseen")).toHaveCount(1);
+    await expect(page.getByTestId("minimap-unseen")).toHaveCount(0);
     await expect(page.getByTestId("minimap-facing")).toBeVisible();
+    await expect
+      .poll(async () =>
+        page
+          .getByTestId("minimap-grid")
+          .evaluate((element) => getComputedStyle(element).gridTemplateColumns.split(" ").length)
+      )
+      .toBe(4);
     await expect(page.getByTestId("map-directions")).toHaveCount(0);
 
     await page.getByRole("button", { name: "Move" }).click();

@@ -10,6 +10,47 @@ tags:
   - dark-zone
 authorNotes: Navigation twist floor with readable one-way and dark-zone clues.
 startRoom: room.b4f.001
+grid:
+  cells:
+    - id: cell.b4f.001
+      roomId: room.b4f.001
+      x: 0
+      y: 0
+      edges:
+        west:
+          kind: stairs
+          targetRoomId: room.b3f.003
+          targetFloorId: dungeon.b3f
+        east:
+          kind: open
+          targetRoomId: room.b4f.002
+          targetCellId: cell.b4f.002
+        south:
+          kind: open
+          targetRoomId: room.b4f.003
+          targetCellId: cell.b4f.003
+    - id: cell.b4f.002
+      roomId: room.b4f.002
+      x: 1
+      y: 0
+      edges:
+        south:
+          kind: one_way
+          targetRoomId: room.b4f.003
+          targetCellId: cell.b4f.003
+    - id: cell.b4f.003
+      roomId: room.b4f.003
+      x: 0
+      y: 1
+      edges:
+        north:
+          kind: open
+          targetRoomId: room.b4f.001
+          targetCellId: cell.b4f.001
+        east:
+          kind: stairs
+          targetRoomId: room.b5f.001
+          targetFloorId: dungeon.b5f
 rooms:
   - id: room.b4f.001
     name: Lanterns Facing Inward

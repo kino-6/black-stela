@@ -84,7 +84,7 @@ describe("scenario pack loader", () => {
 
     expect(result).toMatchObject({
       ok: false,
-      errors: [{ fieldPath: "room.invalid.001.exits.east" }]
+      errors: expect.arrayContaining([expect.objectContaining({ fieldPath: "room.invalid.001.exits.east" })])
     });
   });
 
@@ -97,7 +97,7 @@ describe("scenario pack loader", () => {
 
     expect(result).toMatchObject({
       ok: false,
-      errors: [{ fieldPath: "aiPolicy" }]
+      errors: expect.arrayContaining([expect.objectContaining({ fieldPath: "aiPolicy" })])
     });
   });
 
@@ -205,6 +205,175 @@ rooms:
     expect(result).toMatchObject({
       ok: false,
       errors: expect.arrayContaining([expect.objectContaining({ fieldPath: "room.lost.reachability" })])
+    });
+  });
+
+  it("reports reachable rooms that cannot route back to a town return", () => {
+    const result = loadScenarioPack({
+      "manifest.md": `---
+id: pack.no-return
+title: No Return
+version: 0.1.0
+supportedLanguages: [en]
+entryWorld: world.md
+dungeons:
+  - dungeons/b1f.md
+compatibility:
+  minAppVersion: 0.1.0
+---`,
+      "world.md": `---
+id: world.no-return
+title: No Return
+startDungeon: dungeon.b1f
+startRoom: room.start
+aiPolicy:
+  allowed: [environment_flavor]
+  forbidden: [move_pc]
+---`,
+      "dungeons/b1f.md": `---
+id: dungeon.b1f
+name: No Return Floor
+startRoom: room.start
+rooms:
+  - id: room.start
+    name: Start
+    description: A one-way descent starts here.
+    exits:
+      east: room.trapped
+  - id: room.trapped
+    name: Trapped
+    description: No authored return route leaves this room.
+    exits: {}
+---`
+    });
+
+    expect(result).toMatchObject({
+      ok: false,
+      errors: expect.arrayContaining([expect.objectContaining({ fieldPath: "room.start.returnability" })])
+    });
+  });
+
+  it("reports missing authored floor-to-floor progression", () => {
+    const result = loadScenarioPack({
+      "manifest.md": `---
+id: pack.no-next-floor
+title: No Next Floor
+version: 0.1.0
+supportedLanguages: [en]
+entryWorld: world.md
+dungeons:
+  - dungeons/b1f.md
+  - dungeons/b2f.md
+compatibility:
+  minAppVersion: 0.1.0
+---`,
+      "world.md": `---
+id: world.no-next-floor
+title: No Next Floor
+startDungeon: dungeon.b1f
+startRoom: room.b1f.start
+aiPolicy:
+  allowed: [environment_flavor]
+  forbidden: [move_pc]
+---`,
+      "dungeons/b1f.md": `---
+id: dungeon.b1f
+name: First
+startRoom: room.b1f.start
+rooms:
+  - id: room.b1f.start
+    name: First Start
+    description: A return stair is present, but no descent exists.
+    exits: {}
+    stairsToTown: true
+---`,
+      "dungeons/b2f.md": `---
+id: dungeon.b2f
+name: Second
+startRoom: room.b2f.start
+rooms:
+  - id: room.b2f.start
+    name: Second Start
+    description: This floor has no authored entrance.
+    exits: {}
+    stairsToTown: true
+---`
+    });
+
+    expect(result).toMatchObject({
+      ok: false,
+      errors: expect.arrayContaining([expect.objectContaining({ fieldPath: "dungeon.b1f.floorProgression" })])
+    });
+  });
+
+  it("rejects non-adjacent grid movement unless it is declared special", () => {
+    const result = loadScenarioPack({
+      "manifest.md": `---
+id: pack.bad-grid
+title: Bad Grid
+version: 0.1.0
+supportedLanguages: [en]
+entryWorld: world.md
+dungeons:
+  - dungeons/b1f.md
+compatibility:
+  minAppVersion: 0.1.0
+---`,
+      "world.md": `---
+id: world.bad-grid
+title: Bad Grid
+startDungeon: dungeon.b1f
+startRoom: room.start
+aiPolicy:
+  allowed: [environment_flavor]
+  forbidden: [move_pc]
+---`,
+      "dungeons/b1f.md": `---
+id: dungeon.b1f
+name: Bad Grid
+startRoom: room.start
+grid:
+  cells:
+    - id: cell.start
+      roomId: room.start
+      x: 0
+      y: 0
+      edges:
+        east:
+          kind: open
+          targetRoomId: room.jump
+          targetCellId: cell.jump
+    - id: cell.jump
+      roomId: room.jump
+      x: 3
+      y: 0
+      edges:
+        west:
+          kind: open
+          targetRoomId: room.start
+          targetCellId: cell.start
+rooms:
+  - id: room.start
+    name: Start
+    description: The bad edge skips cells.
+    exits:
+      east: room.jump
+  - id: room.jump
+    name: Jump
+    description: The return marker masks a broken topology.
+    exits:
+      west: room.start
+    stairsToTown: true
+---`
+    });
+
+    expect(result).toMatchObject({
+      ok: false,
+      errors: expect.arrayContaining([
+        expect.objectContaining({
+          fieldPath: "room.start.grid.east"
+        })
+      ])
     });
   });
 });

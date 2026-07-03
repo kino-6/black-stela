@@ -63,7 +63,7 @@ rooms:
     expect(room.exits.east).toBe("room.b1f.002");
     expect(getLocalizedRoomText(defaultWorld, room.id, "ja")).toMatchObject({
       name: "静まり返った石室",
-      description: "冷たい切石が隊列を囲む。東には細い扉が待っている。"
+      description: "冷たい切石が近く迫る。東の細い扉から乾いた空気が漏れる。"
     });
   });
 });

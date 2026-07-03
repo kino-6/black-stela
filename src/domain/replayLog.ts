@@ -91,12 +91,22 @@ export function projectEventToLog(event: GameEvent, locale = "en", world?: Scena
       return { text: `${event.enemyName} presses in, but the party holds formation.`, tags: ["combat", "defend"] };
     case "item_used":
       return { text: `${event.targetName} uses ${event.itemName} and recovers ${event.healAmount} HP.`, tags: ["item"] };
+    case "inventory_item_gained":
+      return { text: `Found ${event.itemName} x${event.quantity}.`, tags: ["item", event.source] };
+    case "item_bought":
+      return { text: `Bought ${event.itemName} for ${event.gold} gold.`, tags: ["town", "shop"] };
+    case "item_sold":
+      return { text: `Sold ${event.itemName} for ${event.gold} gold.`, tags: ["town", "shop"] };
+    case "equipment_changed":
+      return { text: `${event.characterName} equips ${event.itemName}.`, tags: ["town", "equipment"] };
     case "party_recovered":
-      return { text: "The party rests in town. Wounds are cleaned and strength returns.", tags: ["town", "recovery"] };
+      return { text: `The party rests in town for ${event.gold} gold.`, tags: ["town", "recovery"] };
+    case "recovery_blocked":
+      return { text: `The party cannot afford recovery. ${event.goldRequired} gold required.`, tags: ["town", "blocked"] };
     case "party_retreated":
       return { text: "The party retreats and regroups without losing anyone.", tags: ["combat", "retreat"] };
     case "returned_to_town":
-      return { text: "The party returns to town. Wounds are treated and the record is preserved.", tags: ["town"] };
+      return { text: "The party returns to town. The record is preserved.", tags: ["town"] };
     case "debug_started":
       return { text: event.text, tags: ["debug"] };
   }
@@ -160,13 +170,38 @@ function projectEventToJapaneseLog(event: GameEvent, world?: ScenarioWorld): Log
     case "party_defended":
       return { text: `${event.enemyName} が迫るが、隊列は防御の構えを保った。`, tags: ["combat", "defend"] };
     case "item_used":
-      return { text: `${event.targetName} は ${event.itemName} を使い、HPを ${event.healAmount} 回復した。`, tags: ["item"] };
+      return {
+        text: `${event.targetName} は ${localizedCatalogName(event.itemId, event.itemName, world)} を使い、HPを ${event.healAmount} 回復した。`,
+        tags: ["item"]
+      };
+    case "inventory_item_gained":
+      return {
+        text: `${localizedCatalogName(event.itemId, event.itemName, world)} を ${event.quantity} 個見つけた。`,
+        tags: ["item", event.source]
+      };
+    case "item_bought":
+      return {
+        text: `${localizedCatalogName(event.itemId, event.itemName, world)} を ${event.gold} gold で買った。`,
+        tags: ["town", "shop"]
+      };
+    case "item_sold":
+      return {
+        text: `${localizedCatalogName(event.itemId, event.itemName, world)} を売り、${event.gold} gold を得た。`,
+        tags: ["town", "shop"]
+      };
+    case "equipment_changed":
+      return {
+        text: `${event.characterName} は ${localizedCatalogName(event.itemId, event.itemName, world)} を装備した。`,
+        tags: ["town", "equipment"]
+      };
     case "party_recovered":
-      return { text: "隊列は街で休んだ。傷は清められ、力が戻った。", tags: ["town", "recovery"] };
+      return { text: `隊列は街で休み、${event.gold} gold を支払った。`, tags: ["town", "recovery"] };
+    case "recovery_blocked":
+      return { text: `回復には ${event.goldRequired} gold 必要だ。`, tags: ["town", "blocked"] };
     case "party_retreated":
       return { text: "隊列は退却し、誰も失わずに立て直した。", tags: ["combat", "retreat"] };
     case "returned_to_town":
-      return { text: "隊列は街へ戻った。傷は手当てされ、記録は残された。", tags: ["town"] };
+      return { text: "隊列は街へ戻った。記録は残された。", tags: ["town"] };
     case "debug_started":
       return { text: event.text, tags: ["debug"] };
   }
@@ -174,6 +209,12 @@ function projectEventToJapaneseLog(event: GameEvent, world?: ScenarioWorld): Log
 
 function roomName(world: ScenarioWorld | undefined, roomId: string, fallback: string) {
   return world ? getLocalizedRoomText(world, roomId, "ja").name : fallback;
+}
+
+function localizedCatalogName(itemId: string, fallback: string, world?: ScenarioWorld) {
+  const item = world?.items.find((candidate) => candidate.id === itemId);
+  const equipment = world?.equipment.find((candidate) => candidate.id === itemId);
+  return item?.locales?.ja?.name ?? equipment?.locales?.ja?.name ?? fallback;
 }
 
 function translateDirection(direction: "north" | "east" | "south" | "west") {

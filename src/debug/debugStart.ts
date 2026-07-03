@@ -1,7 +1,8 @@
 import { appendEventLogs } from "../domain/replayLog";
-import { getRoom } from "../domain/scenario";
+import { getFloorIdForRoom, getGridCellForRoom, getKnownGridDirections } from "../domain/scenario";
 import type { Character, Direction, GameState, ScenarioWorld } from "../domain/types";
 import { createGuildCharacter } from "../domain/characterCreation";
+import { STARTING_PARTY_GOLD } from "../domain/economy";
 
 export type DebugProgress =
   | "ready"
@@ -46,6 +47,8 @@ export function createDebugStateFromProgress(world: ScenarioWorld, progress: Deb
     defeatedEnemies: [],
     resolvedTraps: [],
     discoveredSecrets: [],
+    partyGold: STARTING_PARTY_GOLD,
+    claimedTreasures: [],
     inventory: [
       {
         id: "item.healing-draught",
@@ -58,8 +61,10 @@ export function createDebugStateFromProgress(world: ScenarioWorld, progress: Deb
     map: {
       floorId: null,
       currentRoomId: null,
+      currentCellId: null,
       currentFacing: null,
       visitedRooms: [],
+      visitedCells: [],
       knownExits: {},
       blockedExits: {},
       secretCandidates: {}
@@ -80,7 +85,7 @@ export function createDebugStateFromProgress(world: ScenarioWorld, progress: Deb
     const state: GameState = {
       ...base,
       phase: "dungeon",
-      position: { roomId: "room.b1f.002", facing: "east" },
+      position: createPosition(world, "room.b1f.002", "east"),
       defeatedEnemies: ["enemy.b1f.ash-slime"],
       resolvedTraps: ["trap.b1f.needle"],
       discoveredSecrets: ["trap.b1f.needle"],
@@ -103,7 +108,7 @@ export function createDebugStateFromProgress(world: ScenarioWorld, progress: Deb
   const state: GameState = {
     ...base,
     phase: "dungeon",
-    position: { roomId: "room.b1f.003", facing: "east" },
+    position: createPosition(world, "room.b1f.003", "east"),
     defeatedEnemies: ["enemy.b1f.ash-slime"],
     resolvedTraps: ["trap.b1f.needle"],
     discoveredSecrets: ["trap.b1f.needle"],
@@ -126,7 +131,7 @@ function createFloorDebugState(base: GameState, world: ScenarioWorld, progress: 
   const state: GameState = {
     ...base,
     phase: "dungeon",
-    position: { roomId, facing: "east" },
+    position: createPosition(world, roomId, "east"),
     defeatedEnemies: ["enemy.b1f.ash-slime"],
     resolvedTraps: ["trap.b1f.needle"],
     discoveredSecrets: ["trap.b1f.needle"],
@@ -163,16 +168,21 @@ function createVisitedPathToFloor(floorNumber: number) {
 export function createMapState(world: ScenarioWorld, visitedRooms: string[]) {
   const currentRoomId = visitedRooms.at(-1) ?? null;
   const floorId = currentRoomId ? getFloorIdForRoom(world, currentRoomId) : null;
+  const currentCell = currentRoomId ? getGridCellForRoom(world, currentRoomId) : null;
+  const visitedCells = visitedRooms
+    .map((roomId) => getGridCellForRoom(world, roomId)?.id)
+    .filter((cellId): cellId is string => Boolean(cellId));
 
   return {
     floorId,
     currentRoomId,
+    currentCellId: currentCell?.id ?? null,
     currentFacing: "east" as Direction,
     visitedRooms,
+    visitedCells,
     knownExits: Object.fromEntries(
       visitedRooms.map((roomId) => {
-        const room = getRoom(world, roomId);
-        return [roomId, Object.keys(room.exits) as Direction[]];
+        return [roomId, getKnownGridDirections(world, roomId)];
       })
     ),
     blockedExits: {},
@@ -180,8 +190,8 @@ export function createMapState(world: ScenarioWorld, visitedRooms: string[]) {
   };
 }
 
-function getFloorIdForRoom(world: ScenarioWorld, roomId: string) {
-  return world.dungeons.find((dungeon) => dungeon.rooms.some((room) => room.id === roomId))?.id ?? null;
+function createPosition(world: ScenarioWorld, roomId: string, facing: Direction) {
+  return { roomId, cellId: getGridCellForRoom(world, roomId)?.id, facing };
 }
 
 function createExpectedParty(): Character[] {
@@ -269,6 +279,48 @@ function createExpectedParty(): Character[] {
       accuracy: 84,
       armor: 1,
       speed: 9
+    },
+    {
+      ...createGuildCharacter({
+        name: "Bran",
+        notes: "Second front line. Keeps six-member formation visible in debug starts.",
+        classId: "vanguard",
+        backgroundId: "debtor",
+        traitIds: ["steady"],
+        portraitRef: "debug://portrait/bran",
+        method: "debug"
+      }),
+      id: "debug.bran",
+      row: "front",
+      hp: 13,
+      maxHp: 13,
+      attack: 5,
+      damageMin: 4,
+      damageMax: 6,
+      accuracy: 76,
+      armor: 2,
+      speed: 5
+    },
+    {
+      ...createGuildCharacter({
+        name: "Lio",
+        notes: "Rear support. Keeps row separation visible in debug starts.",
+        classId: "mender",
+        backgroundId: "cartographer",
+        traitIds: ["curious"],
+        portraitRef: "debug://portrait/lio",
+        method: "debug"
+      }),
+      id: "debug.lio",
+      row: "back",
+      hp: 11,
+      maxHp: 11,
+      attack: 3,
+      damageMin: 2,
+      damageMax: 4,
+      accuracy: 78,
+      armor: 0,
+      speed: 7
     }
   ];
 }

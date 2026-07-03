@@ -1,6 +1,11 @@
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
-import { getRoom } from "../domain/scenario";
+import ashSlimeTextureUrl from "../assets/dungeon/ash-slime.png";
+import returnMarkerTextureUrl from "../assets/dungeon/return-marker.png";
+import stoneFloorTextureUrl from "../assets/dungeon/stone-floor.jpg";
+import stoneWallTextureUrl from "../assets/dungeon/stone-wall.jpg";
+import woodDoorTextureUrl from "../assets/dungeon/wood-door.jpg";
+import { getGridEdge, getRoom, isTraversableEdge } from "../domain/scenario";
 import type { Direction, GameState, ScenarioWorld } from "../domain/types";
 
 interface DungeonViewProps {
@@ -37,6 +42,28 @@ export function DungeonView({ state, world, label }: DungeonViewProps) {
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.45;
+    const textureLoader = new THREE.TextureLoader();
+    const loadedTextures: THREE.Texture[] = [];
+    const renderScene = () => renderer.render(scene, camera);
+    const loadTexture = (url: string, repeat?: [number, number]) => {
+      const texture = textureLoader.load(url, renderScene);
+      texture.colorSpace = THREE.SRGBColorSpace;
+      texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
+      if (repeat) {
+        texture.wrapS = THREE.RepeatWrapping;
+        texture.wrapT = THREE.RepeatWrapping;
+        texture.repeat.set(repeat[0], repeat[1]);
+      }
+      loadedTextures.push(texture);
+      return texture;
+    };
+
+    const wallTexture = loadTexture(stoneWallTextureUrl, [1.35, 1]);
+    const floorTexture = loadTexture(stoneFloorTextureUrl, [2.1, 3.2]);
+    const doorTexture = loadTexture(woodDoorTextureUrl);
+    const ashSlimeTexture = loadTexture(ashSlimeTextureUrl);
+    const returnMarkerTexture = loadTexture(returnMarkerTextureUrl);
+
     const ambient = new THREE.AmbientLight("#9a9383", 1.8);
     const torch = new THREE.PointLight("#f0b76c", 58, 26);
     torch.position.set(-1.5, 2.4, 2.2);
@@ -47,22 +74,20 @@ export function DungeonView({ state, world, label }: DungeonViewProps) {
 
     const wallMaterial = new THREE.MeshStandardMaterial({
       color: "#59615a",
+      map: wallTexture,
       roughness: 0.78,
       metalness: 0.02
     });
     const floorMaterial = new THREE.MeshStandardMaterial({
       color: "#2a2418",
+      map: floorTexture,
       roughness: 0.86
     });
     const doorMaterial = new THREE.MeshStandardMaterial({
-      color: "#9a6b35",
+      color: "#d2b184",
+      map: doorTexture,
       roughness: 0.62,
       metalness: 0.08
-    });
-    const stelaMaterial = new THREE.MeshStandardMaterial({
-      color: "#101010",
-      roughness: 0.5,
-      metalness: 0.12
     });
     const edgeMaterial = new THREE.LineBasicMaterial({ color: "#c69a58", transparent: true, opacity: 0.78 });
     const hazardMaterial = new THREE.MeshStandardMaterial({
@@ -70,10 +95,11 @@ export function DungeonView({ state, world, label }: DungeonViewProps) {
       emissive: "#3a0905",
       roughness: 0.5
     });
-    const enemyMaterial = new THREE.MeshStandardMaterial({
-      color: "#7b8f72",
-      emissive: "#1f2e18",
-      roughness: 0.56
+    const enemyMaterial = new THREE.SpriteMaterial({ map: ashSlimeTexture, transparent: true, depthWrite: false });
+    const returnMarkerMaterial = new THREE.SpriteMaterial({
+      map: returnMarkerTexture,
+      transparent: true,
+      depthWrite: false
     });
 
     const floor = new THREE.Mesh(new THREE.BoxGeometry(8, 0.2, 12), floorMaterial);
@@ -97,23 +123,31 @@ export function DungeonView({ state, world, label }: DungeonViewProps) {
     scene.add(backWall);
 
     const room = getRoom(world, state.position.roomId);
-    const currentExit = room.exits[state.position.facing];
-    const hasFrontDoor = Boolean(currentExit) || room.doors?.includes(state.position.facing);
+    const currentEdge = getGridEdge(world, state.position.roomId, state.position.facing);
+    const currentExit = currentEdge?.targetRoomId ?? room.exits[state.position.facing];
+    const hasFrontDoor = Boolean(currentEdge?.kind === "door" || currentEdge?.kind === "locked" || currentEdge?.kind === "secret" || room.doors?.includes(state.position.facing));
+    const hasFrontOpening = currentEdge ? isTraversableEdge(currentEdge) : Boolean(currentExit);
     if (hasFrontDoor) {
       const door = createDoor(doorMaterial, edgeMaterial);
       door.position.set(0, 1.15, -6.75);
       scene.add(door);
+    } else if (hasFrontOpening) {
+      const opening = new THREE.Mesh(new THREE.BoxGeometry(2.4, 2.35, 0.05), floorMaterial);
+      opening.position.set(0, 1.12, -6.78);
+      scene.add(opening);
     }
 
     const leftDirection = turn(state.position.facing, "left");
     const rightDirection = turn(state.position.facing, "right");
-    if (room.exits[leftDirection] || room.doors?.includes(leftDirection)) {
+    const leftEdge = getGridEdge(world, state.position.roomId, leftDirection);
+    const rightEdge = getGridEdge(world, state.position.roomId, rightDirection);
+    if (leftEdge ? leftEdge.kind !== "wall" : room.exits[leftDirection] || room.doors?.includes(leftDirection)) {
       const sideDoor = createSideDoor(doorMaterial, edgeMaterial);
       sideDoor.position.set(-3.86, 1.06, -2.7);
       sideDoor.rotation.y = Math.PI / 2;
       scene.add(sideDoor);
     }
-    if (room.exits[rightDirection] || room.doors?.includes(rightDirection)) {
+    if (rightEdge ? rightEdge.kind !== "wall" : room.exits[rightDirection] || room.doors?.includes(rightDirection)) {
       const sideDoor = createSideDoor(doorMaterial, edgeMaterial);
       sideDoor.position.set(3.86, 1.06, -2.7);
       sideDoor.rotation.y = -Math.PI / 2;
@@ -121,16 +155,9 @@ export function DungeonView({ state, world, label }: DungeonViewProps) {
     }
 
     if (state.phase === "combat" && state.combat) {
-      const enemy = new THREE.Group();
-      const body = new THREE.Mesh(new THREE.SphereGeometry(0.82, 24, 16), enemyMaterial);
-      body.scale.set(1.25, 0.72, 0.92);
-      body.position.set(0, 0.78, -4.15);
-      const eyeMaterial = new THREE.MeshBasicMaterial({ color: "#f1d68b" });
-      const leftEye = new THREE.Mesh(new THREE.SphereGeometry(0.08, 12, 8), eyeMaterial);
-      leftEye.position.set(-0.28, 0.96, -3.55);
-      const rightEye = leftEye.clone();
-      rightEye.position.x = 0.28;
-      enemy.add(body, leftEye, rightEye);
+      const enemy = new THREE.Sprite(enemyMaterial);
+      enemy.position.set(0, 1.12, -3.2);
+      enemy.scale.set(3.85, 2.55, 1);
       scene.add(enemy);
     }
 
@@ -142,22 +169,15 @@ export function DungeonView({ state, world, label }: DungeonViewProps) {
     }
 
     if (room.stairsToTown) {
-      for (let index = 0; index < 5; index += 1) {
-        const step = new THREE.Mesh(new THREE.BoxGeometry(3.2 - index * 0.28, 0.22, 0.55), floorMaterial);
-        step.position.set(0, index * 0.18, -4.8 - index * 0.55);
-        scene.add(step);
-      }
+      scene.add(createReturnMarker(returnMarkerMaterial));
     }
-
-    const stela = new THREE.Mesh(new THREE.BoxGeometry(0.75, 1.9, 0.25), stelaMaterial);
-    stela.position.set(2.55, 0.95, -4.9);
-    scene.add(stela);
 
     addStoneCourses(scene, wallMaterial);
 
-    renderer.render(scene, camera);
+    renderScene();
 
     return () => {
+      loadedTextures.forEach((texture) => texture.dispose());
       renderer.dispose();
       mount.removeChild(renderer.domElement);
     };
@@ -189,6 +209,13 @@ function createSideDoor(material: THREE.Material, edgeMaterial: THREE.Material) 
   const frame = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(1.45, 2.3, 0.2)), edgeMaterial);
   group.add(slab, frame);
   return group;
+}
+
+function createReturnMarker(material: THREE.SpriteMaterial) {
+  const marker = new THREE.Sprite(material);
+  marker.position.set(0, 0.92, 0.88);
+  marker.scale.set(1.75, 2.35, 1);
+  return marker;
 }
 
 function addStoneCourses(scene: THREE.Scene, material: THREE.Material) {

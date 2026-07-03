@@ -1,6 +1,7 @@
 import { defaultWorld } from "../src/data/defaultWorld";
 import { createDebugStateFromProgress, parseDebugProgress } from "../src/debug/debugStart";
 import { runHeadlessClear } from "../src/headless/headlessRunner";
+import type { GameState } from "../src/domain/types";
 
 interface HeadlessReachabilityOptions {
   progress: ReturnType<typeof parseDebugProgress>;
@@ -52,6 +53,10 @@ const options = parseOptions(process.argv.slice(2));
 const progress = options.progress;
 const initialState = createDebugStateFromProgress(defaultWorld, progress);
 const result = runHeadlessClear(initialState, defaultWorld, options.maxSteps);
+const hpLost = result.state.party.reduce((total, member) => total + Math.max(0, member.maxHp - member.hp), 0);
+const carriedItems = result.state.inventory
+  .filter((item) => item.quantity > 0)
+  .map((item) => ({ id: item.id, name: item.name, quantity: item.quantity, kind: item.kind }));
 
 const report = {
   reachable: result.cleared,
@@ -71,6 +76,21 @@ const report = {
   diagnostic: result.diagnostic,
   final: {
     phase: result.state.phase,
+    returnOutcome: describeReturnOutcome(result.state, result.cleared),
+    partyGold: result.state.partyGold,
+    consumables: carriedItems.filter((item) => item.kind === "healing" || item.kind === "utility"),
+    loot: {
+      carriedItems,
+      claimedTreasures: result.state.claimedTreasures,
+      rewardLogs: result.state.log
+        .filter((entry) => entry.tags.includes("treasure") || entry.tags.includes("reward"))
+        .map((entry) => entry.text)
+    },
+    hpPressure: {
+      hpLost,
+      injuredCount: result.state.party.filter((member) => member.injury).length,
+      lowestHp: Math.min(...result.state.party.map((member) => member.hp))
+    },
     visitedRooms: result.state.map.visitedRooms,
     defeatedEnemies: result.state.defeatedEnemies,
     resolvedTraps: result.state.resolvedTraps,
@@ -82,4 +102,16 @@ console.log(JSON.stringify(report, null, 2));
 
 if (!result.cleared) {
   process.exitCode = 1;
+}
+
+function describeReturnOutcome(state: GameState, reached: boolean) {
+  if (reached && state.phase === "town") {
+    return "returned_to_town";
+  }
+
+  if (state.phase === "town") {
+    return "town_without_reachability_goal";
+  }
+
+  return "not_returned";
 }

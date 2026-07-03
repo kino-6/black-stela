@@ -106,6 +106,7 @@ describe("tactical combat", () => {
     expect(next.combat).toBeNull();
     expect(next.defeatedEnemies).toContain("enemy.b1f.ash-slime");
     expect(next.party[0]).toMatchObject({ xp: 5, gold: 3 });
+    expect(next.partyGold).toBe(state.partyGold + 3);
     expect(next.log.at(-1)?.text).toMatch(/Victory/i);
   });
 

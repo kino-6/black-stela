@@ -12,8 +12,14 @@ describe("scenario summary", () => {
       roomCount: 24,
       itemCount: 4,
       equipmentCount: 2,
+      shopCount: 1,
       encounterTableCount: 8,
       treasureTableCount: 8,
+      shopStockReferenceCount: 4,
+      returnAnchorCount: 2,
+      nextFloorLinkCount: 7,
+      lockCount: 1,
+      lootReferenceCount: 10,
       missingJapaneseRooms: 0,
       pacing: {
         midpointFloor: "dungeon.b5f",
@@ -25,6 +31,28 @@ describe("scenario summary", () => {
 
   it("formats a stable text summary", () => {
     expect(formatScenarioSummary(summarizeScenario(defaultWorld))).toContain("Floors: 8");
+    expect(formatScenarioSummary(summarizeScenario(defaultWorld))).toContain("Shops: 1");
+    expect(formatScenarioSummary(summarizeScenario(defaultWorld))).toContain("Town returns: 2");
+    expect(formatScenarioSummary(summarizeScenario(defaultWorld))).toContain("Next-floor links: 7");
     expect(formatScenarioSummary(summarizeScenario(defaultWorld))).toContain("dungeon.b8f B8F - Gate of Ash");
+  });
+
+  it("keeps the starter economy route reviewable", () => {
+    const shop = defaultWorld.shops.find((candidate) => candidate.id === "shop.stela-general");
+    const b1fStart = defaultWorld.dungeons
+      .flatMap((floor) => floor.rooms)
+      .find((room) => room.id === "room.b1f.001");
+
+    expect(defaultWorld.equipment.map((item) => item.id)).toEqual(
+      expect.arrayContaining(["equip.iron-knife", "equip.ash-mail"])
+    );
+    expect((shop?.stock ?? []).map((stock) => stock.itemId)).toEqual(
+      expect.arrayContaining(["item.healing-draught", "item.lantern-oil", "equip.iron-knife"])
+    );
+    expect(b1fStart?.treasureTable).toBe("treasure.b1f.safe");
+    expect(defaultWorld.treasureTables.find((table) => table.id === "treasure.b1f.safe")?.entries[0]).toMatchObject({
+      itemId: "item.healing-draught",
+      quantity: 1
+    });
   });
 });

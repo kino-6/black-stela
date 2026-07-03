@@ -1,4 +1,4 @@
-import { getLocalizedRoomText, getRoom } from "../domain/scenario";
+import { getGridCellForRoom, getLocalizedRoomText, getRoom } from "../domain/scenario";
 import type { Direction, GameState, ScenarioWorld } from "../domain/types";
 import type { Locale, Translator } from "../i18n";
 
@@ -9,7 +9,7 @@ interface MapPanelProps {
   t: Translator;
 }
 
-const MINI_MAP_RADIUS = 2;
+const MINI_MAP_SIZE = 4;
 const directionOffsets: Record<Direction, { x: number; y: number }> = {
   north: { x: 0, y: -1 },
   east: { x: 1, y: 0 },
@@ -44,6 +44,7 @@ export function MapPanel({ state, world, locale, t }: MapPanelProps) {
       {miniMap.cells.length > 0 && (
         <div className="mini-map" aria-label={t("map.miniMap")} data-testid="minimap">
           <div
+            data-testid="minimap-grid"
             className="mini-map-grid"
             style={{
               gridTemplateColumns: `repeat(${miniMap.width}, 1.1rem)`,
@@ -79,6 +80,11 @@ export function MapPanel({ state, world, locale, t }: MapPanelProps) {
 }
 
 function buildMiniMap(state: GameState, world: ScenarioWorld, locale: Locale, currentRoomId: string | null) {
+  const currentGridCell = currentRoomId ? getGridCellForRoom(world, currentRoomId) : null;
+  if (currentGridCell && currentRoomId) {
+    return buildGridMiniMap(state, world, locale, currentRoomId, currentGridCell);
+  }
+
   const startRoomId = state.map.visitedRooms[0] ?? currentRoomId;
   if (!startRoomId) {
     return { width: 0, height: 0, cells: [] as MiniMapCell[] };
@@ -87,17 +93,6 @@ function buildMiniMap(state: GameState, world: ScenarioWorld, locale: Locale, cu
   const roomIds = new Set<string>(state.map.visitedRooms);
   if (currentRoomId) {
     roomIds.add(currentRoomId);
-  }
-
-  for (const [roomId, exits] of Object.entries(state.map.knownExits)) {
-    roomIds.add(roomId);
-    const room = getRoom(world, roomId);
-    for (const direction of exits ?? []) {
-      const targetRoomId = room.exits[direction];
-      if (targetRoomId) {
-        roomIds.add(targetRoomId);
-      }
-    }
   }
 
   const coordinates = new Map<string, { x: number; y: number }>([[startRoomId, { x: 0, y: 0 }]]);
@@ -146,17 +141,62 @@ function buildMiniMap(state: GameState, world: ScenarioWorld, locale: Locale, cu
   });
 
   const currentCoordinate = currentRoomId ? coordinates.get(currentRoomId) : null;
+  if (!currentCoordinate) {
+    return { width: MINI_MAP_SIZE, height: MINI_MAP_SIZE, cells: [] as MiniMapCell[] };
+  }
+
+  const originX = currentCoordinate.x - 1;
+  const originY = currentCoordinate.y - 1;
   const visibleRawCells = currentCoordinate
     ? rawCells.filter(
         (cell) =>
-          Math.abs(cell.x - currentCoordinate.x) <= MINI_MAP_RADIUS &&
-          Math.abs(cell.y - currentCoordinate.y) <= MINI_MAP_RADIUS
+          cell.x >= originX &&
+          cell.x < originX + MINI_MAP_SIZE &&
+          cell.y >= originY &&
+          cell.y < originY + MINI_MAP_SIZE
       )
     : rawCells;
-  const minX = Math.min(...visibleRawCells.map((cell) => cell.x));
-  const minY = Math.min(...visibleRawCells.map((cell) => cell.y));
-  const cells = visibleRawCells.map((cell) => ({ ...cell, x: cell.x - minX, y: cell.y - minY }));
-  const width = Math.max(...cells.map((cell) => cell.x)) + 1;
-  const height = Math.max(...cells.map((cell) => cell.y)) + 1;
-  return { width, height, cells };
+  const cells = visibleRawCells.map((cell) => ({ ...cell, x: cell.x - originX, y: cell.y - originY }));
+  return { width: MINI_MAP_SIZE, height: MINI_MAP_SIZE, cells };
+}
+
+function buildGridMiniMap(
+  state: GameState,
+  world: ScenarioWorld,
+  locale: Locale,
+  currentRoomId: string,
+  currentGridCell: NonNullable<ReturnType<typeof getGridCellForRoom>>
+) {
+  const visitedRooms = new Set(state.map.visitedRooms);
+  visitedRooms.add(currentRoomId);
+  const originX = currentGridCell.x - 1;
+  const originY = currentGridCell.y - 1;
+  const floor = world.dungeons.find((dungeon) => dungeon.id === state.map.floorId);
+  const visibleCells = (floor?.grid?.cells ?? [])
+    .filter((cell) => visitedRooms.has(cell.roomId))
+    .filter(
+      (cell) =>
+        cell.x >= originX &&
+        cell.x < originX + MINI_MAP_SIZE &&
+        cell.y >= originY &&
+        cell.y < originY + MINI_MAP_SIZE
+    );
+
+  const cells = visibleCells.map((cell) => {
+    const knownExits = (state.map.knownExits[cell.roomId] ?? []).filter((direction) => {
+      const edge = cell.edges[direction];
+      return edge?.targetRoomId ? visitedRooms.has(edge.targetRoomId) : false;
+    });
+
+    return {
+      id: cell.id,
+      x: cell.x - originX,
+      y: cell.y - originY,
+      status: cell.roomId === currentRoomId ? ("current" as const) : ("visited" as const),
+      exits: knownExits,
+      label: getLocalizedRoomText(world, cell.roomId, locale).name
+    };
+  });
+
+  return { width: MINI_MAP_SIZE, height: MINI_MAP_SIZE, cells };
 }
