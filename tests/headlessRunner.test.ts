@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { defaultWorld } from "../src/data/defaultWorld";
 import { createDebugStateFromProgress } from "../src/debug/debugStart";
+import { addCharacter, createCharacter, createInitialGameState } from "../src/domain/gameState";
+import type { ScenarioWorld } from "../src/domain/types";
 import { runHeadlessClear } from "../src/headless/headlessRunner";
 
 describe("headless clear runner", () => {
@@ -31,4 +33,79 @@ describe("headless clear runner", () => {
     expect(result.commands.map((command) => command.type)).toEqual(["move_forward", "return_to_town"]);
     expect(result.state.map.visitedRooms).toContain("room.b1f.003");
   });
+
+  it("reports a stuck room when no scenario route is available", () => {
+    const result = runHeadlessClear(stateWithParty(), blockedWorld, 5);
+
+    expect(result.cleared).toBe(false);
+    expect(result.reason).toBe("stuck");
+    expect(result.diagnostic).toMatchObject({
+      roomId: "room.blocked.start",
+      reason: "no_route"
+    });
+  });
+
+  it("reports max steps for looping scenarios", () => {
+    const result = runHeadlessClear(stateWithParty(), loopWorld, 4);
+
+    expect(result.cleared).toBe(false);
+    expect(result.reason).toBe("max_steps");
+    expect(result.diagnostic?.roomId).toMatch(/^room\.loop\./);
+  });
 });
+
+function stateWithParty() {
+  return addCharacter(createInitialGameState(), createCharacter({ name: "Mira", notes: "Mapper" }));
+}
+
+const blockedWorld: ScenarioWorld = {
+  id: "world.blocked",
+  title: "Blocked Test",
+  startDungeon: "dungeon.blocked",
+  startRoom: "room.blocked.start",
+  aiPolicy: { allowed: [], forbidden: [] },
+  dungeons: [
+    {
+      id: "dungeon.blocked",
+      name: "Blocked",
+      startRoom: "room.blocked.start",
+      rooms: [
+        {
+          id: "room.blocked.start",
+          name: "Blocked Start",
+          description: "There is nowhere to go.",
+          exits: {}
+        }
+      ]
+    }
+  ]
+};
+
+const loopWorld: ScenarioWorld = {
+  id: "world.loop",
+  title: "Loop Test",
+  startDungeon: "dungeon.loop",
+  startRoom: "room.loop.a",
+  aiPolicy: { allowed: [], forbidden: [] },
+  dungeons: [
+    {
+      id: "dungeon.loop",
+      name: "Loop",
+      startRoom: "room.loop.a",
+      rooms: [
+        {
+          id: "room.loop.a",
+          name: "Loop A",
+          description: "A corridor bends east.",
+          exits: { east: "room.loop.b" }
+        },
+        {
+          id: "room.loop.b",
+          name: "Loop B",
+          description: "A corridor bends west.",
+          exits: { west: "room.loop.a" }
+        }
+      ]
+    }
+  ]
+};

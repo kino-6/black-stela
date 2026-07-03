@@ -331,6 +331,74 @@ textarea {
   line-height: 1.55;
 }
 
+.map-panel {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 0.9rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid #2f352d;
+}
+
+.map-current {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.map-current strong {
+  color: #f2efe5;
+  font-size: 1rem;
+}
+
+.map-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(12rem, 0.8fr);
+  gap: 0.75rem;
+}
+
+.map-grid ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  list-style: none;
+  margin: 0.3rem 0 0;
+  padding: 0;
+}
+
+.map-grid li,
+.map-tag {
+  border: 1px solid #3b4438;
+  border-radius: 6px;
+  padding: 0.35rem 0.5rem;
+  background: #121611;
+  color: #d7d3c3;
+  font-size: 0.85rem;
+}
+
+.map-tags {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.35rem;
+  margin-top: 0.3rem;
+}
+
+.map-tag {
+  text-align: center;
+}
+
+.map-tag.unexplored {
+  border-color: #b28b4a;
+  color: #f2d58c;
+}
+
+.map-tag.blocked {
+  border-color: #7f4a43;
+  color: #e3a19a;
+}
+
+.map-tag.muted {
+  opacity: 0.48;
+}
+
 .command-bar {
   display: flex;
   flex-wrap: wrap;
@@ -415,5 +483,9 @@ textarea {
   .town-scene {
     min-height: 18rem;
     height: 18rem;
+  }
+
+  .map-grid {
+    grid-template-columns: 1fr;
   }
 }

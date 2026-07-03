@@ -33,8 +33,13 @@ const DungeonPositionSchema = z.object({
 });
 
 const DungeonMapStateSchema = z.object({
+  floorId: z.string().nullable().default(null),
+  currentRoomId: z.string().nullable().default(null),
+  currentFacing: DirectionSchema.nullable().default(null),
   visitedRooms: z.array(z.string().min(1)),
-  knownExits: z.record(z.array(DirectionSchema))
+  knownExits: z.record(z.array(DirectionSchema)),
+  blockedExits: z.record(z.array(DirectionSchema)).default({}),
+  secretCandidates: z.record(z.array(DirectionSchema)).default({})
 });
 
 const AdventureLogEntrySchema = z.object({
@@ -56,7 +61,7 @@ export const GameStateSchema = z.object({
   log: z.array(AdventureLogEntrySchema),
   turn: z.number().int().nonnegative(),
   aiEnabled: z.boolean()
-}) satisfies z.ZodType<GameState>;
+});
 
 export const SaveDataV1Schema = z.object({
   schemaVersion: z.literal(1),

@@ -10,19 +10,22 @@ export function appendEventLogs(state: { log: AdventureLogEntry[]; turn: number 
 }
 
 export function projectEventsToLogEntries(events: GameEvent[], turn: number): AdventureLogEntry[] {
-  return events.map((event) => {
+  return events.flatMap((event) => {
     const projection = projectEventToLog(event);
+    if (!projection) {
+      return [];
+    }
 
-    return {
+    return [{
       id: crypto.randomUUID(),
       turn,
       text: projection.text,
       tags: projection.tags
-    };
+    }];
   });
 }
 
-export function projectEventToLog(event: GameEvent): LogProjection {
+export function projectEventToLog(event: GameEvent): LogProjection | null {
   switch (event.type) {
     case "party_member_joined":
       return { text: `${event.characterName} joined the roster.`, tags: ["party"] };
@@ -34,6 +37,11 @@ export function projectEventToLog(event: GameEvent): LogProjection {
       return { text: `The party turns ${event.side}, now facing ${event.facing}.`, tags: ["move"] };
     case "movement_blocked":
       return { text: "A cold wall blocks the way.", tags: ["blocked"] };
+    case "map_room_visited":
+    case "map_exits_known":
+    case "map_exit_blocked":
+    case "map_secret_candidate_added":
+      return null;
     case "room_entered":
       return { text: `The party advances into ${event.roomName}.`, tags: ["move"] };
     case "trap_triggered":

@@ -21,8 +21,13 @@ export function createDebugStateFromProgress(world: ScenarioWorld, progress: Deb
     resolvedTraps: [],
     discoveredSecrets: [],
     map: {
+      floorId: null,
+      currentRoomId: null,
+      currentFacing: null,
       visitedRooms: [],
-      knownExits: {}
+      knownExits: {},
+      blockedExits: {},
+      secretCandidates: {}
     },
     log: [],
     turn: 0,
@@ -76,15 +81,27 @@ export function createDebugStateFromProgress(world: ScenarioWorld, progress: Deb
 }
 
 export function createMapState(world: ScenarioWorld, visitedRooms: string[]) {
+  const currentRoomId = visitedRooms.at(-1) ?? null;
+  const floorId = currentRoomId ? getFloorIdForRoom(world, currentRoomId) : null;
+
   return {
+    floorId,
+    currentRoomId,
+    currentFacing: "east" as Direction,
     visitedRooms,
     knownExits: Object.fromEntries(
       visitedRooms.map((roomId) => {
         const room = getRoom(world, roomId);
         return [roomId, Object.keys(room.exits) as Direction[]];
       })
-    )
+    ),
+    blockedExits: {},
+    secretCandidates: {}
   };
+}
+
+function getFloorIdForRoom(world: ScenarioWorld, roomId: string) {
+  return world.dungeons.find((dungeon) => dungeon.rooms.some((room) => room.id === roomId))?.id ?? null;
 }
 
 function createExpectedParty(): Character[] {

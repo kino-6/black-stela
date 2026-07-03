@@ -13,6 +13,7 @@ import {
   ShieldCheck
 } from "lucide-react";
 import { DungeonView } from "./components/DungeonView";
+import { MapPanel } from "./components/MapPanel";
 import { createCharacter, createInitialGameState, addCharacter } from "./domain/gameState";
 import { getRoom } from "./domain/scenario";
 import { executeCommand } from "./domain/rulesEngine";
@@ -297,6 +298,7 @@ export function App() {
           ) : (
             <>
               <DungeonView state={state} world={defaultWorld} />
+              <MapPanel state={state} world={defaultWorld} />
               <div className="room-copy">
                 <p>{state.phase === "combat" ? `${state.combat?.enemy.name} stands in the party's path.` : room?.description}</p>
               </div>

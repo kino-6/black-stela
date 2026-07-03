@@ -11,8 +11,13 @@ export function createInitialGameState(): GameState {
     resolvedTraps: [],
     discoveredSecrets: [],
     map: {
+      floorId: null,
+      currentRoomId: null,
+      currentFacing: null,
       visitedRooms: [],
-      knownExits: {}
+      knownExits: {},
+      blockedExits: {},
+      secretCandidates: {}
     },
     log: [],
     turn: 0,

@@ -287,7 +287,7 @@ Parent: [Plan.md - Phase 2](./Plan.md#phase-2-debug-headless-and-map-system)
 
 ### BS-008: Define General Map Model
 
-Status: [ ]  
+Status: [x]
 Priority: P1  
 Parent plan task: Task 4, Map Model Generalization
 
@@ -296,13 +296,13 @@ Replace the current simple map state with a model that can represent floor ID, r
 
 Acceptance criteria:
 
-- [ ] Map model stores floor-scoped room progress.
-- [ ] Known, unknown, blocked, and secret-candidate exits can be represented.
-- [ ] Existing debug progress states still build valid map data.
+- [x] Map model stores floor-scoped room progress.
+- [x] Known, unknown, blocked, and secret-candidate exits can be represented.
+- [x] Existing debug progress states still build valid map data.
 
 Verification:
 
-- [ ] `npm test`
+- [x] `npm test`
 
 Dependencies:
 
@@ -320,7 +320,7 @@ Estimated scope:
 
 ### BS-009: Add Map Update Events
 
-Status: [ ]  
+Status: [x]
 Priority: P1  
 Parent plan task: Task 4, Map Model Generalization
 
@@ -329,14 +329,14 @@ Move map updates into explicit events so room discovery and exit knowledge are t
 
 Acceptance criteria:
 
-- [ ] Room visit creates a map event.
-- [ ] Exit knowledge is derived from scenario truth through rules.
-- [ ] Map progress remains deterministic in Headless clear.
+- [x] Room visit creates a map event.
+- [x] Exit knowledge is derived from scenario truth through rules.
+- [x] Map progress remains deterministic in Headless clear.
 
 Verification:
 
-- [ ] `npm test`
-- [ ] `npm run headless:clear`
+- [x] `npm test`
+- [x] `npm run headless:clear`
 
 Dependencies:
 
@@ -354,7 +354,7 @@ Estimated scope:
 
 ### BS-010: Replace Fixed Headless Route With Graph Explorer
 
-Status: [ ]  
+Status: [x]
 Priority: P1  
 Parent plan task: Task 5, Headless Explorer
 
@@ -363,14 +363,14 @@ Teach the headless runner to inspect scenario exits and map state instead of har
 
 Acceptance criteria:
 
-- [ ] Runner can choose movement from known exits.
-- [ ] Runner handles combat by selecting deterministic combat commands.
-- [ ] Runner returns a clear stuck reason when no route exists.
+- [x] Runner can choose movement from known exits.
+- [x] Runner handles combat by selecting deterministic combat commands.
+- [x] Runner returns a clear stuck reason when no route exists.
 
 Verification:
 
-- [ ] `npm test`
-- [ ] `npm run headless:clear`
+- [x] `npm test`
+- [x] `npm run headless:clear`
 
 Dependencies:
 
@@ -387,7 +387,7 @@ Estimated scope:
 
 ### BS-011: Add Headless Failure Fixtures
 
-Status: [ ]  
+Status: [x]
 Priority: P1  
 Parent plan task: Task 5, Headless Explorer
 
@@ -396,13 +396,13 @@ Add small test worlds that intentionally cannot clear, proving stuck and max-ste
 
 Acceptance criteria:
 
-- [ ] Missing exit scenario returns `stuck`.
-- [ ] Looping scenario returns `max_steps` or equivalent.
-- [ ] Failure reports include current room and reason.
+- [x] Missing exit scenario returns `stuck`.
+- [x] Looping scenario returns `max_steps` or equivalent.
+- [x] Failure reports include current room and reason.
 
 Verification:
 
-- [ ] `npm test`
+- [x] `npm test`
 
 Dependencies:
 
@@ -419,7 +419,7 @@ Estimated scope:
 
 ### BS-012: Build Minimal Map UI
 
-Status: [ ]  
+Status: [x]
 Priority: P1  
 Parent plan task: Task 6, Map UI
 
@@ -428,15 +428,15 @@ Add a compact map panel showing current room, visited rooms, known exits, and un
 
 Acceptance criteria:
 
-- [ ] Current room is visually identified.
-- [ ] Visited rooms are listed or drawn.
-- [ ] Known exits are visible.
-- [ ] The panel fits desktop and mobile layouts.
+- [x] Current room is visually identified.
+- [x] Visited rooms are listed or drawn.
+- [x] Known exits are visible.
+- [x] The panel fits desktop and mobile layouts.
 
 Verification:
 
-- [ ] `npm run test:e2e`
-- [ ] Playwright mobile viewport check
+- [x] `npm run test:e2e`
+- [x] Playwright mobile viewport check
 
 Dependencies:
 
@@ -455,20 +455,20 @@ Estimated scope:
 
 ### Checkpoint 2: Exploration
 
-Status: [ ]
+Status: [x]
 
 Required verification:
 
-- [ ] `npm test`
-- [ ] `npm run build`
-- [ ] `npm run headless:clear`
-- [ ] `npm run test:e2e`
+- [x] `npm test`
+- [x] `npm run build`
+- [x] `npm run headless:clear`
+- [x] `npm run test:e2e`
 
 Exit criteria:
 
-- [ ] Headless explorer clears without fixed room-script logic.
-- [ ] Map UI represents current progress.
-- [ ] Debug progress starts still work.
+- [x] Headless explorer clears without fixed room-script logic.
+- [x] Map UI represents current progress.
+- [x] Debug progress starts still work.
 
 ## Phase 3: Japanese Localization
 

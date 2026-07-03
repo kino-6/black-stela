@@ -61,6 +61,7 @@ function enterDungeon(state: GameState, world: ScenarioWorld): CommandResult {
     return logOnly(state, { type: "command_blocked", reason: "party_required", command: "enter_dungeon" });
   }
 
+  const roomVisit = visitRoom(state, world, world.startRoom, "east");
   const next: GameState = {
     ...state,
     phase: "dungeon",
@@ -69,7 +70,7 @@ function enterDungeon(state: GameState, world: ScenarioWorld): CommandResult {
       facing: "east"
     },
     combat: null,
-    map: visitRoom(state, world, world.startRoom),
+    map: roomVisit.map,
     turn: state.turn + 1
   };
 
@@ -78,7 +79,8 @@ function enterDungeon(state: GameState, world: ScenarioWorld): CommandResult {
       type: "dungeon_entered",
       roomId: world.startRoom,
       facing: "east"
-    }
+    },
+    ...roomVisit.events
   ]);
 }
 
@@ -95,6 +97,10 @@ function turn(state: GameState, side: "left" | "right"): CommandResult {
       ...state.position,
       facing
     },
+    map: {
+      ...state.map,
+      currentFacing: facing
+    },
     turn: state.turn + 1
   };
 
@@ -108,23 +114,42 @@ function moveForward(state: GameState, world: ScenarioWorld): CommandResult {
 
   const exit = getExit(world, state.position.roomId, state.position.facing);
   if (!exit) {
-    return logOnly(state, {
-      type: "movement_blocked",
-      reason: "wall",
-      roomId: state.position.roomId,
-      facing: state.position.facing
-    });
+    const floorId = state.map.floorId ?? getFloorIdForRoom(world, state.position.roomId);
+    const next: GameState = {
+      ...state,
+      map: {
+        ...state.map,
+        blockedExits: appendDirection(state.map.blockedExits, state.position.roomId, state.position.facing)
+      },
+      turn: state.turn + 1
+    };
+
+    return withEvents(next, [
+      {
+        type: "movement_blocked",
+        reason: "wall",
+        roomId: state.position.roomId,
+        facing: state.position.facing
+      },
+      {
+        type: "map_exit_blocked",
+        floorId,
+        roomId: state.position.roomId,
+        direction: state.position.facing
+      }
+    ]);
   }
 
   const room = getRoom(world, exit);
-  const events: GameEvent[] = [{ type: "room_entered", roomId: room.id, roomName: room.name }];
+  const roomVisit = visitRoom(state, world, exit, state.position.facing);
+  const events: GameEvent[] = [{ type: "room_entered", roomId: room.id, roomName: room.name }, ...roomVisit.events];
   let next: GameState = {
     ...state,
     position: {
       ...state.position,
       roomId: exit
     },
-    map: visitRoom(state, world, exit),
+    map: roomVisit.map,
     turn: state.turn + 1
   };
 
@@ -135,7 +160,7 @@ function moveForward(state: GameState, world: ScenarioWorld): CommandResult {
         ...member,
         hp: Math.max(1, member.hp - room.trap!.damage)
       })),
-      resolvedTraps: [...next.resolvedTraps, room.trap.id],
+      resolvedTraps: [...next.resolvedTraps, room.trap.id]
     };
     events.push({
       type: "trap_triggered",
@@ -156,7 +181,7 @@ function moveForward(state: GameState, world: ScenarioWorld): CommandResult {
       combat: {
         enemy: { ...room.encounter },
         roomId: room.id
-      },
+      }
     };
     events.push({
       type: "enemy_encountered",
@@ -282,6 +307,11 @@ function returnToTown(state: GameState): CommandResult {
     phase: "town",
     position: null,
     combat: null,
+    map: {
+      ...state.map,
+      currentRoomId: null,
+      currentFacing: null
+    },
     party: state.party.map((member) => ({ ...member, hp: member.maxHp })),
     turn: state.turn + 1
   };
@@ -312,18 +342,49 @@ function noChange(state: GameState): CommandResult {
   return { state, events: [] };
 }
 
-function visitRoom(state: GameState, world: ScenarioWorld, roomId: string) {
+function visitRoom(state: GameState, world: ScenarioWorld, roomId: string, facing: Direction) {
   const room = getRoom(world, roomId);
+  const floorId = getFloorIdForRoom(world, roomId) ?? world.startDungeon;
   const visitedRooms = state.map.visitedRooms.includes(roomId)
     ? state.map.visitedRooms
     : [...state.map.visitedRooms, roomId];
+  const exits = Object.keys(room.exits) as Direction[];
 
   return {
-    ...state.map,
-    visitedRooms,
-    knownExits: {
-      ...state.map.knownExits,
-      [roomId]: Object.keys(room.exits) as Direction[]
+    events: [
+      { type: "map_room_visited", floorId, roomId },
+      { type: "map_exits_known", floorId, roomId, exits }
+    ] satisfies GameEvent[],
+    map: {
+      ...state.map,
+      floorId,
+      currentRoomId: roomId,
+      currentFacing: facing,
+      visitedRooms,
+      knownExits: {
+        ...state.map.knownExits,
+        [roomId]: exits
+      }
     }
   };
+}
+
+function appendDirection(
+  current: Partial<Record<string, Direction[]>>,
+  roomId: string,
+  direction: Direction
+): Partial<Record<string, Direction[]>> {
+  const directions = current[roomId] ?? [];
+  if (directions.includes(direction)) {
+    return current;
+  }
+
+  return {
+    ...current,
+    [roomId]: [...directions, direction]
+  };
+}
+
+function getFloorIdForRoom(world: ScenarioWorld, roomId: string) {
+  return world.dungeons.find((dungeon) => dungeon.rooms.some((room) => room.id === roomId))?.id ?? null;
 }

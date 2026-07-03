@@ -26,10 +26,36 @@ describe("rules engine", () => {
       roomId: "room.b1f.001",
       facing: "east"
     });
+    expect(result.events).toContainEqual({
+      type: "map_room_visited",
+      floorId: "dungeon.b1f",
+      roomId: "room.b1f.001"
+    });
     expect(result.state.log.at(-1)).toMatchObject({
       text: "The party descends beneath the black stela.",
       tags: ["dungeon"]
     });
+    expect(result.state.map).toMatchObject({
+      floorId: "dungeon.b1f",
+      currentRoomId: "room.b1f.001",
+      currentFacing: "east",
+      knownExits: { "room.b1f.001": ["east"] }
+    });
+  });
+
+  it("records blocked exits as map events without adding extra display prose", () => {
+    const entered = executeCommand(stateWithParty(), defaultWorld, { type: "enter_dungeon" });
+    const turned = executeCommand(entered, defaultWorld, { type: "turn_left" });
+    const result = resolveCommand(turned, defaultWorld, { type: "move_forward" });
+
+    expect(result.events).toContainEqual({
+      type: "map_exit_blocked",
+      floorId: "dungeon.b1f",
+      roomId: "room.b1f.001",
+      direction: "north"
+    });
+    expect(result.state.map.blockedExits["room.b1f.001"]).toEqual(["north"]);
+    expect(result.state.log.at(-1)?.text).toBe("A cold wall blocks the way.");
   });
 
   it("enters the dungeon and triggers deterministic trap and combat on movement", () => {

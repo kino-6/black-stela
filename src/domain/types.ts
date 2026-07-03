@@ -37,6 +37,10 @@ export type GameEvent =
   | { type: "dungeon_entered"; roomId: string; facing: Direction }
   | { type: "party_turned"; side: "left" | "right"; facing: Direction }
   | { type: "movement_blocked"; reason: "wall"; roomId: string; facing: Direction }
+  | { type: "map_room_visited"; floorId: string; roomId: string }
+  | { type: "map_exits_known"; floorId: string; roomId: string; exits: Direction[] }
+  | { type: "map_exit_blocked"; floorId: string | null; roomId: string; direction: Direction }
+  | { type: "map_secret_candidate_added"; floorId: string | null; roomId: string; direction: Direction }
   | { type: "room_entered"; roomId: string; roomName: string }
   | { type: "trap_triggered"; trapId: string; trapName: string; damage: number }
   | { type: "room_event_triggered"; roomId: string; text: string }
@@ -78,8 +82,13 @@ export interface DungeonPosition {
 }
 
 export interface DungeonMapState {
+  floorId: string | null;
+  currentRoomId: string | null;
+  currentFacing: Direction | null;
   visitedRooms: string[];
   knownExits: Partial<Record<string, Direction[]>>;
+  blockedExits: Partial<Record<string, Direction[]>>;
+  secretCandidates: Partial<Record<string, Direction[]>>;
 }
 
 export interface GameState {

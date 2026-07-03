@@ -1,11 +1,19 @@
 import { executeCommand } from "../domain/rulesEngine";
-import type { Command, GameState, ScenarioWorld } from "../domain/types";
+import { getRoom } from "../domain/scenario";
+import type { Command, Direction, GameState, ScenarioWorld } from "../domain/types";
+
+export interface HeadlessDiagnostic {
+  reason: "no_party" | "no_position" | "no_route" | "max_steps";
+  roomId?: string;
+  phase: GameState["phase"];
+}
 
 export interface HeadlessClearResult {
   cleared: boolean;
   reason: "clear" | "stuck" | "max_steps";
   state: GameState;
   commands: Command[];
+  diagnostic?: HeadlessDiagnostic;
 }
 
 export function runHeadlessClear(initialState: GameState, world: ScenarioWorld, maxSteps = 20): HeadlessClearResult {
@@ -17,20 +25,22 @@ export function runHeadlessClear(initialState: GameState, world: ScenarioWorld, 
       return { cleared: true, reason: "clear", state, commands };
     }
 
-    const command = chooseNextCommand(state);
-    if (!command) {
-      return { cleared: false, reason: "stuck", state, commands };
+    const decision = chooseNextCommand(state, world);
+    if (!decision.command) {
+      return { cleared: false, reason: "stuck", state, commands, diagnostic: decision.diagnostic };
     }
 
-    commands.push(command);
-    state = executeCommand(state, world, command);
+    commands.push(decision.command);
+    state = executeCommand(state, world, decision.command);
   }
 
+  const cleared = isMvpCleared(state);
   return {
-    cleared: isMvpCleared(state),
-    reason: isMvpCleared(state) ? "clear" : "max_steps",
+    cleared,
+    reason: cleared ? "clear" : "max_steps",
     state,
-    commands
+    commands,
+    diagnostic: cleared ? undefined : describeState(state, "max_steps")
   };
 }
 
@@ -43,30 +53,86 @@ export function isMvpCleared(state: GameState): boolean {
   );
 }
 
-function chooseNextCommand(state: GameState): Command | null {
+interface HeadlessDecision {
+  command: Command | null;
+  diagnostic?: HeadlessDiagnostic;
+}
+
+const directionOrder: Direction[] = ["north", "east", "south", "west"];
+const rightOf: Record<Direction, Direction> = {
+  north: "east",
+  east: "south",
+  south: "west",
+  west: "north"
+};
+const leftOf: Record<Direction, Direction> = {
+  north: "west",
+  west: "south",
+  south: "east",
+  east: "north"
+};
+
+function chooseNextCommand(state: GameState, world: ScenarioWorld): HeadlessDecision {
   if (state.phase === "town") {
-    return state.party.length > 0 ? { type: "enter_dungeon" } : null;
+    return state.party.length > 0
+      ? { command: { type: "enter_dungeon" } }
+      : { command: null, diagnostic: describeState(state, "no_party") };
   }
 
   if (state.phase === "combat") {
-    return { type: "attack" };
+    return { command: { type: "attack" } };
   }
 
   if (!state.position) {
-    return null;
+    return { command: null, diagnostic: describeState(state, "no_position") };
   }
 
-  if (state.position.roomId === "room.b1f.001") {
-    return state.position.facing === "east" ? { type: "move_forward" } : { type: "turn_right" };
+  const room = getRoom(world, state.position.roomId);
+  if (room.stairsToTown && state.defeatedEnemies.length > 0) {
+    return { command: { type: "return_to_town" } };
   }
 
-  if (state.position.roomId === "room.b1f.002") {
-    return state.position.facing === "east" ? { type: "move_forward" } : { type: "turn_right" };
+  const direction = chooseExplorationDirection(state, room.exits);
+  if (!direction) {
+    return { command: null, diagnostic: describeState(state, "no_route") };
   }
 
-  if (state.position.roomId === "room.b1f.003") {
-    return { type: "return_to_town" };
+  if (state.position.facing === direction) {
+    return { command: { type: "move_forward" } };
   }
 
-  return null;
+  return { command: turnToward(state.position.facing, direction) };
+}
+
+function chooseExplorationDirection(
+  state: GameState,
+  exits: Partial<Record<Direction, string>>
+): Direction | null {
+  const directions = directionOrder.filter((direction) => exits[direction]);
+  const unexplored = directions.find((direction) => {
+    const roomId = exits[direction];
+    return roomId ? !state.map.visitedRooms.includes(roomId) : false;
+  });
+
+  return unexplored ?? directions[0] ?? null;
+}
+
+function turnToward(facing: Direction, target: Direction): Command {
+  if (rightOf[facing] === target) {
+    return { type: "turn_right" };
+  }
+
+  if (leftOf[facing] === target) {
+    return { type: "turn_left" };
+  }
+
+  return { type: "turn_right" };
+}
+
+function describeState(state: GameState, reason: HeadlessDiagnostic["reason"]): HeadlessDiagnostic {
+  return {
+    reason,
+    phase: state.phase,
+    roomId: state.position?.roomId
+  };
 }
