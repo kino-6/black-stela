@@ -492,6 +492,42 @@ textarea {
   margin-left: auto;
 }
 
+.tempo-status {
+  margin: 0.65rem 0 0;
+  color: #f2d58c;
+  font-size: 0.92rem;
+}
+
+.tempo-settings,
+.town-shortcuts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.tempo-settings label {
+  display: inline-flex;
+  gap: 0.4rem;
+  align-items: center;
+  color: #d7d3c3;
+  font-size: 0.9rem;
+}
+
+.tempo-settings small {
+  color: #9f9b8e;
+  line-height: 1.35;
+}
+
+.validation-warning {
+  border-color: #b28b4a;
+}
+
+.validation-error {
+  border-color: #7f4a43;
+}
+
 .log-list {
   list-style: none;
   margin: 0;

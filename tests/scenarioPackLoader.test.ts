@@ -2,6 +2,18 @@ import { describe, expect, it } from "vitest";
 import defaultManifest from "../content/worlds/default/manifest.md?raw";
 import defaultWorld from "../content/worlds/default/world.md?raw";
 import defaultB1f from "../content/worlds/default/dungeons/b1f.md?raw";
+import defaultB2f from "../content/worlds/default/dungeons/b2f.md?raw";
+import defaultB3f from "../content/worlds/default/dungeons/b3f.md?raw";
+import defaultB4f from "../content/worlds/default/dungeons/b4f.md?raw";
+import defaultB5f from "../content/worlds/default/dungeons/b5f.md?raw";
+import defaultB6f from "../content/worlds/default/dungeons/b6f.md?raw";
+import defaultB7f from "../content/worlds/default/dungeons/b7f.md?raw";
+import defaultB8f from "../content/worlds/default/dungeons/b8f.md?raw";
+import defaultItems from "../content/worlds/default/items.md?raw";
+import defaultEnemies from "../content/worlds/default/enemies.md?raw";
+import defaultEncounters from "../content/worlds/default/encounters.md?raw";
+import defaultTreasure from "../content/worlds/default/treasure.md?raw";
+import defaultProgression from "../content/worlds/default/progression.md?raw";
 import missingDungeonManifest from "./fixtures/scenarios/missing-dungeon/manifest.md?raw";
 import missingDungeonWorld from "./fixtures/scenarios/missing-dungeon/world.md?raw";
 import invalidExitManifest from "./fixtures/scenarios/invalid-exit/manifest.md?raw";
@@ -17,13 +29,25 @@ describe("scenario pack loader", () => {
     const result = loadScenarioPack({
       "manifest.md": defaultManifest,
       "world.md": defaultWorld,
-      "dungeons/b1f.md": defaultB1f
+      "dungeons/b1f.md": defaultB1f,
+      "dungeons/b2f.md": defaultB2f,
+      "dungeons/b3f.md": defaultB3f,
+      "dungeons/b4f.md": defaultB4f,
+      "dungeons/b5f.md": defaultB5f,
+      "dungeons/b6f.md": defaultB6f,
+      "dungeons/b7f.md": defaultB7f,
+      "dungeons/b8f.md": defaultB8f,
+      "items.md": defaultItems,
+      "enemies.md": defaultEnemies,
+      "encounters.md": defaultEncounters,
+      "treasure.md": defaultTreasure,
+      "progression.md": defaultProgression
     });
 
     expect(result).toMatchObject({
       ok: true,
       manifest: { id: "pack.default" },
-      world: { id: "world.default" }
+      world: { id: "world.default", dungeons: expect.arrayContaining([expect.objectContaining({ id: "dungeon.b8f" })]) }
     });
   });
 
@@ -41,9 +65,8 @@ describe("scenario pack loader", () => {
 
   it("reports YAML parse errors with file context", () => {
     const result = loadScenarioPack({
-      "manifest.md": defaultManifest,
+      ...defaultPackFiles(),
       "world.md": "---\nid: [broken\n---",
-      "dungeons/b1f.md": defaultB1f
     });
 
     expect(result).toMatchObject({
@@ -77,4 +100,131 @@ describe("scenario pack loader", () => {
       errors: [{ fieldPath: "aiPolicy" }]
     });
   });
+
+  it("reports broken catalog references with file and field context", () => {
+    const manifest = `---
+id: pack.broken-catalog
+title: Broken Catalog
+version: 0.1.0
+supportedLanguages: [en]
+entryWorld: world.md
+dungeons:
+  - dungeons/b1f.md
+dataFiles:
+  items: items.md
+  enemies: enemies.md
+  encounters: encounters.md
+  treasure: treasure.md
+compatibility:
+  minAppVersion: 0.1.0
+---
+
+# Broken`;
+    const world = `---
+id: world.broken
+title: Broken
+startDungeon: dungeon.b1f
+startRoom: room.broken.001
+aiPolicy:
+  allowed: [environment_flavor]
+  forbidden: [move_pc]
+---
+
+# Broken`;
+    const dungeon = `---
+id: dungeon.b1f
+name: Broken Floor
+startRoom: room.broken.001
+rooms:
+  - id: room.broken.001
+    name: Broken
+    description: Broken refs
+    exits: {}
+    encounterTable: encounters.missing
+    treasureTable: treasure.missing
+---
+
+# Broken`;
+    const result = loadScenarioPack({
+      "manifest.md": manifest,
+      "world.md": world,
+      "dungeons/b1f.md": dungeon,
+      "items.md": "---\nitems: []\nequipment: []\nshops: []\n---",
+      "enemies.md": "---\nenemies: []\n---",
+      "encounters.md": "---\nencounterTables: []\n---",
+      "treasure.md": "---\ntreasureTables: []\n---"
+    });
+
+    expect(result).toMatchObject({
+      ok: false,
+      errors: expect.arrayContaining([
+        expect.objectContaining({ fieldPath: "room.broken.001.encounterTable" }),
+        expect.objectContaining({ fieldPath: "room.broken.001.treasureTable" })
+      ])
+    });
+  });
+
+  it("reports unreachable rooms before authors playtest", () => {
+    const result = loadScenarioPack({
+      "manifest.md": `---
+id: pack.unreachable
+title: Unreachable
+version: 0.1.0
+supportedLanguages: [en]
+entryWorld: world.md
+dungeons:
+  - dungeons/b1f.md
+compatibility:
+  minAppVersion: 0.1.0
+---`,
+      "world.md": `---
+id: world.unreachable
+title: Unreachable
+startDungeon: dungeon.b1f
+startRoom: room.reachable
+aiPolicy:
+  allowed: [environment_flavor]
+  forbidden: [move_pc]
+---`,
+      "dungeons/b1f.md": `---
+id: dungeon.b1f
+name: Unreachable Floor
+startRoom: room.reachable
+rooms:
+  - id: room.reachable
+    name: Reachable
+    description: Start
+    exits: {}
+  - id: room.lost
+    name: Lost
+    description: No route reaches this room.
+    exits: {}
+---`
+    });
+
+    expect(result).toMatchObject({
+      ok: false,
+      errors: expect.arrayContaining([expect.objectContaining({ fieldPath: "room.lost.reachability" })])
+    });
+  });
 });
+
+function defaultPackFiles() {
+  return {
+    "manifest.md": defaultManifest,
+    "world.md": defaultWorld,
+    "dungeons/b1f.md": defaultB1f,
+    "dungeons/b2f.md": defaultB2f,
+    "dungeons/b3f.md": defaultB3f,
+    "dungeons/b4f.md": defaultB4f,
+    "dungeons/b5f.md": defaultB5f,
+    "dungeons/b6f.md": defaultB6f,
+    "dungeons/b7f.md": defaultB7f,
+    "dungeons/b8f.md": defaultB8f,
+    "items.md": defaultItems,
+    "enemies.md": defaultEnemies,
+    "encounters.md": defaultEncounters,
+    "treasure.md": defaultTreasure,
+    "progression.md": defaultProgression
+  };
+}

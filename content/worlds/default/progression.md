@@ -1,0 +1,14 @@
+---
+progressionFlags:
+  - id: flag.b1f.marker-read
+    description: The party reached the black marker and learned the safe return pattern.
+  - id: flag.b2f.soot-shortcut
+    description: The soot-locked shortcut can be opened from the lower side.
+  - id: flag.b5f.mid-shortcut
+    description: The midpoint shortcut from B5F to the upper dust is open.
+---
+
+# Progression Flags
+
+Flags record scenario gates and shortcut state. Runtime flag mutation can be
+added after the data model is stable.

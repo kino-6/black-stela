@@ -2,9 +2,30 @@ import { appendEventLogs } from "../domain/replayLog";
 import { getRoom } from "../domain/scenario";
 import type { Character, Direction, GameState, ScenarioWorld } from "../domain/types";
 
-export type DebugProgress = "ready" | "after_encounter" | "clear_ready";
+export type DebugProgress =
+  | "ready"
+  | "after_encounter"
+  | "clear_ready"
+  | "floor_2"
+  | "floor_3"
+  | "floor_4"
+  | "floor_5"
+  | "floor_6"
+  | "floor_7"
+  | "floor_8";
 
-const debugProgressValues: DebugProgress[] = ["ready", "after_encounter", "clear_ready"];
+export const debugProgressValues: DebugProgress[] = [
+  "ready",
+  "after_encounter",
+  "clear_ready",
+  "floor_2",
+  "floor_3",
+  "floor_4",
+  "floor_5",
+  "floor_6",
+  "floor_7",
+  "floor_8"
+];
 
 export function parseDebugProgress(value: string | null): DebugProgress {
   return debugProgressValues.includes(value as DebugProgress) ? (value as DebugProgress) : "ready";
@@ -70,6 +91,10 @@ export function createDebugStateFromProgress(world: ScenarioWorld, progress: Deb
     };
   }
 
+  if (progress.startsWith("floor_")) {
+    return createFloorDebugState(base, world, progress);
+  }
+
   const state: GameState = {
     ...base,
     phase: "dungeon",
@@ -87,6 +112,47 @@ export function createDebugStateFromProgress(world: ScenarioWorld, progress: Deb
       { type: "debug_started", text: "Debug start: party stands at the return marker with full map progress." }
     ])
   };
+}
+
+function createFloorDebugState(base: GameState, world: ScenarioWorld, progress: DebugProgress): GameState {
+  const floorNumber = Number(progress.replace("floor_", ""));
+  const roomId = `room.b${floorNumber}f.001`;
+  const visitedRooms = createVisitedPathToFloor(floorNumber);
+  const state: GameState = {
+    ...base,
+    phase: "dungeon",
+    position: { roomId, facing: "east" },
+    defeatedEnemies: ["enemy.b1f.ash-slime"],
+    resolvedTraps: ["trap.b1f.needle"],
+    discoveredSecrets: ["trap.b1f.needle"],
+    inventory: [
+      ...base.inventory,
+      {
+        id: "item.lantern-oil",
+        name: "Lantern Oil",
+        kind: "utility",
+        quantity: 1
+      }
+    ],
+    map: createMapState(world, visitedRooms),
+    turn: 5 + floorNumber
+  };
+
+  return {
+    ...state,
+    log: appendEventLogs(state, [
+      { type: "debug_started", text: `Debug start: party begins checks on B${floorNumber}F.` }
+    ])
+  };
+}
+
+function createVisitedPathToFloor(floorNumber: number) {
+  const visited = ["room.b1f.001", "room.b1f.002", "room.b1f.003"];
+  for (let floor = 2; floor <= floorNumber; floor += 1) {
+    visited.push(`room.b${floor}f.001`);
+  }
+
+  return visited;
 }
 
 export function createMapState(world: ScenarioWorld, visitedRooms: string[]) {

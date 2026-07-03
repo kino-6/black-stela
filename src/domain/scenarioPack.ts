@@ -8,6 +8,15 @@ export const scenarioPackManifestSchema = z.object({
   supportedLanguages: z.array(z.enum(["en", "ja"])).min(1),
   entryWorld: z.string().min(1),
   dungeons: z.array(z.string().min(1)).min(1),
+  dataFiles: z
+    .object({
+      items: z.string().min(1).optional(),
+      enemies: z.string().min(1).optional(),
+      encounters: z.string().min(1).optional(),
+      treasure: z.string().min(1).optional(),
+      progression: z.string().min(1).optional()
+    })
+    .default({}),
   compatibility: z.object({
     minAppVersion: z.string().min(1)
   })
@@ -19,8 +28,9 @@ export interface ScenarioValidationError {
   filePath: string;
   fieldPath: string;
   reason: string;
+  severity?: "error" | "warning";
 }
 
 export function parseScenarioPackManifest(markdown: string): ScenarioPackManifest {
-  return parseMarkdownFrontMatter(markdown, scenarioPackManifestSchema).data;
+  return parseMarkdownFrontMatter(markdown, scenarioPackManifestSchema).data as ScenarioPackManifest;
 }

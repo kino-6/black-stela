@@ -1,11 +1,13 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ArrowLeft,
   ArrowRight,
   DoorOpen,
+  FastForward,
   Footprints,
   FolderOpen,
   LogOut,
+  Repeat2,
   Save,
   Swords,
   Volume2,
@@ -18,11 +20,16 @@ import { AiProposalPanel } from "./components/AiProposalPanel";
 import { AiSettingsPanel } from "./components/AiSettingsPanel";
 import { ScenarioValidationPanel } from "./components/ScenarioValidationPanel";
 import { createCharacter, createInitialGameState, addCharacter } from "./domain/gameState";
-import { getLocalizedRoomText } from "./domain/scenario";
+import { getLocalizedRoomText, getRoom } from "./domain/scenario";
 import { executeCommand } from "./domain/rulesEngine";
 import { projectEventToLog } from "./domain/replayLog";
-import type { Command, GameState } from "./domain/types";
-import { createDebugStateFromProgress, parseDebugProgress, type DebugProgress } from "./debug/debugStart";
+import type { AdventureLogEntry, Command, GameState } from "./domain/types";
+import {
+  createDebugStateFromProgress,
+  debugProgressValues,
+  parseDebugProgress,
+  type DebugProgress
+} from "./debug/debugStart";
 import { runHeadlessClear } from "./headless/headlessRunner";
 import { defaultWorld } from "./data/defaultWorld";
 import { guardNarration } from "./services/aiPolicyGuard";
@@ -64,6 +71,12 @@ export function App() {
   const [saveSlotId, setSaveSlotId] = useState("autosave");
   const [saveSlots, setSaveSlots] = useState<SaveSlotSummary[]>(() => createBrowserSaveRepository()?.list() ?? []);
   const [saveStatus, setSaveStatus] = useState("");
+  const [lastCommand, setLastCommand] = useState<Command | null>(null);
+  const [tempoStatus, setTempoStatus] = useState("");
+  const [compactLog, setCompactLog] = useState(() => loadBooleanSetting("black-stela.compactLog", false));
+  const [confirmHighImpact, setConfirmHighImpact] = useState(() =>
+    loadBooleanSetting("black-stela.confirmHighImpact", false)
+  );
   const scenarioValidationErrors = useMemo(() => getScenarioValidationErrorsFromLocation(), []);
 
   const roomText = useMemo(() => {
@@ -74,8 +87,35 @@ export function App() {
     return getLocalizedRoomText(defaultWorld, state.position.roomId, locale);
   }, [locale, state.position]);
 
-  function run(command: Command) {
+  function run(command: Command, options: { remember?: boolean; confirm?: boolean } = {}) {
+    if (options.confirm !== false && confirmHighImpact && isHighImpactCommand(command)) {
+      const confirmed = window.confirm(t("tempo.confirmAction"));
+      if (!confirmed) {
+        setTempoStatus(t("tempo.cancelled"));
+        return;
+      }
+    }
+
     setState((current) => executeCommand(current, defaultWorld, command));
+    if (options.remember !== false && isRepeatableCommand(command)) {
+      setLastCommand(command);
+    }
+    setTempoStatus("");
+  }
+
+  function repeatLastCommand() {
+    if (!lastCommand) {
+      setTempoStatus(t("tempo.noRepeat"));
+      return;
+    }
+
+    if (!isCommandValidForState(lastCommand, state)) {
+      setTempoStatus(t("tempo.repeatBlocked"));
+      return;
+    }
+
+    run(lastCommand, { remember: false, confirm: false });
+    setTempoStatus(t("tempo.repeated"));
   }
 
   function loadDebugProgress() {
@@ -168,6 +208,69 @@ export function App() {
     setNarrationStatus(t("ai.settingsSaved"));
   }
 
+  function runAutoCombat() {
+    const result = runAutoCombatLoop(state, t);
+    setState(result.state);
+    setTempoStatus(result.status);
+    if (result.lastCommand) {
+      setLastCommand(result.lastCommand);
+    }
+  }
+
+  function runAutoMove() {
+    const result = runAutoMoveLoop(state, t);
+    setState(result.state);
+    setTempoStatus(result.status);
+    if (result.lastCommand) {
+      setLastCommand(result.lastCommand);
+    }
+  }
+
+  function toggleCompactLog(nextValue: boolean) {
+    setCompactLog(nextValue);
+    saveBooleanSetting("black-stela.compactLog", nextValue);
+  }
+
+  function toggleConfirmHighImpact(nextValue: boolean) {
+    setConfirmHighImpact(nextValue);
+    saveBooleanSetting("black-stela.confirmHighImpact", nextValue);
+  }
+
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      if (isTypingTarget(event.target)) {
+        return;
+      }
+
+      const key = event.key.toLowerCase();
+      if (key === " " || key === "r") {
+        event.preventDefault();
+        repeatLastCommand();
+      } else if (state.phase === "dungeon" && key === "w") {
+        event.preventDefault();
+        run({ type: "move_forward" });
+      } else if (state.phase === "dungeon" && key === "a") {
+        event.preventDefault();
+        run({ type: "turn_left" });
+      } else if (state.phase === "dungeon" && key === "d") {
+        event.preventDefault();
+        run({ type: "turn_right" });
+      } else if (state.phase === "dungeon" && key === "s") {
+        event.preventDefault();
+        run({ type: "search" });
+      } else if (state.phase === "combat" && key === "f") {
+        event.preventDefault();
+        run({ type: "attack" });
+      } else if (state.phase === "combat" && key === "g") {
+        event.preventDefault();
+        run({ type: "defend" });
+      }
+    }
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [lastCommand, state, confirmHighImpact, t]);
+
   return (
     <main className="app-shell">
       <header className="topbar">
@@ -235,9 +338,11 @@ export function App() {
               value={debugProgress}
               onChange={(event) => setDebugProgress(parseDebugProgress(event.target.value))}
             >
-              <option value="ready">{t("debug.ready")}</option>
-              <option value="after_encounter">{t("debug.afterEncounter")}</option>
-              <option value="clear_ready">{t("debug.clearReady")}</option>
+              {debugProgressValues.map((progress) => (
+                <option key={progress} value={progress}>
+                  {formatDebugProgress(progress, t)}
+                </option>
+              ))}
             </select>
           </label>
           <button type="button" onClick={loadDebugProgress}>{t("debug.loadProgress")}</button>
@@ -350,6 +455,11 @@ export function App() {
                   <p>{t("town.logCount", { count: state.log.length })}</p>
                 </section>
               )}
+              <section className="town-service town-shortcuts" aria-label={t("town.shortcuts")}>
+                <button type="button" onClick={() => run({ type: "recover_party" })}>{t("town.recoverAll")}</button>
+                <button type="button" onClick={saveGame}>{t("town.quickSave")}</button>
+                <button type="button" onClick={loadGame}>{t("town.quickLoad")}</button>
+              </section>
               <p>
                 {t("play.townCopy")}
               </p>
@@ -367,6 +477,10 @@ export function App() {
               </div>
               {state.phase === "combat" ? (
                 <div className="command-bar" aria-label={t("play.combatCommands")}>
+                  <button type="button" onClick={repeatLastCommand}>
+                    <Repeat2 size={18} />
+                    {t("tempo.repeat")}
+                  </button>
                   <button type="button" onClick={() => run({ type: "attack" })}>
                     <Swords size={18} />
                     {t("play.attack")}
@@ -394,10 +508,18 @@ export function App() {
                     <ShieldCheck size={18} />
                     {t("play.retreat")}
                   </button>
+                  <button type="button" onClick={runAutoCombat}>
+                    <FastForward size={18} />
+                    {t("tempo.autoCombat")}
+                  </button>
                   <span className="enemy-meter">{t("play.enemyHp", { hp: state.combat?.enemy.hp ?? 0 })}</span>
                 </div>
               ) : (
                 <div className="command-bar" aria-label={t("play.dungeonCommands")}>
+                  <button type="button" onClick={repeatLastCommand}>
+                    <Repeat2 size={18} />
+                    {t("tempo.repeat")}
+                  </button>
                   <button type="button" aria-label={t("play.turnLeft")} onClick={() => run({ type: "turn_left" })}>
                     <ArrowLeft size={18} />
                   </button>
@@ -420,8 +542,13 @@ export function App() {
                     <LogOut size={18} />
                     {t("play.return")}
                   </button>
+                  <button type="button" onClick={runAutoMove}>
+                    <FastForward size={18} />
+                    {t("tempo.autoMove")}
+                  </button>
                 </div>
               )}
+              {tempoStatus && <p className="tempo-status" aria-live="polite">{tempoStatus}</p>}
             </>
           )}
         </section>
@@ -431,13 +558,26 @@ export function App() {
             <h2 id="log-heading">{t("log.heading")}</h2>
             <button type="button" onClick={narrate}>{t("log.replay")}</button>
           </div>
+          <div className="tempo-settings">
+            <label>
+              <input type="checkbox" checked={compactLog} onChange={(event) => toggleCompactLog(event.target.checked)} />
+              {t("tempo.compactLog")}
+            </label>
+            <label>
+              <input
+                type="checkbox"
+                checked={confirmHighImpact}
+                onChange={(event) => toggleConfirmHighImpact(event.target.checked)}
+              />
+              {t("tempo.confirmHighImpact")}
+            </label>
+            <small>{t("tempo.shortcuts")}</small>
+          </div>
           <ol className="log-list">
             {state.log.length === 0 ? (
               <li className="empty-state">{t("log.empty")}</li>
             ) : (
-              state.log
-                .slice()
-                .reverse()
+              getVisibleLogEntries(state, compactLog)
                 .map((entry) => (
                   <li key={entry.id}>
                     <small>{t("log.turn", { turn: entry.turn })}</small>
@@ -497,6 +637,143 @@ function withAiEnabled(state: GameState, enabled: boolean): GameState {
     ...state,
     aiEnabled: enabled
   };
+}
+
+function formatDebugProgress(progress: DebugProgress, t: Translator) {
+  if (progress === "ready") {
+    return t("debug.ready");
+  }
+
+  if (progress === "after_encounter") {
+    return t("debug.afterEncounter");
+  }
+
+  if (progress === "clear_ready") {
+    return t("debug.clearReady");
+  }
+
+  return t("debug.floorStart", { floor: progress.replace("floor_", "B") + "F" });
+}
+
+function isRepeatableCommand(command: Command) {
+  return ["move_forward", "turn_left", "turn_right", "inspect_wall", "listen", "search", "attack", "defend", "use_item"].includes(
+    command.type
+  );
+}
+
+function isHighImpactCommand(command: Command) {
+  return command.type === "retreat" || command.type === "return_to_town";
+}
+
+function isCommandValidForState(command: Command, state: GameState) {
+  if (state.phase === "combat") {
+    return ["attack", "defend", "use_item", "retreat"].includes(command.type);
+  }
+
+  if (state.phase === "dungeon") {
+    return ["move_forward", "turn_left", "turn_right", "inspect_wall", "listen", "search", "open_door", "disarm_trap", "return_to_town"].includes(
+      command.type
+    );
+  }
+
+  return ["recover_party", "enter_dungeon"].includes(command.type);
+}
+
+function runAutoCombatLoop(state: GameState, t: Translator) {
+  let current = state;
+  let lastCommand: Command | null = null;
+  for (let step = 0; step < 12; step += 1) {
+    if (current.phase !== "combat" || !current.combat) {
+      return { state: current, lastCommand, status: t("tempo.autoStoppedClear") };
+    }
+
+    if (current.combat.enemy.isBoss || current.combat.enemy.role === "boss" || current.combat.enemy.role === "miniboss") {
+      return { state: current, lastCommand, status: t("tempo.autoStoppedBoss") };
+    }
+
+    if (current.party.some((member) => member.injury || member.hp <= Math.ceil(member.maxHp * 0.35))) {
+      return { state: current, lastCommand, status: t("tempo.autoStoppedDanger") };
+    }
+
+    const command: Command = { type: "attack" };
+    current = executeCommand(current, defaultWorld, command);
+    lastCommand = command;
+  }
+
+  return { state: current, lastCommand, status: t("tempo.autoStoppedLimit") };
+}
+
+function runAutoMoveLoop(state: GameState, t: Translator) {
+  let current = state;
+  let lastCommand: Command | null = null;
+  for (let step = 0; step < 12; step += 1) {
+    if (current.phase !== "dungeon" || !current.position) {
+      return { state: current, lastCommand, status: t("tempo.autoMoveStoppedEvent") };
+    }
+
+    if (current.party.some((member) => member.injury || member.hp <= Math.ceil(member.maxHp * 0.35))) {
+      return { state: current, lastCommand, status: t("tempo.autoStoppedDanger") };
+    }
+
+    const room = getRoom(defaultWorld, current.position.roomId);
+    const exits = Object.entries(room.exits).filter(([, target]) => Boolean(target));
+    const currentExit = room.exits[current.position.facing];
+    const unknownExit = exits.find(([, target]) => target && !current.map.visitedRooms.includes(target));
+
+    if (room.trap || room.encounter || room.event || room.gates?.length || room.stairsToTown || exits.length !== 2) {
+      return { state: current, lastCommand, status: t("tempo.autoMoveStoppedEvent") };
+    }
+
+    if (!currentExit || (unknownExit && unknownExit[0] !== current.position.facing)) {
+      return { state: current, lastCommand, status: t("tempo.autoMoveStoppedBranch") };
+    }
+
+    const command: Command = { type: "move_forward" };
+    const next = executeCommand(current, defaultWorld, command);
+    if (next === current || next.phase !== "dungeon") {
+      return { state: next, lastCommand: command, status: t("tempo.autoMoveStoppedEvent") };
+    }
+
+    current = next;
+    lastCommand = command;
+  }
+
+  return { state: current, lastCommand, status: t("tempo.autoStoppedLimit") };
+}
+
+function getVisibleLogEntries(state: GameState, compactLog: boolean): AdventureLogEntry[] {
+  const entries = state.log.slice().reverse();
+  if (!compactLog) {
+    return entries;
+  }
+
+  return entries.filter((entry, index) => {
+    const previous = entries[index - 1];
+    return !previous || previous.text !== entry.text || previous.turn !== entry.turn;
+  });
+}
+
+function loadBooleanSetting(key: string, fallback: boolean) {
+  if (typeof window === "undefined") {
+    return fallback;
+  }
+
+  const value = window.localStorage.getItem(key);
+  return value === null ? fallback : value === "true";
+}
+
+function saveBooleanSetting(key: string, value: boolean) {
+  if (typeof window !== "undefined") {
+    window.localStorage.setItem(key, String(value));
+  }
+}
+
+function isTypingTarget(target: EventTarget | null) {
+  if (!(target instanceof HTMLElement)) {
+    return false;
+  }
+
+  return ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName) || target.isContentEditable;
 }
 
 function getScenarioValidationErrorsFromLocation(): ScenarioValidationError[] {

@@ -3,7 +3,7 @@ import { defaultWorld } from "../src/data/defaultWorld";
 import { createDebugStateFromProgress } from "../src/debug/debugStart";
 import { addCharacter, createCharacter, createInitialGameState } from "../src/domain/gameState";
 import type { ScenarioWorld } from "../src/domain/types";
-import { runHeadlessClear } from "../src/headless/headlessRunner";
+import { runHeadlessClear, runHeadlessProbes } from "../src/headless/headlessRunner";
 
 describe("headless clear runner", () => {
   it("clears the MVP dungeon deterministically from a fresh debug party", () => {
@@ -41,6 +41,7 @@ describe("headless clear runner", () => {
     expect(result.reason).toBe("stuck");
     expect(result.diagnostic).toMatchObject({
       roomId: "room.blocked.start",
+      floorId: "dungeon.blocked",
       reason: "no_route"
     });
   });
@@ -51,6 +52,14 @@ describe("headless clear runner", () => {
     expect(result.cleared).toBe(false);
     expect(result.reason).toBe("max_steps");
     expect(result.diagnostic?.roomId).toMatch(/^room\.loop\./);
+  });
+
+  it("runs probes from authored debug progress states", () => {
+    const results = runHeadlessProbes(defaultWorld);
+
+    expect(results.map((result) => result.progress)).toContain("floor_8");
+    expect(results.every((result) => result.cleared)).toBe(true);
+    expect(results.find((result) => result.progress === "floor_8")?.state.phase).toBe("town");
   });
 });
 
@@ -64,6 +73,13 @@ const blockedWorld: ScenarioWorld = {
   startDungeon: "dungeon.blocked",
   startRoom: "room.blocked.start",
   aiPolicy: { allowed: [], forbidden: [] },
+  items: [],
+  equipment: [],
+  shops: [],
+  enemies: [],
+  encounterTables: [],
+  treasureTables: [],
+  progressionFlags: [],
   dungeons: [
     {
       id: "dungeon.blocked",
@@ -87,6 +103,13 @@ const loopWorld: ScenarioWorld = {
   startDungeon: "dungeon.loop",
   startRoom: "room.loop.a",
   aiPolicy: { allowed: [], forbidden: [] },
+  items: [],
+  equipment: [],
+  shops: [],
+  enemies: [],
+  encounterTables: [],
+  treasureTables: [],
+  progressionFlags: [],
   dungeons: [
     {
       id: "dungeon.loop",

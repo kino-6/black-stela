@@ -1,11 +1,14 @@
 import { executeCommand } from "../domain/rulesEngine";
 import { getRoom } from "../domain/scenario";
+import { createDebugStateFromProgress, debugProgressValues, type DebugProgress } from "../debug/debugStart";
 import type { Command, Direction, GameState, ScenarioWorld } from "../domain/types";
 
 export interface HeadlessDiagnostic {
   reason: "no_party" | "no_position" | "no_route" | "max_steps";
   roomId?: string;
+  floorId?: string | null;
   phase: GameState["phase"];
+  command?: Command["type"];
 }
 
 export interface HeadlessClearResult {
@@ -14,6 +17,10 @@ export interface HeadlessClearResult {
   state: GameState;
   commands: Command[];
   diagnostic?: HeadlessDiagnostic;
+}
+
+export interface HeadlessProbeResult extends HeadlessClearResult {
+  progress: DebugProgress;
 }
 
 export function runHeadlessClear(initialState: GameState, world: ScenarioWorld, maxSteps = 20): HeadlessClearResult {
@@ -31,7 +38,17 @@ export function runHeadlessClear(initialState: GameState, world: ScenarioWorld, 
     }
 
     commands.push(decision.command);
-    state = executeCommand(state, world, decision.command);
+    const nextState = executeCommand(state, world, decision.command);
+    if (nextState === state) {
+      return {
+        cleared: false,
+        reason: "stuck",
+        state,
+        commands,
+        diagnostic: { ...describeState(state, "no_route"), command: decision.command.type }
+      };
+    }
+    state = nextState;
   }
 
   const cleared = isMvpCleared(state);
@@ -42,6 +59,15 @@ export function runHeadlessClear(initialState: GameState, world: ScenarioWorld, 
     commands,
     diagnostic: cleared ? undefined : describeState(state, "max_steps")
   };
+}
+
+export function runHeadlessProbes(world: ScenarioWorld, maxSteps = 80): HeadlessProbeResult[] {
+  return debugProgressValues
+    .filter((progress) => progress !== "ready")
+    .map((progress) => ({
+      progress,
+      ...runHeadlessClear(createDebugStateFromProgress(world, progress), world, maxSteps)
+    }));
 }
 
 export function isMvpCleared(state: GameState): boolean {
@@ -133,6 +159,7 @@ function describeState(state: GameState, reason: HeadlessDiagnostic["reason"]): 
   return {
     reason,
     phase: state.phase,
-    roomId: state.position?.roomId
+    roomId: state.position?.roomId,
+    floorId: state.map.floorId
   };
 }

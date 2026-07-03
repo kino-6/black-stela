@@ -19,16 +19,20 @@ const CharacterSchema = z.object({
 const InventoryItemSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
-  kind: z.literal("healing"),
+  kind: z.enum(["healing", "utility"]),
   quantity: z.number().int().nonnegative(),
-  healAmount: z.number().int().positive()
+  healAmount: z.number().int().positive().optional()
 });
 
 const EnemySchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
   hp: z.number().int().nonnegative(),
-  attack: z.number().int().nonnegative()
+  attack: z.number().int().nonnegative(),
+  role: z.enum(["attrition", "blocker", "status", "ambusher", "caster", "miniboss", "boss"]).optional(),
+  dangerTier: z.number().int().positive().optional(),
+  tags: z.array(z.string()).optional(),
+  isBoss: z.boolean().optional()
 });
 
 const CombatStateSchema = z.object({

@@ -334,14 +334,15 @@ function defend(state: GameState): CommandResult {
 function useItem(state: GameState, itemId: string, targetCharacterId: string): CommandResult {
   const item = state.inventory.find((candidate) => candidate.id === itemId && candidate.quantity > 0);
   const target = state.party.find((member) => member.id === targetCharacterId);
-  if (!item || !target || item.kind !== "healing") {
+  if (!item || !target || item.kind !== "healing" || !item.healAmount) {
     return noChange(state);
   }
 
+  const healAmount = item.healAmount;
   const next: GameState = {
     ...state,
     party: state.party.map((member) =>
-      member.id === target.id ? { ...member, hp: Math.min(member.maxHp, member.hp + item.healAmount) } : member
+      member.id === target.id ? { ...member, hp: Math.min(member.maxHp, member.hp + healAmount) } : member
     ),
     inventory: state.inventory.map((candidate) =>
       candidate.id === item.id ? { ...candidate, quantity: Math.max(0, candidate.quantity - 1) } : candidate
@@ -356,7 +357,7 @@ function useItem(state: GameState, itemId: string, targetCharacterId: string): C
       itemName: item.name,
       targetCharacterId: target.id,
       targetName: target.name,
-      healAmount: item.healAmount
+      healAmount
     }
   ]);
 }

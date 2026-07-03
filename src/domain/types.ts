@@ -31,9 +31,9 @@ export interface Character {
 export interface InventoryItem {
   id: string;
   name: string;
-  kind: "healing";
+  kind: "healing" | "utility";
   quantity: number;
-  healAmount: number;
+  healAmount?: number;
 }
 
 export interface AdventureLogEntry {
@@ -79,6 +79,10 @@ export interface Enemy {
   name: string;
   hp: number;
   attack: number;
+  role?: EnemyRole;
+  dangerTier?: number;
+  tags?: string[];
+  isBoss?: boolean;
 }
 
 export interface Trap {
@@ -86,6 +90,7 @@ export interface Trap {
   name: string;
   damage: number;
   detectDc: number;
+  warning?: string;
 }
 
 export interface CombatState {
@@ -130,6 +135,13 @@ export interface ScenarioWorld {
   startRoom: string;
   aiPolicy: AiPolicy;
   dungeons: DungeonFloor[];
+  items: ScenarioItem[];
+  equipment: ScenarioEquipment[];
+  shops: ScenarioShop[];
+  enemies: Enemy[];
+  encounterTables: EncounterTable[];
+  treasureTables: TreasureTable[];
+  progressionFlags: ProgressionFlag[];
 }
 
 export interface AiPolicy {
@@ -142,6 +154,12 @@ export interface DungeonFloor {
   name: string;
   startRoom: string;
   rooms: DungeonRoom[];
+  level?: number;
+  role?: FloorRole;
+  dangerTier?: number;
+  recommendedPartyLevel?: number;
+  tags?: string[];
+  authorNotes?: string;
 }
 
 export interface DungeonRoom {
@@ -154,5 +172,101 @@ export interface DungeonRoom {
   stairsToTown?: boolean;
   trap?: Trap;
   encounter?: Enemy;
+  encounterTable?: string;
+  treasureTable?: string;
+  gates?: ExplorationGate[];
+  zone?: string;
   event?: string;
 }
+
+export type FloorRole =
+  | "onboarding"
+  | "attrition"
+  | "navigation_twist"
+  | "midpoint_gate"
+  | "deep_route"
+  | "finale"
+  | "optional";
+
+export type EnemyRole = "attrition" | "blocker" | "status" | "ambusher" | "caster" | "miniboss" | "boss";
+
+export interface ScenarioItem {
+  id: string;
+  name: string;
+  kind: "healing" | "utility" | "key" | "treasure";
+  tier: number;
+  price?: number;
+  sellValue?: number;
+  healAmount?: number;
+  locales?: LocalizedNameDescription;
+}
+
+export interface ScenarioEquipment {
+  id: string;
+  name: string;
+  slot: "weapon" | "armor" | "accessory";
+  tier: number;
+  attackBonus?: number;
+  defenseBonus?: number;
+  price?: number;
+  sellValue?: number;
+  locales?: LocalizedNameDescription;
+}
+
+export interface ScenarioShop {
+  id: string;
+  name: string;
+  service: "general_store" | "armory" | "recovery";
+  stock?: ShopStockItem[];
+  locales?: LocalizedNameDescription;
+}
+
+export interface ShopStockItem {
+  itemId: string;
+  price: number;
+  availability?: "always" | "limited" | "unlocked";
+  unlockFlag?: string;
+}
+
+export interface EncounterTable {
+  id: string;
+  floorId?: string;
+  entries: EncounterEntry[];
+}
+
+export interface EncounterEntry {
+  enemyId: string;
+  weight: number;
+  minCount?: number;
+  maxCount?: number;
+}
+
+export interface TreasureTable {
+  id: string;
+  tier: number;
+  entries: TreasureEntry[];
+}
+
+export interface TreasureEntry {
+  itemId: string;
+  weight: number;
+  quantity?: number;
+}
+
+export interface ExplorationGate {
+  id: string;
+  direction?: Direction;
+  kind: "lock" | "hidden" | "one_way" | "dark_zone" | "shortcut";
+  requiredKeyId?: string;
+  requiredFlag?: string;
+  grantsFlag?: string;
+  clue?: string;
+  locales?: Partial<Record<string, { clue?: string }>>;
+}
+
+export interface ProgressionFlag {
+  id: string;
+  description: string;
+}
+
+export type LocalizedNameDescription = Partial<Record<string, { name?: string; description?: string }>>;

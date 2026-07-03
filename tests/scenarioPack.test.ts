@@ -8,7 +8,14 @@ describe("scenario pack manifest", () => {
       id: "pack.default",
       supportedLanguages: ["en", "ja"],
       entryWorld: "world.md",
-      dungeons: ["dungeons/b1f.md"]
+      dungeons: expect.arrayContaining(["dungeons/b1f.md", "dungeons/b8f.md"]),
+      dataFiles: {
+        items: "items.md",
+        enemies: "enemies.md",
+        encounters: "encounters.md",
+        treasure: "treasure.md",
+        progression: "progression.md"
+      }
     });
   });
 

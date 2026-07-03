@@ -7,6 +7,7 @@ describe("debug start state", () => {
     expect(parseDebugProgress("ready")).toBe("ready");
     expect(parseDebugProgress("after_encounter")).toBe("after_encounter");
     expect(parseDebugProgress("clear_ready")).toBe("clear_ready");
+    expect(parseDebugProgress("floor_8")).toBe("floor_8");
     expect(parseDebugProgress("unknown")).toBe("ready");
     expect(parseDebugProgress(null)).toBe("ready");
   });
@@ -26,5 +27,16 @@ describe("debug start state", () => {
     expect(state.map.knownExits["room.b1f.002"]).toEqual(["west", "east"]);
     expect(state.map.blockedExits).toEqual({});
     expect(state.map.secretCandidates).toEqual({});
+  });
+
+  it("starts at authored scenario floors with expected map context", () => {
+    const state = createDebugStateFromProgress(defaultWorld, "floor_8");
+
+    expect(state.phase).toBe("dungeon");
+    expect(state.position).toEqual({ roomId: "room.b8f.001", facing: "east" });
+    expect(state.map.floorId).toBe("dungeon.b8f");
+    expect(state.map.visitedRooms).toContain("room.b1f.003");
+    expect(state.map.visitedRooms).toContain("room.b8f.001");
+    expect(state.inventory.map((item) => item.id)).toContain("item.lantern-oil");
   });
 });

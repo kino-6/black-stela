@@ -46,6 +46,7 @@ export const en = {
     ready: "Ready in town",
     afterEncounter: "After encounter",
     clearReady: "Clear ready",
+    floorStart: "{floor} start",
     loadProgress: "Load progress",
     headlessClear: "Headless clear",
     headlessStatus: "Headless clear: {reason} ({count} commands)"
@@ -95,8 +96,31 @@ export const en = {
     recoveryHeading: "Recovery",
     recordsHeading: "Records",
     recoverParty: "Recover party",
+    recoverAll: "Recover all",
+    quickSave: "Quick save",
+    quickLoad: "Quick load",
+    shortcuts: "Town shortcuts",
     logCount: "{count} records",
     inventory: "Inventory"
+  },
+  tempo: {
+    repeat: "Repeat",
+    autoCombat: "Auto combat",
+    autoMove: "Auto explore",
+    compactLog: "Compact log",
+    confirmHighImpact: "Confirm retreat/return",
+    shortcuts: "Shortcuts: W/A/D move, S search, F attack, G defend, Space/R repeat",
+    confirmAction: "Confirm this high-impact action?",
+    cancelled: "Action cancelled.",
+    noRepeat: "No command to repeat.",
+    repeatBlocked: "The last command cannot be repeated here.",
+    repeated: "Repeated last command.",
+    autoStoppedClear: "Auto combat stopped: combat ended.",
+    autoStoppedBoss: "Auto stopped: boss or miniboss requires manual control.",
+    autoStoppedDanger: "Auto stopped: party danger detected.",
+    autoStoppedLimit: "Auto stopped: step limit reached.",
+    autoMoveStoppedEvent: "Auto move stopped: interesting event or unsafe state.",
+    autoMoveStoppedBranch: "Auto move stopped: branch or unknown route."
   },
   map: {
     heading: "Map",
@@ -128,6 +152,9 @@ export const en = {
   scenario: {
     validation: "Scenario Validation",
     blocked: "Scenario cannot start.",
+    warnings: "Scenario warnings",
+    error: "Error",
+    warning: "Warning",
     file: "File",
     field: "Field",
     reason: "Reason"

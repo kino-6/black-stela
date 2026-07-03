@@ -1,0 +1,56 @@
+---
+id: dungeon.b6f
+name: B6F - Narrow Oaths
+level: 6
+role: deep_route
+dangerTier: 4
+recommendedPartyLevel: 3
+tags:
+  - role-check
+  - traps
+authorNotes: Stronger traps and role checks without hard-locking party builds.
+startRoom: room.b6f.001
+rooms:
+  - id: room.b6f.001
+    name: Vow Passage
+    description: Names are scratched into the wall, each crossed out by a different hand.
+    locales:
+      ja:
+        name: 誓いの通路
+        description: 壁に刻まれた名は、それぞれ別の手で線を引かれている。
+    exits:
+      west: room.b5f.003
+      east: room.b6f.002
+    encounterTable: encounters.b6f.oaths
+  - id: room.b6f.002
+    name: Needle Choir
+    description: Thin metal reeds hum when boots touch the wrong slab.
+    locales:
+      ja:
+        name: 針の合唱
+        description: 誤った石板を踏むと、細い金属の葦が鳴る。
+    exits:
+      west: room.b6f.001
+      south: room.b6f.003
+    trap:
+      id: trap.b6f.needle-choir
+      name: Needle Choir
+      damage: 5
+      detectDc: 13
+      warning: The safe slabs are silent under dropped grit.
+    treasureTable: treasure.b6f.oaths
+  - id: room.b6f.003
+    name: Salted Arch
+    description: Salt crusts the arch ahead, dry as old vows.
+    locales:
+      ja:
+        name: 塩の迫持
+        description: 先の迫持には、古い誓いのように乾いた塩がこびりつく。
+    exits:
+      north: room.b6f.002
+      east: room.b7f.001
+---
+
+# B6F - Narrow Oaths
+
+The dungeon starts asking whether the party came prepared.

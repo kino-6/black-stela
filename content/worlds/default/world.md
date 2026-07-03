@@ -1,6 +1,6 @@
 ---
 id: world.default
-title: Black Stela Prototype
+title: Black Stela - Gate of Ash
 startDungeon: dungeon.b1f
 startRoom: room.b1f.001
 aiPolicy:
@@ -16,8 +16,10 @@ aiPolicy:
 dungeons: []
 ---
 
-# Black Stela Prototype
+# Black Stela - Gate of Ash
 
-The first playable floor below the ancient black stela. This file is editable
-outside the compiled game; YAML is scenario truth and Markdown is human-facing
-context.
+The first authored scenario beneath the black stela at Stela Gate Town. The
+Ashen Descent is planned as an eight-floor compact DRPG scenario about mapping,
+attrition, controlled retreat, and the price of bringing evidence back alive.
+
+YAML is scenario truth. Markdown is human-facing authoring context.

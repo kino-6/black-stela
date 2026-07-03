@@ -48,6 +48,7 @@ export const ja = {
     ready: "街で準備済み",
     afterEncounter: "初戦後",
     clearReady: "帰還直前",
+    floorStart: "{floor} 開始",
     loadProgress: "進捗を読込",
     headlessClear: "Headlessクリア",
     headlessStatus: "Headless clear: {reason} ({count} commands)"
@@ -97,8 +98,31 @@ export const ja = {
     recoveryHeading: "回復",
     recordsHeading: "記録",
     recoverParty: "隊列を回復",
+    recoverAll: "全員回復",
+    quickSave: "クイック保存",
+    quickLoad: "クイック読込",
+    shortcuts: "街ショートカット",
     logCount: "{count} 件の記録",
     inventory: "所持品"
+  },
+  tempo: {
+    repeat: "リピート",
+    autoCombat: "自動戦闘",
+    autoMove: "自動探索",
+    compactLog: "記録を圧縮",
+    confirmHighImpact: "退却/帰還を確認",
+    shortcuts: "ショートカット: W/A/D 移動、S 探索、F 攻撃、G 防御、Space/R リピート",
+    confirmAction: "影響の大きい行動を実行しますか？",
+    cancelled: "行動を取り消しました。",
+    noRepeat: "繰り返すコマンドがありません。",
+    repeatBlocked: "ここでは直前のコマンドを繰り返せません。",
+    repeated: "直前のコマンドを繰り返しました。",
+    autoStoppedClear: "自動戦闘停止: 戦闘が終了しました。",
+    autoStoppedBoss: "自動停止: ボス/中ボスは手動操作が必要です。",
+    autoStoppedDanger: "自動停止: 隊列の危険を検知しました。",
+    autoStoppedLimit: "自動停止: 手数上限に達しました。",
+    autoMoveStoppedEvent: "自動移動停止: 注目イベントまたは危険状態です。",
+    autoMoveStoppedBranch: "自動移動停止: 分岐または未知の経路です。"
   },
   map: {
     heading: "地図",
@@ -130,6 +154,9 @@ export const ja = {
   scenario: {
     validation: "シナリオ検証",
     blocked: "シナリオを開始できません。",
+    warnings: "シナリオ警告",
+    error: "エラー",
+    warning: "警告",
     file: "ファイル",
     field: "項目",
     reason: "理由"

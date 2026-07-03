@@ -1,6 +1,14 @@
 ---
 id: dungeon.b1f
 name: B1F - Silent Approach
+level: 1
+role: onboarding
+dangerTier: 1
+recommendedPartyLevel: 1
+tags:
+  - onboarding
+  - mapping
+authorNotes: Teaches movement, map reading, first trap, combat, and safe retreat.
 startRoom: room.b1f.001
 rooms:
   - id: room.b1f.001
@@ -14,6 +22,7 @@ rooms:
       east: room.b1f.002
     doors:
       - east
+    treasureTable: treasure.b1f.safe
   - id: room.b1f.002
     name: Hall of Old Dust
     description: Dust lies in bands across the floor, broken by fresh marks.
@@ -34,6 +43,11 @@ rooms:
       name: Ash Slime
       hp: 4
       attack: 1
+      role: attrition
+      dangerTier: 1
+      tags:
+        - tutorial
+    encounterTable: encounters.b1f.halls
   - id: room.b1f.003
     name: Black Marker
     description: A narrow marker of black stone leans beside a stair curling upward.
@@ -44,7 +58,17 @@ rooms:
         event: 標石は手に温かい。しかし記録に残るのは、隊列が確かめたことだけだ。
     exits:
       west: room.b1f.002
+      east: room.b2f.001
     stairsToTown: true
+    gates:
+      - id: gate.b1f.first-descent
+        direction: east
+        kind: shortcut
+        grantsFlag: flag.b1f.marker-read
+        clue: The lower stair accepts only a party that knows how to return.
+        locales:
+          ja:
+            clue: 下り階段は、帰還を知る隊列だけを受け入れる。
     event: The marker is warm to the touch, but the log records only what the party confirms.
 ---
 
