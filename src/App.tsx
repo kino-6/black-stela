@@ -14,6 +14,8 @@ import {
 } from "lucide-react";
 import { DungeonView } from "./components/DungeonView";
 import { MapPanel } from "./components/MapPanel";
+import { AiProposalPanel } from "./components/AiProposalPanel";
+import { AiSettingsPanel } from "./components/AiSettingsPanel";
 import { createCharacter, createInitialGameState, addCharacter } from "./domain/gameState";
 import { getLocalizedRoomText } from "./domain/scenario";
 import { executeCommand } from "./domain/rulesEngine";
@@ -23,11 +25,12 @@ import { createDebugStateFromProgress, parseDebugProgress, type DebugProgress } 
 import { runHeadlessClear } from "./headless/headlessRunner";
 import { defaultWorld } from "./data/defaultWorld";
 import { guardNarration } from "./services/aiPolicyGuard";
-import { requestLocalNarration } from "./services/narratorService";
+import { requestNarration } from "./services/narratorService";
 import { fromSaveDataV1, toSaveDataV1 } from "./domain/saveData";
 import { LocalStorageSaveRepository, type SaveSlotSummary } from "./services/saveRepository";
 import { createTranslator, type Locale, type Translator } from "./i18n";
 import { loadLocale, saveLocale as persistLocale } from "./services/settingsRepository";
+import { loadAiSettings, saveAiSettings, type AiSettings } from "./services/aiSettings";
 
 interface CharacterDraft {
   name: string;
@@ -38,12 +41,17 @@ interface CharacterDraft {
 export function App() {
   const [debugMode] = useState(() => isDebugModeEnabled());
   const [debugProgress, setDebugProgress] = useState<DebugProgress>(() => getDebugProgressFromLocation());
+  const [aiSettings, setAiSettings] = useState<AiSettings>(() => loadAiSettings());
   const [state, setState] = useState<GameState>(() =>
-    debugMode ? createDebugStateFromProgress(defaultWorld, getDebugProgressFromLocation()) : createInitialGameState()
+    withAiEnabled(
+      debugMode ? createDebugStateFromProgress(defaultWorld, getDebugProgressFromLocation()) : createInitialGameState(),
+      aiSettings.enabled
+    )
   );
   const [draft, setDraft] = useState<CharacterDraft>({ name: "", notes: "" });
   const [narration, setNarration] = useState("");
   const [narrationStatus, setNarrationStatus] = useState("");
+  const [narrationRejected, setNarrationRejected] = useState(false);
   const [headlessStatus, setHeadlessStatus] = useState("");
   const saveRepository = useMemo(() => createBrowserSaveRepository(), []);
   const [locale, setLocale] = useState<Locale>(() => loadLocale());
@@ -65,7 +73,7 @@ export function App() {
   }
 
   function loadDebugProgress() {
-    setState(createDebugStateFromProgress(defaultWorld, debugProgress));
+    setState(withAiEnabled(createDebugStateFromProgress(defaultWorld, debugProgress), aiSettings.enabled));
     setHeadlessStatus("");
   }
 
@@ -98,12 +106,14 @@ export function App() {
 
   async function narrate() {
     setNarrationStatus(t("log.requesting"));
-    const proposal = await requestLocalNarration(state, defaultWorld);
+    setNarrationRejected(false);
+    const proposal = await requestNarration(state, defaultWorld, aiSettings);
     const guarded = guardNarration(state, defaultWorld, proposal);
 
     if (!guarded.accepted) {
       setNarration("");
       setNarrationStatus(guarded.reason ?? t("log.rejected"));
+      setNarrationRejected(true);
       return;
     }
 
@@ -143,6 +153,13 @@ export function App() {
   function changeLocale(nextLocale: Locale) {
     setLocale(nextLocale);
     persistLocale(nextLocale);
+  }
+
+  function updateAiSettings(nextSettings: AiSettings) {
+    setAiSettings(nextSettings);
+    saveAiSettings(nextSettings);
+    setState((current) => withAiEnabled(current, nextSettings.enabled));
+    setNarrationStatus(t("ai.settingsSaved"));
   }
 
   return (
@@ -187,14 +204,6 @@ export function App() {
             </button>
             <small aria-live="polite">{saveStatus || t("save.slots", { count: saveSlots.length })}</small>
           </div>
-          <label className="ai-toggle">
-            <input
-              type="checkbox"
-              checked={state.aiEnabled}
-              onChange={(event) => setState((current) => ({ ...current, aiEnabled: event.target.checked }))}
-            />
-            {t("ai.local")}
-          </label>
         </div>
       </header>
 
@@ -385,10 +394,8 @@ export function App() {
                 ))
             )}
           </ol>
-          <div className="narration-box" aria-live="polite">
-            <small>{narrationStatus || t("log.narratorIdle")}</small>
-            {narration && <p>{narration}</p>}
-          </div>
+          <AiProposalPanel status={narrationStatus} prose={narration} rejected={narrationRejected} t={t} />
+          <AiSettingsPanel settings={aiSettings} t={t} onChange={updateAiSettings} />
         </aside>
       </section>
     </main>
@@ -429,4 +436,11 @@ function formatPhase(phase: GameState["phase"], t: Translator) {
   }
 
   return t("map.heading");
+}
+
+function withAiEnabled(state: GameState, enabled: boolean): GameState {
+  return {
+    ...state,
+    aiEnabled: enabled
+  };
 }

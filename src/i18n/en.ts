@@ -21,7 +21,23 @@ export const en = {
     corrupt: "Corrupt save"
   },
   ai: {
-    local: "Local AI"
+    local: "Local AI",
+    settings: "AI Settings",
+    enabled: "Enable AI",
+    disabled: "AI off",
+    provider: "Provider",
+    none: "None",
+    ollama: "Ollama",
+    openAiCompatible: "LocalAI compatible",
+    endpoint: "Endpoint",
+    model: "Model",
+    apiKey: "API key",
+    invalidEndpoint: "Invalid endpoint URL.",
+    settingsSaved: "AI settings updated.",
+    proposal: "AI Proposal",
+    noProposal: "No proposal",
+    rejected: "Rejected",
+    accepted: "Accepted"
   },
   debug: {
     heading: "Debug Start",

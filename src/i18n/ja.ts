@@ -23,7 +23,23 @@ export const ja = {
     corrupt: "破損した保存"
   },
   ai: {
-    local: "ローカルAI"
+    local: "ローカルAI",
+    settings: "AI設定",
+    enabled: "AIを有効化",
+    disabled: "AIオフ",
+    provider: "プロバイダー",
+    none: "なし",
+    ollama: "Ollama",
+    openAiCompatible: "LocalAI互換",
+    endpoint: "エンドポイント",
+    model: "モデル",
+    apiKey: "APIキー",
+    invalidEndpoint: "エンドポイントURLが不正です。",
+    settingsSaved: "AI設定を更新しました。",
+    proposal: "AI提案",
+    noProposal: "提案なし",
+    rejected: "拒否",
+    accepted: "採用可能"
   },
   debug: {
     heading: "デバッグ開始",

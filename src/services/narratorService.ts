@@ -1,54 +1,54 @@
 import type { GameState, ScenarioWorld } from "../domain/types";
 import type { NarrationProposal } from "./aiPolicyGuard";
+import { defaultAiSettings, parseAiSettings, type AiSettings } from "./aiSettings";
+import { noneNarratorProvider, type NarratorProvider } from "./narratorProvider";
+import { ollamaProvider } from "./providers/ollamaProvider";
+import { openAiCompatibleProvider } from "./providers/openAiCompatibleProvider";
+
+const providers: Record<AiSettings["provider"], NarratorProvider> = {
+  none: noneNarratorProvider,
+  ollama: ollamaProvider,
+  "openai-compatible": openAiCompatibleProvider
+};
 
 export async function requestLocalNarration(
   state: GameState,
   world: ScenarioWorld,
   endpoint = "http://127.0.0.1:11434/api/generate"
 ): Promise<NarrationProposal> {
-  if (!state.aiEnabled) {
+  return requestNarration(state, world, {
+    ...defaultAiSettings,
+    enabled: state.aiEnabled,
+    provider: state.aiEnabled ? "ollama" : "none",
+    endpoint
+  });
+}
+
+export async function requestNarration(
+  state: GameState,
+  world: ScenarioWorld,
+  inputSettings: Partial<AiSettings> = {}
+): Promise<NarrationProposal> {
+  const settings = parseAiSettings({
+    ...defaultAiSettings,
+    ...inputSettings
+  });
+  const provider = settings.enabled ? providers[settings.provider] : noneNarratorProvider;
+  const result = await provider.narrate({ state, world, settings });
+
+  if (result.status === "success") {
+    return result.proposal;
+  }
+
+  if (result.provider === "none") {
     return {
       source: "fallback",
-      prose: "AI narration is disabled. The canonical log remains the complete record."
+      prose: result.message
     };
   }
 
-  const recentEvents = state.log.slice(-5).map((entry) => entry.text);
-  const body = {
-    model: "llama3.2",
-    stream: false,
-    prompt: JSON.stringify({
-      role: "environment_flavor_only",
-      publicSituation: {
-        phase: state.phase,
-        position: state.position,
-        recentEvents
-      },
-      allowed: world.aiPolicy.allowed,
-      forbidden: world.aiPolicy.forbidden
-    })
+  return {
+    source: "fallback",
+    prose: "The local narrator is unavailable. Exploration continues by deterministic rules."
   };
-
-  try {
-    const response = await fetch(endpoint, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body)
-    });
-
-    if (!response.ok) {
-      throw new Error(`Narrator failed with ${response.status}`);
-    }
-
-    const data = (await response.json()) as { response?: string };
-    return {
-      source: "local_ai",
-      prose: data.response ?? ""
-    };
-  } catch {
-    return {
-      source: "fallback",
-      prose: "The local narrator is unavailable. Exploration continues by deterministic rules."
-    };
-  }
 }

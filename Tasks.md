@@ -704,7 +704,7 @@ Parent: [Plan.md - Phase 4](./Plan.md#phase-4-local-ai-integration)
 
 ### BS-019: Define Narrator Provider Contract
 
-Status: [ ]  
+Status: [x]
 Priority: P1  
 Parent plan task: Task 10, Narrator Provider Interface
 
@@ -713,13 +713,13 @@ Split narration into a provider interface with request input, proposal output, e
 
 Acceptance criteria:
 
-- [ ] `NarratorProvider` interface exists.
-- [ ] Provider result distinguishes success, unavailable, and rejected output.
-- [ ] AI disabled mode uses `none` provider.
+- [x] `NarratorProvider` interface exists.
+- [x] Provider result distinguishes success, unavailable, and rejected output.
+- [x] AI disabled mode uses `none` provider.
 
 Verification:
 
-- [ ] `npm test`
+- [x] `npm test`
 
 Dependencies:
 
@@ -737,7 +737,7 @@ Estimated scope:
 
 ### BS-020: Add Provider Settings Schema
 
-Status: [ ]  
+Status: [x]
 Priority: P1  
 Parent plan task: Task 10, Narrator Provider Interface
 
@@ -746,13 +746,13 @@ Add persisted settings for AI provider kind, endpoint URL, model name, timeout, 
 
 Acceptance criteria:
 
-- [ ] Settings validate with Zod or equivalent.
-- [ ] Defaults keep AI off.
-- [ ] Invalid provider settings fall back safely.
+- [x] Settings validate with Zod or equivalent.
+- [x] Defaults keep AI off.
+- [x] Invalid provider settings fall back safely.
 
 Verification:
 
-- [ ] `npm test`
+- [x] `npm test`
 
 Dependencies:
 
@@ -770,7 +770,7 @@ Estimated scope:
 
 ### BS-021: Implement Ollama Provider Adapter
 
-Status: [ ]  
+Status: [x]
 Priority: P1  
 Parent plan task: Task 10, Narrator Provider Interface
 
@@ -779,14 +779,14 @@ Move the current Ollama-compatible request into a provider adapter.
 
 Acceptance criteria:
 
-- [ ] Ollama adapter uses constrained public situation input.
-- [ ] Network failure returns a non-crashing unavailable result.
-- [ ] AI guard still runs after provider response.
+- [x] Ollama adapter uses constrained public situation input.
+- [x] Network failure returns a non-crashing unavailable result.
+- [x] AI guard still runs after provider response.
 
 Verification:
 
-- [ ] `npm test`
-- [ ] Mocked fetch tests
+- [x] `npm test`
+- [x] Mocked fetch tests
 
 Dependencies:
 
@@ -805,7 +805,7 @@ Estimated scope:
 
 ### BS-022: Implement LocalAI/OpenAI-Compatible Provider Adapter
 
-Status: [ ]  
+Status: [x]
 Priority: P1  
 Parent plan task: Task 11, LocalAI Provider
 
@@ -814,15 +814,15 @@ Add an adapter for LocalAI or any local OpenAI-compatible `/v1/chat/completions`
 
 Acceptance criteria:
 
-- [ ] Endpoint and model are configurable.
-- [ ] API key is optional.
-- [ ] Responses become proposals only.
-- [ ] GameState is not mutated.
+- [x] Endpoint and model are configurable.
+- [x] API key is optional.
+- [x] Responses become proposals only.
+- [x] GameState is not mutated.
 
 Verification:
 
-- [ ] `npm test`
-- [ ] Mocked provider tests
+- [x] `npm test`
+- [x] Mocked provider tests
 
 Dependencies:
 
@@ -840,7 +840,7 @@ Estimated scope:
 
 ### BS-023: Add AI Settings UI
 
-Status: [ ]  
+Status: [x]
 Priority: P1  
 Parent plan task: Task 10, Narrator Provider Interface
 
@@ -849,13 +849,13 @@ Add a compact settings UI for AI off/on, provider type, endpoint, and model.
 
 Acceptance criteria:
 
-- [ ] Default UI shows AI off.
-- [ ] Provider settings can be changed without restarting.
-- [ ] Invalid endpoint errors are visible and non-fatal.
+- [x] Default UI shows AI off.
+- [x] Provider settings can be changed without restarting.
+- [x] Invalid endpoint errors are visible and non-fatal.
 
 Verification:
 
-- [ ] `npm run test:e2e`
+- [x] `npm run test:e2e`
 
 Dependencies:
 
@@ -876,7 +876,7 @@ Estimated scope:
 
 ### BS-024: Build AI Proposal Panel
 
-Status: [ ]  
+Status: [x]
 Priority: P1  
 Parent plan task: Task 12, AI Proposal UI
 
@@ -885,15 +885,15 @@ Show AI output as proposals separate from canonical adventure log entries, inclu
 
 Acceptance criteria:
 
-- [ ] Proposal text is visually separate from canonical log.
-- [ ] Rejected proposals show a reason.
-- [ ] PC speech/action proposals cannot be accepted.
-- [ ] AI-off mode remains unobtrusive.
+- [x] Proposal text is visually separate from canonical log.
+- [x] Rejected proposals show a reason.
+- [x] PC speech/action proposals cannot be accepted.
+- [x] AI-off mode remains unobtrusive.
 
 Verification:
 
-- [ ] `npm test`
-- [ ] `npm run test:e2e`
+- [x] `npm test`
+- [x] `npm run test:e2e`
 
 Dependencies:
 
@@ -912,21 +912,21 @@ Estimated scope:
 
 ### Checkpoint 4: Local AI
 
-Status: [ ]
+Status: [x]
 
 Required verification:
 
-- [ ] `npm test`
-- [ ] `npm run build`
-- [ ] `npm run test:e2e`
-- [ ] AI-off flow passes.
-- [ ] Mock LocalAI-compatible flow passes.
+- [x] `npm test`
+- [x] `npm run build`
+- [x] `npm run test:e2e`
+- [x] AI-off flow passes.
+- [x] Mock LocalAI-compatible flow passes.
 
 Exit criteria:
 
-- [ ] AI provider is configurable.
-- [ ] AI output never mutates GameState.
-- [ ] LocalAI-compatible adapter is tested without requiring a live server.
+- [x] AI provider is configurable.
+- [x] AI output never mutates GameState.
+- [x] LocalAI-compatible adapter is tested without requiring a live server.
 
 ## Phase 5: Scenario Repository
 
