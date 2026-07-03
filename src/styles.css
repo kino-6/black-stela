@@ -24,6 +24,7 @@ body {
 
 button,
 input,
+select,
 textarea {
   font: inherit;
 }
@@ -49,6 +50,7 @@ button:hover {
 
 button:focus-visible,
 input:focus-visible,
+select:focus-visible,
 textarea:focus-visible {
   outline: 2px solid #d5b56d;
   outline-offset: 2px;
@@ -135,7 +137,15 @@ small {
   font-size: 0.85rem;
 }
 
-.save-controls input {
+.locale-control {
+  display: grid;
+  gap: 0.25rem;
+  color: #cfcec2;
+  font-size: 0.85rem;
+}
+
+.save-controls input,
+.locale-control select {
   width: 8rem;
   min-height: 2.5rem;
 }
@@ -269,6 +279,7 @@ small {
 }
 
 input,
+select,
 textarea {
   width: 100%;
   border: 1px solid #3b4438;

@@ -22,6 +22,15 @@ const roomSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
   description: z.string().min(1),
+  locales: z
+    .record(
+      z.object({
+        name: z.string().min(1).optional(),
+        description: z.string().min(1).optional(),
+        event: z.string().min(1).optional()
+      })
+    )
+    .optional(),
   exits: z.record(directionSchema, z.string().min(1)).default({}),
   doors: z.array(directionSchema).optional(),
   stairsToTown: z.boolean().optional(),
@@ -101,6 +110,17 @@ export function getRoom(world: ScenarioWorld, roomId: string) {
   }
 
   return room;
+}
+
+export function getLocalizedRoomText(world: ScenarioWorld, roomId: string, locale: string) {
+  const room = getRoom(world, roomId);
+  const localized = room.locales?.[locale];
+
+  return {
+    name: localized?.name ?? room.name,
+    description: localized?.description ?? room.description,
+    event: localized?.event ?? room.event
+  };
 }
 
 export function getExit(world: ScenarioWorld, roomId: string, direction: Direction) {

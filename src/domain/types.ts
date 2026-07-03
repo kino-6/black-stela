@@ -29,6 +29,7 @@ export interface AdventureLogEntry {
   turn: number;
   text: string;
   tags: string[];
+  event?: GameEvent;
 }
 
 export type GameEvent =
@@ -130,6 +131,7 @@ export interface DungeonRoom {
   id: string;
   name: string;
   description: string;
+  locales?: Partial<Record<string, Partial<Pick<DungeonRoom, "name" | "description" | "event">>>>;
   exits: Partial<Record<Direction, string>>;
   doors?: Direction[];
   stairsToTown?: boolean;

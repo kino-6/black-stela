@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseDungeonFloor, parseScenarioWorld } from "../src/domain/scenario";
+import { getLocalizedRoomText, parseDungeonFloor, parseScenarioWorld } from "../src/domain/scenario";
 import { defaultWorld } from "../src/data/defaultWorld";
 
 describe("scenario validation", () => {
@@ -51,5 +51,16 @@ rooms:
 # Test Floor`;
 
     expect(parseScenarioWorld(world, [dungeon]).dungeons[0].id).toBe("dungeon.test");
+  });
+
+  it("resolves localized room text without changing scenario truth", () => {
+    const room = defaultWorld.dungeons[0].rooms[0];
+
+    expect(room.id).toBe("room.b1f.001");
+    expect(room.exits.east).toBe("room.b1f.002");
+    expect(getLocalizedRoomText(defaultWorld, room.id, "ja")).toMatchObject({
+      name: "静まり返った石室",
+      description: "冷たい切石が隊列を囲む。東には細い扉が待っている。"
+    });
   });
 });

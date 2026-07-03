@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { GameState, ScenarioWorld } from "./types";
+import type { GameEvent, GameState, ScenarioWorld } from "./types";
 
 const DirectionSchema = z.enum(["north", "east", "south", "west"]);
 const GamePhaseSchema = z.enum(["town", "dungeon", "combat"]);
@@ -46,7 +46,8 @@ const AdventureLogEntrySchema = z.object({
   id: z.string().min(1),
   turn: z.number().int().nonnegative(),
   text: z.string(),
-  tags: z.array(z.string())
+  tags: z.array(z.string()),
+  event: z.custom<GameEvent>().optional()
 });
 
 export const GameStateSchema = z.object({

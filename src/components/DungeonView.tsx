@@ -6,9 +6,10 @@ import type { GameState, ScenarioWorld } from "../domain/types";
 interface DungeonViewProps {
   state: GameState;
   world: ScenarioWorld;
+  label: string;
 }
 
-export function DungeonView({ state, world }: DungeonViewProps) {
+export function DungeonView({ state, world, label }: DungeonViewProps) {
   const mountRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -105,7 +106,7 @@ export function DungeonView({ state, world }: DungeonViewProps) {
   }, [state.position, world]);
 
   return (
-    <div className="dungeon-view" aria-label="First-person dungeon view">
+    <div className="dungeon-view" aria-label={label}>
       <div ref={mountRef} className="dungeon-canvas" data-testid="dungeon-canvas" />
     </div>
   );

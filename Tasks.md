@@ -476,7 +476,7 @@ Parent: [Plan.md - Phase 3](./Plan.md#phase-3-japanese-localization)
 
 ### BS-013: Add i18n Dictionary Infrastructure
 
-Status: [ ]  
+Status: [x]
 Priority: P1  
 Parent plan task: Task 7, i18n Foundation
 
@@ -485,14 +485,14 @@ Create a small typed dictionary system for UI strings with `en` and `ja` diction
 
 Acceptance criteria:
 
-- [ ] UI strings can be read through a typed translation function.
-- [ ] Missing translation keys fail in tests or type checks.
-- [ ] Default locale is stable.
+- [x] UI strings can be read through a typed translation function.
+- [x] Missing translation keys fail in tests or type checks.
+- [x] Default locale is stable.
 
 Verification:
 
-- [ ] `npm test`
-- [ ] `npm run build`
+- [x] `npm test`
+- [x] `npm run build`
 
 Dependencies:
 
@@ -511,7 +511,7 @@ Estimated scope:
 
 ### BS-014: Add Language Selection and Persistence
 
-Status: [ ]  
+Status: [x]
 Priority: P1  
 Parent plan task: Task 7, i18n Foundation
 
@@ -520,14 +520,14 @@ Add a language selector and store the chosen locale in settings/save infrastruct
 
 Acceptance criteria:
 
-- [ ] Player can switch between English and Japanese.
-- [ ] Selected language persists across reload.
-- [ ] Headless logic remains language-independent.
+- [x] Player can switch between English and Japanese.
+- [x] Selected language persists across reload.
+- [x] Headless logic remains language-independent.
 
 Verification:
 
-- [ ] `npm test`
-- [ ] `npm run test:e2e`
+- [x] `npm test`
+- [x] `npm run test:e2e`
 
 Dependencies:
 
@@ -546,7 +546,7 @@ Estimated scope:
 
 ### BS-015: Move Current UI Text Into Dictionaries
 
-Status: [ ]  
+Status: [x]
 Priority: P1  
 Parent plan task: Task 7, i18n Foundation
 
@@ -555,14 +555,14 @@ Replace hardcoded UI strings in React components with dictionary lookups.
 
 Acceptance criteria:
 
-- [ ] Town, party, dungeon, combat, debug, and log UI text uses i18n.
-- [ ] English UI remains equivalent.
-- [ ] Japanese UI is readable and natural enough for MVP2.
+- [x] Town, party, dungeon, combat, debug, and log UI text uses i18n.
+- [x] English UI remains equivalent.
+- [x] Japanese UI is readable and natural enough for MVP2.
 
 Verification:
 
-- [ ] `npm run build`
-- [ ] `npm run test:e2e`
+- [x] `npm run build`
+- [x] `npm run test:e2e`
 
 Dependencies:
 
@@ -581,7 +581,7 @@ Estimated scope:
 
 ### BS-016: Add Localized Scenario Text Model
 
-Status: [ ]  
+Status: [x]
 Priority: P1  
 Parent plan task: Task 8, Japanese Scenario Text
 
@@ -590,13 +590,13 @@ Add support for localized scenario display strings while keeping YAML truth lang
 
 Acceptance criteria:
 
-- [ ] Room name and description can resolve by locale.
-- [ ] Scenario truth remains stable IDs, exits, enemies, traps, and rules.
-- [ ] Existing default scenario still validates.
+- [x] Room name and description can resolve by locale.
+- [x] Scenario truth remains stable IDs, exits, enemies, traps, and rules.
+- [x] Existing default scenario still validates.
 
 Verification:
 
-- [ ] `npm test`
+- [x] `npm test`
 
 Dependencies:
 
@@ -614,7 +614,7 @@ Estimated scope:
 
 ### BS-017: Add Japanese Default Scenario Copy
 
-Status: [ ]  
+Status: [x]
 Priority: P1  
 Parent plan task: Task 8, Japanese Scenario Text
 
@@ -623,14 +623,14 @@ Write Japanese text for the default town, B1F rooms, events, and relevant log pr
 
 Acceptance criteria:
 
-- [ ] Japanese room names and descriptions exist.
-- [ ] Japanese event/log prose displays in Japanese mode.
-- [ ] Direct translation title is avoided.
+- [x] Japanese room names and descriptions exist.
+- [x] Japanese event/log prose displays in Japanese mode.
+- [x] Direct translation title is avoided.
 
 Verification:
 
-- [ ] `npm test`
-- [ ] E2E Japanese mode clear flow
+- [x] `npm test`
+- [x] E2E Japanese mode clear flow
 
 Dependencies:
 
@@ -649,7 +649,7 @@ Estimated scope:
 
 ### BS-018: Verify Japanese Responsive Layout
 
-Status: [ ]  
+Status: [x]
 Priority: P1  
 Parent plan task: Task 9, Japanese Typography and Layout
 
@@ -658,14 +658,14 @@ Add E2E coverage for Japanese UI on mobile and desktop, then adjust typography/l
 
 Acceptance criteria:
 
-- [ ] Japanese UI has no obvious overlapping controls at 390px.
-- [ ] Long Japanese log text wraps cleanly.
-- [ ] Buttons remain usable.
+- [x] Japanese UI has no obvious overlapping controls at 390px.
+- [x] Long Japanese log text wraps cleanly.
+- [x] Buttons remain usable.
 
 Verification:
 
-- [ ] `npm run test:e2e`
-- [ ] Playwright screenshots for Japanese mode
+- [x] `npm run test:e2e`
+- [x] Playwright mobile viewport check for Japanese mode
 
 Dependencies:
 
@@ -683,20 +683,20 @@ Estimated scope:
 
 ### Checkpoint 3: Japanese Support
 
-Status: [ ]
+Status: [x]
 
 Required verification:
 
-- [ ] `npm test`
-- [ ] `npm run build`
-- [ ] `npm run test:e2e`
-- [ ] Japanese MVP clear flow passes
+- [x] `npm test`
+- [x] `npm run build`
+- [x] `npm run test:e2e`
+- [x] Japanese MVP clear flow passes
 
 Exit criteria:
 
-- [ ] English and Japanese UI work.
-- [ ] Scenario prose localizes without changing scenario truth.
-- [ ] Headless clear remains language-independent.
+- [x] English and Japanese UI work.
+- [x] Scenario prose localizes without changing scenario truth.
+- [x] Headless clear remains language-independent.
 
 ## Phase 4: Local AI Integration
 

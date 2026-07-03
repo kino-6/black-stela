@@ -1,14 +1,17 @@
-import { getRoom } from "../domain/scenario";
+import { getLocalizedRoomText, getRoom } from "../domain/scenario";
 import type { Direction, GameState, ScenarioWorld } from "../domain/types";
+import type { Locale, Translator } from "../i18n";
 
 interface MapPanelProps {
   state: GameState;
   world: ScenarioWorld;
+  locale: Locale;
+  t: Translator;
 }
 
 const directions: Direction[] = ["north", "east", "south", "west"];
 
-export function MapPanel({ state, world }: MapPanelProps) {
+export function MapPanel({ state, world, locale, t }: MapPanelProps) {
   const currentRoomId = state.map.currentRoomId ?? state.position?.roomId ?? null;
   const currentRoom = currentRoomId ? getRoom(world, currentRoomId) : null;
   const currentExits = currentRoomId ? state.map.knownExits[currentRoomId] ?? [] : [];
@@ -23,27 +26,29 @@ export function MapPanel({ state, world }: MapPanelProps) {
   return (
     <section className="map-panel" aria-labelledby="map-heading">
       <div className="section-title">
-        <h3 id="map-heading">Map</h3>
-        <span>{state.map.floorId ?? "No floor"}</span>
+        <h3 id="map-heading">{t("map.heading")}</h3>
+        <span>{state.map.floorId ?? t("map.noFloor")}</span>
       </div>
       <div className="map-current" data-testid="map-current">
-        <small>Current</small>
-        <strong>{currentRoom?.name ?? "Town"}</strong>
+        <small>{t("map.current")}</small>
+        <strong>{currentRoomId ? getLocalizedRoomText(world, currentRoomId, locale).name : t("map.town")}</strong>
       </div>
       <div className="map-grid">
         <div>
-          <small>Visited</small>
+          <small>{t("map.visited")}</small>
           <ul data-testid="map-visited">
             {state.map.visitedRooms.length === 0 ? (
-              <li>None</li>
+              <li>{t("map.none")}</li>
             ) : (
-              state.map.visitedRooms.map((roomId) => <li key={roomId}>{getRoom(world, roomId).name}</li>)
+              state.map.visitedRooms.map((roomId) => (
+                <li key={roomId}>{getLocalizedRoomText(world, roomId, locale).name}</li>
+              ))
             )}
           </ul>
         </div>
         <div>
-          <small>Exits</small>
-          <div className="map-tags" aria-label="Known exits">
+          <small>{t("map.exits")}</small>
+          <div className="map-tags" aria-label={t("map.knownExits")}>
             {directions.map((direction) => (
               <span
                 className={
@@ -57,7 +62,7 @@ export function MapPanel({ state, world }: MapPanelProps) {
                 }
                 key={direction}
               >
-                {direction}
+                {t(`direction.${direction}`)}
               </span>
             ))}
           </div>
