@@ -4,7 +4,9 @@ import {
   ArrowRight,
   DoorOpen,
   Footprints,
+  FolderOpen,
   LogOut,
+  Save,
   Swords,
   Volume2,
   Search,
@@ -20,6 +22,8 @@ import { runHeadlessClear } from "./headless/headlessRunner";
 import { defaultWorld } from "./data/defaultWorld";
 import { guardNarration } from "./services/aiPolicyGuard";
 import { requestLocalNarration } from "./services/narratorService";
+import { fromSaveDataV1, toSaveDataV1 } from "./domain/saveData";
+import { LocalStorageSaveRepository, type SaveSlotSummary } from "./services/saveRepository";
 
 interface CharacterDraft {
   name: string;
@@ -37,6 +41,10 @@ export function App() {
   const [narration, setNarration] = useState("");
   const [narrationStatus, setNarrationStatus] = useState("");
   const [headlessStatus, setHeadlessStatus] = useState("");
+  const saveRepository = useMemo(() => createBrowserSaveRepository(), []);
+  const [saveSlotId, setSaveSlotId] = useState("autosave");
+  const [saveSlots, setSaveSlots] = useState<SaveSlotSummary[]>(() => createBrowserSaveRepository()?.list() ?? []);
+  const [saveStatus, setSaveStatus] = useState("");
 
   const room = useMemo(() => {
     if (!state.position) {
@@ -97,6 +105,34 @@ export function App() {
     setNarrationStatus(proposal.source === "local_ai" ? "Local narration proposal" : "Fallback narration");
   }
 
+  function saveGame() {
+    if (!saveRepository) {
+      setSaveStatus("Save storage is unavailable.");
+      return;
+    }
+
+    const save = toSaveDataV1(state, defaultWorld);
+    saveRepository.write(saveSlotId, save);
+    setSaveSlots(saveRepository.list());
+    setSaveStatus(`Saved ${saveSlotId}.`);
+  }
+
+  function loadGame() {
+    if (!saveRepository) {
+      setSaveStatus("Save storage is unavailable.");
+      return;
+    }
+
+    const result = saveRepository.read(saveSlotId);
+    if (!result.ok) {
+      setSaveStatus(result.message);
+      return;
+    }
+
+    setState(fromSaveDataV1(result.save));
+    setSaveStatus(`Loaded ${saveSlotId}.`);
+  }
+
   return (
     <main className="app-shell">
       <header className="topbar">
@@ -104,14 +140,43 @@ export function App() {
           <h1>Black Stela</h1>
           <p>Town, party, dungeon, combat, return. AI is off by default.</p>
         </div>
-        <label className="ai-toggle">
-          <input
-            type="checkbox"
-            checked={state.aiEnabled}
-            onChange={(event) => setState((current) => ({ ...current, aiEnabled: event.target.checked }))}
-          />
-          Local AI
-        </label>
+        <div className="topbar-tools">
+          <div className="save-controls" aria-label="Save controls">
+            <label>
+              Slot
+              <input
+                list="save-slots"
+                value={saveSlotId}
+                onChange={(event) => setSaveSlotId(event.target.value)}
+                aria-label="Save slot"
+              />
+            </label>
+            <datalist id="save-slots">
+              {saveSlots.map((slot) => (
+                <option key={slot.slotId} value={slot.slotId}>
+                  {slot.status === "valid" ? slot.savedAt : "Corrupt save"}
+                </option>
+              ))}
+            </datalist>
+            <button type="button" onClick={saveGame}>
+              <Save size={18} />
+              Save game
+            </button>
+            <button type="button" onClick={loadGame}>
+              <FolderOpen size={18} />
+              Load game
+            </button>
+            <small aria-live="polite">{saveStatus || `${saveSlots.length} slots`}</small>
+          </div>
+          <label className="ai-toggle">
+            <input
+              type="checkbox"
+              checked={state.aiEnabled}
+              onChange={(event) => setState((current) => ({ ...current, aiEnabled: event.target.checked }))}
+            />
+            Local AI
+          </label>
+        </div>
       </header>
 
       {debugMode && (
@@ -321,4 +386,12 @@ function getDebugProgressFromLocation() {
 
 function getTotalRoomCount() {
   return defaultWorld.dungeons.reduce((total, dungeon) => total + dungeon.rooms.length, 0);
+}
+
+function createBrowserSaveRepository() {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  return new LocalStorageSaveRepository(window.localStorage);
 }

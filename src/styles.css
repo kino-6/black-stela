@@ -113,6 +113,40 @@ small {
   white-space: nowrap;
 }
 
+.topbar-tools {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+.save-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.save-controls label {
+  display: grid;
+  gap: 0.25rem;
+  color: #cfcec2;
+  font-size: 0.85rem;
+}
+
+.save-controls input {
+  width: 8rem;
+  min-height: 2.5rem;
+}
+
+.save-controls small {
+  min-width: 5.5rem;
+  min-height: 2.5rem;
+  display: inline-flex;
+  align-items: center;
+}
+
 .game-grid {
   display: grid;
   grid-template-columns: minmax(260px, 0.8fr) minmax(360px, 1.5fr) minmax(280px, 0.9fr);
@@ -369,6 +403,11 @@ textarea {
   .topbar {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .topbar-tools,
+  .save-controls {
+    justify-content: flex-start;
   }
 
   .dungeon-view,

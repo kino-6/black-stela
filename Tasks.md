@@ -32,7 +32,7 @@ Parent: [Plan.md - Phase 1](./Plan.md#phase-1-core-state-hardening)
 
 ### BS-001: Define GameEvent Types
 
-Status: [ ]  
+Status: [x]
 Priority: P0  
 Parent plan task: Task 1, GameEvent導入
 
@@ -41,13 +41,13 @@ Add a typed `GameEvent` union representing canonical outcomes such as party join
 
 Acceptance criteria:
 
-- [ ] `GameEvent` union exists in the domain layer.
-- [ ] Events carry machine-readable payloads, not only prose.
-- [ ] Existing MVP outcomes can be represented by events.
+- [x] `GameEvent` union exists in the domain layer.
+- [x] Events carry machine-readable payloads, not only prose.
+- [x] Existing MVP outcomes can be represented by events.
 
 Verification:
 
-- [ ] `npm test`
+- [x] `npm test`
 
 Dependencies:
 
@@ -64,7 +64,7 @@ Estimated scope:
 
 ### BS-002: Add Event-to-Log Projection
 
-Status: [ ]  
+Status: [x]
 Priority: P0  
 Parent plan task: Task 1, GameEvent導入
 
@@ -73,13 +73,13 @@ Create a projector that converts `GameEvent[]` into canonical `AdventureLogEntry
 
 Acceptance criteria:
 
-- [ ] Log text is generated from events.
-- [ ] Existing log expectations still pass.
-- [ ] The projector can later localize event prose.
+- [x] Log text is generated from events.
+- [x] Existing log expectations still pass.
+- [x] The projector can later localize event prose.
 
 Verification:
 
-- [ ] `npm test`
+- [x] `npm test`
 
 Dependencies:
 
@@ -97,7 +97,7 @@ Estimated scope:
 
 ### BS-003: Refactor RulesEngine to Return Events
 
-Status: [ ]  
+Status: [x]
 Priority: P0  
 Parent plan task: Task 1, GameEvent導入
 
@@ -106,15 +106,15 @@ Change command resolution so `RulesEngine` produces events and applies them thro
 
 Acceptance criteria:
 
-- [ ] `executeCommand` still returns the next `GameState`.
-- [ ] Internal command handling emits typed events.
-- [ ] Headless clear output remains behaviorally equivalent.
+- [x] `executeCommand` still returns the next `GameState`.
+- [x] Internal command handling emits typed events.
+- [x] Headless clear output remains behaviorally equivalent.
 
 Verification:
 
-- [ ] `npm test`
-- [ ] `npm run headless:clear`
-- [ ] `npm run build`
+- [x] `npm test`
+- [x] `npm run headless:clear`
+- [x] `npm run build`
 
 Dependencies:
 
@@ -134,7 +134,7 @@ Estimated scope:
 
 ### BS-004: Define Versioned SaveDataV1 Schema
 
-Status: [ ]  
+Status: [x]
 Priority: P0  
 Parent plan task: Task 2, Save Data Schema
 
@@ -143,13 +143,13 @@ Add a Zod schema for versioned save data that captures current game state, party
 
 Acceptance criteria:
 
-- [ ] `SaveDataV1` Zod schema exists.
-- [ ] Save data includes a schema version.
-- [ ] Invalid save payloads fail validation with useful errors.
+- [x] `SaveDataV1` Zod schema exists.
+- [x] Save data includes a schema version.
+- [x] Invalid save payloads fail validation with useful errors.
 
 Verification:
 
-- [ ] `npm test`
+- [x] `npm test`
 
 Dependencies:
 
@@ -166,7 +166,7 @@ Estimated scope:
 
 ### BS-005: Implement GameState Save Round Trip
 
-Status: [ ]  
+Status: [x]
 Priority: P0  
 Parent plan task: Task 2, Save Data Schema
 
@@ -175,14 +175,14 @@ Implement conversion functions from `GameState` to `SaveDataV1` and back, preser
 
 Acceptance criteria:
 
-- [ ] `GameState -> SaveDataV1 -> GameState` round trip passes.
-- [ ] Missing optional future fields use safe defaults.
-- [ ] Unknown future versions are rejected clearly.
+- [x] `GameState -> SaveDataV1 -> GameState` round trip passes.
+- [x] Missing optional future fields use safe defaults.
+- [x] Unknown future versions are rejected clearly.
 
 Verification:
 
-- [ ] `npm test`
-- [ ] Round-trip unit tests
+- [x] `npm test`
+- [x] Round-trip unit tests
 
 Dependencies:
 
@@ -199,7 +199,7 @@ Estimated scope:
 
 ### BS-006: Create SaveRepository Interface and LocalStorage Implementation
 
-Status: [ ]  
+Status: [x]
 Priority: P0  
 Parent plan task: Task 3, Save/Load Repository
 
@@ -208,14 +208,14 @@ Create a repository interface for save slots and an initial browser `localStorag
 
 Acceptance criteria:
 
-- [ ] Saves can be written by slot ID.
-- [ ] Saves can be read by slot ID.
-- [ ] Save slots can be listed.
-- [ ] Corrupt save data is reported without crashing.
+- [x] Saves can be written by slot ID.
+- [x] Saves can be read by slot ID.
+- [x] Save slots can be listed.
+- [x] Corrupt save data is reported without crashing.
 
 Verification:
 
-- [ ] `npm test`
+- [x] `npm test`
 
 Dependencies:
 
@@ -232,7 +232,7 @@ Estimated scope:
 
 ### BS-007: Add Minimal Save/Load UI Hooks
 
-Status: [ ]  
+Status: [x]
 Priority: P0  
 Parent plan task: Task 3, Save/Load Repository
 
@@ -241,14 +241,14 @@ Add minimal UI controls for saving the current game and loading a save slot in b
 
 Acceptance criteria:
 
-- [ ] A player can save current state.
-- [ ] A player can load the saved state after refresh.
-- [ ] Save/load failures show a visible non-crashing message.
+- [x] A player can save current state.
+- [x] A player can load the saved state after refresh.
+- [x] Save/load failures show a visible non-crashing message.
 
 Verification:
 
-- [ ] `npm run test:e2e`
-- [ ] `npm run build`
+- [x] `npm run test:e2e`
+- [x] `npm run build`
 
 Dependencies:
 
@@ -266,20 +266,20 @@ Estimated scope:
 
 ### Checkpoint 1: Core State
 
-Status: [ ]
+Status: [x]
 
 Required verification:
 
-- [ ] `npm test`
-- [ ] `npm run build`
-- [ ] `npm run headless:clear`
-- [ ] `npm run test:e2e`
+- [x] `npm test`
+- [x] `npm run build`
+- [x] `npm run headless:clear`
+- [x] `npm run test:e2e`
 
 Exit criteria:
 
-- [ ] MVP flow still works.
-- [ ] Save/load round trip works.
-- [ ] Game logs are event-derived.
+- [x] MVP flow still works.
+- [x] Save/load round trip works.
+- [x] Game logs are event-derived.
 
 ## Phase 2: Debug, Headless, and Map System
 

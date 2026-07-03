@@ -1,4 +1,4 @@
-import { appendLog } from "../domain/gameState";
+import { appendEventLogs } from "../domain/replayLog";
 import { getRoom } from "../domain/scenario";
 import type { Character, Direction, GameState, ScenarioWorld } from "../domain/types";
 
@@ -32,7 +32,7 @@ export function createDebugStateFromProgress(world: ScenarioWorld, progress: Deb
   if (progress === "ready") {
     return {
       ...base,
-      log: appendLog(base, "Debug start: expected party assembled in town.", ["debug"])
+      log: appendEventLogs(base, [{ type: "debug_started", text: "Debug start: expected party assembled in town." }])
     };
   }
 
@@ -50,7 +50,9 @@ export function createDebugStateFromProgress(world: ScenarioWorld, progress: Deb
 
     return {
       ...state,
-      log: appendLog(state, "Debug start: party has beaten the first encounter and faces deeper east.", ["debug"])
+      log: appendEventLogs(state, [
+        { type: "debug_started", text: "Debug start: party has beaten the first encounter and faces deeper east." }
+      ])
     };
   }
 
@@ -67,7 +69,9 @@ export function createDebugStateFromProgress(world: ScenarioWorld, progress: Deb
 
   return {
     ...state,
-    log: appendLog(state, "Debug start: party stands at the return marker with full map progress.", ["debug"])
+    log: appendEventLogs(state, [
+      { type: "debug_started", text: "Debug start: party stands at the return marker with full map progress." }
+    ])
   };
 }
 

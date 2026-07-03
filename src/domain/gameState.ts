@@ -1,4 +1,5 @@
 import type { Character, GameState } from "./types";
+import { appendEventLogs } from "./replayLog";
 
 export function createInitialGameState(): GameState {
   return {
@@ -38,10 +39,20 @@ export function createCharacter(input: { name: string; notes: string; portraitRe
 }
 
 export function addCharacter(state: GameState, character: Character): GameState {
-  return {
+  const next = {
     ...state,
-    party: [...state.party, character],
-    log: appendLog(state, `${character.name} joined the roster.`, ["party"])
+    party: [...state.party, character]
+  };
+
+  return {
+    ...next,
+    log: appendEventLogs(next, [
+      {
+        type: "party_member_joined",
+        characterId: character.id,
+        characterName: character.name
+      }
+    ])
   };
 }
 

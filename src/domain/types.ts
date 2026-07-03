@@ -31,6 +31,28 @@ export interface AdventureLogEntry {
   tags: string[];
 }
 
+export type GameEvent =
+  | { type: "party_member_joined"; characterId: string; characterName: string }
+  | { type: "command_blocked"; reason: "party_required"; command: Command["type"] }
+  | { type: "dungeon_entered"; roomId: string; facing: Direction }
+  | { type: "party_turned"; side: "left" | "right"; facing: Direction }
+  | { type: "movement_blocked"; reason: "wall"; roomId: string; facing: Direction }
+  | { type: "room_entered"; roomId: string; roomName: string }
+  | { type: "trap_triggered"; trapId: string; trapName: string; damage: number }
+  | { type: "room_event_triggered"; roomId: string; text: string }
+  | { type: "enemy_encountered"; enemyId: string; enemyName: string; roomId: string }
+  | { type: "inspection_made"; mode: "inspect_wall" | "listen" | "open_door" }
+  | { type: "search_completed"; result: "none" }
+  | { type: "trap_detected"; trapId: string; trapName: string }
+  | { type: "trap_disarm_failed"; reason: "none_active" }
+  | { type: "trap_disarmed"; trapId: string; trapName: string }
+  | { type: "enemy_damaged"; enemyId: string; enemyName: string; remainingHp: number }
+  | { type: "enemy_defeated"; enemyId: string; enemyName: string }
+  | { type: "party_wounded"; enemyId: string; enemyName: string; damage: number }
+  | { type: "party_retreated" }
+  | { type: "returned_to_town" }
+  | { type: "debug_started"; text: string };
+
 export interface Enemy {
   id: string;
   name: string;

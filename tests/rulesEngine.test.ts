@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { addCharacter, createCharacter, createInitialGameState } from "../src/domain/gameState";
-import { executeCommand } from "../src/domain/rulesEngine";
+import { executeCommand, resolveCommand } from "../src/domain/rulesEngine";
 import { defaultWorld } from "../src/data/defaultWorld";
 
 function stateWithParty() {
@@ -18,6 +18,20 @@ describe("rules engine", () => {
     expect(state.log.at(-1)?.text).toMatch(/party is required/i);
   });
 
+  it("emits typed events and projects them into canonical log entries", () => {
+    const result = resolveCommand(stateWithParty(), defaultWorld, { type: "enter_dungeon" });
+
+    expect(result.events).toContainEqual({
+      type: "dungeon_entered",
+      roomId: "room.b1f.001",
+      facing: "east"
+    });
+    expect(result.state.log.at(-1)).toMatchObject({
+      text: "The party descends beneath the black stela.",
+      tags: ["dungeon"]
+    });
+  });
+
   it("enters the dungeon and triggers deterministic trap and combat on movement", () => {
     const entered = executeCommand(stateWithParty(), defaultWorld, { type: "enter_dungeon" });
     const moved = executeCommand(entered, defaultWorld, { type: "move_forward" });
@@ -27,6 +41,13 @@ describe("rules engine", () => {
     expect(moved.resolvedTraps).toContain("trap.b1f.needle");
     expect(moved.party[0].hp).toBe(10);
     expect(moved.combat?.enemy.name).toBe("Ash Slime");
+    expect(moved.log.map((entry) => entry.text)).toEqual(
+      expect.arrayContaining([
+        "The party advances into Hall of Old Dust.",
+        "A hidden needle plate snaps shut. The party is injured, but nobody is erased.",
+        "Ash Slime blocks the passage."
+      ])
+    );
   });
 
   it("resolves combat and allows a recovery return to town without deleting characters", () => {
