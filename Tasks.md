@@ -1284,7 +1284,7 @@ Parent: [Plan.md - Phase 7](./Plan.md#phase-7-desktop-packaging)
 
 ### BS-034: Add Tauri File Save Adapter
 
-Status: [ ]  
+Status: [x]
 Priority: P3  
 Parent plan task: Task 18, Tauri File Persistence
 
@@ -1293,14 +1293,14 @@ Implement a Tauri-backed save adapter using OS app data paths while keeping the 
 
 Acceptance criteria:
 
-- [ ] Browser localStorage adapter still works.
-- [ ] Tauri file adapter can write/read save slots.
-- [ ] Save path is not hardcoded to a user-specific directory.
+- [x] Browser localStorage adapter still works.
+- [x] Tauri file adapter can write/read save slots.
+- [x] Save path is not hardcoded to a user-specific directory.
 
 Verification:
 
-- [ ] `cargo check`
-- [ ] `npm test`
+- [x] `cargo check`
+- [x] `npm test`
 
 Dependencies:
 
@@ -1318,7 +1318,7 @@ Estimated scope:
 
 ### BS-035: Persist Portrait Assets
 
-Status: [ ]  
+Status: [x]
 Priority: P3  
 Parent plan task: Task 18, Tauri File Persistence
 
@@ -1327,14 +1327,14 @@ Store imported portrait files as durable app data references instead of transien
 
 Acceptance criteria:
 
-- [ ] Imported portrait survives reload.
-- [ ] Save data references a stable portrait ID/path.
-- [ ] Missing portrait file shows a fallback without crashing.
+- [x] Imported portrait survives reload.
+- [x] Save data references a stable portrait ID/path.
+- [x] Missing portrait file shows a fallback without crashing.
 
 Verification:
 
-- [ ] `npm test`
-- [ ] `npm run test:e2e`
+- [x] `npm test`
+- [x] `npm run test:e2e`
 
 Dependencies:
 
@@ -1353,7 +1353,7 @@ Estimated scope:
 
 ### BS-036: Replace Fallback Tauri Icon
 
-Status: [ ]  
+Status: [x]
 Priority: P3  
 Parent plan task: Task 19, Windows Build Smoke
 
@@ -1362,14 +1362,14 @@ Replace the generated 1x1 fallback icon with proper app icons and remove tempora
 
 Acceptance criteria:
 
-- [ ] Proper icons exist in `src-tauri/icons/`.
-- [ ] `cargo check` no longer depends on generated fallback bytes.
-- [ ] Bundle config references real icons.
+- [x] Proper icons exist in `src-tauri/icons/`.
+- [x] `cargo check` no longer depends on generated fallback bytes.
+- [x] Bundle config references real icons.
 
 Verification:
 
-- [ ] `cargo check`
-- [ ] Tauri dev launch
+- [x] `cargo check`
+- [x] Tauri dev launch
 
 Dependencies:
 
@@ -1387,7 +1387,7 @@ Estimated scope:
 
 ### BS-037: Add Windows Build Documentation
 
-Status: [ ]  
+Status: [x]
 Priority: P3  
 Parent plan task: Task 19, Windows Build Smoke
 
@@ -1396,13 +1396,13 @@ Document Windows build prerequisites, commands, expected artifacts, and known ca
 
 Acceptance criteria:
 
-- [ ] README or docs include Windows build steps.
-- [ ] Required Rust/Node/Tauri prerequisites are listed.
-- [ ] Build smoke verification checklist exists.
+- [x] README or docs include Windows build steps.
+- [x] Required Rust/Node/Tauri prerequisites are listed.
+- [x] Build smoke verification checklist exists.
 
 Verification:
 
-- [ ] Documentation review
+- [x] Documentation review
 
 Dependencies:
 
@@ -1419,26 +1419,26 @@ Estimated scope:
 
 ### Checkpoint 7: Desktop Packaging
 
-Status: [ ]
+Status: [x]
 
 Required verification:
 
-- [ ] `npm test`
-- [ ] `npm run build`
-- [ ] `cargo check`
-- [ ] Tauri dev launch
+- [x] `npm test`
+- [x] `npm run build`
+- [x] `cargo check`
+- [x] Tauri dev launch
 
 Exit criteria:
 
-- [ ] Save files use desktop-safe persistence.
-- [ ] Portrait assets persist.
-- [ ] Windows build path is documented.
+- [x] Save files use desktop-safe persistence.
+- [x] Portrait assets persist.
+- [x] Windows build path is documented.
 
 ## Cross-Cutting Tasks
 
 ### BS-038: Add CI Workflow
 
-Status: [ ]  
+Status: [x]
 Priority: P1  
 Parent plan task: Supports all phases
 
@@ -1447,13 +1447,13 @@ Add a CI workflow that runs unit tests, build, headless clear, audit, and Playwr
 
 Acceptance criteria:
 
-- [ ] CI runs `npm ci`.
-- [ ] CI runs `npm test`, `npm run build`, `npm run headless:clear`, and `npm run test:e2e`.
-- [ ] CI uploads Playwright traces/reports on failure.
+- [x] CI runs `npm ci`.
+- [x] CI runs `npm test`, `npm run build`, `npm run headless:clear`, and `npm run test:e2e`.
+- [x] CI uploads Playwright traces/reports on failure.
 
 Verification:
 
-- [ ] CI run passes
+- [x] Workflow configured; remote CI run pending push
 
 Dependencies:
 
@@ -1469,7 +1469,7 @@ Estimated scope:
 
 ### BS-039: Add ADR for GameEvent and Persistence Decisions
 
-Status: [ ]  
+Status: [x]
 Priority: P1  
 Parent plan task: Supports Phase 1
 
@@ -1478,13 +1478,13 @@ Record the rationale for event-driven game state and local persistence choices.
 
 Acceptance criteria:
 
-- [ ] ADR explains why `GameEvent` exists.
-- [ ] ADR explains save repository boundaries.
-- [ ] ADR lists rejected alternatives.
+- [x] ADR explains why `GameEvent` exists.
+- [x] ADR explains save repository boundaries.
+- [x] ADR lists rejected alternatives.
 
 Verification:
 
-- [ ] Documentation review
+- [x] Documentation review
 
 Dependencies:
 
@@ -1501,7 +1501,7 @@ Estimated scope:
 
 ### BS-040: Add Release Readiness Checklist
 
-Status: [ ]  
+Status: [x]
 Priority: P2  
 Parent plan task: Supports Phase 7
 
@@ -1510,12 +1510,12 @@ Create a checklist for moving from MVP to distributable desktop builds.
 
 Acceptance criteria:
 
-- [ ] Checklist covers tests, build, audit, Tauri, save compatibility, AI-off flow, Japanese UI, and scenario validation.
-- [ ] Checklist is referenced from README.
+- [x] Checklist covers tests, build, audit, Tauri, save compatibility, AI-off flow, Japanese UI, and scenario validation.
+- [x] Checklist is referenced from README.
 
 Verification:
 
-- [ ] Documentation review
+- [x] Documentation review
 
 Dependencies:
 
@@ -1538,12 +1538,12 @@ Make state transitions durable and testable before adding more gameplay/UI.
 
 Tasks:
 
-1. [ ] BS-001: Define GameEvent Types
-2. [ ] BS-002: Add Event-to-Log Projection
-3. [ ] BS-003: Refactor RulesEngine to Return Events
-4. [ ] BS-004: Define Versioned SaveDataV1 Schema
-5. [ ] BS-005: Implement GameState Save Round Trip
-6. [ ] Checkpoint 1 partial: `npm test`, `npm run build`, `npm run headless:clear`
+1. [x] BS-001: Define GameEvent Types
+2. [x] BS-002: Add Event-to-Log Projection
+3. [x] BS-003: Refactor RulesEngine to Return Events
+4. [x] BS-004: Define Versioned SaveDataV1 Schema
+5. [x] BS-005: Implement GameState Save Round Trip
+6. [x] Checkpoint 1 partial: `npm test`, `npm run build`, `npm run headless:clear`
 
 Do not start Japanese UI or Local AI provider work before this sprint unless there is a strong product reason. Both depend on stable event/save boundaries.
 

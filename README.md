@@ -23,6 +23,9 @@ AI is optional, local-only, and never controls player characters.
 - AI policy guard that rejects player-character speech, player-character action, and game-truth mutation
 - Vitest unit coverage and Playwright browser smoke tests
 - Tauri v2 desktop shell scaffold
+- English/Japanese UI and scenario text
+- Scenario pack manifest and validation panel
+- LocalStorage and Tauri-oriented save repository boundaries
 
 ## Quick Start
 
@@ -68,6 +71,12 @@ npm run tauri dev
 | `npm audit --audit-level=moderate` | Check npm dependency advisories |
 | `npm run tauri dev` | Run the Tauri desktop app |
 | `cargo check` from `src-tauri/` | Verify the Rust/Tauri shell |
+
+Release and packaging references:
+
+- [Windows build notes](docs/windows-build.md)
+- [Release readiness checklist](docs/release-checklist.md)
+- [ADR-001: Game events and persistence](docs/decisions/ADR-001-game-events-and-persistence.md)
 
 If Playwright browsers are missing, install Chromium once:
 

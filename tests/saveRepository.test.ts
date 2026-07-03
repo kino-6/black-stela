@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { defaultWorld } from "../src/data/defaultWorld";
 import { addCharacter, createCharacter, createInitialGameState } from "../src/domain/gameState";
 import { toSaveDataV1 } from "../src/domain/saveData";
-import { LocalStorageSaveRepository } from "../src/services/saveRepository";
+import { LocalStorageSaveRepository, TauriFileSaveRepository, type TauriSaveFileApi } from "../src/services/saveRepository";
 
 class MemoryStorage implements Storage {
   private readonly values = new Map<string, string>();
@@ -68,5 +68,56 @@ describe("local storage save repository", () => {
 
     expect(repository.read("broken")).toMatchObject({ ok: false, reason: "corrupt" });
     expect(repository.list()).toMatchObject([{ slotId: "broken", status: "corrupt" }]);
+  });
+});
+
+class MemoryTauriFileApi implements TauriSaveFileApi {
+  readonly files = new Map<string, string>();
+
+  async appDataDir(): Promise<string> {
+    return "/app-data/black-stela";
+  }
+
+  async mkdir(_path: string): Promise<void> {}
+
+  async writeTextFile(path: string, contents: string): Promise<void> {
+    this.files.set(path, contents);
+  }
+
+  async readTextFile(path: string): Promise<string> {
+    const value = this.files.get(path);
+    if (value === undefined) {
+      throw new Error(`Missing file: ${path}`);
+    }
+
+    return value;
+  }
+
+  async readDir(path: string): Promise<Array<{ name: string }>> {
+    return Array.from(this.files.keys())
+      .filter((filePath) => filePath.startsWith(`${path}/`))
+      .map((filePath) => ({ name: filePath.slice(path.length + 1) }));
+  }
+}
+
+describe("tauri file save repository", () => {
+  it("writes, reads, and lists save slots under app data", async () => {
+    const fileApi = new MemoryTauriFileApi();
+    const repository = new TauriFileSaveRepository(fileApi);
+    const save = saveData();
+
+    await repository.write("slot-1", save);
+
+    expect(fileApi.files.has("/app-data/black-stela/saves/slot-1.json")).toBe(true);
+    await expect(repository.read("slot-1")).resolves.toEqual({ ok: true, save });
+    await expect(repository.list()).resolves.toEqual([
+      {
+        slotId: "slot-1",
+        status: "valid",
+        savedAt: "2026-07-03T00:00:00.000Z",
+        worldId: defaultWorld.id,
+        title: defaultWorld.title
+      }
+    ]);
   });
 });

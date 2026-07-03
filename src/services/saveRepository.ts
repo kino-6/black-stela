@@ -97,3 +97,89 @@ export class LocalStorageSaveRepository implements SaveRepository {
     return `${this.prefix}${trimmed}`;
   }
 }
+
+export interface TauriSaveFileApi {
+  appDataDir(): Promise<string>;
+  mkdir(path: string): Promise<void>;
+  writeTextFile(path: string, contents: string): Promise<void>;
+  readTextFile(path: string): Promise<string>;
+  readDir(path: string): Promise<Array<{ name: string }>>;
+}
+
+export class TauriFileSaveRepository {
+  constructor(
+    private readonly fileApi: TauriSaveFileApi,
+    private readonly directoryName = "saves"
+  ) {}
+
+  async write(slotId: string, save: SaveDataV1): Promise<void> {
+    const directory = await this.saveDirectory();
+    await this.fileApi.mkdir(directory);
+    await this.fileApi.writeTextFile(this.pathFor(directory, slotId), JSON.stringify(save));
+  }
+
+  async read(slotId: string): Promise<SaveReadResult> {
+    try {
+      const directory = await this.saveDirectory();
+      return this.parse(await this.fileApi.readTextFile(this.pathFor(directory, slotId)));
+    } catch (error) {
+      return {
+        ok: false,
+        reason: "missing",
+        message: error instanceof Error ? error.message : `Save slot not found: ${slotId}`
+      };
+    }
+  }
+
+  async list(): Promise<SaveSlotSummary[]> {
+    const directory = await this.saveDirectory();
+    const entries = await this.fileApi.readDir(directory);
+    const summaries = await Promise.all(
+      entries
+        .filter((entry) => entry.name.endsWith(".json"))
+        .map(async (entry) => {
+          const slotId = entry.name.replace(/\.json$/, "");
+          const result = await this.read(slotId);
+          if (result.ok) {
+            return {
+              slotId,
+              status: "valid" as const,
+              savedAt: result.save.savedAt,
+              worldId: result.save.scenario.worldId,
+              title: result.save.scenario.title
+            };
+          }
+
+          return { slotId, status: "corrupt" as const, message: result.message };
+        })
+    );
+
+    return summaries.sort((left, right) => left.slotId.localeCompare(right.slotId));
+  }
+
+  private parse(raw: string): SaveReadResult {
+    try {
+      return { ok: true, save: parseSaveDataV1(JSON.parse(raw)) };
+    } catch (error) {
+      return {
+        ok: false,
+        reason: "corrupt",
+        message: `Corrupt save data: ${error instanceof Error ? error.message : "Unknown parse error."}`
+      };
+    }
+  }
+
+  private async saveDirectory() {
+    const root = await this.fileApi.appDataDir();
+    return `${root.replace(/\/$/, "")}/${this.directoryName}`;
+  }
+
+  private pathFor(directory: string, slotId: string) {
+    const trimmed = slotId.trim();
+    if (!trimmed) {
+      throw new Error("Save slot ID is required.");
+    }
+
+    return `${directory}/${trimmed}.json`;
+  }
+}

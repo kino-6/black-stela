@@ -220,8 +220,7 @@ test-results/
 playwright-report/
 .tmp/
 
-# Tauri generated fallback icon
-src-tauri/icons/icon.png
+# Tauri generated schemas
 src-tauri/gen/
 
 # Streamlit
