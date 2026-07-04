@@ -29,6 +29,8 @@ Then read any matching domain gate:
   `docs/gates/japanese-dialogue-gate.md`
 - Screenshot/layout work:
   `docs/gates/screenshot-review.md`
+- Browser normal-route self-play:
+  `docs/gates/browser-selfplay-gate.md`
 
 ## Workflow
 

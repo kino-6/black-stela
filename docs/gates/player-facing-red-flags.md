@@ -69,6 +69,8 @@ new tests pass.
 - Automation hides meaningful decisions or risk.
 - English-only assertions cover a Japanese-facing copy or layout change.
 - Headless success is used as evidence for visual affordance or UX quality.
+- Browser Self-Play is skipped when the normal route, visible controls, stair,
+  return, combat, or town service flow is touched.
 - The feature is explained by prose instead of being visible through layout,
   art, state, or control behavior.
 - Town, room, or event copy tells the player what the party feels or what story
@@ -77,6 +79,7 @@ new tests pass.
 ## Required Evidence
 
 - Browser-visible Playwright test for normal-play flows.
+- Browser Self-Play report for normal-route changes.
 - Unit test for deterministic rule boundaries.
 - Screenshot review for visual/layout work on desktop and mobile.
 - README or task note when headless output is reachability-only.

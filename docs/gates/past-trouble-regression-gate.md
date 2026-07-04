@@ -11,6 +11,7 @@ work.
   Player-Facing Red Flags.
 - [ ] Name which past trouble could recur in the task.
 - [ ] Add browser-visible evidence for the exact player state touched.
+- [ ] Run or cite Browser Self-Play when the normal player route is touched.
 - [ ] State what headless proves and what it does not prove.
 - [ ] If a past trouble recurs, do not merge or mark done.
 
@@ -22,6 +23,7 @@ work.
 | Normal play controls | Language, save/load, AI settings, slot controls, and debug-like affordances were exposed as web UI. | Normal play hides configuration, provider, arbitrary save/load, and debug controls. |
 | AI | AI was treated as a user-facing switch or suggestion panel. | Local AI is hidden, on by concept, non-canonical, and never asks the player to configure it in normal play. |
 | Headless | `clear` wording and scenario-truth reachability implied the browser game was proven. | Headless is reachability only; browser proof is required for UX and play parity. |
+| Browser proof | Codex could rely on scattered E2E claims without performing a player-like route. | Browser Self-Play must drive normal controls from title through party, dungeon, combat, stair/return, and town service when the normal route is touched. |
 | Character creation | Guild registration became a plain form and lost portrait/profile/stat customization. | Character creation must support player-authored identity, roster fantasy, roles, and party experimentation without an always-on scoring panel. |
 | Party guidance | "Party coverage" / `隊列の備え` over-explained composition and spoiled trial-and-error. | Show class, row, and role texture; do not grade the roster in normal guild registration. |
 | Character creation copy | Guild copy described out-of-world setup such as choosing a face, spending bonus points, or listing registration steps. | Registration copy must sound like a guild master judging candidates in-world, not UI instructions in costume. |
@@ -58,6 +60,16 @@ work.
 | Town equipment | Equipment/shop screens felt like shallow admin lists without DRPG preparation weight. | Equipment has meaningful slots, role/class constraints, prices, tradeoffs, and browser-reviewed presentation. |
 | Reference misuse | "Wiz-like" was treated as surface flavor while violating the play structure. | Use classic DRPGs for interaction structure only: party order, formation, attrition, grid maze, command windows, and town prep. Do not copy proprietary content. |
 | Claiming done | Codex declared completion before checking the actual browser UI. | Any player-facing change needs browser screenshot/DOM review and a remaining-risk note. |
+
+## Browser Self-Play
+
+Use [Browser Self-Play Gate](browser-selfplay-gate.md) when a change touches the
+normal player route. The command `npm run selfplay:browser` starts at the title
+screen, uses normal controls only, captures screenshots, and writes a route
+report under `test-results/selfplay/`.
+
+Browser Self-Play complements E2E and screenshot review. It does not replace
+unit tests, scenario validation, or headless reachability.
 
 ## Completion Note Template
 

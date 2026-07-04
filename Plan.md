@@ -26,6 +26,8 @@
   [docs/archive/Tasks.completed-combat-cockpit-map-repair.md](docs/archive/Tasks.completed-combat-cockpit-map-repair.md)
 - [x] BS-156..BS-158 controller-first normal-play UI:
   [docs/archive/Tasks.completed-controller-first-normal-play-ui.md](docs/archive/Tasks.completed-controller-first-normal-play-ui.md)
+- [x] BS-177..BS-182 browser self-play gate:
+  [docs/archive/Tasks.completed-browser-selfplay-gate.md](docs/archive/Tasks.completed-browser-selfplay-gate.md)
 
 ## Current Baseline
 
@@ -108,6 +110,7 @@ proof of UX, fun, fairness, visual legibility, or grid-maze honesty.
 - [x] Lane Q: Party-Round Combat Depth. Guardrail active.
 - [x] Lane R: Sequential Party Command Entry. Guardrail active.
 - [x] Lane S: Combat Cockpit and Map Presentation Repair. Guardrail active.
+- [x] Lane T: Browser Self-Play Gate. Guardrail active.
 - [ ] Lane G: Desktop Productization. Deferred.
 - [ ] Lane H: Hidden Local Narration Operations. Deferred.
 
@@ -129,6 +132,26 @@ Goal: remove web-form/mouse-first assumptions from normal play surfaces.
 Audit:
 [docs/audits/controller-first-normal-play-audit.md](docs/audits/controller-first-normal-play-audit.md)
 
+### [x] Lane T: Browser Self-Play Gate
+
+Goal: make Codex verify Black Stela as a player in a real browser-like route,
+not only through deterministic engine reachability.
+
+- [x] Define Browser Self-Play as Playwright-driven normal play: title, guild,
+  party creation, dungeon entry, combat, movement, stairs/return, shop/recovery,
+  and Japanese/mobile spot checks where relevant.
+- [x] Add a dedicated `selfplay:browser` command that runs a curated browser route
+  and emits screenshots/log evidence under `test-results/selfplay/`.
+- [x] Keep the self-play route honest: no debug progress, no hidden state mutation,
+  no direct rules-engine command injection, no scenario-truth path skipping.
+- [x] Record failures as player-facing categories: blocked control, visual mismatch,
+  text/localization leak, layout overflow, command shift, impossible route,
+  or hidden affordance.
+- [x] Make Browser Self-Play a required completion gate for future player-facing
+  claims, while keeping Headless as reachability-only support.
+- [x] Done slice: browser self-play script/spec, npm command, artifacts, README/Gate
+  notes, and CI-friendly verification.
+
 ### [x] Standing Guardrails
 
 - Use [Grid Labyrinth Skill](docs/skills/grid-labyrinth-skill.md) for movement,
@@ -142,9 +165,9 @@ Audit:
 
 ## Current Milestone Recommendation
 
-Lane O is complete for the current slice. Keep controller-first proof as a
-standing gate before future UI completion. Lane S is archived; keep its
-combat/minimap regressions in gate checks.
+Lane T is complete for the current slice. Browser Self-Play is now a standing
+gate for normal-route player-facing claims. Lane O remains a standing gate;
+Lane S is archived, but its combat and minimap regressions stay in gate checks.
 
 Use [Black Stela Gate Review Skill](docs/skills/black-stela-gate-review-skill.md)
 before any player-facing implementation or completion claim.

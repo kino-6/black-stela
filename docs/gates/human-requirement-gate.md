@@ -25,6 +25,8 @@ Every player-facing task must record:
   verification.
 - Headless/browser parity: what headless proves, and what it explicitly does
   not prove.
+- Browser Self-Play: whether `npm run selfplay:browser` is required for this
+  change, and where its report/screenshots are stored.
 
 If any blocking gate is missing, the task is not ready to merge.
 
@@ -102,6 +104,7 @@ Use this block when adding or taking a player-facing task:
 - [ ] `git diff --check`
 - [ ] Player-facing copy contains no AI/provider/debug setup leakage.
 - [ ] Browser tests cover visible controls for the changed flow.
+- [ ] Browser Self-Play passes when the normal player route is touched.
 - [ ] Screenshots or Playwright evidence cover desktop and mobile when layout
   changes.
 - [ ] Headless results are described as reachability only.

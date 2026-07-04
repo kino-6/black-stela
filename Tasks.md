@@ -44,6 +44,8 @@
   [docs/archive/Tasks.completed-combat-cockpit-map-repair.md](docs/archive/Tasks.completed-combat-cockpit-map-repair.md)
 - [x] BS-156..BS-158:
   [docs/archive/Tasks.completed-controller-first-normal-play-ui.md](docs/archive/Tasks.completed-controller-first-normal-play-ui.md)
+- [x] BS-177..BS-182:
+  [docs/archive/Tasks.completed-browser-selfplay-gate.md](docs/archive/Tasks.completed-browser-selfplay-gate.md)
 
 ## Active Milestones
 
@@ -77,6 +79,7 @@ evidence, automated regression test, and what headless does or does not prove.
 | Lane Q: Party-Round Combat Depth | BS-163..BS-166 archived | Completed current combat-depth pass |
 | Lane R: Sequential Party Command Entry | BS-167..BS-170 archived | Completed current combat-command pass |
 | Lane S: Combat Cockpit and Map Presentation Repair | BS-171..BS-176 archived | Completed current combat/minimap repair slice |
+| Lane T: Browser Self-Play Gate | BS-177..BS-182 archived | Completed current browser self-play slice |
 | Lane G: Desktop Productization | BS-034..BS-037 archived; no active new tasks | Deferred |
 | Lane H: Hidden Local Narration Operations | BS-019..BS-024 archived; no active new tasks | Deferred |
 
@@ -85,6 +88,8 @@ evidence, automated regression test, and what headless does or does not prove.
 - Keep completed tasks archived, not mixed into active backlog.
 - Do D2 before broad F implementation unless the task is a blocking QA gate.
 - Do not mark headless reachability as proof of player UX.
+- Browser Self-Play is the normal-route browser evidence gate; it complements
+  Playwright E2E and screenshot review, and does not replace them.
 - Do not accept arbitrary room graphs as DRPG dungeon topology.
 - Use Grid Labyrinth Skill/Gate for movement, minimap, stairs, return, and
   first-person dungeon rendering work.

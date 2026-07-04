@@ -74,6 +74,7 @@ npm run tauri dev
 | `npm run build` | Type-check and build the web frontend |
 | `npm test` | Run Vitest unit tests |
 | `npm run test:e2e` | Run Playwright browser smoke tests |
+| `npm run selfplay:browser` | Run browser self-play through the normal player route |
 | `npm run headless:reachability` | Run a deterministic reachability probe |
 | `npm run headless:clear` | Legacy alias for `headless:reachability` |
 | `npm run headless:combat` | Run deterministic tactical-combat balance probes |
@@ -88,6 +89,7 @@ Release and packaging references:
 - [ADR-001: Game events and persistence](docs/decisions/ADR-001-game-events-and-persistence.md)
 - [Human Requirement Gate](docs/gates/human-requirement-gate.md)
 - [Player-facing red flags](docs/gates/player-facing-red-flags.md)
+- [Browser self-play gate](docs/gates/browser-selfplay-gate.md)
 - [Screenshot review protocol](docs/gates/screenshot-review.md)
 - [Current plan](Plan.md)
 - [Current tasks](Tasks.md)
@@ -183,6 +185,27 @@ npm run test:e2e -- tests/e2e/player-clear.spec.ts
 
 That test clears through visible controls only and fails if `Return` appears
 before the party reaches a room with a return stair.
+
+## Browser Self-Play
+
+Browser Self-Play is the closest automated equivalent to Codex playing the game
+as a normal player. It starts at the title screen, uses visible controls only,
+creates a six-person party, enters the dungeon, resolves visible combat, uses
+authored stairs and return affordances, returns to town, and checks town
+services.
+
+```sh
+npm run selfplay:browser
+```
+
+The command writes screenshots and route reports to `test-results/selfplay/`:
+
+- `browser-selfplay-report.json`
+- `browser-selfplay-report.md`
+- title, guild, dungeon, combat, stair/return, town, shop, and recovery screenshots
+
+Browser Self-Play is a player-facing UX gate. It is not a replacement for unit
+tests, full Playwright E2E, screenshot review, or scenario validation.
 
 Economy rules are intentionally conservative for the MVP:
 
