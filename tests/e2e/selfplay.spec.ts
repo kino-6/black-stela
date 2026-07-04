@@ -76,9 +76,13 @@ test("browser self-play completes the visible dungeon loop without headless shor
   }
 
   async function capture(name: string) {
-    const path = join(artifactDir, `${String(report.screenshots.length + 1).padStart(2, "0")}-${name}.png`);
-    await page.screenshot({ path, fullPage: true });
-    report.screenshots.push(path);
+    await captureFrom(page, name, report);
+  }
+
+  async function captureFrom(targetPage: Page, name: string, targetReport: SelfPlayReport) {
+    const path = join(artifactDir, `${String(targetReport.screenshots.length + 1).padStart(2, "0")}-${name}.png`);
+    await targetPage.screenshot({ path, fullPage: true });
+    targetReport.screenshots.push(path);
   }
 
   async function clickCommand(name: string | RegExp) {
@@ -154,19 +158,54 @@ test("browser self-play completes the visible dungeon loop without headless shor
 
     await recordStep("return marker brings the party back to town services", "hidden_affordance", async () => {
       await clickCommand("Use return marker");
-      await expect(page.getByRole("heading", { name: "Town" })).toBeVisible();
+      await expect(page.getByRole("heading", { name: "Town", exact: true })).toBeVisible();
       await expect(page.getByText("The party returns to town.")).toBeVisible();
+      await expect(page.getByTestId("town-cockpit")).toBeVisible();
+      await expect(page.getByRole("heading", { name: "Adventurer Registration" })).toHaveCount(0);
+      await expect(page.getByText("Return record")).toBeVisible();
+      await expect(page.getByText("Next preparation", { exact: true })).toBeVisible();
       await capture("post-return-town");
 
-      await clickCommand("Shop");
+      await page.getByTestId("town-cockpit").getByRole("button", { name: "Shop" }).click();
+      report.commands.push("Shop");
       await expect(page.getByRole("heading", { name: "Stela Gate General Store" })).toBeVisible();
       await expect(page.getByText(/\d+ gold/).first()).toBeVisible();
+      await expect(page.getByText("Selected adventurer")).toBeVisible();
+      await expect(page.getByTestId("shop-delta").first()).toBeVisible();
       await capture("shop");
 
       await clickCommand("Recovery");
       await expect(page.getByRole("heading", { name: "Recovery" })).toBeVisible();
       await expect(page.getByText(/Recovery cost:/)).toBeVisible();
+      await expect(page.getByTestId("recovery-plan")).toBeVisible();
       await capture("recovery");
+    });
+
+    await recordStep("Japanese route keeps town services localized", "localization_leak", async () => {
+      const japanesePage = await page.context().newPage();
+      try {
+        await japanesePage.goto("/");
+        await japanesePage.getByRole("button", { name: "Config" }).click();
+        await japanesePage.getByLabel("Language").selectOption("ja");
+        await japanesePage.getByRole("button", { name: "新たな探索" }).click();
+        await createStarterParty(japanesePage, "ja");
+        await expect(japanesePage.getByRole("button", { name: "商店" })).toBeVisible();
+        await expect(japanesePage.getByRole("button", { name: "施療院" })).toBeVisible();
+        await japanesePage.getByRole("button", { name: "商店" }).click();
+        await expect(japanesePage.getByRole("heading", { name: "黒碑門の雑貨店" })).toBeVisible();
+        await expect(japanesePage.getByText("見る冒険者")).toBeVisible();
+        await expect(japanesePage.getByText("gold")).toHaveCount(0);
+        await expect(japanesePage.getByRole("button", { name: "Shop" })).toHaveCount(0);
+        await captureFrom(japanesePage, "ja-shop", report);
+
+        await japanesePage.getByRole("button", { name: "施療院" }).click();
+        await expect(japanesePage.getByRole("heading", { name: "施療院" })).toBeVisible();
+        await expect(japanesePage.getByTestId("recovery-plan")).toBeVisible();
+        await expect(japanesePage.getByText("Recovery")).toHaveCount(0);
+        await captureFrom(japanesePage, "ja-recovery", report);
+      } finally {
+        await japanesePage.close();
+      }
     });
 
     await recordStep("normal route avoids debug/admin/provider leaks", "localization_leak", async () => {

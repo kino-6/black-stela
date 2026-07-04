@@ -14,10 +14,11 @@ test("town modes expose guild, recovery, records, and dungeon entry", async ({ p
   await registerAdventurer(page, { name: "Mira" });
   await expect(page.getByRole("heading", { name: "Mira" })).toBeVisible();
 
-  await page.getByRole("button", { name: "Recovery" }).click();
+  await page.getByLabel("Town modes").getByRole("button", { name: "Recovery" }).click();
   await expect(page.getByRole("heading", { name: "Recovery" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Guild Registry" })).toHaveCount(0);
-  await expect(page.getByText(/Mira: \d+\/\d+/)).toBeVisible();
+  await expect(page.getByTestId("recovery-plan")).toBeVisible();
+  await expect(page.getByTestId("recovery-plan").getByText(/Mira/)).toBeVisible();
 
   await page.getByRole("button", { name: "Records" }).click();
   await expect(page.getByRole("heading", { name: "Records" })).toBeVisible();
@@ -35,8 +36,10 @@ test("town shop supports buying, selling, and equipping without an admin table",
 
   await expect(page.getByRole("heading", { name: "Stela Gate General Store" })).toBeVisible();
   await expect(page.getByText("75 gold")).toBeVisible();
+  await expect(page.getByText("Selected adventurer")).toBeVisible();
   await page.getByRole("button", { name: "Buy" }).first().click();
   await expect(page.getByText("Bought Healing Draught for 25 gold.")).toBeVisible();
+  await expect(page.getByTestId("shop-delta").first()).toBeVisible();
   await expect(page.getByText(/Weapon · DMG/).first()).toBeVisible();
   await expect(page.getByText(/Offhand · ARM/).first()).toBeVisible();
   await expect(page.getByText(/Body · ARM/).first()).toBeVisible();
@@ -59,9 +62,13 @@ test("recovery costs gold and blocks free healing", async ({ page }) => {
   await resolveVisibleCombat(page);
   await advanceToB1fMarker(page);
   await page.getByRole("button", { name: "Use return marker" }).click();
-  await page.getByRole("button", { name: "Recovery" }).click();
+  await expect(page.getByTestId("town-cockpit")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Adventurer Registration" })).toHaveCount(0);
+  await expect(page.getByText("Return record")).toBeVisible();
+  await page.getByTestId("town-cockpit").getByRole("button", { name: "Recovery" }).click();
 
   await expect(page.getByText(/Recovery cost: [1-9]/)).toBeVisible();
+  await expect(page.getByTestId("recovery-plan")).toBeVisible();
   await page.getByRole("button", { name: "Recover party" }).click();
   await expect(page.getByText(/The party rests in town for [1-9]/)).toBeVisible();
 });
@@ -71,9 +78,10 @@ test("Japanese shop equipment stays readable on mobile", async ({ page }) => {
   await setTitleLanguage(page, "ja");
   await page.getByRole("button", { name: "新たな探索" }).click();
   await createStarterParty(page, "ja");
-  await page.getByRole("button", { name: "店" }).click();
+  await page.getByRole("button", { name: "商店" }).click();
 
   await expect(page.getByRole("heading", { name: "黒碑門の雑貨店" })).toBeVisible();
+  await expect(page.getByText("見る冒険者")).toBeVisible();
   await expect(page.getByText(/武器 ·/).first()).toBeVisible();
   await expect(page.getByText(/副手 ·/).first()).toBeVisible();
   await expect(page.getByText("民兵の湾刀")).toBeVisible();

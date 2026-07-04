@@ -202,7 +202,8 @@ The command writes screenshots and route reports to `test-results/selfplay/`:
 
 - `browser-selfplay-report.json`
 - `browser-selfplay-report.md`
-- title, guild, dungeon, combat, stair/return, town, shop, and recovery screenshots
+- title, guild, dungeon, combat, stair/return, post-return town, shop,
+  recovery, and Japanese shop/recovery screenshots
 
 Browser Self-Play is a player-facing UX gate. It is not a replacement for unit
 tests, full Playwright E2E, screenshot review, or scenario validation.

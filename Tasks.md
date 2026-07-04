@@ -46,6 +46,8 @@
   [docs/archive/Tasks.completed-controller-first-normal-play-ui.md](docs/archive/Tasks.completed-controller-first-normal-play-ui.md)
 - [x] BS-177..BS-182:
   [docs/archive/Tasks.completed-browser-selfplay-gate.md](docs/archive/Tasks.completed-browser-selfplay-gate.md)
+- [x] BS-183..BS-188:
+  [docs/archive/Tasks.completed-town-return-loop.md](docs/archive/Tasks.completed-town-return-loop.md)
 
 ## Active Milestones
 
@@ -80,6 +82,7 @@ evidence, automated regression test, and what headless does or does not prove.
 | Lane R: Sequential Party Command Entry | BS-167..BS-170 archived | Completed current combat-command pass |
 | Lane S: Combat Cockpit and Map Presentation Repair | BS-171..BS-176 archived | Completed current combat/minimap repair slice |
 | Lane T: Browser Self-Play Gate | BS-177..BS-182 archived | Completed current browser self-play slice |
+| Lane U: Town Return Loop and Japanese DRPG Service UX | BS-183..BS-188 archived | Completed current town-loop slice |
 | Lane G: Desktop Productization | BS-034..BS-037 archived; no active new tasks | Deferred |
 | Lane H: Hidden Local Narration Operations | BS-019..BS-024 archived; no active new tasks | Deferred |
 

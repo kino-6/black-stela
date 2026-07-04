@@ -47,10 +47,10 @@ test("captures desktop screenshot review states", async ({ page }) => {
   await page.screenshot({ path: "test-results/screenshot-review/desktop-return-stair-front-wall.png", fullPage: true });
 
   await page.getByRole("button", { name: "Use return marker" }).click();
-  await expect(page.getByRole("heading", { name: "Town" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Town", exact: true })).toBeVisible();
   await page.screenshot({ path: "test-results/screenshot-review/desktop-post-return-town.png", fullPage: true });
 
-  await page.getByRole("button", { name: "Shop" }).click();
+  await page.getByTestId("town-cockpit").getByRole("button", { name: "Shop" }).click();
   await expect(page.getByRole("heading", { name: "Stela Gate General Store" })).toBeVisible();
   await page.screenshot({ path: "test-results/screenshot-review/desktop-shop.png", fullPage: true });
 });

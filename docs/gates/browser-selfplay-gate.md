@@ -21,6 +21,8 @@ or direct rules-engine calls.
   use.
 - [ ] Screenshots are captured for title, guild, dungeon, combat, stair/return,
   post-return town, and town service states.
+- [ ] Japanese service states are checked when normal-route labels, shop,
+  recovery, rewards, or compact town UI change.
 - [ ] A JSON or Markdown report records steps, screenshots, final state, and
   failure category.
 - [ ] Normal play exposes no debug/admin/provider/save-slot controls.

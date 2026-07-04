@@ -28,6 +28,8 @@
   [docs/archive/Tasks.completed-controller-first-normal-play-ui.md](docs/archive/Tasks.completed-controller-first-normal-play-ui.md)
 - [x] BS-177..BS-182 browser self-play gate:
   [docs/archive/Tasks.completed-browser-selfplay-gate.md](docs/archive/Tasks.completed-browser-selfplay-gate.md)
+- [x] BS-183..BS-188 town return loop:
+  [docs/archive/Tasks.completed-town-return-loop.md](docs/archive/Tasks.completed-town-return-loop.md)
 
 ## Current Baseline
 
@@ -82,6 +84,8 @@ proof of UX, fun, fairness, visual legibility, or grid-maze honesty.
 - Combat command entry follows classic party RPG structure: the next unresolved
   adventurer receives a command in party order; formation cards are status, not
   arbitrary actor selectors.
+- The town loop must feel like returning, recovering, buying, and preparing for
+  another descent, not falling back into guild-registration or web-form context.
 - Stairs, return seals, and next-floor progression must be browser-visible.
 - Past user-visible failures are recorded in
   [Past Trouble Regression Gate](docs/gates/past-trouble-regression-gate.md)
@@ -111,6 +115,7 @@ proof of UX, fun, fairness, visual legibility, or grid-maze honesty.
 - [x] Lane R: Sequential Party Command Entry. Guardrail active.
 - [x] Lane S: Combat Cockpit and Map Presentation Repair. Guardrail active.
 - [x] Lane T: Browser Self-Play Gate. Guardrail active.
+- [x] Lane U: Town Return Loop and Japanese DRPG Service UX. Guardrail active.
 - [ ] Lane G: Desktop Productization. Deferred.
 - [ ] Lane H: Hidden Local Narration Operations. Deferred.
 
@@ -152,6 +157,38 @@ not only through deterministic engine reachability.
 - [x] Done slice: browser self-play script/spec, npm command, artifacts, README/Gate
   notes, and CI-friendly verification.
 
+### [x] Lane U: Town Return Loop and Japanese DRPG Service UX
+
+Goal: make the normal browser route feel like a DRPG loop: prepare in town,
+descend, spend resources, return, read the damage and rewards, then choose the
+next preparation step.
+
+Evidence from `npm run selfplay:browser` on 2026-07-05:
+
+- Guild/town/shop/recovery still read as English-heavy service screens.
+- Returning to town leaves the player in a guild-registration context.
+- Shop lists items but does not answer who should use them or what changes.
+- Recovery is a plain HP/cost list, not a meaningful attrition decision.
+- Combat and exploration pass the route, but the town loop does not yet create
+  desire to re-enter with better preparation.
+
+Planned slice:
+
+- [x] Rebuild post-return town as a town status cockpit: expedition result,
+  wounds, gold, carried loot, next obvious services, and dungeon re-entry.
+- [x] Localize normal-play town, guild, shop, recovery, combat, and route labels
+  to natural Japanese for the Japanese mode; remove stray English from the
+  player-facing default route.
+- [x] Turn shop into equipment/preparation decisions: selected adventurer,
+  equip eligibility, stat deltas, cost, remaining gold, and inventory result.
+- [x] Turn recovery into attrition management: wounded members, total cost,
+  who can be treated, insufficient-funds state, and clear before/after result.
+- [x] Extend Browser Self-Play to fail when returning lands in registration
+  context, normal route leaks English, shop lacks equipment deltas, or recovery
+  lacks cost/result feedback.
+- [x] Done slice: browser self-play screenshots show town return, shop, and
+  recovery as one-screen DRPG preparation surfaces in Japanese and English.
+
 ### [x] Standing Guardrails
 
 - Use [Grid Labyrinth Skill](docs/skills/grid-labyrinth-skill.md) for movement,
@@ -165,9 +202,9 @@ not only through deterministic engine reachability.
 
 ## Current Milestone Recommendation
 
-Lane T is complete for the current slice. Browser Self-Play is now a standing
-gate for normal-route player-facing claims. Lane O remains a standing gate;
-Lane S is archived, but its combat and minimap regressions stay in gate checks.
+Lane U is complete for the current slice. Browser Self-Play now checks the
+post-return town cockpit, shop equipment deltas, recovery plan, and Japanese
+shop/recovery localization.
 
 Use [Black Stela Gate Review Skill](docs/skills/black-stela-gate-review-skill.md)
 before any player-facing implementation or completion claim.

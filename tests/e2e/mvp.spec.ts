@@ -44,7 +44,7 @@ test("create party, import portrait, enter dungeon, fight, use stairs, and view 
 
   await expect(page.getByRole("button", { name: "Return", exact: true })).toHaveCount(0);
   await page.getByRole("button", { name: "Use return marker" }).click();
-  await expect(page.getByRole("heading", { name: "Town" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Town", exact: true })).toBeVisible();
   await expect(page.getByText("The party returns to town.")).toBeVisible();
 });
 

@@ -23,5 +23,5 @@ test("shows a visible message for corrupt autosave data", async ({ page }) => {
   await expect(page.getByText("Corrupt save")).toBeVisible();
 
   await page.getByRole("button", { name: "New expedition" }).click();
-  await expect(page.getByRole("heading", { name: "Town" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Town", exact: true })).toBeVisible();
 });

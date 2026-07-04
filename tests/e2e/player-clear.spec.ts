@@ -50,7 +50,7 @@ test("clears the MVP route through visible player controls only", async ({ page 
 
   await page.getByRole("button", { name: "Use return marker" }).click();
 
-  await expect(page.getByRole("heading", { name: "Town" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Town", exact: true })).toBeVisible();
   await expect(page.getByText("The party returns to town.")).toBeVisible();
   await page.getByRole("button", { name: "Records" }).click();
   await expect(page.getByText(/^[1-9]\d* records$/)).toBeVisible();
@@ -85,7 +85,7 @@ test("visible controls can descend to B2F and still return through the authored 
 
   await expect(page.getByRole("heading", { name: "Black Marker" })).toBeVisible();
   await page.getByRole("button", { name: "Use return marker" }).click();
-  await expect(page.getByRole("heading", { name: "Town" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Town", exact: true })).toBeVisible();
 });
 
 test("starting cell south wall matches minimap, first-person view, and movement", async ({ page }) => {

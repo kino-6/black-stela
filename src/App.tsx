@@ -168,6 +168,7 @@ export function App() {
 
     return entry.event ? projectEventToLog(entry.event, locale, defaultWorld)?.text ?? entry.text : entry.text;
   }, [locale, state.log, state.phase]);
+  const latestEventType = state.log.at(-1)?.event?.type;
 
   const livingEnemyGroups = useMemo(
     () => state.combat?.enemyGroups.filter((group) => group.count > 0) ?? [],
@@ -191,6 +192,10 @@ export function App() {
   const isTempoRunning = tempoMode !== "idle";
   const showGuildFallbackRecruit = state.party.length > 0 || guildCreationStep !== "briefing";
   const recoveryCost = useMemo(() => calculateRecoveryCost(state.party), [state.party]);
+  const injuredMembers = useMemo(
+    () => state.party.filter((member) => getMemberRecoveryCost(member) > 0),
+    [state.party]
+  );
   const townShop = defaultWorld.shops.find((shop) => shop.id === "shop.stela-general") ?? defaultWorld.shops[0];
   const draftPreview = useMemo(() => createGuildCharacter({
     ...draft,
@@ -203,6 +208,10 @@ export function App() {
   }), [draft, state.turn, t]);
   const selectedProfile = state.party.find((member) => member.id === selectedProfileId) ?? state.party[0] ?? draftPreview;
   const selectedProfileStats = getEffectiveCharacterStats(selectedProfile, defaultWorld);
+  const carriedLootCount = state.inventory.reduce((total, item) => total + item.quantity, 0);
+  const carriedLootSummary = state.inventory.length > 0
+    ? state.inventory.map((item) => `${localizedCatalogName(item.id, locale)} x${item.quantity}`).join(" / ")
+    : t("town.noLoot");
   const suggestedRecruit = useMemo(
     () => createSuggestedRecruitForParty(state.party, state.turn, locale),
     [locale, state.party, state.turn]
@@ -215,6 +224,12 @@ export function App() {
   useEffect(() => {
     stateRef.current = state;
   }, [state]);
+
+  useEffect(() => {
+    if (state.phase === "town" && state.log.at(-1)?.event?.type === "returned_to_town") {
+      setTownMode("entry");
+    }
+  }, [state.phase, state.log]);
 
   useEffect(() => {
     if (state.phase !== "combat") {
@@ -239,6 +254,13 @@ export function App() {
     setState((current) => executeCommand(current, defaultWorld, command));
     void options;
     setTempoStatus("");
+  }
+
+  function enterTownMode(mode: TownMode) {
+    if (mode === "shop" && state.party[0]) {
+      setSelectedProfileId(state.party[0].id);
+    }
+    setTownMode(mode);
   }
 
   function queueSelectedCombatAction(action: CombatActionKind) {
@@ -952,11 +974,11 @@ export function App() {
                 data-controller-active={townMode !== "guild" || state.party.length >= PARTY_SIZE_LIMIT ? "true" : undefined}
                 data-controller-surface="town-tabs"
               >
-                <button type="button" onClick={() => setTownMode("guild")}>{t("town.guild")}</button>
-                <button type="button" onClick={() => setTownMode("shop")}>{t("town.shop")}</button>
-                <button type="button" onClick={() => setTownMode("recovery")}>{t("town.recovery")}</button>
-                <button type="button" onClick={() => setTownMode("records")}>{t("town.records")}</button>
-                <button type="button" onClick={() => setTownMode("entry")}>{t("town.entry")}</button>
+                <button type="button" onClick={() => enterTownMode("guild")}>{t("town.guild")}</button>
+                <button type="button" onClick={() => enterTownMode("shop")}>{t("town.shop")}</button>
+                <button type="button" onClick={() => enterTownMode("recovery")}>{t("town.recovery")}</button>
+                <button type="button" onClick={() => enterTownMode("records")}>{t("town.records")}</button>
+                <button type="button" onClick={() => enterTownMode("entry")}>{t("town.entry")}</button>
               </div>
               {townMode === "guild" && (
                 <section className="guild-studio" aria-labelledby="party-heading">
@@ -1373,15 +1395,63 @@ export function App() {
                 </section>
               )}
               {townMode === "entry" && (
-                <div className="town-scene" aria-hidden="true">
-                <div className="town-skyline" />
-                <div className="town-gate">
-                  <span className="town-lantern left" />
-                  <span className="town-stela" />
-                  <span className="town-lantern right" />
-                </div>
-                <div className="town-steps" />
-              </div>
+                <section
+                  className="town-service town-cockpit"
+                  aria-labelledby="town-status-heading"
+                  data-testid="town-cockpit"
+                  data-controller-active="true"
+                  data-controller-surface="town-entry"
+                >
+                  <div className="service-heading">
+                    <div>
+                      <h3 id="town-status-heading">{t("town.statusHeading")}</h3>
+                      <p>{t("town.statusCopy")}</p>
+                    </div>
+                    <strong>{t("town.gold", { gold: state.partyGold })}</strong>
+                  </div>
+                  <div className="town-cockpit-grid">
+                    <div className="town-scene" aria-hidden="true">
+                      <div className="town-skyline" />
+                      <div className="town-gate">
+                        <span className="town-lantern left" />
+                        <span className="town-stela" />
+                        <span className="town-lantern right" />
+                      </div>
+                      <div className="town-steps" />
+                    </div>
+                    <dl className="town-status-ledger">
+                      <div>
+                        <dt>{t("town.expeditionResult")}</dt>
+                        <dd>{latestLogText || t("town.readyToDescend")}</dd>
+                      </div>
+                      <div>
+                        <dt>{t("town.wounds")}</dt>
+                        <dd>{injuredMembers.length > 0 ? injuredMembers.map((member) => `${member.name} ${member.hp}/${member.maxHp}`).join(" / ") : t("town.noWounds")}</dd>
+                      </div>
+                      <div>
+                        <dt>{t("town.loot")}</dt>
+                        <dd>{carriedLootCount > 0 ? carriedLootSummary : t("town.noLoot")}</dd>
+                      </div>
+                      <div>
+                        <dt>{t("town.nextPreparation")}</dt>
+                        <dd>{recoveryCost > 0 ? t("town.nextRecovery") : state.inventory.some((item) => item.kind === "equipment") ? t("town.nextShop") : t("town.readyToDescend")}</dd>
+                      </div>
+                    </dl>
+                  </div>
+                  <div className="town-action-strip">
+                    <button type="button" onClick={() => enterTownMode("recovery")}>{t("town.recovery")}</button>
+                    <button type="button" onClick={() => enterTownMode("shop")}>{t("town.shop")}</button>
+                    <button
+                      type="button"
+                      className="primary-action"
+                      disabled={state.party.length === 0}
+                      onClick={() => run({ type: "enter_dungeon" })}
+                    >
+                      <DoorOpen size={18} />
+                      {t("play.enterDungeon")}
+                    </button>
+                  </div>
+                </section>
               )}
               {townMode === "recovery" && (
                 <section
@@ -1391,16 +1461,38 @@ export function App() {
                   data-controller-surface="town-recovery"
                 >
                   <h3 id="recovery-heading">{t("town.recoveryHeading")}</h3>
+                  {latestLogText && isRecoveryEventType(latestEventType) && <p className="event-window" aria-live="polite">{latestLogText}</p>}
                   <p className="town-ledger">
                     <strong>{t("town.gold", { gold: state.partyGold })}</strong>
                     <span>{t("town.recoveryCost", { gold: recoveryCost })}</span>
                   </p>
-                  <ul>
-                    {state.party.map((member) => (
-                      <li key={member.id}>{member.name}: {member.hp}/{member.maxHp}{member.injury ? ` · ${member.injury}` : ""}</li>
-                    ))}
-                  </ul>
-                  <button type="button" disabled={state.partyGold < recoveryCost} onClick={() => run({ type: "recover_party" })}>{t("town.recoverParty")}</button>
+                  <div className="recovery-plan" data-testid="recovery-plan">
+                    {state.party.map((member) => {
+                      const memberCost = getMemberRecoveryCost(member);
+                      return (
+                        <article className={memberCost > 0 ? "recovery-row injured" : "recovery-row"} key={member.id}>
+                          <strong>{member.name}</strong>
+                          <span>{member.hp}/{member.maxHp}</span>
+                          <small>
+                            {memberCost > 0
+                              ? t("town.recoveryMemberPlan", { cost: memberCost, after: member.maxHp })
+                              : t("town.noTreatmentNeeded")}
+                          </small>
+                        </article>
+                      );
+                    })}
+                  </div>
+                  <p className="town-ledger">
+                    <span>{recoveryCost > 0 ? t("town.afterRecovery", { count: injuredMembers.length }) : t("town.noRecoveryNeeded")}</span>
+                    {state.partyGold < recoveryCost && <strong>{t("town.cannotAffordRecovery")}</strong>}
+                  </p>
+                  <button
+                    type="button"
+                    disabled={recoveryCost <= 0 || state.partyGold < recoveryCost}
+                    onClick={() => run({ type: "recover_party" })}
+                  >
+                    {t("town.recoverParty")}
+                  </button>
                 </section>
               )}
               {townMode === "shop" && townShop && (
@@ -1414,13 +1506,40 @@ export function App() {
                     <h3 id="shop-heading">{localizedShopName(townShop, locale)}</h3>
                     <strong>{t("town.gold", { gold: state.partyGold })}</strong>
                   </div>
-                  {latestLogText && <p className="event-window" aria-live="polite">{latestLogText}</p>}
+                  {latestLogText && isShopEventType(latestEventType) && <p className="event-window" aria-live="polite">{latestLogText}</p>}
+                  <section className="shop-adventurer-panel" aria-label={t("town.selectedAdventurer")}>
+                    <div>
+                      <strong>{t("town.selectedAdventurer")}: {selectedProfile.name}</strong>
+                      <span>
+                        {t("town.equipmentSummary", {
+                          attack: selectedProfileStats.damageMax,
+                          accuracy: selectedProfileStats.accuracy,
+                          armorValue: selectedProfileStats.armor,
+                          speed: selectedProfileStats.speed
+                        })}
+                      </span>
+                    </div>
+                    <div className="shop-party-select">
+                      {state.party.map((member) => (
+                        <button
+                          type="button"
+                          className={member.id === selectedProfile.id ? "selected" : ""}
+                          key={member.id}
+                          onClick={() => setSelectedProfileId(member.id)}
+                        >
+                          {member.name}
+                        </button>
+                      ))}
+                    </div>
+                  </section>
                   <div className="shop-grid">
                     <section aria-label={t("town.shopStock")}>
                       <h4>{t("town.shopStock")}</h4>
                       <div className="shop-list">
                         {townShop.stock?.map((stock) => {
                           const equipment = findEquipmentById(stock.itemId);
+                          const selectedCanEquip = equipment ? isEquipmentUsableBy(equipment, selectedProfile) : false;
+                          const previewStats = equipment ? previewEquipmentStats(selectedProfile, equipment) : null;
                           return (
                             <article className="shop-row" key={stock.itemId}>
                               <div>
@@ -1431,7 +1550,18 @@ export function App() {
                                     : t("town.price", { gold: stock.price })}
                                 </span>
                                 {equipment && <small>{localizedCatalogDescription(stock.itemId, locale)}</small>}
+                                {equipment && (
+                                  <small data-testid="shop-delta">
+                                    {selectedCanEquip
+                                      ? t("town.canEquip", { member: selectedProfile.name })
+                                      : t("town.cannotEquip", { member: selectedProfile.name })}
+                                    {selectedCanEquip && previewStats
+                                      ? ` · ${formatStatDelta(selectedProfileStats, previewStats, t)}`
+                                      : ""}
+                                  </small>
+                                )}
                                 {equipment && <small>{t("town.price", { gold: stock.price })}</small>}
+                                <small>{t("town.remainingGold", { gold: Math.max(0, state.partyGold - stock.price) })}</small>
                               </div>
                               <button
                                 type="button"
@@ -1479,47 +1609,45 @@ export function App() {
                   </div>
                   <section className="equipment-board" aria-label={t("town.equipment")}>
                     <h4>{t("town.equipment")}</h4>
-                    {state.party.map((member) => (
-                      <article className="equipment-row" key={member.id}>
-                        <div>
-                          <strong>{member.name}</strong>
-                          <span>
-                            {t("town.equipmentSummary", {
-                              attack: getEffectiveCharacterStats(member, defaultWorld).damageMax,
-                              accuracy: getEffectiveCharacterStats(member, defaultWorld).accuracy,
-                              armorValue: getEffectiveCharacterStats(member, defaultWorld).armor,
-                              speed: getEffectiveCharacterStats(member, defaultWorld).speed
-                            })}
-                          </span>
-                          <dl className="equipment-slots">
-                            {equipmentSlotOrder.map((slot) => (
-                              <div key={`${member.id}:${slot}`}>
-                                <dt>{formatEquipmentSlot(slot, t)}</dt>
-                                <dd>{equippedName(member.equipment[slot], locale)}</dd>
-                              </div>
-                            ))}
-                          </dl>
-                        </div>
-                        <div className="equipment-actions">
-                          {state.inventory.filter((item) => item.kind === "equipment").map((item) => {
-                            const equipment = findEquipmentById(item.id);
-                            const usable = equipment ? isEquipmentUsableBy(equipment, member) : false;
-                            return (
-                              <button
-                                type="button"
-                                key={`${member.id}:${item.id}`}
-                                aria-label={`${t("town.equip")} ${localizedCatalogName(item.id, locale)} to ${member.name}`}
-                                disabled={!usable}
-                                onClick={() => run({ type: "equip_item", characterId: member.id, equipmentId: item.id })}
-                              >
-                                {localizedCatalogName(item.id, locale)}
-                                <small>{usable ? t("town.allowed") : t("town.ineligible")}</small>
-                              </button>
-                            );
+                    <article className="equipment-row">
+                      <div>
+                        <strong>{selectedProfile.name}</strong>
+                        <span>
+                          {t("town.equipmentSummary", {
+                            attack: selectedProfileStats.damageMax,
+                            accuracy: selectedProfileStats.accuracy,
+                            armorValue: selectedProfileStats.armor,
+                            speed: selectedProfileStats.speed
                           })}
-                        </div>
-                      </article>
-                    ))}
+                        </span>
+                        <dl className="equipment-slots">
+                          {equipmentSlotOrder.map((slot) => (
+                            <div key={`${selectedProfile.id}:${slot}`}>
+                              <dt>{formatEquipmentSlot(slot, t)}</dt>
+                              <dd>{equippedName(selectedProfile.equipment[slot], locale)}</dd>
+                            </div>
+                          ))}
+                        </dl>
+                      </div>
+                      <div className="equipment-actions">
+                        {state.inventory.filter((item) => item.kind === "equipment").map((item) => {
+                          const equipment = findEquipmentById(item.id);
+                          const usable = equipment ? isEquipmentUsableBy(equipment, selectedProfile) : false;
+                          return (
+                            <button
+                              type="button"
+                              key={`${selectedProfile.id}:${item.id}`}
+                              aria-label={`${t("town.equip")} ${localizedCatalogName(item.id, locale)} to ${selectedProfile.name}`}
+                              disabled={!usable}
+                              onClick={() => run({ type: "equip_item", characterId: selectedProfile.id, equipmentId: item.id })}
+                            >
+                              {localizedCatalogName(item.id, locale)}
+                              <small>{usable ? t("town.allowed") : t("town.ineligible")}</small>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </article>
                   </section>
                 </section>
               )}
@@ -1539,7 +1667,7 @@ export function App() {
                   )}
                 </section>
               )}
-              {townMode !== "guild" && townMode !== "shop" && (
+              {townMode === "records" && (
                 <>
                   <p>
                     {t("play.townCopy")}
@@ -2082,6 +2210,54 @@ function equippedName(itemId: string | undefined, locale: Locale) {
 function localizedEnemyGroupName(group: { enemyId: string; name: string }, locale: Locale) {
   const enemy = defaultWorld.enemies.find((candidate) => candidate.id === group.enemyId);
   return enemy?.locales?.[locale]?.name ?? enemy?.name ?? group.name;
+}
+
+function getMemberRecoveryCost(member: Character) {
+  return Math.max(0, member.maxHp - member.hp) + (member.injury ? 8 : 0);
+}
+
+function isShopEventType(type: string | undefined) {
+  return type === "item_bought" || type === "item_sold" || type === "equipment_changed";
+}
+
+function isRecoveryEventType(type: string | undefined) {
+  return type === "party_recovered" || type === "recovery_blocked";
+}
+
+function previewEquipmentStats(member: Character, equipment: ScenarioEquipment) {
+  return getEffectiveCharacterStats(
+    {
+      ...member,
+      equipment: {
+        ...member.equipment,
+        [equipment.slot]: equipment.id
+      }
+    },
+    defaultWorld
+  );
+}
+
+function formatStatDelta(
+  current: ReturnType<typeof getEffectiveCharacterStats>,
+  next: ReturnType<typeof getEffectiveCharacterStats>,
+  t: Translator
+) {
+  const parts = [
+    formatSignedDelta(t("town.effectAttack"), next.damageMax - current.damageMax),
+    formatSignedDelta(t("town.effectAccuracy"), next.accuracy - current.accuracy),
+    formatSignedDelta(t("town.effectDefense"), next.armor - current.armor),
+    formatSignedDelta(t("town.effectSpeed"), next.speed - current.speed)
+  ].filter(Boolean);
+
+  return parts.length > 0 ? parts.join(" / ") : t("town.noStatChange");
+}
+
+function formatSignedDelta(label: string, value: number) {
+  if (value === 0) {
+    return "";
+  }
+
+  return `${label} ${value > 0 ? "+" : ""}${value}`;
 }
 
 function findEquipmentById(itemId: string | undefined) {
