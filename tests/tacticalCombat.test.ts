@@ -88,6 +88,32 @@ describe("tactical combat", () => {
     expect(next.log.at(-1)?.text).toMatch(/Round 1/i);
   });
 
+  it("resolves multiple front-row orders before enemies answer", () => {
+    const state = {
+      ...tacticalCombatState(),
+      party: [
+        { ...character("Mira", "front", 8), id: "char.front" },
+        { ...character("Bran", "front", 8), id: "char.second" }
+      ],
+      combat: {
+        ...tacticalCombatState().combat!,
+        enemyGroups: [{ ...tacticalCombatState().combat!.enemyGroups[0], count: 2, hpEach: 2, maxHpEach: 2 }]
+      }
+    };
+
+    const next = executeCommand(state, defaultWorld, {
+      type: "declare_round",
+      actions: [
+        { actorId: "char.front", action: "attack", targetGroupId: "group.slime" },
+        { actorId: "char.second", action: "attack", targetGroupId: "group.slime" }
+      ]
+    });
+
+    expect(next.phase).toBe("dungeon");
+    expect(next.combat).toBeNull();
+    expect(next.party.every((member) => member.hp === state.party.find((before) => before.id === member.id)?.hp)).toBe(true);
+  });
+
   it("grants rewards and clears combat when the last enemy group falls", () => {
     const state = {
       ...tacticalCombatState(),

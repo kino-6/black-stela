@@ -11,7 +11,7 @@ treasureTables:
     entries:
       - itemId: item.lantern-oil
         weight: 6
-      - itemId: equip.iron-knife
+      - itemId: equip.rusted-dirk
         weight: 2
   - id: treasure.b3f.watermark
     tier: 2
@@ -26,14 +26,14 @@ treasureTables:
   - id: treasure.b5f.keeper
     tier: 3
     entries:
-      - itemId: equip.ash-mail
+      - itemId: equip.ring-mail
         weight: 4
       - itemId: item.ashen-key
         weight: 1
   - id: treasure.b6f.oaths
     tier: 4
     entries:
-      - itemId: equip.ash-mail
+      - itemId: equip.black-thread-ring
         weight: 3
   - id: treasure.b7f.rare
     tier: 5

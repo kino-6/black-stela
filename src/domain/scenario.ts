@@ -24,6 +24,7 @@ const localizedNameDescriptionSchema = z.record(
 const enemySchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
+  locales: localizedNameDescriptionSchema.optional(),
   hp: z.number().int().positive(),
   attack: z.number().int().nonnegative(),
   armor: z.number().int().nonnegative().optional(),
@@ -72,10 +73,15 @@ const scenarioItemSchema = z.object({
 const scenarioEquipmentSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
-  slot: z.enum(["weapon", "armor", "accessory"]),
+  description: z.string().min(1).optional(),
+  slot: z.enum(["weapon", "offhand", "body", "head", "hands", "accessory"]),
   tier: z.number().int().nonnegative(),
   attackBonus: z.number().int().optional(),
   defenseBonus: z.number().int().optional(),
+  accuracyBonus: z.number().int().optional(),
+  speedBonus: z.number().int().optional(),
+  allowedClasses: z.array(z.enum(["vanguard", "seeker", "mender", "occultist"])).optional(),
+  tags: z.array(z.string().min(1)).default([]),
   price: z.number().int().nonnegative().optional(),
   sellValue: z.number().int().nonnegative().optional(),
   locales: localizedNameDescriptionSchema.optional()

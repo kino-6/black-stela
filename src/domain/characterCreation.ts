@@ -44,6 +44,7 @@ export interface GuildCharacterInput {
   backgroundId?: CharacterBackgroundId;
   traitIds?: CharacterTraitId[];
   aptitudeFocus?: keyof CharacterAptitudes | "balanced";
+  bonusAptitude?: Partial<CharacterAptitudes>;
   portraitRef?: string;
   accentColor?: string;
   method?: CharacterCreationMethod;
@@ -68,7 +69,7 @@ export const classCatalog: CharacterClassDefinition[] = [
     roleTags: ["front_line", "damage", "retreat_guard"],
     rowPreference: "front",
     base: { maxHp: 15, attack: 5, damageMin: 4, damageMax: 6, accuracy: 76, armor: 2, speed: 5 },
-    equipment: ["worn mail", "short sword"]
+    equipment: ["militia sabre", "padded jack"]
   },
   {
     id: "seeker",
@@ -76,7 +77,7 @@ export const classCatalog: CharacterClassDefinition[] = [
     roleTags: ["trap_handling", "mapping", "damage"],
     rowPreference: "front",
     base: { maxHp: 11, attack: 4, damageMin: 3, damageMax: 5, accuracy: 84, armor: 1, speed: 9 },
-    equipment: ["knife", "chalk cord"]
+    equipment: ["rusted dirk", "chalk cord"]
   },
   {
     id: "mender",
@@ -84,7 +85,7 @@ export const classCatalog: CharacterClassDefinition[] = [
     roleTags: ["healing", "status_safety"],
     rowPreference: "back",
     base: { maxHp: 10, attack: 3, damageMin: 2, damageMax: 4, accuracy: 76, armor: 0, speed: 6 },
-    equipment: ["salve kit", "oath bell"]
+    equipment: ["ashwood staff", "candle ward"]
   },
   {
     id: "occultist",
@@ -92,7 +93,7 @@ export const classCatalog: CharacterClassDefinition[] = [
     roleTags: ["status_safety", "damage", "mapping"],
     rowPreference: "back",
     base: { maxHp: 9, attack: 3, damageMin: 2, damageMax: 5, accuracy: 78, armor: 0, speed: 7 },
-    equipment: ["black primer", "wax charm"]
+    equipment: ["ashwood staff", "black thread ring"]
   }
 ];
 
@@ -209,7 +210,7 @@ export function createGuildCharacter(input: GuildCharacterInput): Character {
   const background = findBackground(input.backgroundId ?? "watch");
   const traitIds: CharacterTraitId[] = input.traitIds?.length ? input.traitIds.slice(0, 2) : ["steady"];
   const traits = traitIds.map(findTrait);
-  const aptitude = buildAptitude(input.aptitudeFocus ?? "balanced", background, traits);
+  const aptitude = buildAptitude(input.aptitudeFocus ?? "balanced", background, traits, input.bonusAptitude);
   const stats = deriveStats(classDef, aptitude);
   const equipment = Array.from(new Set([...classDef.equipment, ...traits.flatMap((trait) => trait.equipment ? [trait.equipment] : [])]));
 
@@ -328,7 +329,8 @@ export function findTrait(id: CharacterTraitId) {
 function buildAptitude(
   focus: keyof CharacterAptitudes | "balanced",
   background: CharacterBackgroundDefinition,
-  traits: CharacterTraitDefinition[]
+  traits: CharacterTraitDefinition[],
+  bonusAptitude: Partial<CharacterAptitudes> = {}
 ) {
   const aptitude = { ...defaultAptitude };
   if (focus !== "balanced") {
@@ -343,6 +345,10 @@ function buildAptitude(
     for (const [key, value] of Object.entries(trait.aptitude)) {
       aptitude[key as keyof CharacterAptitudes] += value ?? 0;
     }
+  }
+
+  for (const [key, value] of Object.entries(bonusAptitude)) {
+    aptitude[key as keyof CharacterAptitudes] += value ?? 0;
   }
 
   return aptitude;

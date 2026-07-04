@@ -36,6 +36,8 @@ export function createInventoryItemFromCatalog(world: ScenarioWorld, itemId: str
       slot: equipment.slot,
       attackBonus: equipment.attackBonus,
       defenseBonus: equipment.defenseBonus,
+      accuracyBonus: equipment.accuracyBonus,
+      speedBonus: equipment.speedBonus,
       sellValue: equipment.sellValue
     };
   }
@@ -74,19 +76,25 @@ export function getEffectiveCharacterStats(character: Character, world: Scenario
     .filter((equipment): equipment is ScenarioEquipment => Boolean(equipment));
   const attackBonus = equipped.reduce((total, item) => total + (item.attackBonus ?? 0), 0);
   const defenseBonus = equipped.reduce((total, item) => total + (item.defenseBonus ?? 0), 0);
+  const accuracyBonus = equipped.reduce((total, item) => total + (item.accuracyBonus ?? 0), 0);
+  const speedBonus = equipped.reduce((total, item) => total + (item.speedBonus ?? 0), 0);
 
   return {
     attack: character.attack + attackBonus,
     damageMin: character.damageMin + attackBonus,
     damageMax: character.damageMax + attackBonus,
-    accuracy: character.accuracy,
+    accuracy: Math.max(0, Math.min(100, character.accuracy + accuracyBonus)),
     armor: character.armor + defenseBonus,
-    speed: character.speed
+    speed: Math.max(0, character.speed + speedBonus)
   };
 }
 
 export function getEquipmentSlot(world: ScenarioWorld, equipmentId: string): EquipmentSlot | null {
   return findEquipment(world, equipmentId)?.slot ?? null;
+}
+
+export function isEquipmentUsableBy(equipment: ScenarioEquipment, character: Character) {
+  return !equipment.allowedClasses?.length || equipment.allowedClasses.includes(character.classId);
 }
 
 export function calculateRecoveryCost(party: Character[]) {

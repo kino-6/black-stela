@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { startNewExpedition } from "./helpers";
+import { registerAdventurer, startNewExpedition } from "./helpers";
 
 for (const viewport of [
   { name: "desktop", width: 1440, height: 900 },
@@ -9,8 +9,7 @@ for (const viewport of [
     await page.setViewportSize({ width: viewport.width, height: viewport.height });
     await startNewExpedition(page);
 
-    await page.getByLabel("Name").fill("Mira");
-    await page.getByRole("button", { name: "Register adventurer" }).click();
+    await registerAdventurer(page, { name: "Mira" });
     await page.getByRole("button", { name: "Enter dungeon" }).click();
 
     await expect(page.getByRole("heading", { name: "Area" })).toBeVisible();

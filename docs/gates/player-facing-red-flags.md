@@ -31,6 +31,11 @@ new tests pass.
   fail to fit in Japanese.
 - UI is dominated by dashboard panels, admin-style controls, or generic web
   form chrome instead of diegetic game surfaces.
+- Combat command entry behaves like a web list where clicking a party card
+  chooses the only actor, instead of advancing through the party in order.
+- Japanese normal play contains stray English enemy/place names, `gold`, shop
+  labels, combat labels, or untranslated logs that are not intentional genre
+  abbreviations.
 - Character creation is only a name/notes form when the task promises guild
   registration, roles, identity, or party coverage.
 - Scenario or UI prose sounds like translated English, explains theme directly,
@@ -40,6 +45,9 @@ new tests pass.
 ## Advisory
 
 - Controls are technically correct but lack DRPG rhythm, tension, or ceremony.
+- Classic DRPG references are used as aesthetic cover while ignoring their play
+  structure: party order, command confirmation, attrition, formation, and grid
+  maze rules.
 - Repeated logs crowd out the current scene.
 - Automation hides meaningful decisions or risk.
 - English-only assertions cover a Japanese-facing copy or layout change.

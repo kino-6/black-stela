@@ -1,12 +1,10 @@
 import { expect, test } from "@playwright/test";
-import { startNewExpedition } from "./helpers";
+import { registerAdventurer, startNewExpedition } from "./helpers";
 
 test("autosaves current state and continues from the title screen", async ({ page }) => {
   await startNewExpedition(page);
 
-  await page.getByLabel("Name").fill("Mira");
-  await page.getByLabel("Notes").fill("Maps every room by hand.");
-  await page.getByRole("button", { name: "Register adventurer" }).click();
+  await registerAdventurer(page, { name: "Mira", notes: "Maps every room by hand." });
   await expect(page.getByRole("heading", { name: "Mira" })).toBeVisible();
 
   await page.reload();

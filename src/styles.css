@@ -328,6 +328,18 @@ small {
   color: #c9a765;
 }
 
+.guild-entry-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem;
+  margin-bottom: 0.75rem;
+}
+
+.guild-entry-strip .event-window {
+  flex: 1 1 18rem;
+}
+
 .party-member {
   display: grid;
   grid-template-columns: 3.5rem 1fr;
@@ -502,10 +514,186 @@ textarea {
   gap: 1rem;
 }
 
+.guild-studio-grid.full-party {
+  grid-template-columns: minmax(16rem, 0.62fr) minmax(28rem, 1.38fr);
+}
+
 .studio-creator {
   margin-top: 0;
   padding: 0;
   border-top: 0;
+}
+
+.guild-flow {
+  align-content: start;
+  min-height: 34rem;
+}
+
+.guild-ready-panel {
+  display: grid;
+  align-content: start;
+  gap: 0.6rem;
+  min-height: 10rem;
+  padding: 0.85rem;
+  border: 1px solid #30372f;
+  border-radius: 6px;
+  background: #0d100d;
+}
+
+.guild-ready-panel h4,
+.guild-ready-panel p {
+  margin: 0;
+}
+
+.guild-ready-panel p {
+  color: #bdb8aa;
+  line-height: 1.6;
+}
+
+.guild-stepper {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.guild-stepper button {
+  width: 100%;
+  min-height: 2.2rem;
+  border-color: #30372f;
+  font-size: 0.82rem;
+  color: #bdb8aa;
+}
+
+.guild-stepper .active button {
+  border-color: #d5b56d;
+  color: #f2efe5;
+  background: #211d13;
+}
+
+.guild-step-panel {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  gap: 0.8rem;
+  min-height: 24rem;
+  align-content: start;
+  padding: 0.85rem;
+  border: 1px solid #30372f;
+  border-radius: 6px;
+  background: #0d100d;
+}
+
+.guild-step-panel h4,
+.guild-step-panel p {
+  margin: 0;
+}
+
+.guild-step-panel p {
+  max-width: 40rem;
+  color: #bdb8aa;
+  line-height: 1.6;
+}
+
+.class-card-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.55rem;
+}
+
+.class-card {
+  display: grid;
+  gap: 0.35rem;
+  min-height: 6.2rem;
+  align-content: start;
+  padding: 0.75rem;
+  text-align: left;
+  border-color: #30372f;
+}
+
+.class-card.selected {
+  border-color: #d5b56d;
+  background: #211d13;
+}
+
+.class-card strong {
+  color: #f2efe5;
+  font-size: 1rem;
+}
+
+.class-card span,
+.class-card small {
+  color: #bdb8aa;
+}
+
+.flow-actions {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  margin-top: auto;
+}
+
+.creator-grid.compact {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.bonus-heading {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.bonus-heading button {
+  display: inline-flex;
+  gap: 0.4rem;
+  align-items: center;
+  white-space: nowrap;
+}
+
+.bonus-grid {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.bonus-row {
+  display: grid;
+  grid-template-columns: minmax(7rem, 1fr) 2.4rem 2.4rem 2.4rem;
+  gap: 0.35rem;
+  align-items: center;
+  padding: 0.45rem;
+  border: 1px solid #30372f;
+  border-radius: 4px;
+  background: #11150f;
+}
+
+.bonus-row span {
+  color: #cfcec2;
+}
+
+.bonus-row strong {
+  text-align: center;
+  color: #d5b56d;
+}
+
+.bonus-row button {
+  min-height: 2rem;
+  padding: 0;
+}
+
+.bonus-summary {
+  margin: 0;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid #30372f;
+  border-radius: 4px;
+  background: #11150f;
+  color: #cfcec2;
+  overflow-wrap: anywhere;
 }
 
 .creator-topline {
@@ -526,6 +714,14 @@ textarea {
 
 .roster-compact {
   grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.guild-studio .roster {
+  overflow: visible;
+}
+
+.guild-studio-grid.full-party .character-profile {
+  display: none;
 }
 
 .stat-preview,
@@ -791,6 +987,53 @@ textarea {
   background: #242216;
 }
 
+.battle-choice.ordered {
+  border-color: #6f8f65;
+}
+
+.battle-order {
+  display: grid;
+  gap: 0.45rem;
+  padding: 0.55rem;
+  border: 1px solid #2e332b;
+  border-radius: 4px;
+  background: #0b0d0b;
+}
+
+.battle-order-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  align-items: center;
+  padding-bottom: 0.35rem;
+  border-bottom: 1px solid #252921;
+}
+
+.battle-order h3 {
+  margin: 0;
+  font-size: 0.95rem;
+  color: #d9c27a;
+}
+
+.battle-order-header span,
+.battle-order p,
+.battle-order li {
+  color: #b9b2a2;
+  font-size: 0.82rem;
+}
+
+.battle-order ol {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.35rem 0.75rem;
+  margin: 0;
+  padding-left: 1.35rem;
+}
+
+.battle-order p {
+  margin: 0;
+}
+
 .validation-warning {
   border-color: #b28b4a;
 }
@@ -1002,7 +1245,7 @@ textarea {
 
 .town-view {
   display: grid;
-  grid-template-rows: auto minmax(18rem, 1fr) auto auto auto;
+  grid-template-rows: auto auto auto auto auto;
   min-height: 0;
   gap: 0.75rem;
 }
@@ -1033,8 +1276,17 @@ textarea {
   font-size: 0.78rem;
 }
 
+.shop-row small,
+.equipment-row small {
+  color: #8f9188;
+  font-size: 0.72rem;
+  line-height: 1.35;
+}
+
 .shop-service {
   gap: 0.75rem;
+  max-height: calc(100vh - 9rem);
+  overflow: auto;
 }
 
 .shop-grid {
@@ -1090,6 +1342,38 @@ textarea {
   flex-wrap: wrap;
   justify-content: end;
   gap: 0.35rem;
+}
+
+.equipment-actions button {
+  display: grid;
+  gap: 0.1rem;
+  min-width: 8rem;
+  justify-items: center;
+}
+
+.equipment-slots {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.25rem 0.5rem;
+  margin: 0.35rem 0 0;
+}
+
+.equipment-slots div {
+  display: grid;
+  gap: 0.05rem;
+}
+
+.equipment-slots dt {
+  color: #8f9188;
+  font-size: 0.68rem;
+  text-transform: uppercase;
+}
+
+.equipment-slots dd {
+  margin: 0;
+  color: #d9d4c8;
+  font-size: 0.76rem;
+  overflow-wrap: anywhere;
 }
 
 .town-scene {
@@ -1500,7 +1784,7 @@ textarea {
 }
 
 .town-view {
-  grid-template-rows: auto minmax(18rem, 1fr) auto auto;
+  grid-template-rows: auto auto auto auto;
 }
 
 @media (max-width: 720px) {
@@ -1748,6 +2032,12 @@ textarea {
   gap: 0.35rem;
 }
 
+.formation-slots .battle-choice {
+  border: 1px solid #3b4138;
+  border-radius: 4px;
+  background: #171a17;
+}
+
 .battle-choice {
   display: flex;
   align-items: center;
@@ -1775,6 +2065,16 @@ textarea {
   font-size: 0.74rem;
 }
 
+.formation-slots .battle-choice strong {
+  flex: 0 0 auto;
+  max-width: 6rem;
+}
+
+.formation-slots .battle-choice span {
+  flex: 1 1 auto;
+  text-align: right;
+}
+
 .command-dock {
   position: sticky;
   bottom: 0;
@@ -1795,11 +2095,19 @@ textarea {
     grid-template-columns: 1fr;
   }
 
+  .guild-studio-grid.full-party {
+    grid-template-columns: 1fr;
+  }
+
   .scene-deck {
     grid-template-columns: 1fr;
   }
 
   .battle-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .battle-order ol {
     grid-template-columns: 1fr;
   }
 }
@@ -1810,10 +2118,22 @@ textarea {
   }
 
   .creator-grid,
+  .creator-grid.compact,
+  .class-card-grid,
+  .guild-stepper,
   .roster-compact,
+  .equipment-slots,
   .stat-preview dl,
   .character-profile dl {
     grid-template-columns: 1fr;
+  }
+
+  .guild-step-panel {
+    min-height: 0;
+  }
+
+  .bonus-heading {
+    display: grid;
   }
 
   .studio-header,

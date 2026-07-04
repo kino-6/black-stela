@@ -4,6 +4,26 @@ import type { GameEvent, GameState, ScenarioWorld } from "./types";
 const DirectionSchema = z.enum(["north", "east", "south", "west"]);
 const GamePhaseSchema = z.enum(["town", "dungeon", "combat"]);
 const LocaleSchema = z.enum(["en", "ja"]);
+const LocalizedNameDescriptionSchema = z
+  .object({
+    en: z.object({ name: z.string().optional(), description: z.string().optional() }).optional(),
+    ja: z.object({ name: z.string().optional(), description: z.string().optional() }).optional()
+  });
+const EquipmentSlotSchema = z.enum(["weapon", "offhand", "body", "head", "hands", "accessory"]);
+const EquipmentRecordSchema = z
+  .object({
+    weapon: z.string().min(1).optional(),
+    offhand: z.string().min(1).optional(),
+    body: z.string().min(1).optional(),
+    armor: z.string().min(1).optional(),
+    head: z.string().min(1).optional(),
+    hands: z.string().min(1).optional(),
+    accessory: z.string().min(1).optional()
+  })
+  .transform(({ armor, ...equipment }) => ({
+    ...equipment,
+    body: equipment.body ?? armor
+  }));
 
 const CharacterSchema = z.object({
   id: z.string().min(1),
@@ -26,13 +46,7 @@ const CharacterSchema = z.object({
   traitIds: z.array(z.enum(["steady", "scarred", "lucky", "grim", "curious"])).default(["steady"]),
   accentColor: z.string().default("#c9a765"),
   startingEquipment: z.array(z.string().min(1)).default(["worn mail", "short sword"]),
-  equipment: z
-    .object({
-      weapon: z.string().min(1).optional(),
-      armor: z.string().min(1).optional(),
-      accessory: z.string().min(1).optional()
-    })
-    .default({}),
+  equipment: EquipmentRecordSchema.default({}),
   creation: z
     .object({
       method: z.enum(["legacy", "quick", "detailed", "template", "debug"]).default("legacy"),
@@ -81,15 +95,18 @@ const InventoryItemSchema = z.object({
   kind: z.enum(["healing", "utility", "key", "treasure", "equipment"]),
   quantity: z.number().int().nonnegative(),
   healAmount: z.number().int().positive().optional(),
-  slot: z.enum(["weapon", "armor", "accessory"]).optional(),
+  slot: EquipmentSlotSchema.optional(),
   attackBonus: z.number().int().optional(),
   defenseBonus: z.number().int().optional(),
+  accuracyBonus: z.number().int().optional(),
+  speedBonus: z.number().int().optional(),
   sellValue: z.number().int().nonnegative().optional()
 });
 
 const EnemySchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
+  locales: LocalizedNameDescriptionSchema.optional(),
   hp: z.number().int().nonnegative(),
   attack: z.number().int().nonnegative(),
   armor: z.number().int().nonnegative().optional(),

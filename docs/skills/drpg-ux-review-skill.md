@@ -22,6 +22,17 @@ must review the screen before claiming a player-facing change is done.
 - First-person dungeon crawlers rely on grid movement, visible affordances, and
   readable party state.
 
+## Controller-First Contract
+
+- Treat keyboard/controller as the primary input model for normal play.
+- Design screens as focusable command windows and staged choices, not web forms.
+- Directional navigation must move through choices in a predictable order.
+- Confirm/cancel must have obvious equivalents for every staged flow.
+- Text entry and portrait import can use form controls, but they must be reached
+  from a controller-friendly staged flow and must not dominate the screen.
+- Browser proof must include keyboard/controller-style traversal for changed
+  guild, town, combat, dungeon, shop, records, recovery, or config surfaces.
+
 ## Blocking Review Loop
 
 1. Name the player expectation: party planning, formation, danger reading,
@@ -33,6 +44,7 @@ must review the screen before claiming a player-facing change is done.
    - desktop and mobile layout
    - English and Japanese labels when text changes
    - keyboard/controller-style operation
+   - stable focus order and confirm/cancel behavior for changed surfaces
    - screenshot or DOM proof of the exact state
 5. Run one self-review pass and record remaining UX risk honestly.
 
@@ -53,6 +65,7 @@ must review the screen before claiming a player-facing change is done.
 - Passing headless reachability is used as proof of player UX.
 - The user has to identify obvious layout, copy, or affordance problems after
   Codex says the work is complete.
+- Normal play asks the player to hunt scattered web controls with a mouse.
 
 ## Acceptance Checks
 
@@ -60,5 +73,7 @@ must review the screen before claiming a player-facing change is done.
 - [ ] Front/back rows are visually separated in exploration and combat.
 - [ ] Command layout remains stable after messages/logs change.
 - [ ] Mouse is supported, but keyboard/controller-style operation is tested.
+- [ ] Guild/town/combat/dungeon flows have staged focus order and confirm/cancel
+  actions rather than scattered form controls.
 - [ ] Desktop and mobile layouts avoid overlap, overflow, and web-app residue.
 - [ ] Japanese UI is checked when labels or layout change.

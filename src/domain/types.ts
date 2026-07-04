@@ -23,7 +23,7 @@ export type Command =
 
 export type CombatRow = "front" | "back";
 export type CombatActionKind = "attack" | "defend" | "use_item" | "cast";
-export type EquipmentSlot = "weapon" | "armor" | "accessory";
+export type EquipmentSlot = "weapon" | "offhand" | "body" | "head" | "hands" | "accessory";
 export type CharacterClassId = "vanguard" | "seeker" | "mender" | "occultist";
 export type CharacterBackgroundId = "watch" | "ruinborn" | "apothecary" | "debtor" | "cartographer";
 export type CharacterTraitId = "steady" | "scarred" | "lucky" | "grim" | "curious";
@@ -94,6 +94,8 @@ export interface InventoryItem {
   slot?: EquipmentSlot;
   attackBonus?: number;
   defenseBonus?: number;
+  accuracyBonus?: number;
+  speedBonus?: number;
   sellValue?: number;
 }
 
@@ -146,6 +148,7 @@ export type GameEvent =
 export interface Enemy {
   id: string;
   name: string;
+  locales?: LocalizedNameDescription;
   hp: number;
   attack: number;
   armor?: number;
@@ -345,10 +348,15 @@ export interface ScenarioItem {
 export interface ScenarioEquipment {
   id: string;
   name: string;
-  slot: "weapon" | "armor" | "accessory";
+  description?: string;
+  slot: EquipmentSlot;
   tier: number;
   attackBonus?: number;
   defenseBonus?: number;
+  accuracyBonus?: number;
+  speedBonus?: number;
+  allowedClasses?: CharacterClassId[];
+  tags?: string[];
   price?: number;
   sellValue?: number;
   locales?: LocalizedNameDescription;

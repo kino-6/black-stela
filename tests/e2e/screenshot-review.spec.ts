@@ -8,6 +8,14 @@ test("captures desktop screenshot review states", async ({ page }) => {
   await page.screenshot({ path: "test-results/screenshot-review/desktop-title.png", fullPage: true });
 
   await startNewExpedition(page);
+  await expect(page.getByRole("heading", { name: "Adventurer Registration" })).toBeVisible();
+  await page.screenshot({ path: "test-results/screenshot-review/desktop-guild-empty.png", fullPage: true });
+  await page.getByRole("button", { name: "Skip explanation" }).click();
+  await page.screenshot({ path: "test-results/screenshot-review/desktop-guild-class.png", fullPage: true });
+  await page.getByTestId("guild-step-class").getByRole("button", { name: "Next" }).click();
+  await page.getByTestId("guild-step-appearance").getByRole("button", { name: "Next" }).click();
+  await page.screenshot({ path: "test-results/screenshot-review/desktop-guild-bonus.png", fullPage: true });
+
   await page.getByRole("button", { name: "Beginner Safe" }).click();
   await page.screenshot({ path: "test-results/screenshot-review/desktop-guild.png", fullPage: true });
 
@@ -27,6 +35,10 @@ test("captures desktop screenshot review states", async ({ page }) => {
   await page.getByRole("button", { name: "Move" }).click();
   await expect(page.getByRole("heading", { name: "Black Marker" })).toBeVisible();
   await page.screenshot({ path: "test-results/screenshot-review/desktop-return-stair.png", fullPage: true });
+
+  await page.getByLabel("Turn left").click();
+  await expect(page.getByTestId("dungeon-canvas")).toHaveAttribute("data-front-edge", "wall");
+  await page.screenshot({ path: "test-results/screenshot-review/desktop-return-stair-front-wall.png", fullPage: true });
 
   await page.getByRole("button", { name: "Use return marker" }).click();
   await expect(page.getByRole("heading", { name: "Town" })).toBeVisible();

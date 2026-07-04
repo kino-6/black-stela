@@ -2,6 +2,9 @@
 enemies:
   - id: enemy.b1f.ash-slime
     name: Ash Slime
+    locales:
+      ja:
+        name: 灰泥
     hp: 4
     attack: 1
     armor: 0
@@ -17,6 +20,9 @@ enemies:
     tags: [tutorial, slime]
   - id: enemy.b2f.hook-rat
     name: Hook Rat
+    locales:
+      ja:
+        name: 鉤鼠
     hp: 5
     attack: 2
     armor: 0
@@ -32,6 +38,9 @@ enemies:
     tags: [beast]
   - id: enemy.b3f.bitter-mote
     name: Bitter Mote
+    locales:
+      ja:
+        name: 苦い塵
     hp: 6
     attack: 2
     armor: 0
@@ -47,6 +56,9 @@ enemies:
     tags: [status]
   - id: enemy.b4f.lantern-ward
     name: Lantern Ward
+    locales:
+      ja:
+        name: 灯守
     hp: 8
     attack: 3
     armor: 2
@@ -62,6 +74,9 @@ enemies:
     tags: [construct]
   - id: enemy.b5f.cinder-keeper
     name: Cinder Keeper
+    locales:
+      ja:
+        name: 灰燼の番人
     hp: 14
     attack: 4
     armor: 2
@@ -78,6 +93,9 @@ enemies:
     tags: [midpoint, boss]
   - id: enemy.b6f.oath-cutter
     name: Oath Cutter
+    locales:
+      ja:
+        name: 誓い断ち
     hp: 10
     attack: 4
     armor: 1
@@ -93,6 +111,9 @@ enemies:
     tags: [blade]
   - id: enemy.b7f.vault-husk
     name: Vault Husk
+    locales:
+      ja:
+        name: 納骨殻
     hp: 12
     attack: 4
     armor: 3
@@ -108,6 +129,9 @@ enemies:
     tags: [optional]
   - id: enemy.b8f.ash-votary
     name: Ash Votary
+    locales:
+      ja:
+        name: 灰の奉者
     hp: 22
     attack: 5
     armor: 3
