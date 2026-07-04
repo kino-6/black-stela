@@ -61,7 +61,7 @@ equipment:
     attackBonus: 2
     price: 45
     sellValue: 14
-    allowedClasses: [vanguard, seeker]
+    allowedClasses: [vanguard, sellsword, bulwark, duelist, seeker, scout, cutpurse]
     tags: [front_line, blade]
     locales:
       ja:
@@ -76,7 +76,7 @@ equipment:
     accuracyBonus: 2
     price: 32
     sellValue: 10
-    allowedClasses: [mender, occultist]
+    allowedClasses: [mender, chanter, occultist, arcanist, wayfinder]
     tags: [back_row, focus]
     locales:
       ja:
@@ -91,7 +91,7 @@ equipment:
     speedBonus: -1
     price: 24
     sellValue: 8
-    allowedClasses: [vanguard, seeker]
+    allowedClasses: [vanguard, sellsword, bulwark, duelist, seeker, scout, cutpurse]
     tags: [shield, front_line]
     locales:
       ja:
@@ -106,7 +106,7 @@ equipment:
     accuracyBonus: 1
     price: 26
     sellValue: 8
-    allowedClasses: [mender, occultist]
+    allowedClasses: [mender, chanter, occultist, arcanist, wayfinder]
     tags: [focus, ward]
     locales:
       ja:
@@ -133,7 +133,7 @@ equipment:
     speedBonus: -1
     price: 78
     sellValue: 25
-    allowedClasses: [vanguard, seeker]
+    allowedClasses: [vanguard, sellsword, bulwark, duelist, seeker, scout, cutpurse]
     tags: [front_line, mail]
     locales:
       ja:
@@ -147,7 +147,7 @@ equipment:
     defenseBonus: 1
     price: 18
     sellValue: 6
-    allowedClasses: [vanguard, seeker]
+    allowedClasses: [vanguard, sellsword, bulwark, duelist, seeker, scout, cutpurse]
     tags: [helm]
     locales:
       ja:
@@ -175,7 +175,7 @@ equipment:
     speedBonus: 1
     price: 24
     sellValue: 8
-    allowedClasses: [seeker, occultist]
+    allowedClasses: [seeker, scout, cutpurse, occultist, arcanist, wayfinder]
     tags: [mapping, speed]
     locales:
       ja:
@@ -189,7 +189,7 @@ equipment:
     defenseBonus: 1
     price: 30
     sellValue: 10
-    allowedClasses: [mender, occultist]
+    allowedClasses: [mender, chanter, occultist, arcanist, wayfinder]
     tags: [ward, back_row]
     locales:
       ja:

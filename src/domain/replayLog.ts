@@ -43,7 +43,11 @@ export function projectEventToLog(event: GameEvent, locale = "en", world?: Scena
     case "party_turned":
       return { text: `The party turns ${event.side}, now facing ${event.facing}.`, tags: ["move"] };
     case "movement_blocked":
-      return { text: "A cold wall blocks the way.", tags: ["blocked"] };
+      return event.reason === "stairs"
+        ? { text: "A stair waits ahead. Choose Use stairs to descend.", tags: ["blocked", "stairs"] }
+        : { text: "A cold wall blocks the way.", tags: ["blocked"] };
+    case "stairs_used":
+      return { text: "The party takes the stair to the next floor.", tags: ["move", "stairs"] };
     case "map_room_visited":
     case "map_exits_known":
     case "map_exit_blocked":
@@ -123,7 +127,11 @@ function projectEventToJapaneseLog(event: GameEvent, world?: ScenarioWorld): Log
     case "party_turned":
       return { text: `隊列は${event.side === "left" ? "左" : "右"}を向き、${translateDirection(event.facing)}を正面にした。`, tags: ["move"] };
     case "movement_blocked":
-      return { text: "冷たい壁が行く手を塞いでいる。", tags: ["blocked"] };
+      return event.reason === "stairs"
+        ? { text: "正面に階段がある。降りるなら階段を使う。", tags: ["blocked", "stairs"] }
+        : { text: "冷たい壁が行く手を塞いでいる。", tags: ["blocked"] };
+    case "stairs_used":
+      return { text: "隊列は階段を降りた。", tags: ["move", "stairs"] };
     case "map_room_visited":
     case "map_exits_known":
     case "map_exit_blocked":
@@ -226,17 +234,23 @@ function translateDirection(direction: "north" | "east" | "south" | "west") {
   return { north: "北", east: "東", south: "南", west: "西" }[direction];
 }
 
-function projectBlockedCommand(reason: "party_required" | "town_return_unavailable"): LogProjection {
+function projectBlockedCommand(reason: "party_required" | "town_return_unavailable" | "stairs_unavailable"): LogProjection {
   if (reason === "party_required") {
     return { text: "A party is required before entering the labyrinth.", tags: ["blocked"] };
+  }
+  if (reason === "stairs_unavailable") {
+    return { text: "There is no stair in front of the party.", tags: ["blocked", "stairs"] };
   }
 
   return { text: "There is no stair or return seal here.", tags: ["blocked"] };
 }
 
-function projectJapaneseBlockedCommand(reason: "party_required" | "town_return_unavailable"): LogProjection {
+function projectJapaneseBlockedCommand(reason: "party_required" | "town_return_unavailable" | "stairs_unavailable"): LogProjection {
   if (reason === "party_required") {
     return { text: "迷宮に入るには隊列が必要だ。", tags: ["blocked"] };
+  }
+  if (reason === "stairs_unavailable") {
+    return { text: "正面に使える階段はない。", tags: ["blocked", "stairs"] };
   }
 
   return { text: "ここには街へ戻る階段も帰還印もない。", tags: ["blocked"] };

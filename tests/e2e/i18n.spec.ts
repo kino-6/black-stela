@@ -49,6 +49,10 @@ test("keeps Japanese layout usable on mobile", async ({ page }) => {
   await page.getByRole("button", { name: "迷宮に入る" }).click();
 
   await expect(page.getByText("冷たい切石が近く迫る。東の細い扉から乾いた空気が漏れる。")).toBeVisible();
+  await expect(page.getByTestId("party-hud").getByTestId("party-hud-portrait")).toBeVisible();
+  await expect(page.getByTestId("party-hud")).toContainText(/威力 \d+-\d+/);
+  await expect(page.getByTestId("party-hud")).toContainText(/防御 \d+/);
+  await expect(page.getByTestId("party-hud")).toContainText(/速度 \d+/);
   const horizontalOverflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth);
   expect(horizontalOverflow).toBe(false);
 });

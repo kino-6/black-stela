@@ -19,6 +19,14 @@ function resolveCombat(state: GameState) {
   return current;
 }
 
+function advanceToB1fMarker(state: GameState) {
+  let current = state;
+  for (let step = 0; step < 4; step += 1) {
+    current = executeCommand(current, defaultWorld, { type: "move_forward" });
+  }
+  return current;
+}
+
 describe("rules engine", () => {
   it("requires a party before entering the dungeon", () => {
     const state = executeCommand(createInitialGameState(), defaultWorld, { type: "enter_dungeon" });
@@ -100,7 +108,7 @@ describe("rules engine", () => {
     const moved = executeCommand(entered, defaultWorld, { type: "move_forward" });
     const afterAttack = resolveCombat(moved);
     const blocked = executeCommand(afterAttack, defaultWorld, { type: "return_to_town" });
-    const marker = executeCommand(afterAttack, defaultWorld, { type: "move_forward" });
+    const marker = advanceToB1fMarker(afterAttack);
     const town = executeCommand(marker, defaultWorld, { type: "return_to_town" });
 
     expect(afterAttack.phase).toBe("dungeon");
@@ -108,10 +116,26 @@ describe("rules engine", () => {
     expect(blocked.phase).toBe("dungeon");
     expect(blocked.position?.roomId).toBe("room.b1f.002");
     expect(blocked.log.at(-1)?.text).toBe("There is no stair or return seal here.");
-    expect(marker.position?.roomId).toBe("room.b1f.003");
+    expect(marker.position?.roomId).toBe("room.b1f.006");
     expect(town.phase).toBe("town");
     expect(town.party).toHaveLength(1);
     expect(town.party[0].hp).toBeGreaterThan(0);
     expect(town.party[0].hp).toBeLessThanOrEqual(town.party[0].maxHp);
+  });
+
+  it("requires an explicit stair command instead of descending on move", () => {
+    const entered = executeCommand(stateWithParty(), defaultWorld, { type: "enter_dungeon" });
+    const afterCombat = resolveCombat(executeCommand(entered, defaultWorld, { type: "move_forward" }));
+    const marker = advanceToB1fMarker(afterCombat);
+
+    const moved = executeCommand(marker, defaultWorld, { type: "move_forward" });
+    const descended = executeCommand(marker, defaultWorld, { type: "use_stairs" });
+
+    expect(marker.position?.roomId).toBe("room.b1f.006");
+    expect(moved.position?.roomId).toBe("room.b1f.006");
+    expect(moved.map.floorId).toBe("dungeon.b1f");
+    expect(moved.log.at(-1)?.text).toBe("A stair waits ahead. Choose Use stairs to descend.");
+    expect(descended.position?.roomId).toBe("room.b2f.001");
+    expect(descended.map.floorId).toBe("dungeon.b2f");
   });
 });

@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
-import { registerAdventurer, resolveVisibleCombat, setTitleLanguage, startNewExpedition } from "./helpers";
+import type { Page } from "@playwright/test";
+import { createStarterParty, registerAdventurer, resolveVisibleCombat, setTitleLanguage, startNewExpedition } from "./helpers";
 
 test("town modes expose guild, recovery, records, and dungeon entry", async ({ page }) => {
   await startNewExpedition(page);
@@ -29,7 +30,7 @@ test("town modes expose guild, recovery, records, and dungeon entry", async ({ p
 test("town shop supports buying, selling, and equipping without an admin table", async ({ page }) => {
   await startNewExpedition(page);
 
-  await page.getByRole("button", { name: "Beginner Safe" }).click();
+  await createStarterParty(page);
   await page.getByRole("button", { name: "Shop" }).click();
 
   await expect(page.getByRole("heading", { name: "Stela Gate General Store" })).toBeVisible();
@@ -42,7 +43,9 @@ test("town shop supports buying, selling, and equipping without an admin table",
   await expect(page.getByText("Head", { exact: true }).first()).toBeVisible();
   await page.getByRole("button", { name: "Buy Militia Sabre" }).click();
   await expect(page.getByText("Bought Militia Sabre for 45 gold.")).toBeVisible();
-  await page.getByRole("button", { name: "Equip Militia Sabre to Rook" }).click();
+  const equipSabre = page.locator('button[aria-label^="Equip Militia Sabre to"]:not([disabled])').first();
+  await expect(equipSabre).toBeVisible();
+  await equipSabre.click();
   await expect(page.getByText(/equips Militia Sabre/i)).toBeVisible();
   await expect(page.getByRole("button", { name: "Sell" }).last()).toBeVisible();
 });
@@ -54,7 +57,7 @@ test("recovery costs gold and blocks free healing", async ({ page }) => {
   await page.getByRole("button", { name: "Enter dungeon" }).click();
   await page.getByRole("button", { name: "Move" }).click();
   await resolveVisibleCombat(page);
-  await page.getByRole("button", { name: "Move" }).click();
+  await advanceToB1fMarker(page);
   await page.getByRole("button", { name: "Use return marker" }).click();
   await page.getByRole("button", { name: "Recovery" }).click();
 
@@ -67,7 +70,7 @@ test("Japanese shop equipment stays readable on mobile", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await setTitleLanguage(page, "ja");
   await page.getByRole("button", { name: "新たな探索" }).click();
-  await page.getByRole("button", { name: "初心者向け" }).click();
+  await createStarterParty(page, "ja");
   await page.getByRole("button", { name: "店" }).click();
 
   await expect(page.getByRole("heading", { name: "黒碑門の雑貨店" })).toBeVisible();
@@ -92,3 +95,9 @@ test("combat exposes defend and item use choices", async ({ page }) => {
   await expect(page.getByRole("button", { name: "Defend" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Use item" })).toBeVisible();
 });
+
+async function advanceToB1fMarker(page: Page) {
+  for (let step = 0; step < 4; step += 1) {
+    await page.getByRole("button", { name: "Move" }).click();
+  }
+}

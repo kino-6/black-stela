@@ -60,9 +60,6 @@ export function MapPanel({ state, world, locale, t }: MapPanelProps) {
                 style={{ gridColumn: cell.x + 1, gridRow: cell.y + 1 }}
                 title={cell.label}
               >
-                {cell.exits.map((direction) => (
-                  <i aria-hidden="true" className={`mini-map-link link-${direction}`} key={direction} />
-                ))}
                 {cell.status === "current" && facing && (
                   <b
                     aria-label={t(`direction.${facing}`)}

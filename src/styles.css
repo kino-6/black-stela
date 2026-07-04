@@ -271,6 +271,12 @@ small {
   margin-bottom: 0.75rem;
 }
 
+.guild-actions p {
+  margin: 0;
+  color: #bdb8aa;
+  line-height: 1.55;
+}
+
 .template-row {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -280,52 +286,6 @@ small {
 .template-row button,
 .guild-actions > button {
   min-height: 2.35rem;
-}
-
-.coverage-panel {
-  display: grid;
-  gap: 0.45rem;
-  margin-bottom: 0.75rem;
-  padding: 0.65rem;
-  border: 1px solid #30372f;
-  border-radius: 4px;
-  background: #10140f;
-}
-
-.coverage-panel h3 {
-  margin: 0;
-  color: #eee8d8;
-  font-size: 0.82rem;
-  text-transform: uppercase;
-}
-
-.coverage-panel ul {
-  display: grid;
-  gap: 0.3rem;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.coverage-panel li {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-  font-size: 0.78rem;
-}
-
-.coverage-panel strong {
-  color: #d5b56d;
-  font-weight: 600;
-}
-
-.coverage-missing strong {
-  color: #d4876a;
-}
-
-.coverage-thin strong {
-  color: #c9a765;
 }
 
 .guild-entry-strip {
@@ -338,6 +298,174 @@ small {
 
 .guild-entry-strip .event-window {
   flex: 1 1 18rem;
+}
+
+.guild-tavern-panel {
+  display: grid;
+  gap: 0.65rem;
+  padding: 0.65rem;
+  border: 1px solid #30372f;
+  border-radius: 6px;
+  background: #0d100d;
+}
+
+.guild-tavern-scene {
+  position: relative;
+  min-height: 10.5rem;
+  overflow: hidden;
+  border: 1px solid #3a3728;
+  border-radius: 4px;
+  background:
+    radial-gradient(circle at 36% 28%, rgba(220, 177, 89, 0.28), transparent 8rem),
+    linear-gradient(180deg, #181914 0%, #090b09 58%, #16100a 100%);
+}
+
+.guild-tavern-scene::before {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 36%;
+  content: "";
+  background: linear-gradient(180deg, rgba(44, 30, 17, 0), rgba(55, 32, 14, 0.86));
+}
+
+.guild-master-figure {
+  position: absolute;
+  right: 18%;
+  bottom: 15%;
+  width: 5.5rem;
+  height: 7rem;
+}
+
+.guild-master-head,
+.guild-master-body {
+  position: absolute;
+  display: block;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.guild-master-head {
+  top: 0.2rem;
+  width: 2.2rem;
+  height: 2.2rem;
+  border: 1px solid #d5b56d;
+  border-radius: 50%;
+  background: #8c7041;
+}
+
+.guild-master-body {
+  bottom: 0;
+  width: 4.4rem;
+  height: 5.2rem;
+  border: 1px solid #8c7041;
+  border-radius: 2rem 2rem 0.35rem 0.35rem;
+  background: linear-gradient(180deg, #2a2c22, #12150f);
+}
+
+.tavern-lantern,
+.tavern-counter,
+.tavern-table {
+  position: absolute;
+  display: block;
+}
+
+.tavern-lantern {
+  top: 1.1rem;
+  left: 1.4rem;
+  width: 1.2rem;
+  height: 1.8rem;
+  border: 1px solid #d5b56d;
+  background: #a06a24;
+  box-shadow: 0 0 2.8rem rgba(213, 181, 109, 0.38);
+}
+
+.tavern-counter {
+  right: 3%;
+  bottom: 10%;
+  width: 54%;
+  height: 1.45rem;
+  border: 1px solid #69411f;
+  background: #2b1a0f;
+}
+
+.tavern-table {
+  left: 7%;
+  bottom: 13%;
+  width: 33%;
+  height: 1.9rem;
+  border: 1px solid #5c3b1f;
+  border-radius: 50%;
+  background: #20140c;
+}
+
+.guild-master-dialogue {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.guild-master-dialogue > strong {
+  color: #f2efe5;
+}
+
+.guild-master-dialogue p {
+  margin: 0;
+  color: #d6d0bd;
+  line-height: 1.55;
+}
+
+.binary-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.45rem;
+}
+
+.guild-candidate-card {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.candidate-heading {
+  display: grid;
+  grid-template-columns: 3.5rem 1fr;
+  gap: 0.65rem;
+  align-items: center;
+}
+
+.candidate-heading strong {
+  display: block;
+  color: #f2efe5;
+}
+
+.candidate-heading span,
+.candidate-details dd {
+  color: #bdb8aa;
+}
+
+.candidate-details {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+}
+
+.candidate-details div {
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.5rem;
+  border: 1px solid #30372f;
+  border-radius: 4px;
+  background: #11150f;
+}
+
+.candidate-details dt {
+  color: #d5b56d;
+  font-size: 0.85rem;
+}
+
+.candidate-details dd {
+  margin: 0;
+  line-height: 1.5;
 }
 
 .party-member {
@@ -391,6 +519,71 @@ small {
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+.portrait-asset {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  color: #f2d58c;
+  font-size: 1.15rem;
+  isolation: isolate;
+  background:
+    radial-gradient(circle at 50% 38%, rgb(242 213 140 / 0.2), transparent 28%),
+    linear-gradient(145deg, #262719, #10130f 58%, #070806);
+}
+
+.portrait-asset::before {
+  content: "";
+  position: absolute;
+  inset: 18% 22% 12%;
+  z-index: -1;
+  border: 1px solid rgb(213 181 109 / 0.45);
+  border-radius: 48% 48% 38% 38%;
+  background: linear-gradient(180deg, rgb(230 211 160 / 0.18), rgb(50 38 24 / 0.28));
+}
+
+.portrait-asset::after {
+  content: "";
+  position: absolute;
+  left: 18%;
+  right: 18%;
+  bottom: 12%;
+  z-index: -1;
+  height: 18%;
+  border-top: 1px solid rgb(213 181 109 / 0.36);
+  background: rgb(10 12 10 / 0.45);
+}
+
+.portrait-asset-ruin,
+.portrait-asset-grave {
+  background:
+    radial-gradient(circle at 45% 38%, rgb(142 168 122 / 0.22), transparent 30%),
+    linear-gradient(145deg, #1e281d, #10130f 60%, #070806);
+}
+
+.portrait-asset-vial,
+.portrait-asset-dock {
+  background:
+    radial-gradient(circle at 55% 35%, rgb(122 155 189 / 0.24), transparent 30%),
+    linear-gradient(145deg, #1c2730, #10130f 60%, #070806);
+}
+
+.portrait-asset-coin,
+.portrait-asset-pit,
+.portrait-asset-cloak {
+  background:
+    radial-gradient(circle at 50% 38%, rgb(182 111 77 / 0.24), transparent 28%),
+    linear-gradient(145deg, #301d18, #11100d 62%, #070806);
+}
+
+.portrait-asset-map,
+.portrait-asset-ink {
+  background:
+    radial-gradient(circle at 50% 35%, rgb(167 132 184 / 0.22), transparent 30%),
+    linear-gradient(145deg, #272130, #11100d 62%, #070806);
 }
 
 .portrait-large {
@@ -510,7 +703,7 @@ textarea {
 
 .guild-studio-grid {
   display: grid;
-  grid-template-columns: minmax(22rem, 0.9fr) minmax(24rem, 1.1fr);
+  grid-template-columns: minmax(24rem, 1fr) minmax(18rem, 0.58fr);
   gap: 1rem;
 }
 
@@ -663,7 +856,7 @@ textarea {
 
 .bonus-row {
   display: grid;
-  grid-template-columns: minmax(7rem, 1fr) 2.4rem 2.4rem 2.4rem;
+  grid-template-columns: minmax(7rem, 1fr) 2.4rem 2.4rem 1.7rem 2.4rem;
   gap: 0.35rem;
   align-items: center;
   padding: 0.45rem;
@@ -679,6 +872,12 @@ textarea {
 .bonus-row strong {
   text-align: center;
   color: #d5b56d;
+}
+
+.bonus-row small {
+  min-width: 1.2rem;
+  color: #d5b56d;
+  font-size: 0.78rem;
 }
 
 .bonus-row button {
@@ -706,6 +905,26 @@ textarea {
   flex: 1;
 }
 
+.origin-support {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.origin-note {
+  margin: 0;
+  color: #c7c3b5;
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+.origin-support button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
 .studio-roster {
   display: grid;
   gap: 0.75rem;
@@ -713,7 +932,37 @@ textarea {
 }
 
 .roster-compact {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: 1fr;
+}
+
+.formation-roster {
+  gap: 0.65rem;
+}
+
+.formation-row {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.formation-row h4 {
+  margin: 0;
+  color: #d5b56d;
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+}
+
+.formation-slots {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.55rem;
+}
+
+.formation-slot-empty {
+  min-height: 4.9rem;
+  border: 1px dashed #30372f;
+  border-radius: 4px;
+  background: #0c0f0b;
+  opacity: 0.55;
 }
 
 .guild-studio .roster {
@@ -1495,7 +1744,7 @@ textarea {
   max-width: 100%;
   border: 1px solid #292e28;
   border-radius: 3px;
-  padding: 0.55rem;
+  padding: 0.45rem;
   overflow: hidden;
   background:
     linear-gradient(180deg, rgba(17, 19, 16, 0.92), rgba(6, 7, 6, 0.96)),
@@ -1505,55 +1754,39 @@ textarea {
 
 .mini-map-grid {
   display: grid;
-  gap: 0.36rem;
-  align-items: center;
-  justify-items: center;
+  gap: 0;
+  align-items: stretch;
+  justify-items: stretch;
   width: max-content;
-  min-width: calc(4 * 1.1rem + 3 * 0.36rem);
-  min-height: calc(4 * 1.1rem + 3 * 0.36rem);
+  min-width: calc(4 * 1.18rem);
+  min-height: calc(4 * 1.18rem);
 }
 
 .mini-map-cell {
   position: relative;
   display: block;
-  width: 1.1rem;
+  width: 1.18rem;
   aspect-ratio: 1;
-  border: 1px solid #4e5548;
-  border-radius: 2px;
-  background: #121611;
+  margin: -1px 0 0 -1px;
+  border: 1px solid #2c332d;
+  border-radius: 0;
+  background: #101410;
 }
 
-.mini-map-link {
-  position: absolute;
-  background: #716244;
+.mini-map-cell.exit-east {
+  border-right-color: #967a42;
 }
 
-.mini-map-link.link-east {
-  top: 50%;
-  left: 100%;
-  width: 0.48rem;
-  height: 1px;
+.mini-map-cell.exit-west {
+  border-left-color: #967a42;
 }
 
-.mini-map-link.link-west {
-  top: 50%;
-  right: 100%;
-  width: 0.48rem;
-  height: 1px;
+.mini-map-cell.exit-north {
+  border-top-color: #967a42;
 }
 
-.mini-map-link.link-north {
-  left: 50%;
-  bottom: 100%;
-  width: 1px;
-  height: 0.48rem;
-}
-
-.mini-map-link.link-south {
-  left: 50%;
-  top: 100%;
-  width: 1px;
-  height: 0.48rem;
+.mini-map-cell.exit-south {
+  border-bottom-color: #967a42;
 }
 
 .mini-map-cell.current {
@@ -1834,6 +2067,15 @@ textarea {
   min-height: 0;
 }
 
+.combat-cockpit {
+  grid-template-rows: auto auto minmax(0, 1fr);
+  gap: 0.45rem;
+}
+
+.combat-cockpit .scene-deck {
+  grid-template-columns: 1fr;
+}
+
 .navigation-board {
   min-width: 0;
   align-self: start;
@@ -1844,8 +2086,17 @@ textarea {
 }
 
 .scene-deck .dungeon-canvas {
-  height: clamp(14rem, 32vh, 24rem);
-  min-height: 14rem;
+  height: clamp(13rem, 30vh, 22rem);
+  min-height: 13rem;
+}
+
+.combat-cockpit .scene-deck .dungeon-view {
+  min-height: 10rem;
+}
+
+.combat-cockpit .scene-deck .dungeon-canvas {
+  height: clamp(10rem, 24vh, 15rem);
+  min-height: 10rem;
 }
 
 .debug-panel ~ .game-grid .scene-deck .dungeon-view {
@@ -1914,14 +2165,43 @@ textarea {
 
 .party-token {
   display: grid;
-  gap: 0.1rem;
+  grid-template-columns: 3.1rem minmax(0, 1fr);
+  gap: 0.5rem;
+  align-items: center;
   min-width: 0;
-  min-height: 2.6rem;
-  padding: 0.35rem 0.5rem;
+  min-height: 4.4rem;
+  padding: 0.38rem 0.5rem;
   border: 1px solid #4b5148;
   border-left-width: 3px;
   border-radius: 3px;
   background: #111410;
+}
+
+.party-token-portrait {
+  width: 2.75rem;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border: 1px solid #4d5346;
+  border-radius: 3px;
+  background: #171a14;
+}
+
+.party-token-portrait img,
+.party-token-portrait .portrait-asset {
+  width: 100%;
+  height: 100%;
+}
+
+.party-token-body {
+  display: grid;
+  gap: 0.22rem;
+  min-width: 0;
+}
+
+.party-token-heading {
+  display: grid;
+  gap: 0.05rem;
+  min-width: 0;
 }
 
 .party-token strong {
@@ -1932,9 +2212,25 @@ textarea {
   white-space: nowrap;
 }
 
-.party-token span {
+.party-token small {
   color: #aaa99d;
   font-size: 0.74rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.party-token-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.08rem 0.45rem;
+}
+
+.party-token-stats span {
+  color: #c3c0b2;
+  font-size: 0.7rem;
+  line-height: 1.15;
+  white-space: nowrap;
 }
 
 .party-token.back {
@@ -1956,8 +2252,13 @@ textarea {
 }
 
 .debug-panel ~ .game-grid .party-token {
-  min-height: 2.05rem;
+  grid-template-columns: 2.5rem minmax(0, 1fr);
+  min-height: 3.6rem;
   padding: 0.2rem 0.45rem;
+}
+
+.debug-panel ~ .game-grid .party-token-portrait {
+  width: 2.2rem;
 }
 
 .debug-panel ~ .game-grid .cockpit-copy {
@@ -1985,9 +2286,9 @@ textarea {
 
 .battle-screen {
   align-self: start;
-  gap: 0.6rem;
+  gap: 0.45rem;
   min-height: 0;
-  padding: 0.7rem;
+  padding: 0.55rem;
 }
 
 .battle-header {
@@ -1998,13 +2299,14 @@ textarea {
 }
 
 .battle-grid {
-  grid-template-columns: minmax(14rem, 0.85fr) minmax(22rem, 1.15fr);
+  grid-template-columns: minmax(12rem, 0.7fr) minmax(20rem, 1.3fr);
   align-items: start;
+  gap: 0.55rem;
 }
 
 .battle-side {
-  gap: 0.45rem;
-  padding: 0.55rem;
+  gap: 0.35rem;
+  padding: 0.45rem;
   border: 1px solid #2e332b;
   border-radius: 4px;
   background: #0b0d0b;
@@ -2044,8 +2346,8 @@ textarea {
   justify-content: space-between;
   gap: 0.45rem;
   min-width: 0;
-  min-height: 2.65rem;
-  padding: 0.4rem 0.55rem;
+  min-height: 2.35rem;
+  padding: 0.32rem 0.5rem;
 }
 
 .battle-choice strong,
@@ -2075,6 +2377,14 @@ textarea {
   text-align: right;
 }
 
+.enemy-choice {
+  cursor: default;
+}
+
+.enemy-choice[aria-current="true"] {
+  box-shadow: inset 4px 0 0 #d5b56d;
+}
+
 .command-dock {
   position: sticky;
   bottom: 0;
@@ -2087,7 +2397,7 @@ textarea {
 }
 
 .command-dock button {
-  min-width: 5.4rem;
+  min-width: 4.8rem;
 }
 
 @media (max-width: 1100px) {
@@ -2126,6 +2436,10 @@ textarea {
   .stat-preview dl,
   .character-profile dl {
     grid-template-columns: 1fr;
+  }
+
+  .formation-slots {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .guild-step-panel {

@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { registerAdventurer, resolveVisibleCombat, setTitleLanguage, startNewExpedition } from "./helpers";
+import { createStarterParty, focusControllerButton, registerAdventurer, resolveVisibleCombat, setTitleLanguage, startNewExpedition } from "./helpers";
 
 test("resolves tactical combat through visible actor, target, and combat commands", async ({ page }) => {
   await startNewExpedition(page);
@@ -13,14 +13,23 @@ test("resolves tactical combat through visible actor, target, and combat command
   await expect(page.getByRole("heading", { name: "Enemy groups" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Party formation" })).toBeVisible();
   await expect(page.getByTestId("party-hud")).toHaveCount(0);
+  await expect(page.getByLabel("Mini-map")).toHaveCount(0);
   await expect(page.getByTestId("combat-enemy-group")).toContainText("Ash Slime");
+  await expect(page.getByTestId("combat-enemy-group")).not.toContainText(/HP \d+/);
+  await expect(page.getByRole("button", { name: /Ash Slime/ })).toHaveCount(0);
   await expect(page.getByTestId("combat-actor")).toContainText("Mira");
   await expect(page.getByRole("button", { name: "Attack" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Target" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Resolve round" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Sleep" })).toBeVisible();
 
   const combatBoardHeight = await page.getByLabel("Battle screen").evaluate((element) => element.getBoundingClientRect().height);
-  expect(combatBoardHeight).toBeLessThan(430);
+  expect(combatBoardHeight).toBeLessThan(390);
+  const cockpitFitsViewport = await page.locator(".adventure-cockpit").evaluate((element) => {
+    const bounds = element.getBoundingClientRect();
+    return bounds.bottom <= window.innerHeight + 1;
+  });
+  expect(cockpitFitsViewport).toBe(true);
 
   await resolveVisibleCombat(page);
 
@@ -58,26 +67,32 @@ test("queues visible party orders before resolving a combat round", async ({ pag
 test("combat commands advance through party order instead of clicked actor cards", async ({ page }) => {
   await startNewExpedition(page);
 
-  await page.getByRole("button", { name: "Beginner Safe" }).click();
+  await createStarterParty(page);
   await page.getByRole("button", { name: "Enter dungeon" }).click();
   await page.getByRole("button", { name: "Move" }).click();
 
   await expect(page.getByLabel("Battle screen")).toBeVisible();
-  await page.getByTestId("combat-actor").filter({ hasText: "Bran" }).click();
+  await expect(page.getByRole("button", { name: /Ash Slime|灰泥/ })).toHaveCount(0);
+  const actorNames = await page.getByTestId("combat-actor").locator("strong").allTextContents();
+  const firstActor = actorNames[0];
+  const clickedActor = actorNames.at(-1) ?? firstActor;
+  await page.getByTestId("combat-actor").filter({ hasText: clickedActor }).click();
   await page.getByRole("button", { name: "Attack" }).click();
 
-  await expect(page.getByTestId("combat-order-list")).toContainText("Rook");
-  await expect(page.getByTestId("combat-order-list")).not.toContainText("Bran");
+  await expect(page.getByTestId("combat-order-list")).toContainText(firstActor);
+  if (clickedActor !== firstActor) {
+    await expect(page.getByTestId("combat-order-list")).not.toContainText(clickedActor);
+  }
 });
 
 test("six-member party keeps front and back rows visible in combat", async ({ page }) => {
   await startNewExpedition(page);
 
-  await page.getByRole("button", { name: "Beginner Safe" }).click();
+  await createStarterParty(page);
   await page.getByRole("button", { name: "Enter dungeon" }).click();
 
-  await expect(page.getByTestId("party-front-row")).toContainText("Rook");
-  await expect(page.getByTestId("party-back-row")).toContainText("Sei");
+  await expect(page.getByTestId("party-front-row").getByTestId("party-token")).toHaveCount(3);
+  await expect(page.getByTestId("party-back-row").getByTestId("party-token")).toHaveCount(3);
   await page.getByRole("button", { name: "Move" }).click();
 
   await expect(page.getByLabel("Battle screen")).toBeVisible();
@@ -95,12 +110,13 @@ test("six-member party keeps front and back rows visible in combat", async ({ pa
 test("keyboard-only command flow keeps command windows stable", async ({ page }) => {
   await startNewExpedition(page);
 
-  await page.getByRole("button", { name: "Beginner Safe" }).click();
+  await createStarterParty(page);
   await page.getByRole("button", { name: "Enter dungeon" }).click();
 
   const dungeonDockBefore = await page
     .getByTestId("dungeon-command-window")
     .evaluate((element) => element.getBoundingClientRect().top);
+  await focusControllerButton(page, "Move");
   await page.keyboard.press("Enter");
   await expect(page.getByLabel("Battle screen")).toBeVisible();
 
@@ -122,13 +138,14 @@ test("Japanese mobile combat order remains readable", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await setTitleLanguage(page, "ja");
   await page.getByRole("button", { name: "新たな探索" }).click();
-  await page.getByRole("button", { name: "初心者向け" }).click();
+  await createStarterParty(page, "ja");
   await page.getByRole("button", { name: "迷宮に入る" }).click();
   await page.getByRole("button", { name: "進む" }).click();
 
   await expect(page.getByRole("heading", { name: "戦闘", exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "戦闘指示" })).toBeVisible();
   await expect(page.getByTestId("combat-enemy-group")).toContainText("灰泥");
+  await expect(page.getByTestId("combat-enemy-group")).not.toContainText(/HP \d+/);
   await expect(page.getByText("Ash Slime")).toHaveCount(0);
   await expect(page.getByRole("button", { name: "決定" })).toBeVisible();
   await expect(page.getByRole("button", { name: "一手戻す" })).toBeVisible();

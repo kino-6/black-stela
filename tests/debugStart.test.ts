@@ -38,7 +38,7 @@ describe("debug start state", () => {
     expect(state.phase).toBe("dungeon");
     expect(state.position).toEqual({ roomId: "room.b8f.001", cellId: "cell.b8f.001", facing: "east" });
     expect(state.map.floorId).toBe("dungeon.b8f");
-    expect(state.map.visitedRooms).toContain("room.b1f.003");
+    expect(state.map.visitedRooms).toContain("room.b1f.006");
     expect(state.map.visitedRooms).toContain("room.b8f.001");
     expect(state.inventory.map((item) => item.id)).toContain("item.lantern-oil");
   });

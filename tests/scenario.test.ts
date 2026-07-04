@@ -6,7 +6,7 @@ describe("scenario validation", () => {
   it("loads the editable default world from Markdown and YAML front matter", () => {
     expect(defaultWorld.id).toBe("world.default");
     expect(defaultWorld.dungeons).toHaveLength(8);
-    expect(defaultWorld.dungeons[0].rooms).toHaveLength(3);
+    expect(defaultWorld.dungeons[0].rooms).toHaveLength(8);
     expect(defaultWorld.items.map((item) => item.id)).toContain("item.healing-draught");
     expect(defaultWorld.encounterTables.map((table) => table.id)).toContain("encounters.b8f.gate");
     expect(defaultWorld.aiPolicy.forbidden).toContain("speak_for_pc");

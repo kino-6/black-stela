@@ -3,6 +3,7 @@ export type Direction = "north" | "east" | "south" | "west";
 export type Command =
   | { type: "enter_dungeon" }
   | { type: "move_forward" }
+  | { type: "use_stairs" }
   | { type: "turn_left" }
   | { type: "turn_right" }
   | { type: "inspect_wall" }
@@ -24,9 +25,45 @@ export type Command =
 export type CombatRow = "front" | "back";
 export type CombatActionKind = "attack" | "defend" | "use_item" | "cast";
 export type EquipmentSlot = "weapon" | "offhand" | "body" | "head" | "hands" | "accessory";
-export type CharacterClassId = "vanguard" | "seeker" | "mender" | "occultist";
-export type CharacterBackgroundId = "watch" | "ruinborn" | "apothecary" | "debtor" | "cartographer";
-export type CharacterTraitId = "steady" | "scarred" | "lucky" | "grim" | "curious";
+export type CharacterClassId =
+  | "vanguard"
+  | "sellsword"
+  | "bulwark"
+  | "duelist"
+  | "seeker"
+  | "scout"
+  | "cutpurse"
+  | "mender"
+  | "chanter"
+  | "occultist"
+  | "arcanist"
+  | "wayfinder";
+export type CharacterBackgroundId =
+  | "watch"
+  | "ruinborn"
+  | "apothecary"
+  | "debtor"
+  | "cartographer"
+  | "shrine_ward"
+  | "caravan_guard"
+  | "pit_fighter"
+  | "scriptorium"
+  | "grave_tender"
+  | "dock_rat"
+  | "deserter";
+export type CharacterTraitId =
+  | "steady"
+  | "scarred"
+  | "lucky"
+  | "grim"
+  | "curious"
+  | "cautious"
+  | "bold"
+  | "devout"
+  | "nimble"
+  | "stubborn"
+  | "sharp_eyed"
+  | "soft_spoken";
 export type CharacterCreationMethod = "legacy" | "quick" | "detailed" | "template" | "debug";
 
 export interface CharacterAptitudes {
@@ -109,10 +146,11 @@ export interface AdventureLogEntry {
 
 export type GameEvent =
   | { type: "party_member_joined"; characterId: string; characterName: string }
-  | { type: "command_blocked"; reason: "party_required" | "town_return_unavailable"; command: Command["type"] }
+  | { type: "command_blocked"; reason: "party_required" | "town_return_unavailable" | "stairs_unavailable"; command: Command["type"] }
   | { type: "dungeon_entered"; roomId: string; facing: Direction }
   | { type: "party_turned"; side: "left" | "right"; facing: Direction }
-  | { type: "movement_blocked"; reason: "wall"; roomId: string; facing: Direction }
+  | { type: "movement_blocked"; reason: "wall" | "stairs"; roomId: string; facing: Direction }
+  | { type: "stairs_used"; fromRoomId: string; toRoomId: string; toFloorId: string | null }
   | { type: "map_room_visited"; floorId: string; roomId: string }
   | { type: "map_exits_known"; floorId: string; roomId: string; exits: Direction[] }
   | { type: "map_exit_blocked"; floorId: string | null; roomId: string; direction: Direction }

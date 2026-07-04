@@ -108,11 +108,18 @@ export function createDebugStateFromProgress(world: ScenarioWorld, progress: Deb
   const state: GameState = {
     ...base,
     phase: "dungeon",
-    position: createPosition(world, "room.b1f.003", "east"),
+    position: createPosition(world, "room.b1f.006", "east"),
     defeatedEnemies: ["enemy.b1f.ash-slime"],
     resolvedTraps: ["trap.b1f.needle"],
     discoveredSecrets: ["trap.b1f.needle"],
-    map: createMapState(world, ["room.b1f.001", "room.b1f.002", "room.b1f.003"]),
+    map: createMapState(world, [
+      "room.b1f.001",
+      "room.b1f.002",
+      "room.b1f.003",
+      "room.b1f.004",
+      "room.b1f.005",
+      "room.b1f.006"
+    ]),
     turn: 5
   };
 
@@ -157,7 +164,14 @@ function createFloorDebugState(base: GameState, world: ScenarioWorld, progress: 
 }
 
 function createVisitedPathToFloor(floorNumber: number) {
-  const visited = ["room.b1f.001", "room.b1f.002", "room.b1f.003"];
+  const visited = [
+    "room.b1f.001",
+    "room.b1f.002",
+    "room.b1f.003",
+    "room.b1f.004",
+    "room.b1f.005",
+    "room.b1f.006"
+  ];
   for (let floor = 2; floor <= floorNumber; floor += 1) {
     visited.push(`room.b${floor}f.001`);
   }

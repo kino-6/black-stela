@@ -80,7 +80,24 @@ const scenarioEquipmentSchema = z.object({
   defenseBonus: z.number().int().optional(),
   accuracyBonus: z.number().int().optional(),
   speedBonus: z.number().int().optional(),
-  allowedClasses: z.array(z.enum(["vanguard", "seeker", "mender", "occultist"])).optional(),
+  allowedClasses: z
+    .array(
+      z.enum([
+        "vanguard",
+        "sellsword",
+        "bulwark",
+        "duelist",
+        "seeker",
+        "scout",
+        "cutpurse",
+        "mender",
+        "chanter",
+        "occultist",
+        "arcanist",
+        "wayfinder"
+      ])
+    )
+    .optional(),
   tags: z.array(z.string().min(1)).default([]),
   price: z.number().int().nonnegative().optional(),
   sellValue: z.number().int().nonnegative().optional(),

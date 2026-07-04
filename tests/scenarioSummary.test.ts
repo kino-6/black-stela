@@ -9,7 +9,7 @@ describe("scenario summary", () => {
     expect(summary).toMatchObject({
       title: "Black Stela - Gate of Ash",
       floorCount: 8,
-      roomCount: 24,
+      roomCount: 29,
       itemCount: 4,
       equipmentCount: 11,
       shopCount: 1,

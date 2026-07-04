@@ -30,10 +30,40 @@ const CharacterSchema = z.object({
   name: z.string().min(1),
   notes: z.string(),
   title: z.string().default("Vanguard"),
-  classId: z.enum(["vanguard", "seeker", "mender", "occultist"]).default("vanguard"),
+  classId: z
+    .enum([
+      "vanguard",
+      "sellsword",
+      "bulwark",
+      "duelist",
+      "seeker",
+      "scout",
+      "cutpurse",
+      "mender",
+      "chanter",
+      "occultist",
+      "arcanist",
+      "wayfinder"
+    ])
+    .default("vanguard"),
   roleTags: z.array(z.string().min(1)).default(["front_line", "damage", "retreat_guard"]),
   rowPreference: z.enum(["front", "back"]).default("front"),
-  backgroundId: z.enum(["watch", "ruinborn", "apothecary", "debtor", "cartographer"]).default("watch"),
+  backgroundId: z
+    .enum([
+      "watch",
+      "ruinborn",
+      "apothecary",
+      "debtor",
+      "cartographer",
+      "shrine_ward",
+      "caravan_guard",
+      "pit_fighter",
+      "scriptorium",
+      "grave_tender",
+      "dock_rat",
+      "deserter"
+    ])
+    .default("watch"),
   aptitude: z
     .object({
       might: z.number().int().nonnegative().default(2),
@@ -43,7 +73,24 @@ const CharacterSchema = z.object({
       luck: z.number().int().nonnegative().default(2)
     })
     .default({ might: 2, agility: 2, spirit: 2, wit: 2, luck: 2 }),
-  traitIds: z.array(z.enum(["steady", "scarred", "lucky", "grim", "curious"])).default(["steady"]),
+  traitIds: z
+    .array(
+      z.enum([
+        "steady",
+        "scarred",
+        "lucky",
+        "grim",
+        "curious",
+        "cautious",
+        "bold",
+        "devout",
+        "nimble",
+        "stubborn",
+        "sharp_eyed",
+        "soft_spoken"
+      ])
+    )
+    .default(["steady"]),
   accentColor: z.string().default("#c9a765"),
   startingEquipment: z.array(z.string().min(1)).default(["worn mail", "short sword"]),
   equipment: EquipmentRecordSchema.default({}),

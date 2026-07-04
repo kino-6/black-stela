@@ -1,5 +1,5 @@
 import { appendEventLogs } from "./replayLog";
-import { getExit, getFloorIdForRoom, getGridCellForRoom, getKnownGridDirections, getRoom } from "./scenario";
+import { getExit, getFloorIdForRoom, getGridCellForRoom, getGridEdge, getKnownGridDirections, getRoom } from "./scenario";
 import {
   addInventoryItem,
   calculateRecoveryCost,
@@ -57,6 +57,8 @@ export function resolveCommand(state: GameState, world: ScenarioWorld, command: 
       return turn(state, "right");
     case "move_forward":
       return moveForward(state, world);
+    case "use_stairs":
+      return useStairs(state, world);
     case "inspect_wall":
       return logOnly(state, { type: "inspection_made", mode: "inspect_wall" });
     case "listen":
@@ -155,6 +157,23 @@ function moveForward(state: GameState, world: ScenarioWorld): CommandResult {
     return noChange(state);
   }
 
+  const forwardEdge = getGridEdge(world, state.position.roomId, state.position.facing);
+  if (forwardEdge?.kind === "stairs") {
+    const next: GameState = {
+      ...state,
+      turn: state.turn + 1
+    };
+
+    return withEvents(next, [
+      {
+        type: "movement_blocked",
+        reason: "stairs",
+        roomId: state.position.roomId,
+        facing: state.position.facing
+      }
+    ]);
+  }
+
   const exit = getExit(world, state.position.roomId, state.position.facing);
   if (!exit) {
     const floorId = state.map.floorId ?? getFloorIdForRoom(world, state.position.roomId);
@@ -241,6 +260,72 @@ function moveForward(state: GameState, world: ScenarioWorld): CommandResult {
       enemyId: encounter.enemy.id,
       enemyName: encounter.count > 1 ? `${encounter.enemy.name} x${encounter.count}` : encounter.enemy.name,
       roomId: room.id
+    });
+  }
+
+  return withEvents(next, events);
+}
+
+function useStairs(state: GameState, world: ScenarioWorld): CommandResult {
+  if (!state.position || state.phase !== "dungeon") {
+    return noChange(state);
+  }
+
+  const edge = getGridEdge(world, state.position.roomId, state.position.facing);
+  if (edge?.kind !== "stairs" || !edge.targetRoomId) {
+    return logOnly(state, { type: "command_blocked", reason: "stairs_unavailable", command: "use_stairs" });
+  }
+
+  const targetRoom = getRoom(world, edge.targetRoomId);
+  const roomVisit = visitRoom(state, world, targetRoom.id, state.position.facing);
+  const targetCell = getGridCellForRoom(world, targetRoom.id);
+  const events: GameEvent[] = [
+    {
+      type: "stairs_used",
+      fromRoomId: state.position.roomId,
+      toRoomId: targetRoom.id,
+      toFloorId: edge.targetFloorId ?? roomVisit.map.floorId ?? null
+    },
+    ...roomVisit.events
+  ];
+
+  let next: GameState = {
+    ...state,
+    position: {
+      ...state.position,
+      roomId: targetRoom.id,
+      cellId: targetCell?.id
+    },
+    party: markDeepestFloor(state.party, roomVisit.map.floorId ?? state.map.floorId),
+    map: roomVisit.map,
+    turn: state.turn + 1
+  };
+
+  const treasure = collectRoomTreasure(next, world, targetRoom.id, targetRoom.treasureTable);
+  next = treasure.state;
+  events.push(...treasure.events);
+
+  if (targetRoom.event) {
+    events.push({ type: "room_event_triggered", roomId: targetRoom.id, text: targetRoom.event });
+  }
+
+  const encounter = targetRoom.encounter
+    ? { enemy: world.enemies.find((enemy) => enemy.id === targetRoom.encounter?.id) ?? targetRoom.encounter, count: 1 }
+    : targetRoom.encounterTable
+      ? resolveEncounterTable(world, targetRoom.encounterTable, state.turn)
+      : null;
+
+  if (encounter && !state.defeatedEnemies.includes(encounter.enemy.id)) {
+    next = {
+      ...next,
+      phase: "combat",
+      combat: createCombatState(targetRoom.id, encounter.enemy, encounter.count)
+    };
+    events.push({
+      type: "enemy_encountered",
+      enemyId: encounter.enemy.id,
+      enemyName: encounter.count > 1 ? `${encounter.enemy.name} x${encounter.count}` : encounter.enemy.name,
+      roomId: targetRoom.id
     });
   }
 

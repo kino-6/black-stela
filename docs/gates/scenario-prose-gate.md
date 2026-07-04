@@ -17,6 +17,8 @@ enemy text, records, and Japanese localization.
   emotion.
 - [ ] English and Japanese are equivalent scene localizations, not strict
   word-for-word translations.
+- [ ] Spoken/service lines also pass
+  [`japanese-dialogue-gate.md`](japanese-dialogue-gate.md).
 
 ## Red Flags
 
@@ -28,6 +30,8 @@ enemy text, records, and Japanese localization.
 - The text tells the player what the party is supposed to feel.
 - The line repeats information already visible in the first-person view or map.
 - The Japanese reads as a calque: noun-heavy, passive, or "X waits for Y."
+- NPC or service text sounds like written exposition instead of a person
+  speaking in the scene.
 
 ## Required Evidence
 

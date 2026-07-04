@@ -6,6 +6,9 @@ Japanese localization.
 
 Start by using `docs/skills/black-stela-gate-review-skill.md`; it routes prose
 work through the Past Trouble Regression Gate and Scenario Prose Gate.
+For NPC/service spoken lines, also use
+`docs/skills/japanese-dialogue-skill.md` and
+`docs/gates/japanese-dialogue-gate.md`.
 
 ## Goal
 
@@ -42,6 +45,11 @@ think or do.
    player-character emotion.
 6. Read the Japanese aloud. If it sounds like translated English, rewrite from
    Japanese word order and image first.
+7. For guild, shop, inn, and other service copy, do not list UI steps. Rewrite
+   the same information as the speaker's job, test, warning, or offer inside
+   the world.
+8. If the line is spoken, pass the Japanese Dialogue Gate: speaker, listener,
+   immediate intent, and read-aloud naturalness.
 
 ## Rewrite Pattern
 
@@ -71,6 +79,10 @@ Why:
 - Translation-tinted phrases: 〜を待っている, 〜することになる, 〜の下へ続く.
 - Player-character interiority: 決意する, 恐れる, 勇気を出す, 胸が高鳴る.
 - Explaining the game loop: 帰還できる, 記録を残す, 冒険が始まる.
+- UI-step narration in costume: 職業を選び, ボーナスポイントを振り分け,
+  最後に名前を決める.
+- Written lines pretending to be speech: 名は最後でいい, どの才がまだ伸びる,
+  それを見てから帳面を開く.
 - Overfamiliar fantasy fillers: 古の, 神秘的な, 禍々しい, 静寂が支配する.
 
 ## Checks

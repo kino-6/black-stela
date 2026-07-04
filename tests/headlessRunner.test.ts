@@ -18,18 +18,28 @@ describe("headless reachability runner", () => {
     expect(result.state.claimedTreasures).toContain("room.b1f.001");
     expect(result.state.defeatedEnemies).toContain("enemy.b1f.ash-slime");
     expect(result.state.resolvedTraps).toContain("trap.b1f.needle");
-    expect(result.state.map.visitedRooms).toEqual(["room.b1f.001", "room.b1f.002", "room.b1f.003"]);
+    expect(result.state.map.visitedRooms).toEqual([
+      "room.b1f.001",
+      "room.b1f.002",
+      "room.b1f.003",
+      "room.b1f.004",
+      "room.b1f.005",
+      "room.b1f.006"
+    ]);
     expect(result.commands.map((command) => command.type)).toEqual([
       "enter_dungeon",
       "move_forward",
       "declare_round",
       "move_forward",
+      "move_forward",
+      "move_forward",
+      "move_forward",
       "return_to_town"
     ]);
     expect(result.trace.map((step) => step.command)).toEqual(result.commands.map((command) => command.type));
-    expect(result.trace.filter((step) => step.knowledge === "known_map_exits")).toHaveLength(2);
+    expect(result.trace.filter((step) => step.knowledge === "known_map_exits")).toHaveLength(5);
     expect(result.trace.find((step) => step.command === "return_to_town")).toMatchObject({
-      fromRoomId: "room.b1f.003",
+      fromRoomId: "room.b1f.006",
       toPhase: "town",
       knowledge: "known_room_state"
     });
@@ -40,14 +50,20 @@ describe("headless reachability runner", () => {
     const result = runHeadlessClear(initialState, defaultWorld);
 
     expect(result.cleared).toBe(true);
-    expect(result.commands.map((command) => command.type)).toEqual(["move_forward", "return_to_town"]);
+    expect(result.commands.map((command) => command.type)).toEqual([
+      "move_forward",
+      "move_forward",
+      "move_forward",
+      "move_forward",
+      "return_to_town"
+    ]);
     expect(result.trace[0]).toMatchObject({
       command: "move_forward",
       fromRoomId: "room.b1f.002",
       toRoomId: "room.b1f.003",
       knowledge: "known_map_exits"
     });
-    expect(result.state.map.visitedRooms).toContain("room.b1f.003");
+    expect(result.state.map.visitedRooms).toContain("room.b1f.006");
   });
 
   it("reports a stuck room when no scenario route is available", () => {

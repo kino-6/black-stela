@@ -111,6 +111,12 @@ export function DungeonView({ state, world, label }: DungeonViewProps) {
       roughness: 0.5
     });
     const enemyMaterial = new THREE.SpriteMaterial({ map: ashSlimeTexture, transparent: true, depthWrite: false });
+    const enemyShadowMaterial = new THREE.MeshBasicMaterial({
+      color: "#070504",
+      transparent: true,
+      opacity: 0.52,
+      depthWrite: false
+    });
     const returnMarkerMaterial = new THREE.SpriteMaterial({
       map: returnMarkerTexture,
       transparent: true,
@@ -118,9 +124,10 @@ export function DungeonView({ state, world, label }: DungeonViewProps) {
     });
 
     const blockedFront = viewModel.front === "wall";
-    const roomDepth = blockedFront ? 8 : 12;
-    const roomCenterZ = blockedFront ? 0.8 : -1;
-    const frontWallZ = blockedFront ? -3.15 : -7;
+    const roomDepth = blockedFront ? 5.8 : 12;
+    const roomCenterZ = blockedFront ? 1.55 : -1;
+    const frontWallZ = blockedFront ? -1.32 : -7;
+    const sideFeatureZ = blockedFront ? 1.05 : -2.7;
 
     const floor = new THREE.Mesh(new THREE.BoxGeometry(8, 0.2, roomDepth), floorMaterial);
     floor.position.set(0, -0.1, roomCenterZ);
@@ -158,7 +165,7 @@ export function DungeonView({ state, world, label }: DungeonViewProps) {
         viewModel.left === "door"
           ? createSideDoor(doorMaterial, edgeMaterial)
           : createSideOpening(floorMaterial, edgeMaterial);
-      leftFeature.position.set(-3.86, 1.06, blockedFront ? -1.2 : -2.7);
+      leftFeature.position.set(-3.86, 1.06, sideFeatureZ);
       leftFeature.rotation.y = Math.PI / 2;
       scene.add(leftFeature);
     }
@@ -167,15 +174,22 @@ export function DungeonView({ state, world, label }: DungeonViewProps) {
         viewModel.right === "door"
           ? createSideDoor(doorMaterial, edgeMaterial)
           : createSideOpening(floorMaterial, edgeMaterial);
-      rightFeature.position.set(3.86, 1.06, blockedFront ? -1.2 : -2.7);
+      rightFeature.position.set(3.86, 1.06, sideFeatureZ);
       rightFeature.rotation.y = -Math.PI / 2;
       scene.add(rightFeature);
     }
 
     if (state.phase === "combat" && state.combat) {
+      const enemyShadow = new THREE.Mesh(new THREE.CircleGeometry(1.22, 32), enemyShadowMaterial);
+      enemyShadow.position.set(0, 0.035, -2.86);
+      enemyShadow.rotation.x = -Math.PI / 2;
+      enemyShadow.scale.set(1.85, 0.55, 1);
+      scene.add(enemyShadow);
+
       const enemy = new THREE.Sprite(enemyMaterial);
-      enemy.position.set(0, 1.12, -3.2);
-      enemy.scale.set(3.85, 2.55, 1);
+      enemy.center.set(0.5, 0.38);
+      enemy.position.set(0, 0.74, -2.82);
+      enemy.scale.set(4.35, 2.82, 1);
       scene.add(enemy);
     }
 
@@ -208,6 +222,7 @@ export function DungeonView({ state, world, label }: DungeonViewProps) {
         className="dungeon-canvas"
         data-front-edge={viewModel?.front ?? "unknown"}
         data-front-traversable={viewModel?.frontTraversable ? "true" : "false"}
+        data-front-visual={viewModel?.front === "wall" ? "blocked-wall" : viewModel?.front ?? "unknown"}
         data-left-edge={viewModel?.left ?? "unknown"}
         data-right-edge={viewModel?.right ?? "unknown"}
         data-testid="dungeon-canvas"

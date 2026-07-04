@@ -6,10 +6,64 @@ export async function startNewExpedition(page: Page) {
   await page.getByRole("button", { name: "New expedition" }).click();
 }
 
+export async function createStarterParty(page: Page, locale: "en" | "ja" = "en") {
+  const labels = locale === "ja"
+    ? {
+        skip: "説明を聞かない",
+        yes: "はい",
+        proposal: "こいつはどうだ？"
+      }
+    : {
+        skip: "Skip explanation",
+        yes: "Yes",
+        proposal: "How about this one?"
+      };
+
+  if (await page.getByRole("button", { name: labels.skip }).isVisible()) {
+    await page.getByRole("button", { name: labels.skip }).click();
+  }
+
+  for (let index = 0; index < 6; index += 1) {
+    await page.getByRole("button", { name: labels.yes, exact: true }).click();
+    await expect(page.getByTestId("guild-suggestion")).toContainText(labels.proposal);
+    await page.getByRole("button", { name: labels.yes, exact: true }).click();
+    await expect(page.getByText(`${index + 1}/6`)).toBeVisible();
+  }
+}
+
 export async function setTitleLanguage(page: Page, locale: "en" | "ja") {
   await page.goto("/");
   await page.getByRole("button", { name: "Config" }).click();
   await page.getByLabel("Language").selectOption(locale);
+}
+
+export async function focusControllerButton(page: Page, name: string | RegExp, options: { direction?: "next" | "previous"; limit?: number } = {}) {
+  const direction = options.direction === "previous" ? "ArrowLeft" : "ArrowRight";
+  const limit = options.limit ?? 24;
+
+  for (let attempt = 0; attempt < limit; attempt += 1) {
+    const label = await getActiveElementLabel(page);
+    if (typeof name === "string" ? label.includes(name) : name.test(label)) {
+      return;
+    }
+    await page.keyboard.press(direction);
+  }
+
+  throw new Error(`Controller focus did not reach ${String(name)}. Last focus: ${await getActiveElementLabel(page)}`);
+}
+
+async function getActiveElementLabel(page: Page) {
+  return page.evaluate(() => {
+    const element = document.activeElement as HTMLElement | null;
+    if (!element || element === document.body || element === document.documentElement) {
+      return "";
+    }
+    return [element?.getAttribute("aria-label"), element?.textContent]
+      .filter(Boolean)
+      .join(" ")
+      .replace(/\s+/g, " ")
+      .trim();
+  });
 }
 
 export async function registerAdventurer(
@@ -24,7 +78,7 @@ export async function registerAdventurer(
         plus: "筋力 +",
         name: "名前",
         title: "二つ名",
-        notes: "メモ",
+        notes: "覚え書き",
         register: "冒険者を登録"
       }
     : {
@@ -32,8 +86,8 @@ export async function registerAdventurer(
         next: "Next",
         plus: "Might +",
         name: "Name",
-        title: "Title",
-        notes: "Notes",
+        title: "Epithet",
+        notes: "Record",
         register: "Register adventurer"
       };
 

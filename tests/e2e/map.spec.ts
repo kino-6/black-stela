@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { registerAdventurer, startNewExpedition } from "./helpers";
+import { registerAdventurer, resolveVisibleCombat, startNewExpedition } from "./helpers";
 
 for (const viewport of [
   { name: "desktop", width: 1440, height: 900 },
@@ -25,9 +25,16 @@ for (const viewport of [
           .evaluate((element) => getComputedStyle(element).gridTemplateColumns.split(" ").length)
       )
       .toBe(4);
+    await expect
+      .poll(async () => page.getByTestId("minimap-grid").evaluate((element) => getComputedStyle(element).gap))
+      .toBe("0px");
+    await expect(page.locator(".mini-map-link")).toHaveCount(0);
     await expect(page.getByTestId("map-directions")).toHaveCount(0);
 
     await page.getByRole("button", { name: "Move" }).click();
+    if (await page.getByLabel("Battle screen").isVisible()) {
+      await resolveVisibleCombat(page);
+    }
 
     await expect(page.getByTestId("map-current")).toContainText("Hall of Old Dust");
     await expect(page.getByTestId("minimap-visited")).toHaveCount(1);

@@ -32,6 +32,13 @@ shops, records, configuration, and recovery must all be operable through a
 stable focus order, directional navigation, confirm/cancel semantics, and fixed
 command/message areas.
 
+This is a blocking completion rule, not a preference. A player-facing change is
+not done unless Playwright or screenshot evidence proves keyboard/controller
+style traversal for the changed surface. Mouse support is allowed only as a
+secondary convenience; it cannot be the only visible or tested path. If a normal
+screen has no directional focus route, no confirm action, or no cancel/back
+route where backtracking is possible, mark the task unfinished.
+
 Forms are allowed only when the fantasy requires text entry, file import, or a
 debug/developer workflow. Normal character creation must be staged as command
 windows and focused choices: one decision at a time, visible preview, stable

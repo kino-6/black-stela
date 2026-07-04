@@ -1,5 +1,5 @@
 import { executeCommand } from "../domain/rulesEngine";
-import { getRoom } from "../domain/scenario";
+import { getGridEdge, getRoom } from "../domain/scenario";
 import { createDebugStateFromProgress, debugProgressValues, type DebugProgress } from "../debug/debugStart";
 import type { Command, Direction, GameState, ScenarioWorld } from "../domain/types";
 
@@ -104,7 +104,7 @@ export function isMvpCleared(state: GameState): boolean {
     state.phase === "town" &&
     state.defeatedEnemies.includes("enemy.b1f.ash-slime") &&
     state.resolvedTraps.includes("trap.b1f.needle") &&
-    state.map.visitedRooms.includes("room.b1f.003")
+    state.map.visitedRooms.includes("room.b1f.006")
   );
 }
 
@@ -165,7 +165,11 @@ function chooseNextCommand(state: GameState, world: ScenarioWorld): HeadlessDeci
   }
 
   if (state.position.facing === direction) {
-    return { command: { type: "move_forward" }, knowledge: "known_map_exits" };
+    const edge = getGridEdge(world, state.position.roomId, direction);
+    return {
+      command: edge?.kind === "stairs" ? { type: "use_stairs" } : { type: "move_forward" },
+      knowledge: "known_map_exits"
+    };
   }
 
   return { command: turnToward(state.position.facing, direction), knowledge: "known_map_exits" };

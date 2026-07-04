@@ -1,7 +1,8 @@
 import { expect, test } from "@playwright/test";
+import type { Page } from "@playwright/test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { resolveVisibleCombat, setTitleLanguage, startNewExpedition } from "./helpers";
+import { createStarterParty, resolveVisibleCombat, setTitleLanguage, startNewExpedition } from "./helpers";
 
 test("captures desktop screenshot review states", async ({ page }) => {
   await page.goto("/");
@@ -16,12 +17,17 @@ test("captures desktop screenshot review states", async ({ page }) => {
   await page.getByTestId("guild-step-appearance").getByRole("button", { name: "Next" }).click();
   await page.screenshot({ path: "test-results/screenshot-review/desktop-guild-bonus.png", fullPage: true });
 
-  await page.getByRole("button", { name: "Beginner Safe" }).click();
+  await createStarterParty(page);
   await page.screenshot({ path: "test-results/screenshot-review/desktop-guild.png", fullPage: true });
 
   await page.getByRole("button", { name: "Enter dungeon" }).click();
   await expect(page.getByRole("heading", { name: "Silent Stone Chamber" })).toBeVisible();
   await page.screenshot({ path: "test-results/screenshot-review/desktop-dungeon-start.png", fullPage: true });
+  await page.getByLabel("Turn right").click();
+  await expect(page.getByTestId("minimap-facing")).toHaveClass(/facing-south/);
+  await expect(page.getByTestId("dungeon-canvas")).toHaveAttribute("data-front-visual", "blocked-wall");
+  await page.screenshot({ path: "test-results/screenshot-review/desktop-dungeon-start-south-wall.png", fullPage: true });
+  await page.getByLabel("Turn left").click();
 
   await page.getByRole("button", { name: "Move" }).click();
   await expect(page.getByRole("heading", { name: "Combat" })).toBeVisible();
@@ -32,7 +38,7 @@ test("captures desktop screenshot review states", async ({ page }) => {
   await expect(page.getByText(/Victory.*XP.*gold/i)).toBeVisible();
   await page.screenshot({ path: "test-results/screenshot-review/desktop-map-after-move.png", fullPage: true });
 
-  await page.getByRole("button", { name: "Move" }).click();
+  await advanceToB1fMarker(page);
   await expect(page.getByRole("heading", { name: "Black Marker" })).toBeVisible();
   await page.screenshot({ path: "test-results/screenshot-review/desktop-return-stair.png", fullPage: true });
 
@@ -53,7 +59,7 @@ test("captures mobile Japanese guild screenshot review state", async ({ page }) 
   await page.setViewportSize({ width: 390, height: 844 });
   await setTitleLanguage(page, "ja");
   await page.getByRole("button", { name: "新たな探索" }).click();
-  await page.getByRole("button", { name: "初心者向け" }).click();
+  await createStarterParty(page, "ja");
 
   await expect(page.getByRole("heading", { name: "冒険者登録" })).toBeVisible();
   await page.screenshot({ path: "test-results/screenshot-review/mobile-ja-guild.png", fullPage: true });
@@ -80,4 +86,10 @@ function defaultPackFiles(relativePaths: string[]) {
     mimeType: "text/markdown",
     buffer: readFileSync(join(process.cwd(), "content/worlds/default", relativePath))
   }));
+}
+
+async function advanceToB1fMarker(page: Page) {
+  for (let step = 0; step < 4; step += 1) {
+    await page.getByRole("button", { name: "Move" }).click();
+  }
 }

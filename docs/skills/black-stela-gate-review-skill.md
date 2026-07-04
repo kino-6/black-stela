@@ -25,6 +25,8 @@ Then read any matching domain gate:
   `docs/gates/grid-labyrinth-gate.md`
 - Japanese/prose/localization:
   `docs/gates/scenario-prose-gate.md`
+- Japanese spoken lines, NPC dialogue, service copy:
+  `docs/gates/japanese-dialogue-gate.md`
 - Screenshot/layout work:
   `docs/gates/screenshot-review.md`
 

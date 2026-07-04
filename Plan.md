@@ -22,6 +22,10 @@
   [docs/archive/Tasks.completed-party-round-combat-depth.md](docs/archive/Tasks.completed-party-round-combat-depth.md)
 - [x] BS-167..BS-170 sequential party command entry:
   [docs/archive/Tasks.completed-sequential-party-command-entry.md](docs/archive/Tasks.completed-sequential-party-command-entry.md)
+- [x] BS-171..BS-176 combat cockpit and map repair:
+  [docs/archive/Tasks.completed-combat-cockpit-map-repair.md](docs/archive/Tasks.completed-combat-cockpit-map-repair.md)
+- [x] BS-156..BS-158 controller-first normal-play UI:
+  [docs/archive/Tasks.completed-controller-first-normal-play-ui.md](docs/archive/Tasks.completed-controller-first-normal-play-ui.md)
 
 ## Current Baseline
 
@@ -60,6 +64,9 @@ proof of UX, fun, fairness, visual legibility, or grid-maze honesty.
   shop, recovery, records, and configuration flows use staged choices, stable
   focus order, confirm/cancel semantics, and fixed command/message areas before
   mouse convenience.
+- Controller-first is a blocking completion rule. Changed normal-play surfaces
+  need browser proof for directional focus, confirm, and cancel/back where
+  applicable; mouse-only operation means the task is unfinished.
 - Dungeon topology is a continuous grid of cells, walls, doors, stairs, and edge
   rules. Arbitrary linked rooms are not a DRPG maze.
 - Party formation is six-member, row-visible, and reviewed in browser before
@@ -96,26 +103,31 @@ proof of UX, fun, fairness, visual legibility, or grid-maze honesty.
 - [x] Lane L: Past Trouble Regression Gate. Guardrail active.
 - [x] Lane M: First-Person View and Minimap Parity. Guardrail active.
 - [x] Lane N: Guild Registration Flow Reconstruction. Guardrail active.
-- [ ] Lane O: Controller-First Normal-Play UI. Active.
+- [x] Lane O: Controller-First Normal-Play UI. Guardrail active.
 - [x] Lane P: DRPG Equipment Depth. Guardrail active.
 - [x] Lane Q: Party-Round Combat Depth. Guardrail active.
 - [x] Lane R: Sequential Party Command Entry. Guardrail active.
+- [x] Lane S: Combat Cockpit and Map Presentation Repair. Guardrail active.
 - [ ] Lane G: Desktop Productization. Deferred.
 - [ ] Lane H: Hidden Local Narration Operations. Deferred.
 
-### [ ] Lane O: Controller-First Normal-Play UI
+### [x] Lane O: Controller-First Normal-Play UI
 
 Goal: remove web-form/mouse-first assumptions from normal play surfaces.
 
-- Define one focus model for town, guild registration, dungeon, combat, shop,
+- [x] Define one focus model for town, guild registration, dungeon, combat, shop,
   recovery, records, and config: directional movement, confirm, cancel/back.
-- Convert guild registration from clickable step tabs/buttons into a staged
+- [x] Convert guild registration from clickable step tabs/buttons into a staged
   command-window flow with visible focus, shortcuts, and stable message area.
-- Audit all normal screens for scattered form controls, hover-only affordances,
+- [x] Audit all normal screens for scattered form controls, hover-only affordances,
   and commands that move after logs/messages update.
-- Add Playwright coverage for keyboard/controller-style traversal on desktop and
-  Japanese/mobile where labels or layout change.
-- Keep mouse support as convenience, not as the primary interaction model.
+- [x] Add Playwright coverage for keyboard/controller traversal on changed surfaces.
+- [x] Add shared focus control: arrows select, Enter/Space confirms, Escape cancels.
+- [x] Keep mouse support as convenience, not as the primary interaction model.
+- [x] Done slice: shared focus controller plus guild/dungeon/combat/town/shop/config/repeat E2E proof.
+
+Audit:
+[docs/audits/controller-first-normal-play-audit.md](docs/audits/controller-first-normal-play-audit.md)
 
 ### [x] Standing Guardrails
 
@@ -130,8 +142,9 @@ Goal: remove web-form/mouse-first assumptions from normal play surfaces.
 
 ## Current Milestone Recommendation
 
-Lane O is next. Make controller-first operation the default proof requirement
-before further guild, town, combat, or dungeon UI work is called complete.
+Lane O is complete for the current slice. Keep controller-first proof as a
+standing gate before future UI completion. Lane S is archived; keep its
+combat/minimap regressions in gate checks.
 
 Use [Black Stela Gate Review Skill](docs/skills/black-stela-gate-review-skill.md)
 before any player-facing implementation or completion claim.

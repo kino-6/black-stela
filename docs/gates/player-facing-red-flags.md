@@ -37,7 +37,24 @@ new tests pass.
   labels, combat labels, or untranslated logs that are not intentional genre
   abbreviations.
 - Character creation is only a name/notes form when the task promises guild
-  registration, roles, identity, or party coverage.
+  registration, roles, identity, or party-building texture.
+- A six-person party has too few classes to make composition interesting, or
+  class cards expose design tags instead of telling what the job does.
+- Guild registration shows an always-on roster scoring/advice panel that
+  replaces player experimentation with obvious optimization prompts.
+- Quick recruit, starter templates, or other convenience shortcuts appear on
+  the first guild briefing screen before the player has engaged with
+  registration.
+- Character creation asks the player to choose an unexplained color swatch, or
+  shows only a blank initial when an origin/default portrait should carry the
+  roster fantasy.
+- Background/origin and temperament choices are too few, cannot be rerolled, or
+  read like form metadata rather than adventurer texture.
+- Name, title, or record fields appear as plain administrative inputs without
+  rerollable candidate text, or use blunt labels such as "memo" in normal play.
+- A six-person roster is shown as an undifferentiated 2x3 grid instead of
+  explicit front/back rows, or repeats default class text such as
+  `Seeker / Seeker`.
 - Scenario or UI prose sounds like translated English, explains theme directly,
   or uses abstract fantasy filler instead of concrete scene detail.
 - The task does not state which past trouble was considered.

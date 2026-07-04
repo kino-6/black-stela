@@ -19,7 +19,7 @@ grid:
       edges:
         west:
           kind: stairs
-          targetRoomId: room.b1f.003
+          targetRoomId: room.b1f.006
           targetFloorId: dungeon.b1f
         east:
           kind: open
@@ -68,7 +68,7 @@ rooms:
         name: 分かれ塵の踊り場
         description: 沈んだ導石を挟み、二本の塵の道が分かれている。
     exits:
-      west: room.b1f.003
+      west: room.b1f.006
       east: room.b2f.002
       south: room.b2f.003
     encounterTable: encounters.b2f.branches

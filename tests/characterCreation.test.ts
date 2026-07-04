@@ -1,8 +1,38 @@
 import { describe, expect, it } from "vitest";
-import { createGuildCharacter, createQuickRecruit, createStarterParty, PARTY_SIZE_LIMIT } from "../src/domain/characterCreation";
+import {
+  backgroundCatalog,
+  classCatalog,
+  createGuildCharacter,
+  createQuickRecruit,
+  createStarterParty,
+  PARTY_SIZE_LIMIT,
+  traitCatalog
+} from "../src/domain/characterCreation";
+import { createIdentitySuggestion } from "../src/domain/identitySuggestion";
 import { addCharacter, createInitialGameState } from "../src/domain/gameState";
 
 describe("character creation", () => {
+  it("offers enough class variety for a six-member DRPG party", () => {
+    expect(classCatalog).toHaveLength(12);
+    expect(new Set(classCatalog.map((classDef) => classDef.id)).size).toBe(12);
+    expect(classCatalog.every((classDef) => classDef.description.en.length > 20)).toBe(true);
+    expect(classCatalog.every((classDef) => classDef.description.ja.length > 10)).toBe(true);
+    expect(classCatalog.every((classDef) => Object.values(classDef.aptitude).some((value) => (value ?? 0) > 0))).toBe(true);
+    expect(classCatalog.filter((classDef) => classDef.rowPreference === "front").length).toBeGreaterThanOrEqual(6);
+    expect(classCatalog.filter((classDef) => classDef.rowPreference === "back").length).toBeGreaterThanOrEqual(5);
+  });
+
+  it("offers enough origins and temperaments for roster authorship", () => {
+    expect(backgroundCatalog).toHaveLength(12);
+    expect(traitCatalog).toHaveLength(12);
+    expect(new Set(backgroundCatalog.map((background) => background.id)).size).toBe(12);
+    expect(new Set(traitCatalog.map((trait) => trait.id)).size).toBe(12);
+    expect(backgroundCatalog.every((background) => background.notes.en.length > 18)).toBe(true);
+    expect(backgroundCatalog.every((background) => background.notes.ja.length > 8)).toBe(true);
+    expect(backgroundCatalog.every((background) => background.accentColor.startsWith("#"))).toBe(true);
+    expect(backgroundCatalog.every((background) => background.portraitKey.length > 0)).toBe(true);
+  });
+
   it("creates a guild recruit with class, aptitude, equipment, and creation history", () => {
     const character = createGuildCharacter({
       name: "Mira",
@@ -36,6 +66,18 @@ describe("character creation", () => {
     expect(character.damageMax).toBeGreaterThanOrEqual(character.damageMin);
   });
 
+  it("uses the origin as the default visual accent when no manual color is provided", () => {
+    const character = createGuildCharacter({
+      name: "Orn",
+      classId: "mender",
+      backgroundId: "grave_tender",
+      traitIds: ["soft_spoken"]
+    });
+
+    expect(character.accentColor).toBe(backgroundCatalog.find((background) => background.id === "grave_tender")?.accentColor);
+    expect(character.notes).toBe("Does not flinch at the still or the cold.");
+  });
+
   it("generates deterministic quick recruits from the same seed", () => {
     const left = createQuickRecruit("guild-seed", 1);
     const right = createQuickRecruit("guild-seed", 1);
@@ -59,6 +101,38 @@ describe("character creation", () => {
 
     expect(boosted.aptitude.agility).toBe(base.aptitude.agility + 3);
     expect(boosted.speed).toBe(base.speed + 3);
+  });
+
+  it("starts from class aptitude instead of zeroed ability rows", () => {
+    const vanguard = createGuildCharacter({ name: "Rook", classId: "vanguard", backgroundId: "watch", traitIds: ["steady"] });
+    const arcanist = createGuildCharacter({ name: "Mira", classId: "arcanist", backgroundId: "scriptorium", traitIds: ["curious"] });
+
+    expect(vanguard.aptitude.might).toBeGreaterThan(2);
+    expect(vanguard.aptitude.spirit).toBeGreaterThan(2);
+    expect(arcanist.aptitude.wit).toBeGreaterThan(arcanist.aptitude.might);
+  });
+
+  it("rolls name, epithet, and record suggestions from the chosen recruit texture", () => {
+    const suggestion = createIdentitySuggestion({
+      seed: 4,
+      locale: "ja",
+      classId: "seeker",
+      backgroundId: "cartographer",
+      traitId: "curious"
+    });
+    const nextSuggestion = createIdentitySuggestion({
+      seed: 5,
+      locale: "ja",
+      classId: "seeker",
+      backgroundId: "cartographer",
+      traitId: "curious"
+    });
+
+    expect(suggestion.name.length).toBeGreaterThan(0);
+    expect(suggestion.title.length).toBeGreaterThan(0);
+    expect(suggestion.notes).toContain("地図師");
+    expect(suggestion.notes).toContain("探索者");
+    expect(nextSuggestion.name).not.toBe(suggestion.name);
   });
 
   it("starter templates create a six-member front/back formation", () => {
