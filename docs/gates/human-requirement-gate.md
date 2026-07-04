@@ -71,6 +71,9 @@ Use these as review prompts when the change touches mood or play feel:
 | Codex says done before checking visible UI quality | DRPG UX Gate |
 | Shop, inventory, or equipment screens feel like admin tables | Town service presentation gate |
 | Rewards exist only in hidden state or logs | Visible reward/economy gate |
+| Combat moves only the clicked/selected character instead of advancing party order | DRPG UX Gate |
+| Japanese mode mixes English enemy names, units, or labels without genre reason | Localization/prose gate |
+| "Wiz-like" is used as flavor while ignoring party-order command structure | DRPG UX Gate |
 
 ## Implementation Handoff Template
 
@@ -113,6 +116,10 @@ Use this block when adding or taking a player-facing task:
   evidence.
 - [ ] Shop/equipment UI is reviewed as a town service, not a generic data table.
 - [ ] Rewards are visible in browser screenshots or Playwright assertions.
+- [ ] Combat command entry proves party-order flow and blocks arbitrary selected
+  actor execution.
+- [ ] Japanese normal-play checks reject stray English enemy names, units, and
+  combat/shop labels unless intentionally genre-standard.
 
 ## Screenshot Review Protocol
 

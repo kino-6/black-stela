@@ -13,7 +13,8 @@ import {
   ShieldCheck,
   Square,
   Sword,
-  Upload
+  Upload,
+  Wand2
 } from "lucide-react";
 import { DungeonView } from "./components/DungeonView";
 import { MapPanel } from "./components/MapPanel";
@@ -37,8 +38,17 @@ import {
 import { getLocalizedRoomText, getRoom } from "./domain/scenario";
 import { executeCommand } from "./domain/rulesEngine";
 import { projectEventToLog } from "./domain/replayLog";
-import { calculateRecoveryCost, getEffectiveCharacterStats } from "./domain/economy";
-import type { CharacterAptitudes, Command, GameState } from "./domain/types";
+import { calculateRecoveryCost, getEffectiveCharacterStats, isEquipmentUsableBy } from "./domain/economy";
+import type {
+  CharacterAptitudes,
+  CombatActionDeclaration,
+  CombatActionKind,
+  Command,
+  EquipmentSlot,
+  GameState,
+  InventoryItem,
+  ScenarioEquipment
+} from "./domain/types";
 import {
   createDebugStateFromProgress,
   debugProgressValues,
@@ -63,10 +73,14 @@ interface CharacterDraft {
   backgroundId: "watch" | "ruinborn" | "apothecary" | "debtor" | "cartographer";
   traitId: "steady" | "scarred" | "lucky" | "grim" | "curious";
   aptitudeFocus: "balanced" | "might" | "agility" | "spirit" | "wit" | "luck";
+  bonusPool: number;
+  bonusAptitude: CharacterAptitudes;
+  bonusSeed: number;
   accentColor: string;
   portraitRef?: string;
 }
 
+type GuildCreationStep = "briefing" | "class" | "appearance" | "bonus" | "name";
 type TownMode = "guild" | "shop" | "recovery" | "records" | "entry";
 type AppScreen = "title" | "config" | "game";
 type TempoMode = "idle" | "dungeon" | "combat";
@@ -80,8 +94,15 @@ const defaultDraft: CharacterDraft = {
   backgroundId: "watch",
   traitId: "steady",
   aptitudeFocus: "balanced",
+  bonusPool: 5,
+  bonusAptitude: { might: 0, agility: 0, spirit: 0, wit: 0, luck: 0 },
+  bonusSeed: 1,
   accentColor: "#c9a765"
 };
+
+const aptitudeKeys: (keyof CharacterAptitudes)[] = ["might", "agility", "spirit", "wit", "luck"];
+const guildStepOrder: GuildCreationStep[] = ["briefing", "class", "appearance", "bonus", "name"];
+const equipmentSlotOrder: EquipmentSlot[] = ["weapon", "offhand", "body", "head", "hands", "accessory"];
 
 export function App() {
   const [debugMode] = useState(() => isDebugModeEnabled());
@@ -94,7 +115,7 @@ export function App() {
   const [screen, setScreen] = useState<AppScreen>(() =>
     debugMode || scenarioValidationErrors.length > 0 ? "game" : "title"
   );
-  const [draft, setDraft] = useState<CharacterDraft>(defaultDraft);
+  const [draft, setDraft] = useState<CharacterDraft>(() => createFreshDraft({ bonusSeed: 1 }));
   const [townMode, setTownMode] = useState<TownMode>("guild");
   const [headlessStatus, setHeadlessStatus] = useState("");
   const saveRepository = useMemo(() => createBrowserSaveRepository(), []);
@@ -105,7 +126,8 @@ export function App() {
   const [saveStatus, setSaveStatus] = useState("");
   const [tempoStatus, setTempoStatus] = useState("");
   const [tempoMode, setTempoMode] = useState<TempoMode>("idle");
-  const [selectedActorId, setSelectedActorId] = useState<string | null>(null);
+  const [guildCreationStep, setGuildCreationStep] = useState<GuildCreationStep>("briefing");
+  const [combatOrders, setCombatOrders] = useState<CombatActionDeclaration[]>([]);
   const [selectedTargetId, setSelectedTargetId] = useState<string | null>(null);
   const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null);
   const [scenarioImportStatus, setScenarioImportStatus] = useState("");
@@ -137,10 +159,23 @@ export function App() {
     return entry.event ? projectEventToLog(entry.event, locale, defaultWorld)?.text ?? entry.text : entry.text;
   }, [locale, state.log, state.phase]);
 
-  const livingEnemyGroups = state.combat?.enemyGroups.filter((group) => group.count > 0) ?? [];
-  const activeParty = state.party.filter((member) => member.hp > 0 && !member.injury);
-  const selectedActor = activeParty.find((member) => member.id === selectedActorId) ?? activeParty[0] ?? null;
+  const livingEnemyGroups = useMemo(
+    () => state.combat?.enemyGroups.filter((group) => group.count > 0) ?? [],
+    [state.combat?.enemyGroups]
+  );
+  const activeParty = useMemo(
+    () => state.party.filter((member) => member.hp > 0 && !member.injury),
+    [state.party]
+  );
   const selectedTarget = livingEnemyGroups.find((group) => group.id === selectedTargetId) ?? livingEnemyGroups[0] ?? null;
+  const orderedActorIds = useMemo(() => new Set(combatOrders.map((order) => order.actorId)), [combatOrders]);
+  const selectedActor = activeParty.find((member) => !orderedActorIds.has(member.id)) ?? null;
+  const frontRowStanding = activeParty.some((member) => member.row === "front");
+  const canSelectedActorAttack = Boolean(
+    selectedActor && selectedTarget && !(selectedActor.row === "back" && frontRowStanding)
+  );
+  const combatOrdersReady = state.phase === "combat" && activeParty.length > 0 && activeParty.every((member) => orderedActorIds.has(member.id));
+  const combatHealingItem = state.inventory.find((item) => item.kind === "healing" && item.quantity > 0);
   const showGuildPanel = false;
   const isTempoRunning = tempoMode !== "idle";
   const partyCoverage = useMemo(() => analyzePartyCoverage(state.party), [state.party]);
@@ -150,11 +185,15 @@ export function App() {
     ...draft,
     name: draft.name || t("party.namePlaceholder"),
     traitIds: [draft.traitId],
+    bonusAptitude: draft.bonusAptitude,
+    seed: `bonus:${draft.bonusSeed}`,
     method: "detailed",
     registeredAtTurn: state.turn
   }), [draft, state.turn, t]);
   const selectedProfile = state.party.find((member) => member.id === selectedProfileId) ?? state.party[0] ?? draftPreview;
   const selectedProfileStats = getEffectiveCharacterStats(selectedProfile, defaultWorld);
+  const allocatedBonusPoints = useMemo(() => getAllocatedBonusPoints(draft.bonusAptitude), [draft.bonusAptitude]);
+  const remainingBonusPoints = draft.bonusPool - allocatedBonusPoints;
 
   useEffect(() => {
     stateRef.current = state;
@@ -162,19 +201,19 @@ export function App() {
 
   useEffect(() => {
     if (state.phase !== "combat") {
-      setSelectedActorId(null);
       setSelectedTargetId(null);
+      setCombatOrders([]);
       return;
-    }
-
-    if (!selectedActor && activeParty[0]) {
-      setSelectedActorId(activeParty[0].id);
     }
 
     if (!selectedTarget && livingEnemyGroups[0]) {
       setSelectedTargetId(livingEnemyGroups[0].id);
     }
-  }, [activeParty, livingEnemyGroups, selectedActor, selectedTarget, state.phase]);
+  }, [livingEnemyGroups, selectedTarget, state.phase]);
+
+  useEffect(() => {
+    setCombatOrders([]);
+  }, [state.phase, state.combat?.round, state.combat?.roomId]);
 
   function run(command: Command, options: { remember?: boolean; confirm?: boolean } = {}) {
     if (isTempoRunning) {
@@ -185,38 +224,51 @@ export function App() {
     setTempoStatus("");
   }
 
-  function resolveSelectedRound(action: "attack" | "defend" = "attack") {
+  function queueSelectedCombatAction(action: CombatActionKind) {
     if (!selectedActor) {
       return;
     }
 
-    run(
-      {
-        type: "declare_round",
-        actions: [
-          {
-            actorId: selectedActor.id,
-            action,
-            targetGroupId: action === "attack" ? selectedTarget?.id : undefined
-          }
-        ]
-      },
-      { remember: false }
-    );
-  }
-
-  function castSelectedSleep() {
-    if (!selectedActor || !selectedTarget) {
+    if (action === "attack" && (!selectedTarget || !canSelectedActorAttack)) {
       return;
     }
 
-    run(
-      {
-        type: "declare_round",
-        actions: [{ actorId: selectedActor.id, action: "cast", spellId: "sleep", targetGroupId: selectedTarget.id }]
-      },
-      { remember: false }
-    );
+    if (action === "cast" && !selectedTarget) {
+      return;
+    }
+
+    if (action === "use_item" && !combatHealingItem) {
+      return;
+    }
+
+    const order: CombatActionDeclaration =
+      action === "attack"
+        ? { actorId: selectedActor.id, action, targetGroupId: selectedTarget!.id }
+        : action === "cast"
+          ? { actorId: selectedActor.id, action, spellId: "sleep", targetGroupId: selectedTarget!.id }
+          : action === "use_item"
+            ? { actorId: selectedActor.id, action, itemId: combatHealingItem!.id, targetCharacterId: selectedActor.id }
+            : { actorId: selectedActor.id, action };
+    const nextOrders = [...combatOrders.filter((queued) => queued.actorId !== selectedActor.id), order];
+    setCombatOrders(nextOrders);
+  }
+
+  function executeCombatOrders() {
+    if (!combatOrdersReady) {
+      return;
+    }
+
+    run({ type: "declare_round", actions: combatOrders }, { remember: false });
+    setCombatOrders([]);
+  }
+
+  function takeBackCombatOrder() {
+    const nextOrders = combatOrders.slice(0, -1);
+    setCombatOrders(nextOrders);
+  }
+
+  function clearCombatOrders() {
+    setCombatOrders([]);
   }
 
   function toggleTempoMode(preferredMode: TempoMode = getTempoModeForPhase(state.phase)) {
@@ -255,12 +307,15 @@ export function App() {
     const character = createGuildCharacter({
       ...draft,
       traitIds: [draft.traitId],
+      bonusAptitude: draft.bonusAptitude,
+      seed: `bonus:${draft.bonusSeed}`,
       method: "detailed",
       registeredAtTurn: state.turn
     });
     setState((current) => addCharacter(current, character));
     setSelectedProfileId(character.id);
-    setDraft({ ...defaultDraft, classId: draft.classId, backgroundId: draft.backgroundId, traitId: draft.traitId });
+    setDraft(createFreshDraft({ classId: draft.classId, backgroundId: draft.backgroundId, traitId: draft.traitId }));
+    setGuildCreationStep("class");
   }
 
   function addQuickRecruit() {
@@ -280,6 +335,39 @@ export function App() {
     setSelectedProfileId(party[0]?.id ?? null);
   }
 
+  function rerollBonusPool() {
+    setDraft((current) => {
+      const nextSeed = current.bonusSeed + 1;
+      return {
+        ...current,
+        bonusSeed: nextSeed,
+        bonusPool: rollBonusPool(nextSeed),
+        bonusAptitude: createEmptyBonusAptitude()
+      };
+    });
+  }
+
+  function adjustBonusAptitude(key: keyof CharacterAptitudes, delta: 1 | -1) {
+    setDraft((current) => {
+      const currentValue = current.bonusAptitude[key];
+      const allocated = getAllocatedBonusPoints(current.bonusAptitude);
+      if (delta > 0 && allocated >= current.bonusPool) {
+        return current;
+      }
+      if (delta < 0 && currentValue <= 0) {
+        return current;
+      }
+
+      return {
+        ...current,
+        bonusAptitude: {
+          ...current.bonusAptitude,
+          [key]: currentValue + delta
+        }
+      };
+    });
+  }
+
   async function importPortrait(file: File | undefined) {
     if (!file) {
       return;
@@ -297,7 +385,8 @@ export function App() {
 
   function startNewGame() {
     setState(createInitialGameState());
-    setDraft(defaultDraft);
+    setDraft(createFreshDraft());
+    setGuildCreationStep("briefing");
     setTownMode("guild");
     setSelectedProfileId(null);
     setTempoStatus("");
@@ -423,13 +512,20 @@ export function App() {
         run({ type: "search" });
       } else if (state.phase === "combat" && (key === "f" || key === "enter")) {
         event.preventDefault();
-        resolveSelectedRound("attack");
+        if (combatOrdersReady && key === "enter") {
+          executeCombatOrders();
+        } else {
+          queueSelectedCombatAction("attack");
+        }
       } else if (state.phase === "combat" && key === "g") {
         event.preventDefault();
-        resolveSelectedRound("defend");
-      } else if (state.phase === "combat" && (key === "arrowdown" || key === "arrowup")) {
+        queueSelectedCombatAction("defend");
+      } else if (state.phase === "combat" && key === "x") {
         event.preventDefault();
-        cycleSelectedActor(key === "arrowdown" ? 1 : -1);
+        executeCombatOrders();
+      } else if (state.phase === "combat" && key === "backspace") {
+        event.preventDefault();
+        takeBackCombatOrder();
       } else if (state.phase === "combat" && (key === "arrowright" || key === "arrowleft")) {
         event.preventDefault();
         cycleSelectedTarget(key === "arrowright" ? 1 : -1);
@@ -438,17 +534,7 @@ export function App() {
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [isTempoRunning, selectedActor, selectedTarget, state, t, tempoMode]);
-
-  function cycleSelectedActor(step: number) {
-    if (activeParty.length === 0) {
-      return;
-    }
-
-    const index = Math.max(0, activeParty.findIndex((member) => member.id === selectedActor?.id));
-    const next = activeParty[(index + step + activeParty.length) % activeParty.length];
-    setSelectedActorId(next.id);
-  }
+  }, [combatOrdersReady, isTempoRunning, selectedActor, selectedTarget, state, t, tempoMode]);
 
   function cycleSelectedTarget(step: number) {
     if (livingEnemyGroups.length === 0) {
@@ -785,155 +871,242 @@ export function App() {
                     <span>{state.party.length}/{PARTY_SIZE_LIMIT}</span>
                   </div>
 
-                  <div className="guild-studio-grid">
-                    <form
-                      className="creator studio-creator"
-                      onSubmit={(event) => {
-                        event.preventDefault();
-                        addDraftCharacter();
-                      }}
-                    >
-                      <div className="creator-topline">
-                        <div className="portrait portrait-large" style={{ borderColor: draft.accentColor }}>
-                          {draft.portraitRef ? (
-                            <img data-testid="portrait-preview" src={draft.portraitRef} alt={t("party.portraitPreview")} />
-                          ) : (
-                            <span>{(draft.name || t("party.namePlaceholder")).slice(0, 1)}</span>
-                          )}
-                        </div>
-                        <label className="portrait-import">
-                          {t("party.portrait")}
-                          <input
-                            data-testid="portrait-input"
-                            type="file"
-                            accept="image/*"
-                            onChange={(event) => importPortrait(event.target.files?.[0])}
-                          />
-                        </label>
-                      </div>
-
-                      <div className="creator-grid">
-                        <label>
-                          {t("party.name")}
-                          <input
-                            value={draft.name}
-                            onChange={(event) => setDraft((current) => ({ ...current, name: event.target.value }))}
-                            placeholder={t("party.namePlaceholder")}
-                            required
-                          />
-                        </label>
-                        <label>
-                          {t("party.title")}
-                          <input
-                            value={draft.title}
-                            onChange={(event) => setDraft((current) => ({ ...current, title: event.target.value }))}
-                            placeholder={t("party.titlePlaceholder")}
-                          />
-                        </label>
-                        <label>
-                          {t("party.class")}
-                          <select
-                            aria-label={t("party.class")}
-                            value={draft.classId}
-                            onChange={(event) => setDraft((current) => ({ ...current, classId: event.target.value as CharacterDraft["classId"] }))}
-                          >
-                            {classCatalog.map((classDef) => (
-                              <option key={classDef.id} value={classDef.id}>{classDef.label[locale]}</option>
-                            ))}
-                          </select>
-                        </label>
-                        <label>
-                          {t("party.background")}
-                          <select
-                            aria-label={t("party.background")}
-                            value={draft.backgroundId}
-                            onChange={(event) => setDraft((current) => ({ ...current, backgroundId: event.target.value as CharacterDraft["backgroundId"] }))}
-                          >
-                            {backgroundCatalog.map((background) => (
-                              <option key={background.id} value={background.id}>{background.label[locale]}</option>
-                            ))}
-                          </select>
-                        </label>
-                        <label>
-                          {t("party.trait")}
-                          <select
-                            aria-label={t("party.trait")}
-                            value={draft.traitId}
-                            onChange={(event) => setDraft((current) => ({ ...current, traitId: event.target.value as CharacterDraft["traitId"] }))}
-                          >
-                            {traitCatalog.map((trait) => (
-                              <option key={trait.id} value={trait.id}>{trait.label[locale]}</option>
-                            ))}
-                          </select>
-                        </label>
-                        <label>
-                          {t("party.aptitude")}
-                          <select
-                            aria-label={t("party.aptitude")}
-                            value={draft.aptitudeFocus}
-                            onChange={(event) => setDraft((current) => ({ ...current, aptitudeFocus: event.target.value as CharacterDraft["aptitudeFocus"] }))}
-                          >
-                            {(["balanced", "might", "agility", "spirit", "wit", "luck"] as const).map((focus) => (
-                              <option key={focus} value={focus}>{t(`aptitude.${focus}` as Parameters<Translator>[0])}</option>
-                            ))}
-                          </select>
-                        </label>
-                      </div>
-
-                      <label>
-                        {t("party.notes")}
-                        <textarea
-                          value={draft.notes}
-                          onChange={(event) => setDraft((current) => ({ ...current, notes: event.target.value }))}
-                          placeholder={t("party.notesPlaceholder")}
-                        />
-                      </label>
-
-                      <div className="accent-row" aria-label={t("party.accent")}>
-                        {["#c9a765", "#8ea87a", "#b66f4d", "#7a9bbd", "#a784b8"].map((color) => (
-                          <button
-                            type="button"
-                            className={draft.accentColor === color ? "selected" : ""}
-                            key={color}
-                            aria-label={color}
-                            onClick={() => setDraft((current) => ({ ...current, accentColor: color }))}
-                            style={{ backgroundColor: color }}
-                          />
-                        ))}
-                      </div>
-
-                      <section className="stat-preview" data-testid="stat-preview" aria-label={t("party.statPreview")}>
-                        <h4>{t("party.statPreview")}</h4>
-                        <dl>
-                          <div><dt>HP</dt><dd>{draftPreview.maxHp}</dd></div>
-                          <div><dt>{t("party.damage")}</dt><dd>{draftPreview.damageMin}-{draftPreview.damageMax}</dd></div>
-                          <div><dt>{t("party.accuracy")}</dt><dd>{draftPreview.accuracy}</dd></div>
-                          <div><dt>{t("party.armor")}</dt><dd>{draftPreview.armor}</dd></div>
-                          <div><dt>{t("party.speed")}</dt><dd>{draftPreview.speed}</dd></div>
-                          <div><dt>{t("party.row")}</dt><dd>{formatCombatRow(draftPreview.row, t)}</dd></div>
-                        </dl>
-                        <p>{formatAptitudes(draftPreview.aptitude, t)}</p>
-                        <p>{formatRoleTags(draftPreview.roleTags, t)}</p>
+                  <div className={`guild-studio-grid${state.party.length >= PARTY_SIZE_LIMIT ? " full-party" : ""}`}>
+                    {state.party.length >= PARTY_SIZE_LIMIT ? (
+                      <section className="guild-ready-panel" aria-label={t("party.partyReadyHeading")}>
+                        <h4>{t("party.partyReadyHeading")}</h4>
+                        <p>{t("party.partyReadyCopy")}</p>
                       </section>
+                    ) : (
+                      <form
+                        className="creator studio-creator guild-flow"
+                        onSubmit={(event) => {
+                          event.preventDefault();
+                          addDraftCharacter();
+                        }}
+                      >
+                      <ol className="guild-stepper" aria-label={t("party.creationSteps")}>
+                        {guildStepOrder.map((step) => (
+                          <li className={guildCreationStep === step ? "active" : ""} key={step}>
+                            <button type="button" onClick={() => setGuildCreationStep(step)}>
+                              {t(`party.step.${step}` as Parameters<Translator>[0])}
+                            </button>
+                          </li>
+                        ))}
+                      </ol>
 
-                      <button type="submit" className="primary-action" disabled={state.party.length >= PARTY_SIZE_LIMIT}>
-                        {t("party.add")}
-                      </button>
-                    </form>
+                      {guildCreationStep === "briefing" && (
+                        <section className="guild-step-panel" data-testid="guild-step-briefing">
+                          <h4>{t("party.guildMaster")}</h4>
+                          <p>{t("party.guildBriefing")}</p>
+                          <div className="flow-actions">
+                            <button type="button" className="primary-action" onClick={() => setGuildCreationStep("class")}>
+                              {t("party.startRegistration")}
+                            </button>
+                            <button type="button" onClick={() => setGuildCreationStep("class")}>
+                              {t("party.skipBriefing")}
+                            </button>
+                          </div>
+                        </section>
+                      )}
+
+                      {guildCreationStep === "class" && (
+                        <section className="guild-step-panel" data-testid="guild-step-class">
+                          <h4>{t("party.chooseClass")}</h4>
+                          <div className="class-card-grid">
+                            {classCatalog.map((classDef) => (
+                              <button
+                                type="button"
+                                className={draft.classId === classDef.id ? "class-card selected" : "class-card"}
+                                key={classDef.id}
+                                onClick={() => setDraft((current) => ({ ...current, classId: classDef.id }))}
+                              >
+                                <strong>{classDef.label[locale]}</strong>
+                                <span>{formatCombatRow(classDef.rowPreference, t)}</span>
+                                <small>{formatRoleTags(classDef.roleTags, t)}</small>
+                              </button>
+                            ))}
+                          </div>
+                          <div className="flow-actions">
+                            <button type="button" onClick={() => setGuildCreationStep("briefing")}>{t("party.back")}</button>
+                            <button type="button" className="primary-action" onClick={() => setGuildCreationStep("appearance")}>{t("party.next")}</button>
+                          </div>
+                        </section>
+                      )}
+
+                      {guildCreationStep === "appearance" && (
+                        <section className="guild-step-panel" data-testid="guild-step-appearance">
+                          <h4>{t("party.chooseAppearance")}</h4>
+                          <div className="creator-topline">
+                            <div className="portrait portrait-large" style={{ borderColor: draft.accentColor }}>
+                              {draft.portraitRef ? (
+                                <img data-testid="portrait-preview" src={draft.portraitRef} alt={t("party.portraitPreview")} />
+                              ) : (
+                                <span>{(draft.name || findClass(draft.classId).label[locale]).slice(0, 1)}</span>
+                              )}
+                            </div>
+                            <label className="portrait-import">
+                              {t("party.portrait")}
+                              <input
+                                data-testid="portrait-input"
+                                type="file"
+                                accept="image/*"
+                                onChange={(event) => importPortrait(event.target.files?.[0])}
+                              />
+                            </label>
+                          </div>
+                          <div className="creator-grid compact">
+                            <label>
+                              {t("party.background")}
+                              <select
+                                aria-label={t("party.background")}
+                                value={draft.backgroundId}
+                                onChange={(event) => setDraft((current) => ({ ...current, backgroundId: event.target.value as CharacterDraft["backgroundId"] }))}
+                              >
+                                {backgroundCatalog.map((background) => (
+                                  <option key={background.id} value={background.id}>{background.label[locale]}</option>
+                                ))}
+                              </select>
+                            </label>
+                            <label>
+                              {t("party.trait")}
+                              <select
+                                aria-label={t("party.trait")}
+                                value={draft.traitId}
+                                onChange={(event) => setDraft((current) => ({ ...current, traitId: event.target.value as CharacterDraft["traitId"] }))}
+                              >
+                                {traitCatalog.map((trait) => (
+                                  <option key={trait.id} value={trait.id}>{trait.label[locale]}</option>
+                                ))}
+                              </select>
+                            </label>
+                          </div>
+                          <div className="accent-row" aria-label={t("party.accent")}>
+                            {["#c9a765", "#8ea87a", "#b66f4d", "#7a9bbd", "#a784b8"].map((color) => (
+                              <button
+                                type="button"
+                                className={draft.accentColor === color ? "selected" : ""}
+                                key={color}
+                                aria-label={color}
+                                onClick={() => setDraft((current) => ({ ...current, accentColor: color }))}
+                                style={{ backgroundColor: color }}
+                              />
+                            ))}
+                          </div>
+                          <div className="flow-actions">
+                            <button type="button" onClick={() => setGuildCreationStep("class")}>{t("party.back")}</button>
+                            <button type="button" className="primary-action" onClick={() => setGuildCreationStep("bonus")}>{t("party.next")}</button>
+                          </div>
+                        </section>
+                      )}
+
+                      {guildCreationStep === "bonus" && (
+                        <section className="guild-step-panel" data-testid="guild-step-bonus">
+                          <div className="bonus-heading">
+                            <div>
+                              <h4>{t("party.allocateBonus")}</h4>
+                              <p>{t("party.bonusRemaining", { remaining: remainingBonusPoints, pool: draft.bonusPool })}</p>
+                            </div>
+                            <button type="button" onClick={rerollBonusPool}>
+                              <Wand2 size={18} />
+                              {t("party.rerollBonus")}
+                            </button>
+                          </div>
+                          <div className="bonus-grid" aria-label={t("party.allocateBonus")}>
+                            {aptitudeKeys.map((key) => (
+                              <div className="bonus-row" key={key}>
+                                <span>{t(`aptitude.${key}` as Parameters<Translator>[0])}</span>
+                                <button
+                                  type="button"
+                                  aria-label={`${t(`aptitude.${key}` as Parameters<Translator>[0])} -`}
+                                  disabled={draft.bonusAptitude[key] <= 0}
+                                  onClick={() => adjustBonusAptitude(key, -1)}
+                                >
+                                  -
+                                </button>
+                                <strong>{draft.bonusAptitude[key]}</strong>
+                                <button
+                                  type="button"
+                                  aria-label={`${t(`aptitude.${key}` as Parameters<Translator>[0])} +`}
+                                  disabled={remainingBonusPoints <= 0}
+                                  onClick={() => adjustBonusAptitude(key, 1)}
+                                >
+                                  +
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                          <p className="bonus-summary" data-testid="stat-preview" aria-label={t("party.statPreview")}>
+                            HP {draftPreview.maxHp} / {t("party.damage")} {draftPreview.damageMin}-{draftPreview.damageMax} / {t("party.accuracy")} {draftPreview.accuracy} / {t("party.speed")} {draftPreview.speed}
+                          </p>
+                          <div className="flow-actions">
+                            <button type="button" onClick={() => setGuildCreationStep("appearance")}>{t("party.back")}</button>
+                            <button type="button" className="primary-action" disabled={remainingBonusPoints > 0} onClick={() => setGuildCreationStep("name")}>{t("party.next")}</button>
+                          </div>
+                        </section>
+                      )}
+
+                      {guildCreationStep === "name" && (
+                        <section className="guild-step-panel" data-testid="guild-step-name">
+                          <h4>{t("party.nameAdventurer")}</h4>
+                          <div className="creator-grid compact">
+                            <label>
+                              {t("party.name")}
+                              <input
+                                value={draft.name}
+                                onChange={(event) => setDraft((current) => ({ ...current, name: event.target.value }))}
+                                placeholder={t("party.namePlaceholder")}
+                                required
+                              />
+                            </label>
+                            <label>
+                              {t("party.title")}
+                              <input
+                                value={draft.title}
+                                onChange={(event) => setDraft((current) => ({ ...current, title: event.target.value }))}
+                                placeholder={t("party.titlePlaceholder")}
+                              />
+                            </label>
+                          </div>
+                          <label>
+                            {t("party.notes")}
+                            <textarea
+                              value={draft.notes}
+                              onChange={(event) => setDraft((current) => ({ ...current, notes: event.target.value }))}
+                              placeholder={t("party.notesPlaceholder")}
+                            />
+                          </label>
+                          <section className="recruit-review" aria-label={t("party.review")}>
+                            <strong>{draft.name || t("party.namePlaceholder")}</strong>
+                            <span>{findClass(draft.classId).label[locale]} · {findBackground(draft.backgroundId).label[locale]} · {findTrait(draft.traitId).label[locale]}</span>
+                            <small>{formatAptitudes(draftPreview.aptitude, t)}</small>
+                          </section>
+                          <div className="flow-actions">
+                            <button type="button" onClick={() => setGuildCreationStep("bonus")}>{t("party.back")}</button>
+                            <button type="submit" className="primary-action" disabled={state.party.length >= PARTY_SIZE_LIMIT || remainingBonusPoints > 0}>
+                              {t("party.add")}
+                            </button>
+                          </div>
+                        </section>
+                      )}
+                      </form>
+                    )}
 
                     <section className="studio-roster" aria-label={t("party.heading")}>
-                      <div className="guild-actions" aria-label={t("party.quickActions")}>
-                        <button type="button" onClick={addQuickRecruit} disabled={state.party.length >= PARTY_SIZE_LIMIT}>
-                          {t("party.quickRecruit")}
-                        </button>
-                        <div className="template-row" aria-label={t("party.templates")}>
-                          {(Object.keys(starterTemplates) as StarterTemplateId[]).map((templateId) => (
-                            <button type="button" key={templateId} onClick={() => applyStarterTemplate(templateId)}>
-                              {starterTemplates[templateId].label[locale]}
-                            </button>
-                          ))}
+                      {state.party.length < PARTY_SIZE_LIMIT && (
+                        <div className="guild-actions" aria-label={t("party.quickActions")}>
+                          <button type="button" onClick={addQuickRecruit}>
+                            {t("party.quickRecruit")}
+                          </button>
+                          <div className="template-row" aria-label={t("party.templates")}>
+                            {(Object.keys(starterTemplates) as StarterTemplateId[]).map((templateId) => (
+                              <button type="button" key={templateId} onClick={() => applyStarterTemplate(templateId)}>
+                                {starterTemplates[templateId].label[locale]}
+                              </button>
+                            ))}
+                          </div>
                         </div>
-                      </div>
+                      )}
 
                       <section className="coverage-panel" aria-label={t("party.coverage")}>
                         <h3>{t("party.coverage")}</h3>
@@ -946,6 +1119,20 @@ export function App() {
                           ))}
                         </ul>
                       </section>
+
+                      {state.party.length > 0 && (
+                        <div className="guild-entry-strip">
+                          {latestLogText && <p className="event-window" aria-live="polite">{latestLogText}</p>}
+                          <button
+                            type="button"
+                            className="primary-action"
+                            onClick={() => run({ type: "enter_dungeon" })}
+                          >
+                            <DoorOpen size={18} />
+                            {t("play.enterDungeon")}
+                          </button>
+                        </div>
+                      )}
 
                       <div className="roster roster-compact" aria-live="polite">
                         {state.party.length === 0 ? (
@@ -968,7 +1155,7 @@ export function App() {
                               </div>
                               <div>
                                 <strong>{member.name}</strong>
-                                <span>{member.title} / {findClass(member.classId).label[locale]}</span>
+                                <span>{formatCharacterTitle(member.title, member.classId, locale)} / {findClass(member.classId).label[locale]}</span>
                                 <small>{t("party.hpAtk", { hp: member.hp, maxHp: member.maxHp, attack: member.attack })}</small>
                               </div>
                             </button>
@@ -976,6 +1163,7 @@ export function App() {
                         )}
                       </div>
 
+                      {state.party.length > 0 && (
                       <article className="character-profile" data-testid="character-profile" aria-label={t("party.profile")}>
                         <div className="profile-heading">
                           <div className="portrait portrait-large" style={{ borderColor: selectedProfile.accentColor }}>
@@ -987,11 +1175,11 @@ export function App() {
                           </div>
                           <div>
                             <h4>{selectedProfile.name}</h4>
-                            <p>{selectedProfile.title} / {findClass(selectedProfile.classId).label[locale]} / {findBackground(selectedProfile.backgroundId).label[locale]}</p>
+                            <p>{formatCharacterTitle(selectedProfile.title, selectedProfile.classId, locale)} / {findClass(selectedProfile.classId).label[locale]} / {findBackground(selectedProfile.backgroundId).label[locale]}</p>
                             <small>{selectedProfile.traitIds.map((traitId) => findTrait(traitId).label[locale]).join(" · ")}</small>
                           </div>
                         </div>
-                        <p className="profile-notes">{selectedProfile.notes || t("party.noNotes")}</p>
+                        <p className="profile-notes">{formatCharacterNotes(selectedProfile.notes, selectedProfile.backgroundId, locale) || t("party.noNotes")}</p>
                         <dl>
                           <div><dt>HP</dt><dd>{selectedProfile.hp}/{selectedProfile.maxHp}</dd></div>
                           <div><dt>{t("party.damage")}</dt><dd>{selectedProfileStats.damageMin}-{selectedProfileStats.damageMax}</dd></div>
@@ -1004,6 +1192,7 @@ export function App() {
                           <div><dt>{t("party.injuries")}</dt><dd>{selectedProfile.memory.injuries}</dd></div>
                         </dl>
                       </article>
+                      )}
                     </section>
                   </div>
                 </section>
@@ -1040,25 +1229,36 @@ export function App() {
                     <h3 id="shop-heading">{localizedShopName(townShop, locale)}</h3>
                     <strong>{t("town.gold", { gold: state.partyGold })}</strong>
                   </div>
+                  {latestLogText && <p className="event-window" aria-live="polite">{latestLogText}</p>}
                   <div className="shop-grid">
                     <section aria-label={t("town.shopStock")}>
                       <h4>{t("town.shopStock")}</h4>
                       <div className="shop-list">
-                        {townShop.stock?.map((stock) => (
-                          <article className="shop-row" key={stock.itemId}>
-                            <div>
-                              <strong>{localizedCatalogName(stock.itemId, locale)}</strong>
-                              <span>{t("town.price", { gold: stock.price })}</span>
-                            </div>
-                            <button
-                              type="button"
-                              disabled={state.partyGold < stock.price}
-                              onClick={() => run({ type: "buy_item", shopId: townShop.id, itemId: stock.itemId })}
-                            >
-                              {t("town.buy")}
-                            </button>
-                          </article>
-                        ))}
+                        {townShop.stock?.map((stock) => {
+                          const equipment = findEquipmentById(stock.itemId);
+                          return (
+                            <article className="shop-row" key={stock.itemId}>
+                              <div>
+                                <strong>{localizedCatalogName(stock.itemId, locale)}</strong>
+                                <span>
+                                  {equipment
+                                    ? `${formatEquipmentSlot(equipment.slot, t)} · ${formatEquipmentEffect(equipment, t)}`
+                                    : t("town.price", { gold: stock.price })}
+                                </span>
+                                {equipment && <small>{localizedCatalogDescription(stock.itemId, locale)}</small>}
+                                {equipment && <small>{t("town.price", { gold: stock.price })}</small>}
+                              </div>
+                              <button
+                                type="button"
+                                aria-label={`${t("town.buy")} ${localizedCatalogName(stock.itemId, locale)}`}
+                                disabled={state.partyGold < stock.price}
+                                onClick={() => run({ type: "buy_item", shopId: townShop.id, itemId: stock.itemId })}
+                              >
+                                {t("town.buy")}
+                              </button>
+                            </article>
+                          );
+                        })}
                       </div>
                     </section>
                     <section aria-label={t("town.inventory")}>
@@ -1071,7 +1271,13 @@ export function App() {
                             <article className="shop-row" key={item.id}>
                               <div>
                                 <strong>{localizedCatalogName(item.id, locale)}</strong>
-                                <span>{t("town.quantity", { count: item.quantity })}</span>
+                                <span>
+                                  {item.kind === "equipment" && item.slot
+                                    ? `${formatEquipmentSlot(item.slot, t)} · ${formatInventoryEffect(item, t)}`
+                                    : t("town.quantity", { count: item.quantity })}
+                                </span>
+                                {item.kind === "equipment" && <small>{localizedCatalogDescription(item.id, locale)}</small>}
+                                {item.kind === "equipment" && <small>{t("town.quantity", { count: item.quantity })}</small>}
                               </div>
                               <button
                                 type="button"
@@ -1094,23 +1300,38 @@ export function App() {
                           <strong>{member.name}</strong>
                           <span>
                             {t("town.equipmentSummary", {
-                              weapon: equippedName(member.equipment.weapon, locale),
-                              armor: equippedName(member.equipment.armor, locale),
                               attack: getEffectiveCharacterStats(member, defaultWorld).damageMax,
-                              armorValue: getEffectiveCharacterStats(member, defaultWorld).armor
+                              accuracy: getEffectiveCharacterStats(member, defaultWorld).accuracy,
+                              armorValue: getEffectiveCharacterStats(member, defaultWorld).armor,
+                              speed: getEffectiveCharacterStats(member, defaultWorld).speed
                             })}
                           </span>
+                          <dl className="equipment-slots">
+                            {equipmentSlotOrder.map((slot) => (
+                              <div key={`${member.id}:${slot}`}>
+                                <dt>{formatEquipmentSlot(slot, t)}</dt>
+                                <dd>{equippedName(member.equipment[slot], locale)}</dd>
+                              </div>
+                            ))}
+                          </dl>
                         </div>
                         <div className="equipment-actions">
-                          {state.inventory.filter((item) => item.kind === "equipment").map((item) => (
-                            <button
-                              type="button"
-                              key={`${member.id}:${item.id}`}
-                              onClick={() => run({ type: "equip_item", characterId: member.id, equipmentId: item.id })}
-                            >
-                              {localizedCatalogName(item.id, locale)}
-                            </button>
-                          ))}
+                          {state.inventory.filter((item) => item.kind === "equipment").map((item) => {
+                            const equipment = findEquipmentById(item.id);
+                            const usable = equipment ? isEquipmentUsableBy(equipment, member) : false;
+                            return (
+                              <button
+                                type="button"
+                                key={`${member.id}:${item.id}`}
+                                aria-label={`${t("town.equip")} ${localizedCatalogName(item.id, locale)} to ${member.name}`}
+                                disabled={!usable}
+                                onClick={() => run({ type: "equip_item", characterId: member.id, equipmentId: item.id })}
+                              >
+                                {localizedCatalogName(item.id, locale)}
+                                <small>{usable ? t("town.allowed") : t("town.ineligible")}</small>
+                              </button>
+                            );
+                          })}
                         </div>
                       </article>
                     ))}
@@ -1133,19 +1354,23 @@ export function App() {
                   )}
                 </section>
               )}
-              <p>
-                {t("play.townCopy")}
-              </p>
-              {latestLogText && <p className="event-window" aria-live="polite">{latestLogText}</p>}
-              <button
-                type="button"
-                className="primary-action"
-                disabled={state.party.length === 0}
-                onClick={() => run({ type: "enter_dungeon" })}
-              >
-                <DoorOpen size={18} />
-                {t("play.enterDungeon")}
-              </button>
+              {townMode !== "guild" && townMode !== "shop" && (
+                <>
+                  <p>
+                    {t("play.townCopy")}
+                  </p>
+                  {latestLogText && <p className="event-window" aria-live="polite">{latestLogText}</p>}
+                  <button
+                    type="button"
+                    className="primary-action"
+                    disabled={state.party.length === 0}
+                    onClick={() => run({ type: "enter_dungeon" })}
+                  >
+                    <DoorOpen size={18} />
+                    {t("play.enterDungeon")}
+                  </button>
+                </>
+              )}
             </div>
           ) : (
             <div className={`adventure-cockpit ${state.phase === "combat" ? "combat-cockpit" : "dungeon-cockpit"}`}>
@@ -1194,7 +1419,13 @@ export function App() {
                 <section className="battle-screen" aria-label={t("play.battleScreen")}>
                   <div className="battle-header">
                     <strong>{t("play.round", { round: state.combat?.round ?? 1 })}</strong>
-                    <span>{selectedActor && selectedTarget ? t("play.selectedOrder", { actor: selectedActor.name, target: selectedTarget.name }) : t("play.selectOrder")}</span>
+                    <span>
+                      {selectedActor && selectedTarget
+                        ? t("play.selectedOrder", { actor: selectedActor.name, target: localizedEnemyGroupName(selectedTarget, locale) })
+                        : combatOrdersReady
+                          ? t("play.orderReady")
+                          : t("play.selectOrder")}
+                    </span>
                   </div>
 
                   <div className="battle-grid">
@@ -1208,7 +1439,7 @@ export function App() {
                           data-testid="combat-enemy-group"
                           onClick={() => setSelectedTargetId(group.id)}
                         >
-                          <strong>{group.name}</strong>
+                          <strong>{localizedEnemyGroupName(group, locale)}</strong>
                           <span>{t("play.enemyGroupStatus", { count: group.count, hp: group.hpEach })}</span>
                         </button>
                       ))}
@@ -1221,17 +1452,18 @@ export function App() {
                           <span>{row === "front" ? t("play.frontRow") : t("play.backRow")}</span>
                           <div className="formation-slots">
                             {state.party.filter((member) => member.row === row).map((member) => (
-                              <button
-                                type="button"
+                              <div
+                                role="listitem"
                                 key={member.id}
-                                className={member.id === selectedActor?.id ? "battle-choice selected" : "battle-choice"}
+                                className={`battle-choice ${member.id === selectedActor?.id ? "selected" : ""} ${
+                                  orderedActorIds.has(member.id) ? "ordered" : ""
+                                }`}
                                 data-testid="combat-actor"
-                                onClick={() => setSelectedActorId(member.id)}
-                                disabled={Boolean(member.injury)}
+                                aria-current={member.id === selectedActor?.id ? "step" : undefined}
                               >
                                 <strong>{member.name}</strong>
                                 <span>{t("play.actorStatus", { hp: member.hp, maxHp: member.maxHp, row: formatCombatRow(member.row, t) })}</span>
-                              </button>
+                              </div>
                             ))}
                           </div>
                         </div>
@@ -1239,38 +1471,60 @@ export function App() {
                     </div>
                   </div>
 
+                  <div className="battle-order" aria-label={t("play.battleOrder")}>
+                    <div className="battle-order-header">
+                      <h3>{t("play.battleOrder")}</h3>
+                      <span>{t("play.orderProgress", { ready: combatOrders.length, total: activeParty.length })}</span>
+                    </div>
+                    {combatOrders.length > 0 ? (
+                      <ol data-testid="combat-order-list">
+                        {combatOrders.map((order, index) => (
+                          <li key={`${order.actorId}:${index}`}>{formatCombatOrder(order, state, locale, t)}</li>
+                        ))}
+                      </ol>
+                    ) : (
+                      <p data-testid="combat-order-list">{t("play.orderEmpty")}</p>
+                    )}
+                  </div>
+
                   <div className="command-bar command-dock" aria-label={t("play.combatCommands")} data-testid="combat-command-window">
                     <button type="button" aria-pressed={isTempoRunning} onClick={() => toggleTempoMode("combat")}>
                       {isTempoRunning ? <Square size={18} /> : <Repeat2 size={18} />}
                       {isTempoRunning ? t("tempo.stop") : t("tempo.repeat")}
                     </button>
-                    <button type="button" disabled={!selectedActor || !selectedTarget} onClick={() => resolveSelectedRound("attack")}>
+                    <button type="button" disabled={!canSelectedActorAttack} onClick={() => queueSelectedCombatAction("attack")}>
                       <Sword size={18} />
                       {t("play.attack")}
                     </button>
-                    <button type="button" disabled={!selectedActor} onClick={() => resolveSelectedRound("defend")}>
+                    <button type="button" disabled={!selectedActor} onClick={() => queueSelectedCombatAction("defend")}>
                       <ShieldCheck size={18} />
                       {t("play.defend")}
                     </button>
-                    <button type="button" disabled={!selectedActor || !selectedTarget} onClick={castSelectedSleep}>
+                    <button type="button" disabled={!selectedActor || !selectedTarget} onClick={() => queueSelectedCombatAction("cast")}>
                       <ShieldCheck size={18} />
                       {t("play.sleep")}
                     </button>
-                    {state.inventory.some((item) => item.kind === "healing" && item.quantity > 0) && selectedActor && (
+                    {combatHealingItem && selectedActor && (
                       <button
                         type="button"
-                        onClick={() =>
-                          run({
-                            type: "use_item",
-                            itemId: state.inventory.find((item) => item.kind === "healing" && item.quantity > 0)!.id,
-                            targetCharacterId: selectedActor.id
-                          })
-                        }
+                        onClick={() => queueSelectedCombatAction("use_item")}
                       >
                         <ShieldCheck size={18} />
                         {t("play.useItem")}
                       </button>
                     )}
+                    <button type="button" disabled={!combatOrdersReady} onClick={executeCombatOrders}>
+                      <Sword size={18} />
+                      {t("play.fight")}
+                    </button>
+                    <button type="button" disabled={combatOrders.length === 0} onClick={takeBackCombatOrder}>
+                      <ShieldCheck size={18} />
+                      {t("play.takeBack")}
+                    </button>
+                    <button type="button" disabled={combatOrders.length === 0} onClick={clearCombatOrders}>
+                      <Square size={18} />
+                      {t("play.clearOrders")}
+                    </button>
                     <button type="button" onClick={() => run({ type: "retreat" })}>
                       <ShieldCheck size={18} />
                       {t("play.retreat")}
@@ -1323,6 +1577,29 @@ function isDebugModeEnabled() {
   return typeof window !== "undefined" && new URLSearchParams(window.location.search).get("debug") === "1";
 }
 
+function createFreshDraft(overrides: Partial<CharacterDraft> = {}): CharacterDraft {
+  const seed = overrides.bonusSeed ?? Date.now();
+  return {
+    ...defaultDraft,
+    bonusSeed: seed,
+    bonusPool: rollBonusPool(seed),
+    bonusAptitude: createEmptyBonusAptitude(),
+    ...overrides
+  };
+}
+
+function createEmptyBonusAptitude(): CharacterAptitudes {
+  return { might: 0, agility: 0, spirit: 0, wit: 0, luck: 0 };
+}
+
+function rollBonusPool(seed: number) {
+  return 4 + (Math.floor(Math.abs(Math.sin(seed * 12.9898) * 10_000)) % 5);
+}
+
+function getAllocatedBonusPoints(bonus: CharacterAptitudes) {
+  return aptitudeKeys.reduce((total, key) => total + bonus[key], 0);
+}
+
 function getDebugProgressFromLocation() {
   if (typeof window === "undefined") {
     return "ready";
@@ -1359,6 +1636,30 @@ function formatCombatRow(row: GameState["party"][number]["row"], t: Translator) 
   return row === "front" ? t("play.frontRow") : t("play.backRow");
 }
 
+function formatCombatOrder(order: CombatActionDeclaration, state: GameState, locale: Locale, t: Translator) {
+  const actor = state.party.find((member) => member.id === order.actorId);
+  const target = state.combat?.enemyGroups.find((group) => group.id === order.targetGroupId);
+  const action = formatCombatAction(order.action, t);
+  if (target) {
+    return t("play.orderWithTarget", { actor: actor?.name ?? order.actorId, action, target: localizedEnemyGroupName(target, locale) });
+  }
+
+  return t("play.orderWithoutTarget", { actor: actor?.name ?? order.actorId, action });
+}
+
+function formatCombatAction(action: CombatActionKind, t: Translator) {
+  switch (action) {
+    case "attack":
+      return t("play.attack");
+    case "defend":
+      return t("play.defend");
+    case "use_item":
+      return t("play.useItem");
+    case "cast":
+      return t("play.sleep");
+  }
+}
+
 function formatAptitudes(aptitude: CharacterAptitudes, t: Translator) {
   return (["might", "agility", "spirit", "wit", "luck"] as const)
     .map((key) => `${t(`aptitude.${key}` as Parameters<Translator>[0])} ${aptitude[key]}`)
@@ -1367,6 +1668,16 @@ function formatAptitudes(aptitude: CharacterAptitudes, t: Translator) {
 
 function formatRoleTags(roleTags: string[], t: Translator) {
   return roleTags.map((tag) => t(`coverage.${tag}` as Parameters<Translator>[0])).join(" / ");
+}
+
+function formatCharacterTitle(title: string, classId: GameState["party"][number]["classId"], locale: Locale) {
+  const classDef = findClass(classId);
+  return title === classDef.label.en ? classDef.label[locale] : title;
+}
+
+function formatCharacterNotes(notes: string, backgroundId: GameState["party"][number]["backgroundId"], locale: Locale) {
+  const background = findBackground(backgroundId);
+  return notes === background.notes.en ? background.notes[locale] : notes;
 }
 
 function localizedShopName(shop: (typeof defaultWorld.shops)[number], locale: Locale) {
@@ -1387,8 +1698,74 @@ function localizedCatalogName(itemId: string | undefined, locale: Locale) {
   return equipment?.locales?.[locale]?.name ?? equipment?.name ?? itemId;
 }
 
+function localizedCatalogDescription(itemId: string | undefined, locale: Locale) {
+  if (!itemId) {
+    return "";
+  }
+
+  const item = defaultWorld.items.find((candidate) => candidate.id === itemId);
+  if (item) {
+    return item.locales?.[locale]?.description ?? "";
+  }
+
+  const equipment = findEquipmentById(itemId);
+  return equipment?.locales?.[locale]?.description ?? equipment?.description ?? "";
+}
+
 function equippedName(itemId: string | undefined, locale: Locale) {
   return itemId ? localizedCatalogName(itemId, locale) : "-";
+}
+
+function localizedEnemyGroupName(group: { enemyId: string; name: string }, locale: Locale) {
+  const enemy = defaultWorld.enemies.find((candidate) => candidate.id === group.enemyId);
+  return enemy?.locales?.[locale]?.name ?? enemy?.name ?? group.name;
+}
+
+function findEquipmentById(itemId: string | undefined) {
+  return defaultWorld.equipment.find((candidate) => candidate.id === itemId);
+}
+
+function formatEquipmentSlot(slot: EquipmentSlot, t: Translator) {
+  return t(`town.slots.${slot}` as Parameters<Translator>[0]);
+}
+
+function formatEquipmentEffect(equipment: ScenarioEquipment, t: Translator) {
+  return formatBonusParts(
+    equipment.attackBonus,
+    equipment.defenseBonus,
+    equipment.accuracyBonus,
+    equipment.speedBonus,
+    t
+  );
+}
+
+function formatInventoryEffect(item: InventoryItem, t: Translator) {
+  return formatBonusParts(item.attackBonus, item.defenseBonus, item.accuracyBonus, item.speedBonus, t);
+}
+
+function formatBonusParts(
+  attackBonus: number | undefined,
+  defenseBonus: number | undefined,
+  accuracyBonus: number | undefined,
+  speedBonus: number | undefined,
+  t: Translator
+) {
+  const parts = [
+    formatSignedBonus(t("town.effectAttack"), attackBonus),
+    formatSignedBonus(t("town.effectDefense"), defenseBonus),
+    formatSignedBonus(t("town.effectAccuracy"), accuracyBonus),
+    formatSignedBonus(t("town.effectSpeed"), speedBonus)
+  ].filter(Boolean);
+
+  return parts.length > 0 ? parts.join(" / ") : t("aptitude.balanced");
+}
+
+function formatSignedBonus(label: string, value: number | undefined) {
+  if (!value) {
+    return "";
+  }
+
+  return `${label} ${value > 0 ? "+" : ""}${value}`;
 }
 
 function formatDebugProgress(progress: DebugProgress, t: Translator) {
@@ -1440,15 +1817,21 @@ function runTempoCombatStep(state: GameState, t: Translator) {
     return { state, keepRunning: false, status: t("tempo.autoStoppedDanger") };
   }
 
-  const actor = state.party.find((member) => member.hp > 0 && !member.injury && member.row === "front") ?? state.party[0];
   const target = state.combat.enemyGroups.find((group) => group.count > 0);
-  if (!actor || !target) {
+  const activeParty = state.party.filter((member) => member.hp > 0 && !member.injury);
+  if (activeParty.length === 0 || !target) {
     return { state, keepRunning: false, status: t("tempo.autoStoppedDanger") };
   }
 
+  const hasStandingFront = activeParty.some((member) => member.row === "front");
+  const actions: CombatActionDeclaration[] = activeParty.map((member) =>
+    member.row === "front" || !hasStandingFront
+      ? { actorId: member.id, action: "attack", targetGroupId: target.id }
+      : { actorId: member.id, action: "defend" }
+  );
   const next = executeCommand(state, defaultWorld, {
     type: "declare_round",
-    actions: [{ actorId: actor.id, action: "attack", targetGroupId: target.id }]
+    actions
   });
 
   if (next.phase !== "combat") {

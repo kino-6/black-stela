@@ -47,6 +47,20 @@ describe("character creation", () => {
     expect(left.creation).toEqual({ method: "quick", seed: "guild-seed", registeredAtTurn: 1 });
   });
 
+  it("applies manually allocated bonus aptitude during detailed creation", () => {
+    const base = createGuildCharacter({ name: "Rill", classId: "seeker", backgroundId: "watch", traitIds: ["steady"] });
+    const boosted = createGuildCharacter({
+      name: "Rill",
+      classId: "seeker",
+      backgroundId: "watch",
+      traitIds: ["steady"],
+      bonusAptitude: { agility: 3 }
+    });
+
+    expect(boosted.aptitude.agility).toBe(base.aptitude.agility + 3);
+    expect(boosted.speed).toBe(base.speed + 3);
+  });
+
   it("starter templates create a six-member front/back formation", () => {
     const party = createStarterParty("balanced", 2);
 

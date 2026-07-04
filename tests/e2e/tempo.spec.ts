@@ -1,11 +1,10 @@
 import { expect, test } from "@playwright/test";
-import { resolveVisibleCombat, setTitleLanguage, startNewExpedition } from "./helpers";
+import { registerAdventurer, resolveVisibleCombat, setTitleLanguage, startNewExpedition } from "./helpers";
 
 test("repeat and keyboard commands keep the dungeon loop fast", async ({ page }) => {
   await startNewExpedition(page);
 
-  await page.getByLabel("Name").fill("Mira");
-  await page.getByRole("button", { name: "Register adventurer" }).click();
+  await registerAdventurer(page, { name: "Mira" });
   await page.getByRole("button", { name: "Enter dungeon" }).click();
 
   await expect(page.getByRole("button", { name: "Repeat" })).toBeVisible();
@@ -29,8 +28,7 @@ test("repeat and keyboard commands keep the dungeon loop fast", async ({ page })
 test("combat and town recovery keep the loop playable", async ({ page }) => {
   await startNewExpedition(page);
 
-  await page.getByLabel("Name").fill("Mira");
-  await page.getByRole("button", { name: "Register adventurer" }).click();
+  await registerAdventurer(page, { name: "Mira" });
   await page.getByRole("button", { name: "Enter dungeon" }).click();
   await page.getByRole("button", { name: "Move" }).click();
 
@@ -53,8 +51,7 @@ test("Japanese tempo controls fit on mobile", async ({ page }) => {
   await setTitleLanguage(page, "ja");
   await page.getByRole("button", { name: "新たな探索" }).click();
 
-  await page.getByLabel("名前").fill("ミラ");
-  await page.getByRole("button", { name: "冒険者を登録" }).click();
+  await registerAdventurer(page, { locale: "ja", name: "ミラ" });
   await page.getByRole("button", { name: "迷宮に入る" }).click();
 
   await expect(page.getByRole("button", { name: "リピート" })).toBeVisible();

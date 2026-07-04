@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { defaultWorld } from "../src/data/defaultWorld";
 import { addCharacter, createCharacter, createInitialGameState } from "../src/domain/gameState";
-import { getEffectiveCharacterStats } from "../src/domain/economy";
+import { getEffectiveCharacterStats, isEquipmentUsableBy } from "../src/domain/economy";
 import { executeCommand } from "../src/domain/rulesEngine";
 
 function stateWithParty() {
@@ -26,24 +26,97 @@ describe("economy and equipment", () => {
     const bought = executeCommand(state, defaultWorld, {
       type: "buy_item",
       shopId: "shop.stela-general",
-      itemId: "equip.iron-knife"
+      itemId: "equip.militia-sabre"
     });
     const equipped = executeCommand(bought, defaultWorld, {
       type: "equip_item",
       characterId: bought.party[0].id,
-      equipmentId: "equip.iron-knife"
+      equipmentId: "equip.militia-sabre"
     });
 
-    expect(bought.partyGold).toBe(state.partyGold - 40);
-    expect(bought.inventory.find((item) => item.id === "equip.iron-knife")?.quantity).toBe(1);
-    expect(equipped.party[0].equipment.weapon).toBe("equip.iron-knife");
+    expect(bought.partyGold).toBe(state.partyGold - 45);
+    expect(bought.inventory.find((item) => item.id === "equip.militia-sabre")?.quantity).toBe(1);
+    expect(equipped.party[0].equipment.weapon).toBe("equip.militia-sabre");
     expect(getEffectiveCharacterStats(equipped.party[0], defaultWorld).damageMax).toBe(
-      state.party[0].damageMax + 1
+      state.party[0].damageMax + 2
     );
 
-    const sellEquipped = executeCommand(equipped, defaultWorld, { type: "sell_item", itemId: "equip.iron-knife" });
+    const sellEquipped = executeCommand(equipped, defaultWorld, { type: "sell_item", itemId: "equip.militia-sabre" });
     expect(sellEquipped.partyGold).toBe(equipped.partyGold);
-    expect(sellEquipped.party[0].equipment.weapon).toBe("equip.iron-knife");
+    expect(sellEquipped.party[0].equipment.weapon).toBe("equip.militia-sabre");
+  });
+
+  it("supports DRPG equipment slots, stat tradeoffs, and class restrictions", () => {
+    const state = stateWithParty();
+    const withBuckler = executeCommand(
+      executeCommand(state, defaultWorld, {
+        type: "buy_item",
+        shopId: "shop.stela-general",
+        itemId: "equip.split-buckler"
+      }),
+      defaultWorld,
+      {
+        type: "equip_item",
+        characterId: state.party[0].id,
+        equipmentId: "equip.split-buckler"
+      }
+    );
+    const withCap = executeCommand(
+      executeCommand(withBuckler, defaultWorld, {
+        type: "buy_item",
+        shopId: "shop.stela-general",
+        itemId: "equip.iron-cap"
+      }),
+      defaultWorld,
+      {
+        type: "equip_item",
+        characterId: state.party[0].id,
+        equipmentId: "equip.iron-cap"
+      }
+    );
+    const withGrip = executeCommand(
+      executeCommand(withCap, defaultWorld, {
+        type: "buy_item",
+        shopId: "shop.stela-general",
+        itemId: "equip.grip-gloves"
+      }),
+      defaultWorld,
+      {
+        type: "equip_item",
+        characterId: state.party[0].id,
+        equipmentId: "equip.grip-gloves"
+      }
+    );
+
+    expect(withGrip.party[0].equipment.offhand).toBe("equip.split-buckler");
+    expect(withGrip.party[0].equipment.head).toBe("equip.iron-cap");
+    expect(withGrip.party[0].equipment.hands).toBe("equip.grip-gloves");
+    expect(getEffectiveCharacterStats(withGrip.party[0], defaultWorld)).toMatchObject({
+      armor: state.party[0].armor + 2,
+      accuracy: state.party[0].accuracy + 4,
+      speed: state.party[0].speed - 1
+    });
+  });
+
+  it("blocks class-ineligible equipment", () => {
+    const state = {
+      ...stateWithParty(),
+      partyGold: 100,
+      party: stateWithParty().party.map((member) => ({ ...member, classId: "mender" as const, row: "back" as const }))
+    };
+    const bought = executeCommand(state, defaultWorld, {
+      type: "buy_item",
+      shopId: "shop.stela-general",
+      itemId: "equip.split-buckler"
+    });
+    const equipped = executeCommand(bought, defaultWorld, {
+      type: "equip_item",
+      characterId: bought.party[0].id,
+      equipmentId: "equip.split-buckler"
+    });
+
+    expect(isEquipmentUsableBy(defaultWorld.equipment.find((item) => item.id === "equip.split-buckler")!, bought.party[0])).toBe(false);
+    expect(equipped.party[0].equipment.offhand).toBeUndefined();
   });
 
   it("charges gold for recovery and blocks unaffordable recovery", () => {

@@ -7,6 +7,7 @@ import {
   findEquipment,
   getEffectiveCharacterStats,
   getEquipmentSlot,
+  isEquipmentUsableBy,
   removeInventoryItem
 } from "./economy";
 import type {
@@ -224,7 +225,7 @@ function moveForward(state: GameState, world: ScenarioWorld): CommandResult {
   }
 
   const encounter = room.encounter
-    ? { enemy: room.encounter, count: 1 }
+    ? { enemy: world.enemies.find((enemy) => enemy.id === room.encounter?.id) ?? room.encounter, count: 1 }
     : room.encounterTable
       ? resolveEncounterTable(world, room.encounterTable, state.turn)
       : null;
@@ -600,7 +601,7 @@ function equipItem(state: GameState, world: ScenarioWorld, characterId: string, 
   const equipment = findEquipment(world, equipmentId);
   const slot = getEquipmentSlot(world, equipmentId);
   const character = state.party.find((member) => member.id === characterId);
-  if (!item || item.kind !== "equipment" || !equipment || !slot || !character) {
+  if (!item || item.kind !== "equipment" || !equipment || !slot || !character || !isEquipmentUsableBy(equipment, character)) {
     return noChange(state);
   }
 

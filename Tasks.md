@@ -28,11 +28,48 @@
   [docs/archive/Tasks.completed-drpg-ux-formation.md](docs/archive/Tasks.completed-drpg-ux-formation.md)
 - [x] BS-128..BS-135, BS-141..BS-144:
   [docs/archive/Tasks.completed-grid-prose-command.md](docs/archive/Tasks.completed-grid-prose-command.md)
+- [x] BS-145..BS-148:
+  [docs/archive/Tasks.completed-view-map-parity.md](docs/archive/Tasks.completed-view-map-parity.md)
+- [x] BS-149..BS-154:
+  [docs/archive/Tasks.completed-guild-flow-reconstruction.md](docs/archive/Tasks.completed-guild-flow-reconstruction.md)
+- [x] BS-155:
+  [docs/archive/Tasks.completed-controller-first-contract.md](docs/archive/Tasks.completed-controller-first-contract.md)
+- [x] BS-159..BS-162:
+  [docs/archive/Tasks.completed-equipment-depth.md](docs/archive/Tasks.completed-equipment-depth.md)
+- [x] BS-163..BS-166:
+  [docs/archive/Tasks.completed-party-round-combat-depth.md](docs/archive/Tasks.completed-party-round-combat-depth.md)
+- [x] BS-167..BS-170:
+  [docs/archive/Tasks.completed-sequential-party-command-entry.md](docs/archive/Tasks.completed-sequential-party-command-entry.md)
 
 ## Active Milestones
 
-No active milestones. Add the next slice only after mapping it from `Plan.md`
-with human expectation, red flags, browser evidence, and automated regression.
+### BS-156: Guild Registration Focus Model
+
+- [ ] Define the guild flow as staged command windows: briefing, class,
+  appearance, bonus, name, review.
+- [ ] Add keyboard/controller traversal expectations for next/back,
+  confirm/cancel, list movement, and bounded message area.
+- [ ] Red flag: step tabs, free cursor targeting, or form controls dominate
+  normal character creation.
+- [ ] Verification: Playwright guild traversal test and screenshot review.
+
+### BS-157: Normal-Play Surface Audit
+
+- [ ] Audit town, dungeon, combat, shop, recovery, records, config, repeat/auto,
+  and guild for mouse-first or web-admin residue.
+- [ ] Record each surface as pass/fail with one visible browser state.
+- [ ] Red flag: logs/messages shift commands or focus order is unclear.
+- [ ] Verification: update affected E2E specs, including Japanese/mobile where
+  labels or layout change.
+
+### BS-158: Controller Regression Gate
+
+- [ ] Add reusable E2E helper(s) for directional focus, confirm, cancel/back,
+  and command stability.
+- [ ] Ensure changed normal-play surfaces have keyboard/controller-style proof.
+- [ ] State what headless cannot prove for controller UX.
+- [ ] Verification: `npm run test:e2e`, `npm test`, `npm run build`,
+  `npm run headless:reachability`, `git diff --check`.
 
 Checkpoint commands: `npm test`, `npm run build`, `npm run test:e2e`,
 `npm run headless:reachability`, `git diff --check`.
@@ -58,6 +95,12 @@ evidence, automated regression test, and what headless does or does not prove.
 | Lane F2: Scenario Prose and Localization Quality | BS-141..BS-142 archived | Completed current prose gate pass |
 | Lane I: Controller-First Command UI Reconstruction | BS-143..BS-144 archived | Completed current command gate pass |
 | Lane K: DRPG UX Autonomy and Six-Person Formation | BS-136..BS-140 archived | Completed current pass |
+| Lane M: First-Person View and Minimap Parity | BS-145..BS-148 archived | Completed current view/map parity pass |
+| Lane N: Guild Registration Flow Reconstruction | BS-149..BS-154 archived | Completed current guild flow pass |
+| Lane O: Controller-First Normal-Play UI | BS-155 archived; BS-156..BS-158 active | Planned next implementation slice |
+| Lane P: DRPG Equipment Depth | BS-159..BS-162 archived | Completed current equipment-depth pass |
+| Lane Q: Party-Round Combat Depth | BS-163..BS-166 archived | Completed current combat-depth pass |
+| Lane R: Sequential Party Command Entry | BS-167..BS-170 archived | Completed current combat-command pass |
 | Lane G: Desktop Productization | BS-034..BS-037 archived; no active new tasks | Deferred |
 | Lane H: Hidden Local Narration Operations | BS-019..BS-024 archived; no active new tasks | Deferred |
 

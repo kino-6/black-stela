@@ -40,28 +40,161 @@ items:
         name: 黒碑片
         description: 黒碑の根から剥がれた小片。
 equipment:
-  - id: equip.iron-knife
-    name: Iron Knife
+  - id: equip.rusted-dirk
+    name: Rusted Dirk
+    description: A short blade with a wrapped tang; cheap, light, and honest.
     slot: weapon
     tier: 1
     attackBonus: 1
-    price: 40
-    sellValue: 12
+    accuracyBonus: 2
+    price: 22
+    sellValue: 7
     locales:
       ja:
-        name: 鉄の小刀
-        description: 扱いやすい短い刃。
-  - id: equip.ash-mail
-    name: Ash Mail
-    slot: armor
-    tier: 3
+        name: 錆びた短剣
+        description: 柄を巻き直した短い刃。安く、軽く、裏切らない。
+  - id: equip.militia-sabre
+    name: Militia Sabre
+    description: A gate guard's curved blade; enough reach for the front line.
+    slot: weapon
+    tier: 1
+    attackBonus: 2
+    price: 45
+    sellValue: 14
+    allowedClasses: [vanguard, seeker]
+    tags: [front_line, blade]
+    locales:
+      ja:
+        name: 民兵の湾刀
+        description: 門衛が使う反り刃。前列で届く長さがある。
+  - id: equip.ashwood-staff
+    name: Ashwood Staff
+    description: A soot-dark staff balanced for ward signs and back-row strikes.
+    slot: weapon
+    tier: 1
+    attackBonus: 1
+    accuracyBonus: 2
+    price: 32
+    sellValue: 10
+    allowedClasses: [mender, occultist]
+    tags: [back_row, focus]
+    locales:
+      ja:
+        name: 灰木の杖
+        description: 札を切る手に重さを合わせた黒ずんだ杖。
+  - id: equip.split-buckler
+    name: Split Buckler
+    description: A small cracked shield; it catches knives but slows the hand.
+    slot: offhand
+    tier: 1
+    defenseBonus: 1
+    speedBonus: -1
+    price: 24
+    sellValue: 8
+    allowedClasses: [vanguard, seeker]
+    tags: [shield, front_line]
+    locales:
+      ja:
+        name: 割れ留めの小盾
+        description: 亀裂を留めた小盾。刃は受けるが手元は鈍る。
+  - id: equip.candle-ward
+    name: Candle Ward
+    description: A palm charm packed with tallow ash; not a shield, but it steadies the chant.
+    slot: offhand
+    tier: 1
+    defenseBonus: 1
+    accuracyBonus: 1
+    price: 26
+    sellValue: 8
+    allowedClasses: [mender, occultist]
+    tags: [focus, ward]
+    locales:
+      ja:
+        name: 蝋灰の護符
+        description: 蝋灰を詰めた掌の護符。盾ではないが詠唱を乱さない。
+  - id: equip.padded-jack
+    name: Padded Jack
+    description: Quilted cloth with hard seams; the first armor that matters.
+    slot: body
+    tier: 1
+    defenseBonus: 1
+    price: 34
+    sellValue: 11
+    locales:
+      ja:
+        name: 綿入れの胴衣
+        description: 縫い目を固めた厚布。最初に頼れる防具。
+  - id: equip.ring-mail
+    name: Ring Mail
+    description: Small rings sewn over leather; heavy enough to make retreat late.
+    slot: body
+    tier: 2
     defenseBonus: 2
-    price: 180
-    sellValue: 54
+    speedBonus: -1
+    price: 78
+    sellValue: 25
+    allowedClasses: [vanguard, seeker]
+    tags: [front_line, mail]
     locales:
       ja:
-        name: 灰鎖帷子
-        description: 灰を噛ませた軽い鎖帷子。
+        name: 輪留め革鎧
+        description: 革に小輪を縫い込んだ鎧。守るが退き足は遅れる。
+  - id: equip.iron-cap
+    name: Iron Cap
+    description: A dented cap with a leather liner; ugly, but the skull stays whole.
+    slot: head
+    tier: 1
+    defenseBonus: 1
+    price: 18
+    sellValue: 6
+    allowedClasses: [vanguard, seeker]
+    tags: [helm]
+    locales:
+      ja:
+        name: 凹み鉄帽
+        description: 革裏を貼った凹み帽。見栄えより頭蓋を守る。
+  - id: equip.grip-gloves
+    name: Grip Gloves
+    description: Waxed finger wraps for blades, tools, and spell chalk.
+    slot: hands
+    tier: 1
+    accuracyBonus: 4
+    price: 20
+    sellValue: 7
+    tags: [accuracy, tools]
+    locales:
+      ja:
+        name: 滑り止め手袋
+        description: 指先に蝋を噛ませた手袋。刃物、工具、呪印に効く。
+  - id: equip.chalk-cord
+    name: Chalk Cord
+    description: A wrist cord dusted with map chalk; fast hands find safer lines.
+    slot: accessory
+    tier: 1
+    accuracyBonus: 1
+    speedBonus: 1
+    price: 24
+    sellValue: 8
+    allowedClasses: [seeker, occultist]
+    tags: [mapping, speed]
+    locales:
+      ja:
+        name: 白墨紐
+        description: 地図用の白墨を染ませた手首紐。速い手は安全な線を引く。
+  - id: equip.black-thread-ring
+    name: Black Thread Ring
+    description: A dull ring wound with black thread; a small promise against panic.
+    slot: accessory
+    tier: 1
+    defenseBonus: 1
+    price: 30
+    sellValue: 10
+    allowedClasses: [mender, occultist]
+    tags: [ward, back_row]
+    locales:
+      ja:
+        name: 黒糸の指輪
+        description: 黒い糸を巻いた鈍い指輪。恐慌を遠ざける小さな約束。
 shops:
   - id: shop.stela-general
     name: Stela Gate General Store
@@ -73,13 +206,39 @@ shops:
       - itemId: item.lantern-oil
         price: 10
         availability: always
-      - itemId: equip.iron-knife
-        price: 40
+      - itemId: equip.rusted-dirk
+        price: 22
         availability: always
-      - itemId: equip.ash-mail
-        price: 180
-        availability: unlocked
-        unlockFlag: flag.b5f.mid-shortcut
+      - itemId: equip.militia-sabre
+        price: 45
+        availability: always
+      - itemId: equip.ashwood-staff
+        price: 32
+        availability: always
+      - itemId: equip.split-buckler
+        price: 24
+        availability: always
+      - itemId: equip.candle-ward
+        price: 26
+        availability: always
+      - itemId: equip.padded-jack
+        price: 34
+        availability: always
+      - itemId: equip.ring-mail
+        price: 78
+        availability: always
+      - itemId: equip.iron-cap
+        price: 18
+        availability: always
+      - itemId: equip.grip-gloves
+        price: 20
+        availability: always
+      - itemId: equip.chalk-cord
+        price: 24
+        availability: always
+      - itemId: equip.black-thread-ring
+        price: 30
+        availability: always
     locales:
       ja:
         name: 黒碑門の雑貨店

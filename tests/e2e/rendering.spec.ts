@@ -1,10 +1,9 @@
 import { expect, test } from "@playwright/test";
-import { startNewExpedition } from "./helpers";
+import { registerAdventurer, startNewExpedition } from "./helpers";
 
 async function enterDungeon(page: import("@playwright/test").Page) {
   await startNewExpedition(page);
-  await page.getByLabel("Name").fill("Vale");
-  await page.getByRole("button", { name: "Register adventurer" }).click();
+  await registerAdventurer(page, { name: "Vale" });
   await page.getByRole("button", { name: "Enter dungeon" }).click();
 }
 

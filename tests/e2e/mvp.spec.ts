@@ -1,20 +1,21 @@
 import { expect, test } from "@playwright/test";
-import { resolveVisibleCombat, startNewExpedition } from "./helpers";
+import { registerAdventurer, resolveVisibleCombat, startNewExpedition } from "./helpers";
 
 test("create party, import portrait, enter dungeon, fight, use stairs, and view log", async ({ page }) => {
   await startNewExpedition(page);
 
-  await page.getByLabel("Name").fill("Mira");
-  await page.getByLabel("Notes").fill("Maps every room by hand.");
-  await page.getByTestId("portrait-input").setInputFiles({
-    name: "portrait.png",
-    mimeType: "image/png",
-    buffer: Buffer.from(
-      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII=",
-      "base64"
-    )
+  await registerAdventurer(page, {
+    name: "Mira",
+    notes: "Maps every room by hand.",
+    portrait: {
+      name: "portrait.png",
+      mimeType: "image/png",
+      buffer: Buffer.from(
+        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII=",
+        "base64"
+      )
+    }
   });
-  await page.getByRole("button", { name: "Register adventurer" }).click();
 
   await expect(page.getByRole("heading", { name: "Mira" })).toBeVisible();
   await page.getByRole("button", { name: "Enter dungeon" }).click();

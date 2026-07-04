@@ -47,14 +47,31 @@ describe("save data", () => {
     expect(parsed.state.claimedTreasures).toEqual([]);
   });
 
+  it("normalizes legacy armor equipment into the body slot", () => {
+    const save = toSaveDataV1(progressedState(), defaultWorld, { savedAt: "2026-07-03T00:00:00.000Z" });
+    const parsed = parseSaveDataV1({
+      ...save,
+      state: {
+        ...save.state,
+        party: save.state.party.map((member) => ({
+          ...member,
+          equipment: { weapon: "equip.militia-sabre", armor: "equip.padded-jack" }
+        }))
+      }
+    });
+
+    expect(parsed.state.party[0].equipment.weapon).toBe("equip.militia-sabre");
+    expect(parsed.state.party[0].equipment.body).toBe("equip.padded-jack");
+  });
+
   it("round trips economy and equipment state", () => {
     const bought = executeCommand(
       addCharacter(createInitialGameState(), createCharacter({ name: "Mira", notes: "Mapper" })),
       defaultWorld,
       {
-      type: "buy_item",
-      shopId: "shop.stela-general",
-      itemId: "equip.iron-knife"
+        type: "buy_item",
+        shopId: "shop.stela-general",
+        itemId: "equip.militia-sabre"
       }
     );
     const save = toSaveDataV1(bought, defaultWorld, { savedAt: "2026-07-03T00:00:00.000Z" });
@@ -62,7 +79,7 @@ describe("save data", () => {
 
     expect(restored.partyGold).toBe(bought.partyGold);
     expect(restored.claimedTreasures).toEqual(bought.claimedTreasures);
-    expect(restored.inventory.find((item) => item.id === "equip.iron-knife")?.quantity).toBe(1);
+    expect(restored.inventory.find((item) => item.id === "equip.militia-sabre")?.quantity).toBe(1);
   });
 
   it("rejects unknown future versions clearly", () => {

@@ -136,7 +136,7 @@ function projectEventToJapaneseLog(event: GameEvent, world?: ScenarioWorld): Log
     case "room_event_triggered":
       return { text: world ? getLocalizedRoomText(world, event.roomId, "ja").event ?? event.text : event.text, tags: ["event"] };
     case "enemy_encountered":
-      return { text: `${event.enemyName} が通路を塞いでいる。`, tags: ["combat"] };
+      return { text: `${localizedEnemyName(event.enemyId, event.enemyName, world)} が通路を塞いでいる。`, tags: ["combat"] };
     case "inspection_made":
       return projectJapaneseInspection(event.mode);
     case "search_completed":
@@ -148,9 +148,9 @@ function projectEventToJapaneseLog(event: GameEvent, world?: ScenarioWorld): Log
     case "trap_disarmed":
       return { text: `${event.trapName} は安全になった。`, tags: ["trap"] };
     case "enemy_damaged":
-      return { text: `${event.enemyName} はよろめき、前衛に傷を負わせた。`, tags: ["combat"] };
+      return { text: `${localizedEnemyName(event.enemyId, event.enemyName, world)} はよろめき、前衛に傷を負わせた。`, tags: ["combat"] };
     case "enemy_defeated":
-      return { text: `${event.enemyName} は倒れた。道は開けた。`, tags: ["combat"] };
+      return { text: `${localizedEnemyName(event.enemyId, event.enemyName, world)} は倒れた。道は開けた。`, tags: ["combat"] };
     case "combat_action_blocked":
       return {
         text:
@@ -160,15 +160,15 @@ function projectEventToJapaneseLog(event: GameEvent, world?: ScenarioWorld): Log
         tags: ["combat", "blocked"]
       };
     case "combat_round_resolved":
-      return { text: `ラウンド ${event.round}: ${event.summaries.join(" ")}`, tags: ["combat", "round"] };
+      return { text: `ラウンド ${event.round} の戦闘指示を実行した。`, tags: ["combat", "round"] };
     case "combat_rewards":
-      return { text: `勝利。隊列は ${event.xp} XP と ${event.gold} gold を得た。`, tags: ["combat", "reward"] };
+      return { text: `勝利。隊列は経験値 ${event.xp} と ${event.gold}G を得た。`, tags: ["combat", "reward"] };
     case "party_wounded":
-      return { text: `${event.enemyName} は前衛に傷を負わせた。`, tags: ["combat"] };
+      return { text: `${localizedEnemyName(event.enemyId, event.enemyName, world)} は前衛に傷を負わせた。`, tags: ["combat"] };
     case "character_injured":
       return { text: `${event.characterName} は負傷したが、隊列には残っている。`, tags: ["injury"] };
     case "party_defended":
-      return { text: `${event.enemyName} が迫るが、隊列は防御の構えを保った。`, tags: ["combat", "defend"] };
+      return { text: `${localizedEnemyName(event.enemyId, event.enemyName, world)} が迫るが、隊列は防御の構えを保った。`, tags: ["combat", "defend"] };
     case "item_used":
       return {
         text: `${event.targetName} は ${localizedCatalogName(event.itemId, event.itemName, world)} を使い、HPを ${event.healAmount} 回復した。`,
@@ -181,12 +181,12 @@ function projectEventToJapaneseLog(event: GameEvent, world?: ScenarioWorld): Log
       };
     case "item_bought":
       return {
-        text: `${localizedCatalogName(event.itemId, event.itemName, world)} を ${event.gold} gold で買った。`,
+        text: `${localizedCatalogName(event.itemId, event.itemName, world)} を ${event.gold}G で買った。`,
         tags: ["town", "shop"]
       };
     case "item_sold":
       return {
-        text: `${localizedCatalogName(event.itemId, event.itemName, world)} を売り、${event.gold} gold を得た。`,
+        text: `${localizedCatalogName(event.itemId, event.itemName, world)} を売り、${event.gold}G を得た。`,
         tags: ["town", "shop"]
       };
     case "equipment_changed":
@@ -195,9 +195,9 @@ function projectEventToJapaneseLog(event: GameEvent, world?: ScenarioWorld): Log
         tags: ["town", "equipment"]
       };
     case "party_recovered":
-      return { text: `隊列は街で休み、${event.gold} gold を支払った。`, tags: ["town", "recovery"] };
+      return { text: `隊列は街で休み、${event.gold}G を支払った。`, tags: ["town", "recovery"] };
     case "recovery_blocked":
-      return { text: `回復には ${event.goldRequired} gold 必要だ。`, tags: ["town", "blocked"] };
+      return { text: `回復には ${event.goldRequired}G 必要だ。`, tags: ["town", "blocked"] };
     case "party_retreated":
       return { text: "隊列は退却し、誰も失わずに立て直した。", tags: ["combat", "retreat"] };
     case "returned_to_town":
@@ -215,6 +215,11 @@ function localizedCatalogName(itemId: string, fallback: string, world?: Scenario
   const item = world?.items.find((candidate) => candidate.id === itemId);
   const equipment = world?.equipment.find((candidate) => candidate.id === itemId);
   return item?.locales?.ja?.name ?? equipment?.locales?.ja?.name ?? fallback;
+}
+
+function localizedEnemyName(enemyId: string, fallback: string, world?: ScenarioWorld) {
+  const enemy = world?.enemies.find((candidate) => candidate.id === enemyId);
+  return enemy?.locales?.ja?.name ?? enemy?.name ?? fallback;
 }
 
 function translateDirection(direction: "north" | "east" | "south" | "west") {

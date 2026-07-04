@@ -29,10 +29,15 @@ work.
 | Visual affordances | Enemies, doors, stairs, traps, or route state existed only in logs/text. | Important DRPG affordances must be visible in the first-person view or compact HUD. |
 | Assets | Enemies and landmarks were primitive circles/rectangles. | Player-facing assets need authored/generated silhouettes, material texture, and screenshot review. |
 | Combat commands | "Round resolve" or missing attack read as debug/unfinished UI. | Combat uses clear command selection, target selection, message advance, and stable command positions. |
+| Combat command order | Combat let a clicked/selected party card decide the only actor, unlike classic party-command RPGs. | Combat commands advance through standing party members in formation order; formation cards are status, not arbitrary actor selectors. |
 | Logs | Messages pushed commands around or duplicated the same idea. | Logs/messages are bounded; command surfaces never shift after results. |
+| Controller-first UI | Guild/town/combat/dungeon UI was designed as web forms or scattered mouse targets. | Normal play is controller/keyboard first: staged choices, stable focus order, confirm/cancel, and fixed command/message areas. |
 | Repeat/auto | Repeat produced "cannot repeat" or hid risk instead of helping tempo. | Repeat/auto is an explicit mode, cancellable, and stops on danger, branch, or unsafe state. |
 | Party formation | Party display was a flat row/list or wrong size. | Six-person party, front/back rows, and row meaning are visible in exploration and combat. |
 | Prose | Japanese sounded translated, abstract, or told the player what to feel. | Prose is Japanese-first, concrete, short, sensory/spatial, and never speaks for player characters. |
+| Localization | Japanese normal play mixed stray English enemy names, units, or combat/shop text. | Japanese mode localizes enemy/place names, rewards, shop units, and logs; only genre-natural abbreviations remain. |
+| Town equipment | Equipment/shop screens felt like shallow admin lists without DRPG preparation weight. | Equipment has meaningful slots, role/class constraints, prices, tradeoffs, and browser-reviewed presentation. |
+| Reference misuse | "Wiz-like" was treated as surface flavor while violating the play structure. | Use classic DRPGs for interaction structure only: party order, formation, attrition, grid maze, command windows, and town prep. Do not copy proprietary content. |
 | Claiming done | Codex declared completion before checking the actual browser UI. | Any player-facing change needs browser screenshot/DOM review and a remaining-risk note. |
 
 ## Completion Note Template

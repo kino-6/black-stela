@@ -16,6 +16,12 @@
   [docs/archive/Tasks.completed-character-authoring-scenario-authoring.md](docs/archive/Tasks.completed-character-authoring-scenario-authoring.md)
 - [x] BS-136..BS-140 DRPG UX formation:
   [docs/archive/Tasks.completed-drpg-ux-formation.md](docs/archive/Tasks.completed-drpg-ux-formation.md)
+- [x] BS-159..BS-162 DRPG equipment depth:
+  [docs/archive/Tasks.completed-equipment-depth.md](docs/archive/Tasks.completed-equipment-depth.md)
+- [x] BS-163..BS-166 party-round combat depth:
+  [docs/archive/Tasks.completed-party-round-combat-depth.md](docs/archive/Tasks.completed-party-round-combat-depth.md)
+- [x] BS-167..BS-170 sequential party command entry:
+  [docs/archive/Tasks.completed-sequential-party-command-entry.md](docs/archive/Tasks.completed-sequential-party-command-entry.md)
 
 ## Current Baseline
 
@@ -44,13 +50,29 @@ proof of UX, fun, fairness, visual legibility, or grid-maze honesty.
   traits, aptitude, stats, and memory remain player-authored fantasy.
 - Scenario prose must read as native Japanese: concrete object, sensory/spatial
   cue, short line, no theme explanation or translated-English syntax.
+- Japanese normal play must not mix stray English names or units. Keep genre
+  conventions only when they are natural in Japanese RPGs; localize enemy names,
+  place names, shop text, rewards, and logs.
 - Local narration stays hidden, local-first, non-canonical, and unable to mutate
   `GameState`.
 - Return/escape, save, automation, and debug affordances must respect DRPG rules.
+- Normal-play UI is controller/keyboard first. Guild, town, dungeon, combat,
+  shop, recovery, records, and configuration flows use staged choices, stable
+  focus order, confirm/cancel semantics, and fixed command/message areas before
+  mouse convenience.
 - Dungeon topology is a continuous grid of cells, walls, doors, stairs, and edge
   rules. Arbitrary linked rooms are not a DRPG maze.
 - Party formation is six-member, row-visible, and reviewed in browser before
   player-facing work is called done.
+- Equipment must be a DRPG preparation layer, not a two-stat accessory list.
+  Use original items with classic party-DRPG structure: weapon, offhand, body,
+  head, hands, accessory, class/role fit, price tension, and visible tradeoffs.
+- Combat must resolve as party tactics, not one debug-like button press. Normal
+  play queues visible actor commands, shows target/risk/order, then resolves a
+  bounded round without moving the command window.
+- Combat command entry follows classic party RPG structure: the next unresolved
+  adventurer receives a command in party order; formation cards are status, not
+  arbitrary actor selectors.
 - Stairs, return seals, and next-floor progression must be browser-visible.
 - Past user-visible failures are recorded in
   [Past Trouble Regression Gate](docs/gates/past-trouble-regression-gate.md)
@@ -72,72 +94,44 @@ proof of UX, fun, fairness, visual legibility, or grid-maze honesty.
 - [x] Lane J: Grid Labyrinth Topology Recovery. Guardrail active.
 - [x] Lane K: DRPG UX Autonomy and Six-Person Formation. Guardrail active.
 - [x] Lane L: Past Trouble Regression Gate. Guardrail active.
+- [x] Lane M: First-Person View and Minimap Parity. Guardrail active.
+- [x] Lane N: Guild Registration Flow Reconstruction. Guardrail active.
+- [ ] Lane O: Controller-First Normal-Play UI. Active.
+- [x] Lane P: DRPG Equipment Depth. Guardrail active.
+- [x] Lane Q: Party-Round Combat Depth. Guardrail active.
+- [x] Lane R: Sequential Party Command Entry. Guardrail active.
 - [ ] Lane G: Desktop Productization. Deferred.
 - [ ] Lane H: Hidden Local Narration Operations. Deferred.
 
-### [x] Lane K: DRPG UX Autonomy and Six-Person Formation
+### [ ] Lane O: Controller-First Normal-Play UI
 
-Goal: stop shipping player-facing UI that is merely functional but visibly weak.
+Goal: remove web-form/mouse-first assumptions from normal play surfaces.
 
+- Define one focus model for town, guild registration, dungeon, combat, shop,
+  recovery, records, and config: directional movement, confirm, cancel/back.
+- Convert guild registration from clickable step tabs/buttons into a staged
+  command-window flow with visible focus, shortcuts, and stable message area.
+- Audit all normal screens for scattered form controls, hover-only affordances,
+  and commands that move after logs/messages update.
+- Add Playwright coverage for keyboard/controller-style traversal on desktop and
+  Japanese/mobile where labels or layout change.
+- Keep mouse support as convenience, not as the primary interaction model.
+
+### [x] Standing Guardrails
+
+- Use [Grid Labyrinth Skill](docs/skills/grid-labyrinth-skill.md) for movement,
+  minimap, stairs, return, and first-person render changes.
 - Use [DRPG UX Review Skill](docs/skills/drpg-ux-review-skill.md) before UI,
   party, combat, town, dungeon, command, or automation changes.
-- Enforce [DRPG UX Gate](docs/gates/drpg-ux-gate.md): six-member party, visible
-  front/back rows, stable command surfaces, browser review, mobile/Japanese
-  checks, and explicit remaining UX risk.
-- Make guild templates, debug starts, exploration HUD, and combat formation
-  consistently support three-front/three-back party presentation.
-
-### [x] Lane J: Grid Labyrinth Topology Recovery
-
-Goal: replace room-link graphs with grid cells and edge metadata.
-
-- Use [Grid Labyrinth Skill](docs/skills/grid-labyrinth-skill.md) before any
-  dungeon, map, movement, stair, or rendering change.
-- Enforce [Grid Labyrinth Gate](docs/gates/grid-labyrinth-gate.md): explicit
-  cell coordinates, cell-edge walls/doors, adjacent movement, current-cell
-  stairs/return, and browser-visible proof.
-- Add scenario schema support for grid cells and edge metadata while migrating
-  the current room graph only as a temporary compatibility source.
-- Convert B1F first into a compact continuous grid with entrance, branch, door,
-  trap/combat cell, return mark, and downstairs cell; then expand B2F-B8F.
-- Rebuild minimap and first-person render from grid coordinates, not inferred
-  room graph coordinates.
-- Reject non-adjacent arbitrary exits in validation unless declared as stairs,
-  one-way edge, shortcut, or floor transition.
-- Add Playwright coverage for normal controls reaching lower-floor stairs and
-  returning to town from the correct current cell.
-
-### [x] Lane F2: Scenario Prose and Localization Quality
-
-Goal: remove translated-English mood text and make scenario prose support play.
-
-- Use [Scenario Prose Skill](docs/skills/scenario-prose-skill.md) and
-  [Scenario Prose Gate](docs/gates/scenario-prose-gate.md).
-- Rewrite Japanese first; add QA for abstract filler and translated syntax.
-
-### [x] Lane I: Controller-First Command UI Reconstruction
-
-Goal: stop log growth from moving commands and rebuild combat/exploration input
-as a classic RPG command surface.
-
-- Replace action-button rows with a fixed command window, cursor highlight,
-  confirm/cancel bindings, and controller/keyboard navigation.
-- Separate interaction states: command select, target select, message/result
-  advance, submenu select, auto/repeat running, and disabled/unsafe states.
-- Keep logs in a fixed message window with bounded height and explicit advance;
-  combat resolution must never shift command positions.
-- Add command memory/defaults: Attack/Defend/Item/Spell/Retreat as menu items,
-  target defaults, Take Back before round resolve, and repeat only as a held
-  mode that can stop on cancel/danger/branch/boss.
-- Verification: Playwright presses keyboard only through a combat round,
-  asserts command-window bounding box is stable before/after attack, verifies
-  cancel/back behavior, target selection, message advance, Japanese/mobile fit,
-  and no button displacement from logs.
+- Use [Scenario Prose Skill](docs/skills/scenario-prose-skill.md) before prose
+  and localization changes.
+- Keep command windows stable, party rows visible, and Japanese/mobile checks
+  active for any changed player-facing surface.
 
 ## Current Milestone Recommendation
 
-Lane J/F2/I current passes are complete; keep their gates active for future UI,
-dungeon, prose, and command work.
+Lane O is next. Make controller-first operation the default proof requirement
+before further guild, town, combat, or dungeon UI work is called complete.
 
 Use [Black Stela Gate Review Skill](docs/skills/black-stela-gate-review-skill.md)
 before any player-facing implementation or completion claim.

@@ -11,11 +11,11 @@ describe("scenario summary", () => {
       floorCount: 8,
       roomCount: 24,
       itemCount: 4,
-      equipmentCount: 2,
+      equipmentCount: 11,
       shopCount: 1,
       encounterTableCount: 8,
       treasureTableCount: 8,
-      shopStockReferenceCount: 4,
+      shopStockReferenceCount: 13,
       returnAnchorCount: 2,
       nextFloorLinkCount: 7,
       lockCount: 1,
@@ -44,10 +44,18 @@ describe("scenario summary", () => {
       .find((room) => room.id === "room.b1f.001");
 
     expect(defaultWorld.equipment.map((item) => item.id)).toEqual(
-      expect.arrayContaining(["equip.iron-knife", "equip.ash-mail"])
+      expect.arrayContaining([
+        "equip.rusted-dirk",
+        "equip.militia-sabre",
+        "equip.split-buckler",
+        "equip.padded-jack",
+        "equip.iron-cap",
+        "equip.grip-gloves",
+        "equip.chalk-cord"
+      ])
     );
     expect((shop?.stock ?? []).map((stock) => stock.itemId)).toEqual(
-      expect.arrayContaining(["item.healing-draught", "item.lantern-oil", "equip.iron-knife"])
+      expect.arrayContaining(["item.healing-draught", "item.lantern-oil", "equip.militia-sabre", "equip.split-buckler"])
     );
     expect(b1fStart?.treasureTable).toBe("treasure.b1f.safe");
     expect(defaultWorld.treasureTables.find((table) => table.id === "treasure.b1f.safe")?.entries[0]).toMatchObject({
