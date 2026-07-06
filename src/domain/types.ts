@@ -150,7 +150,8 @@ export type GameEvent =
   | { type: "command_blocked"; reason: "party_required" | "town_return_unavailable" | "stairs_unavailable"; command: Command["type"] }
   | { type: "dungeon_entered"; roomId: string; facing: Direction }
   | { type: "party_turned"; side: "left" | "right"; facing: Direction }
-  | { type: "movement_blocked"; reason: "wall" | "stairs"; roomId: string; facing: Direction }
+  | { type: "movement_blocked"; reason: "wall" | "stairs" | "locked"; roomId: string; facing: Direction }
+  | { type: "shortcut_opened" }
   | { type: "stairs_used"; fromRoomId: string; toRoomId: string; toFloorId: string | null }
   | { type: "map_room_visited"; floorId: string; roomId: string }
   | { type: "map_exits_known"; floorId: string; roomId: string; exits: Direction[] }

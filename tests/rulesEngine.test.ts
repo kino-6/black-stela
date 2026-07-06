@@ -193,6 +193,34 @@ describe("checkpoint resume", () => {
   });
 });
 
+describe("runtime gates and shortcuts", () => {
+  function dungeonAt(roomId: string, extra: Partial<GameState> = {}): GameState {
+    return { ...stateWithParty(), phase: "dungeon", position: { roomId, facing: "east" }, ...extra };
+  }
+
+  it("locks the ash vault until the party carries the ashen key", () => {
+    const noKey = executeCommand(dungeonAt("room.b7f.002"), defaultWorld, { type: "move_forward" });
+    expect(noKey.position?.roomId).toBe("room.b7f.002");
+    expect(noKey.log.at(-1)?.tags).toContain("locked");
+
+    const withKey = executeCommand(
+      dungeonAt("room.b7f.002", {
+        inventory: [{ id: "item.ashen-key", name: "Ashen Key", kind: "key", quantity: 1 }]
+      }),
+      defaultWorld,
+      { type: "move_forward" }
+    );
+    expect(withKey.position?.roomId).toBe("room.b7f.003");
+  });
+
+  it("grants the shortcut flag and logs it when the party reaches the lifted bar", () => {
+    const atBar = executeCommand(dungeonAt("room.b5f.002"), defaultWorld, { type: "move_forward" });
+    expect(atBar.position?.roomId).toBe("room.b5f.003");
+    expect(atBar.discoveredSecrets).toContain("flag.b5f.mid-shortcut");
+    expect(atBar.log.some((entry) => entry.tags.includes("shortcut"))).toBe(true);
+  });
+});
+
 describe("three-block dungeon structure", () => {
   it("caps each block with a boss gate, and B3/B6 caps add a rest point", () => {
     const capFloors = defaultWorld.dungeons.filter((floor) => floor.tags?.includes("block-cap"));

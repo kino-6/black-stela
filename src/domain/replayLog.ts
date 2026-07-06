@@ -48,9 +48,15 @@ export function projectEventToLog(event: GameEvent, locale: Locale = "en", world
         tags: ["move"]
       };
     case "movement_blocked":
-      return event.reason === "stairs"
-        ? { text: t("events.movementBlockedStairs"), tags: ["blocked", "stairs"] }
-        : { text: t("events.movementBlockedWall"), tags: ["blocked"] };
+      if (event.reason === "stairs") {
+        return { text: t("events.movementBlockedStairs"), tags: ["blocked", "stairs"] };
+      }
+      if (event.reason === "locked") {
+        return { text: t("events.movementBlockedLocked"), tags: ["blocked", "locked"] };
+      }
+      return { text: t("events.movementBlockedWall"), tags: ["blocked"] };
+    case "shortcut_opened":
+      return { text: t("events.shortcutOpened"), tags: ["shortcut"] };
     case "stairs_used":
       return { text: t("events.stairsUsed"), tags: ["move", "stairs"] };
     case "map_room_visited":

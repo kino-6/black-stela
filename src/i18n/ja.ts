@@ -297,6 +297,8 @@ export const ja = {
     sideRight: "右",
     movementBlockedStairs: "正面に階段がある。降りるなら階段を使う。",
     movementBlockedWall: "冷たい壁が行く手を塞いでいる。",
+    movementBlockedLocked: "行く手は施錠されている。まず何かで開ける必要がある。",
+    shortcutOpened: "近くで近道が開いた。",
     stairsUsed: "隊列は階段を降りた。",
     roomEntered: "隊列は{room}へ進んだ。",
     trapTriggered: "{trap} が作動した。隊列は傷を負ったが、誰も失われていない。",

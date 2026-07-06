@@ -295,6 +295,8 @@ export const en = {
     sideRight: "right",
     movementBlockedStairs: "A stair waits ahead. Choose Use stairs to descend.",
     movementBlockedWall: "A cold wall blocks the way.",
+    movementBlockedLocked: "The way is locked. Something here must open it first.",
+    shortcutOpened: "A shortcut opens nearby.",
     stairsUsed: "The party takes the stair to the next floor.",
     roomEntered: "The party advances into {room}.",
     trapTriggered: "{trap} snaps shut. The party is injured, but nobody is erased.",

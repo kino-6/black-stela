@@ -19,6 +19,7 @@ import type {
   Command,
   Direction,
   Enemy,
+  ExplorationGate,
   GameEvent,
   GameState,
   ScenarioWorld
@@ -219,7 +220,26 @@ function moveForward(state: GameState, world: ScenarioWorld): CommandResult {
     ]);
   }
 
-  const exit = getExit(world, state.position.roomId, state.position.facing);
+  const forwardGate = getRoom(world, state.position.roomId).gates?.find(
+    (gate) => gate.direction === state.position!.facing
+  );
+  if (forwardGate && !isGateOpen(forwardGate, state)) {
+    return withEvents({ ...state, turn: state.turn + 1 }, [
+      {
+        type: "movement_blocked",
+        reason: "locked",
+        roomId: state.position.roomId,
+        facing: state.position.facing
+      }
+    ]);
+  }
+
+  // An open gate lets the party through its otherwise-impassable edge (e.g. a
+  // locked vault opened with the right key).
+  const exit =
+    forwardGate && forwardEdge?.targetRoomId
+      ? forwardEdge.targetRoomId
+      : getExit(world, state.position.roomId, state.position.facing);
   if (!exit) {
     const floorId = state.map.floorId ?? getFloorIdForRoom(world, state.position.roomId);
     const next: GameState = {
@@ -286,6 +306,16 @@ function moveForward(state: GameState, world: ScenarioWorld): CommandResult {
 
   if (room.event) {
     events.push({ type: "room_event_triggered", roomId: room.id, text: room.event });
+  }
+
+  const grantedFlags = (room.gates ?? [])
+    .map((gate) => gate.grantsFlag)
+    .filter((flag): flag is string => typeof flag === "string" && !next.discoveredSecrets.includes(flag));
+  if (grantedFlags.length > 0) {
+    next = { ...next, discoveredSecrets: [...next.discoveredSecrets, ...grantedFlags] };
+    if ((room.gates ?? []).some((gate) => gate.kind === "shortcut" && gate.grantsFlag && grantedFlags.includes(gate.grantsFlag))) {
+      events.push({ type: "shortcut_opened" });
+    }
   }
 
   const encounter = room.encounter
@@ -1222,6 +1252,16 @@ function visitRoom(state: GameState, world: ScenarioWorld, roomId: string, facin
 
 function appendUnique<T>(items: T[], item: T): T[] {
   return items.includes(item) ? items : [...items, item];
+}
+
+function isGateOpen(gate: ExplorationGate, state: GameState): boolean {
+  if (gate.requiredKeyId && !state.inventory.some((item) => item.id === gate.requiredKeyId && item.quantity > 0)) {
+    return false;
+  }
+  if (gate.requiredFlag && !state.discoveredSecrets.includes(gate.requiredFlag)) {
+    return false;
+  }
+  return true;
 }
 
 function appendDirection(
