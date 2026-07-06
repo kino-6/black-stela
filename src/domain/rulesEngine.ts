@@ -18,6 +18,7 @@ import type {
   CombatState,
   Command,
   Direction,
+  DungeonRoom,
   Enemy,
   ExplorationGate,
   GameEvent,
@@ -318,6 +319,8 @@ function moveForward(state: GameState, world: ScenarioWorld): CommandResult {
     }
   }
 
+  next = applySpinner(next, room, events);
+
   const encounter = room.encounter
     ? { enemy: world.enemies.find((enemy) => enemy.id === room.encounter?.id) ?? room.encounter, count: 1 }
     : room.encounterTable
@@ -383,6 +386,8 @@ function useStairs(state: GameState, world: ScenarioWorld): CommandResult {
   if (targetRoom.event) {
     events.push({ type: "room_event_triggered", roomId: targetRoom.id, text: targetRoom.event });
   }
+
+  next = applySpinner(next, targetRoom, events);
 
   const encounter = targetRoom.encounter
     ? { enemy: world.enemies.find((enemy) => enemy.id === targetRoom.encounter?.id) ?? targetRoom.encounter, count: 1 }
@@ -1252,6 +1257,23 @@ function visitRoom(state: GameState, world: ScenarioWorld, roomId: string, facin
 
 function appendUnique<T>(items: T[], item: T): T[] {
   return items.includes(item) ? items : [...items, item];
+}
+
+const SPIN_ORDER: Direction[] = ["north", "east", "south", "west"];
+
+// Wizardry-style spinner floor: standing on it turns the party to a new facing.
+// Deterministic on the turn counter so it is disorienting but replayable.
+function applySpinner(state: GameState, room: DungeonRoom, events: GameEvent[]): GameState {
+  if (!room.spinner || !state.position) {
+    return state;
+  }
+  const facing = SPIN_ORDER[state.turn % SPIN_ORDER.length];
+  events.push({ type: "spinner_triggered", facing });
+  return {
+    ...state,
+    position: { ...state.position, facing },
+    map: { ...state.map, currentFacing: facing }
+  };
 }
 
 function isGateOpen(gate: ExplorationGate, state: GameState): boolean {

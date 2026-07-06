@@ -196,6 +196,7 @@ const roomSchema = z.object({
   doors: z.array(directionSchema).optional(),
   stairsToTown: z.boolean().optional(),
   restPoint: z.boolean().optional(),
+  spinner: z.boolean().optional(),
   trap: trapSchema.optional(),
   encounter: enemySchema.optional(),
   encounterTable: z.string().min(1).optional(),

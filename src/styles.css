@@ -1995,6 +1995,12 @@ textarea {
   filter: drop-shadow(0 0 1px rgba(6, 7, 6, 0.95));
 }
 
+/* Spinner floor: a violet swirl. */
+.mini-map-marker.marker-spinner {
+  border-radius: 50%;
+  background: conic-gradient(#c9a0f0, #6a3fb0, #c9a0f0, #6a3fb0, #c9a0f0);
+}
+
 /* Event: a cyan disc. */
 .mini-map-marker.marker-event {
   border-radius: 50%;

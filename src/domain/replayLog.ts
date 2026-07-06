@@ -57,6 +57,8 @@ export function projectEventToLog(event: GameEvent, locale: Locale = "en", world
       return { text: t("events.movementBlockedWall"), tags: ["blocked"] };
     case "shortcut_opened":
       return { text: t("events.shortcutOpened"), tags: ["shortcut"] };
+    case "spinner_triggered":
+      return { text: t("events.spinnerTriggered"), tags: ["spinner"] };
     case "stairs_used":
       return { text: t("events.stairsUsed"), tags: ["move", "stairs"] };
     case "map_room_visited":

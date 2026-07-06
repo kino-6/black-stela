@@ -219,6 +219,15 @@ describe("runtime gates and shortcuts", () => {
     expect(atBar.discoveredSecrets).toContain("flag.b5f.mid-shortcut");
     expect(atBar.log.some((entry) => entry.tags.includes("shortcut"))).toBe(true);
   });
+
+  it("spins the party's facing when they reach the lanterns spinner floor", () => {
+    const spin = ["north", "east", "south", "west"] as const;
+    const spun = executeCommand(dungeonAt("room.b3f.003"), defaultWorld, { type: "use_stairs" });
+    expect(spun.position?.roomId).toBe("room.b4f.001");
+    expect(spun.position?.facing).toBe(spin[spun.turn % 4]);
+    expect(spun.map.currentFacing).toBe(spun.position?.facing);
+    expect(spun.log.some((entry) => entry.tags.includes("spinner"))).toBe(true);
+  });
 });
 
 describe("three-block dungeon structure", () => {

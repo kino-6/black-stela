@@ -55,15 +55,16 @@ grid:
 rooms:
   - id: room.b4f.001
     name: Lanterns Facing Inward
-    description: All lantern hooks point toward the center of the room.
+    description: All lantern hooks point toward the center of the room, and the floor underfoot turns without a sound.
     locales:
       ja:
         name: 内向きの灯具
-        description: 灯具の鉤はすべて部屋の中央へ向いている。
+        description: 灯具の鉤はすべて部屋の中央へ向き、足元の床が音もなく回る。
     exits:
       west: room.b3f.003
       east: room.b4f.002
       south: room.b4f.003
+    spinner: true
     encounterTable: encounters.b4f.dark
   - id: room.b4f.002
     name: One-Way Walk
