@@ -30,7 +30,7 @@ import {
   PARTY_SIZE_LIMIT,
   traitCatalog
 } from "./domain/characterCreation";
-import { getGridEdge, getLocalizedRoomText, getRoom } from "./domain/scenario";
+import { getGridEdge, getLocalizedRoomText, getRoom, isBossFloor } from "./domain/scenario";
 import { createIdentitySuggestion } from "./domain/identitySuggestion";
 import { executeCommand, listUnlockedCheckpoints } from "./domain/rulesEngine";
 import { projectEventToLog } from "./domain/replayLog";
@@ -154,10 +154,8 @@ export function App() {
   const currentRoom = useMemo(() => (state.position ? getRoom(defaultWorld, state.position.roomId) : null), [state.position]);
   const canReturnToTown = Boolean(currentRoom?.stairsToTown || currentRoom?.restPoint);
   const escapeItem = state.inventory.find((item) => item.kind === "escape" && item.quantity > 0);
-  const currentFloorIsBoss = Boolean(
-    defaultWorld.dungeons.find((dungeon) => dungeon.id === state.map.floorId)?.tags?.includes("boss")
-  );
-  const canUseEscapeItem = Boolean(escapeItem) && state.phase === "dungeon" && !currentFloorIsBoss;
+  const canUseEscapeItem =
+    Boolean(escapeItem) && state.phase === "dungeon" && !isBossFloor(defaultWorld, state.map.floorId);
   const canUseStairs = Boolean(
     state.position && getGridEdge(defaultWorld, state.position.roomId, state.position.facing)?.kind === "stairs"
   );
@@ -214,8 +212,9 @@ export function App() {
   }), [draft, state.turn, t]);
   const selectedProfile = state.party.find((member) => member.id === selectedProfileId) ?? state.party[0] ?? draftPreview;
   const selectedProfileStats = getEffectiveCharacterStats(selectedProfile, defaultWorld);
-  const availableShopCategories = SHOP_CATEGORY_ORDER.filter((category) =>
-    (townShop.stock ?? []).some((stock) => shopCategoryFor(stock.itemId) === category)
+  const availableShopCategories = useMemo(
+    () => SHOP_CATEGORY_ORDER.filter((category) => (townShop.stock ?? []).some((stock) => shopCategoryFor(stock.itemId) === category)),
+    [townShop.stock]
   );
   const activeShopCategory: ShopCategory = availableShopCategories.includes(shopCategory)
     ? shopCategory

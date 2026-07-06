@@ -1,5 +1,5 @@
 import { appendEventLogs } from "./replayLog";
-import { getExit, getFloorIdForRoom, getGridCellForRoom, getGridEdge, getKnownGridDirections, getRoom } from "./scenario";
+import { getExit, getFloorIdForRoom, getGridCellForRoom, getGridEdge, getKnownGridDirections, getRoom, isBossFloor } from "./scenario";
 import {
   addInventoryItem,
   calculateRecoveryCost,
@@ -319,10 +319,8 @@ function moveForward(state: GameState, world: ScenarioWorld): CommandResult {
     }
   }
 
-  next = applySpinner(next, room, events);
-  next = applyHazard(next, room, events);
-  const teleport = applyTeleport(next, world, room, events);
-  next = teleport.state;
+  const effects = applyCellEffects(next, world, room, events);
+  next = effects.state;
 
   const encounter = room.encounter
     ? { enemy: world.enemies.find((enemy) => enemy.id === room.encounter?.id) ?? room.encounter, count: 1 }
@@ -330,7 +328,7 @@ function moveForward(state: GameState, world: ScenarioWorld): CommandResult {
       ? resolveEncounterTable(world, room.encounterTable, state.turn)
       : null;
 
-  if (!teleport.teleported && encounter && !state.defeatedEnemies.includes(encounter.enemy.id)) {
+  if (!effects.teleported && encounter && !state.defeatedEnemies.includes(encounter.enemy.id)) {
     next = {
       ...next,
       phase: "combat",
@@ -390,10 +388,8 @@ function useStairs(state: GameState, world: ScenarioWorld): CommandResult {
     events.push({ type: "room_event_triggered", roomId: targetRoom.id, text: targetRoom.event });
   }
 
-  next = applySpinner(next, targetRoom, events);
-  next = applyHazard(next, targetRoom, events);
-  const teleport = applyTeleport(next, world, targetRoom, events);
-  next = teleport.state;
+  const effects = applyCellEffects(next, world, targetRoom, events);
+  next = effects.state;
 
   const encounter = targetRoom.encounter
     ? { enemy: world.enemies.find((enemy) => enemy.id === targetRoom.encounter?.id) ?? targetRoom.encounter, count: 1 }
@@ -401,7 +397,7 @@ function useStairs(state: GameState, world: ScenarioWorld): CommandResult {
       ? resolveEncounterTable(world, targetRoom.encounterTable, state.turn)
       : null;
 
-  if (!teleport.teleported && encounter && !state.defeatedEnemies.includes(encounter.enemy.id)) {
+  if (!effects.teleported && encounter && !state.defeatedEnemies.includes(encounter.enemy.id)) {
     next = {
       ...next,
       phase: "combat",
@@ -676,8 +672,7 @@ function useEscapeItem(state: GameState, world: ScenarioWorld, item: GameState["
   }
 
   // The escape charm is barred on the boss floor: the finale is a commitment.
-  const floor = world.dungeons.find((dungeon) => dungeon.id === state.map.floorId);
-  if (floor?.tags?.includes("boss")) {
+  if (isBossFloor(world, state.map.floorId)) {
     return logOnly(state, { type: "command_blocked", reason: "town_return_unavailable", command: "return_to_town" });
   }
 
@@ -1322,6 +1317,20 @@ function applyHazard(state: GameState, room: DungeonRoom, events: GameEvent[]): 
     ...state,
     party: state.party.map((member) => ({ ...member, hp: Math.max(1, member.hp - damage) }))
   };
+}
+
+// Single dispatch point for on-cell floor effects, so entering a room applies
+// them in one fixed order from every call site (move, stairs). New tile types
+// are added here once.
+function applyCellEffects(
+  state: GameState,
+  world: ScenarioWorld,
+  room: DungeonRoom,
+  events: GameEvent[]
+): { state: GameState; teleported: boolean } {
+  let next = applySpinner(state, room, events);
+  next = applyHazard(next, room, events);
+  return applyTeleport(next, world, room, events);
 }
 
 function isGateOpen(gate: ExplorationGate, state: GameState): boolean {

@@ -350,6 +350,10 @@ export function getRoom(world: ScenarioWorld, roomId: string) {
   return room;
 }
 
+export function isBossFloor(world: ScenarioWorld, floorId: string | null): boolean {
+  return Boolean(world.dungeons.find((dungeon) => dungeon.id === floorId)?.tags?.includes("boss"));
+}
+
 export function getLocalizedRoomText(world: ScenarioWorld, roomId: string, locale: string) {
   const room = getRoom(world, roomId);
   const localized = room.locales?.[locale];

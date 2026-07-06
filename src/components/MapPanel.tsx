@@ -1,5 +1,6 @@
 import { getGridCellForRoom, getLocalizedRoomText, getRoom } from "../domain/scenario";
-import type { Direction, DungeonGridEdge, GameState, ScenarioWorld } from "../domain/types";
+import { useMemo } from "react";
+import type { Direction, DungeonGridEdge, DungeonRoom, GameState, ScenarioWorld } from "../domain/types";
 import type { Locale, Translator } from "../i18n";
 
 interface MapPanelProps {
@@ -36,7 +37,7 @@ const CLOSED_EDGES: Record<Direction, EdgeKind> = { north: "wall", east: "wall",
 
 export function MapPanel({ state, world, locale, t }: MapPanelProps) {
   const currentRoomId = state.map.currentRoomId ?? state.position?.roomId ?? null;
-  const miniMap = buildMiniMap(state, world, locale, currentRoomId);
+  const miniMap = useMemo(() => buildMiniMap(state, world, locale, currentRoomId), [state, world, locale, currentRoomId]);
   const facing = state.position?.facing ?? state.map.currentFacing ?? null;
   const cellsByPosition = new Map(miniMap.cells.map((cell) => [`${cell.x},${cell.y}`, cell]));
 
@@ -120,8 +121,7 @@ function edgeRenderKind(edge: DungeonGridEdge | undefined): EdgeKind {
   }
 }
 
-function cellMarker(world: ScenarioWorld, state: GameState, roomId: string, edges: Record<Direction, EdgeKind>): CellMarker {
-  const room = getRoom(world, roomId);
+function cellMarker(room: DungeonRoom, state: GameState, edges: Record<Direction, EdgeKind>): CellMarker {
   if (room.stairsToTown) {
     return "return";
   }
@@ -143,7 +143,7 @@ function cellMarker(world: ScenarioWorld, state: GameState, roomId: string, edge
   if (room.trap && state.resolvedTraps.includes(room.trap.id)) {
     return "trap";
   }
-  if (room.treasureTable && !state.claimedTreasures.includes(roomId)) {
+  if (room.treasureTable && !state.claimedTreasures.includes(room.id)) {
     return "treasure";
   }
   return null;
@@ -178,6 +178,7 @@ function buildGridMiniMap(
     );
 
   const cells: MiniMapCell[] = visibleCells.map((cell) => {
+    const room = getRoom(world, cell.roomId);
     const edges: Record<Direction, EdgeKind> = {
       north: edgeRenderKind(cell.edges.north),
       east: edgeRenderKind(cell.edges.east),
@@ -191,7 +192,7 @@ function buildGridMiniMap(
       y: cell.y - originY,
       status: cell.roomId === currentRoomId ? "current" : "visited",
       edges,
-      marker: cellMarker(world, state, cell.roomId, edges),
+      marker: cellMarker(room, state, edges),
       label: getLocalizedRoomText(world, cell.roomId, locale).name
     };
   });
@@ -275,7 +276,7 @@ function buildGraphMiniMap(state: GameState, world: ScenarioWorld, locale: Local
         y: coordinate.y - originY,
         status,
         edges,
-        marker: status === "unseen" ? null : cellMarker(world, state, roomId, edges),
+        marker: status === "unseen" ? null : cellMarker(room, state, edges),
         label: getLocalizedRoomText(world, roomId, locale).name
       };
     });
