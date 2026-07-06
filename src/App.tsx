@@ -32,7 +32,7 @@ import {
 } from "./domain/characterCreation";
 import { getGridEdge, getLocalizedRoomText, getRoom } from "./domain/scenario";
 import { createIdentitySuggestion } from "./domain/identitySuggestion";
-import { executeCommand } from "./domain/rulesEngine";
+import { executeCommand, listUnlockedCheckpoints } from "./domain/rulesEngine";
 import { projectEventToLog } from "./domain/replayLog";
 import { calculateRecoveryCost, getEffectiveCharacterStats, isEquipmentUsableBy } from "./domain/economy";
 import type {
@@ -215,6 +215,7 @@ export function App() {
   const activeShopCategory: ShopCategory = availableShopCategories.includes(shopCategory)
     ? shopCategory
     : availableShopCategories[0] ?? "weapon";
+  const unlockedCheckpoints = useMemo(() => listUnlockedCheckpoints(state, defaultWorld), [state]);
   const carriedLootCount = state.inventory.reduce((total, item) => total + item.quantity, 0);
   const carriedLootSummary = state.inventory.length > 0
     ? state.inventory.map((item) => `${localizedCatalogName(item.id, locale)} x${item.quantity}`).join(" / ")
@@ -1450,6 +1451,24 @@ export function App() {
                       </div>
                     </dl>
                   </div>
+                  {unlockedCheckpoints.length > 0 && (
+                    <div className="checkpoint-resume" data-testid="checkpoint-resume">
+                      <h4>{t("play.checkpointsHeading")}</h4>
+                      <div className="checkpoint-list">
+                        {unlockedCheckpoints.map((checkpoint) => (
+                          <button
+                            type="button"
+                            key={checkpoint.roomId}
+                            data-testid={`resume-${checkpoint.roomId}`}
+                            disabled={state.party.length === 0}
+                            onClick={() => run({ type: "resume_at_checkpoint", roomId: checkpoint.roomId })}
+                          >
+                            {t("play.resumeAt", { place: getLocalizedRoomText(defaultWorld, checkpoint.roomId, locale).name })}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                   <div className="town-action-strip">
                     <button type="button" onClick={() => enterTownMode("recovery")}>{t("town.recovery")}</button>
                     <button type="button" onClick={() => enterTownMode("shop")}>{t("town.shop")}</button>

@@ -51,6 +51,8 @@ export function resolveCommand(state: GameState, world: ScenarioWorld, command: 
   switch (command.type) {
     case "enter_dungeon":
       return enterDungeon(state, world);
+    case "resume_at_checkpoint":
+      return resumeAtCheckpoint(state, world, command.roomId);
     case "turn_left":
       return turn(state, "left");
     case "turn_right":
@@ -127,6 +129,49 @@ function enterDungeon(state: GameState, world: ScenarioWorld): CommandResult {
     ...roomVisit.events,
     ...treasure.events
   ]);
+}
+
+export interface CheckpointInfo {
+  roomId: string;
+  floorId: string;
+  roomName: string;
+}
+
+export function listUnlockedCheckpoints(state: GameState, world: ScenarioWorld): CheckpointInfo[] {
+  return world.dungeons
+    .flatMap((floor) => floor.rooms.map((room) => ({ floor, room })))
+    .filter(({ room }) => room.restPoint && state.map.visitedRooms.includes(room.id))
+    .map(({ floor, room }) => ({ roomId: room.id, floorId: floor.id, roomName: room.name }));
+}
+
+function resumeAtCheckpoint(state: GameState, world: ScenarioWorld, roomId: string): CommandResult {
+  if (state.party.length === 0) {
+    return logOnly(state, { type: "command_blocked", reason: "party_required", command: "enter_dungeon" });
+  }
+
+  const room = getRoom(world, roomId);
+  const unlocked = Boolean(room.restPoint) && state.map.visitedRooms.includes(roomId);
+  if (!unlocked) {
+    return noChange(state);
+  }
+
+  const roomVisit = visitRoom(state, world, roomId, "east");
+  const startCell = getGridCellForRoom(world, roomId);
+  const next: GameState = {
+    ...state,
+    phase: "dungeon",
+    position: {
+      roomId,
+      cellId: startCell?.id,
+      facing: "east"
+    },
+    combat: null,
+    party: markExpeditionStarted(state.party, roomVisit.map.floorId ?? world.startDungeon, state.turn + 1),
+    map: roomVisit.map,
+    turn: state.turn + 1
+  };
+
+  return withEvents(next, [{ type: "room_entered", roomId, roomName: room.name }, ...roomVisit.events]);
 }
 
 function turn(state: GameState, side: "left" | "right"): CommandResult {

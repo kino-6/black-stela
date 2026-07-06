@@ -137,6 +137,8 @@ export const ja = {
     townCopy:
       "ギルドの灯が石床に短く揺れている。黒碑の下り口から、冷えた土の匂いが上がる。",
     enterDungeon: "迷宮に入る",
+    checkpointsHeading: "到達済みの休息所",
+    resumeAt: "{place}から再開",
     combatDescription: "{enemy} が行く手を塞いでいる。",
     combatCommands: "戦闘コマンド",
     battleScreen: "戦闘画面",

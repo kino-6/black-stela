@@ -25,4 +25,9 @@ test("B3F block-cap rest point offers return to town", async ({ page }) => {
 
   await returnBtn.click();
   await expect(page.getByRole("heading", { name: "Town", exact: true })).toBeVisible();
+
+  // The reached rest point is now a resumable checkpoint from the dungeon entry.
+  await expect(page.getByTestId("checkpoint-resume")).toBeVisible();
+  await page.getByTestId("resume-room.b3f.003").click();
+  await expect(page.getByTestId("map-current")).toContainText("Chain Descent");
 });

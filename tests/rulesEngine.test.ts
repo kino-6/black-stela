@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { addCharacter, createCharacter, createInitialGameState } from "../src/domain/gameState";
-import { executeCommand, resolveCommand } from "../src/domain/rulesEngine";
+import { executeCommand, listUnlockedCheckpoints, resolveCommand } from "../src/domain/rulesEngine";
 import { defaultWorld } from "../src/data/defaultWorld";
 import type { GameState } from "../src/domain/types";
 
@@ -162,5 +162,33 @@ describe("rest points and scarce return", () => {
       .filter((room) => room.restPoint || room.stairsToTown)
       .map((room) => room.id);
     expect(restIds).toEqual(expect.arrayContaining(["room.b3f.003", "room.b6f.003"]));
+  });
+});
+
+describe("checkpoint resume", () => {
+  function townWithVisited(roomIds: string[]): GameState {
+    return {
+      ...stateWithParty(),
+      map: { ...createInitialGameState().map, visitedRooms: roomIds }
+    };
+  }
+
+  it("lists only reached rest points and resumes the party there", () => {
+    const town = townWithVisited(["room.b3f.003"]);
+    expect(listUnlockedCheckpoints(town, defaultWorld).map((cp) => cp.roomId)).toEqual(["room.b3f.003"]);
+
+    const resumed = executeCommand(town, defaultWorld, { type: "resume_at_checkpoint", roomId: "room.b3f.003" });
+    expect(resumed.phase).toBe("dungeon");
+    expect(resumed.position?.roomId).toBe("room.b3f.003");
+    expect(resumed.map.floorId).toBe("dungeon.b3f");
+  });
+
+  it("refuses to resume at a rest point that was never reached", () => {
+    const resumed = executeCommand(townWithVisited([]), defaultWorld, {
+      type: "resume_at_checkpoint",
+      roomId: "room.b6f.003"
+    });
+    expect(resumed.phase).toBe("town");
+    expect(resumed.position).toBeNull();
   });
 });

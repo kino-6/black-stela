@@ -2,6 +2,7 @@ export type Direction = "north" | "east" | "south" | "west";
 
 export type Command =
   | { type: "enter_dungeon" }
+  | { type: "resume_at_checkpoint"; roomId: string }
   | { type: "move_forward" }
   | { type: "use_stairs" }
   | { type: "turn_left" }

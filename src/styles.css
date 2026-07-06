@@ -1542,6 +1542,31 @@ textarea {
   min-height: 0;
 }
 
+.checkpoint-resume {
+  margin-top: 0.6rem;
+}
+
+.checkpoint-resume h4 {
+  margin: 0 0 0.4rem;
+  font-size: 0.85rem;
+  color: #c9a765;
+}
+
+.checkpoint-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.checkpoint-list button {
+  padding: 0.4rem 0.75rem;
+  min-height: 2.2rem;
+  border: 1px solid #6b5a2f;
+  border-radius: 3px;
+  background: #201b10;
+  color: #f2d58c;
+}
+
 .town-status-ledger {
   display: grid;
   gap: 0.5rem;

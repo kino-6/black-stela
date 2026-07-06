@@ -135,6 +135,8 @@ export const en = {
     townCopy:
       "The guild lamps gutter over worn stone. Cold air rises from the stair beneath the black stela.",
     enterDungeon: "Enter dungeon",
+    checkpointsHeading: "Reached rest points",
+    resumeAt: "Resume at {place}",
     combatDescription: "{enemy} stands in the party's path.",
     combatCommands: "Combat commands",
     battleScreen: "Battle screen",
