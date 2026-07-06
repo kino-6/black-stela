@@ -49,7 +49,15 @@ test("create party, import portrait, enter dungeon, fight, use stairs, and view 
 });
 
 async function advanceToB1fMarker(page: Page) {
-  for (let step = 0; step < 4; step += 1) {
-    await page.getByRole("button", { name: "Move" }).click();
+  // B1F's trunk runs straight east to the Black Marker; walk it, clearing any
+  // fight along the way, until the marker chamber is on screen.
+  for (let step = 0; step < 40; step += 1) {
+    if (await page.getByRole("heading", { name: "Black Marker" }).isVisible().catch(() => false)) {
+      return;
+    }
+    await page.getByRole("button", { name: "Move", exact: true }).click();
+    if (await page.getByLabel("Battle screen").isVisible().catch(() => false)) {
+      await resolveVisibleCombat(page);
+    }
   }
 }

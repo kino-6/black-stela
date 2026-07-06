@@ -52,7 +52,8 @@ function parseOptions(args: string[]): HeadlessReachabilityOptions {
 const options = parseOptions(process.argv.slice(2));
 const progress = options.progress;
 const initialState = createDebugStateFromProgress(defaultWorld, progress);
-const result = runHeadlessClear(initialState, defaultWorld, options.maxSteps);
+// Dense floors need a larger walk budget than the old linear layout.
+const result = runHeadlessClear(initialState, defaultWorld, options.maxSteps ?? 300);
 const hpLost = result.state.party.reduce((total, member) => total + Math.max(0, member.maxHp - member.hp), 0);
 const carriedItems = result.state.inventory
   .filter((item) => item.quantity > 0)
@@ -63,7 +64,7 @@ const report = {
   outcome: result.cleared ? "reachable" : result.reason,
   engineReason: result.reason,
   progress,
-  maxSteps: options.maxSteps ?? 20,
+  maxSteps: options.maxSteps ?? 300,
   commands: result.commands.map((command) => command.type),
   trace: result.trace.map((step) => ({
     command: step.command,

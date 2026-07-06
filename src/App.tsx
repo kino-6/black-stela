@@ -344,7 +344,8 @@ export function App() {
   }
 
   function runHeadless() {
-    const result = runHeadlessClear(state, defaultWorld);
+    // Dense floors need a larger walk budget than the old linear layout.
+    const result = runHeadlessClear(state, defaultWorld, 300);
     setState(result.state);
     setHeadlessStatus(
       t("debug.headlessReachabilityStatus", {

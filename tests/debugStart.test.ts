@@ -27,7 +27,7 @@ describe("debug start state", () => {
     expect(state.map.currentFacing).toBe("east");
     expect(state.map.visitedRooms).toEqual(["room.b1f.001", "room.b1f.002"]);
     expect(state.map.visitedCells).toEqual(["cell.b1f.001", "cell.b1f.002"]);
-    expect(state.map.knownExits["room.b1f.002"]).toEqual(["west", "east"]);
+    expect(state.map.knownExits["room.b1f.002"]).toEqual(["east", "west"]);
     expect(state.map.blockedExits).toEqual({});
     expect(state.map.secretCandidates).toEqual({});
   });

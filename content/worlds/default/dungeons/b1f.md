@@ -9,146 +9,75 @@ tags:
   - onboarding
   - mapping
   - block-1
-authorNotes: Teaches movement, map reading, first trap, combat, and safe retreat.
+authorNotes: >-
+  Onboarding floor on a 20x20 frame. A short forced trunk teaches the grammar in
+  order (move, first fight, read the map, search the trap, reach the marker),
+  while two wings off the central hub reward exploration. A one-way winch cage
+  from the marker collapses the return climb. Entrance opens east so the fixed
+  starting facing walks the party inward.
 startRoom: room.b1f.001
-grid:
-  cells:
-    - id: cell.b1f.001
-      roomId: room.b1f.001
-      x: 0
-      y: 0
-      edges:
-        east:
-          kind: door
-          targetRoomId: room.b1f.002
-          targetCellId: cell.b1f.002
-    - id: cell.b1f.002
-      roomId: room.b1f.002
-      x: 1
-      y: 0
-      edges:
-        west:
-          kind: door
-          targetRoomId: room.b1f.001
-          targetCellId: cell.b1f.001
-        east:
-          kind: open
-          targetRoomId: room.b1f.003
-          targetCellId: cell.b1f.003
-    - id: cell.b1f.003
-      roomId: room.b1f.003
-      x: 2
-      y: 0
-      edges:
-        west:
-          kind: open
-          targetRoomId: room.b1f.002
-          targetCellId: cell.b1f.002
-        east:
-          kind: open
-          targetRoomId: room.b1f.004
-          targetCellId: cell.b1f.004
-        south:
-          kind: door
-          targetRoomId: room.b1f.007
-          targetCellId: cell.b1f.007
-    - id: cell.b1f.004
-      roomId: room.b1f.004
-      x: 3
-      y: 0
-      edges:
-        west:
-          kind: open
-          targetRoomId: room.b1f.003
-          targetCellId: cell.b1f.003
-        east:
-          kind: open
-          targetRoomId: room.b1f.005
-          targetCellId: cell.b1f.005
-        south:
-          kind: door
-          targetRoomId: room.b1f.008
-          targetCellId: cell.b1f.008
-    - id: cell.b1f.005
-      roomId: room.b1f.005
-      x: 4
-      y: 0
-      edges:
-        west:
-          kind: open
-          targetRoomId: room.b1f.004
-          targetCellId: cell.b1f.004
-        east:
-          kind: door
-          targetRoomId: room.b1f.006
-          targetCellId: cell.b1f.006
-    - id: cell.b1f.006
-      roomId: room.b1f.006
-      x: 5
-      y: 0
-      edges:
-        west:
-          kind: door
-          targetRoomId: room.b1f.005
-          targetCellId: cell.b1f.005
-        east:
-          kind: stairs
-          targetRoomId: room.b2f.001
-          targetFloorId: dungeon.b2f
-    - id: cell.b1f.007
-      roomId: room.b1f.007
-      x: 2
-      y: 1
-      edges:
-        north:
-          kind: door
-          targetRoomId: room.b1f.003
-          targetCellId: cell.b1f.003
-        east:
-          kind: open
-          targetRoomId: room.b1f.008
-          targetCellId: cell.b1f.008
-    - id: cell.b1f.008
-      roomId: room.b1f.008
-      x: 3
-      y: 1
-      edges:
-        west:
-          kind: open
-          targetRoomId: room.b1f.007
-          targetCellId: cell.b1f.007
-        north:
-          kind: door
-          targetRoomId: room.b1f.004
-          targetCellId: cell.b1f.004
+map: |
+  ####################
+  ######1#############
+  ######.....#########
+  ######.#.###########
+  ######...###########
+  ########.###########
+  ########.###########
+  ########.###########
+  #######...##########
+  #EC.....H......N..M#
+  #######...##########
+  ########.###########
+  ########.###########
+  ########.###########
+  ######...###########
+  ######.#.###########
+  ######.....#########
+  ######2#############
+  ####################
+  ####################
+symbols:
+  E: room.b1f.001
+  C: room.b1f.002
+  H: room.b1f.003
+  "1": room.b1f.004
+  N: room.b1f.005
+  M: room.b1f.006
+  "2": room.b1f.007
+corridor:
+  name: Dust-Choked Corridor
+  description: A low run of fitted stone, dust banked along the walls and broken only by the party's own tracks.
+  locales:
+    ja:
+      name: 塵の廊下
+      description: 切石の低い通路。壁際に塵が積もり、隊列自身の足跡だけがそれを乱している。
+edges:
+  - from: room.b1f.006
+    direction: east
+    kind: stairs
+    to: room.b2f.001
+    targetFloorId: dungeon.b2f
+  - from: room.b1f.006
+    direction: north
+    kind: shortcut
+    to: room.b1f.001
 rooms:
   - id: room.b1f.001
     name: Silent Stone Chamber
-    description: Cold fitted blocks press close. A narrow east door leaks dry air.
+    description: Cold fitted blocks press close. The only way on leaks dry air to the east.
     locales:
       ja:
         name: 静まり返った石室
-        description: 冷たい切石が近く迫る。東の細い扉から乾いた空気が漏れる。
-    exits:
-      east: room.b1f.002
-    doors:
-      - east
+        description: 冷たい切石が近く迫る。先へ続く唯一の道は、東へ乾いた空気を漏らしている。
     treasureTable: treasure.b1f.safe
   - id: room.b1f.002
     name: Hall of Old Dust
-    description: Dust lies in bands across the floor, broken by fresh marks.
+    description: Dust lies in bands across the floor, broken by fresh marks — and something low and pale stirs in them.
     locales:
       ja:
         name: 古い塵の広間
-        description: 床には古い塵が帯のように積もり、新しい跡だけがそれを乱している。
-    exits:
-      west: room.b1f.001
-      east: room.b1f.003
-    trap:
-      id: trap.b1f.needle
-      name: A hidden needle plate
-      damage: 2
-      detectDc: 10
+        description: 床には古い塵が帯のように積もり、新しい跡だけがそれを乱している。その中で、低く青白い何かが蠢く。
     encounter:
       id: enemy.b1f.ash-slime
       name: Ash Slime
@@ -160,56 +89,41 @@ rooms:
         - tutorial
     encounterTable: encounters.b1f.halls
   - id: room.b1f.003
+    name: Ashfall Crossing
+    description: A wider chamber where four ways meet under a slow fall of ash. It is the one room you keep coming back to.
+    locales:
+      ja:
+        name: 灰降りの辻
+        description: ゆっくりと灰の降る下で四方の道が交わる、やや広い部屋。何度も戻ってくることになる場所だ。
+  - id: room.b1f.004
+    name: Chalk-Marked Niche
+    description: A dead-end niche crowded with old chalk tallies, and a cloth bundle someone tucked behind them.
+    locales:
+      ja:
+        name: 白墨の小間
+        description: 古い白墨の刻み書きがひしめく行き止まりの小間。その裏に、誰かが押し込んだ布包みがある。
+    treasureTable: treasure.b1f.nook
+  - id: room.b1f.005
     name: Smoke-Bent Passage
-    description: Smoke stains lean along the ceiling. One side door falls away into a lower run of stones.
+    description: Smoke stains lean along the ceiling. A line of pinholes breaks the dust just where a boot would fall.
     locales:
       ja:
         name: 煙に曲がる通路
-        description: 天井の煤が斜めに流れている。脇の扉の先では石床が少し低くなる。
-    exits:
-      west: room.b1f.002
-      east: room.b1f.004
-      south: room.b1f.007
-    doors:
-      - south
-  - id: room.b1f.004
-    name: Fork of Black Mortar
-    description: Black mortar cuts the wall joints. The passage continues east, with a tight door to the south.
-    locales:
-      ja:
-        name: 黒目地の分岐
-        description: 壁の目地だけが黒い。東へ続く通路の脇に、狭い南扉がある。
-    exits:
-      west: room.b1f.003
-      east: room.b1f.005
-      south: room.b1f.008
-    doors:
-      - south
-  - id: room.b1f.005
-    name: Low Arch of Soot
-    description: The ceiling drops low enough to scrape spear hafts. A reinforced door bars the way.
-    locales:
-      ja:
-        name: 煤けた低いアーチ
-        description: 槍の柄が擦れるほど天井が低い。正面に補強された扉がある。
-    exits:
-      west: room.b1f.004
-      east: room.b1f.006
-    doors:
-      - east
+        description: 天井の煤が斜めに流れている。ちょうど足を下ろす所で、細かな針穴の列が塵を破っている。
+    trap:
+      id: trap.b1f.needle
+      name: A hidden needle plate
+      damage: 2
+      detectDc: 10
+      warning: A line of pinholes breaks the dust ahead.
   - id: room.b1f.006
     name: Black Marker
-    description: A narrow marker of black stone leans beside a stair curling upward.
+    description: A narrow marker of black stone leans beside a capped shaft and a stair curling east. A winch cage hangs over the shaft.
     locales:
       ja:
         name: 黒い標石
-        description: 上へ巻く階段のそばに、細い黒石の標が傾いている。
-        event: 標石は手に温かい。しかし記録に残るのは、隊列が確かめたことだけだ。
-    exits:
-      west: room.b1f.005
-      east: room.b2f.001
-    doors:
-      - west
+        description: 蓋をされた竪坑と、東へ巻く階段のそばに、細い黒石の標が傾いている。竪坑の上には籠が掛かっている。
+        event: 標石は手に温かい。竪坑の籠は、入口まで一気に戻る道を約束している。
     stairsToTown: true
     gates:
       - id: gate.b1f.first-descent
@@ -220,34 +134,20 @@ rooms:
         locales:
           ja:
             clue: 下り階段は、帰還を知る隊列だけを受け入れる。
-    event: The marker is warm to the touch, but the log records only what the party confirms.
+    event: The marker is warm to the touch; the shaft cage promises a quick way back to the entrance.
   - id: room.b1f.007
-    name: Cinder Side Passage
-    description: Fine grit slides under every step. The side path turns back toward the main run.
+    name: Cinder Cache
+    description: A dead-end cache where cinders drifted into a dry corner, half-burying a stitched pouch.
     locales:
       ja:
-        name: 灰溜まりの脇道
-        description: 踏むたびに細かな灰が滑る。脇道は本筋へ戻る形で折れている。
-    exits:
-      north: room.b1f.003
-      east: room.b1f.008
-    doors:
-      - north
-  - id: room.b1f.008
-    name: Chalk Scrape Niche
-    description: Chalk marks crowd the stone at shoulder height. A narrow north door returns to the fork.
-    locales:
-      ja:
-        name: 白線の残る小間
-        description: 肩の高さに白い擦り跡が重なっている。北の狭い扉は分岐へ戻る。
-    exits:
-      west: room.b1f.007
-      north: room.b1f.004
-    doors:
-      - north
+        name: 燃え殻の隠し
+        description: 燃え殻が乾いた隅に吹き溜まった行き止まり。縫い綴じられた小袋が半ば埋もれている。
+    treasureTable: treasure.b1f.nook
 ---
 
 # B1F - Silent Approach
 
-A first loop floor with a visible branch, a return marker, and a stair that
-requires an explicit descent command.
+The first floor on a full 20x20 frame. A short forced trunk carries the teaching
+beats in order — move, the first fight, the anchor hub, the searched trap, the
+marker — while two wings off the hub reward the curious with dead-end caches. The
+marker's winch cage opens a one-way shortcut straight back to the entrance.

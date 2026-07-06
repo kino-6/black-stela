@@ -228,9 +228,16 @@ async function assertNormalPlayHasNoDebugControls(page: Page) {
 }
 
 async function advanceToB1fMarker(page: Page, report: SelfPlayReport) {
-  for (let step = 0; step < 4; step += 1) {
-    await page.getByRole("button", { name: "Move" }).click();
+  // Walk the straight east trunk to the Black Marker, clearing any fight en route.
+  for (let step = 0; step < 40; step += 1) {
+    if (await page.getByRole("button", { name: "Use return marker" }).isVisible().catch(() => false)) {
+      return;
+    }
+    await page.getByRole("button", { name: "Move", exact: true }).click();
     report.commands.push("Move");
+    if (await page.getByLabel("Battle screen").isVisible().catch(() => false)) {
+      await resolveVisibleCombat(page);
+    }
   }
 }
 

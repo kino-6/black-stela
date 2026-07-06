@@ -95,8 +95,9 @@ test("starting cell south wall matches minimap, first-person view, and movement"
   await page.getByRole("button", { name: "Enter dungeon" }).click();
   await expect(page.getByRole("heading", { name: "Silent Stone Chamber" })).toBeVisible();
   await expect(page.getByTestId("minimap-facing")).toHaveClass(/facing-east/);
-  await expect(page.getByTestId("dungeon-canvas")).toHaveAttribute("data-front-edge", "door");
-  await expect(page.getByTestId("dungeon-canvas")).toHaveAttribute("data-front-depth", "cell-edge");
+  // The entrance opens east into a corridor, not a door.
+  await expect(page.getByTestId("dungeon-canvas")).toHaveAttribute("data-front-edge", "open");
+  await expect(page.getByTestId("dungeon-canvas")).toHaveAttribute("data-front-depth", "corridor");
 
   await page.getByLabel("Turn right").click();
   await expect(page.getByTestId("minimap-facing")).toHaveClass(/facing-south/);
@@ -105,7 +106,7 @@ test("starting cell south wall matches minimap, first-person view, and movement"
   await expect(canvasShell).toHaveAttribute("data-front-edge", "wall");
   await expect(canvasShell).toHaveAttribute("data-front-traversable", "false");
   await expect(canvasShell).toHaveAttribute("data-front-visual", "blocked-wall");
-  await expect(canvasShell).toHaveAttribute("data-left-edge", "door");
+  await expect(canvasShell).toHaveAttribute("data-left-edge", "open");
   await expect(canvasShell).toHaveAttribute("data-right-edge", "wall");
 
   await page.getByRole("button", { name: "Move" }).click();
@@ -123,13 +124,15 @@ test("first-person view, minimap, and movement agree when forward is blocked", a
   await advanceToB1fMarker(page);
   await expect(page.getByRole("heading", { name: "Black Marker" })).toBeVisible();
 
-  await page.getByLabel("Turn left").click();
-  await expect(page.getByTestId("minimap-facing")).toHaveClass(/facing-north/);
+  // North is the winch shortcut and east is the descent stair, so face the
+  // solid south wall to test a blocked step.
+  await page.getByLabel("Turn right").click();
+  await expect(page.getByTestId("minimap-facing")).toHaveClass(/facing-south/);
 
   const canvasShell = page.getByTestId("dungeon-canvas");
   await expect(canvasShell).toHaveAttribute("data-front-edge", "wall");
   await expect(canvasShell).toHaveAttribute("data-front-traversable", "false");
-  await expect(canvasShell).toHaveAttribute("data-left-edge", "door");
+  await expect(canvasShell).toHaveAttribute("data-left-edge", "open");
   await expect(canvasShell).toHaveAttribute("data-right-edge", "open");
 
   await page.getByRole("button", { name: "Move" }).click();
@@ -139,7 +142,15 @@ test("first-person view, minimap, and movement agree when forward is blocked", a
 });
 
 async function advanceToB1fMarker(page: Page) {
-  for (let step = 0; step < 4; step += 1) {
-    await page.getByRole("button", { name: "Move" }).click();
+  // The B1F trunk runs straight east to the Black Marker; walk it, clearing any
+  // fight, until the marker chamber is on screen.
+  for (let step = 0; step < 40; step += 1) {
+    if (await page.getByRole("heading", { name: "Black Marker" }).isVisible().catch(() => false)) {
+      return;
+    }
+    await page.getByRole("button", { name: "Move", exact: true }).click();
+    if (await page.getByLabel("Battle screen").isVisible().catch(() => false)) {
+      await resolveVisibleCombat(page);
+    }
   }
 }

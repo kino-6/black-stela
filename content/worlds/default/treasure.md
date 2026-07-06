@@ -6,6 +6,13 @@ treasureTables:
       - itemId: item.healing-draught
         weight: 10
         quantity: 1
+  - id: treasure.b1f.nook
+    tier: 1
+    entries:
+      - itemId: item.healing-draught
+        weight: 6
+      - itemId: item.lantern-oil
+        weight: 4
   - id: treasure.b2f.risk
     tier: 2
     entries:

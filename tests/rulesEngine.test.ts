@@ -19,10 +19,15 @@ function resolveCombat(state: GameState) {
   return current;
 }
 
+// B1F's trunk runs due east from the entrance; walk it, resolving the placed
+// slime fight along the way, until the party reaches the Black Marker.
 function advanceToB1fMarker(state: GameState) {
   let current = state;
-  for (let step = 0; step < 4; step += 1) {
+  for (let step = 0; step < 40 && current.position?.roomId !== "room.b1f.006"; step += 1) {
     current = executeCommand(current, defaultWorld, { type: "move_forward" });
+    if (current.phase === "combat") {
+      current = resolveCombat(current);
+    }
   }
   return current;
 }
@@ -83,24 +88,21 @@ describe("rules engine", () => {
     expect(result.state.log.at(-1)?.text).toBe("A cold wall blocks the way.");
   });
 
-  it("enters the dungeon and triggers deterministic trap and combat on movement", () => {
+  it("triggers the placed slime fight and the searched trap along the B1F trunk", () => {
+    // Entrance faces east straight into the slime hall; the trap is deeper in.
     const entered = executeCommand(stateWithParty(), defaultWorld, { type: "enter_dungeon" });
-    const moved = executeCommand(entered, defaultWorld, { type: "move_forward" });
+    const current = executeCommand(entered, defaultWorld, { type: "move_forward" });
 
-    expect(moved.phase).toBe("combat");
-    expect(moved.position?.roomId).toBe("room.b1f.002");
-    expect(moved.position?.cellId).toBe("cell.b1f.002");
-    expect(moved.map.currentCellId).toBe("cell.b1f.002");
-    expect(moved.resolvedTraps).toContain("trap.b1f.needle");
-    expect(moved.party[0].hp).toBe(moved.party[0].maxHp - 2);
-    expect(moved.combat?.enemy.name).toBe("Ash Slime");
-    expect(moved.log.map((entry) => entry.text)).toEqual(
-      expect.arrayContaining([
-        "The party advances into Hall of Old Dust.",
-        "A hidden needle plate snaps shut. The party is injured, but nobody is erased.",
-        "Ash Slime blocks the passage."
-      ])
-    );
+    expect(current.phase).toBe("combat");
+    expect(current.position?.roomId).toBe("room.b1f.002");
+    expect(current.combat?.enemy.name).toBe("Ash Slime");
+
+    // Walking on to the marker crosses the needle-trap chamber, resolving it.
+    const marker = advanceToB1fMarker(resolveCombat(current));
+    expect(marker.position?.roomId).toBe("room.b1f.006");
+    expect(marker.defeatedEnemies).toContain("enemy.b1f.ash-slime");
+    expect(marker.resolvedTraps).toContain("trap.b1f.needle");
+    expect(marker.party[0].hp).toBeLessThan(marker.party[0].maxHp);
   });
 
   it("blocks return to town until the party reaches a return stair", () => {
@@ -125,8 +127,7 @@ describe("rules engine", () => {
 
   it("requires an explicit stair command instead of descending on move", () => {
     const entered = executeCommand(stateWithParty(), defaultWorld, { type: "enter_dungeon" });
-    const afterCombat = resolveCombat(executeCommand(entered, defaultWorld, { type: "move_forward" }));
-    const marker = advanceToB1fMarker(afterCombat);
+    const marker = advanceToB1fMarker(entered);
 
     const moved = executeCommand(marker, defaultWorld, { type: "move_forward" });
     const descended = executeCommand(marker, defaultWorld, { type: "use_stairs" });
