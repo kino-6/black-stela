@@ -220,6 +220,18 @@ describe("runtime gates and shortcuts", () => {
     expect(atBar.log.some((entry) => entry.tags.includes("shortcut"))).toBe(true);
   });
 
+  it("gathers a resource once from the dry cistern", () => {
+    const at = dungeonAt("room.b3f.001");
+    const before = at.inventory.find((entry) => entry.id === "item.healing-draught")?.quantity ?? 0;
+
+    const gathered = executeCommand(at, defaultWorld, { type: "search" });
+    expect(gathered.inventory.find((entry) => entry.id === "item.healing-draught")?.quantity).toBe(before + 1);
+    expect(gathered.log.some((entry) => entry.tags.includes("item"))).toBe(true);
+
+    const again = executeCommand(gathered, defaultWorld, { type: "search" });
+    expect(again.inventory.find((entry) => entry.id === "item.healing-draught")?.quantity).toBe(before + 1);
+  });
+
   it("bleeds the party on the hooked-corridor damage floor", () => {
     const before = dungeonAt("room.b2f.001");
     const stepped = executeCommand(before, defaultWorld, { type: "move_forward" });

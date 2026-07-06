@@ -284,6 +284,7 @@ export const ja = {
       spinner: "回転床",
       teleporter: "転移床",
       hazard: "刃の床",
+      gather: "採集点",
       event: "出来事",
       trap: "罠(解除済)",
       treasure: "宝"

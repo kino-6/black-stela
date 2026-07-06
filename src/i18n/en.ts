@@ -282,6 +282,7 @@ export const en = {
       spinner: "Spinner floor",
       teleporter: "Teleporter",
       hazard: "Damage floor",
+      gather: "Gather point",
       event: "Event",
       trap: "Trap (cleared)",
       treasure: "Treasure"

@@ -56,14 +56,15 @@ grid:
 rooms:
   - id: room.b3f.001
     name: Dry Cistern Mouth
-    description: A round cistern lies dry, its rim cut like blunt teeth.
+    description: A round cistern lies dry, its rim cut like blunt teeth, with dried marsh-herbs still lodged in the cracks.
     locales:
       ja:
         name: 乾いた貯水口
-        description: 丸い貯水槽は乾き、縁は鈍い歯のように削られている。
+        description: 丸い貯水槽は乾き、縁は鈍い歯のように削られ、干からびた沢薬草が割れ目に残っている。
     exits:
       west: room.b2f.003
       east: room.b3f.002
+    gatherItem: item.healing-draught
     encounterTable: encounters.b3f.cistern
   - id: room.b3f.002
     name: Bitter Water Mark

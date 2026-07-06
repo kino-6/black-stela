@@ -420,6 +420,24 @@ function search(state: GameState, world: ScenarioWorld): CommandResult {
   }
 
   const room = getRoom(world, state.position.roomId);
+
+  // Gather point: a searchable resource node that yields its item once.
+  const gatherKey = `gather:${room.id}`;
+  if (room.gatherItem && !state.discoveredSecrets.includes(gatherKey)) {
+    const item = createInventoryItemFromCatalog(world, room.gatherItem, 1);
+    if (item) {
+      const next: GameState = {
+        ...state,
+        inventory: addInventoryItem(state.inventory, item),
+        discoveredSecrets: [...state.discoveredSecrets, gatherKey],
+        turn: state.turn + 1
+      };
+      return withEvents(next, [
+        { type: "inventory_item_gained", itemId: item.id, itemName: item.name, quantity: 1, source: "reward" }
+      ]);
+    }
+  }
+
   if (!room.trap || state.resolvedTraps.includes(room.trap.id)) {
     return logOnly(state, { type: "search_completed", result: "none" });
   }

@@ -361,6 +361,7 @@ export interface DungeonRoom {
   spinner?: boolean;
   teleportTo?: string;
   damageTile?: number;
+  gatherItem?: string;
   trap?: Trap;
   encounter?: Enemy;
   encounterTable?: string;

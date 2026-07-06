@@ -2036,6 +2036,12 @@ textarea {
   transform: translate(0, 0) rotate(45deg);
 }
 
+/* Gather point: a green node. */
+.mini-map-marker.marker-gather {
+  border-radius: 50%;
+  background: #6fca6a;
+}
+
 /* Event: a cyan disc. */
 .mini-map-marker.marker-event {
   border-radius: 50%;

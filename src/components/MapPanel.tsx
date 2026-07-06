@@ -21,7 +21,7 @@ const directionOffsets: Record<Direction, { x: number; y: number }> = {
 };
 
 type EdgeKind = "open" | "wall" | "door" | "locked" | "stairs";
-type CellMarker = "return" | "stairs" | "spinner" | "teleporter" | "hazard" | "event" | "trap" | "treasure" | null;
+type CellMarker = "return" | "stairs" | "spinner" | "teleporter" | "hazard" | "gather" | "event" | "trap" | "treasure" | null;
 
 interface MiniMapCell {
   id: string;
@@ -141,6 +141,9 @@ function cellMarker(room: DungeonRoom, state: GameState, edges: Record<Direction
   }
   if (room.damageTile) {
     return "hazard";
+  }
+  if (room.gatherItem && !state.discoveredSecrets.includes(`gather:${room.id}`)) {
+    return "gather";
   }
   if (DIRECTIONS.some((direction) => edges[direction] === "stairs")) {
     return "stairs";
