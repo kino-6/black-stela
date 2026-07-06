@@ -320,6 +320,7 @@ function moveForward(state: GameState, world: ScenarioWorld): CommandResult {
   }
 
   next = applySpinner(next, room, events);
+  next = applyHazard(next, room, events);
   const teleport = applyTeleport(next, world, room, events);
   next = teleport.state;
 
@@ -390,6 +391,7 @@ function useStairs(state: GameState, world: ScenarioWorld): CommandResult {
   }
 
   next = applySpinner(next, targetRoom, events);
+  next = applyHazard(next, targetRoom, events);
   const teleport = applyTeleport(next, world, targetRoom, events);
   next = teleport.state;
 
@@ -1305,6 +1307,20 @@ function applyTeleport(
       map: roomVisit.map
     },
     teleported: true
+  };
+}
+
+// Etrian-style damage floor: standing on it bleeds every party member. Repeatable
+// (unlike a one-shot trap), so it is real attrition each time it is crossed.
+function applyHazard(state: GameState, room: DungeonRoom, events: GameEvent[]): GameState {
+  if (!room.damageTile || state.party.length === 0) {
+    return state;
+  }
+  const damage = room.damageTile;
+  events.push({ type: "hazard_damage", damage });
+  return {
+    ...state,
+    party: state.party.map((member) => ({ ...member, hp: Math.max(1, member.hp - damage) }))
   };
 }
 

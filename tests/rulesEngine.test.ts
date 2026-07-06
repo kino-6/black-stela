@@ -220,6 +220,14 @@ describe("runtime gates and shortcuts", () => {
     expect(atBar.log.some((entry) => entry.tags.includes("shortcut"))).toBe(true);
   });
 
+  it("bleeds the party on the hooked-corridor damage floor", () => {
+    const before = dungeonAt("room.b2f.001");
+    const stepped = executeCommand(before, defaultWorld, { type: "move_forward" });
+    expect(stepped.position?.roomId).toBe("room.b2f.002");
+    expect(stepped.log.some((entry) => entry.tags.includes("hazard"))).toBe(true);
+    expect(stepped.party[0].hp).toBeLessThan(before.party[0].hp);
+  });
+
   it("teleports the party back when they step onto the one-way walk", () => {
     const stepped = executeCommand(dungeonAt("room.b4f.001"), defaultWorld, { type: "move_forward" });
     expect(stepped.position?.roomId).toBe("room.b4f.001");

@@ -280,6 +280,7 @@ export const en = {
       stairs: "Stairs",
       spinner: "Spinner floor",
       teleporter: "Teleporter",
+      hazard: "Damage floor",
       event: "Event",
       trap: "Trap (cleared)",
       treasure: "Treasure"
@@ -301,6 +302,7 @@ export const en = {
     shortcutOpened: "A shortcut opens nearby.",
     spinnerTriggered: "The floor turns underfoot; your sense of direction slips away.",
     teleported: "A hidden teleporter wrenches the party somewhere else.",
+    hazardDamage: "The bladed floor bites; each of the party loses {damage} HP.",
     stairsUsed: "The party takes the stair to the next floor.",
     roomEntered: "The party advances into {room}.",
     trapTriggered: "{trap} snaps shut. The party is injured, but nobody is erased.",

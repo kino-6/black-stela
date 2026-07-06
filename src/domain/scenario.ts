@@ -198,6 +198,7 @@ const roomSchema = z.object({
   restPoint: z.boolean().optional(),
   spinner: z.boolean().optional(),
   teleportTo: z.string().optional(),
+  damageTile: z.number().int().positive().optional(),
   trap: trapSchema.optional(),
   encounter: enemySchema.optional(),
   encounterTable: z.string().min(1).optional(),

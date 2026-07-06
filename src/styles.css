@@ -2007,6 +2007,13 @@ textarea {
   background: radial-gradient(circle, #1a0a1e 0 28%, #e05bd0 28% 60%, #1a0a1e 60%);
 }
 
+/* Damage floor: a red hazard diamond. */
+.mini-map-marker.marker-hazard {
+  border-radius: 1px;
+  background: #d9443a;
+  transform: translate(0, 0) rotate(45deg);
+}
+
 /* Event: a cyan disc. */
 .mini-map-marker.marker-event {
   border-radius: 50%;

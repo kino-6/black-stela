@@ -20,7 +20,7 @@ const directionOffsets: Record<Direction, { x: number; y: number }> = {
 };
 
 type EdgeKind = "open" | "wall" | "door" | "locked" | "stairs";
-type CellMarker = "return" | "stairs" | "spinner" | "teleporter" | "event" | "trap" | "treasure" | null;
+type CellMarker = "return" | "stairs" | "spinner" | "teleporter" | "hazard" | "event" | "trap" | "treasure" | null;
 
 interface MiniMapCell {
   id: string;
@@ -130,6 +130,9 @@ function cellMarker(world: ScenarioWorld, state: GameState, roomId: string, edge
   }
   if (room.teleportTo) {
     return "teleporter";
+  }
+  if (room.damageTile) {
+    return "hazard";
   }
   if (DIRECTIONS.some((direction) => edges[direction] === "stairs")) {
     return "stairs";

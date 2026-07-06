@@ -75,6 +75,7 @@ rooms:
     encounterTable: encounters.b2f.branches
   - id: room.b2f.002
     name: Hooked Corridor
+    damageTile: 2
     description: Iron hooks line the mortar gaps. Most are too old to move.
     locales:
       ja:

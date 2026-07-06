@@ -154,6 +154,7 @@ export type GameEvent =
   | { type: "shortcut_opened" }
   | { type: "spinner_triggered"; facing: Direction }
   | { type: "teleported"; toRoomId: string; toRoomName: string }
+  | { type: "hazard_damage"; damage: number }
   | { type: "stairs_used"; fromRoomId: string; toRoomId: string; toFloorId: string | null }
   | { type: "map_room_visited"; floorId: string; roomId: string }
   | { type: "map_exits_known"; floorId: string; roomId: string; exits: Direction[] }
@@ -359,6 +360,7 @@ export interface DungeonRoom {
   restPoint?: boolean;
   spinner?: boolean;
   teleportTo?: string;
+  damageTile?: number;
   trap?: Trap;
   encounter?: Enemy;
   encounterTable?: string;

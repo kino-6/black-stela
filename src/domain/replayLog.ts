@@ -61,6 +61,8 @@ export function projectEventToLog(event: GameEvent, locale: Locale = "en", world
       return { text: t("events.spinnerTriggered"), tags: ["spinner"] };
     case "teleported":
       return { text: t("events.teleported"), tags: ["teleport"] };
+    case "hazard_damage":
+      return { text: t("events.hazardDamage", { damage: event.damage }), tags: ["hazard"] };
     case "stairs_used":
       return { text: t("events.stairsUsed"), tags: ["move", "stairs"] };
     case "map_room_visited":
