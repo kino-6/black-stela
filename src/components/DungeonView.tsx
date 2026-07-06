@@ -5,7 +5,7 @@ import returnMarkerTextureUrl from "../assets/dungeon/return-marker.png";
 import stoneFloorTextureUrl from "../assets/dungeon/stone-floor.jpg";
 import stoneWallTextureUrl from "../assets/dungeon/stone-wall.jpg";
 import woodDoorTextureUrl from "../assets/dungeon/wood-door.jpg";
-import { getGridCellForRoom, getGridEdge, getRoom, isTraversableEdge } from "../domain/scenario";
+import { getGridCellForRoom, getGridEdge, getRoom, isTraversableEdge, secretKey } from "../domain/scenario";
 import type { Direction, GameState, ScenarioWorld } from "../domain/types";
 
 interface DungeonViewProps {
@@ -15,6 +15,9 @@ interface DungeonViewProps {
 }
 
 type EdgeVisual = "wall" | "open" | "door";
+// Geometry distinguishes stairs from a plain opening; the view model (and its
+// data-* attributes) keeps the coarser three-value language.
+type EdgeKindVisual = "wall" | "open" | "door" | "stairs";
 
 interface EdgeViewState {
   visual: EdgeVisual;
@@ -28,6 +31,14 @@ interface DungeonViewModel {
   frontTraversable: boolean;
 }
 
+interface CorridorSegment {
+  index: number;
+  left: EdgeKindVisual;
+  right: EdgeKindVisual;
+  /** Set on the final visible segment: what closes off the view ahead. */
+  frontCap?: EdgeKindVisual;
+}
+
 export interface DungeonRenderLayout {
   roomDepth: number;
   roomCenterZ: number;
@@ -36,9 +47,22 @@ export interface DungeonRenderLayout {
   frontDepth: "cell-edge" | "corridor";
 }
 
+// One grid cell is CELL deep; the camera stands in the current cell looking down
+// the corridor, and successive cells recede toward the fog.
+const CELL = 3.5;
+const HALF_WIDTH = 4;
+const WALL_HEIGHT = 3.2;
+const WALL_MID_Y = 1.5;
+const CEILING_Y = 3.1;
+const MAX_DEPTH = 4;
+
 export function DungeonView({ state, world, label }: DungeonViewProps) {
   const mountRef = useRef<HTMLDivElement | null>(null);
-  const viewModel = useMemo(() => getDungeonViewModel(state, world), [state.position, world]);
+  const viewModel = useMemo(() => getDungeonViewModel(state, world), [state.position, state.discoveredSecrets, world]);
+  const corridor = useMemo(
+    () => projectCorridorAhead(state, world),
+    [state.position, state.discoveredSecrets, world]
+  );
 
   useEffect(() => {
     if (!mountRef.current || !state.position || !viewModel) {
@@ -49,12 +73,12 @@ export function DungeonView({ state, world, label }: DungeonViewProps) {
     const width = mount.clientWidth;
     const height = mount.clientHeight;
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color("#11120f");
-    scene.fog = new THREE.Fog("#11120f", 8, 22);
+    scene.background = new THREE.Color("#0d0e0b");
+    scene.fog = new THREE.Fog("#0d0e0b", 6, 20);
 
-    const camera = new THREE.PerspectiveCamera(62, width / height, 0.1, 100);
-    camera.position.set(0, 1.5, 4.5);
-    camera.lookAt(0, 1.3, -4);
+    const camera = new THREE.PerspectiveCamera(66, width / height, 0.1, 100);
+    camera.position.set(0, 1.5, 2.4);
+    camera.lookAt(0, 1.32, -6);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, preserveDrawingBuffer: true });
     renderer.setSize(width, height);
@@ -87,12 +111,12 @@ export function DungeonView({ state, world, label }: DungeonViewProps) {
     const ashSlimeTexture = loadTexture(ashSlimeTextureUrl);
     const returnMarkerTexture = loadTexture(returnMarkerTextureUrl);
 
-    const ambient = new THREE.AmbientLight("#9a9383", 1.8);
-    const torch = new THREE.PointLight("#f0b76c", 58, 26);
-    torch.position.set(-1.5, 2.4, 2.2);
-    const frontLight = new THREE.SpotLight("#ffe0a0", 34, 18, Math.PI / 6, 0.4, 1);
-    frontLight.position.set(0, 2.8, 2.8);
-    frontLight.target.position.set(0, 1.1, -5.4);
+    const ambient = new THREE.AmbientLight("#9a9383", 1.7);
+    const torch = new THREE.PointLight("#f0b76c", 55, 26);
+    torch.position.set(-1.5, 2.4, 1.6);
+    const frontLight = new THREE.SpotLight("#ffe0a0", 30, 20, Math.PI / 6, 0.4, 1);
+    frontLight.position.set(0, 2.8, 2.0);
+    frontLight.target.position.set(0, 1.1, -6.4);
     scene.add(ambient, torch, frontLight, frontLight.target);
 
     const wallMaterial = new THREE.MeshStandardMaterial({
@@ -131,62 +155,30 @@ export function DungeonView({ state, world, label }: DungeonViewProps) {
       depthWrite: false
     });
 
-    const {
-      roomDepth,
-      roomCenterZ,
-      frontWallZ,
-      sideFeatureZ
-    } = getDungeonRenderLayout(viewModel);
+    // Build the corridor cell by cell: floor and ceiling for every visible cell,
+    // a solid wall or a door where the side is closed, and nothing where it is
+    // open (the darkness beyond reads as a branching passage). The last segment
+    // is capped by whatever blocks the view ahead.
+    for (const segment of corridor) {
+      const zCenter = -segment.index * CELL;
 
-    const floor = new THREE.Mesh(new THREE.BoxGeometry(8, 0.2, roomDepth), floorMaterial);
-    floor.position.set(0, -0.1, roomCenterZ);
-    scene.add(floor);
+      const floorTile = new THREE.Mesh(new THREE.BoxGeometry(HALF_WIDTH * 2, 0.2, CELL), floorMaterial);
+      floorTile.position.set(0, -0.1, zCenter);
+      scene.add(floorTile);
 
-    const ceiling = new THREE.Mesh(new THREE.BoxGeometry(8, 0.2, roomDepth), wallMaterial);
-    ceiling.position.set(0, 3.1, roomCenterZ);
-    scene.add(ceiling);
+      const ceilingTile = new THREE.Mesh(new THREE.BoxGeometry(HALF_WIDTH * 2, 0.2, CELL), wallMaterial);
+      ceilingTile.position.set(0, CEILING_Y, zCenter);
+      scene.add(ceilingTile);
 
-    const leftWall = new THREE.Mesh(new THREE.BoxGeometry(0.25, 3.2, roomDepth), wallMaterial);
-    leftWall.position.set(-4, 1.5, roomCenterZ);
-    scene.add(leftWall);
+      addSideFeature(scene, wallMaterial, doorMaterial, edgeMaterial, "left", segment.left, zCenter);
+      addSideFeature(scene, wallMaterial, doorMaterial, edgeMaterial, "right", segment.right, zCenter);
 
-    const rightWall = new THREE.Mesh(new THREE.BoxGeometry(0.25, 3.2, roomDepth), wallMaterial);
-    rightWall.position.set(4, 1.5, roomCenterZ);
-    scene.add(rightWall);
-
-    const frontWall = new THREE.Mesh(new THREE.BoxGeometry(8, 3.2, 0.25), wallMaterial);
-    frontWall.position.set(0, 1.5, frontWallZ);
-    scene.add(frontWall);
+      if (segment.frontCap) {
+        addFrontCap(scene, wallMaterial, doorMaterial, floorMaterial, edgeMaterial, segment.frontCap, zCenter);
+      }
+    }
 
     const room = getRoom(world, state.position.roomId);
-    if (viewModel.front === "door") {
-      const door = createDoor(doorMaterial, edgeMaterial);
-      door.position.set(0, 1.15, frontWallZ + 0.12);
-      scene.add(door);
-    } else if (viewModel.front === "open") {
-      const opening = createFrontOpening(floorMaterial, edgeMaterial);
-      opening.position.set(0, 1.12, frontWallZ + 0.12);
-      scene.add(opening);
-    }
-
-    if (viewModel.left !== "wall") {
-      const leftFeature =
-        viewModel.left === "door"
-          ? createSideDoor(doorMaterial, edgeMaterial)
-          : createSideOpening(floorMaterial, edgeMaterial);
-      leftFeature.position.set(-3.86, 1.06, sideFeatureZ);
-      leftFeature.rotation.y = Math.PI / 2;
-      scene.add(leftFeature);
-    }
-    if (viewModel.right !== "wall") {
-      const rightFeature =
-        viewModel.right === "door"
-          ? createSideDoor(doorMaterial, edgeMaterial)
-          : createSideOpening(floorMaterial, edgeMaterial);
-      rightFeature.position.set(3.86, 1.06, sideFeatureZ);
-      rightFeature.rotation.y = -Math.PI / 2;
-      scene.add(rightFeature);
-    }
 
     if (state.phase === "combat" && state.combat) {
       const enemyShadow = new THREE.Mesh(new THREE.CircleGeometry(1.22, 32), enemyShadowMaterial);
@@ -204,7 +196,7 @@ export function DungeonView({ state, world, label }: DungeonViewProps) {
 
     if (room.trap && !state.resolvedTraps.includes(room.trap.id)) {
       const trap = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 0.04, 3), hazardMaterial);
-      trap.position.set(0, 0.04, -2.15);
+      trap.position.set(0, 0.04, -1.5);
       trap.rotation.y = Math.PI / 3;
       scene.add(trap);
     }
@@ -213,8 +205,6 @@ export function DungeonView({ state, world, label }: DungeonViewProps) {
       scene.add(createReturnMarker(returnMarkerMaterial));
     }
 
-    addStoneCourses(scene, wallMaterial, frontWallZ);
-
     renderScene();
 
     return () => {
@@ -222,7 +212,7 @@ export function DungeonView({ state, world, label }: DungeonViewProps) {
       renderer.dispose();
       mount.removeChild(renderer.domElement);
     };
-  }, [state.position, state.phase, state.combat?.enemy.id, state.resolvedTraps, viewModel, world]);
+  }, [state.position, state.phase, state.combat?.enemy.id, state.resolvedTraps, corridor, viewModel, world]);
 
   return (
     <div className="dungeon-view" aria-label={label}>
@@ -260,9 +250,10 @@ export function getDungeonViewModel(state: GameState, world: ScenarioWorld): Dun
 
   const room = getRoom(world, state.position.roomId);
   const hasGridCell = Boolean(getGridCellForRoom(world, state.position.roomId));
-  const front = getEdgeViewState(world, room.id, state.position.facing, hasGridCell, room);
-  const left = getEdgeViewState(world, room.id, turn(state.position.facing, "left"), hasGridCell, room);
-  const right = getEdgeViewState(world, room.id, turn(state.position.facing, "right"), hasGridCell, room);
+  const secrets = state.discoveredSecrets;
+  const front = getEdgeViewState(world, room.id, state.position.facing, hasGridCell, room, secrets);
+  const left = getEdgeViewState(world, room.id, turn(state.position.facing, "left"), hasGridCell, room, secrets);
+  const right = getEdgeViewState(world, room.id, turn(state.position.facing, "right"), hasGridCell, room, secrets);
 
   return {
     front: front.visual,
@@ -277,12 +268,21 @@ function getEdgeViewState(
   roomId: string,
   direction: Direction,
   hasGridCell: boolean,
-  room: ReturnType<typeof getRoom>
+  room: ReturnType<typeof getRoom>,
+  discoveredSecrets: string[]
 ): EdgeViewState {
   const edge = getGridEdge(world, roomId, direction);
   if (edge) {
-    if (edge.kind === "door" || edge.kind === "locked" || edge.kind === "secret") {
+    if (edge.kind === "door" || edge.kind === "locked") {
       return { visual: "door", traversable: isTraversableEdge(edge) };
+    }
+
+    // A hidden passage stays wall-blank until searched out; once found it reads
+    // as a doorway, matching the minimap and never leaking the secret early.
+    if (edge.kind === "secret") {
+      return discoveredSecrets.includes(secretKey(roomId, direction))
+        ? { visual: "door", traversable: true }
+        : { visual: "wall", traversable: false };
     }
 
     return isTraversableEdge(edge)
@@ -303,6 +303,131 @@ function getEdgeViewState(
     : { visual: "wall", traversable: false };
 }
 
+// Walk forward through open edges, collecting the cells the party can see down
+// the corridor along with each cell's side walls, until a wall/door/stairs (or
+// the depth limit) closes the view.
+export function projectCorridorAhead(state: GameState, world: ScenarioWorld): CorridorSegment[] {
+  if (!state.position) {
+    return [];
+  }
+
+  const facing = state.position.facing;
+  const leftDir = turn(facing, "left");
+  const rightDir = turn(facing, "right");
+  const segments: CorridorSegment[] = [];
+  let roomId: string | undefined = state.position.roomId;
+
+  for (let index = 0; index < MAX_DEPTH && roomId; index += 1) {
+    const left = geometryEdgeKind(world, roomId, leftDir, state.discoveredSecrets);
+    const right = geometryEdgeKind(world, roomId, rightDir, state.discoveredSecrets);
+    const front = geometryEdgeKind(world, roomId, facing, state.discoveredSecrets);
+    const forwardEdge = getGridEdge(world, roomId, facing);
+    const canContinue = front === "open" && Boolean(forwardEdge?.targetRoomId) && index < MAX_DEPTH - 1;
+
+    if (canContinue) {
+      segments.push({ index, left, right });
+      roomId = forwardEdge?.targetRoomId;
+    } else {
+      segments.push({ index, left, right, frontCap: front });
+      break;
+    }
+  }
+
+  return segments;
+}
+
+function geometryEdgeKind(
+  world: ScenarioWorld,
+  roomId: string,
+  direction: Direction,
+  discoveredSecrets: string[]
+): EdgeKindVisual {
+  const edge = getGridEdge(world, roomId, direction);
+  if (!edge) {
+    if (!getGridCellForRoom(world, roomId)) {
+      const room = getRoom(world, roomId);
+      if (room.doors?.includes(direction)) {
+        return "door";
+      }
+      return room.exits[direction] ? "open" : "wall";
+    }
+    return "wall";
+  }
+
+  switch (edge.kind) {
+    case "door":
+    case "locked":
+      return "door";
+    case "secret":
+      return discoveredSecrets.includes(secretKey(roomId, direction)) ? "door" : "wall";
+    case "stairs":
+      return "stairs";
+    case "open":
+    case "one_way":
+    case "shortcut":
+      return isTraversableEdge(edge) ? "open" : "wall";
+    default:
+      return "wall";
+  }
+}
+
+function addSideFeature(
+  scene: THREE.Scene,
+  wallMaterial: THREE.Material,
+  doorMaterial: THREE.Material,
+  edgeMaterial: THREE.Material,
+  side: "left" | "right",
+  kind: EdgeKindVisual,
+  zCenter: number
+) {
+  const x = side === "left" ? -HALF_WIDTH : HALF_WIDTH;
+
+  // Open (and stairs) sides are left as gaps so the passage beyond is visible.
+  if (kind === "open" || kind === "stairs") {
+    return;
+  }
+
+  const wall = new THREE.Mesh(new THREE.BoxGeometry(0.25, WALL_HEIGHT, CELL), wallMaterial);
+  wall.position.set(x, WALL_MID_Y, zCenter);
+  scene.add(wall);
+
+  if (kind === "door") {
+    const door = createSideDoor(doorMaterial, edgeMaterial);
+    door.position.set(side === "left" ? x + 0.14 : x - 0.14, 1.06, zCenter);
+    door.rotation.y = side === "left" ? Math.PI / 2 : -Math.PI / 2;
+    scene.add(door);
+  }
+}
+
+function addFrontCap(
+  scene: THREE.Scene,
+  wallMaterial: THREE.Material,
+  doorMaterial: THREE.Material,
+  floorMaterial: THREE.Material,
+  edgeMaterial: THREE.Material,
+  kind: EdgeKindVisual,
+  zCenter: number
+) {
+  // The view fades into fog when the corridor runs past the depth limit.
+  if (kind === "open") {
+    return;
+  }
+
+  const z = zCenter - CELL / 2;
+  const wall = new THREE.Mesh(new THREE.BoxGeometry(HALF_WIDTH * 2, WALL_HEIGHT, 0.25), wallMaterial);
+  wall.position.set(0, WALL_MID_Y, z);
+  scene.add(wall);
+  addStoneCourses(scene, wallMaterial, z);
+
+  if (kind === "door") {
+    const door = createDoor(doorMaterial, edgeMaterial);
+    door.position.set(0, 1.15, z + 0.14);
+    scene.add(door);
+  } else if (kind === "stairs") {
+    scene.add(createStairs(floorMaterial, edgeMaterial, z));
+  }
+}
+
 function createDoor(material: THREE.Material, edgeMaterial: THREE.Material) {
   const group = new THREE.Group();
   const slab = new THREE.Mesh(new THREE.BoxGeometry(2.15, 2.62, 0.2), material);
@@ -316,15 +441,6 @@ function createDoor(material: THREE.Material, edgeMaterial: THREE.Material) {
   return group;
 }
 
-function createFrontOpening(material: THREE.Material, edgeMaterial: THREE.Material) {
-  const group = new THREE.Group();
-  const voidPanel = new THREE.Mesh(new THREE.BoxGeometry(2.55, 2.35, 0.06), material);
-  const frame = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(2.7, 2.5, 0.08)), edgeMaterial);
-  voidPanel.position.set(0, 0, 0.01);
-  group.add(voidPanel, frame);
-  return group;
-}
-
 function createSideDoor(material: THREE.Material, edgeMaterial: THREE.Material) {
   const group = new THREE.Group();
   const slab = new THREE.Mesh(new THREE.BoxGeometry(1.35, 2.2, 0.16), material);
@@ -333,18 +449,27 @@ function createSideDoor(material: THREE.Material, edgeMaterial: THREE.Material) 
   return group;
 }
 
-function createSideOpening(material: THREE.Material, edgeMaterial: THREE.Material) {
+function createStairs(stepMaterial: THREE.Material, edgeMaterial: THREE.Material, z: number) {
   const group = new THREE.Group();
-  const voidPanel = new THREE.Mesh(new THREE.BoxGeometry(1.45, 2.18, 0.14), material);
-  const frame = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(1.58, 2.32, 0.18)), edgeMaterial);
-  group.add(voidPanel, frame);
+  const stepCount = 5;
+  for (let index = 0; index < stepCount; index += 1) {
+    const step = new THREE.Mesh(new THREE.BoxGeometry(3.2, 0.24, 0.46), stepMaterial);
+    step.position.set(0, 0.12 + index * 0.26, z + 1.4 - index * 0.46);
+    group.add(step);
+  }
+  const frame = new THREE.LineSegments(
+    new THREE.EdgesGeometry(new THREE.BoxGeometry(3.3, stepCount * 0.26, 0.05)),
+    edgeMaterial
+  );
+  frame.position.set(0, stepCount * 0.13, z + 0.2);
+  group.add(frame);
   return group;
 }
 
 function createReturnMarker(material: THREE.SpriteMaterial) {
   const marker = new THREE.Sprite(material);
-  marker.position.set(0, 0.92, 0.88);
-  marker.scale.set(1.75, 2.35, 1);
+  marker.position.set(0, 0.92, 0.4);
+  marker.scale.set(1.6, 2.15, 1);
   return marker;
 }
 
