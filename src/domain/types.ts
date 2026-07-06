@@ -153,6 +153,7 @@ export type GameEvent =
   | { type: "movement_blocked"; reason: "wall" | "stairs" | "locked"; roomId: string; facing: Direction }
   | { type: "shortcut_opened" }
   | { type: "spinner_triggered"; facing: Direction }
+  | { type: "teleported"; toRoomId: string; toRoomName: string }
   | { type: "stairs_used"; fromRoomId: string; toRoomId: string; toFloorId: string | null }
   | { type: "map_room_visited"; floorId: string; roomId: string }
   | { type: "map_exits_known"; floorId: string; roomId: string; exits: Direction[] }
@@ -357,6 +358,7 @@ export interface DungeonRoom {
   stairsToTown?: boolean;
   restPoint?: boolean;
   spinner?: boolean;
+  teleportTo?: string;
   trap?: Trap;
   encounter?: Enemy;
   encounterTable?: string;

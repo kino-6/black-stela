@@ -279,6 +279,7 @@ export const en = {
       return: "Return stair",
       stairs: "Stairs",
       spinner: "Spinner floor",
+      teleporter: "Teleporter",
       event: "Event",
       trap: "Trap (cleared)",
       treasure: "Treasure"
@@ -299,6 +300,7 @@ export const en = {
     movementBlockedLocked: "The way is locked. Something here must open it first.",
     shortcutOpened: "A shortcut opens nearby.",
     spinnerTriggered: "The floor turns underfoot; your sense of direction slips away.",
+    teleported: "A hidden teleporter wrenches the party somewhere else.",
     stairsUsed: "The party takes the stair to the next floor.",
     roomEntered: "The party advances into {room}.",
     trapTriggered: "{trap} snaps shut. The party is injured, but nobody is erased.",

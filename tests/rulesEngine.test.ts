@@ -220,6 +220,12 @@ describe("runtime gates and shortcuts", () => {
     expect(atBar.log.some((entry) => entry.tags.includes("shortcut"))).toBe(true);
   });
 
+  it("teleports the party back when they step onto the one-way walk", () => {
+    const stepped = executeCommand(dungeonAt("room.b4f.001"), defaultWorld, { type: "move_forward" });
+    expect(stepped.position?.roomId).toBe("room.b4f.001");
+    expect(stepped.log.some((entry) => entry.tags.includes("teleport"))).toBe(true);
+  });
+
   it("spins the party's facing when they reach the lanterns spinner floor", () => {
     const spin = ["north", "east", "south", "west"] as const;
     const spun = executeCommand(dungeonAt("room.b3f.003"), defaultWorld, { type: "use_stairs" });

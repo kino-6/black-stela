@@ -281,6 +281,7 @@ export const ja = {
       return: "帰還階段",
       stairs: "階段",
       spinner: "回転床",
+      teleporter: "転移床",
       event: "出来事",
       trap: "罠(解除済)",
       treasure: "宝"
@@ -301,6 +302,7 @@ export const ja = {
     movementBlockedLocked: "行く手は施錠されている。まず何かで開ける必要がある。",
     shortcutOpened: "近くで近道が開いた。",
     spinnerTriggered: "足元の床が回り、方角を見失う。",
+    teleported: "隠れた転移床が、隊列を別の場所へ引きずり込む。",
     stairsUsed: "隊列は階段を降りた。",
     roomEntered: "隊列は{room}へ進んだ。",
     trapTriggered: "{trap} が作動した。隊列は傷を負ったが、誰も失われていない。",

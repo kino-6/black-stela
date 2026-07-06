@@ -320,6 +320,8 @@ function moveForward(state: GameState, world: ScenarioWorld): CommandResult {
   }
 
   next = applySpinner(next, room, events);
+  const teleport = applyTeleport(next, world, room, events);
+  next = teleport.state;
 
   const encounter = room.encounter
     ? { enemy: world.enemies.find((enemy) => enemy.id === room.encounter?.id) ?? room.encounter, count: 1 }
@@ -327,7 +329,7 @@ function moveForward(state: GameState, world: ScenarioWorld): CommandResult {
       ? resolveEncounterTable(world, room.encounterTable, state.turn)
       : null;
 
-  if (encounter && !state.defeatedEnemies.includes(encounter.enemy.id)) {
+  if (!teleport.teleported && encounter && !state.defeatedEnemies.includes(encounter.enemy.id)) {
     next = {
       ...next,
       phase: "combat",
@@ -388,6 +390,8 @@ function useStairs(state: GameState, world: ScenarioWorld): CommandResult {
   }
 
   next = applySpinner(next, targetRoom, events);
+  const teleport = applyTeleport(next, world, targetRoom, events);
+  next = teleport.state;
 
   const encounter = targetRoom.encounter
     ? { enemy: world.enemies.find((enemy) => enemy.id === targetRoom.encounter?.id) ?? targetRoom.encounter, count: 1 }
@@ -395,7 +399,7 @@ function useStairs(state: GameState, world: ScenarioWorld): CommandResult {
       ? resolveEncounterTable(world, targetRoom.encounterTable, state.turn)
       : null;
 
-  if (encounter && !state.defeatedEnemies.includes(encounter.enemy.id)) {
+  if (!teleport.teleported && encounter && !state.defeatedEnemies.includes(encounter.enemy.id)) {
     next = {
       ...next,
       phase: "combat",
@@ -1273,6 +1277,34 @@ function applySpinner(state: GameState, room: DungeonRoom, events: GameEvent[]):
     ...state,
     position: { ...state.position, facing },
     map: { ...state.map, currentFacing: facing }
+  };
+}
+
+// Wizardry-style teleporter floor: stepping onto it silently warps the party to
+// another room. Transit only — the source room's content is skipped.
+function applyTeleport(
+  state: GameState,
+  world: ScenarioWorld,
+  room: DungeonRoom,
+  events: GameEvent[]
+): { state: GameState; teleported: boolean } {
+  if (!room.teleportTo || !state.position) {
+    return { state, teleported: false };
+  }
+
+  const targetRoom = getRoom(world, room.teleportTo);
+  const roomVisit = visitRoom(state, world, targetRoom.id, state.position.facing);
+  const targetCell = getGridCellForRoom(world, targetRoom.id);
+  events.push({ type: "teleported", toRoomId: targetRoom.id, toRoomName: targetRoom.name });
+  events.push(...roomVisit.events);
+
+  return {
+    state: {
+      ...state,
+      position: { ...state.position, roomId: targetRoom.id, cellId: targetCell?.id },
+      map: roomVisit.map
+    },
+    teleported: true
   };
 }
 

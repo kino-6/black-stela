@@ -2001,6 +2001,12 @@ textarea {
   background: conic-gradient(#c9a0f0, #6a3fb0, #c9a0f0, #6a3fb0, #c9a0f0);
 }
 
+/* Teleporter: a magenta ringed disc. */
+.mini-map-marker.marker-teleporter {
+  border-radius: 50%;
+  background: radial-gradient(circle, #1a0a1e 0 28%, #e05bd0 28% 60%, #1a0a1e 60%);
+}
+
 /* Event: a cyan disc. */
 .mini-map-marker.marker-event {
   border-radius: 50%;

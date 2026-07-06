@@ -68,13 +68,14 @@ rooms:
     encounterTable: encounters.b4f.dark
   - id: room.b4f.002
     name: One-Way Walk
-    description: The floor slopes too gently to notice until the party turns back.
+    description: The floor slopes too gently to notice until the party turns back and finds the lanterns again.
     locales:
       ja:
         name: 一方坂
-        description: 振り返るまで気づかないほど、床はかすかに傾いている。
+        description: 振り返るまで気づかないほど床はかすかに傾き、気づけば内向きの灯具の間に戻っている。
     exits:
       south: room.b4f.003
+    teleportTo: room.b4f.001
     gates:
       - id: gate.b4f.one-way
         direction: south
