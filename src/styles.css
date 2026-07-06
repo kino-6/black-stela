@@ -1868,14 +1868,14 @@ textarea {
   align-items: stretch;
   justify-items: stretch;
   width: max-content;
-  min-width: calc(5 * 1.48rem);
-  min-height: calc(5 * 1.48rem);
+  min-width: calc(5 * 1.7rem);
+  min-height: calc(5 * 1.7rem);
 }
 
 .mini-map-cell {
   position: relative;
   display: block;
-  width: 1.48rem;
+  width: 1.7rem;
   aspect-ratio: 1;
   margin: -1px 0 0 -1px;
   border: 2px solid transparent;
@@ -1939,74 +1939,91 @@ textarea {
 .mini-map-cell.edge-south-locked { border-bottom: 3px double #d76a4a; }
 .mini-map-cell.edge-west-locked { border-left: 3px double #d76a4a; }
 
-/* On-cell landmarks: a small badge in the top-left corner, so it never
-   collides with the centred facing arrow on the current cell. */
+/* On-cell landmarks: a distinct, outlined badge in the top-left corner. It
+   sits above the facing arrow (z-index) so it stays readable on the current cell. */
 .mini-map-marker {
   position: absolute;
-  left: 2px;
-  top: 2px;
-  width: 0.42rem;
-  height: 0.42rem;
-  border-radius: 50%;
+  left: 1px;
+  top: 1px;
+  width: 0.62rem;
+  height: 0.62rem;
+  z-index: 2;
   pointer-events: none;
-  box-shadow: 0 0 0 1px rgba(8, 9, 7, 0.85);
+  box-shadow: 0 0 0 1.5px rgba(6, 7, 6, 0.92);
 }
 
-.mini-map-marker.marker-stairs,
+/* Return seal: an amber stamped ring. */
 .mini-map-marker.marker-return {
-  border-radius: 1px;
-  background: linear-gradient(#f6ead0 34%, #a9772f 34% 67%, #f6ead0 67%);
+  border-radius: 50%;
+  background: #f4d270;
+  box-shadow: 0 0 0 1.5px rgba(6, 7, 6, 0.92), inset 0 0 0 2px #6f4a12;
 }
 
+/* Downstairs: an amber down-pointing wedge. */
+.mini-map-marker.marker-stairs {
+  width: 0;
+  height: 0;
+  box-shadow: none;
+  border-left: 0.35rem solid transparent;
+  border-right: 0.35rem solid transparent;
+  border-top: 0.52rem solid #f2c24a;
+  filter: drop-shadow(0 0 1px rgba(6, 7, 6, 0.95));
+}
+
+/* Event: a cyan disc. */
 .mini-map-marker.marker-event {
-  background: #7cc0e6;
+  border-radius: 50%;
+  background: #5cb8ea;
 }
 
+/* Treasure: a gold square. */
 .mini-map-marker.marker-treasure {
   border-radius: 1px;
   background: #f0cd57;
 }
 
+/* Trap: an orange up-pointing wedge. */
 .mini-map-marker.marker-trap {
   width: 0;
   height: 0;
-  border-radius: 0;
   box-shadow: none;
-  border-left: 0.26rem solid transparent;
-  border-right: 0.26rem solid transparent;
-  border-bottom: 0.42rem solid #d76a4a;
+  border-left: 0.35rem solid transparent;
+  border-right: 0.35rem solid transparent;
+  border-bottom: 0.52rem solid #e8873a;
+  filter: drop-shadow(0 0 1px rgba(6, 7, 6, 0.95));
 }
 
-/* Facing arrow: compact and high-contrast on the gold current cell. */
+/* Facing arrow: a large red arrow, dark-outlined for contrast on the gold cell. */
 .mini-map-facing {
   position: absolute;
   left: 50%;
   top: 50%;
   width: 0;
   height: 0;
+  z-index: 3;
   transform: translate(-50%, -50%);
   border-style: solid;
-  filter: drop-shadow(0 0 2px rgba(246, 235, 210, 0.55));
+  filter: drop-shadow(0 0 1.5px rgba(10, 6, 4, 0.95));
 }
 
 .mini-map-facing.facing-north {
-  border-width: 0 0.16rem 0.28rem;
-  border-color: transparent transparent #241a08;
+  border-width: 0 0.32rem 0.52rem;
+  border-color: transparent transparent #e23a2a;
 }
 
 .mini-map-facing.facing-east {
-  border-width: 0.16rem 0 0.16rem 0.28rem;
-  border-color: transparent transparent transparent #241a08;
+  border-width: 0.32rem 0 0.32rem 0.52rem;
+  border-color: transparent transparent transparent #e23a2a;
 }
 
 .mini-map-facing.facing-south {
-  border-width: 0.28rem 0.16rem 0;
-  border-color: #241a08 transparent transparent;
+  border-width: 0.52rem 0.32rem 0;
+  border-color: #e23a2a transparent transparent;
 }
 
 .mini-map-facing.facing-west {
-  border-width: 0.16rem 0.28rem 0.16rem 0;
-  border-color: transparent #241a08 transparent transparent;
+  border-width: 0.32rem 0.52rem 0.32rem 0;
+  border-color: transparent #e23a2a transparent transparent;
 }
 
 .command-bar {
