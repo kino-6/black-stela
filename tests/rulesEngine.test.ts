@@ -246,6 +246,38 @@ describe("runtime gates and shortcuts", () => {
     expect(stepped.log.some((entry) => entry.tags.includes("teleport"))).toBe(true);
   });
 
+  it("opens the B3F drop-shaft shortcut only after the winch is wound", () => {
+    // Entering the winch grants the flag and logs the shortcut opening.
+    const atWinch = executeCommand(
+      dungeonAt("room.b3f.c1_8", { position: { roomId: "room.b3f.c1_8", facing: "west" } }),
+      defaultWorld,
+      { type: "move_forward" }
+    );
+    expect(atWinch.position?.roomId).toBe("room.b3f.winch");
+    expect(atWinch.discoveredSecrets).toContain("flag.b3f.winch");
+    expect(atWinch.log.some((entry) => entry.tags.includes("shortcut"))).toBe(true);
+
+    // Without the flag, the hub's shaft cage will not hold.
+    const blocked = executeCommand(
+      dungeonAt("room.b3f.hub", { position: { roomId: "room.b3f.hub", facing: "south" } }),
+      defaultWorld,
+      { type: "move_forward" }
+    );
+    expect(blocked.position?.roomId).toBe("room.b3f.hub");
+    expect(blocked.log.at(-1)?.tags).toContain("locked");
+
+    // With the winch wound, the shortcut rides straight back to the entry.
+    const rode = executeCommand(
+      dungeonAt("room.b3f.hub", {
+        position: { roomId: "room.b3f.hub", facing: "south" },
+        discoveredSecrets: ["flag.b3f.winch"]
+      }),
+      defaultWorld,
+      { type: "move_forward" }
+    );
+    expect(rode.position?.roomId).toBe("room.b3f.001");
+  });
+
   it("hides the ash-vault cache behind a secret wall until the party searches", () => {
     const facingSecret = dungeonAt("room.b7f.002", { position: { roomId: "room.b7f.002", facing: "south" } });
 

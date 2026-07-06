@@ -18,6 +18,13 @@ treasureTables:
     entries:
       - itemId: item.healing-draught
         weight: 8
+  - id: treasure.b3f.side
+    tier: 2
+    entries:
+      - itemId: item.lantern-oil
+        weight: 5
+      - itemId: item.healing-draught
+        weight: 3
   - id: treasure.b4f.dark
     tier: 3
     entries:

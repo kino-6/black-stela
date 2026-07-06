@@ -10,72 +10,75 @@ tags:
   - status
   - block-1
   - block-cap
-authorNotes: Adds resource pressure and the first status-oriented enemy family.
+authorNotes: >-
+  Dense cistern grid: looping north galleries, a dead-end reliquary nook, a
+  warden choke guarding the descent, and a wound-winch shortcut back to the
+  entry. Authored as an ASCII map; corridors are auto-expanded by the loader.
 startRoom: room.b3f.001
-grid:
-  cells:
-    - id: cell.b3f.001
-      roomId: room.b3f.001
-      x: 0
-      y: 0
-      edges:
-        west:
-          kind: stairs
-          targetRoomId: room.b2f.003
-          targetFloorId: dungeon.b2f
-        east:
-          kind: open
-          targetRoomId: room.b3f.002
-          targetCellId: cell.b3f.002
-    - id: cell.b3f.002
-      roomId: room.b3f.002
-      x: 1
-      y: 0
-      edges:
-        west:
-          kind: open
-          targetRoomId: room.b3f.001
-          targetCellId: cell.b3f.001
-        south:
-          kind: open
-          targetRoomId: room.b3f.003
-          targetCellId: cell.b3f.003
-    - id: cell.b3f.003
-      roomId: room.b3f.003
-      x: 1
-      y: 1
-      edges:
-        north:
-          kind: open
-          targetRoomId: room.b3f.002
-          targetCellId: cell.b3f.002
-        east:
-          kind: stairs
-          targetRoomId: room.b4f.001
-          targetFloorId: dungeon.b4f
+map: |
+  E.......T
+  .#.###.##
+  .........
+  .###.###.
+  .........
+  ####M####
+  .........
+  .#.#.#.#.
+  W.H.....D
+symbols:
+  E: room.b3f.001
+  M: room.b3f.002
+  D: room.b3f.003
+  T: room.b3f.cache
+  W: room.b3f.winch
+  H: room.b3f.hub
+corridor:
+  name: Cistern Gallery
+  description: A low gallery of fitted stone, the floor scored by old water-lines and drifting ash.
+  locales:
+    ja:
+      name: 貯水回廊
+      description: 切石の低い回廊。床には古い水位線と流れ込んだ灰の筋が残る。
+edges:
+  - from: room.b3f.001
+    direction: west
+    kind: stairs
+    to: room.b2f.003
+    targetFloorId: dungeon.b2f
+  - from: room.b3f.003
+    direction: east
+    kind: stairs
+    to: room.b4f.001
+    targetFloorId: dungeon.b4f
+  - from: room.b3f.hub
+    direction: south
+    kind: shortcut
+    to: room.b3f.001
 rooms:
   - id: room.b3f.001
     name: Dry Cistern Mouth
-    description: A round cistern lies dry, its rim cut like blunt teeth, with dried marsh-herbs still lodged in the cracks.
+    description: A round cistern lies dry, its rim cut like blunt teeth, with dried marsh-herbs still lodged in the cracks. Stairs climb west toward B2F.
     locales:
       ja:
         name: 乾いた貯水口
-        description: 丸い貯水槽は乾き、縁は鈍い歯のように削られ、干からびた沢薬草が割れ目に残っている。
-    exits:
-      west: room.b2f.003
-      east: room.b3f.002
+        description: 丸い貯水槽は乾き、縁は鈍い歯のように削られ、干からびた沢薬草が割れ目に残っている。西の階段はB2Fへ上る。
     gatherItem: item.healing-draught
     encounterTable: encounters.b3f.cistern
+  - id: room.b3f.cache
+    name: Silt Reliquary
+    description: A dead-end nook where the receding water left a caked shelf of silt, and something wrapped in oiled cloth.
+    locales:
+      ja:
+        name: 泥の小祠
+        description: 水が引いたあとの行き止まりの窪み。固まった泥の棚に、油布に包まれた何かが残されている。
+    treasureTable: treasure.b3f.side
   - id: room.b3f.002
     name: Bitter Water Mark
-    description: Green stains mark where water once reached the party's waist.
+    description: Green stains mark where water once reached the party's waist. The only way down lies through here.
     locales:
       ja:
         name: 苦水の跡
-        description: 緑の染みが、かつて水が腰まで届いたことを示している。
-    exits:
-      west: room.b3f.001
-      south: room.b3f.003
+        description: 緑の染みが、かつて水が腰まで届いたことを示している。下りへの道はここを抜けるほかない。
     trap:
       id: trap.b3f.bitter-needle
       name: Bitter Needle
@@ -93,6 +96,37 @@ rooms:
       tags:
         - block-cap
     treasureTable: treasure.b3f.watermark
+  - id: room.b3f.winch
+    name: Drowned Winch
+    description: A great iron winch leans over a capped drop-shaft. Wound tight, it would haul a cage straight up to the cistern mouth.
+    locales:
+      ja:
+        name: 沈んだ巻き上げ機
+        description: 蓋をされた竪坑の上に、大きな鉄の巻き上げ機が傾いている。巻き上げれば、籠は貯水口まで一気に上がるだろう。
+    gates:
+      - id: gate.b3f.winch
+        kind: shortcut
+        grantsFlag: flag.b3f.winch
+        clue: The winch is wound; the drop-shaft to the entry now bears a cage.
+        locales:
+          ja:
+            clue: 巻き上げ機を締めた。入口へ通じる竪坑に、いまは籠が掛かっている。
+  - id: room.b3f.hub
+    name: Drop-Shaft Landing
+    description: A railed landing over the capped shaft. If the winch were wound, a cage here would ride straight back to the entry.
+    locales:
+      ja:
+        name: 竪坑の踊り場
+        description: 蓋をした竪坑の上の、手すり付きの踊り場。巻き上げ機さえ締まっていれば、ここの籠で入口まで戻れる。
+    gates:
+      - id: gate.b3f.shortcut
+        direction: south
+        kind: shortcut
+        requiredFlag: flag.b3f.winch
+        clue: Without the winch wound, the shaft cage will not hold.
+        locales:
+          ja:
+            clue: 巻き上げ機が締まっていなければ、竪坑の籠は保たない。
   - id: room.b3f.003
     name: Chain Descent
     description: A chain ladder descends through a square well of silent air. A worn rope-ring by the well still holds the way back to town.
@@ -100,13 +134,12 @@ rooms:
       ja:
         name: 鎖の降り口
         description: 鎖梯子が、音のない四角い井戸を下っている。井戸端の擦り切れた綱の環が、まだ帰り道を保っている。
-    exits:
-      north: room.b3f.002
-      east: room.b4f.001
     restPoint: true
     event: The chain is cold enough to numb fingers through leather.
 ---
 
 # B3F - Cistern Teeth
 
-Resource pressure begins to matter. Optional treasure sits beside warning signs.
+A dense cistern grid. Looping northern galleries hide a dead-end reliquary; the
+warden's mark is the only way down; and a wound winch opens a drop-shaft
+shortcut straight back to the entry for the return climb.

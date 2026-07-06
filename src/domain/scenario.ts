@@ -1,4 +1,5 @@
 import yaml from "js-yaml";
+import { expandFloorMap, isMapFloor } from "./floorMap";
 import { z } from "zod";
 import type { Direction, DungeonFloor, DungeonGridCell, DungeonGridEdge, ScenarioWorld } from "./types";
 
@@ -287,7 +288,16 @@ export function parseMarkdownFrontMatter<T>(
 }
 
 export function parseDungeonFloor(markdown: string): DungeonFloor {
-  return parseMarkdownFrontMatter(markdown, dungeonFloorSchema).data as DungeonFloor;
+  const match = markdown.match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/);
+  if (!match) {
+    throw new Error("Scenario document is missing YAML front matter.");
+  }
+
+  const raw = yaml.load(match[1]);
+  // A floor may be authored either as an explicit `grid`/`rooms` pair or as a
+  // dense ASCII `map`; expand the latter into the canonical shape first.
+  const source = isMapFloor(raw) ? expandFloorMap(raw) : raw;
+  return dungeonFloorSchema.parse(source) as DungeonFloor;
 }
 
 export function parseScenarioWorld(

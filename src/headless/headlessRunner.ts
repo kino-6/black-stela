@@ -44,13 +44,21 @@ export function runHeadlessClear(initialState: GameState, world: ScenarioWorld, 
   let state = initialState;
   const commands: Command[] = [];
   const trace: HeadlessStepTrace[] = [];
+  // Run-scoped visit counts let the explorer prefer least-trodden ground when a
+  // room offers no unexplored exit, so it walks out of dense loops instead of
+  // ping-ponging between two already-seen cells.
+  const visitCounts = new Map<string, number>();
 
   for (let step = 0; step < maxSteps; step += 1) {
     if (isMvpCleared(state)) {
       return { cleared: true, reason: "clear", state, commands, trace };
     }
 
-    const decision = chooseNextCommand(state, world);
+    if (state.position) {
+      visitCounts.set(state.position.roomId, (visitCounts.get(state.position.roomId) ?? 0) + 1);
+    }
+
+    const decision = chooseNextCommand(state, world, visitCounts);
     if (!decision.command) {
       return { cleared: false, reason: "stuck", state, commands, trace, diagnostic: decision.diagnostic };
     }
@@ -90,7 +98,7 @@ export function runHeadlessClear(initialState: GameState, world: ScenarioWorld, 
   };
 }
 
-export function runHeadlessProbes(world: ScenarioWorld, maxSteps = 80): HeadlessProbeResult[] {
+export function runHeadlessProbes(world: ScenarioWorld, maxSteps = 300): HeadlessProbeResult[] {
   return debugProgressValues
     .filter((progress) => progress !== "ready")
     .map((progress) => ({
@@ -128,7 +136,7 @@ const leftOf: Record<Direction, Direction> = {
   east: "north"
 };
 
-function chooseNextCommand(state: GameState, world: ScenarioWorld): HeadlessDecision {
+function chooseNextCommand(state: GameState, world: ScenarioWorld, visitCounts: Map<string, number> = new Map()): HeadlessDecision {
   if (state.phase === "town") {
     return state.party.length > 0
       ? { command: { type: "enter_dungeon" }, knowledge: "town_state" }
@@ -159,7 +167,12 @@ function chooseNextCommand(state: GameState, world: ScenarioWorld): HeadlessDeci
     return { command: { type: "return_to_town" }, knowledge: "known_room_state" };
   }
 
-  const direction = chooseExplorationDirection(state, room.exits, state.map.knownExits[state.position.roomId] ?? []);
+  const direction = chooseExplorationDirection(
+    state,
+    room.exits,
+    state.map.knownExits[state.position.roomId] ?? [],
+    visitCounts
+  );
   if (!direction) {
     return { command: null, knowledge: "known_map_exits", diagnostic: describeState(state, "no_route") };
   }
@@ -178,15 +191,29 @@ function chooseNextCommand(state: GameState, world: ScenarioWorld): HeadlessDeci
 function chooseExplorationDirection(
   state: GameState,
   exits: Partial<Record<Direction, string>>,
-  knownDirections: Direction[]
+  knownDirections: Direction[],
+  visitCounts: Map<string, number>
 ): Direction | null {
   const directions = directionOrder.filter((direction) => knownDirections.includes(direction) && exits[direction]);
   const unexplored = directions.find((direction) => {
     const roomId = exits[direction];
     return roomId ? !state.map.visitedRooms.includes(roomId) : false;
   });
+  if (unexplored) {
+    return unexplored;
+  }
 
-  return unexplored ?? directions[0] ?? null;
+  if (directions.length === 0) {
+    return null;
+  }
+
+  // No unexplored exit: head toward the least-visited neighbour (ties broken by
+  // the fixed direction order) so dense loops unwind instead of oscillating.
+  return directions.reduce((best, direction) => {
+    const cost = visitCounts.get(exits[direction] ?? "") ?? 0;
+    const bestCost = visitCounts.get(exits[best] ?? "") ?? 0;
+    return cost < bestCost ? direction : best;
+  }, directions[0]);
 }
 
 function turnToward(facing: Direction, target: Direction): Command {
