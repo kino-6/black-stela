@@ -1,5 +1,14 @@
 import { appendEventLogs } from "./replayLog";
-import { getExit, getFloorIdForRoom, getGridCellForRoom, getGridEdge, getKnownGridDirections, getRoom, isBossFloor } from "./scenario";
+import {
+  getExit,
+  getFloorIdForRoom,
+  getGridCellForRoom,
+  getGridEdge,
+  getKnownGridDirections,
+  getRoom,
+  isBossFloor,
+  secretKey
+} from "./scenario";
 import {
   addInventoryItem,
   calculateRecoveryCost,
@@ -236,10 +245,15 @@ function moveForward(state: GameState, world: ScenarioWorld): CommandResult {
   }
 
   // An open gate lets the party through its otherwise-impassable edge (e.g. a
-  // locked vault opened with the right key).
+  // locked vault opened with the right key); a discovered secret edge (hidden
+  // passage) likewise becomes traversable once searched out.
+  const secretRevealed =
+    forwardEdge?.kind === "secret" &&
+    Boolean(forwardEdge.targetRoomId) &&
+    state.discoveredSecrets.includes(secretKey(state.position.roomId, state.position.facing));
   const exit =
-    forwardGate && forwardEdge?.targetRoomId
-      ? forwardEdge.targetRoomId
+    (forwardGate && forwardEdge?.targetRoomId) || secretRevealed
+      ? forwardEdge?.targetRoomId
       : getExit(world, state.position.roomId, state.position.facing);
   if (!exit) {
     const floorId = state.map.floorId ?? getFloorIdForRoom(world, state.position.roomId);
@@ -420,6 +434,22 @@ function search(state: GameState, world: ScenarioWorld): CommandResult {
   }
 
   const room = getRoom(world, state.position.roomId);
+
+  // Hidden passage: searching reveals any secret grid edges of this cell.
+  const cell = getGridCellForRoom(world, room.id);
+  const secretDirections = cell
+    ? (Object.keys(cell.edges) as Direction[]).filter(
+        (direction) => cell.edges[direction]?.kind === "secret" && !state.discoveredSecrets.includes(secretKey(room.id, direction))
+      )
+    : [];
+  if (secretDirections.length > 0) {
+    const next: GameState = {
+      ...state,
+      discoveredSecrets: [...state.discoveredSecrets, ...secretDirections.map((direction) => secretKey(room.id, direction))],
+      turn: state.turn + 1
+    };
+    return withEvents(next, [{ type: "secret_found" }]);
+  }
 
   // Gather point: a searchable resource node that yields its item once.
   const gatherKey = `gather:${room.id}`;

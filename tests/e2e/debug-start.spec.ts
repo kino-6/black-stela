@@ -5,11 +5,11 @@ test("debug start can load progress and run the reachability probe", async ({ pa
 
   await expect(page.getByRole("heading", { name: "Debug Start" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Hall of Old Dust" })).toBeVisible();
-  await expect(page.getByText("Mapped 2/29")).toBeVisible();
+  await expect(page.getByText("Mapped 2/30")).toBeVisible();
 
   await page.getByRole("button", { name: "Headless reachability" }).click();
 
   await expect(page.getByText("Headless reachability: reached")).toBeVisible();
   await expect(page.getByRole("heading", { name: "Town", exact: true })).toBeVisible();
-  await expect(page.getByText("Mapped 6/29")).toBeVisible();
+  await expect(page.getByText("Mapped 6/30")).toBeVisible();
 });

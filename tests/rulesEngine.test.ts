@@ -246,6 +246,25 @@ describe("runtime gates and shortcuts", () => {
     expect(stepped.log.some((entry) => entry.tags.includes("teleport"))).toBe(true);
   });
 
+  it("hides the ash-vault cache behind a secret wall until the party searches", () => {
+    const facingSecret = dungeonAt("room.b7f.002", { position: { roomId: "room.b7f.002", facing: "south" } });
+
+    const blocked = executeCommand(facingSecret, defaultWorld, { type: "move_forward" });
+    expect(blocked.position?.roomId).toBe("room.b7f.002");
+    expect(blocked.log.at(-1)?.tags).toContain("blocked");
+
+    const searched = executeCommand(facingSecret, defaultWorld, { type: "search" });
+    expect(searched.discoveredSecrets).toContain("secret:room.b7f.002:south");
+    expect(searched.log.some((entry) => entry.tags.includes("secret"))).toBe(true);
+
+    const revealed = executeCommand(
+      { ...searched, position: { roomId: "room.b7f.002", facing: "south" } },
+      defaultWorld,
+      { type: "move_forward" }
+    );
+    expect(revealed.position?.roomId).toBe("room.b7f.004");
+  });
+
   it("spins the party's facing when they reach the lanterns spinner floor", () => {
     const spin = ["north", "east", "south", "west"] as const;
     const spun = executeCommand(dungeonAt("room.b3f.003"), defaultWorld, { type: "use_stairs" });

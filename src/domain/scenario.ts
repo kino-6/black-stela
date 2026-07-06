@@ -355,6 +355,12 @@ export function isBossFloor(world: ScenarioWorld, floorId: string | null): boole
   return Boolean(world.dungeons.find((dungeon) => dungeon.id === floorId)?.tags?.includes("boss"));
 }
 
+// A hidden passage (secret grid edge) is discovered per room+direction and the
+// flag persists in discoveredSecrets.
+export function secretKey(roomId: string, direction: Direction): string {
+  return `secret:${roomId}:${direction}`;
+}
+
 export function getLocalizedRoomText(world: ScenarioWorld, roomId: string, locale: string) {
   const room = getRoom(world, roomId);
   const localized = room.locales?.[locale];

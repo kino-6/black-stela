@@ -1,4 +1,4 @@
-import { getGridCellForRoom, getLocalizedRoomText, getRoom } from "../domain/scenario";
+import { getGridCellForRoom, getLocalizedRoomText, getRoom, secretKey } from "../domain/scenario";
 import { useMemo } from "react";
 import type { Direction, DungeonGridEdge, DungeonRoom, GameState, ScenarioWorld } from "../domain/types";
 import type { Locale, Translator } from "../i18n";
@@ -107,7 +107,7 @@ export function MapPanel({ state, world, locale, t }: MapPanelProps) {
   );
 }
 
-function edgeRenderKind(edge: DungeonGridEdge | undefined): EdgeKind {
+function edgeRenderKind(edge: DungeonGridEdge | undefined, secretRevealed = false): EdgeKind {
   if (!edge) {
     return "wall";
   }
@@ -122,8 +122,10 @@ function edgeRenderKind(edge: DungeonGridEdge | undefined): EdgeKind {
       return "locked";
     case "stairs":
       return "stairs";
-    case "wall":
     case "secret":
+      // A hidden passage stays indistinguishable from a wall until searched out.
+      return secretRevealed ? "door" : "wall";
+    case "wall":
     default:
       return "wall";
   }
@@ -190,11 +192,12 @@ function buildGridMiniMap(
 
   const cells: MiniMapCell[] = visibleCells.map((cell) => {
     const room = getRoom(world, cell.roomId);
+    const isRevealed = (direction: Direction) => state.discoveredSecrets.includes(secretKey(cell.roomId, direction));
     const edges: Record<Direction, EdgeKind> = {
-      north: edgeRenderKind(cell.edges.north),
-      east: edgeRenderKind(cell.edges.east),
-      south: edgeRenderKind(cell.edges.south),
-      west: edgeRenderKind(cell.edges.west)
+      north: edgeRenderKind(cell.edges.north, isRevealed("north")),
+      east: edgeRenderKind(cell.edges.east, isRevealed("east")),
+      south: edgeRenderKind(cell.edges.south, isRevealed("south")),
+      west: edgeRenderKind(cell.edges.west, isRevealed("west"))
     };
 
     return {

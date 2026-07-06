@@ -305,6 +305,7 @@ export const en = {
     spinnerTriggered: "The floor turns underfoot; your sense of direction slips away.",
     teleported: "A hidden teleporter wrenches the party somewhere else.",
     hazardDamage: "The bladed floor bites; each of the party loses {damage} HP.",
+    secretFound: "The search reveals a hidden passage in the wall.",
     stairsUsed: "The party takes the stair to the next floor.",
     roomEntered: "The party advances into {room}.",
     trapTriggered: "{trap} snaps shut. The party is injured, but nobody is erased.",

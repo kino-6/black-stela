@@ -40,6 +40,13 @@ treasureTables:
     entries:
       - itemId: item.stela-shard
         weight: 1
+  - id: treasure.b7f.cache
+    tier: 4
+    entries:
+      - itemId: equip.black-thread-ring
+        weight: 2
+      - itemId: item.healing-draught
+        weight: 4
   - id: treasure.b8f.final
     tier: 5
     entries:
