@@ -8,6 +8,7 @@ recommendedPartyLevel: 3
 tags:
   - miniboss
   - shortcut
+  - block-2
 authorNotes: Midpoint gate, miniboss, and economy pressure.
 startRoom: room.b5f.001
 grid:

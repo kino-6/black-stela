@@ -8,6 +8,7 @@ recommendedPartyLevel: 4
 tags:
   - optional
   - rare-reward
+  - block-3
 authorNotes: Optional high-risk side objective before the finale.
 startRoom: room.b7f.001
 grid:

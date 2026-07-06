@@ -8,6 +8,8 @@ recommendedPartyLevel: 2
 tags:
   - resources
   - status
+  - block-1
+  - block-cap
 authorNotes: Adds resource pressure and the first status-oriented enemy family.
 startRoom: room.b3f.001
 grid:
@@ -79,6 +81,16 @@ rooms:
       damage: 4
       detectDc: 12
       warning: The stain is broken by a line of pinholes.
+    encounter:
+      id: enemy.b3f.cistern-warden
+      name: Cistern Warden
+      hp: 11
+      attack: 3
+      role: miniboss
+      dangerTier: 2
+      isBoss: true
+      tags:
+        - block-cap
     treasureTable: treasure.b3f.watermark
   - id: room.b3f.003
     name: Chain Descent

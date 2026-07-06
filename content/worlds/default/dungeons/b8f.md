@@ -8,6 +8,8 @@ recommendedPartyLevel: 4
 tags:
   - finale
   - boss
+  - block-3
+  - block-cap
 authorNotes: Final commitment area and return-path pressure.
 startRoom: room.b8f.001
 grid:

@@ -8,6 +8,7 @@ recommendedPartyLevel: 1
 tags:
   - onboarding
   - mapping
+  - block-1
 authorNotes: Teaches movement, map reading, first trap, combat, and safe retreat.
 startRoom: room.b1f.001
 grid:

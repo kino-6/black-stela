@@ -8,6 +8,7 @@ recommendedPartyLevel: 1
 tags:
   - branching
   - shortcut
+  - block-1
 authorNotes: Introduces branch choice, locked shortcut, and a stronger hallway mix.
 startRoom: room.b2f.001
 grid:

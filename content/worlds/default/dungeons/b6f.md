@@ -8,6 +8,8 @@ recommendedPartyLevel: 3
 tags:
   - role-check
   - traps
+  - block-2
+  - block-cap
 authorNotes: Stronger traps and role checks without hard-locking party builds.
 startRoom: room.b6f.001
 grid:
@@ -79,6 +81,16 @@ rooms:
       damage: 5
       detectDc: 13
       warning: The safe slabs are silent under dropped grit.
+    encounter:
+      id: enemy.b6f.oath-warden
+      name: Oath Warden
+      hp: 18
+      attack: 5
+      role: miniboss
+      dangerTier: 4
+      isBoss: true
+      tags:
+        - block-cap
     treasureTable: treasure.b6f.oaths
   - id: room.b6f.003
     name: Salted Arch

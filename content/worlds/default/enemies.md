@@ -91,6 +91,44 @@ enemies:
     dangerTier: 4
     isBoss: true
     tags: [midpoint, boss]
+  - id: enemy.b3f.cistern-warden
+    name: Cistern Warden
+    locales:
+      ja:
+        name: 貯水の番人
+    hp: 11
+    attack: 3
+    armor: 1
+    accuracy: 78
+    damageMin: 2
+    damageMax: 5
+    speed: 6
+    morale: 10
+    xp: 12
+    gold: 9
+    role: miniboss
+    dangerTier: 2
+    isBoss: true
+    tags: [block-cap, boss]
+  - id: enemy.b6f.oath-warden
+    name: Oath Warden
+    locales:
+      ja:
+        name: 誓いの番人
+    hp: 18
+    attack: 5
+    armor: 2
+    accuracy: 82
+    damageMin: 3
+    damageMax: 6
+    speed: 6
+    morale: 11
+    xp: 22
+    gold: 15
+    role: miniboss
+    dangerTier: 4
+    isBoss: true
+    tags: [block-cap, boss]
   - id: enemy.b6f.oath-cutter
     name: Oath Cutter
     locales:

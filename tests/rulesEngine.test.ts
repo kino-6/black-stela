@@ -193,6 +193,22 @@ describe("checkpoint resume", () => {
   });
 });
 
+describe("three-block dungeon structure", () => {
+  it("caps each block with a boss gate, and B3/B6 caps add a rest point", () => {
+    const capFloors = defaultWorld.dungeons.filter((floor) => floor.tags?.includes("block-cap"));
+    expect(capFloors.map((floor) => floor.id)).toEqual(["dungeon.b3f", "dungeon.b6f", "dungeon.b8f"]);
+
+    for (const floor of capFloors) {
+      expect(floor.rooms.some((room) => room.encounter?.isBoss), `${floor.id} needs a boss gate`).toBe(true);
+    }
+
+    for (const id of ["dungeon.b3f", "dungeon.b6f"]) {
+      const floor = defaultWorld.dungeons.find((candidate) => candidate.id === id)!;
+      expect(floor.rooms.some((room) => room.restPoint), `${id} needs a rest point`).toBe(true);
+    }
+  });
+});
+
 describe("emergency return charm", () => {
   function dungeonWithCharm(roomId: string, floorId: string): GameState {
     return {

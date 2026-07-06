@@ -8,6 +8,7 @@ recommendedPartyLevel: 2
 tags:
   - one-way
   - dark-zone
+  - block-2
 authorNotes: Navigation twist floor with readable one-way and dark-zone clues.
 startRoom: room.b4f.001
 grid:
