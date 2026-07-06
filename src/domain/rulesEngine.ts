@@ -76,7 +76,7 @@ export function resolveCommand(state: GameState, world: ScenarioWorld, command: 
     case "defend":
       return defend(state);
     case "use_item":
-      return useItem(state, command.itemId, command.targetCharacterId);
+      return useItem(state, world, command.itemId, command.targetCharacterId);
     case "buy_item":
       return buyItem(state, world, command.shopId, command.itemId);
     case "sell_item":
@@ -629,8 +629,43 @@ function defend(state: GameState): CommandResult {
   ]);
 }
 
-function useItem(state: GameState, itemId: string, targetCharacterId: string): CommandResult {
+function useEscapeItem(state: GameState, world: ScenarioWorld, item: GameState["inventory"][number]): CommandResult {
+  if (state.phase !== "dungeon" || !state.position) {
+    return noChange(state);
+  }
+
+  // The escape charm is barred on the boss floor: the finale is a commitment.
+  const floor = world.dungeons.find((dungeon) => dungeon.id === state.map.floorId);
+  if (floor?.tags?.includes("boss")) {
+    return logOnly(state, { type: "command_blocked", reason: "town_return_unavailable", command: "return_to_town" });
+  }
+
+  const next: GameState = {
+    ...state,
+    phase: "town",
+    position: null,
+    combat: null,
+    map: {
+      ...state.map,
+      currentRoomId: null,
+      currentCellId: null,
+      currentFacing: null
+    },
+    inventory: state.inventory.map((candidate) =>
+      candidate.id === item.id ? { ...candidate, quantity: Math.max(0, candidate.quantity - 1) } : candidate
+    ),
+    turn: state.turn + 1
+  };
+
+  return withEvents(next, [{ type: "returned_to_town" }]);
+}
+
+function useItem(state: GameState, world: ScenarioWorld, itemId: string, targetCharacterId: string): CommandResult {
   const item = state.inventory.find((candidate) => candidate.id === itemId && candidate.quantity > 0);
+  if (item?.kind === "escape") {
+    return useEscapeItem(state, world, item);
+  }
+
   const target = state.party.find((member) => member.id === targetCharacterId);
   if (!item || !target || item.kind !== "healing" || !item.healAmount) {
     return noChange(state);

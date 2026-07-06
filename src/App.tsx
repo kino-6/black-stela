@@ -153,6 +153,11 @@ export function App() {
   }, [locale, state.position]);
   const currentRoom = useMemo(() => (state.position ? getRoom(defaultWorld, state.position.roomId) : null), [state.position]);
   const canReturnToTown = Boolean(currentRoom?.stairsToTown || currentRoom?.restPoint);
+  const escapeItem = state.inventory.find((item) => item.kind === "escape" && item.quantity > 0);
+  const currentFloorIsBoss = Boolean(
+    defaultWorld.dungeons.find((dungeon) => dungeon.id === state.map.floorId)?.tags?.includes("boss")
+  );
+  const canUseEscapeItem = Boolean(escapeItem) && state.phase === "dungeon" && !currentFloorIsBoss;
   const canUseStairs = Boolean(
     state.position && getGridEdge(defaultWorld, state.position.roomId, state.position.facing)?.kind === "stairs"
   );
@@ -1973,6 +1978,17 @@ export function App() {
                       {t("play.useReturnMarker")}
                     </button>
                   )}
+                  {canUseEscapeItem && escapeItem && (
+                    <button
+                      type="button"
+                      className="context-command"
+                      data-testid="use-return-charm"
+                      onClick={() => run({ type: "use_item", itemId: escapeItem.id, targetCharacterId: state.party[0]?.id ?? "" })}
+                    >
+                      <LogOut size={18} />
+                      {t("play.useReturnCharm")}
+                    </button>
+                  )}
                 </div>
               )}
             </div>
@@ -2322,7 +2338,7 @@ function shopCategoryFor(itemId: string): ShopCategory {
     return "trinket";
   }
   const item = defaultWorld.items.find((candidate) => candidate.id === itemId);
-  return item?.kind === "healing" ? "consumable" : "tool";
+  return item?.kind === "healing" || item?.kind === "escape" ? "consumable" : "tool";
 }
 
 function formatEquipmentSlot(slot: EquipmentSlot, t: Translator) {

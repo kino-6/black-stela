@@ -139,7 +139,7 @@ const CharacterSchema = z.object({
 const InventoryItemSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
-  kind: z.enum(["healing", "utility", "key", "treasure", "equipment"]),
+  kind: z.enum(["healing", "utility", "key", "treasure", "equipment", "escape"]),
   quantity: z.number().int().nonnegative(),
   healAmount: z.number().int().positive().optional(),
   slot: EquipmentSlotSchema.optional(),

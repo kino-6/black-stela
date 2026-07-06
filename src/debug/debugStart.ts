@@ -149,6 +149,12 @@ function createFloorDebugState(base: GameState, world: ScenarioWorld, progress: 
         name: "Lantern Oil",
         kind: "utility",
         quantity: 1
+      },
+      {
+        id: "item.return-charm",
+        name: "Warding Return Charm",
+        kind: "escape",
+        quantity: 1
       }
     ],
     map: createMapState(world, visitedRooms),

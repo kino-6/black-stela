@@ -39,6 +39,16 @@ items:
       ja:
         name: 黒碑片
         description: 黒碑の根から剥がれた小片。
+  - id: item.return-charm
+    name: Warding Return Charm
+    kind: escape
+    tier: 2
+    price: 90
+    sellValue: 30
+    locales:
+      ja:
+        name: 帰還の割符
+        description: 砕けば道を焼き、隊列を街へ引き戻す高価な割符。深部の逃げ道。
 equipment:
   - id: equip.rusted-dirk
     name: Rusted Dirk
@@ -205,6 +215,9 @@ shops:
         availability: always
       - itemId: item.lantern-oil
         price: 10
+        availability: always
+      - itemId: item.return-charm
+        price: 90
         availability: always
       - itemId: equip.rusted-dirk
         price: 22

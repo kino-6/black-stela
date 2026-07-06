@@ -168,6 +168,7 @@ export const en = {
     listen: "Listen",
     useStairs: "Use stairs",
     useReturnMarker: "Use return marker",
+    useReturnCharm: "Use return charm",
     partyStatus: "Party status",
     memberStatus: "Adventurer combat status",
     attack: "Attack",

@@ -192,3 +192,35 @@ describe("checkpoint resume", () => {
     expect(resumed.position).toBeNull();
   });
 });
+
+describe("emergency return charm", () => {
+  function dungeonWithCharm(roomId: string, floorId: string): GameState {
+    return {
+      ...stateWithParty(),
+      phase: "dungeon",
+      position: { roomId, facing: "east" },
+      map: { ...createInitialGameState().map, floorId },
+      inventory: [{ id: "item.return-charm", name: "Warding Return Charm", kind: "escape", quantity: 1 }]
+    };
+  }
+
+  it("escapes to town mid-floor and consumes the charm", () => {
+    const escaped = executeCommand(dungeonWithCharm("room.b3f.002", "dungeon.b3f"), defaultWorld, {
+      type: "use_item",
+      itemId: "item.return-charm",
+      targetCharacterId: "unused"
+    });
+    expect(escaped.phase).toBe("town");
+    expect(escaped.inventory.find((entry) => entry.id === "item.return-charm")?.quantity).toBe(0);
+  });
+
+  it("is barred on the boss floor", () => {
+    const blocked = executeCommand(dungeonWithCharm("room.b8f.001", "dungeon.b8f"), defaultWorld, {
+      type: "use_item",
+      itemId: "item.return-charm",
+      targetCharacterId: "unused"
+    });
+    expect(blocked.phase).toBe("dungeon");
+    expect(blocked.inventory.find((entry) => entry.id === "item.return-charm")?.quantity).toBe(1);
+  });
+});

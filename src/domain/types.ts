@@ -126,7 +126,7 @@ export interface Character {
 export interface InventoryItem {
   id: string;
   name: string;
-  kind: "healing" | "utility" | "key" | "treasure" | "equipment";
+  kind: "healing" | "utility" | "key" | "treasure" | "equipment" | "escape";
   quantity: number;
   healAmount?: number;
   slot?: EquipmentSlot;
@@ -377,7 +377,7 @@ export type EnemyRole = "attrition" | "blocker" | "status" | "ambusher" | "caste
 export interface ScenarioItem {
   id: string;
   name: string;
-  kind: "healing" | "utility" | "key" | "treasure";
+  kind: "healing" | "utility" | "key" | "treasure" | "escape";
   tier: number;
   price?: number;
   sellValue?: number;
