@@ -1,6 +1,7 @@
 import type { AdventureLogEntry, GameEvent } from "./types";
 import { getLocalizedRoomText } from "./scenario";
 import type { ScenarioWorld } from "./types";
+import { createTranslator, type Locale, type Translator } from "../i18n";
 
 interface LogProjection {
   text: string;
@@ -28,254 +29,164 @@ export function projectEventsToLogEntries(events: GameEvent[], turn: number): Ad
   });
 }
 
-export function projectEventToLog(event: GameEvent, locale = "en", world?: ScenarioWorld): LogProjection | null {
-  if (locale === "ja") {
-    return projectEventToJapaneseLog(event, world);
-  }
+export function projectEventToLog(event: GameEvent, locale: Locale = "en", world?: ScenarioWorld): LogProjection | null {
+  const t = createTranslator(locale);
 
   switch (event.type) {
     case "party_member_joined":
-      return { text: `${event.characterName} joined the roster.`, tags: ["party"] };
+      return { text: t("events.partyJoined", { name: event.characterName }), tags: ["party"] };
     case "command_blocked":
-      return projectBlockedCommand(event.reason);
+      return projectBlockedCommand(event.reason, t);
     case "dungeon_entered":
-      return { text: "The party descends beneath the black stela.", tags: ["dungeon"] };
+      return { text: t("events.dungeonEntered"), tags: ["dungeon"] };
     case "party_turned":
-      return { text: `The party turns ${event.side}, now facing ${event.facing}.`, tags: ["move"] };
+      return {
+        text: t("events.partyTurned", {
+          side: t(event.side === "left" ? "events.sideLeft" : "events.sideRight"),
+          facing: t(`direction.${event.facing}`)
+        }),
+        tags: ["move"]
+      };
     case "movement_blocked":
       return event.reason === "stairs"
-        ? { text: "A stair waits ahead. Choose Use stairs to descend.", tags: ["blocked", "stairs"] }
-        : { text: "A cold wall blocks the way.", tags: ["blocked"] };
+        ? { text: t("events.movementBlockedStairs"), tags: ["blocked", "stairs"] }
+        : { text: t("events.movementBlockedWall"), tags: ["blocked"] };
     case "stairs_used":
-      return { text: "The party takes the stair to the next floor.", tags: ["move", "stairs"] };
+      return { text: t("events.stairsUsed"), tags: ["move", "stairs"] };
     case "map_room_visited":
     case "map_exits_known":
     case "map_exit_blocked":
     case "map_secret_candidate_added":
       return null;
     case "room_entered":
-      return { text: `The party advances into ${event.roomName}.`, tags: ["move"] };
+      return { text: t("events.roomEntered", { room: resolveRoomName(event.roomId, event.roomName, world, locale) }), tags: ["move"] };
     case "trap_triggered":
-      return { text: `${event.trapName} snaps shut. The party is injured, but nobody is erased.`, tags: ["trap"] };
+      return { text: t("events.trapTriggered", { trap: event.trapName }), tags: ["trap"] };
     case "room_event_triggered":
-      return { text: event.text, tags: ["event"] };
+      return { text: resolveRoomEventText(event.roomId, event.text, world, locale), tags: ["event"] };
     case "enemy_encountered":
-      return { text: `${event.enemyName} blocks the passage.`, tags: ["combat"] };
+      return { text: t("events.enemyEncountered", { enemy: resolveEnemyName(event.enemyId, event.enemyName, world, locale) }), tags: ["combat"] };
     case "inspection_made":
-      return projectInspection(event.mode);
+      return projectInspection(event.mode, t);
     case "search_completed":
-      return { text: "The search finds no active danger.", tags: ["search"] };
+      return { text: t("events.searchCompleted"), tags: ["search"] };
     case "trap_detected":
-      return { text: `The party notices ${event.trapName}.`, tags: ["search"] };
+      return { text: t("events.trapDetected", { trap: event.trapName }), tags: ["search"] };
     case "trap_disarm_failed":
-      return { text: "There is no active trap to disarm.", tags: ["trap"] };
+      return { text: t("events.trapDisarmFailed"), tags: ["trap"] };
     case "trap_disarmed":
-      return { text: `${event.trapName} is made safe.`, tags: ["trap"] };
+      return { text: t("events.trapDisarmed", { trap: event.trapName }), tags: ["trap"] };
     case "enemy_damaged":
-      return { text: `${event.enemyName} reels, then wounds the front line.`, tags: ["combat"] };
+      return { text: t("events.enemyDamaged", { enemy: resolveEnemyName(event.enemyId, event.enemyName, world, locale) }), tags: ["combat"] };
     case "enemy_defeated":
-      return { text: `${event.enemyName} falls. The route is clear.`, tags: ["combat"] };
+      return { text: t("events.enemyDefeated", { enemy: resolveEnemyName(event.enemyId, event.enemyName, world, locale) }), tags: ["combat"] };
     case "combat_action_blocked":
       return {
         text:
           event.reason === "back_row_blocked"
-            ? `${event.actorName ?? "The back row"} cannot reach past the front row.`
-            : "The battle order cannot be completed.",
+            ? t("events.combatActionBackRow", { actor: event.actorName ?? t("events.backRowFallback") })
+            : t("events.combatActionBlocked"),
         tags: ["combat", "blocked"]
       };
     case "combat_round_resolved":
-      return { text: `Round ${event.round}: ${event.summaries.join(" ")}`, tags: ["combat", "round"] };
+      return { text: t("events.combatRoundResolved", { round: event.round, summaries: event.summaries.join(" ") }), tags: ["combat", "round"] };
     case "combat_rewards":
-      return { text: `Victory. The party earns ${event.xp} XP and ${event.gold} gold.`, tags: ["combat", "reward"] };
+      return { text: t("events.combatRewards", { xp: event.xp, gold: event.gold }), tags: ["combat", "reward"] };
     case "party_wounded":
-      return { text: `${event.enemyName} reels, then wounds the front line.`, tags: ["combat"] };
+      return { text: t("events.partyWounded", { enemy: resolveEnemyName(event.enemyId, event.enemyName, world, locale) }), tags: ["combat"] };
     case "character_injured":
-      return { text: `${event.characterName} is wounded but remains in the party.`, tags: ["injury"] };
+      return { text: t("events.characterInjured", { name: event.characterName }), tags: ["injury"] };
     case "party_defended":
-      return { text: `${event.enemyName} presses in, but the party holds formation.`, tags: ["combat", "defend"] };
-    case "item_used":
-      return { text: `${event.targetName} uses ${event.itemName} and recovers ${event.healAmount} HP.`, tags: ["item"] };
-    case "inventory_item_gained":
-      return { text: `Found ${event.itemName} x${event.quantity}.`, tags: ["item", event.source] };
-    case "item_bought":
-      return { text: `Bought ${event.itemName} for ${event.gold} gold.`, tags: ["town", "shop"] };
-    case "item_sold":
-      return { text: `Sold ${event.itemName} for ${event.gold} gold.`, tags: ["town", "shop"] };
-    case "equipment_changed":
-      return { text: `${event.characterName} equips ${event.itemName}.`, tags: ["town", "equipment"] };
-    case "party_recovered":
-      return { text: `The party rests in town for ${event.gold} gold.`, tags: ["town", "recovery"] };
-    case "recovery_blocked":
-      return { text: `The party cannot afford recovery. ${event.goldRequired} gold required.`, tags: ["town", "blocked"] };
-    case "party_retreated":
-      return { text: "The party retreats and regroups without losing anyone.", tags: ["combat", "retreat"] };
-    case "returned_to_town":
-      return { text: "The party returns to town. The record is preserved.", tags: ["town"] };
-    case "debug_started":
-      return { text: event.text, tags: ["debug"] };
-  }
-}
-
-function projectEventToJapaneseLog(event: GameEvent, world?: ScenarioWorld): LogProjection | null {
-  switch (event.type) {
-    case "party_member_joined":
-      return { text: `${event.characterName} が隊列に加わった。`, tags: ["party"] };
-    case "command_blocked":
-      return projectJapaneseBlockedCommand(event.reason);
-    case "dungeon_entered":
-      return { text: "隊列は黒い石碑の下へ降りた。", tags: ["dungeon"] };
-    case "party_turned":
-      return { text: `隊列は${event.side === "left" ? "左" : "右"}を向き、${translateDirection(event.facing)}を正面にした。`, tags: ["move"] };
-    case "movement_blocked":
-      return event.reason === "stairs"
-        ? { text: "正面に階段がある。降りるなら階段を使う。", tags: ["blocked", "stairs"] }
-        : { text: "冷たい壁が行く手を塞いでいる。", tags: ["blocked"] };
-    case "stairs_used":
-      return { text: "隊列は階段を降りた。", tags: ["move", "stairs"] };
-    case "map_room_visited":
-    case "map_exits_known":
-    case "map_exit_blocked":
-    case "map_secret_candidate_added":
-      return null;
-    case "room_entered":
-      return { text: `隊列は${roomName(world, event.roomId, event.roomName)}へ進んだ。`, tags: ["move"] };
-    case "trap_triggered":
-      return { text: `${event.trapName} が作動した。隊列は傷を負ったが、誰も失われていない。`, tags: ["trap"] };
-    case "room_event_triggered":
-      return { text: world ? getLocalizedRoomText(world, event.roomId, "ja").event ?? event.text : event.text, tags: ["event"] };
-    case "enemy_encountered":
-      return { text: `${localizedEnemyName(event.enemyId, event.enemyName, world)} が通路を塞いでいる。`, tags: ["combat"] };
-    case "inspection_made":
-      return projectJapaneseInspection(event.mode);
-    case "search_completed":
-      return { text: "探索したが、動いている危険は見つからない。", tags: ["search"] };
-    case "trap_detected":
-      return { text: `隊列は ${event.trapName} に気づいた。`, tags: ["search"] };
-    case "trap_disarm_failed":
-      return { text: "解除すべき罠はない。", tags: ["trap"] };
-    case "trap_disarmed":
-      return { text: `${event.trapName} は安全になった。`, tags: ["trap"] };
-    case "enemy_damaged":
-      return { text: `${localizedEnemyName(event.enemyId, event.enemyName, world)} はよろめき、前衛に傷を負わせた。`, tags: ["combat"] };
-    case "enemy_defeated":
-      return { text: `${localizedEnemyName(event.enemyId, event.enemyName, world)} は倒れた。道は開けた。`, tags: ["combat"] };
-    case "combat_action_blocked":
-      return {
-        text:
-          event.reason === "back_row_blocked"
-            ? `${event.actorName ?? "後衛"} は前衛を越えて攻撃できない。`
-            : "戦闘指示を完了できない。",
-        tags: ["combat", "blocked"]
-      };
-    case "combat_round_resolved":
-      return { text: `ラウンド ${event.round} の戦闘指示を実行した。`, tags: ["combat", "round"] };
-    case "combat_rewards":
-      return { text: `勝利。隊列は経験値 ${event.xp} と ${event.gold}G を得た。`, tags: ["combat", "reward"] };
-    case "party_wounded":
-      return { text: `${localizedEnemyName(event.enemyId, event.enemyName, world)} は前衛に傷を負わせた。`, tags: ["combat"] };
-    case "character_injured":
-      return { text: `${event.characterName} は負傷したが、隊列には残っている。`, tags: ["injury"] };
-    case "party_defended":
-      return { text: `${localizedEnemyName(event.enemyId, event.enemyName, world)} が迫るが、隊列は防御の構えを保った。`, tags: ["combat", "defend"] };
+      return { text: t("events.partyDefended", { enemy: resolveEnemyName(event.enemyId, event.enemyName, world, locale) }), tags: ["combat", "defend"] };
     case "item_used":
       return {
-        text: `${event.targetName} は ${localizedCatalogName(event.itemId, event.itemName, world)} を使い、HPを ${event.healAmount} 回復した。`,
+        text: t("events.itemUsed", {
+          target: event.targetName,
+          item: resolveCatalogName(event.itemId, event.itemName, world, locale),
+          hp: event.healAmount
+        }),
         tags: ["item"]
       };
     case "inventory_item_gained":
       return {
-        text: `${localizedCatalogName(event.itemId, event.itemName, world)} を ${event.quantity} 個見つけた。`,
+        text: t("events.inventoryItemGained", { item: resolveCatalogName(event.itemId, event.itemName, world, locale), quantity: event.quantity }),
         tags: ["item", event.source]
       };
     case "item_bought":
       return {
-        text: `${localizedCatalogName(event.itemId, event.itemName, world)} を ${event.gold}G で買った。`,
+        text: t("events.itemBought", { item: resolveCatalogName(event.itemId, event.itemName, world, locale), gold: event.gold }),
         tags: ["town", "shop"]
       };
     case "item_sold":
       return {
-        text: `${localizedCatalogName(event.itemId, event.itemName, world)} を売り、${event.gold}G を得た。`,
+        text: t("events.itemSold", { item: resolveCatalogName(event.itemId, event.itemName, world, locale), gold: event.gold }),
         tags: ["town", "shop"]
       };
     case "equipment_changed":
       return {
-        text: `${event.characterName} は ${localizedCatalogName(event.itemId, event.itemName, world)} を装備した。`,
+        text: t("events.equipmentChanged", { name: event.characterName, item: resolveCatalogName(event.itemId, event.itemName, world, locale) }),
         tags: ["town", "equipment"]
       };
     case "party_recovered":
-      return { text: `隊列は街で休み、${event.gold}G を支払った。`, tags: ["town", "recovery"] };
+      return { text: t("events.partyRecovered", { gold: event.gold }), tags: ["town", "recovery"] };
     case "recovery_blocked":
-      return { text: `回復には ${event.goldRequired}G 必要だ。`, tags: ["town", "blocked"] };
+      return { text: t("events.recoveryBlocked", { gold: event.goldRequired }), tags: ["town", "blocked"] };
     case "party_retreated":
-      return { text: "隊列は退却し、誰も失わずに立て直した。", tags: ["combat", "retreat"] };
+      return { text: t("events.partyRetreated"), tags: ["combat", "retreat"] };
     case "returned_to_town":
-      return { text: "隊列は街へ戻った。記録は残された。", tags: ["town"] };
+      return { text: t("events.returnedToTown"), tags: ["town"] };
     case "debug_started":
       return { text: event.text, tags: ["debug"] };
   }
 }
 
-function roomName(world: ScenarioWorld | undefined, roomId: string, fallback: string) {
-  return world ? getLocalizedRoomText(world, roomId, "ja").name : fallback;
+function resolveRoomName(roomId: string, fallback: string, world: ScenarioWorld | undefined, locale: Locale) {
+  return locale === "ja" && world ? getLocalizedRoomText(world, roomId, "ja").name : fallback;
 }
 
-function localizedCatalogName(itemId: string, fallback: string, world?: ScenarioWorld) {
+function resolveRoomEventText(roomId: string, fallback: string, world: ScenarioWorld | undefined, locale: Locale) {
+  return locale === "ja" && world ? getLocalizedRoomText(world, roomId, "ja").event ?? fallback : fallback;
+}
+
+function resolveCatalogName(itemId: string, fallback: string, world: ScenarioWorld | undefined, locale: Locale) {
+  if (locale !== "ja") {
+    return fallback;
+  }
   const item = world?.items.find((candidate) => candidate.id === itemId);
   const equipment = world?.equipment.find((candidate) => candidate.id === itemId);
   return item?.locales?.ja?.name ?? equipment?.locales?.ja?.name ?? fallback;
 }
 
-function localizedEnemyName(enemyId: string, fallback: string, world?: ScenarioWorld) {
+function resolveEnemyName(enemyId: string, fallback: string, world: ScenarioWorld | undefined, locale: Locale) {
+  if (locale !== "ja") {
+    return fallback;
+  }
   const enemy = world?.enemies.find((candidate) => candidate.id === enemyId);
   return enemy?.locales?.ja?.name ?? enemy?.name ?? fallback;
 }
 
-function translateDirection(direction: "north" | "east" | "south" | "west") {
-  return { north: "北", east: "東", south: "南", west: "西" }[direction];
-}
-
-function projectBlockedCommand(reason: "party_required" | "town_return_unavailable" | "stairs_unavailable"): LogProjection {
+function projectBlockedCommand(
+  reason: "party_required" | "town_return_unavailable" | "stairs_unavailable",
+  t: Translator
+): LogProjection {
   if (reason === "party_required") {
-    return { text: "A party is required before entering the labyrinth.", tags: ["blocked"] };
+    return { text: t("events.blockedPartyRequired"), tags: ["blocked"] };
   }
   if (reason === "stairs_unavailable") {
-    return { text: "There is no stair in front of the party.", tags: ["blocked", "stairs"] };
+    return { text: t("events.blockedStairsUnavailable"), tags: ["blocked", "stairs"] };
   }
 
-  return { text: "There is no stair or return seal here.", tags: ["blocked"] };
+  return { text: t("events.blockedNoReturn"), tags: ["blocked"] };
 }
 
-function projectJapaneseBlockedCommand(reason: "party_required" | "town_return_unavailable" | "stairs_unavailable"): LogProjection {
-  if (reason === "party_required") {
-    return { text: "迷宮に入るには隊列が必要だ。", tags: ["blocked"] };
-  }
-  if (reason === "stairs_unavailable") {
-    return { text: "正面に使える階段はない。", tags: ["blocked", "stairs"] };
-  }
-
-  return { text: "ここには街へ戻る階段も帰還印もない。", tags: ["blocked"] };
-}
-
-function projectJapaneseInspection(mode: "inspect_wall" | "listen" | "open_door"): LogProjection {
+function projectInspection(mode: "inspect_wall" | "listen" | "open_door", t: Translator): LogProjection {
   if (mode === "inspect_wall") {
-    return { text: "隊列は石組みを調べたが、進路は変わらない。", tags: ["inspect"] };
+    return { text: t("events.inspectWall"), tags: ["inspect"] };
   }
 
   if (mode === "listen") {
-    return { text: "組まれた石の向こうで、低い隙間風が動いている。", tags: ["listen"] };
+    return { text: t("events.listen"), tags: ["listen"] };
   }
 
-  return { text: "扉は慎重な一押しで開いた。", tags: ["door"] };
-}
-
-function projectInspection(mode: "inspect_wall" | "listen" | "open_door"): LogProjection {
-  if (mode === "inspect_wall") {
-    return { text: "The party studies the stonework without changing the route.", tags: ["inspect"] };
-  }
-
-  if (mode === "listen") {
-    return { text: "A low draft moves somewhere beyond the fitted blocks.", tags: ["listen"] };
-  }
-
-  return { text: "The door yields to a careful push.", tags: ["door"] };
+  return { text: t("events.openDoor"), tags: ["door"] };
 }

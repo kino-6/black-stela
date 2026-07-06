@@ -10,6 +10,8 @@ import {
 } from "../src/domain/characterCreation";
 import { createIdentitySuggestion } from "../src/domain/identitySuggestion";
 import { addCharacter, createInitialGameState } from "../src/domain/gameState";
+import { getEffectiveCharacterStats } from "../src/domain/economy";
+import { defaultWorld } from "../src/data/defaultWorld";
 
 describe("character creation", () => {
   it("offers enough class variety for a six-member DRPG party", () => {
@@ -60,10 +62,25 @@ describe("character creation", () => {
       memory: { injuries: 0, retreats: 0, notableVictories: [], deeds: [] }
     });
     expect(character.roleTags).toContain("trap_handling");
-    expect(character.startingEquipment).toContain("chalk cord");
+    expect(character.startingEquipment).toContain("equip.chalk-cord");
     expect(character.aptitude.wit).toBeGreaterThan(character.aptitude.might);
     expect(character.maxHp).toBeGreaterThan(0);
     expect(character.damageMax).toBeGreaterThanOrEqual(character.damageMin);
+  });
+
+  it("equips the class starting loadout so adventurers are not empty-handed", () => {
+    const vanguard = createGuildCharacter({ name: "Mira", classId: "vanguard" });
+    expect(vanguard.equipment.weapon).toBe("equip.militia-sabre");
+    expect(vanguard.equipment.body).toBe("equip.padded-jack");
+    const effective = getEffectiveCharacterStats(vanguard, defaultWorld);
+    expect(effective.attack).toBeGreaterThan(vanguard.attack);
+    expect(effective.armor).toBeGreaterThan(vanguard.armor);
+
+    // Every class enters with at least a weapon or protective slot filled.
+    for (const classDef of classCatalog) {
+      const member = createGuildCharacter({ name: "Test", classId: classDef.id });
+      expect(Object.keys(member.equipment).length).toBeGreaterThan(0);
+    }
   });
 
   it("uses the origin as the default visual accent when no manual color is provided", () => {

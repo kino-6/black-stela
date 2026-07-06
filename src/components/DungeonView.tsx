@@ -28,6 +28,14 @@ interface DungeonViewModel {
   frontTraversable: boolean;
 }
 
+export interface DungeonRenderLayout {
+  roomDepth: number;
+  roomCenterZ: number;
+  frontWallZ: number;
+  sideFeatureZ: number;
+  frontDepth: "cell-edge" | "corridor";
+}
+
 export function DungeonView({ state, world, label }: DungeonViewProps) {
   const mountRef = useRef<HTMLDivElement | null>(null);
   const viewModel = useMemo(() => getDungeonViewModel(state, world), [state.position, world]);
@@ -123,11 +131,12 @@ export function DungeonView({ state, world, label }: DungeonViewProps) {
       depthWrite: false
     });
 
-    const blockedFront = viewModel.front === "wall";
-    const roomDepth = blockedFront ? 5.8 : 12;
-    const roomCenterZ = blockedFront ? 1.55 : -1;
-    const frontWallZ = blockedFront ? -1.32 : -7;
-    const sideFeatureZ = blockedFront ? 1.05 : -2.7;
+    const {
+      roomDepth,
+      roomCenterZ,
+      frontWallZ,
+      sideFeatureZ
+    } = getDungeonRenderLayout(viewModel);
 
     const floor = new THREE.Mesh(new THREE.BoxGeometry(8, 0.2, roomDepth), floorMaterial);
     floor.position.set(0, -0.1, roomCenterZ);
@@ -223,12 +232,25 @@ export function DungeonView({ state, world, label }: DungeonViewProps) {
         data-front-edge={viewModel?.front ?? "unknown"}
         data-front-traversable={viewModel?.frontTraversable ? "true" : "false"}
         data-front-visual={viewModel?.front === "wall" ? "blocked-wall" : viewModel?.front ?? "unknown"}
+        data-front-depth={viewModel ? getDungeonRenderLayout(viewModel).frontDepth : "unknown"}
         data-left-edge={viewModel?.left ?? "unknown"}
         data-right-edge={viewModel?.right ?? "unknown"}
         data-testid="dungeon-canvas"
       />
     </div>
   );
+}
+
+export function getDungeonRenderLayout(viewModel: DungeonViewModel): DungeonRenderLayout {
+  const frontIsCurrentCellBoundary = viewModel.front === "wall" || viewModel.front === "door";
+
+  return {
+    roomDepth: frontIsCurrentCellBoundary ? 5.8 : 12,
+    roomCenterZ: frontIsCurrentCellBoundary ? 1.55 : -1,
+    frontWallZ: frontIsCurrentCellBoundary ? -1.32 : -7,
+    sideFeatureZ: 1.05,
+    frontDepth: frontIsCurrentCellBoundary ? "cell-edge" : "corridor"
+  };
 }
 
 export function getDungeonViewModel(state: GameState, world: ScenarioWorld): DungeonViewModel | null {

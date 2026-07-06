@@ -31,6 +31,10 @@ think or do.
 - Tone: restrained, physical, cold, old, local to the room.
 - Viewpoint: what the party can perceive now, not an omniscient explanation.
 - Length: one or two short Japanese sentences for normal room/town copy.
+- Line layout: the rendered Japanese line must wrap cleanly in the target
+  message box. A one-character orphan after wrapping is a rewrite signal.
+- Storage: reusable player-facing prose should live in scenario/localization
+  data, not component code, unless it is truly local to one developer-only view.
 - Content: one concrete object plus one sensory or spatial cue.
 - Function: every line must help orientation, risk, mood, or memory.
 
@@ -45,10 +49,14 @@ think or do.
    player-character emotion.
 6. Read the Japanese aloud. If it sounds like translated English, rewrite from
    Japanese word order and image first.
-7. For guild, shop, inn, and other service copy, do not list UI steps. Rewrite
+7. Render or estimate the target box width. If the line leaves a single
+   character on the next line, shorten or rebalance the sentence.
+8. For guild, shop, inn, and other service copy, do not list UI steps. Rewrite
    the same information as the speaker's job, test, warning, or offer inside
    the world.
-8. If the line is spoken, pass the Japanese Dialogue Gate: speaker, listener,
+9. Externalize reusable lines into scenario/localization data before adding
+   more component literals.
+10. If the line is spoken, pass the Japanese Dialogue Gate: speaker, listener,
    immediate intent, and read-aloud naturalness.
 
 ## Rewrite Pattern
@@ -93,5 +101,8 @@ Why:
 - [ ] Does it avoid speaking for player characters?
 - [ ] Does it avoid explaining theme or UI function?
 - [ ] Is it short enough to read during play?
+- [ ] Does it wrap cleanly in the actual message box, without a one-character
+  final-line orphan?
+- [ ] Is it scenario/localization data when reused or content-authored?
 - [ ] Does the English version localize the same scene rather than force the
   Japanese into a literal translation?

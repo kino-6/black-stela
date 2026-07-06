@@ -37,13 +37,22 @@ test("town shop supports buying, selling, and equipping without an admin table",
   await expect(page.getByRole("heading", { name: "Stela Gate General Store" })).toBeVisible();
   await expect(page.getByText("75 gold")).toBeVisible();
   await expect(page.getByText("Selected adventurer")).toBeVisible();
-  await page.getByRole("button", { name: "Buy" }).first().click();
-  await expect(page.getByText("Bought Healing Draught for 25 gold.")).toBeVisible();
-  await expect(page.getByTestId("shop-delta").first()).toBeVisible();
+
+  // Weapons category is the default; other slots live under their own tabs.
   await expect(page.getByText(/Weapon · DMG/).first()).toBeVisible();
+  await expect(page.getByTestId("shop-delta").first()).toBeVisible();
+  await page.getByTestId("shop-category-offhand").click();
   await expect(page.getByText(/Offhand · ARM/).first()).toBeVisible();
+  await page.getByTestId("shop-category-armor").click();
   await expect(page.getByText(/Body · ARM/).first()).toBeVisible();
+  await page.getByTestId("shop-category-trinket").click();
   await expect(page.getByText("Head", { exact: true }).first()).toBeVisible();
+
+  // Buy a consumable from its category, then a weapon, then equip it.
+  await page.getByTestId("shop-category-consumable").click();
+  await page.getByRole("button", { name: "Buy Healing Draught" }).click();
+  await expect(page.getByText("Bought Healing Draught for 25 gold.")).toBeVisible();
+  await page.getByTestId("shop-category-weapon").click();
   await page.getByRole("button", { name: "Buy Militia Sabre" }).click();
   await expect(page.getByText("Bought Militia Sabre for 45 gold.")).toBeVisible();
   const equipSabre = page.locator('button[aria-label^="Equip Militia Sabre to"]:not([disabled])').first();
@@ -82,10 +91,13 @@ test("Japanese shop equipment stays readable on mobile", async ({ page }) => {
 
   await expect(page.getByRole("heading", { name: "黒碑門の雑貨店" })).toBeVisible();
   await expect(page.getByText("見る冒険者")).toBeVisible();
+  // Weapons category is default and readable, then switch categories on mobile.
   await expect(page.getByText(/武器 ·/).first()).toBeVisible();
+  await expect(page.getByLabel("品揃え").getByText("民兵の湾刀")).toBeVisible();
+  await page.getByTestId("shop-category-offhand").click();
   await expect(page.getByText(/副手 ·/).first()).toBeVisible();
-  await expect(page.getByText("民兵の湾刀")).toBeVisible();
-  await expect(page.getByText("滑り止め手袋")).toBeVisible();
+  await page.getByTestId("shop-category-trinket").click();
+  await expect(page.getByLabel("品揃え").getByText("滑り止め手袋")).toBeVisible();
   await expect(page.getByText("gold")).toHaveCount(0);
   await expect(page.getByText(/G/).first()).toBeVisible();
 

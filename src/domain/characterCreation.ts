@@ -5,7 +5,8 @@ import type {
   CharacterClassId,
   CharacterCreationMethod,
   CharacterTraitId,
-  CombatRow
+  CombatRow,
+  EquipmentSlot
 } from "./types";
 
 export interface LocalizedLabel {
@@ -21,7 +22,7 @@ export interface CharacterClassDefinition {
   rowPreference: CombatRow;
   aptitude: Partial<CharacterAptitudes>;
   base: Pick<Character, "maxHp" | "attack" | "damageMin" | "damageMax" | "accuracy" | "armor" | "speed">;
-  equipment: string[];
+  equipment: Partial<Record<EquipmentSlot, string>>;
 }
 
 export interface CharacterBackgroundDefinition {
@@ -78,7 +79,7 @@ export const classCatalog: CharacterClassDefinition[] = [
     rowPreference: "front",
     aptitude: { might: 2, spirit: 1 },
     base: { maxHp: 15, attack: 5, damageMin: 4, damageMax: 6, accuracy: 76, armor: 2, speed: 5 },
-    equipment: ["militia sabre", "padded jack"]
+    equipment: { weapon: "equip.militia-sabre", body: "equip.padded-jack" }
   },
   {
     id: "sellsword",
@@ -91,7 +92,7 @@ export const classCatalog: CharacterClassDefinition[] = [
     rowPreference: "front",
     aptitude: { might: 2, agility: 1 },
     base: { maxHp: 14, attack: 5, damageMin: 4, damageMax: 7, accuracy: 78, armor: 1, speed: 6 },
-    equipment: ["militia sabre", "padded jack"]
+    equipment: { weapon: "equip.militia-sabre", body: "equip.padded-jack" }
   },
   {
     id: "bulwark",
@@ -104,7 +105,7 @@ export const classCatalog: CharacterClassDefinition[] = [
     rowPreference: "front",
     aptitude: { might: 2, spirit: 2 },
     base: { maxHp: 17, attack: 4, damageMin: 3, damageMax: 5, accuracy: 72, armor: 3, speed: 3 },
-    equipment: ["split buckler", "padded jack"]
+    equipment: { offhand: "equip.split-buckler", body: "equip.padded-jack" }
   },
   {
     id: "duelist",
@@ -117,7 +118,7 @@ export const classCatalog: CharacterClassDefinition[] = [
     rowPreference: "front",
     aptitude: { might: 1, agility: 2 },
     base: { maxHp: 12, attack: 5, damageMin: 3, damageMax: 8, accuracy: 86, armor: 0, speed: 10 },
-    equipment: ["militia sabre", "grip gloves"]
+    equipment: { weapon: "equip.militia-sabre", hands: "equip.grip-gloves" }
   },
   {
     id: "seeker",
@@ -130,7 +131,7 @@ export const classCatalog: CharacterClassDefinition[] = [
     rowPreference: "front",
     aptitude: { agility: 2, wit: 1 },
     base: { maxHp: 11, attack: 4, damageMin: 3, damageMax: 5, accuracy: 84, armor: 1, speed: 9 },
-    equipment: ["rusted dirk", "chalk cord"]
+    equipment: { weapon: "equip.rusted-dirk", accessory: "equip.chalk-cord" }
   },
   {
     id: "scout",
@@ -143,7 +144,7 @@ export const classCatalog: CharacterClassDefinition[] = [
     rowPreference: "front",
     aptitude: { agility: 2, wit: 1, luck: 1 },
     base: { maxHp: 10, attack: 3, damageMin: 2, damageMax: 5, accuracy: 86, armor: 0, speed: 11 },
-    equipment: ["rusted dirk", "chalk cord"]
+    equipment: { weapon: "equip.rusted-dirk", accessory: "equip.chalk-cord" }
   },
   {
     id: "cutpurse",
@@ -156,7 +157,7 @@ export const classCatalog: CharacterClassDefinition[] = [
     rowPreference: "front",
     aptitude: { agility: 2, luck: 1 },
     base: { maxHp: 10, attack: 4, damageMin: 2, damageMax: 6, accuracy: 88, armor: 0, speed: 10 },
-    equipment: ["rusted dirk", "grip gloves"]
+    equipment: { weapon: "equip.rusted-dirk", hands: "equip.grip-gloves" }
   },
   {
     id: "mender",
@@ -169,7 +170,7 @@ export const classCatalog: CharacterClassDefinition[] = [
     rowPreference: "back",
     aptitude: { spirit: 2, wit: 1 },
     base: { maxHp: 10, attack: 3, damageMin: 2, damageMax: 4, accuracy: 76, armor: 0, speed: 6 },
-    equipment: ["ashwood staff", "candle ward"]
+    equipment: { weapon: "equip.ashwood-staff", offhand: "equip.candle-ward" }
   },
   {
     id: "chanter",
@@ -182,7 +183,7 @@ export const classCatalog: CharacterClassDefinition[] = [
     rowPreference: "back",
     aptitude: { spirit: 3 },
     base: { maxHp: 11, attack: 2, damageMin: 1, damageMax: 4, accuracy: 78, armor: 1, speed: 5 },
-    equipment: ["ashwood staff", "candle ward"]
+    equipment: { weapon: "equip.ashwood-staff", offhand: "equip.candle-ward" }
   },
   {
     id: "occultist",
@@ -195,7 +196,7 @@ export const classCatalog: CharacterClassDefinition[] = [
     rowPreference: "back",
     aptitude: { spirit: 1, wit: 2 },
     base: { maxHp: 9, attack: 3, damageMin: 2, damageMax: 5, accuracy: 78, armor: 0, speed: 7 },
-    equipment: ["ashwood staff", "black thread ring"]
+    equipment: { weapon: "equip.ashwood-staff", accessory: "equip.black-thread-ring" }
   },
   {
     id: "arcanist",
@@ -208,7 +209,7 @@ export const classCatalog: CharacterClassDefinition[] = [
     rowPreference: "back",
     aptitude: { wit: 3 },
     base: { maxHp: 8, attack: 4, damageMin: 2, damageMax: 7, accuracy: 80, armor: 0, speed: 6 },
-    equipment: ["ashwood staff", "black thread ring"]
+    equipment: { weapon: "equip.ashwood-staff", accessory: "equip.black-thread-ring" }
   },
   {
     id: "wayfinder",
@@ -221,7 +222,7 @@ export const classCatalog: CharacterClassDefinition[] = [
     rowPreference: "back",
     aptitude: { agility: 1, spirit: 1, wit: 2 },
     base: { maxHp: 10, attack: 3, damageMin: 2, damageMax: 5, accuracy: 82, armor: 0, speed: 8 },
-    equipment: ["chalk cord", "candle ward"]
+    equipment: { accessory: "equip.chalk-cord", offhand: "equip.candle-ward" }
   }
 ];
 
@@ -412,7 +413,7 @@ export function createGuildCharacter(input: GuildCharacterInput): Character {
   const traits = traitIds.map(findTrait);
   const aptitude = buildAptitude(classDef, input.aptitudeFocus ?? "balanced", background, traits, input.bonusAptitude);
   const stats = deriveStats(classDef, aptitude);
-  const equipment = Array.from(new Set([...classDef.equipment, ...traits.flatMap((trait) => trait.equipment ? [trait.equipment] : [])]));
+  const loadout: Partial<Record<EquipmentSlot, string>> = { ...classDef.equipment };
 
   return {
     id: crypto.randomUUID(),
@@ -426,8 +427,8 @@ export function createGuildCharacter(input: GuildCharacterInput): Character {
     aptitude,
     traitIds,
     accentColor: input.accentColor ?? background.accentColor,
-    startingEquipment: equipment,
-    equipment: {},
+    startingEquipment: Object.values(loadout),
+    equipment: loadout,
     creation: {
       method: input.method ?? "detailed",
       seed: input.seed,

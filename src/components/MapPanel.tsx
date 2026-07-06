@@ -1,5 +1,5 @@
 import { getGridCellForRoom, getLocalizedRoomText, getRoom } from "../domain/scenario";
-import type { Direction, GameState, ScenarioWorld } from "../domain/types";
+import type { Direction, DungeonGridEdge, GameState, ScenarioWorld } from "../domain/types";
 import type { Locale, Translator } from "../i18n";
 
 interface MapPanelProps {
@@ -9,7 +9,9 @@ interface MapPanelProps {
   t: Translator;
 }
 
-const MINI_MAP_SIZE = 4;
+const MINI_MAP_SIZE = 5;
+const MINI_MAP_RADIUS = Math.floor(MINI_MAP_SIZE / 2);
+const DIRECTIONS: Direction[] = ["north", "east", "south", "west"];
 const directionOffsets: Record<Direction, { x: number; y: number }> = {
   north: { x: 0, y: -1 },
   east: { x: 1, y: 0 },
@@ -17,19 +19,26 @@ const directionOffsets: Record<Direction, { x: number; y: number }> = {
   west: { x: -1, y: 0 }
 };
 
+type EdgeKind = "open" | "wall" | "door" | "locked" | "stairs";
+type CellMarker = "return" | "stairs" | "event" | "trap" | "treasure" | null;
+
 interface MiniMapCell {
   id: string;
   x: number;
   y: number;
   status: "current" | "visited" | "unseen";
-  exits: Direction[];
+  edges: Record<Direction, EdgeKind>;
+  marker: CellMarker;
   label: string;
 }
+
+const CLOSED_EDGES: Record<Direction, EdgeKind> = { north: "wall", east: "wall", south: "wall", west: "wall" };
 
 export function MapPanel({ state, world, locale, t }: MapPanelProps) {
   const currentRoomId = state.map.currentRoomId ?? state.position?.roomId ?? null;
   const miniMap = buildMiniMap(state, world, locale, currentRoomId);
   const facing = state.position?.facing ?? state.map.currentFacing ?? null;
+  const cellsByPosition = new Map(miniMap.cells.map((cell) => [`${cell.x},${cell.y}`, cell]));
 
   return (
     <section className="map-panel" aria-labelledby="map-heading">
@@ -47,33 +56,88 @@ export function MapPanel({ state, world, locale, t }: MapPanelProps) {
             data-testid="minimap-grid"
             className="mini-map-grid"
             style={{
-              gridTemplateColumns: `repeat(${miniMap.width}, 1.1rem)`,
-              gridTemplateRows: `repeat(${miniMap.height}, 1.1rem)`
+              gridTemplateColumns: `repeat(${MINI_MAP_SIZE}, 1.4rem)`,
+              gridTemplateRows: `repeat(${MINI_MAP_SIZE}, 1.4rem)`
             }}
           >
-            {miniMap.cells.map((cell) => (
-              <span
-                aria-label={`${cell.label}: ${t(`map.${cell.status}`)}`}
-                className={`mini-map-cell ${cell.status} ${cell.exits.map((direction) => `exit-${direction}`).join(" ")}`}
-                data-testid={`minimap-${cell.status}`}
-                key={cell.id}
-                style={{ gridColumn: cell.x + 1, gridRow: cell.y + 1 }}
-                title={cell.label}
-              >
-                {cell.status === "current" && facing && (
-                  <b
-                    aria-label={t(`direction.${facing}`)}
-                    className={`mini-map-facing facing-${facing}`}
-                    data-testid="minimap-facing"
-                  />
-                )}
-              </span>
-            ))}
+            {Array.from({ length: MINI_MAP_SIZE * MINI_MAP_SIZE }).map((_, index) => {
+              const x = index % MINI_MAP_SIZE;
+              const y = Math.floor(index / MINI_MAP_SIZE);
+              const cell = cellsByPosition.get(`${x},${y}`);
+              if (!cell) {
+                return <span key={`empty-${index}`} className="mini-map-cell empty" aria-hidden="true" />;
+              }
+
+              const edgeClasses = DIRECTIONS.map((direction) => `edge-${direction}-${cell.edges[direction]}`).join(" ");
+              const markerLabel = cell.marker ? `, ${t(`map.marker.${cell.marker}`)}` : "";
+              return (
+                <span
+                  aria-label={`${cell.label}: ${t(`map.${cell.status}`)}${markerLabel}`}
+                  className={`mini-map-cell ${cell.status} ${edgeClasses}`}
+                  data-testid={`minimap-${cell.status}`}
+                  key={cell.id}
+                  title={cell.label}
+                >
+                  {cell.marker && (
+                    <i className={`mini-map-marker marker-${cell.marker}`} data-testid={`minimap-marker-${cell.marker}`} aria-hidden="true" />
+                  )}
+                  {cell.status === "current" && facing && (
+                    <b
+                      aria-label={t(`direction.${facing}`)}
+                      className={`mini-map-facing facing-${facing}`}
+                      data-testid="minimap-facing"
+                    />
+                  )}
+                </span>
+              );
+            })}
           </div>
         </div>
       )}
     </section>
   );
+}
+
+function edgeRenderKind(edge: DungeonGridEdge | undefined): EdgeKind {
+  if (!edge) {
+    return "wall";
+  }
+  switch (edge.kind) {
+    case "open":
+    case "one_way":
+    case "shortcut":
+      return "open";
+    case "door":
+      return "door";
+    case "locked":
+      return "locked";
+    case "stairs":
+      return "stairs";
+    case "wall":
+    case "secret":
+    default:
+      return "wall";
+  }
+}
+
+function cellMarker(world: ScenarioWorld, state: GameState, roomId: string, edges: Record<Direction, EdgeKind>): CellMarker {
+  const room = getRoom(world, roomId);
+  if (room.stairsToTown) {
+    return "return";
+  }
+  if (DIRECTIONS.some((direction) => edges[direction] === "stairs")) {
+    return "stairs";
+  }
+  if (room.event) {
+    return "event";
+  }
+  if (room.trap && state.resolvedTraps.includes(room.trap.id)) {
+    return "trap";
+  }
+  if (room.treasureTable && !state.claimedTreasures.includes(roomId)) {
+    return "treasure";
+  }
+  return null;
 }
 
 function buildMiniMap(state: GameState, world: ScenarioWorld, locale: Locale, currentRoomId: string | null) {
@@ -82,9 +146,54 @@ function buildMiniMap(state: GameState, world: ScenarioWorld, locale: Locale, cu
     return buildGridMiniMap(state, world, locale, currentRoomId, currentGridCell);
   }
 
+  return buildGraphMiniMap(state, world, locale, currentRoomId);
+}
+
+function buildGridMiniMap(
+  state: GameState,
+  world: ScenarioWorld,
+  locale: Locale,
+  currentRoomId: string,
+  currentGridCell: NonNullable<ReturnType<typeof getGridCellForRoom>>
+) {
+  const visitedRooms = new Set(state.map.visitedRooms);
+  visitedRooms.add(currentRoomId);
+  const originX = currentGridCell.x - MINI_MAP_RADIUS;
+  const originY = currentGridCell.y - MINI_MAP_RADIUS;
+  const floor = world.dungeons.find((dungeon) => dungeon.id === state.map.floorId);
+  const visibleCells = (floor?.grid?.cells ?? [])
+    .filter((cell) => visitedRooms.has(cell.roomId))
+    .filter(
+      (cell) =>
+        cell.x >= originX && cell.x < originX + MINI_MAP_SIZE && cell.y >= originY && cell.y < originY + MINI_MAP_SIZE
+    );
+
+  const cells: MiniMapCell[] = visibleCells.map((cell) => {
+    const edges: Record<Direction, EdgeKind> = {
+      north: edgeRenderKind(cell.edges.north),
+      east: edgeRenderKind(cell.edges.east),
+      south: edgeRenderKind(cell.edges.south),
+      west: edgeRenderKind(cell.edges.west)
+    };
+
+    return {
+      id: cell.id,
+      x: cell.x - originX,
+      y: cell.y - originY,
+      status: cell.roomId === currentRoomId ? "current" : "visited",
+      edges,
+      marker: cellMarker(world, state, cell.roomId, edges),
+      label: getLocalizedRoomText(world, cell.roomId, locale).name
+    };
+  });
+
+  return { cells };
+}
+
+function buildGraphMiniMap(state: GameState, world: ScenarioWorld, locale: Locale, currentRoomId: string | null) {
   const startRoomId = state.map.visitedRooms[0] ?? currentRoomId;
   if (!startRoomId) {
-    return { width: 0, height: 0, cells: [] as MiniMapCell[] };
+    return { cells: [] as MiniMapCell[] };
   }
 
   const roomIds = new Set<string>(state.map.visitedRooms);
@@ -122,78 +231,45 @@ function buildMiniMap(state: GameState, world: ScenarioWorld, locale: Locale, cu
     }
   }
 
-  const rawCells = Array.from(coordinates.entries()).map(([roomId, coordinate]) => {
-    const room = getRoom(world, roomId);
-    const knownExits = (state.map.knownExits[roomId] ?? []).filter((direction) => {
-      const targetRoomId = room.exits[direction];
-      return targetRoomId ? roomIds.has(targetRoomId) : false;
-    });
-    return {
-      id: roomId,
-      ...coordinate,
-      status: roomId === currentRoomId ? ("current" as const) : state.map.visitedRooms.includes(roomId) ? ("visited" as const) : ("unseen" as const),
-      exits: knownExits,
-      label: getLocalizedRoomText(world, roomId, locale).name
-    };
-  });
-
   const currentCoordinate = currentRoomId ? coordinates.get(currentRoomId) : null;
   if (!currentCoordinate) {
-    return { width: MINI_MAP_SIZE, height: MINI_MAP_SIZE, cells: [] as MiniMapCell[] };
+    return { cells: [] as MiniMapCell[] };
   }
 
-  const originX = currentCoordinate.x - 1;
-  const originY = currentCoordinate.y - 1;
-  const visibleRawCells = currentCoordinate
-    ? rawCells.filter(
-        (cell) =>
-          cell.x >= originX &&
-          cell.x < originX + MINI_MAP_SIZE &&
-          cell.y >= originY &&
-          cell.y < originY + MINI_MAP_SIZE
-      )
-    : rawCells;
-  const cells = visibleRawCells.map((cell) => ({ ...cell, x: cell.x - originX, y: cell.y - originY }));
-  return { width: MINI_MAP_SIZE, height: MINI_MAP_SIZE, cells };
-}
+  const originX = currentCoordinate.x - MINI_MAP_RADIUS;
+  const originY = currentCoordinate.y - MINI_MAP_RADIUS;
 
-function buildGridMiniMap(
-  state: GameState,
-  world: ScenarioWorld,
-  locale: Locale,
-  currentRoomId: string,
-  currentGridCell: NonNullable<ReturnType<typeof getGridCellForRoom>>
-) {
-  const visitedRooms = new Set(state.map.visitedRooms);
-  visitedRooms.add(currentRoomId);
-  const originX = currentGridCell.x - 1;
-  const originY = currentGridCell.y - 1;
-  const floor = world.dungeons.find((dungeon) => dungeon.id === state.map.floorId);
-  const visibleCells = (floor?.grid?.cells ?? [])
-    .filter((cell) => visitedRooms.has(cell.roomId))
+  const cells: MiniMapCell[] = Array.from(coordinates.entries())
     .filter(
-      (cell) =>
-        cell.x >= originX &&
-        cell.x < originX + MINI_MAP_SIZE &&
-        cell.y >= originY &&
-        cell.y < originY + MINI_MAP_SIZE
-    );
+      ([, coordinate]) =>
+        coordinate.x >= originX &&
+        coordinate.x < originX + MINI_MAP_SIZE &&
+        coordinate.y >= originY &&
+        coordinate.y < originY + MINI_MAP_SIZE
+    )
+    .map(([roomId, coordinate]) => {
+      const room = getRoom(world, roomId);
+      const status: MiniMapCell["status"] =
+        roomId === currentRoomId ? "current" : state.map.visitedRooms.includes(roomId) ? "visited" : "unseen";
+      const known = status === "unseen" ? [] : state.map.knownExits[roomId] ?? [];
+      const edges: Record<Direction, EdgeKind> = { ...CLOSED_EDGES };
+      for (const direction of known) {
+        const targetRoomId = room.exits[direction];
+        if (targetRoomId && roomIds.has(targetRoomId)) {
+          edges[direction] = "open";
+        }
+      }
 
-  const cells = visibleCells.map((cell) => {
-    const knownExits = (state.map.knownExits[cell.roomId] ?? []).filter((direction) => {
-      const edge = cell.edges[direction];
-      return edge?.targetRoomId ? visitedRooms.has(edge.targetRoomId) : false;
+      return {
+        id: roomId,
+        x: coordinate.x - originX,
+        y: coordinate.y - originY,
+        status,
+        edges,
+        marker: status === "unseen" ? null : cellMarker(world, state, roomId, edges),
+        label: getLocalizedRoomText(world, roomId, locale).name
+      };
     });
 
-    return {
-      id: cell.id,
-      x: cell.x - originX,
-      y: cell.y - originY,
-      status: cell.roomId === currentRoomId ? ("current" as const) : ("visited" as const),
-      exits: knownExits,
-      label: getLocalizedRoomText(world, cell.roomId, locale).name
-    };
-  });
-
-  return { width: MINI_MAP_SIZE, height: MINI_MAP_SIZE, cells };
+  return { cells };
 }

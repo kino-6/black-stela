@@ -16,10 +16,13 @@ test("guild registration supports quick and detailed recruits without roster sco
   await page.getByRole("button", { name: "Yes", exact: true }).click();
   await expect(page.getByTestId("guild-suggestion")).toContainText("How about this one?");
   await expect(page.getByTestId("guild-suggestion")).toContainText("What are they good at?");
+  await expect(page.getByTestId("guild-suggestion")).toContainText("Equipment");
   await page.getByRole("button", { name: "Yes", exact: true }).click();
   await expect(page.getByText("1/6")).toBeVisible();
 
   await expect(page.getByTestId("guild-step-class").locator(".class-card")).toHaveCount(12);
+  await expect(page.getByTestId("guild-step-class").locator(".class-gear")).toHaveCount(12);
+  await expect(page.getByTestId("guild-step-class").locator(".class-gear").first()).toContainText("Equipment:");
   await expect(page.getByText("Reads hinges, dust, and floor scars")).toBeVisible();
   await expect(page.getByText("Front line")).toHaveCount(0);
   await expect(page.getByText("Retreat guard")).toHaveCount(0);

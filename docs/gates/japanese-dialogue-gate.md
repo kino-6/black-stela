@@ -12,6 +12,12 @@ localized command guidance that is meant to sound like speech.
 - [ ] It does not rely on fake gravitas, abstract nouns, or translated-English
   sentence shape.
 - [ ] The UI, not the dialogue, carries mechanical detail where possible.
+- [ ] Displayed Japanese line breaks are acceptable in the target message box:
+  no one-character orphan tail, no punctuation stranded at line start, and no
+  awkward wrap that makes the line look machine-translated. Layout is enforced
+  by the [Japanese Line-Layout Gate](japanese-line-layout-gate.md).
+- [ ] Reusable dialogue is authored in scenario/localization data where
+  practical, not hardcoded in component logic.
 
 ## Red Flags
 
@@ -21,10 +27,14 @@ localized command guidance that is meant to sound like speech.
 - The line would sound strange if said aloud by a shopkeeper, guild master, or
   wounded adventurer.
 - The line speaks to the player as a designer, not as someone in the world.
+- The sentence is technically natural but wraps with a single character left
+  alone on the next line.
 
 ## Required Evidence
 
 - [ ] Before/after prose diff for the changed line.
 - [ ] Japanese browser or E2E assertion covers the changed copy.
+- [ ] Screenshot or browser evidence shows the actual wrapped line in its
+  target message box when the copy is layout-sensitive.
 - [ ] Regression check rejects at least one removed unnatural phrase when the
   issue is a repeated user-visible failure.

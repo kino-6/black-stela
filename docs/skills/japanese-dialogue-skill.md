@@ -25,6 +25,8 @@ summary with quote marks around it.
 - Name the speaker, listener, and immediate intent before writing.
 - Use one conversational move: ask, warn, offer, refuse, test, or confirm.
 - Keep the line short enough to say aloud without sounding like narration.
+- Keep the displayed line short enough to wrap cleanly in its target message
+  box. If the rendered line leaves a one-character orphan, rewrite it.
 - Let surrounding UI carry procedure. Dialogue should not list every step.
 - Prefer concrete spoken nouns and verbs: 腕, 出, 得意, 載せる, 払う, 戻れ.
 - Use plain Japanese word order. If it reads like an essay, rewrite it.
@@ -35,8 +37,11 @@ summary with quote marks around it.
 2. Decide what the speaker wants from the player now.
 3. Say only that, as a spoken line.
 4. Read it aloud once. If a person would not say it, cut or rephrase.
-5. Delete stacked rhetorical lists such as `何で...、どこで...、どの...`.
-6. Delete stagey wrap-up phrases such as `それを見てから帳面を開く`.
+5. Check the target message box. If wrapping leaves one character alone or
+   strands punctuation, rewrite for that box instead of accepting the wrap.
+6. Delete stacked rhetorical lists such as `何で...、どこで...、どの...`.
+7. Delete stagey wrap-up phrases such as `それを見てから帳面を開く`.
+8. Put reusable lines in scenario/localization data where practical.
 
 ## Bad Patterns
 
@@ -58,3 +63,5 @@ summary with quote marks around it.
 - [ ] Is there one intent, not a list of UI steps?
 - [ ] Does it avoid fake literary symmetry and abstract noun chains?
 - [ ] Can the UI still explain the mechanics without the line carrying them all?
+- [ ] Does it wrap cleanly in the actual Japanese message box?
+- [ ] Is it externalized or ready to externalize if reused across scenes?

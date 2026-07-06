@@ -24,7 +24,7 @@ for (const viewport of [
           .getByTestId("minimap-grid")
           .evaluate((element) => getComputedStyle(element).gridTemplateColumns.split(" ").length)
       )
-      .toBe(4);
+      .toBe(5);
     await expect
       .poll(async () => page.getByTestId("minimap-grid").evaluate((element) => getComputedStyle(element).gap))
       .toBe("0px");
@@ -43,3 +43,33 @@ for (const viewport of [
     await expect(page.getByTestId("map-directions")).toHaveCount(0);
   });
 }
+
+test("minimap centers the party and shows walls, doors, and landmarks", async ({ page }) => {
+  await startNewExpedition(page);
+  await registerAdventurer(page, { name: "Mira" });
+  await page.getByRole("button", { name: "Enter dungeon" }).click();
+  await expect(page.getByTestId("minimap")).toBeVisible();
+
+  // 5x5 grid: the current cell sits at the centre (row 2, col 2 -> index 12).
+  await expect(page.locator(".mini-map-cell")).toHaveCount(25);
+  await expect(page.locator(".mini-map-cell").nth(12)).toHaveClass(/(^|\s)current(\s|$)/);
+
+  // Starting cell reads its real edges: an east door and stone walls elsewhere.
+  const current = page.getByTestId("minimap-current");
+  await expect(current).toHaveClass(/edge-east-door/);
+  await expect(current).toHaveClass(/edge-north-wall/);
+  await expect(current).toHaveClass(/edge-west-wall/);
+
+  // Advance to the black-marker cell and confirm its return landmark shows.
+  for (let step = 0; step < 6; step += 1) {
+    if (await page.getByRole("button", { name: "Use return marker" }).isVisible().catch(() => false)) {
+      break;
+    }
+    await page.getByRole("button", { name: "Move", exact: true }).click();
+    if (await page.getByLabel("Battle screen").isVisible().catch(() => false)) {
+      await resolveVisibleCombat(page);
+    }
+  }
+  await expect(page.getByRole("button", { name: "Use return marker" })).toBeVisible();
+  await expect(page.getByTestId("minimap-marker-return")).toHaveCount(1);
+});

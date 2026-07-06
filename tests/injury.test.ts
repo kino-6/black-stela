@@ -7,7 +7,7 @@ import { defaultWorld } from "../src/data/defaultWorld";
 function combatState(enemyAttack = 5): GameState {
   const member = createCharacter({ name: "Mira", notes: "Mapper" });
   return {
-    ...addCharacter(createInitialGameState(), { ...member, hp: 2, maxHp: 12 }),
+    ...addCharacter(createInitialGameState(), { ...member, hp: 2, maxHp: 12, equipment: {} }),
     phase: "combat",
     position: { roomId: "room.b1f.002", facing: "east" },
     combat: {

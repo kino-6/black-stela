@@ -46,6 +46,8 @@ test("town, shop, config, and repeat surfaces remain controller reachable", asyn
   await focusControllerButton(page, "Shop");
   await page.keyboard.press("Enter");
   await expect(page.getByRole("heading", { name: "Stela Gate General Store" })).toBeVisible();
+  await focusControllerButton(page, "Consumables");
+  await page.keyboard.press("Enter");
   await focusControllerButton(page, "Buy Healing Draught");
   await page.keyboard.press("Enter");
   await expect(page.getByText("Bought Healing Draught for 25 gold.")).toBeVisible();

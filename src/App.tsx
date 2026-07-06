@@ -137,6 +137,7 @@ export function App() {
   const [combatOrders, setCombatOrders] = useState<CombatActionDeclaration[]>([]);
   const [selectedTargetId, setSelectedTargetId] = useState<string | null>(null);
   const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null);
+  const [shopCategory, setShopCategory] = useState<ShopCategory>("weapon");
   const [scenarioImportStatus, setScenarioImportStatus] = useState("");
   const [scenarioImportErrors, setScenarioImportErrors] = useState<ScenarioValidationError[]>([]);
   const autosaveSummary = saveSlots.find((slot) => slot.slotId === AUTO_SAVE_SLOT);
@@ -208,6 +209,12 @@ export function App() {
   }), [draft, state.turn, t]);
   const selectedProfile = state.party.find((member) => member.id === selectedProfileId) ?? state.party[0] ?? draftPreview;
   const selectedProfileStats = getEffectiveCharacterStats(selectedProfile, defaultWorld);
+  const availableShopCategories = SHOP_CATEGORY_ORDER.filter((category) =>
+    (townShop.stock ?? []).some((stock) => shopCategoryFor(stock.itemId) === category)
+  );
+  const activeShopCategory: ShopCategory = availableShopCategories.includes(shopCategory)
+    ? shopCategory
+    : availableShopCategories[0] ?? "weapon";
   const carriedLootCount = state.inventory.reduce((total, item) => total + item.quantity, 0);
   const carriedLootSummary = state.inventory.length > 0
     ? state.inventory.map((item) => `${localizedCatalogName(item.id, locale)} x${item.quantity}`).join(" / ")
@@ -833,9 +840,9 @@ export function App() {
                     </p>
                     <small>{member.traitIds.map((traitId) => findTrait(traitId).label[locale]).join(" · ")}</small>
                     <small>
-                      {t("party.hpAtk", { hp: member.hp, maxHp: member.maxHp, attack: member.attack })}
+                      {t("party.hpAtk", { hp: member.hp, maxHp: member.maxHp, attack: getEffectiveCharacterStats(member, defaultWorld).attack })}
                     </small>
-                    <small>{member.startingEquipment.join(" / ")}</small>
+                    <small>{member.startingEquipment.map((id) => localizedCatalogName(id, locale)).join(" / ")}</small>
                   </div>
                 </article>
               ))
@@ -1046,6 +1053,7 @@ export function App() {
                                 <strong>{classDef.label[locale]}</strong>
                                 <span>{formatCombatRow(classDef.rowPreference, t)}</span>
                                 <small>{classDef.description[locale]}</small>
+                                <small className="class-gear">{t("party.equipment")}: {Object.values(classDef.equipment).map((id) => localizedCatalogName(id, locale)).join(" / ")}</small>
                               </button>
                             ))}
                           </div>
@@ -1279,6 +1287,10 @@ export function App() {
                                     <dt>{t("party.background")}</dt>
                                     <dd>{suggestedRecruitBackground.notes[locale]}</dd>
                                   </div>
+                                  <div>
+                                    <dt>{t("party.equipment")}</dt>
+                                    <dd>{suggestedRecruit.startingEquipment.map((id) => localizedCatalogName(id, locale)).join(" / ")}</dd>
+                                  </div>
                                 </dl>
                                 <div className="binary-actions" aria-label={t("party.quickRecruitProposal")}>
                                   <button type="button" className="primary-action" onClick={acceptGuildSuggestion}>
@@ -1383,7 +1395,7 @@ export function App() {
                           <div><dt>{t("party.armor")}</dt><dd>{selectedProfileStats.armor}</dd></div>
                           <div><dt>{t("party.speed")}</dt><dd>{selectedProfileStats.speed}</dd></div>
                           <div><dt>{t("party.row")}</dt><dd>{formatCombatRow(selectedProfile.row, t)}</dd></div>
-                          <div><dt>{t("party.equipment")}</dt><dd>{selectedProfile.startingEquipment.join(" / ")}</dd></div>
+                          <div><dt>{t("party.equipment")}</dt><dd>{selectedProfile.startingEquipment.map((id) => localizedCatalogName(id, locale)).join(" / ")}</dd></div>
                           <div><dt>{t("party.deepestFloor")}</dt><dd>{selectedProfile.memory.deepestFloorId ?? "-"}</dd></div>
                           <div><dt>{t("party.victories")}</dt><dd>{selectedProfile.memory.notableVictories.length}</dd></div>
                           <div><dt>{t("party.injuries")}</dt><dd>{selectedProfile.memory.injuries}</dd></div>
@@ -1535,8 +1547,23 @@ export function App() {
                   <div className="shop-grid">
                     <section aria-label={t("town.shopStock")}>
                       <h4>{t("town.shopStock")}</h4>
+                      <div className="shop-category-tabs" role="tablist">
+                        {availableShopCategories.map((category) => (
+                          <button
+                            type="button"
+                            role="tab"
+                            aria-selected={category === activeShopCategory}
+                            className={category === activeShopCategory ? "selected" : ""}
+                            data-testid={`shop-category-${category}`}
+                            key={category}
+                            onClick={() => setShopCategory(category)}
+                          >
+                            {t(`town.category.${category}` as Parameters<Translator>[0])}
+                          </button>
+                        ))}
+                      </div>
                       <div className="shop-list">
-                        {townShop.stock?.map((stock) => {
+                        {townShop.stock?.filter((stock) => shopCategoryFor(stock.itemId) === activeShopCategory).map((stock) => {
                           const equipment = findEquipmentById(stock.itemId);
                           const selectedCanEquip = equipment ? isEquipmentUsableBy(equipment, selectedProfile) : false;
                           const previewStats = equipment ? previewEquipmentStats(selectedProfile, equipment) : null;
@@ -2262,6 +2289,21 @@ function formatSignedDelta(label: string, value: number) {
 
 function findEquipmentById(itemId: string | undefined) {
   return defaultWorld.equipment.find((candidate) => candidate.id === itemId);
+}
+
+type ShopCategory = "weapon" | "armor" | "offhand" | "trinket" | "tool" | "consumable";
+const SHOP_CATEGORY_ORDER: ShopCategory[] = ["weapon", "armor", "offhand", "trinket", "tool", "consumable"];
+
+function shopCategoryFor(itemId: string): ShopCategory {
+  const equipment = findEquipmentById(itemId);
+  if (equipment) {
+    if (equipment.slot === "weapon") return "weapon";
+    if (equipment.slot === "body") return "armor";
+    if (equipment.slot === "offhand") return "offhand";
+    return "trinket";
+  }
+  const item = defaultWorld.items.find((candidate) => candidate.id === itemId);
+  return item?.kind === "healing" ? "consumable" : "tool";
 }
 
 function formatEquipmentSlot(slot: EquipmentSlot, t: Translator) {

@@ -821,6 +821,10 @@ textarea {
   color: #bdb8aa;
 }
 
+.class-card small.class-gear {
+  color: #b9a06a;
+}
+
 .flow-actions {
   position: relative;
   z-index: 1;
@@ -1592,6 +1596,29 @@ textarea {
   background: #1d1a10;
 }
 
+.shop-category-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-bottom: 0.6rem;
+}
+
+.shop-category-tabs button {
+  padding: 0.35rem 0.7rem;
+  min-height: 2.1rem;
+  font-size: 0.85rem;
+  border: 1px solid #2c332d;
+  border-radius: 3px;
+  background: #14170f;
+  color: #cfd2c4;
+}
+
+.shop-category-tabs button.selected {
+  border-color: #c9a765;
+  background: #241f12;
+  color: #f2d58c;
+}
+
 .recovery-plan {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.45rem;
@@ -1841,53 +1868,116 @@ textarea {
   align-items: stretch;
   justify-items: stretch;
   width: max-content;
-  min-width: calc(4 * 1.18rem);
-  min-height: calc(4 * 1.18rem);
+  min-width: calc(5 * 1.48rem);
+  min-height: calc(5 * 1.48rem);
 }
 
 .mini-map-cell {
   position: relative;
   display: block;
-  width: 1.18rem;
+  width: 1.48rem;
   aspect-ratio: 1;
   margin: -1px 0 0 -1px;
-  border: 1px solid #2c332d;
+  border: 2px solid transparent;
   border-radius: 0;
-  background: #101410;
+  background: #0d110d;
 }
 
-.mini-map-cell.exit-east {
-  border-right-color: #967a42;
-}
-
-.mini-map-cell.exit-west {
-  border-left-color: #967a42;
-}
-
-.mini-map-cell.exit-north {
-  border-top-color: #967a42;
-}
-
-.mini-map-cell.exit-south {
-  border-bottom-color: #967a42;
-}
-
-.mini-map-cell.current {
-  border-color: #f0d58e;
-  background: #d5b56d;
-  box-shadow: 0 0 0 2px rgba(213, 181, 109, 0.16), 0 0 16px rgba(213, 181, 109, 0.42);
-}
-
-.mini-map-cell.visited {
-  border-color: #7d826d;
-  background: #32382f;
-}
-
-.mini-map-cell.unseen {
-  border-color: #a1855d;
+/* Empty background: a faint lattice for spatial reference only, so real
+   walls on explored cells stand out instead of blending into a grid. */
+.mini-map-cell.empty {
+  border-color: rgba(122, 134, 114, 0.13);
   background: transparent;
 }
 
+/* Explored cells sit above the empty lattice so their walls always win. */
+.mini-map-cell.current,
+.mini-map-cell.visited,
+.mini-map-cell.unseen {
+  z-index: 1;
+}
+
+.mini-map-cell.current {
+  background: #d9b968;
+  box-shadow: 0 0 0 2px rgba(240, 213, 142, 0.35), 0 0 16px rgba(213, 181, 109, 0.5);
+  z-index: 2;
+}
+
+.mini-map-cell.visited {
+  background: #3d4638;
+}
+
+.mini-map-cell.unseen {
+  background: rgba(60, 54, 40, 0.35);
+}
+
+/* Corridor walls: closed edges read as a solid, bright stone border. */
+.mini-map-cell.edge-north-wall { border-top-color: #6f7a63; }
+.mini-map-cell.edge-east-wall { border-right-color: #6f7a63; }
+.mini-map-cell.edge-south-wall { border-bottom-color: #6f7a63; }
+.mini-map-cell.edge-west-wall { border-left-color: #6f7a63; }
+
+/* Open passages: no border, so connected cells read as one corridor. */
+.mini-map-cell.edge-north-open { border-top-color: transparent; }
+.mini-map-cell.edge-east-open { border-right-color: transparent; }
+.mini-map-cell.edge-south-open { border-bottom-color: transparent; }
+.mini-map-cell.edge-west-open { border-left-color: transparent; }
+
+/* Doors read as a warm double gate; stairs edges share the door tone. */
+.mini-map-cell.edge-north-door,
+.mini-map-cell.edge-north-stairs { border-top: 3px double #e2b45c; }
+.mini-map-cell.edge-east-door,
+.mini-map-cell.edge-east-stairs { border-right: 3px double #e2b45c; }
+.mini-map-cell.edge-south-door,
+.mini-map-cell.edge-south-stairs { border-bottom: 3px double #e2b45c; }
+.mini-map-cell.edge-west-door,
+.mini-map-cell.edge-west-stairs { border-left: 3px double #e2b45c; }
+
+/* Locked doors read red. */
+.mini-map-cell.edge-north-locked { border-top: 3px double #d76a4a; }
+.mini-map-cell.edge-east-locked { border-right: 3px double #d76a4a; }
+.mini-map-cell.edge-south-locked { border-bottom: 3px double #d76a4a; }
+.mini-map-cell.edge-west-locked { border-left: 3px double #d76a4a; }
+
+/* On-cell landmarks: a small badge in the top-left corner, so it never
+   collides with the centred facing arrow on the current cell. */
+.mini-map-marker {
+  position: absolute;
+  left: 2px;
+  top: 2px;
+  width: 0.42rem;
+  height: 0.42rem;
+  border-radius: 50%;
+  pointer-events: none;
+  box-shadow: 0 0 0 1px rgba(8, 9, 7, 0.85);
+}
+
+.mini-map-marker.marker-stairs,
+.mini-map-marker.marker-return {
+  border-radius: 1px;
+  background: linear-gradient(#f6ead0 34%, #a9772f 34% 67%, #f6ead0 67%);
+}
+
+.mini-map-marker.marker-event {
+  background: #7cc0e6;
+}
+
+.mini-map-marker.marker-treasure {
+  border-radius: 1px;
+  background: #f0cd57;
+}
+
+.mini-map-marker.marker-trap {
+  width: 0;
+  height: 0;
+  border-radius: 0;
+  box-shadow: none;
+  border-left: 0.26rem solid transparent;
+  border-right: 0.26rem solid transparent;
+  border-bottom: 0.42rem solid #d76a4a;
+}
+
+/* Facing arrow: compact and high-contrast on the gold current cell. */
 .mini-map-facing {
   position: absolute;
   left: 50%;
@@ -1896,27 +1986,27 @@ textarea {
   height: 0;
   transform: translate(-50%, -50%);
   border-style: solid;
-  filter: drop-shadow(0 0 4px rgba(7, 8, 7, 0.8));
+  filter: drop-shadow(0 0 2px rgba(246, 235, 210, 0.55));
 }
 
 .mini-map-facing.facing-north {
-  border-width: 0 0.24rem 0.42rem;
-  border-color: transparent transparent #15130e;
+  border-width: 0 0.16rem 0.28rem;
+  border-color: transparent transparent #241a08;
 }
 
 .mini-map-facing.facing-east {
-  border-width: 0.24rem 0 0.24rem 0.42rem;
-  border-color: transparent transparent transparent #15130e;
+  border-width: 0.16rem 0 0.16rem 0.28rem;
+  border-color: transparent transparent transparent #241a08;
 }
 
 .mini-map-facing.facing-south {
-  border-width: 0.42rem 0.24rem 0;
-  border-color: #15130e transparent transparent;
+  border-width: 0.28rem 0.16rem 0;
+  border-color: #241a08 transparent transparent;
 }
 
 .mini-map-facing.facing-west {
-  border-width: 0.24rem 0.42rem 0.24rem 0;
-  border-color: transparent #15130e transparent transparent;
+  border-width: 0.16rem 0.28rem 0.16rem 0;
+  border-color: transparent #241a08 transparent transparent;
 }
 
 .command-bar {

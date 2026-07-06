@@ -22,6 +22,14 @@ through party members in formation order, not through arbitrary clicked actor
 cards; Japanese normal play must not leak stray English enemy names, units, shop
 text, or combat labels unless they are natural genre abbreviations.
 
+Japanese text quality includes line layout. Do not accept player-facing Japanese
+copy that wraps with a lonely one-character tail, awkward punctuation at the
+start of a line, or a visual break that makes the sentence look translated or
+careless. Rewrite the line, shorten it, or author an explicit line variant for
+the target message box. Prefer moving dialogue, service copy, room text, item
+text, and tutorial-like messages into scenario/localization data instead of
+hardcoding them inside React components.
+
 ## Lessons From Strong User Feedback
 
 Treat the following as non-negotiable product constraints. They come from
@@ -69,6 +77,10 @@ to keep restating them.
   labels and prose. Avoid translated-English sentence shapes, theme explanation,
   out-of-world setup wording, and direct UI-instruction dialogue disguised as
   character speech.
+- Do not treat Japanese copy as only a string value. Its displayed line breaks
+  are part of the writing. If a message box leaves a one-character orphan after
+  wrapping, rewrite the sentence, adjust the planned break, or provide a
+  display-specific variant in scenario/localization data.
 - Do not let logs or messages push commands around. Command areas, party rows,
   minimap, and core combat/town controls must remain stable within one screen.
 - Do not call town services done if they are just lists. Returning to town must

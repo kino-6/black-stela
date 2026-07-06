@@ -95,6 +95,8 @@ test("starting cell south wall matches minimap, first-person view, and movement"
   await page.getByRole("button", { name: "Enter dungeon" }).click();
   await expect(page.getByRole("heading", { name: "Silent Stone Chamber" })).toBeVisible();
   await expect(page.getByTestId("minimap-facing")).toHaveClass(/facing-east/);
+  await expect(page.getByTestId("dungeon-canvas")).toHaveAttribute("data-front-edge", "door");
+  await expect(page.getByTestId("dungeon-canvas")).toHaveAttribute("data-front-depth", "cell-edge");
 
   await page.getByLabel("Turn right").click();
   await expect(page.getByTestId("minimap-facing")).toHaveClass(/facing-south/);

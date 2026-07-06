@@ -5,7 +5,9 @@ import { getEffectiveCharacterStats, isEquipmentUsableBy } from "../src/domain/e
 import { executeCommand } from "../src/domain/rulesEngine";
 
 function stateWithParty() {
-  return addCharacter(createInitialGameState(), createCharacter({ name: "Mira", notes: "Mapper" }));
+  // Equip mechanics are tested from a clean slate; strip the class starting
+  // loadout so slot/stat deltas reflect only what the test equips.
+  return addCharacter(createInitialGameState(), { ...createCharacter({ name: "Mira", notes: "Mapper" }), equipment: {} });
 }
 
 describe("economy and equipment", () => {

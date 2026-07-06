@@ -17,6 +17,11 @@ enemy text, records, and Japanese localization.
   emotion.
 - [ ] English and Japanese are equivalent scene localizations, not strict
   word-for-word translations.
+- [ ] Japanese display wrapping is checked in its target surface: no
+  one-character orphan tail, no punctuation stranded at line start, and no
+  awkward line split that harms rhythm.
+- [ ] Player-facing prose is stored in scenario/localization data where
+  practical instead of component code.
 - [ ] Spoken/service lines also pass
   [`japanese-dialogue-gate.md`](japanese-dialogue-gate.md).
 
@@ -32,12 +37,17 @@ enemy text, records, and Japanese localization.
 - The Japanese reads as a calque: noun-heavy, passive, or "X waits for Y."
 - NPC or service text sounds like written exposition instead of a person
   speaking in the scene.
+- Rendered Japanese leaves a single character on the final wrapped line.
+- A reusable room, service, item, or guidance line is hardcoded into a React
+  component.
 
 ## Required Evidence
 
 - [ ] Prose diff includes before/after examples for at least one representative
   town line and one room/event line.
 - [ ] Japanese UI or E2E check covers the changed copy.
+- [ ] Screenshot/browser evidence shows the actual wrapping for changed
+  layout-sensitive Japanese copy.
 - [ ] Scenario summary or content QA identifies prose fields that still need a
   pass.
 - [ ] Reviewer note names which job each changed line serves: orientation, risk,
