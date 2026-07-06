@@ -269,6 +269,7 @@ export const en = {
     current: "Current room",
     town: "Town",
     miniMap: "Mini-map",
+    darkness: "Darkness — count your steps",
     paths: "Ways",
     visited: "Mapped",
     open: "Open",

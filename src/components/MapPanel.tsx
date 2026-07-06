@@ -40,6 +40,9 @@ export function MapPanel({ state, world, locale, t }: MapPanelProps) {
   const miniMap = useMemo(() => buildMiniMap(state, world, locale, currentRoomId), [state, world, locale, currentRoomId]);
   const facing = state.position?.facing ?? state.map.currentFacing ?? null;
   const cellsByPosition = new Map(miniMap.cells.map((cell) => [`${cell.x},${cell.y}`, cell]));
+  const inDarkZone = Boolean(
+    currentRoomId && getRoom(world, currentRoomId).gates?.some((gate) => gate.kind === "dark_zone")
+  );
 
   return (
     <section className="map-panel" aria-labelledby="map-heading">
@@ -52,7 +55,12 @@ export function MapPanel({ state, world, locale, t }: MapPanelProps) {
         <strong>{currentRoomId ? getLocalizedRoomText(world, currentRoomId, locale).name : t("map.town")}</strong>
       </div>
       {miniMap.cells.length > 0 && (
-        <div className="mini-map" aria-label={t("map.miniMap")} data-testid="minimap">
+        <div className={`mini-map${inDarkZone ? " dark" : ""}`} aria-label={t("map.miniMap")} data-testid="minimap">
+          {inDarkZone && (
+            <div className="mini-map-dark-overlay" data-testid="minimap-dark">
+              {t("map.darkness")}
+            </div>
+          )}
           <div
             data-testid="minimap-grid"
             className="mini-map-grid"

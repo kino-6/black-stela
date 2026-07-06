@@ -271,6 +271,7 @@ export const ja = {
     current: "現在地",
     town: "街",
     miniMap: "ミニマップ",
+    darkness: "視界不良 — 歩数を数えよ",
     paths: "通路",
     visited: "記録済み",
     open: "通路",
