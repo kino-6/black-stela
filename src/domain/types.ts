@@ -352,6 +352,7 @@ export interface DungeonRoom {
   exits: Partial<Record<Direction, string>>;
   doors?: Direction[];
   stairsToTown?: boolean;
+  restPoint?: boolean;
   trap?: Trap;
   encounter?: Enemy;
   encounterTable?: string;

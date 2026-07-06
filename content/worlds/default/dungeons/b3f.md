@@ -82,14 +82,15 @@ rooms:
     treasureTable: treasure.b3f.watermark
   - id: room.b3f.003
     name: Chain Descent
-    description: A chain ladder descends through a square well of silent air.
+    description: A chain ladder descends through a square well of silent air. A worn rope-ring by the well still holds the way back to town.
     locales:
       ja:
         name: 鎖の降り口
-        description: 鎖梯子が、音のない四角い井戸を下っている。
+        description: 鎖梯子が、音のない四角い井戸を下っている。井戸端の擦り切れた綱の環が、まだ帰り道を保っている。
     exits:
       north: room.b3f.002
       east: room.b4f.001
+    restPoint: true
     event: The chain is cold enough to numb fingers through leather.
 ---
 

@@ -139,3 +139,28 @@ describe("rules engine", () => {
     expect(descended.map.floorId).toBe("dungeon.b2f");
   });
 });
+
+describe("rest points and scarce return", () => {
+  function dungeonAt(roomId: string): GameState {
+    return { ...stateWithParty(), phase: "dungeon", position: { roomId, facing: "east" } };
+  }
+
+  it("allows return to town at block-cap rest points but not mid-floor", () => {
+    for (const restRoom of ["room.b1f.006", "room.b3f.003", "room.b6f.003"]) {
+      const returned = executeCommand(dungeonAt(restRoom), defaultWorld, { type: "return_to_town" });
+      expect(returned.phase, `${restRoom} should allow return`).toBe("town");
+    }
+
+    const blocked = executeCommand(dungeonAt("room.b3f.002"), defaultWorld, { type: "return_to_town" });
+    expect(blocked.phase).toBe("dungeon");
+    expect(blocked.log.at(-1)?.tags).toContain("blocked");
+  });
+
+  it("marks the block-cap descent rooms as rest points in scenario data", () => {
+    const restIds = defaultWorld.dungeons
+      .flatMap((floor) => floor.rooms)
+      .filter((room) => room.restPoint || room.stairsToTown)
+      .map((room) => room.id);
+    expect(restIds).toEqual(expect.arrayContaining(["room.b3f.003", "room.b6f.003"]));
+  });
+});

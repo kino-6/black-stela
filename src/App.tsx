@@ -152,7 +152,7 @@ export function App() {
     return getLocalizedRoomText(defaultWorld, state.position.roomId, locale);
   }, [locale, state.position]);
   const currentRoom = useMemo(() => (state.position ? getRoom(defaultWorld, state.position.roomId) : null), [state.position]);
-  const canReturnToTown = Boolean(currentRoom?.stairsToTown);
+  const canReturnToTown = Boolean(currentRoom?.stairsToTown || currentRoom?.restPoint);
   const canUseStairs = Boolean(
     state.position && getGridEdge(defaultWorld, state.position.roomId, state.position.facing)?.kind === "stairs"
   );
@@ -2439,7 +2439,7 @@ function runTempoDungeonStep(state: GameState, t: Translator) {
   const exits = Object.entries(room.exits).filter(([, target]) => Boolean(target));
   const forwardEdge = getGridEdge(defaultWorld, state.position.roomId, state.position.facing);
   const currentExit = room.exits[state.position.facing];
-  if (room.trap || room.encounter || room.event || room.gates?.length || room.stairsToTown) {
+  if (room.trap || room.encounter || room.event || room.gates?.length || room.stairsToTown || room.restPoint) {
     return { state, keepRunning: false, status: t("tempo.autoMoveStoppedEvent") };
   }
 
@@ -2457,7 +2457,7 @@ function runTempoDungeonStep(state: GameState, t: Translator) {
   }
 
   const nextRoom = next.position ? getRoom(defaultWorld, next.position.roomId) : null;
-  if (nextRoom?.trap || nextRoom?.encounter || nextRoom?.event || nextRoom?.gates?.length || nextRoom?.stairsToTown) {
+  if (nextRoom?.trap || nextRoom?.encounter || nextRoom?.event || nextRoom?.gates?.length || nextRoom?.stairsToTown || nextRoom?.restPoint) {
     return { state: next, keepRunning: false, status: t("tempo.autoMoveStoppedEvent") };
   }
 

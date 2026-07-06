@@ -82,14 +82,15 @@ rooms:
     treasureTable: treasure.b6f.oaths
   - id: room.b6f.003
     name: Salted Arch
-    description: Salt crusts the arch ahead, dry as old vows.
+    description: Salt crusts the arch ahead, dry as old vows. A shallow alcove keeps the last sure way back before the deep route.
     locales:
       ja:
         name: 塩の迫持
-        description: 先の迫持には、古い誓いのように乾いた塩がこびりつく。
+        description: 先の迫持には、古い誓いのように乾いた塩がこびりつく。浅い窪みが、深部へ入る前の確かな帰り道を残している。
     exits:
       north: room.b6f.002
       east: room.b7f.001
+    restPoint: true
 ---
 
 # B6F - Narrow Oaths

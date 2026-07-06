@@ -1001,7 +1001,7 @@ function returnToTown(state: GameState, world: ScenarioWorld): CommandResult {
   }
 
   const room = getRoom(world, state.position.roomId);
-  if (!room.stairsToTown) {
+  if (!room.stairsToTown && !room.restPoint) {
     return logOnly(state, { type: "command_blocked", reason: "town_return_unavailable", command: "return_to_town" });
   }
 
