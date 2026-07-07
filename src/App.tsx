@@ -33,6 +33,7 @@ import {
 import { getGridEdge, getLocalizedRoomText, getRoom, isBossFloor } from "./domain/scenario";
 import { createIdentitySuggestion } from "./domain/identitySuggestion";
 import { executeCommand, listUnlockedCheckpoints } from "./domain/rulesEngine";
+import { getTempoModeForPhase, runTempoStep, type TempoMode } from "./domain/tempo";
 import { projectEventToLog } from "./domain/replayLog";
 import { calculateRecoveryCost, getEffectiveCharacterStats, isEquipmentUsableBy } from "./domain/economy";
 import type {
@@ -87,7 +88,6 @@ type GuildCreationStep = "briefing" | "class" | "appearance" | "bonus" | "name";
 type GuildOfferState = "ask" | "suggestion" | "dismissed";
 type TownMode = "guild" | "shop" | "recovery" | "records" | "entry";
 type AppScreen = "title" | "config" | "game";
-type TempoMode = "idle" | "dungeon" | "combat";
 
 const AUTO_SAVE_SLOT = "autosave";
 const defaultDraft: CharacterDraft = {
@@ -581,7 +581,7 @@ export function App() {
     }
 
     const timer = window.setInterval(() => {
-      const result = runTempoStep(stateRef.current, tempoMode, t);
+      const result = runTempoStep(stateRef.current, tempoMode, defaultWorld, t);
       stateRef.current = result.state;
       setState(result.state);
 
@@ -2398,109 +2398,6 @@ function formatDebugProgress(progress: DebugProgress, t: Translator) {
   }
 
   return t("debug.floorStart", { floor: progress.replace("floor_", "B") + "F" });
-}
-
-function getTempoModeForPhase(phase: GameState["phase"]): TempoMode {
-  if (phase === "combat") {
-    return "combat";
-  }
-
-  if (phase === "dungeon") {
-    return "dungeon";
-  }
-
-  return "idle";
-}
-
-function runTempoStep(state: GameState, mode: Exclude<TempoMode, "idle">, t: Translator) {
-  if (mode === "combat") {
-    return runTempoCombatStep(state, t);
-  }
-
-  return runTempoDungeonStep(state, t);
-}
-
-function runTempoCombatStep(state: GameState, t: Translator) {
-  if (state.phase !== "combat" || !state.combat) {
-    return { state, keepRunning: false, status: t("tempo.autoStoppedClear") };
-  }
-
-  if (state.combat.enemy.isBoss || state.combat.enemy.role === "boss" || state.combat.enemy.role === "miniboss") {
-    return { state, keepRunning: false, status: t("tempo.autoStoppedBoss") };
-  }
-
-  if (state.party.some((member) => member.injury || member.hp <= Math.ceil(member.maxHp * 0.35))) {
-    return { state, keepRunning: false, status: t("tempo.autoStoppedDanger") };
-  }
-
-  const target = state.combat.enemyGroups.find((group) => group.count > 0);
-  const activeParty = state.party.filter((member) => member.hp > 0 && !member.injury);
-  if (activeParty.length === 0 || !target) {
-    return { state, keepRunning: false, status: t("tempo.autoStoppedDanger") };
-  }
-
-  const hasStandingFront = activeParty.some((member) => member.row === "front");
-  const actions: CombatActionDeclaration[] = activeParty.map((member) =>
-    member.row === "front" || !hasStandingFront
-      ? { actorId: member.id, action: "attack", targetGroupId: target.id }
-      : { actorId: member.id, action: "defend" }
-  );
-  const next = executeCommand(state, defaultWorld, {
-    type: "declare_round",
-    actions
-  });
-
-  if (next.phase !== "combat") {
-    return { state: next, keepRunning: false, status: t("tempo.autoStoppedClear") };
-  }
-
-  if (next.party.some((member) => member.injury || member.hp <= Math.ceil(member.maxHp * 0.35))) {
-    return { state: next, keepRunning: false, status: t("tempo.autoStoppedDanger") };
-  }
-
-  return { state: next, keepRunning: true, status: "" };
-}
-
-function runTempoDungeonStep(state: GameState, t: Translator) {
-  if (state.phase !== "dungeon" || !state.position) {
-    return { state, keepRunning: false, status: t("tempo.autoMoveStoppedEvent") };
-  }
-
-  if (state.party.some((member) => member.injury || member.hp <= Math.ceil(member.maxHp * 0.35))) {
-    return { state, keepRunning: false, status: t("tempo.autoStoppedDanger") };
-  }
-
-  const room = getRoom(defaultWorld, state.position.roomId);
-  const exits = Object.entries(room.exits).filter(([, target]) => Boolean(target));
-  const forwardEdge = getGridEdge(defaultWorld, state.position.roomId, state.position.facing);
-  const currentExit = room.exits[state.position.facing];
-  // Stop for hazards/events on the current tile, but not merely for standing on
-  // a return/rest tile — the party starts on the entrance's town gate and must
-  // be able to auto-walk off it. Arriving at a return/rest tile still stops
-  // (see the nextRoom check below).
-  if (room.trap || room.encounter || room.event || room.gates?.length) {
-    return { state, keepRunning: false, status: t("tempo.autoMoveStoppedEvent") };
-  }
-
-  if (forwardEdge?.kind === "stairs") {
-    return { state, keepRunning: false, status: t("tempo.autoMoveStoppedEvent") };
-  }
-
-  if (!currentExit || exits.length > 2) {
-    return { state, keepRunning: false, status: t("tempo.autoMoveStoppedBranch") };
-  }
-
-  const next = executeCommand(state, defaultWorld, { type: "move_forward" });
-  if (next === state || next.phase !== "dungeon") {
-    return { state: next, keepRunning: false, status: t("tempo.autoMoveStoppedEvent") };
-  }
-
-  const nextRoom = next.position ? getRoom(defaultWorld, next.position.roomId) : null;
-  if (nextRoom?.trap || nextRoom?.encounter || nextRoom?.event || nextRoom?.gates?.length || nextRoom?.stairsToTown || nextRoom?.restPoint) {
-    return { state: next, keepRunning: false, status: t("tempo.autoMoveStoppedEvent") };
-  }
-
-  return { state: next, keepRunning: true, status: "" };
 }
 
 function isTypingTarget(target: EventTarget | null) {
