@@ -126,6 +126,12 @@ export const ja = {
     editAccent: "色",
     editSave: "保存",
     editCancel: "取消",
+    deposit: "記録庫へ保管",
+    vaultHeading: "冒険者記録庫",
+    vaultHint: "記録庫の冒険者は、どの遠征のギルドにも招き入れられる。",
+    vaultOrigin: "{world} より",
+    import: "招き入れる",
+    vaultRemove: "破棄",
     hpAtk: "HP {hp}/{maxHp} · 攻撃 {attack}"
   },
   aptitude: {
@@ -329,6 +335,7 @@ export const ja = {
     partyUnretired: "{name} が引退から復帰した。",
     partyErased: "{name} の名は台帳から永久に消された。",
     partyEdited: "{name} のギルド記録を書き改めた。",
+    partyImported: "{name} が別世界の記録庫からギルドに加わった。",
     dungeonEntered: "隊列は黒い石碑の下へ降りた。",
     partyTurned: "隊列は{side}を向き、{facing}を正面にした。",
     sideLeft: "左",

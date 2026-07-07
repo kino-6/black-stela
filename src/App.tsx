@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowDown,
   ArrowLeft,
@@ -29,8 +29,10 @@ import {
   findClass,
   findTrait,
   PARTY_SIZE_LIMIT,
+  toPortableAdventurer,
   traitCatalog
 } from "./domain/characterCreation";
+import { readVault, depositToVault, removeFromVault, type VaultEntry } from "./domain/adventurerVault";
 import { getGridEdge, getLocalizedRoomText, getRoom, isBossFloor } from "./domain/scenario";
 import { createIdentitySuggestion } from "./domain/identitySuggestion";
 import { executeCommand, listUnlockedCheckpoints } from "./domain/rulesEngine";
@@ -183,6 +185,29 @@ export function App() {
   const [eraseConfirmId, setEraseConfirmId] = useState<string | null>(null);
   const [editProfileId, setEditProfileId] = useState<string | null>(null);
   const [editDraft, setEditDraft] = useState({ name: "", title: "", notes: "", accentColor: "#c9a765" });
+  const vaultStorage = useMemo(() => (typeof window !== "undefined" ? window.localStorage : null), []);
+  const [vault, setVault] = useState<VaultEntry[]>(() => (vaultStorage ? readVault(vaultStorage) : []));
+
+  const depositMember = useCallback(
+    (character: Character) => {
+      if (!vaultStorage) {
+        return;
+      }
+      const portable = toPortableAdventurer(character, defaultWorld);
+      setVault(depositToVault(vaultStorage, portable, crypto.randomUUID()));
+    },
+    [vaultStorage]
+  );
+
+  const removeVaultEntry = useCallback(
+    (vaultId: string) => {
+      if (!vaultStorage) {
+        return;
+      }
+      setVault(removeFromVault(vaultStorage, vaultId));
+    },
+    [vaultStorage]
+  );
   const [scenarioImportStatus, setScenarioImportStatus] = useState("");
   const [scenarioImportErrors, setScenarioImportErrors] = useState<ScenarioValidationError[]>([]);
   const autosaveSummary = saveSlots.find((slot) => slot.slotId === AUTO_SAVE_SLOT);
@@ -1567,6 +1592,46 @@ export function App() {
                         </section>
                       )}
 
+                      {vault.length > 0 && (
+                        <section className="formation-row vault-row" aria-label={t("party.vaultHeading")} data-testid="adventurer-vault">
+                          <h4>{t("party.vaultHeading")} ({vault.length})</h4>
+                          <p className="vault-hint">{t("party.vaultHint")}</p>
+                          <div className="formation-slots">
+                            {vault.map((entry) => (
+                              <div className="formation-slot" key={entry.vaultId}>
+                                <div className="party-member vault-member" style={{ borderColor: entry.adventurer.identity.accentColor }}>
+                                  <div>
+                                    <strong>{entry.adventurer.identity.name}</strong>
+                                    <span>
+                                      {findClass(entry.adventurer.build.classId).label[locale]} · Lv{entry.adventurer.progress.level}
+                                    </span>
+                                    <small>{t("party.vaultOrigin", { world: entry.adventurer.origin.worldTitle })}</small>
+                                  </div>
+                                </div>
+                                {state.phase === "town" && (
+                                  <div className="retired-actions">
+                                    <button
+                                      type="button"
+                                      className="roster-action"
+                                      onClick={() => run({ type: "import_member", adventurer: entry.adventurer })}
+                                    >
+                                      {t("party.import")}
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className="roster-action danger"
+                                      onClick={() => removeVaultEntry(entry.vaultId)}
+                                    >
+                                      {t("party.vaultRemove")}
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </section>
+                      )}
+
                       {state.party.length > 0 && (
                       <article className="character-profile" data-testid="character-profile" aria-label={t("party.profile")}>
                         <div className="profile-heading">
@@ -1633,6 +1698,14 @@ export function App() {
                               onClick={() => run({ type: "retire_member", characterId: selectedProfile.id })}
                             >
                               {t("party.retire")}
+                            </button>
+                            <button
+                              type="button"
+                              className="roster-action"
+                              data-testid="deposit-vault"
+                              onClick={() => depositMember(selectedProfile)}
+                            >
+                              {t("party.deposit")}
                             </button>
                             {editProfileId !== selectedProfile.id && (
                               <button

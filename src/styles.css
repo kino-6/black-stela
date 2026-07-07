@@ -961,6 +961,19 @@ textarea {
   gap: 0.55rem;
 }
 
+.vault-hint {
+  margin: 0;
+  color: #9a8f78;
+  font-size: 0.72rem;
+  line-height: 1.4;
+}
+
+.vault-member small {
+  display: block;
+  color: #9a8f78;
+  font-size: 0.68rem;
+}
+
 .formation-slot-empty {
   min-height: 4.9rem;
   border: 1px dashed #30372f;

@@ -124,6 +124,12 @@ export const en = {
     editAccent: "Accent",
     editSave: "Save",
     editCancel: "Cancel",
+    deposit: "Record to vault",
+    vaultHeading: "Adventurer vault",
+    vaultHint: "Vaulted adventurers can be imported into any expedition's guild.",
+    vaultOrigin: "from {world}",
+    import: "Import",
+    vaultRemove: "Discard",
     hpAtk: "HP {hp}/{maxHp} · ATK {attack}"
   },
   aptitude: {
@@ -327,6 +333,7 @@ export const en = {
     partyUnretired: "{name} comes out of retirement.",
     partyErased: "{name}'s name is struck from the ledger for good.",
     partyEdited: "{name}'s guild record is revised.",
+    partyImported: "{name} joins the guild from another realm's vault.",
     dungeonEntered: "The party descends beneath the black stela.",
     partyTurned: "The party turns {side}, now facing {facing}.",
     sideLeft: "left",

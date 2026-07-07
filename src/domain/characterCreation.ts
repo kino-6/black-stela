@@ -7,10 +7,13 @@ import type {
   CharacterTraitId,
   CombatRow,
   EquipmentSlot,
+  ImportAdjustmentKind,
+  PortableAdventurer,
+  ScenarioImportPolicy,
   ScenarioWorld
 } from "./types";
 import { baseMaxMpForClass } from "./spells";
-import { applyLevelUps } from "./leveling";
+import { applyLevelUps, xpForLevel } from "./leveling";
 import { findEquipment, isEquipmentUsableBy } from "./economy";
 
 export interface LocalizedLabel {
@@ -503,6 +506,132 @@ export function reclassCharacter(character: Character, newClassId: CharacterClas
   }
 
   return { ...releveled, hp: releveled.maxHp, mp: releveled.maxMp, equipment };
+}
+
+// Capture a registered adventurer as a scenario-independent snapshot. Identity,
+// build, and earned progress travel; scenario equipment ids, dungeon position,
+// and derived combat stats are dropped (rebuilt on import).
+export function toPortableAdventurer(
+  character: Character,
+  world: ScenarioWorld,
+  options: { exportedAt?: string } = {}
+): PortableAdventurer {
+  return {
+    formatVersion: 1,
+    exportedAt: options.exportedAt ?? new Date().toISOString(),
+    origin: { worldId: world.id, worldTitle: world.title },
+    identity: {
+      name: character.name,
+      title: character.title,
+      notes: character.notes,
+      accentColor: character.accentColor,
+      portraitRef: character.portraitRef
+    },
+    build: {
+      classId: character.classId,
+      backgroundId: character.backgroundId,
+      roleTags: character.roleTags,
+      rowPreference: character.rowPreference,
+      aptitude: character.aptitude,
+      traitIds: character.traitIds
+    },
+    progress: {
+      level: character.level,
+      xp: character.xp,
+      gold: character.gold,
+      memory: character.memory
+    }
+  };
+}
+
+export interface ImportResult {
+  character: Character;
+  adjustments: ImportAdjustmentKind[];
+}
+
+// Copy a vault adventurer into a target world's guild. Stats are rebuilt from
+// the class baseline + retained aptitude and re-levelled from the (clamped) xp,
+// gear is left empty (the new world's ids differ), a fresh id is minted, and the
+// scenario import policy clamps level/gold, remaps disallowed classes, and
+// resets in-world dungeon progress so a veteran starts this world fresh.
+export function importAdventurer(
+  portable: PortableAdventurer,
+  world: ScenarioWorld,
+  policy: ScenarioImportPolicy | undefined = world.importPolicy
+): ImportResult {
+  const adjustments: ImportAdjustmentKind[] = [];
+
+  let classId = portable.build.classId;
+  if (policy?.allowedClasses && policy.allowedClasses.length > 0 && !policy.allowedClasses.includes(classId)) {
+    classId = policy.allowedClasses[0];
+    adjustments.push("class_remapped");
+  }
+
+  let level = Math.max(1, portable.progress.level);
+  if (policy?.levelCap !== undefined && level > policy.levelCap) {
+    level = Math.max(1, policy.levelCap);
+    adjustments.push("level_capped");
+  }
+  // Keep xp consistent with the (possibly capped) level: never above the next
+  // level's threshold, never below the current level's floor.
+  const xp = Math.min(Math.max(portable.progress.xp, xpForLevel(level)), xpForLevel(level + 1) - 1);
+
+  let gold = Math.max(0, portable.progress.gold);
+  if (policy?.goldCap !== undefined && gold > policy.goldCap) {
+    gold = Math.max(0, policy.goldCap);
+    adjustments.push("gold_capped");
+  }
+
+  const classDef = findClass(classId);
+  const stats = deriveStats(classDef, portable.build.aptitude);
+  const maxMp = baseMaxMpForClass(classId, portable.build.aptitude);
+
+  const memory = {
+    ...portable.progress.memory,
+    firstExpeditionTurn: undefined,
+    deepestFloorId: policy?.startingFloorId
+  };
+  if (portable.progress.memory.deepestFloorId !== policy?.startingFloorId || portable.progress.memory.firstExpeditionTurn !== undefined) {
+    adjustments.push("progress_reset");
+  }
+
+  const base: Character = {
+    id: crypto.randomUUID(),
+    name: portable.identity.name,
+    notes: portable.identity.notes,
+    title: portable.identity.title,
+    classId: classDef.id,
+    roleTags: classDef.roleTags,
+    rowPreference: classDef.rowPreference,
+    backgroundId: portable.build.backgroundId,
+    aptitude: portable.build.aptitude,
+    traitIds: portable.build.traitIds,
+    accentColor: portable.identity.accentColor,
+    startingEquipment: Object.values(classDef.equipment).filter((id): id is string => Boolean(id)),
+    equipment: {},
+    creation: { method: "import", registeredAtTurn: 0 },
+    memory,
+    portraitRef: portable.identity.portraitRef,
+    row: classDef.rowPreference,
+    level,
+    hp: stats.maxHp,
+    maxHp: stats.maxHp,
+    mp: maxMp,
+    maxMp,
+    attack: stats.attack,
+    damageMin: stats.damageMin,
+    damageMax: stats.damageMax,
+    accuracy: stats.accuracy,
+    armor: stats.armor,
+    speed: stats.speed,
+    xp,
+    gold,
+    status: [],
+    injury: undefined
+  };
+
+  const character = applyLevelUps(base).character;
+  return { character: { ...character, hp: character.maxHp, mp: character.maxMp }, adjustments };
 }
 
 export function createLegacyGuildCharacter(input: { name: string; notes: string; portraitRef?: string }): Character {

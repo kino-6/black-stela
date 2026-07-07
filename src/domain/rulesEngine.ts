@@ -1,6 +1,6 @@
 import { appendEventLogs } from "./replayLog";
 import { applyLevelUps } from "./leveling";
-import { PARTY_SIZE_LIMIT, findClass, reclassCharacter } from "./characterCreation";
+import { PARTY_SIZE_LIMIT, findClass, importAdventurer, reclassCharacter } from "./characterCreation";
 import { SPELLS, knownSpells } from "./spells";
 import { FEAR_ACCURACY_PENALTY, POISON_DAMAGE, STATUS_WEAR_OFF, statusResistPct } from "./status";
 import {
@@ -39,6 +39,7 @@ import type {
   ExplorationGate,
   GameEvent,
   GameState,
+  PortableAdventurer,
   ScenarioWorld
 } from "./types";
 
@@ -138,6 +139,8 @@ export function resolveCommand(state: GameState, world: ScenarioWorld, command: 
       return eraseMember(state, command.characterId);
     case "edit_member_identity":
       return editMemberIdentity(state, command);
+    case "import_member":
+      return importMember(state, world, command.adventurer);
     case "resume_at_checkpoint":
       return resumeAtCheckpoint(state, world, command.roomId);
     case "turn_left":
@@ -335,6 +338,18 @@ function editMemberIdentity(
     return noChange(state);
   }
   return withEvents(next, [{ type: "party_member_edited", characterName: editedName }]);
+}
+
+// Copy a vault adventurer into the guild reserve, clamped by the target world's
+// import policy. Imports always land in the reserve so the active party is never
+// silently overfilled. Town-only.
+function importMember(state: GameState, world: ScenarioWorld, adventurer: PortableAdventurer): CommandResult {
+  if (state.phase !== "town") {
+    return noChange(state);
+  }
+  const { character, adjustments } = importAdventurer(adventurer, world);
+  const next: GameState = { ...state, reserve: [...state.reserve, character] };
+  return withEvents(next, [{ type: "party_member_imported", characterName: character.name, adjustments }]);
 }
 
 function enterDungeon(state: GameState, world: ScenarioWorld): CommandResult {
