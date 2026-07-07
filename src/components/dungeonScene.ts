@@ -1,20 +1,9 @@
 import * as THREE from "three";
-import ashSlimeTextureUrl from "../assets/dungeon/ash-slime.png";
-import ashVotaryTextureUrl from "../assets/dungeon/ash-votary.png";
-import bitterMoteTextureUrl from "../assets/dungeon/bitter-mote.png";
-import cinderKeeperTextureUrl from "../assets/dungeon/cinder-keeper.png";
-import cisternWardenTextureUrl from "../assets/dungeon/cistern-warden.png";
-import dustCrawlerTextureUrl from "../assets/dungeon/dust-crawler.png";
-import hookRatTextureUrl from "../assets/dungeon/hook-rat.png";
-import lanternWardTextureUrl from "../assets/dungeon/lantern-ward.png";
-import oathCutterTextureUrl from "../assets/dungeon/oath-cutter.png";
-import oathWardenTextureUrl from "../assets/dungeon/oath-warden.png";
 import returnMarkerTextureUrl from "../assets/dungeon/return-marker.png";
 import stoneFloorTextureUrl from "../assets/dungeon/stone-floor.jpg";
 import stoneWallTextureUrl from "../assets/dungeon/stone-wall.jpg";
-import vaultHuskTextureUrl from "../assets/dungeon/vault-husk.png";
 import woodDoorTextureUrl from "../assets/dungeon/wood-door.jpg";
-import { dungeonBlockTextureUrls } from "../ui/artAssets";
+import { dungeonBlockTextureUrls, getEnemySpriteTextureUrl } from "../ui/artAssets";
 
 // Geometry distinguishes stairs from a plain opening; the view model keeps the
 // coarser three-value language. Both the projection (DungeonView) and this
@@ -40,20 +29,6 @@ export interface DungeonSceneInput {
   /** Draw the town-return feature: the entrance stairway or the waystone. */
   returnMarker: "stairs" | "marker" | null;
 }
-
-const enemySpriteTextureUrls: Record<string, string> = {
-  "enemy.b1f.ash-slime": ashSlimeTextureUrl,
-  "enemy.b1f.dust-crawler": dustCrawlerTextureUrl,
-  "enemy.b2f.hook-rat": hookRatTextureUrl,
-  "enemy.b3f.bitter-mote": bitterMoteTextureUrl,
-  "enemy.b4f.lantern-ward": lanternWardTextureUrl,
-  "enemy.b6f.oath-cutter": oathCutterTextureUrl,
-  "enemy.b7f.vault-husk": vaultHuskTextureUrl,
-  "enemy.b3f.cistern-warden": cisternWardenTextureUrl,
-  "enemy.b5f.cinder-keeper": cinderKeeperTextureUrl,
-  "enemy.b6f.oath-warden": oathWardenTextureUrl,
-  "enemy.b8f.ash-votary": ashVotaryTextureUrl
-};
 
 // One grid cell is CELL deep; the camera stands in the current cell looking down
 // the corridor, and successive cells recede toward the fog.
@@ -215,14 +190,6 @@ export function buildDungeonScene(mount: HTMLDivElement, input: DungeonSceneInpu
     renderer.dispose();
     mount.removeChild(renderer.domElement);
   };
-}
-
-export function getEnemySpriteTextureUrl(enemyId: string) {
-  return enemySpriteTextureUrls[enemyId] ?? ashSlimeTextureUrl;
-}
-
-export function hasEnemySpriteTexture(enemyId: string) {
-  return Object.hasOwn(enemySpriteTextureUrls, enemyId);
 }
 
 export function getDungeonBlockTextureUrls(floorId: string | null) {

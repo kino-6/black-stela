@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { getDungeonRenderLayout } from "../src/components/DungeonView";
-import { getDungeonBlockTextureUrls, hasEnemySpriteTexture } from "../src/components/dungeonScene";
+import { getDungeonBlockTextureUrls } from "../src/components/dungeonScene";
+import { hasEnemySpriteTexture } from "../src/ui/artAssets";
 import { defaultWorld } from "../src/data/defaultWorld";
 import { backgroundCatalog } from "../src/domain/characterCreation";
 import { catalogIconUrls, portraitAssetUrls } from "../src/ui/artAssets";
