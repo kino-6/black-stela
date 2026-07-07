@@ -41,6 +41,21 @@ import {
   isTypingTarget,
   moveControllerFocus
 } from "./ui/controllerFocus";
+import {
+  formatBonusParts,
+  formatCombatRow,
+  formatDebugProgress,
+  formatEquipmentEffect,
+  formatEquipmentSlot,
+  formatInventoryEffect,
+  formatPhase,
+  formatSignedBonus,
+  formatSignedDelta,
+  formatStatDelta,
+  getMemberRecoveryCost,
+  isRecoveryEventType,
+  isShopEventType
+} from "./ui/format";
 import { projectEventToLog } from "./domain/replayLog";
 import { calculateRecoveryCost, getEffectiveCharacterStats, isEquipmentUsableBy } from "./domain/economy";
 import type {
@@ -2147,21 +2162,6 @@ function createBrowserSaveRepository() {
   return new LocalStorageSaveRepository(window.localStorage);
 }
 
-function formatPhase(phase: GameState["phase"], t: Translator) {
-  if (phase === "town") {
-    return t("play.town");
-  }
-
-  if (phase === "combat") {
-    return t("play.combat");
-  }
-
-  return t("play.dungeon");
-}
-
-function formatCombatRow(row: GameState["party"][number]["row"], t: Translator) {
-  return row === "front" ? t("play.frontRow") : t("play.backRow");
-}
 
 function formatCombatOrder(order: CombatActionDeclaration, state: GameState, locale: Locale, t: Translator) {
   const actor = state.party.find((member) => member.id === order.actorId);
@@ -2281,18 +2281,6 @@ function localizedEnemyGroupName(group: { enemyId: string; name: string }, local
   return enemy?.locales?.[locale]?.name ?? enemy?.name ?? group.name;
 }
 
-function getMemberRecoveryCost(member: Character) {
-  return Math.max(0, member.maxHp - member.hp) + (member.injury ? 8 : 0);
-}
-
-function isShopEventType(type: string | undefined) {
-  return type === "item_bought" || type === "item_sold" || type === "equipment_changed";
-}
-
-function isRecoveryEventType(type: string | undefined) {
-  return type === "party_recovered" || type === "recovery_blocked";
-}
-
 function previewEquipmentStats(member: Character, equipment: ScenarioEquipment) {
   return getEffectiveCharacterStats(
     {
@@ -2304,29 +2292,6 @@ function previewEquipmentStats(member: Character, equipment: ScenarioEquipment) 
     },
     defaultWorld
   );
-}
-
-function formatStatDelta(
-  current: ReturnType<typeof getEffectiveCharacterStats>,
-  next: ReturnType<typeof getEffectiveCharacterStats>,
-  t: Translator
-) {
-  const parts = [
-    formatSignedDelta(t("town.effectAttack"), next.damageMax - current.damageMax),
-    formatSignedDelta(t("town.effectAccuracy"), next.accuracy - current.accuracy),
-    formatSignedDelta(t("town.effectDefense"), next.armor - current.armor),
-    formatSignedDelta(t("town.effectSpeed"), next.speed - current.speed)
-  ].filter(Boolean);
-
-  return parts.length > 0 ? parts.join(" / ") : t("town.noStatChange");
-}
-
-function formatSignedDelta(label: string, value: number) {
-  if (value === 0) {
-    return "";
-  }
-
-  return `${label} ${value > 0 ? "+" : ""}${value}`;
 }
 
 function findEquipmentById(itemId: string | undefined) {
@@ -2346,65 +2311,6 @@ function shopCategoryFor(itemId: string): ShopCategory {
   }
   const item = defaultWorld.items.find((candidate) => candidate.id === itemId);
   return item?.kind === "healing" || item?.kind === "escape" ? "consumable" : "tool";
-}
-
-function formatEquipmentSlot(slot: EquipmentSlot, t: Translator) {
-  return t(`town.slots.${slot}` as Parameters<Translator>[0]);
-}
-
-function formatEquipmentEffect(equipment: ScenarioEquipment, t: Translator) {
-  return formatBonusParts(
-    equipment.attackBonus,
-    equipment.defenseBonus,
-    equipment.accuracyBonus,
-    equipment.speedBonus,
-    t
-  );
-}
-
-function formatInventoryEffect(item: InventoryItem, t: Translator) {
-  return formatBonusParts(item.attackBonus, item.defenseBonus, item.accuracyBonus, item.speedBonus, t);
-}
-
-function formatBonusParts(
-  attackBonus: number | undefined,
-  defenseBonus: number | undefined,
-  accuracyBonus: number | undefined,
-  speedBonus: number | undefined,
-  t: Translator
-) {
-  const parts = [
-    formatSignedBonus(t("town.effectAttack"), attackBonus),
-    formatSignedBonus(t("town.effectDefense"), defenseBonus),
-    formatSignedBonus(t("town.effectAccuracy"), accuracyBonus),
-    formatSignedBonus(t("town.effectSpeed"), speedBonus)
-  ].filter(Boolean);
-
-  return parts.length > 0 ? parts.join(" / ") : t("aptitude.balanced");
-}
-
-function formatSignedBonus(label: string, value: number | undefined) {
-  if (!value) {
-    return "";
-  }
-
-  return `${label} ${value > 0 ? "+" : ""}${value}`;
-}
-
-function formatDebugProgress(progress: DebugProgress, t: Translator) {
-  if (progress === "ready") {
-    return t("debug.ready");
-  }
-
-  if (progress === "after_encounter") {
-    return t("debug.afterEncounter");
-  }
-
-  if (progress === "return_ready") {
-    return t("debug.returnReady");
-  }
-
-  return t("debug.floorStart", { floor: progress.replace("floor_", "B") + "F" });
 }
 
 function getScenarioValidationErrorsFromLocation(): ScenarioValidationError[] {
