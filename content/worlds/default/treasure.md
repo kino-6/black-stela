@@ -81,6 +81,13 @@ treasureTables:
     entries:
       - itemId: equip.black-thread-ring
         weight: 3
+  - id: treasure.b6f.side
+    tier: 4
+    entries:
+      - itemId: item.healing-draught
+        weight: 5
+      - itemId: item.lantern-oil
+        weight: 3
   - id: treasure.b7f.rare
     tier: 5
     entries:

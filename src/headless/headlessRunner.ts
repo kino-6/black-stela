@@ -101,7 +101,7 @@ export function runHeadlessClear(initialState: GameState, world: ScenarioWorld, 
 // Dense 20x20 floors cost the greedy explorer far more steps than the old linear
 // layout, and a deep-floor probe may cross several of them to reach a town-return
 // anchor — so the walk budget is generous.
-export function runHeadlessProbes(world: ScenarioWorld, maxSteps = 900): HeadlessProbeResult[] {
+export function runHeadlessProbes(world: ScenarioWorld, maxSteps = 1800): HeadlessProbeResult[] {
   return debugProgressValues
     .filter((progress) => progress !== "ready")
     .map((progress) => ({
@@ -166,7 +166,10 @@ function chooseNextCommand(state: GameState, world: ScenarioWorld, visitCounts: 
   }
 
   const room = getRoom(world, state.position.roomId);
-  if (room.stairsToTown && state.defeatedEnemies.length > 0) {
+  // Return from any town-return anchor the engine honours — rest points as well
+  // as stairs-to-town — so a deep-floor probe heads home from the nearest anchor
+  // instead of climbing every dense floor back to the surface.
+  if ((room.stairsToTown || room.restPoint) && state.defeatedEnemies.length > 0) {
     return { command: { type: "return_to_town" }, knowledge: "known_room_state" };
   }
 
