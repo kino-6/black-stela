@@ -3003,6 +3003,15 @@ textarea {
   min-height: 0;
 }
 
+.combat-cockpit .cockpit-message,
+.combat-rail .battle-side,
+.combat-command-window {
+  background:
+    linear-gradient(180deg, rgba(7, 8, 6, 0.88), rgba(7, 8, 6, 0.82)),
+    url("./assets/ui/combat-vignette.jpg") center / cover no-repeat,
+    #080906;
+}
+
 .combat-cockpit .cockpit-message {
   grid-area: message;
 }

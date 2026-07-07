@@ -122,6 +122,7 @@ import {
   rollBonusPool,
   type CharacterDraft
 } from "./ui/characterDraft";
+import { catalogIconUrls, portraitAssetUrls } from "./ui/artAssets";
 
 type GuildCreationStep = "briefing" | "class" | "appearance" | "bonus" | "name";
 type GuildOfferState = "ask" | "suggestion" | "dismissed";
@@ -1953,7 +1954,8 @@ export function App() {
                           const selectedCanEquip = equipment ? isEquipmentUsableBy(equipment, selectedProfile) : false;
                           const previewStats = equipment ? previewEquipmentStats(selectedProfile, equipment) : null;
                           return (
-                            <article className="shop-row" key={stock.itemId}>
+                            <article className="shop-row shop-row-with-icon" key={stock.itemId}>
+                              {renderCatalogIcon(stock.itemId)}
                               <div>
                                 <strong>{localizedCatalogName(stock.itemId, locale)}</strong>
                                 <span>
@@ -1995,7 +1997,8 @@ export function App() {
                           <p className="empty-state">{t("town.inventoryEmpty")}</p>
                         ) : (
                           state.inventory.map((item) => (
-                            <article className="shop-row" key={item.id}>
+                            <article className="shop-row shop-row-with-icon" key={item.id}>
+                              {renderCatalogIcon(item.id)}
                               <div>
                                 <strong>{localizedCatalogName(item.id, locale)}</strong>
                                 <span>
@@ -2053,6 +2056,7 @@ export function App() {
                               disabled={!usable}
                               onClick={() => run({ type: "equip_item", characterId: selectedProfile.id, equipmentId: item.id })}
                             >
+                              {renderCatalogIcon(item.id)}
                               {localizedCatalogName(item.id, locale)}
                               <small>{usable ? t("town.allowed") : t("town.ineligible")}</small>
                             </button>
@@ -2415,6 +2419,11 @@ function renderPortraitContent({
   }
 
   const background = findBackground(backgroundId);
+  const portraitAssetUrl = portraitAssetUrls[background.portraitKey];
+  if (portraitAssetUrl) {
+    return <img data-testid={testId} src={portraitAssetUrl} alt={alt || background.label.en} />;
+  }
+
   const mark = fallback.trim().slice(0, 1) || background.label.en.slice(0, 1);
   return (
     <span
@@ -2425,6 +2434,15 @@ function renderPortraitContent({
       {mark}
     </span>
   );
+}
+
+function renderCatalogIcon(itemId: string) {
+  const iconUrl = catalogIconUrls[itemId];
+  if (!iconUrl) {
+    return null;
+  }
+
+  return <img className="catalog-icon" src={iconUrl} alt="" aria-hidden="true" />;
 }
 
 function getDebugProgressFromLocation() {
