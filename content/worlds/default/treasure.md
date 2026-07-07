@@ -29,6 +29,13 @@ treasureTables:
         weight: 6
       - itemId: equip.rusted-dirk
         weight: 2
+  - id: treasure.b2f.cache
+    tier: 2
+    entries:
+      - itemId: item.healing-draught
+        weight: 6
+      - itemId: item.lantern-oil
+        weight: 4
   - id: treasure.b3f.watermark
     tier: 2
     entries:
