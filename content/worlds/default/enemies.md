@@ -18,6 +18,26 @@ enemies:
     role: attrition
     dangerTier: 1
     tags: [tutorial, slime]
+  - id: enemy.b1f.dust-crawler
+    name: Dust Crawler
+    locales:
+      ja:
+        name: 塵這い
+    hp: 6
+    attack: 2
+    armor: 0
+    accuracy: 68
+    damageMin: 1
+    damageMax: 3
+    speed: 5
+    morale: 6
+    xp: 5
+    gold: 3
+    role: attrition
+    dangerTier: 1
+    weaknesses:
+      fire: 1.5
+    tags: [beast]
   - id: enemy.b2f.hook-rat
     name: Hook Rat
     locales:

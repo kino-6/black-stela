@@ -13,6 +13,15 @@ treasureTables:
         weight: 6
       - itemId: item.lantern-oil
         weight: 4
+  - id: treasure.b1f.chamber
+    tier: 1
+    entries:
+      - itemId: item.healing-draught
+        weight: 6
+      - itemId: item.lantern-oil
+        weight: 3
+      - itemId: equip.rusted-dirk
+        weight: 2
   - id: treasure.b2f.risk
     tier: 2
     entries:
