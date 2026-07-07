@@ -53,6 +53,13 @@ treasureTables:
     entries:
       - itemId: item.ashen-key
         weight: 1
+  - id: treasure.b4f.side
+    tier: 3
+    entries:
+      - itemId: item.healing-draught
+        weight: 6
+      - itemId: item.lantern-oil
+        weight: 4
   - id: treasure.b5f.keeper
     tier: 3
     entries:
