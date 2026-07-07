@@ -219,6 +219,8 @@ export const en = {
     recovery: "Recovery",
     records: "Records",
     entry: "Dungeon Entry",
+    backToTown: "Back to town",
+    servicesHeading: "Town services",
     statusHeading: "Town return",
     statusCopy: "Read the damage, count the purse, and choose the next preparation.",
     expeditionResult: "Return record",

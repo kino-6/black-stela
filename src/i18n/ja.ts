@@ -221,6 +221,8 @@ export const ja = {
     recovery: "施療院",
     records: "記録",
     entry: "迷宮入口",
+    backToTown: "町へ戻る",
+    servicesHeading: "町の施設",
     statusHeading: "帰還後の支度",
     statusCopy: "傷と荷を確かめ、次に潜る前の手を選ぶ。",
     expeditionResult: "帰還記録",

@@ -16,6 +16,7 @@ test("normal play surfaces support directional focus, confirm, and cancel", asyn
   await expect(page.getByTestId("guild-step-class")).toBeVisible();
 
   await createStarterParty(page);
+  await page.getByRole("button", { name: "Back to town" }).click();
   await focusControllerButton(page, "Enter dungeon");
   await page.keyboard.press("Enter");
   await expect(page.getByRole("heading", { name: "Silent Stone Chamber" })).toBeVisible();
@@ -42,6 +43,8 @@ test("town, shop, config, and repeat surfaces remain controller reachable", asyn
 
   await startNewExpedition(page);
   await createStarterParty(page);
+  // Reach the town hub, whose console service menu is controller-reachable.
+  await page.getByRole("button", { name: "Back to town" }).click();
 
   await focusControllerButton(page, "Shop");
   await page.keyboard.press("Enter");
@@ -52,12 +55,12 @@ test("town, shop, config, and repeat surfaces remain controller reachable", asyn
   await page.keyboard.press("Enter");
   await expect(page.getByText("Bought Healing Draught for 25 gold.")).toBeVisible();
 
+  // Cancel back to the hub, then stage into another service and the dungeon.
+  await page.getByRole("button", { name: "Back to town" }).click();
   await focusControllerButton(page, "Records");
   await page.keyboard.press("Enter");
   await expect(page.getByRole("heading", { name: "Records" })).toBeVisible();
-  await focusControllerButton(page, "Dungeon Entry");
-  await page.keyboard.press("Enter");
-  await expect(page.getByRole("button", { name: "Enter dungeon" })).toBeVisible();
+  await page.getByRole("button", { name: "Back to town" }).click();
   await focusControllerButton(page, "Enter dungeon");
   await page.keyboard.press("Enter");
   await expect(page.getByRole("heading", { name: "Silent Stone Chamber" })).toBeVisible();
@@ -66,6 +69,7 @@ test("town, shop, config, and repeat surfaces remain controller reachable", asyn
 test("repeat mode can be started and stopped through confirm focus", async ({ page }) => {
   await startNewExpedition(page);
   await registerAdventurer(page, { name: "Mira" });
+  await page.getByRole("button", { name: "Back to town" }).click();
   await page.getByRole("button", { name: "Enter dungeon" }).click();
 
   await focusControllerButton(page, "Repeat");

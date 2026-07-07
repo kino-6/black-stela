@@ -112,6 +112,7 @@ test("browser self-play completes the visible dungeon loop without headless shor
     });
 
     await recordStep("party enters B1F through normal dungeon entry", "hidden_affordance", async () => {
+      await page.getByRole("button", { name: "Back to town" }).click();
       await clickCommand("Enter dungeon");
       await expect(page.getByRole("heading", { name: "Silent Stone Chamber" })).toBeVisible();
       await expect(page.getByTestId("dungeon-canvas").locator("canvas")).toBeVisible();
@@ -175,6 +176,7 @@ test("browser self-play completes the visible dungeon loop without headless shor
       await expect(page.getByTestId("shop-delta").first()).toBeVisible();
       await capture("shop");
 
+      await page.getByRole("button", { name: "Back to town" }).click();
       await clickCommand("Recovery");
       await expect(page.getByRole("heading", { name: "Recovery" })).toBeVisible();
       await expect(page.getByText(/Recovery cost:/)).toBeVisible();
@@ -190,6 +192,7 @@ test("browser self-play completes the visible dungeon loop without headless shor
         await japanesePage.getByLabel("Language").selectOption("ja");
         await japanesePage.getByRole("button", { name: "新たな探索" }).click();
         await createStarterParty(japanesePage, "ja");
+        await japanesePage.getByRole("button", { name: "町へ戻る" }).click();
         await expect(japanesePage.getByRole("button", { name: "商店" })).toBeVisible();
         await expect(japanesePage.getByRole("button", { name: "施療院" })).toBeVisible();
         await japanesePage.getByRole("button", { name: "商店" }).click();
@@ -199,6 +202,7 @@ test("browser self-play completes the visible dungeon loop without headless shor
         await expect(japanesePage.getByRole("button", { name: "Shop" })).toHaveCount(0);
         await captureFrom(japanesePage, "ja-shop", report);
 
+        await japanesePage.getByRole("button", { name: "町へ戻る" }).click();
         await japanesePage.getByRole("button", { name: "施療院" }).click();
         await expect(japanesePage.getByRole("heading", { name: "施療院" })).toBeVisible();
         await expect(japanesePage.getByTestId("recovery-plan")).toBeVisible();

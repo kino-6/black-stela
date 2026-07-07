@@ -9,11 +9,15 @@ export async function startNewExpedition(page: Page) {
 export async function createStarterParty(page: Page, locale: "en" | "ja" = "en") {
   const labels = locale === "ja"
     ? {
+        guild: "ギルド",
+        back: "町へ戻る",
         skip: "説明を聞かない",
         yes: "はい",
         proposal: "こいつはどうだ？"
       }
     : {
+        guild: "Guild",
+        back: "Back to town",
         skip: "Skip explanation",
         yes: "Yes",
         proposal: "How about this one?"
@@ -29,6 +33,17 @@ export async function createStarterParty(page: Page, locale: "en" | "ja" = "en")
     await page.getByRole("button", { name: labels.yes, exact: true }).click();
     await expect(page.getByText(`${index + 1}/6`)).toBeVisible();
   }
+}
+
+// The town lands on a hub whose service menu (Guild / Shop / Recovery / Records /
+// Enter dungeon) is only visible from the hub itself. This returns to the hub if a
+// service is currently open, then opens the requested service.
+export async function openTownService(page: Page, name: string | RegExp, locale: "en" | "ja" = "en") {
+  const back = page.getByRole("button", { name: locale === "ja" ? "町へ戻る" : "Back to town", exact: true });
+  if (await back.isVisible().catch(() => false)) {
+    await back.click();
+  }
+  await page.getByRole("button", { name, exact: true }).click();
 }
 
 export async function setTitleLanguage(page: Page, locale: "en" | "ja") {

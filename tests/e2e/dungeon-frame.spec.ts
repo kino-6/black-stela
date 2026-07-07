@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { startNewExpedition, createStarterParty } from "./helpers";
+import { startNewExpedition, createStarterParty, openTownService } from "./helpers";
 
 /**
  * DRPG fixed dungeon frame: on a desktop viewport the exploration screen is a
@@ -10,8 +10,7 @@ import { startNewExpedition, createStarterParty } from "./helpers";
 async function enterDungeon(page: import("@playwright/test").Page) {
   await startNewExpedition(page);
   await createStarterParty(page);
-  await page.getByRole("button", { name: "Dungeon Entry" }).click();
-  await page.getByRole("button", { name: "Enter dungeon" }).click();
+  await openTownService(page, "Enter dungeon");
   await page.getByTestId("dungeon-canvas").waitFor();
 }
 

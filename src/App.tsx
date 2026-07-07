@@ -6,15 +6,19 @@ import {
   DoorOpen,
   Footprints,
   FolderOpen,
+  HeartPulse,
   LogOut,
   Repeat2,
   Save,
+  ScrollText,
   Volume2,
   Search,
   ShieldCheck,
+  ShoppingBag,
   Square,
   Sword,
   Upload,
+  Users,
   Wand2
 } from "lucide-react";
 import { DungeonView } from "./components/DungeonView";
@@ -1087,18 +1091,14 @@ export function App() {
 
           {state.phase === "town" ? (
             <div className="town-view">
-              <div
-                className="town-mode-tabs"
-                aria-label="Town modes"
-                data-controller-active={townMode !== "guild" || state.party.length >= PARTY_SIZE_LIMIT ? "true" : undefined}
-                data-controller-surface="town-tabs"
-              >
-                <button type="button" onClick={() => enterTownMode("guild")}>{t("town.guild")}</button>
-                <button type="button" onClick={() => enterTownMode("shop")}>{t("town.shop")}</button>
-                <button type="button" onClick={() => enterTownMode("recovery")}>{t("town.recovery")}</button>
-                <button type="button" onClick={() => enterTownMode("records")}>{t("town.records")}</button>
-                <button type="button" onClick={() => enterTownMode("entry")}>{t("town.entry")}</button>
-              </div>
+              {townMode !== "entry" && (
+                <div className="town-service-bar">
+                  <button type="button" className="town-back" onClick={() => enterTownMode("entry")}>
+                    <ArrowLeft size={18} />
+                    {t("town.backToTown")}
+                  </button>
+                </div>
+              )}
               {townMode === "guild" && (
                 <section className="guild-studio" aria-labelledby="party-heading">
                   <div className="studio-header">
@@ -1815,19 +1815,39 @@ export function App() {
                       </div>
                     </div>
                   )}
-                  <div className="town-action-strip">
-                    <button type="button" onClick={() => enterTownMode("recovery")}>{t("town.recovery")}</button>
-                    <button type="button" onClick={() => enterTownMode("shop")}>{t("town.shop")}</button>
+                  <nav
+                    className="town-service-menu"
+                    aria-label={t("town.servicesHeading")}
+                    data-controller-active="true"
+                    data-controller-surface="town-services"
+                  >
+                    <button type="button" data-testid="town-service-guild" onClick={() => enterTownMode("guild")}>
+                      <Users size={18} />
+                      {t("town.guild")}
+                    </button>
+                    <button type="button" onClick={() => enterTownMode("shop")}>
+                      <ShoppingBag size={18} />
+                      {t("town.shop")}
+                    </button>
+                    <button type="button" onClick={() => enterTownMode("recovery")}>
+                      <HeartPulse size={18} />
+                      {t("town.recovery")}
+                    </button>
+                    <button type="button" onClick={() => enterTownMode("records")}>
+                      <ScrollText size={18} />
+                      {t("town.records")}
+                    </button>
                     <button
                       type="button"
                       className="primary-action"
+                      data-testid="town-enter-dungeon"
                       disabled={state.party.length === 0}
                       onClick={() => run({ type: "enter_dungeon" })}
                     >
                       <DoorOpen size={18} />
                       {t("play.enterDungeon")}
                     </button>
-                  </div>
+                  </nav>
                 </section>
               )}
               {townMode === "recovery" && (

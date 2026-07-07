@@ -1,30 +1,34 @@
 import { expect, test } from "@playwright/test";
 import type { Page } from "@playwright/test";
-import { createStarterParty, registerAdventurer, resolveVisibleCombat, setTitleLanguage, startNewExpedition } from "./helpers";
+import { createStarterParty, openTownService, registerAdventurer, resolveVisibleCombat, setTitleLanguage, startNewExpedition } from "./helpers";
 
 test("town modes expose guild, recovery, records, and dungeon entry", async ({ page }) => {
   await startNewExpedition(page);
 
+  // A fresh expedition lands on the guild; the town hub (reached with "Back to
+  // town") lists its services as a console menu instead of a tab bar.
+  await page.getByRole("button", { name: "Back to town" }).click();
   await expect(page.getByRole("button", { name: "Guild" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Shop" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Recovery" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Records" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Dungeon Entry" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Enter dungeon" })).toBeVisible();
 
+  // Stage into the guild to register, then back out to the hub for services.
+  await page.getByRole("button", { name: "Guild" }).click();
   await registerAdventurer(page, { name: "Mira" });
   await expect(page.getByRole("heading", { name: "Mira" })).toBeVisible();
 
-  await page.getByLabel("Town modes").getByRole("button", { name: "Recovery" }).click();
+  await openTownService(page, "Recovery");
   await expect(page.getByRole("heading", { name: "Recovery" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Guild Registry" })).toHaveCount(0);
   await expect(page.getByTestId("recovery-plan")).toBeVisible();
   await expect(page.getByTestId("recovery-plan").getByText(/Mira/)).toBeVisible();
 
-  await page.getByRole("button", { name: "Records" }).click();
+  await openTownService(page, "Records");
   await expect(page.getByRole("heading", { name: "Records" })).toBeVisible();
 
-  await page.getByRole("button", { name: "Dungeon Entry" }).click();
-  await page.getByRole("button", { name: "Enter dungeon" }).click();
+  await openTownService(page, "Enter dungeon");
   await expect(page.getByRole("heading", { name: "Silent Stone Chamber" })).toBeVisible();
 });
 
@@ -32,7 +36,7 @@ test("town shop supports buying, selling, and equipping without an admin table",
   await startNewExpedition(page);
 
   await createStarterParty(page);
-  await page.getByRole("button", { name: "Shop" }).click();
+  await openTownService(page, "Shop");
 
   await expect(page.getByRole("heading", { name: "Stela Gate General Store" })).toBeVisible();
   await expect(page.getByText("75 gold")).toBeVisible();
@@ -87,7 +91,7 @@ test("Japanese shop equipment stays readable on mobile", async ({ page }) => {
   await setTitleLanguage(page, "ja");
   await page.getByRole("button", { name: "新たな探索" }).click();
   await createStarterParty(page, "ja");
-  await page.getByRole("button", { name: "商店" }).click();
+  await openTownService(page, "商店", "ja");
 
   await expect(page.getByRole("heading", { name: "黒碑門の雑貨店" })).toBeVisible();
   await expect(page.getByText("見る冒険者")).toBeVisible();

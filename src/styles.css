@@ -1720,6 +1720,20 @@ textarea {
   background: #101210;
 }
 
+.shop-row-with-icon {
+  grid-template-columns: 3rem minmax(0, 1fr) auto;
+}
+
+.catalog-icon {
+  width: 2.65rem;
+  aspect-ratio: 1;
+  object-fit: contain;
+  justify-self: center;
+  border: 1px solid rgba(213, 181, 109, 0.28);
+  border-radius: 3px;
+  background: radial-gradient(circle at 50% 36%, rgba(213, 181, 109, 0.16), rgba(7, 8, 6, 0.72) 62%);
+}
+
 .shop-row div,
 .equipment-row div:first-child {
   display: grid;
@@ -1746,6 +1760,10 @@ textarea {
   gap: 0.1rem;
   min-width: 8rem;
   justify-items: center;
+}
+
+.equipment-actions .catalog-icon {
+  width: 2rem;
 }
 
 .equipment-slots {
@@ -2005,77 +2023,49 @@ textarea {
   position: absolute;
   left: 1px;
   top: 1px;
-  width: 0.62rem;
-  height: 0.62rem;
+  width: 0.72rem;
+  height: 0.72rem;
   z-index: 2;
   pointer-events: none;
-  box-shadow: 0 0 0 1.5px rgba(6, 7, 6, 0.92);
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
 }
 
-/* Return seal: an amber stamped ring. */
 .mini-map-marker.marker-return {
-  border-radius: 50%;
-  background: #f4d270;
-  box-shadow: 0 0 0 1.5px rgba(6, 7, 6, 0.92), inset 0 0 0 2px #6f4a12;
+  background-image: url("./assets/minimap/marker-return.png");
 }
 
-/* Downstairs: an amber down-pointing wedge. */
 .mini-map-marker.marker-stairs {
-  width: 0;
-  height: 0;
-  box-shadow: none;
-  border-left: 0.35rem solid transparent;
-  border-right: 0.35rem solid transparent;
-  border-top: 0.52rem solid #f2c24a;
-  filter: drop-shadow(0 0 1px rgba(6, 7, 6, 0.95));
+  background-image: url("./assets/minimap/marker-stairs.png");
 }
 
-/* Spinner floor: a violet swirl. */
 .mini-map-marker.marker-spinner {
-  border-radius: 50%;
-  background: conic-gradient(#c9a0f0, #6a3fb0, #c9a0f0, #6a3fb0, #c9a0f0);
+  background-image: url("./assets/minimap/marker-spinner.png");
 }
 
-/* Teleporter: a magenta ringed disc. */
 .mini-map-marker.marker-teleporter {
-  border-radius: 50%;
-  background: radial-gradient(circle, #1a0a1e 0 28%, #e05bd0 28% 60%, #1a0a1e 60%);
+  background-image: url("./assets/minimap/marker-teleporter.png");
 }
 
-/* Damage floor: a red hazard diamond. */
 .mini-map-marker.marker-hazard {
-  border-radius: 1px;
-  background: #d9443a;
-  transform: translate(0, 0) rotate(45deg);
+  background-image: url("./assets/minimap/marker-hazard.png");
 }
 
-/* Gather point: a green node. */
 .mini-map-marker.marker-gather {
-  border-radius: 50%;
-  background: #6fca6a;
+  background-image: url("./assets/minimap/marker-gather.png");
 }
 
-/* Event: a cyan disc. */
 .mini-map-marker.marker-event {
-  border-radius: 50%;
-  background: #5cb8ea;
+  background-image: url("./assets/minimap/marker-event.png");
 }
 
-/* Treasure: a gold square. */
 .mini-map-marker.marker-treasure {
-  border-radius: 1px;
-  background: #f0cd57;
+  background-image: url("./assets/minimap/marker-treasure.png");
 }
 
-/* Trap: an orange up-pointing wedge. */
 .mini-map-marker.marker-trap {
-  width: 0;
-  height: 0;
-  box-shadow: none;
-  border-left: 0.35rem solid transparent;
-  border-right: 0.35rem solid transparent;
-  border-bottom: 0.52rem solid #e8873a;
-  filter: drop-shadow(0 0 1px rgba(6, 7, 6, 0.95));
+  background-image: url("./assets/minimap/marker-trap.png");
 }
 
 /* Facing arrow: a large red arrow, dark-outlined for contrast on the gold cell. */
@@ -2183,8 +2173,10 @@ textarea {
   place-items: center;
   overflow: hidden;
   background:
-    radial-gradient(circle at 50% 34%, rgba(111, 65, 48, 0.24), transparent 18rem),
-    linear-gradient(180deg, #090a09 0%, #030403 100%);
+    linear-gradient(90deg, rgba(3, 4, 3, 0.94) 0%, rgba(5, 6, 5, 0.78) 28%, rgba(5, 6, 5, 0.2) 62%),
+    linear-gradient(0deg, rgba(3, 4, 3, 0.82) 0%, rgba(3, 4, 3, 0.08) 55%),
+    url("./assets/title/black-stela-title.jpg") center / cover no-repeat,
+    #030403;
 }
 
 .title-screen {
@@ -2753,6 +2745,19 @@ textarea {
     grid-template-columns: 1fr;
   }
 
+  .shop-row-with-icon {
+    grid-template-columns: 2.6rem minmax(0, 1fr);
+  }
+
+  .shop-row-with-icon > button {
+    grid-column: 1 / -1;
+    justify-self: stretch;
+  }
+
+  .shop-row-with-icon .catalog-icon {
+    width: 2.25rem;
+  }
+
   .command-dock {
     position: static;
   }
@@ -3138,5 +3143,141 @@ textarea {
 
   .combat-cockpit .cockpit-scene .dungeon-canvas {
     height: clamp(11rem, 34vh, 18rem);
+  }
+}
+
+/* ============================================================
+   DRPG town frame (phase=town) — a Wizardry-style hub with a
+   console service menu and staged services. The town home shows
+   the gate scene + party/expedition status + a service menu; a
+   service (guild/shop/recovery/records) stages over it with a
+   "back to town" cancel. The frame fills the viewport; dense
+   services (guild/shop) scroll internally while the back bar and
+   the menu stay put.
+   ============================================================ */
+.app-shell[data-phase="town"] .game-grid {
+  grid-template-columns: minmax(0, 1fr);
+  max-width: none;
+  justify-content: stretch;
+}
+
+.app-shell[data-phase="town"] .play-panel {
+  overflow: hidden;
+}
+
+.town-view {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  height: 100%;
+  min-height: 0;
+}
+
+.town-view > .town-service-bar {
+  flex: none;
+}
+
+.town-service-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid #2a2c27;
+  border-radius: 4px;
+  background: #0c0d0b;
+}
+
+.town-service-bar strong {
+  color: #e7dcc2;
+}
+
+.town-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 2.6rem;
+}
+
+/* Dense services scroll inside the frame; the hub fits without scroll. */
+.app-shell[data-phase="town"] .town-view,
+.app-shell[data-phase="town"] .town-view > * {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.town-view > .guild-studio,
+.town-view > .town-service {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.town-view > .town-cockpit {
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.town-cockpit .town-cockpit-grid {
+  min-height: 0;
+  flex: 0 0 auto;
+}
+
+.town-cockpit .town-service-menu {
+  margin-top: auto;
+}
+
+/* Console service menu on the hub: large pad-friendly targets. */
+.town-service-menu {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr));
+  gap: 0.55rem;
+}
+
+.town-service-menu button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  min-height: 3.4rem;
+  font-size: 1rem;
+  border: 1px solid #3a4038;
+  border-radius: 4px;
+  background: #12140f;
+  color: #e7dcc2;
+}
+
+.town-service-menu button:hover:not(:disabled),
+.town-service-menu button:focus-visible {
+  border-color: #c9a765;
+  background: #1c1d15;
+}
+
+.town-service-menu .primary-action {
+  border-color: #9f7a3d;
+  background: #2b2416;
+  color: #f2d58c;
+}
+
+@media (max-width: 1100px) {
+  .app-shell[data-phase="town"] {
+    height: auto;
+    overflow: visible;
+  }
+
+  .app-shell[data-phase="town"] .game-grid,
+  .app-shell[data-phase="town"] .play-panel {
+    overflow: visible;
+  }
+
+  .town-view > .town-cockpit {
+    overflow: visible;
+  }
+
+  .town-service-menu {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
