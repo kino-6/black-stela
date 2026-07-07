@@ -1,5 +1,14 @@
 import { getEffectiveCharacterStats } from "../domain/economy";
-import type { Character, EquipmentSlot, GameState, InventoryItem, ScenarioEquipment } from "../domain/types";
+import type {
+  Character,
+  CharacterAptitudes,
+  CombatActionKind,
+  CombatEnemyGroup,
+  EquipmentSlot,
+  GameState,
+  InventoryItem,
+  ScenarioEquipment
+} from "../domain/types";
 import type { DebugProgress } from "../debug/debugStart";
 import type { Translator } from "../i18n";
 
@@ -116,4 +125,33 @@ export function formatDebugProgress(progress: DebugProgress, t: Translator) {
   }
 
   return t("debug.floorStart", { floor: progress.replace("floor_", "B") + "F" });
+}
+
+export function formatEnemyGroupStatus(group: CombatEnemyGroup, t: Translator) {
+  const ratio = group.maxHpEach > 0 ? group.hpEach / group.maxHpEach : 0;
+  const condition = ratio <= 0.35
+    ? t("play.enemyConditionWeak")
+    : ratio < 1
+      ? t("play.enemyConditionWounded")
+      : t("play.enemyConditionFresh");
+  return t("play.enemyGroupStatus", { count: group.count, condition });
+}
+
+export function formatCombatAction(action: CombatActionKind, t: Translator) {
+  switch (action) {
+    case "attack":
+      return t("play.attack");
+    case "defend":
+      return t("play.defend");
+    case "use_item":
+      return t("play.useItem");
+    case "cast":
+      return t("play.sleep");
+  }
+}
+
+export function formatAptitudes(aptitude: CharacterAptitudes, t: Translator) {
+  return (["might", "agility", "spirit", "wit", "luck"] as const)
+    .map((key) => `${t(`aptitude.${key}` as Parameters<Translator>[0])} ${aptitude[key]}`)
+    .join(" / ");
 }

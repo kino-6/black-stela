@@ -1,7 +1,9 @@
 import { defaultWorld } from "../data/defaultWorld";
+import { findBackground, findClass } from "../domain/characterCreation";
 import { getEffectiveCharacterStats } from "../domain/economy";
-import type { Character, ScenarioEquipment } from "../domain/types";
-import type { Locale } from "../i18n";
+import type { Character, CombatActionDeclaration, GameState, ScenarioEquipment } from "../domain/types";
+import type { Locale, Translator } from "../i18n";
+import { formatCombatAction, formatCombatRow } from "./format";
 
 /**
  * Catalog lookups against the loaded world: localized item/equipment/enemy
@@ -76,4 +78,56 @@ export function shopCategoryFor(itemId: string): ShopCategory {
   }
   const item = defaultWorld.items.find((candidate) => candidate.id === itemId);
   return item?.kind === "healing" || item?.kind === "escape" ? "consumable" : "tool";
+}
+
+export function formatCombatOrder(order: CombatActionDeclaration, state: GameState, locale: Locale, t: Translator) {
+  const actor = state.party.find((member) => member.id === order.actorId);
+  const target = state.combat?.enemyGroups.find((group) => group.id === order.targetGroupId);
+  const action = formatCombatAction(order.action, t);
+  if (target) {
+    return t("play.orderWithTarget", { actor: actor?.name ?? order.actorId, action, target: localizedEnemyGroupName(target, locale) });
+  }
+
+  return t("play.orderWithoutTarget", { actor: actor?.name ?? order.actorId, action });
+}
+
+export function formatCharacterTitle(title: string, classId: GameState["party"][number]["classId"], locale: Locale) {
+  const classDef = findClass(classId);
+  return title === classDef.label.en ? classDef.label[locale] : title;
+}
+
+export function formatCharacterSummary(
+  member: GameState["party"][number],
+  locale: Locale,
+  t: Translator,
+  options: { includeRow?: boolean } = {}
+) {
+  const classDef = findClass(member.classId);
+  const title = formatCharacterTitle(member.title, member.classId, locale);
+  const row = options.includeRow === false ? "" : formatCombatRow(member.row, t);
+  const parts = isDefaultClassTitle(member.title, member.classId)
+    ? [classDef.label[locale], row]
+    : [title, classDef.label[locale], row];
+
+  return Array.from(new Set(parts.filter(Boolean))).join(" / ");
+}
+
+export function isDefaultClassTitle(title: string, classId: GameState["party"][number]["classId"]) {
+  const classDef = findClass(classId);
+  const defaultAliases: Partial<Record<GameState["party"][number]["classId"], string[]>> = {
+    vanguard: ["Vanguard", "前衛"],
+    seeker: ["Seeker", "探索者"],
+    mender: ["Mender", "癒し手"],
+    occultist: ["Occultist", "秘術師"]
+  };
+  return [classDef.label.en, classDef.label.ja, ...(defaultAliases[classId] ?? [])].includes(title);
+}
+
+export function formatCharacterNotes(notes: string, backgroundId: GameState["party"][number]["backgroundId"], locale: Locale) {
+  const background = findBackground(backgroundId);
+  return notes === background.notes.en ? background.notes[locale] : notes;
+}
+
+export function localizedShopName(shop: (typeof defaultWorld.shops)[number], locale: Locale) {
+  return shop.locales?.[locale]?.name ?? shop.name;
 }

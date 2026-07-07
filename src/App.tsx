@@ -46,9 +46,11 @@ import {
   moveControllerFocus
 } from "./ui/controllerFocus";
 import {
+  formatAptitudes,
   formatBonusParts,
   formatCombatRow,
   formatDebugProgress,
+  formatEnemyGroupStatus,
   formatEquipmentEffect,
   formatEquipmentSlot,
   formatInventoryEffect,
@@ -64,9 +66,13 @@ import {
   SHOP_CATEGORY_ORDER,
   equippedName,
   findEquipmentById,
+  formatCharacterNotes,
+  formatCharacterSummary,
+  formatCombatOrder,
   localizedCatalogDescription,
   localizedCatalogName,
   localizedEnemyGroupName,
+  localizedShopName,
   previewEquipmentStats,
   shopCategoryFor,
   type ShopCategory
@@ -2410,87 +2416,6 @@ function createBrowserSaveRepository() {
   return new LocalStorageSaveRepository(window.localStorage);
 }
 
-
-function formatCombatOrder(order: CombatActionDeclaration, state: GameState, locale: Locale, t: Translator) {
-  const actor = state.party.find((member) => member.id === order.actorId);
-  const target = state.combat?.enemyGroups.find((group) => group.id === order.targetGroupId);
-  const action = formatCombatAction(order.action, t);
-  if (target) {
-    return t("play.orderWithTarget", { actor: actor?.name ?? order.actorId, action, target: localizedEnemyGroupName(target, locale) });
-  }
-
-  return t("play.orderWithoutTarget", { actor: actor?.name ?? order.actorId, action });
-}
-
-function formatEnemyGroupStatus(group: CombatEnemyGroup, t: Translator) {
-  const ratio = group.maxHpEach > 0 ? group.hpEach / group.maxHpEach : 0;
-  const condition = ratio <= 0.35
-    ? t("play.enemyConditionWeak")
-    : ratio < 1
-      ? t("play.enemyConditionWounded")
-      : t("play.enemyConditionFresh");
-  return t("play.enemyGroupStatus", { count: group.count, condition });
-}
-
-function formatCombatAction(action: CombatActionKind, t: Translator) {
-  switch (action) {
-    case "attack":
-      return t("play.attack");
-    case "defend":
-      return t("play.defend");
-    case "use_item":
-      return t("play.useItem");
-    case "cast":
-      return t("play.sleep");
-  }
-}
-
-function formatAptitudes(aptitude: CharacterAptitudes, t: Translator) {
-  return (["might", "agility", "spirit", "wit", "luck"] as const)
-    .map((key) => `${t(`aptitude.${key}` as Parameters<Translator>[0])} ${aptitude[key]}`)
-    .join(" / ");
-}
-
-function formatCharacterTitle(title: string, classId: GameState["party"][number]["classId"], locale: Locale) {
-  const classDef = findClass(classId);
-  return title === classDef.label.en ? classDef.label[locale] : title;
-}
-
-function formatCharacterSummary(
-  member: GameState["party"][number],
-  locale: Locale,
-  t: Translator,
-  options: { includeRow?: boolean } = {}
-) {
-  const classDef = findClass(member.classId);
-  const title = formatCharacterTitle(member.title, member.classId, locale);
-  const row = options.includeRow === false ? "" : formatCombatRow(member.row, t);
-  const parts = isDefaultClassTitle(member.title, member.classId)
-    ? [classDef.label[locale], row]
-    : [title, classDef.label[locale], row];
-
-  return Array.from(new Set(parts.filter(Boolean))).join(" / ");
-}
-
-function isDefaultClassTitle(title: string, classId: GameState["party"][number]["classId"]) {
-  const classDef = findClass(classId);
-  const defaultAliases: Partial<Record<GameState["party"][number]["classId"], string[]>> = {
-    vanguard: ["Vanguard", "前衛"],
-    seeker: ["Seeker", "探索者"],
-    mender: ["Mender", "癒し手"],
-    occultist: ["Occultist", "秘術師"]
-  };
-  return [classDef.label.en, classDef.label.ja, ...(defaultAliases[classId] ?? [])].includes(title);
-}
-
-function formatCharacterNotes(notes: string, backgroundId: GameState["party"][number]["backgroundId"], locale: Locale) {
-  const background = findBackground(backgroundId);
-  return notes === background.notes.en ? background.notes[locale] : notes;
-}
-
-function localizedShopName(shop: (typeof defaultWorld.shops)[number], locale: Locale) {
-  return shop.locales?.[locale]?.name ?? shop.name;
-}
 
 function getScenarioValidationErrorsFromLocation(): ScenarioValidationError[] {
   if (typeof window === "undefined") {
