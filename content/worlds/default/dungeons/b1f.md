@@ -65,11 +65,12 @@ edges:
 rooms:
   - id: room.b1f.001
     name: Silent Stone Chamber
-    description: Cold fitted blocks press close. The only way on leaks dry air to the east.
+    description: Cold fitted blocks press close. Stairs climb back to town behind the party; the only way on leaks dry air to the east.
     locales:
       ja:
         name: 静まり返った石室
-        description: 冷たい切石が近く迫る。先へ続く唯一の道は、東へ乾いた空気を漏らしている。
+        description: 冷たい切石が近く迫る。背後には町へ上る階段。先へ続く唯一の道は、東へ乾いた空気を漏らしている。
+    stairsToTown: true
     treasureTable: treasure.b1f.safe
   - id: room.b1f.002
     name: Hall of Old Dust

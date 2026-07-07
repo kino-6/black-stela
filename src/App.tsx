@@ -2474,7 +2474,11 @@ function runTempoDungeonStep(state: GameState, t: Translator) {
   const exits = Object.entries(room.exits).filter(([, target]) => Boolean(target));
   const forwardEdge = getGridEdge(defaultWorld, state.position.roomId, state.position.facing);
   const currentExit = room.exits[state.position.facing];
-  if (room.trap || room.encounter || room.event || room.gates?.length || room.stairsToTown || room.restPoint) {
+  // Stop for hazards/events on the current tile, but not merely for standing on
+  // a return/rest tile — the party starts on the entrance's town gate and must
+  // be able to auto-walk off it. Arriving at a return/rest tile still stops
+  // (see the nextRoom check below).
+  if (room.trap || room.encounter || room.event || room.gates?.length) {
     return { state, keepRunning: false, status: t("tempo.autoMoveStoppedEvent") };
   }
 

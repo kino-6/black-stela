@@ -48,7 +48,7 @@ test("keeps Japanese layout usable on mobile", async ({ page }) => {
   await registerAdventurer(page, { locale: "ja", name: "ミラ" });
   await page.getByRole("button", { name: "迷宮に入る" }).click();
 
-  await expect(page.getByText("冷たい切石が近く迫る。先へ続く唯一の道は、東へ乾いた空気を漏らしている。")).toBeVisible();
+  await expect(page.getByText("冷たい切石が近く迫る。背後には町へ上る階段。先へ続く唯一の道は、東へ乾いた空気を漏らしている。")).toBeVisible();
   await expect(page.getByTestId("party-hud").getByTestId("party-hud-portrait")).toBeVisible();
   await expect(page.getByTestId("party-hud")).toContainText(/威力 \d+-\d+/);
   await expect(page.getByTestId("party-hud")).toContainText(/防御 \d+/);

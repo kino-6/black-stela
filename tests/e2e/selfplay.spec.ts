@@ -116,7 +116,8 @@ test("browser self-play completes the visible dungeon loop without headless shor
       await expect(page.getByRole("heading", { name: "Silent Stone Chamber" })).toBeVisible();
       await expect(page.getByTestId("dungeon-canvas").locator("canvas")).toBeVisible();
       await expect(page.getByLabel("Mini-map")).toBeVisible();
-      await expect(page.getByRole("button", { name: "Use return marker" })).toHaveCount(0);
+      // The entrance doubles as the town gate, so the return marker is present here.
+      await expect(page.getByRole("button", { name: "Use return marker" })).toBeVisible();
       await capture("dungeon-start");
     });
 

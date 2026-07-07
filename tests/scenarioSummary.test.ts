@@ -16,7 +16,7 @@ describe("scenario summary", () => {
       encounterTableCount: 8,
       treasureTableCount: 11,
       shopStockReferenceCount: 14,
-      returnAnchorCount: 2,
+      returnAnchorCount: 3,
       nextFloorLinkCount: 7,
       lockCount: 1,
       lootReferenceCount: 16,
@@ -32,7 +32,7 @@ describe("scenario summary", () => {
   it("formats a stable text summary", () => {
     expect(formatScenarioSummary(summarizeScenario(defaultWorld))).toContain("Floors: 8");
     expect(formatScenarioSummary(summarizeScenario(defaultWorld))).toContain("Shops: 1");
-    expect(formatScenarioSummary(summarizeScenario(defaultWorld))).toContain("Town returns: 2");
+    expect(formatScenarioSummary(summarizeScenario(defaultWorld))).toContain("Town returns: 3");
     expect(formatScenarioSummary(summarizeScenario(defaultWorld))).toContain("Next-floor links: 7");
     expect(formatScenarioSummary(summarizeScenario(defaultWorld))).toContain("dungeon.b8f B8F - Gate of Ash");
   });
