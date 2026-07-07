@@ -150,6 +150,7 @@ describe("rules engine", () => {
 
     expect(back.position?.roomId).toBe("room.b1f.c10_9");
     expect(back.position?.facing).toBe("east");
+    expect(back.log.some((entry) => entry.text.includes("steps back"))).toBe(true);
   });
 
   it("blocks a backward step into the wall behind the party", () => {

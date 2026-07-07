@@ -73,7 +73,12 @@ export function projectEventToLog(event: GameEvent, locale: Locale = "en", world
     case "map_secret_candidate_added":
       return null;
     case "room_entered":
-      return { text: t("events.roomEntered", { room: resolveRoomName(event.roomId, event.roomName, world, locale) }), tags: ["move"] };
+      return {
+        text: t(event.backward ? "events.roomEnteredBack" : "events.roomEntered", {
+          room: resolveRoomName(event.roomId, event.roomName, world, locale)
+        }),
+        tags: ["move"]
+      };
     case "trap_triggered":
       return { text: t("events.trapTriggered", { trap: event.trapName }), tags: ["trap"] };
     case "room_event_triggered":

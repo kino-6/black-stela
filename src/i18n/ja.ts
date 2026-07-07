@@ -312,6 +312,7 @@ export const ja = {
     secretFound: "探索の末、壁に隠れた通路が現れた。",
     stairsUsed: "隊列は階段を降りた。",
     roomEntered: "隊列は{room}へ進んだ。",
+    roomEnteredBack: "隊列は{room}へ後退した。",
     trapTriggered: "{trap} が作動した。隊列は傷を負ったが、誰も失われていない。",
     enemyEncountered: "{enemy} が通路を塞いでいる。",
     searchCompleted: "探索したが、動いている危険は見つからない。",

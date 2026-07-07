@@ -310,6 +310,7 @@ export const en = {
     secretFound: "The search reveals a hidden passage in the wall.",
     stairsUsed: "The party takes the stair to the next floor.",
     roomEntered: "The party advances into {room}.",
+    roomEnteredBack: "The party steps back into {room}.",
     trapTriggered: "{trap} snaps shut. The party is injured, but nobody is erased.",
     enemyEncountered: "{enemy} blocks the passage.",
     searchCompleted: "The search finds no active danger.",

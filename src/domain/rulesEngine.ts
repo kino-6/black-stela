@@ -298,7 +298,11 @@ function moveForward(state: GameState, world: ScenarioWorld, requestedDirection?
   const room = getRoom(world, exit);
   const roomVisit = visitRoom(state, world, exit, state.position.facing);
   const targetCell = getGridCellForRoom(world, exit);
-  const events: GameEvent[] = [{ type: "room_entered", roomId: room.id, roomName: room.name }, ...roomVisit.events];
+  const isBackward = moveDirection !== state.position.facing;
+  const events: GameEvent[] = [
+    { type: "room_entered", roomId: room.id, roomName: room.name, backward: isBackward },
+    ...roomVisit.events
+  ];
   let next: GameState = {
     ...state,
     position: {

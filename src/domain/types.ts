@@ -162,7 +162,7 @@ export type GameEvent =
   | { type: "map_exits_known"; floorId: string; roomId: string; exits: Direction[] }
   | { type: "map_exit_blocked"; floorId: string | null; roomId: string; direction: Direction }
   | { type: "map_secret_candidate_added"; floorId: string | null; roomId: string; direction: Direction }
-  | { type: "room_entered"; roomId: string; roomName: string }
+  | { type: "room_entered"; roomId: string; roomName: string; backward?: boolean }
   | { type: "trap_triggered"; trapId: string; trapName: string; damage: number }
   | { type: "room_event_triggered"; roomId: string; text: string }
   | { type: "enemy_encountered"; enemyId: string; enemyName: string; roomId: string }
