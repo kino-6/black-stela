@@ -8,6 +8,7 @@ export type Command =
   | { type: "retire_member"; characterId: string }
   | { type: "unretire_member"; characterId: string }
   | { type: "erase_member"; characterId: string }
+  | { type: "edit_member_identity"; characterId: string; name: string; title: string; notes: string; accentColor: string }
   | { type: "resume_at_checkpoint"; roomId: string }
   | { type: "move_forward" }
   | { type: "move_backward" }
@@ -163,6 +164,7 @@ export type GameEvent =
   | { type: "party_member_retired"; characterName: string }
   | { type: "party_member_unretired"; characterName: string }
   | { type: "party_member_erased"; characterName: string }
+  | { type: "party_member_edited"; characterName: string }
   | { type: "command_blocked"; reason: "party_required" | "town_return_unavailable" | "stairs_unavailable"; command: Command["type"] }
   | { type: "dungeon_entered"; roomId: string; facing: Direction }
   | { type: "party_turned"; side: "left" | "right"; facing: Direction }

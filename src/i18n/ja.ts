@@ -119,6 +119,13 @@ export const ja = {
     eraseWarning: "{name} を台帳から永久に消しますか？記録は失われ、二度と戻せません。",
     eraseConfirm: "はい、永久に消去する",
     eraseCancel: "思いとどまる",
+    edit: "記録を編集",
+    editName: "名前",
+    editTitle: "称号",
+    editNotes: "記録",
+    editAccent: "色",
+    editSave: "保存",
+    editCancel: "取消",
     hpAtk: "HP {hp}/{maxHp} · 攻撃 {attack}"
   },
   aptitude: {
@@ -321,6 +328,7 @@ export const ja = {
     partyRetired: "{name} は得物を置き、ギルドを引退した。",
     partyUnretired: "{name} が引退から復帰した。",
     partyErased: "{name} の名は台帳から永久に消された。",
+    partyEdited: "{name} のギルド記録を書き改めた。",
     dungeonEntered: "隊列は黒い石碑の下へ降りた。",
     partyTurned: "隊列は{side}を向き、{facing}を正面にした。",
     sideLeft: "左",

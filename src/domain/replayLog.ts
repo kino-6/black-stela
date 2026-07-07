@@ -47,6 +47,8 @@ export function projectEventToLog(event: GameEvent, locale: Locale = "en", world
       return { text: t("events.partyUnretired", { name: event.characterName }), tags: ["party"] };
     case "party_member_erased":
       return { text: t("events.partyErased", { name: event.characterName }), tags: ["party"] };
+    case "party_member_edited":
+      return { text: t("events.partyEdited", { name: event.characterName }), tags: ["party"] };
     case "command_blocked":
       return projectBlockedCommand(event.reason, t);
     case "dungeon_entered":

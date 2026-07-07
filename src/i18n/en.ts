@@ -117,6 +117,13 @@ export const en = {
     eraseWarning: "Strike {name} from the ledger forever? Their record is lost and cannot be recovered.",
     eraseConfirm: "Yes, erase forever",
     eraseCancel: "Keep them",
+    edit: "Edit record",
+    editName: "Name",
+    editTitle: "Epithet",
+    editNotes: "Record",
+    editAccent: "Accent",
+    editSave: "Save",
+    editCancel: "Cancel",
     hpAtk: "HP {hp}/{maxHp} · ATK {attack}"
   },
   aptitude: {
@@ -319,6 +326,7 @@ export const en = {
     partyRetired: "{name} hangs up their gear and retires to the guild.",
     partyUnretired: "{name} comes out of retirement.",
     partyErased: "{name}'s name is struck from the ledger for good.",
+    partyEdited: "{name}'s guild record is revised.",
     dungeonEntered: "The party descends beneath the black stela.",
     partyTurned: "The party turns {side}, now facing {facing}.",
     sideLeft: "left",

@@ -181,6 +181,8 @@ export function App() {
   const [shopCategory, setShopCategory] = useState<ShopCategory>("weapon");
   const [reclassClassId, setReclassClassId] = useState<CharacterClassId | "">("");
   const [eraseConfirmId, setEraseConfirmId] = useState<string | null>(null);
+  const [editProfileId, setEditProfileId] = useState<string | null>(null);
+  const [editDraft, setEditDraft] = useState({ name: "", title: "", notes: "", accentColor: "#c9a765" });
   const [scenarioImportStatus, setScenarioImportStatus] = useState("");
   const [scenarioImportErrors, setScenarioImportErrors] = useState<ScenarioValidationError[]>([]);
   const autosaveSummary = saveSlots.find((slot) => slot.slotId === AUTO_SAVE_SLOT);
@@ -1632,7 +1634,60 @@ export function App() {
                             >
                               {t("party.retire")}
                             </button>
+                            {editProfileId !== selectedProfile.id && (
+                              <button
+                                type="button"
+                                className="roster-action"
+                                onClick={() => {
+                                  setEditProfileId(selectedProfile.id);
+                                  setEditDraft({
+                                    name: selectedProfile.name,
+                                    title: selectedProfile.title,
+                                    notes: selectedProfile.notes,
+                                    accentColor: selectedProfile.accentColor
+                                  });
+                                }}
+                              >
+                                {t("party.edit")}
+                              </button>
+                            )}
                           </div>
+                        )}
+                        {state.phase === "town" && editProfileId === selectedProfile.id && (
+                          <form
+                            className="identity-edit"
+                            data-testid="identity-edit"
+                            onSubmit={(event) => {
+                              event.preventDefault();
+                              run({ type: "edit_member_identity", characterId: selectedProfile.id, ...editDraft });
+                              setEditProfileId(null);
+                            }}
+                          >
+                            <label>
+                              {t("party.editName")}
+                              <input value={editDraft.name} onChange={(event) => setEditDraft((draft) => ({ ...draft, name: event.target.value }))} />
+                            </label>
+                            <label>
+                              {t("party.editTitle")}
+                              <input value={editDraft.title} onChange={(event) => setEditDraft((draft) => ({ ...draft, title: event.target.value }))} />
+                            </label>
+                            <label>
+                              {t("party.editNotes")}
+                              <textarea value={editDraft.notes} onChange={(event) => setEditDraft((draft) => ({ ...draft, notes: event.target.value }))} />
+                            </label>
+                            <label>
+                              {t("party.editAccent")}
+                              <input type="color" value={editDraft.accentColor} onChange={(event) => setEditDraft((draft) => ({ ...draft, accentColor: event.target.value }))} />
+                            </label>
+                            <div className="retired-actions">
+                              <button type="submit" className="roster-action" disabled={!editDraft.name.trim()}>
+                                {t("party.editSave")}
+                              </button>
+                              <button type="button" className="roster-action" onClick={() => setEditProfileId(null)}>
+                                {t("party.editCancel")}
+                              </button>
+                            </div>
+                          </form>
                         )}
                       </article>
                       )}

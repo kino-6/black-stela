@@ -136,6 +136,8 @@ export function resolveCommand(state: GameState, world: ScenarioWorld, command: 
       return unretireMember(state, command.characterId);
     case "erase_member":
       return eraseMember(state, command.characterId);
+    case "edit_member_identity":
+      return editMemberIdentity(state, command);
     case "resume_at_checkpoint":
       return resumeAtCheckpoint(state, world, command.roomId);
     case "turn_left":
@@ -300,6 +302,39 @@ function eraseMember(state: GameState, characterId: string): CommandResult {
     retired: state.retired.filter((c) => c.id !== characterId)
   };
   return withEvents(next, [{ type: "party_member_erased", characterName: member.name }]);
+}
+
+// Revise an adventurer's identity (name/epithet/record/accent) without touching
+// their build. Town-only; the name is required.
+function editMemberIdentity(
+  state: GameState,
+  patch: { characterId: string; name: string; title: string; notes: string; accentColor: string }
+): CommandResult {
+  if (state.phase !== "town") {
+    return noChange(state);
+  }
+  const name = patch.name.trim();
+  if (!name) {
+    return noChange(state);
+  }
+  let editedName = "";
+  const revise = (member: Character): Character => {
+    if (member.id !== patch.characterId) {
+      return member;
+    }
+    editedName = name;
+    return { ...member, name, title: patch.title.trim(), notes: patch.notes.trim(), accentColor: patch.accentColor };
+  };
+  const next: GameState = {
+    ...state,
+    party: state.party.map(revise),
+    reserve: state.reserve.map(revise),
+    retired: state.retired.map(revise)
+  };
+  if (!editedName) {
+    return noChange(state);
+  }
+  return withEvents(next, [{ type: "party_member_edited", characterName: editedName }]);
 }
 
 function enterDungeon(state: GameState, world: ScenarioWorld): CommandResult {
