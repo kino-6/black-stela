@@ -435,19 +435,25 @@ Measured hot spots (lines, at time of writing):
   — 568; `src/components/DungeonView.tsx` — 488 (React component + Three.js
   scene builder in one).
 
+Progress: the first four (low-risk, pure-function) slices below shipped to main
+(App.tsx 2624 → 2274; new modules `src/domain/tempo.ts`, `src/ui/controllerFocus.ts`,
+`src/ui/format.ts`, `src/ui/catalog.ts`; +5 tempo unit tests). The remaining
+slices are state-coupled / higher-risk and are deferred to a follow-up branch.
+
 Planned slices (ordered by value/risk; one extraction per commit, suite green
 after each):
 
-- [ ] Extract the tempo/auto-move **rules** out of `App.tsx` into
+- [x] Extract the tempo/auto-move **rules** out of `App.tsx` into
   `src/domain/tempo.ts` (`runTempoStep`, `runTempoCombatStep`,
   `runTempoDungeonStep`, `getTempoModeForPhase`). These are pure game rules;
   move them to the domain and add unit tests (they currently have none).
-- [ ] Extract the **keyboard controller / focus** helpers (`getActiveController*`,
+- [x] Extract the **keyboard controller / focus** helpers (`getActiveController*`,
   `moveControllerFocus`, `activateControllerCancel`, `isTypingTarget`, …) into
   `src/ui/controllerFocus.ts`.
-- [ ] Extract **presentation helpers** (`formatPhase`, `equippedName`,
-  `previewEquipmentStats`, `formatStatDelta`, `formatEquipmentEffect`,
-  `shopCategoryFor`, …) into `src/ui/format.ts` / `src/ui/shop.ts`.
+- [x] Extract **presentation helpers** (`formatPhase`, `formatStatDelta`,
+  `formatEquipmentEffect`, …) into `src/ui/format.ts`, and catalog lookups
+  (`localizedCatalogName`, `equippedName`, `previewEquipmentStats`,
+  `shopCategoryFor`, `ShopCategory`, …) into `src/ui/catalog.ts`.
 - [ ] Lift the **character-draft / guild** state and handlers (`createFreshDraft`,
   bonus-pool rolls, identity/origin rerolls, suggestion logic) into a
   `useCharacterDraft` hook (or `src/ui/guild/`).
