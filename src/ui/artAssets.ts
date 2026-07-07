@@ -4,6 +4,17 @@ import stoneFloorBlock3Url from "../assets/dungeon/stone-floor-block3.jpg";
 import stoneWallBlock1Url from "../assets/dungeon/stone-wall-block1.jpg";
 import stoneWallBlock2Url from "../assets/dungeon/stone-wall-block2.jpg";
 import stoneWallBlock3Url from "../assets/dungeon/stone-wall-block3.jpg";
+import ashSlimeTextureUrl from "../assets/dungeon/ash-slime.png";
+import ashVotaryTextureUrl from "../assets/dungeon/ash-votary.png";
+import bitterMoteTextureUrl from "../assets/dungeon/bitter-mote.png";
+import cinderKeeperTextureUrl from "../assets/dungeon/cinder-keeper.png";
+import cisternWardenTextureUrl from "../assets/dungeon/cistern-warden.png";
+import dustCrawlerTextureUrl from "../assets/dungeon/dust-crawler.png";
+import hookRatTextureUrl from "../assets/dungeon/hook-rat.png";
+import lanternWardTextureUrl from "../assets/dungeon/lantern-ward.png";
+import oathCutterTextureUrl from "../assets/dungeon/oath-cutter.png";
+import oathWardenTextureUrl from "../assets/dungeon/oath-warden.png";
+import vaultHuskTextureUrl from "../assets/dungeon/vault-husk.png";
 import equipAshwoodStaffUrl from "../assets/icons/equip-ashwood-staff.png";
 import equipBlackThreadRingUrl from "../assets/icons/equip-black-thread-ring.png";
 import equipCandleWardUrl from "../assets/icons/equip-candle-ward.png";
@@ -72,3 +83,30 @@ export const dungeonBlockTextureUrls = {
   block2: { wall: stoneWallBlock2Url, floor: stoneFloorBlock2Url },
   block3: { wall: stoneWallBlock3Url, floor: stoneFloorBlock3Url }
 } as const;
+
+// Combat sprite per enemy id. Ash Slime doubles as the fallback so an enemy
+// without a dedicated sprite (e.g. a scenario pack's custom foe) still draws
+// something rather than crashing.
+export const ENEMY_SPRITE_FALLBACK_URL = ashSlimeTextureUrl;
+
+export const enemySpriteTextureUrls: Record<string, string> = {
+  "enemy.b1f.ash-slime": ashSlimeTextureUrl,
+  "enemy.b1f.dust-crawler": dustCrawlerTextureUrl,
+  "enemy.b2f.hook-rat": hookRatTextureUrl,
+  "enemy.b3f.bitter-mote": bitterMoteTextureUrl,
+  "enemy.b4f.lantern-ward": lanternWardTextureUrl,
+  "enemy.b6f.oath-cutter": oathCutterTextureUrl,
+  "enemy.b7f.vault-husk": vaultHuskTextureUrl,
+  "enemy.b3f.cistern-warden": cisternWardenTextureUrl,
+  "enemy.b5f.cinder-keeper": cinderKeeperTextureUrl,
+  "enemy.b6f.oath-warden": oathWardenTextureUrl,
+  "enemy.b8f.ash-votary": ashVotaryTextureUrl
+};
+
+export function getEnemySpriteTextureUrl(enemyId: string) {
+  return enemySpriteTextureUrls[enemyId] ?? ENEMY_SPRITE_FALLBACK_URL;
+}
+
+export function hasEnemySpriteTexture(enemyId: string) {
+  return Object.hasOwn(enemySpriteTextureUrls, enemyId);
+}
