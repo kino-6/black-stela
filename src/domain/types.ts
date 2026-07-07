@@ -4,6 +4,12 @@ export type Command =
   | { type: "enter_dungeon" }
   | { type: "bench_member"; characterId: string }
   | { type: "recall_member"; characterId: string }
+  | { type: "reclass_member"; characterId: string; classId: CharacterClassId }
+  | { type: "retire_member"; characterId: string }
+  | { type: "unretire_member"; characterId: string }
+  | { type: "erase_member"; characterId: string }
+  | { type: "edit_member_identity"; characterId: string; name: string; title: string; notes: string; accentColor: string }
+  | { type: "import_member"; adventurer: PortableAdventurer }
   | { type: "resume_at_checkpoint"; roomId: string }
   | { type: "move_forward" }
   | { type: "move_backward" }
@@ -68,7 +74,7 @@ export type CharacterTraitId =
   | "stubborn"
   | "sharp_eyed"
   | "soft_spoken";
-export type CharacterCreationMethod = "legacy" | "quick" | "detailed" | "template" | "debug";
+export type CharacterCreationMethod = "legacy" | "quick" | "detailed" | "template" | "debug" | "import";
 
 export interface CharacterAptitudes {
   might: number;
@@ -92,6 +98,48 @@ export interface RosterMemory {
   notableVictories: string[];
   deeds: string[];
 }
+
+// A scenario-independent snapshot of a registered adventurer: identity, the
+// build (class/background/aptitude/traits), and earned progress (level/xp/
+// reputation). Deliberately excludes scenario-bound equipment ids, dungeon
+// position, and derived combat stats — those are rebuilt on import into a
+// target world. Versioned so the vault format can evolve.
+export interface PortableAdventurer {
+  formatVersion: 1;
+  exportedAt: string;
+  origin: { worldId: string; worldTitle: string };
+  identity: {
+    name: string;
+    title: string;
+    notes: string;
+    accentColor: string;
+    portraitRef?: string;
+  };
+  build: {
+    classId: CharacterClassId;
+    backgroundId: CharacterBackgroundId;
+    roleTags: string[];
+    rowPreference: CombatRow;
+    aptitude: CharacterAptitudes;
+    traitIds: CharacterTraitId[];
+  };
+  progress: {
+    level: number;
+    xp: number;
+    gold: number;
+    memory: RosterMemory;
+  };
+}
+
+// How a target scenario constrains adventurers imported from the vault.
+export interface ScenarioImportPolicy {
+  levelCap?: number;
+  goldCap?: number;
+  allowedClasses?: CharacterClassId[];
+  startingFloorId?: string;
+}
+
+export type ImportAdjustmentKind = "level_capped" | "gold_capped" | "class_remapped" | "progress_reset";
 
 export interface Character {
   id: string;
@@ -155,6 +203,12 @@ export type GameEvent =
   | { type: "party_member_joined"; characterId: string; characterName: string }
   | { type: "party_member_benched"; characterName: string }
   | { type: "party_member_recalled"; characterName: string }
+  | { type: "party_member_reclassed"; characterName: string; className: string }
+  | { type: "party_member_retired"; characterName: string }
+  | { type: "party_member_unretired"; characterName: string }
+  | { type: "party_member_erased"; characterName: string }
+  | { type: "party_member_edited"; characterName: string }
+  | { type: "party_member_imported"; characterName: string; adjustments: ImportAdjustmentKind[] }
   | { type: "command_blocked"; reason: "party_required" | "town_return_unavailable" | "stairs_unavailable"; command: Command["type"] }
   | { type: "dungeon_entered"; roomId: string; facing: Direction }
   | { type: "party_turned"; side: "left" | "right"; facing: Direction }
@@ -309,6 +363,7 @@ export interface GameState {
   phase: "town" | "dungeon" | "combat";
   party: Character[];
   reserve: Character[];
+  retired: Character[];
   position: DungeonPosition | null;
   combat: CombatState | null;
   defeatedEnemies: string[];
@@ -337,6 +392,7 @@ export interface ScenarioWorld {
   encounterTables: EncounterTable[];
   treasureTables: TreasureTable[];
   progressionFlags: ProgressionFlag[];
+  importPolicy?: ScenarioImportPolicy;
 }
 
 export interface AiPolicy {

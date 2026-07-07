@@ -7,18 +7,40 @@ Completed task slices and traceability are archived in:
 - [docs/archive/Tasks.completed-index.md](docs/archive/Tasks.completed-index.md)
 - [docs/archive/Plan.completed-index.md](docs/archive/Plan.completed-index.md)
 
-## Active Milestones
+## Active Milestone: Lane Y — Guild Roster Lifecycle (slices B, C)
 
-Recently completed and archived:
+Goal: the guild becomes a real home the player curates — edit, retire, and
+reclass registered adventurers, and carry them into other scenarios.
 
-- Lane V (BS-189..BS-193): scenario text externalization and Japanese line layout —
-  [archive](docs/archive/Tasks.completed-text-externalization-line-layout.md).
-- Lane W (BS-194..BS-197): starting gear, categorized shop, and registration gear
-  display — [archive](docs/archive/Tasks.completed-starting-gear-categorized-shop.md).
+- [x] Slice A: roster bench/recall (party + reserve, save migration). Shipped.
+- [x] Slice B — Registration lifecycle: Shipped.
+  - [x] Reclass (転職): recompute stats from the new class baseline + retained
+    aptitude, auto-unequip gear the new class cannot use, keep identity/portrait/
+    memory/xp/level.
+  - [x] Retire (two-tier): reversible retire → recallable "retired" state with
+    records preserved; permanent erasure only behind a deliberate two-step
+    confirmation. Save schema gained a retired state.
+  - [x] Edit identity: revise name/epithet/record/accent through the member
+    detail surface without re-rolling the build.
+- [x] Slice C — Cross-scenario adventurers: Shipped.
+  - [x] Portable format (identity + build + earned progress; exclude scenario
+    equipment ids / dungeon position), versioned + Zod-validated
+    (`PortableAdventurer`, `toPortableAdventurer`).
+  - [x] Scenario-independent vault (own localStorage boundary
+    `black-stela:adventurer-vault:v1`), deposit selected, discard.
+  - [x] Import (copy) into a guild's reserve via `import_member`, clamped by the
+    world's `importPolicy` (level/gold caps, allowed-class remap, in-world
+    progress reset), returning applied adjustments.
+- Gate for each: human expectation + red flags explicit, unit tests for the
+  domain rule, browser evidence for the surface, Japanese copy passes the line-
+  layout/dialogue gates. Retire/reclass confirmations read in-world (guild
+  master), the permanent-erasure step is an unmistakable second confirmation.
 
-The next high-priority planning slices are Lane X (repeat/auto tempo feedback) and
-Lane Y (guild roster management and cross-scenario adventurers) in
-[Plan.md](Plan.md). Write a milestone goal before opening either as tasks here.
+Recently completed (archived): Lane V, Lane W, Lane Z (dungeon gimmicks), the
+combat overhaul ([CombatPlan.md](CombatPlan.md)), dense floor maps + backward
+movement + honest rendering ([DungeonPlan.md](DungeonPlan.md)), Lane R refactor
+slices 1–4, and Lane Y slice A. Upcoming after Lane Y: Lane X (tempo feedback),
+Lane R remainder, dense-floor rollout B2/B4–B8. See [Plan.md](Plan.md).
 
 ## Deferred Lanes
 

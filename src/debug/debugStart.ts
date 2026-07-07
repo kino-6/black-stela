@@ -43,6 +43,7 @@ export function createDebugStateFromProgress(world: ScenarioWorld, progress: Deb
     phase: "town",
     party,
     reserve: [],
+    retired: [],
     position: null,
     combat: null,
     defeatedEnemies: [],

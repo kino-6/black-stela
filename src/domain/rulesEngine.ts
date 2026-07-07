@@ -1,6 +1,6 @@
 import { appendEventLogs } from "./replayLog";
 import { applyLevelUps } from "./leveling";
-import { PARTY_SIZE_LIMIT } from "./characterCreation";
+import { PARTY_SIZE_LIMIT, findClass, importAdventurer, reclassCharacter } from "./characterCreation";
 import { SPELLS, knownSpells } from "./spells";
 import { FEAR_ACCURACY_PENALTY, POISON_DAMAGE, STATUS_WEAR_OFF, statusResistPct } from "./status";
 import {
@@ -25,6 +25,7 @@ import {
 } from "./economy";
 import type {
   Character,
+  CharacterClassId,
   CombatActionDeclaration,
   CombatEnemyGroup,
   CombatStatus,
@@ -38,6 +39,7 @@ import type {
   ExplorationGate,
   GameEvent,
   GameState,
+  PortableAdventurer,
   ScenarioWorld
 } from "./types";
 
@@ -127,6 +129,18 @@ export function resolveCommand(state: GameState, world: ScenarioWorld, command: 
       return benchMember(state, command.characterId);
     case "recall_member":
       return recallMember(state, command.characterId);
+    case "reclass_member":
+      return reclassMemberCommand(state, world, command.characterId, command.classId);
+    case "retire_member":
+      return retireMember(state, command.characterId);
+    case "unretire_member":
+      return unretireMember(state, command.characterId);
+    case "erase_member":
+      return eraseMember(state, command.characterId);
+    case "edit_member_identity":
+      return editMemberIdentity(state, command);
+    case "import_member":
+      return importMember(state, world, command.adventurer);
     case "resume_at_checkpoint":
       return resumeAtCheckpoint(state, world, command.roomId);
     case "turn_left":
@@ -206,6 +220,136 @@ function recallMember(state: GameState, characterId: string): CommandResult {
     reserve: state.reserve.filter((candidate) => candidate.id !== characterId)
   };
   return withEvents(next, [{ type: "party_member_recalled", characterName: member.name }]);
+}
+
+// Retrain a party or benched adventurer into a new class. Town-only.
+function reclassMemberCommand(
+  state: GameState,
+  world: ScenarioWorld,
+  characterId: string,
+  classId: CharacterClassId
+): CommandResult {
+  if (state.phase !== "town") {
+    return noChange(state);
+  }
+  const inParty = state.party.find((candidate) => candidate.id === characterId);
+  const inReserve = state.reserve.find((candidate) => candidate.id === characterId);
+  const member = inParty ?? inReserve;
+  if (!member || member.classId === classId) {
+    return noChange(state);
+  }
+  const reclassed = reclassCharacter(member, classId, world);
+  const next: GameState = {
+    ...state,
+    party: state.party.map((candidate) => (candidate.id === characterId ? reclassed : candidate)),
+    reserve: state.reserve.map((candidate) => (candidate.id === characterId ? reclassed : candidate))
+  };
+  return withEvents(next, [
+    { type: "party_member_reclassed", characterName: reclassed.name, className: findClass(classId).label.en }
+  ]);
+}
+
+// Reversible retire: move an active/benched adventurer to the retired roll,
+// records preserved and recallable later. Town-only.
+function retireMember(state: GameState, characterId: string): CommandResult {
+  if (state.phase !== "town") {
+    return noChange(state);
+  }
+  const member = state.party.find((c) => c.id === characterId) ?? state.reserve.find((c) => c.id === characterId);
+  if (!member) {
+    return noChange(state);
+  }
+  const next: GameState = {
+    ...state,
+    party: state.party.filter((c) => c.id !== characterId),
+    reserve: state.reserve.filter((c) => c.id !== characterId),
+    retired: [...state.retired, member]
+  };
+  return withEvents(next, [{ type: "party_member_retired", characterName: member.name }]);
+}
+
+// Recall a retired adventurer back to the guild bench. Town-only.
+function unretireMember(state: GameState, characterId: string): CommandResult {
+  if (state.phase !== "town") {
+    return noChange(state);
+  }
+  const member = state.retired.find((c) => c.id === characterId);
+  if (!member) {
+    return noChange(state);
+  }
+  const next: GameState = {
+    ...state,
+    retired: state.retired.filter((c) => c.id !== characterId),
+    reserve: [...state.reserve, member]
+  };
+  return withEvents(next, [{ type: "party_member_unretired", characterName: member.name }]);
+}
+
+// Permanent erasure: irreversibly remove an adventurer from every roster. The
+// two-step confirmation that guards this lives in the UI. Town-only.
+function eraseMember(state: GameState, characterId: string): CommandResult {
+  if (state.phase !== "town") {
+    return noChange(state);
+  }
+  const member =
+    state.party.find((c) => c.id === characterId) ??
+    state.reserve.find((c) => c.id === characterId) ??
+    state.retired.find((c) => c.id === characterId);
+  if (!member) {
+    return noChange(state);
+  }
+  const next: GameState = {
+    ...state,
+    party: state.party.filter((c) => c.id !== characterId),
+    reserve: state.reserve.filter((c) => c.id !== characterId),
+    retired: state.retired.filter((c) => c.id !== characterId)
+  };
+  return withEvents(next, [{ type: "party_member_erased", characterName: member.name }]);
+}
+
+// Revise an adventurer's identity (name/epithet/record/accent) without touching
+// their build. Town-only; the name is required.
+function editMemberIdentity(
+  state: GameState,
+  patch: { characterId: string; name: string; title: string; notes: string; accentColor: string }
+): CommandResult {
+  if (state.phase !== "town") {
+    return noChange(state);
+  }
+  const name = patch.name.trim();
+  if (!name) {
+    return noChange(state);
+  }
+  let editedName = "";
+  const revise = (member: Character): Character => {
+    if (member.id !== patch.characterId) {
+      return member;
+    }
+    editedName = name;
+    return { ...member, name, title: patch.title.trim(), notes: patch.notes.trim(), accentColor: patch.accentColor };
+  };
+  const next: GameState = {
+    ...state,
+    party: state.party.map(revise),
+    reserve: state.reserve.map(revise),
+    retired: state.retired.map(revise)
+  };
+  if (!editedName) {
+    return noChange(state);
+  }
+  return withEvents(next, [{ type: "party_member_edited", characterName: editedName }]);
+}
+
+// Copy a vault adventurer into the guild reserve, clamped by the target world's
+// import policy. Imports always land in the reserve so the active party is never
+// silently overfilled. Town-only.
+function importMember(state: GameState, world: ScenarioWorld, adventurer: PortableAdventurer): CommandResult {
+  if (state.phase !== "town") {
+    return noChange(state);
+  }
+  const { character, adjustments } = importAdventurer(adventurer, world);
+  const next: GameState = { ...state, reserve: [...state.reserve, character] };
+  return withEvents(next, [{ type: "party_member_imported", characterName: character.name, adjustments }]);
 }
 
 function enterDungeon(state: GameState, world: ScenarioWorld): CommandResult {

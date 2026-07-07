@@ -96,7 +96,7 @@ const CharacterSchema = z.object({
   equipment: EquipmentRecordSchema.default({}),
   creation: z
     .object({
-      method: z.enum(["legacy", "quick", "detailed", "template", "debug"]).default("legacy"),
+      method: z.enum(["legacy", "quick", "detailed", "template", "debug", "import"]).default("legacy"),
       seed: z.string().optional(),
       registeredAtTurn: z.number().int().nonnegative().default(0)
     })
@@ -253,6 +253,7 @@ export const GameStateSchema = z.object({
   phase: GamePhaseSchema,
   party: z.array(CharacterSchema),
   reserve: z.array(CharacterSchema).default([]),
+  retired: z.array(CharacterSchema).default([]),
   position: DungeonPositionSchema.nullable(),
   combat: CombatStateSchema.nullable(),
   defeatedEnemies: z.array(z.string()),

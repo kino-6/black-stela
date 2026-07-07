@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowDown,
   ArrowLeft,
@@ -29,8 +29,10 @@ import {
   findClass,
   findTrait,
   PARTY_SIZE_LIMIT,
+  toPortableAdventurer,
   traitCatalog
 } from "./domain/characterCreation";
+import { readVault, depositToVault, removeFromVault, type VaultEntry } from "./domain/adventurerVault";
 import { getGridEdge, getLocalizedRoomText, getRoom, isBossFloor } from "./domain/scenario";
 import { createIdentitySuggestion } from "./domain/identitySuggestion";
 import { executeCommand, listUnlockedCheckpoints } from "./domain/rulesEngine";
@@ -179,6 +181,33 @@ export function App() {
   const [selectedTargetId, setSelectedTargetId] = useState<string | null>(null);
   const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null);
   const [shopCategory, setShopCategory] = useState<ShopCategory>("weapon");
+  const [reclassClassId, setReclassClassId] = useState<CharacterClassId | "">("");
+  const [eraseConfirmId, setEraseConfirmId] = useState<string | null>(null);
+  const [editProfileId, setEditProfileId] = useState<string | null>(null);
+  const [editDraft, setEditDraft] = useState({ name: "", title: "", notes: "", accentColor: "#c9a765" });
+  const vaultStorage = useMemo(() => (typeof window !== "undefined" ? window.localStorage : null), []);
+  const [vault, setVault] = useState<VaultEntry[]>(() => (vaultStorage ? readVault(vaultStorage) : []));
+
+  const depositMember = useCallback(
+    (character: Character) => {
+      if (!vaultStorage) {
+        return;
+      }
+      const portable = toPortableAdventurer(character, defaultWorld);
+      setVault(depositToVault(vaultStorage, portable, crypto.randomUUID()));
+    },
+    [vaultStorage]
+  );
+
+  const removeVaultEntry = useCallback(
+    (vaultId: string) => {
+      if (!vaultStorage) {
+        return;
+      }
+      setVault(removeFromVault(vaultStorage, vaultId));
+    },
+    [vaultStorage]
+  );
   const [scenarioImportStatus, setScenarioImportStatus] = useState("");
   const [scenarioImportErrors, setScenarioImportErrors] = useState<ScenarioValidationError[]>([]);
   const autosaveSummary = saveSlots.find((slot) => slot.slotId === AUTO_SAVE_SLOT);
@@ -1510,6 +1539,99 @@ export function App() {
                         </section>
                       )}
 
+                      {state.retired.length > 0 && (
+                        <section className="formation-row retired-row" aria-label={t("party.retiredHeading")} data-testid="guild-retired">
+                          <h4>{t("party.retiredHeading")} ({state.retired.length})</h4>
+                          <div className="formation-slots">
+                            {state.retired.map((member) => (
+                              <div className="formation-slot" key={member.id}>
+                                <div className="party-member retired-member" style={{ borderColor: member.accentColor }}>
+                                  <div>
+                                    <strong>{member.name}</strong>
+                                    <span>{formatCharacterSummary(member, locale, t)}</span>
+                                  </div>
+                                </div>
+                                {state.phase === "town" && eraseConfirmId !== member.id && (
+                                  <div className="retired-actions">
+                                    <button
+                                      type="button"
+                                      className="roster-action"
+                                      disabled={state.party.length >= PARTY_SIZE_LIMIT}
+                                      onClick={() => run({ type: "unretire_member", characterId: member.id })}
+                                    >
+                                      {t("party.unretire")}
+                                    </button>
+                                    <button type="button" className="roster-action danger" onClick={() => setEraseConfirmId(member.id)}>
+                                      {t("party.erase")}
+                                    </button>
+                                  </div>
+                                )}
+                                {state.phase === "town" && eraseConfirmId === member.id && (
+                                  <div className="erase-confirm" data-testid="erase-confirm">
+                                    <p>{t("party.eraseWarning", { name: member.name })}</p>
+                                    <div className="retired-actions">
+                                      <button
+                                        type="button"
+                                        className="roster-action danger"
+                                        onClick={() => {
+                                          run({ type: "erase_member", characterId: member.id });
+                                          setEraseConfirmId(null);
+                                        }}
+                                      >
+                                        {t("party.eraseConfirm")}
+                                      </button>
+                                      <button type="button" className="roster-action" onClick={() => setEraseConfirmId(null)}>
+                                        {t("party.eraseCancel")}
+                                      </button>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </section>
+                      )}
+
+                      {vault.length > 0 && (
+                        <section className="formation-row vault-row" aria-label={t("party.vaultHeading")} data-testid="adventurer-vault">
+                          <h4>{t("party.vaultHeading")} ({vault.length})</h4>
+                          <p className="vault-hint">{t("party.vaultHint")}</p>
+                          <div className="formation-slots">
+                            {vault.map((entry) => (
+                              <div className="formation-slot" key={entry.vaultId}>
+                                <div className="party-member vault-member" style={{ borderColor: entry.adventurer.identity.accentColor }}>
+                                  <div>
+                                    <strong>{entry.adventurer.identity.name}</strong>
+                                    <span>
+                                      {findClass(entry.adventurer.build.classId).label[locale]} · Lv{entry.adventurer.progress.level}
+                                    </span>
+                                    <small>{t("party.vaultOrigin", { world: entry.adventurer.origin.worldTitle })}</small>
+                                  </div>
+                                </div>
+                                {state.phase === "town" && (
+                                  <div className="retired-actions">
+                                    <button
+                                      type="button"
+                                      className="roster-action"
+                                      onClick={() => run({ type: "import_member", adventurer: entry.adventurer })}
+                                    >
+                                      {t("party.import")}
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className="roster-action danger"
+                                      onClick={() => removeVaultEntry(entry.vaultId)}
+                                    >
+                                      {t("party.vaultRemove")}
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </section>
+                      )}
+
                       {state.party.length > 0 && (
                       <article className="character-profile" data-testid="character-profile" aria-label={t("party.profile")}>
                         <div className="profile-heading">
@@ -1539,6 +1661,107 @@ export function App() {
                           <div><dt>{t("party.victories")}</dt><dd>{selectedProfile.memory.notableVictories.length}</dd></div>
                           <div><dt>{t("party.injuries")}</dt><dd>{selectedProfile.memory.injuries}</dd></div>
                         </dl>
+                        {state.phase === "town" && (
+                          <div className="reclass-control" data-testid="reclass-control">
+                            <label>
+                              {t("party.reclass")}
+                              <select
+                                value={reclassClassId}
+                                onChange={(event) => setReclassClassId(event.target.value as CharacterClassId | "")}
+                              >
+                                <option value="">{t("party.reclassPick")}</option>
+                                {classCatalog
+                                  .filter((classDef) => classDef.id !== selectedProfile.classId)
+                                  .map((classDef) => (
+                                    <option key={classDef.id} value={classDef.id}>
+                                      {classDef.label[locale]}
+                                    </option>
+                                  ))}
+                              </select>
+                            </label>
+                            <button
+                              type="button"
+                              className="roster-action"
+                              disabled={!reclassClassId}
+                              onClick={() => {
+                                if (reclassClassId) {
+                                  run({ type: "reclass_member", characterId: selectedProfile.id, classId: reclassClassId });
+                                  setReclassClassId("");
+                                }
+                              }}
+                            >
+                              {t("party.reclassConfirm")}
+                            </button>
+                            <button
+                              type="button"
+                              className="roster-action"
+                              onClick={() => run({ type: "retire_member", characterId: selectedProfile.id })}
+                            >
+                              {t("party.retire")}
+                            </button>
+                            <button
+                              type="button"
+                              className="roster-action"
+                              data-testid="deposit-vault"
+                              onClick={() => depositMember(selectedProfile)}
+                            >
+                              {t("party.deposit")}
+                            </button>
+                            {editProfileId !== selectedProfile.id && (
+                              <button
+                                type="button"
+                                className="roster-action"
+                                onClick={() => {
+                                  setEditProfileId(selectedProfile.id);
+                                  setEditDraft({
+                                    name: selectedProfile.name,
+                                    title: selectedProfile.title,
+                                    notes: selectedProfile.notes,
+                                    accentColor: selectedProfile.accentColor
+                                  });
+                                }}
+                              >
+                                {t("party.edit")}
+                              </button>
+                            )}
+                          </div>
+                        )}
+                        {state.phase === "town" && editProfileId === selectedProfile.id && (
+                          <form
+                            className="identity-edit"
+                            data-testid="identity-edit"
+                            onSubmit={(event) => {
+                              event.preventDefault();
+                              run({ type: "edit_member_identity", characterId: selectedProfile.id, ...editDraft });
+                              setEditProfileId(null);
+                            }}
+                          >
+                            <label>
+                              {t("party.editName")}
+                              <input value={editDraft.name} onChange={(event) => setEditDraft((draft) => ({ ...draft, name: event.target.value }))} />
+                            </label>
+                            <label>
+                              {t("party.editTitle")}
+                              <input value={editDraft.title} onChange={(event) => setEditDraft((draft) => ({ ...draft, title: event.target.value }))} />
+                            </label>
+                            <label>
+                              {t("party.editNotes")}
+                              <textarea value={editDraft.notes} onChange={(event) => setEditDraft((draft) => ({ ...draft, notes: event.target.value }))} />
+                            </label>
+                            <label>
+                              {t("party.editAccent")}
+                              <input type="color" value={editDraft.accentColor} onChange={(event) => setEditDraft((draft) => ({ ...draft, accentColor: event.target.value }))} />
+                            </label>
+                            <div className="retired-actions">
+                              <button type="submit" className="roster-action" disabled={!editDraft.name.trim()}>
+                                {t("party.editSave")}
+                              </button>
+                              <button type="button" className="roster-action" onClick={() => setEditProfileId(null)}>
+                                {t("party.editCancel")}
+                              </button>
+                            </div>
+                          </form>
+                        )}
                       </article>
                       )}
                     </section>
