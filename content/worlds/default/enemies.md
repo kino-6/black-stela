@@ -77,6 +77,19 @@ enemies:
     role: blocker
     dangerTier: 3
     tags: [construct]
+    abilities:
+      - name: Lantern Flare
+        chance: 40
+        effect:
+          kind: damage
+          min: 3
+          max: 6
+          element: fire
+      - name: Blinding Glare
+        chance: 30
+        effect:
+          kind: status
+          status: fear
   - id: enemy.b5f.cinder-keeper
     name: Cinder Keeper
     locales:

@@ -33,6 +33,7 @@ import type {
   DungeonRoom,
   Element,
   Enemy,
+  EnemyAbility,
   ExplorationGate,
   GameEvent,
   GameState,
@@ -74,6 +75,43 @@ const CRIT_MULTIPLIER = 1.5;
 // (>1 = weak, <1 = resistant, default 1).
 function elementMultiplier(weaknesses: Partial<Record<Element, number>> | undefined, element: Element): number {
   return weaknesses?.[element] ?? 1;
+}
+
+// Enemy AI: pick the first ability whose chance roll lands this turn (else the
+// enemy makes a plain attack).
+function selectEnemyAbility(abilities: EnemyAbility[] | undefined, seed: string): EnemyAbility | null {
+  for (const ability of abilities ?? []) {
+    if (rollPercent(`${seed}:${ability.name}`) < ability.chance) {
+      return ability;
+    }
+  }
+  return null;
+}
+
+// Apply damage to one party member, wounding (not killing) them at 0 HP.
+function damagePartyMember(
+  party: GameState["party"],
+  targetId: string,
+  damage: number,
+  injuredEvents: GameEvent[]
+): GameState["party"] {
+  return party.map((member) => {
+    if (member.id !== targetId) {
+      return member;
+    }
+    const hp = member.hp - damage;
+    if (hp <= 0) {
+      injuredEvents.push({ type: "character_injured", characterId: member.id, characterName: member.name, injury: "wounded" });
+      return {
+        ...member,
+        hp: 1,
+        injury: "wounded" as const,
+        status: clearRoundStatuses(member.status),
+        memory: { ...member.memory, injuries: member.memory.injuries + 1 }
+      };
+    }
+    return { ...member, hp, status: clearRoundStatuses(member.status) };
+  });
 }
 
 export function executeCommand(state: GameState, world: ScenarioWorld, command: Command): GameState {
@@ -735,6 +773,38 @@ function declareRound(state: GameState, world: ScenarioWorld, actions: CombatAct
       continue;
     }
 
+    const ability = selectEnemyAbility(group.abilities, `${state.turn}:${combat.round}:${group.id}`);
+    if (ability) {
+      if (ability.effect.kind === "damage") {
+        const targetStats = getEffectiveCharacterStats(target, world);
+        const guarded = target.status?.includes("ward");
+        const armor = targetStats.armor + (guarded ? 2 : 0);
+        const damage = rollDamage(
+          `${state.turn}:${combat.round}:${group.id}:${target.id}:ability`,
+          ability.effect.min,
+          ability.effect.max,
+          armor
+        );
+        party = damagePartyMember(party, target.id, damage, injuredEvents);
+        summaries.push(`${group.name} looses ${ability.name} at ${target.name} for ${damage}.`);
+      } else {
+        const resist = statusResistPct(target.resistance, ability.effect.status);
+        const roll = rollPercent(`${state.turn}:${combat.round}:${group.id}:${target.id}:ability-resist`);
+        if (roll >= resist) {
+          const ailment = ability.effect.status;
+          party = party.map((member) =>
+            member.id === target.id && !member.injury
+              ? { ...member, status: uniqueStatuses([...(member.status ?? []), ailment]) }
+              : member
+          );
+          summaries.push(`${group.name} works ${ability.name}, afflicting ${target.name} with ${ailment}.`);
+        } else {
+          summaries.push(`${target.name} shrugs off ${group.name}'s ${ability.name}.`);
+        }
+      }
+      continue;
+    }
+
     const hitRoll = rollPercent(`${state.turn}:${combat.round}:${group.id}:${target.id}:hit`);
     if (hitRoll > group.accuracy) {
       summaries.push(`${group.name} misses ${target.name}.`);
@@ -745,28 +815,7 @@ function declareRound(state: GameState, world: ScenarioWorld, actions: CombatAct
     const guarded = target.status?.includes("ward");
     const armor = targetStats.armor + (guarded ? 2 : 0);
     const damage = rollDamage(`${state.turn}:${combat.round}:${group.id}:${target.id}:damage`, group.damageMin, group.damageMax, armor);
-    party = party.map((member) => {
-      if (member.id !== target.id) {
-        return member;
-      }
-      const hp = member.hp - damage;
-      if (hp <= 0) {
-        injuredEvents.push({
-          type: "character_injured",
-          characterId: member.id,
-          characterName: member.name,
-          injury: "wounded"
-        });
-        return {
-          ...member,
-          hp: 1,
-          injury: "wounded" as const,
-          status: clearRoundStatuses(member.status),
-          memory: { ...member.memory, injuries: member.memory.injuries + 1 }
-        };
-      }
-      return { ...member, hp, status: clearRoundStatuses(member.status) };
-    });
+    party = damagePartyMember(party, target.id, damage, injuredEvents);
     summaries.push(`${group.name} wounds ${target.name} for ${damage}.`);
 
     if (group.inflicts) {
@@ -1080,7 +1129,8 @@ function createEnemyGroup(enemy: Enemy, count: number): CombatEnemyGroup {
     status: [],
     resistances: enemy.resistances,
     inflicts: enemy.inflicts,
-    weaknesses: enemy.weaknesses
+    weaknesses: enemy.weaknesses,
+    abilities: enemy.abilities
   };
 }
 

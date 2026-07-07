@@ -52,18 +52,21 @@ targeting, and deterministic seeded rolls (`rollPercent`/`rollDamage`).
 
 ## Implementation slices (build up; suite green after each)
 
-1. **Growth foundation.** `level` field + XP-threshold curve +
+**Status: all five slices shipped to main.** The overhaul below is complete;
+balance numbers remain first-pass and tunable.
+
+1. [x] **Growth foundation.** `level` field + XP-threshold curve +
    `src/domain/leveling.ts` (`xpForLevel`, `applyLevelUps`) + level-up on
    victory with stat growth + `character_leveled_up` event/log + level shown in
    the party HUD. No magic yet.
-2. **MP + spell system.** `mp`/`maxMp`, spell catalog + per-class learn table,
+2. [x] **MP + spell system.** `mp`/`maxMp`, spell catalog + per-class learn table,
    generic `cast` (heal / damage / sleep) with MP cost, MP restore on rest/town,
    spell menu + targeting UI.
-3. **Status ailments.** Poison/silence/fear + party sleep, per-round ticks and
+3. [x] **Status ailments.** Poison/silence/fear + party sleep, per-round ticks and
    resist rolls; enemies can inflict them.
-4. **Elements + weakness + criticals.** Element tags + enemy weakness/resist
+4. [x] **Elements + weakness + criticals.** Element tags + enemy weakness/resist
    multipliers + crit chance.
-5. **Enemy AI variety.** Enemy spell/behaviour data + an action-selection AI.
+5. [x] **Enemy AI variety.** Enemy spell/behaviour data + an action-selection AI.
 
 Guardrails: deterministic seeded rolls stay deterministic (tests depend on it);
 each slice is one focused commit kept green (unit + e2e); balance numbers are

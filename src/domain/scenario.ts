@@ -58,6 +58,23 @@ const enemySchema = z.object({
       frost: z.number().min(0).max(4).optional()
     })
     .optional(),
+  abilities: z
+    .array(
+      z.object({
+        name: z.string().min(1),
+        chance: z.number().int().min(0).max(100),
+        effect: z.union([
+          z.object({
+            kind: z.literal("damage"),
+            min: z.number().int().nonnegative(),
+            max: z.number().int().nonnegative(),
+            element: z.enum(["physical", "fire", "frost"])
+          }),
+          z.object({ kind: z.literal("status"), status: z.enum(["poison", "fear", "silence", "sleep", "ward"]) })
+        ])
+      })
+    )
+    .optional(),
   drops: z.array(z.string().min(1)).optional(),
   role: enemyRoleSchema.optional(),
   dangerTier: z.number().int().positive().optional(),
