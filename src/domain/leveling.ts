@@ -29,11 +29,14 @@ export function applyLevelUps(character: Character): LevelUpResult {
     const nextLevel = current.level + 1;
     const gain = growthForLevel(current, nextLevel);
     const maxHp = current.maxHp + gain.maxHp;
+    const maxMp = current.maxMp + gain.maxMp;
     current = {
       ...current,
       level: nextLevel,
       maxHp,
       hp: Math.min(current.hp + gain.maxHp, maxHp),
+      maxMp,
+      mp: Math.min(current.mp + gain.maxMp, maxMp),
       attack: current.attack + gain.attack,
       damageMin: current.damageMin + gain.damageMin,
       damageMax: current.damageMax + gain.damageMax,
@@ -54,6 +57,7 @@ export function applyLevelUps(character: Character): LevelUpResult {
 
 interface StatGain {
   maxHp: number;
+  maxMp: number;
   attack: number;
   damageMin: number;
   damageMax: number;
@@ -68,8 +72,10 @@ function growthForLevel(character: Character, newLevel: number): StatGain {
   const spirit = character.aptitude.spirit ?? 0;
   const everyOther = newLevel % 2 === 0;
 
+  const wit = character.aptitude.wit ?? 0;
   return {
     maxHp: 2 + Math.max(might, spirit),
+    maxMp: character.maxMp > 0 && spirit + wit >= 2 ? 2 : character.maxMp > 0 ? 1 : 0,
     attack: everyOther ? 1 : 0,
     damageMin: newLevel % 3 === 0 ? 1 : 0,
     damageMax: everyOther ? 1 : 0,

@@ -35,6 +35,7 @@ import { getGridEdge, getLocalizedRoomText, getRoom, isBossFloor } from "./domai
 import { createIdentitySuggestion } from "./domain/identitySuggestion";
 import { executeCommand, listUnlockedCheckpoints } from "./domain/rulesEngine";
 import { getTempoModeForPhase, runTempoStep, type TempoMode } from "./domain/tempo";
+import { SPELLS, knownSpells, type SpellId } from "./domain/spells";
 import {
   activateControllerCancel,
   focusFirstControllerChoice,
@@ -122,6 +123,12 @@ type GuildCreationStep = "briefing" | "class" | "appearance" | "bonus" | "name";
 type GuildOfferState = "ask" | "suggestion" | "dismissed";
 type TownMode = "guild" | "shop" | "recovery" | "records" | "entry";
 type AppScreen = "title" | "config" | "game";
+
+const SPELL_LABEL_KEY: Record<SpellId, "play.spellHeal" | "play.spellFirebolt" | "play.spellSleep"> = {
+  heal: "play.spellHeal",
+  firebolt: "play.spellFirebolt",
+  sleep: "play.spellSleep"
+};
 
 const AUTO_SAVE_SLOT = "autosave";
 const defaultDraft: CharacterDraft = {
@@ -336,6 +343,31 @@ export function App() {
             : { actorId: selectedActor.id, action };
     const nextOrders = [...combatOrders.filter((queued) => queued.actorId !== selectedActor.id), order];
     setCombatOrders(nextOrders);
+  }
+
+  function queueSelectedCombatSpell(spellId: SpellId) {
+    if (!selectedActor) {
+      return;
+    }
+    const spell = SPELLS[spellId];
+    if (selectedActor.mp < spell.mpCost) {
+      return;
+    }
+
+    let order: CombatActionDeclaration;
+    if (spell.target === "ally") {
+      const wounded = [...state.party]
+        .filter((member) => member.hp > 0)
+        .sort((left, right) => left.hp / left.maxHp - right.hp / right.maxHp)[0];
+      order = { actorId: selectedActor.id, action: "cast", spellId, targetCharacterId: (wounded ?? selectedActor).id };
+    } else {
+      if (!selectedTarget) {
+        return;
+      }
+      order = { actorId: selectedActor.id, action: "cast", spellId, targetGroupId: selectedTarget.id };
+    }
+
+    setCombatOrders([...combatOrders.filter((queued) => queued.actorId !== selectedActor.id), order]);
   }
 
   function executeCombatOrders() {
@@ -1847,6 +1879,7 @@ export function App() {
                                 <div className="party-token-stats" aria-label={t("play.memberStatus")}>
                                   <span>Lv {member.level}</span>
                                   <span>HP {member.hp}/{member.maxHp}</span>
+                                  {member.maxMp > 0 && <span>{t("play.mpShort")} {member.mp}/{member.maxMp}</span>}
                                   <span>{t("party.damage")} {stats.damageMin}-{stats.damageMax}</span>
                                   <span>{t("party.armor")} {stats.armor}</span>
                                   <span>{t("party.speed")} {stats.speed}</span>
@@ -1962,10 +1995,22 @@ export function App() {
                       <ShieldCheck size={18} />
                       {t("play.defend")}
                     </button>
-                    <button type="button" disabled={!selectedActor || !selectedTarget} onClick={() => queueSelectedCombatAction("cast")}>
-                      <ShieldCheck size={18} />
-                      {t("play.sleep")}
-                    </button>
+                    {selectedActor &&
+                      knownSpells(selectedActor.classId, selectedActor.level).map((spellId) => {
+                        const spell = SPELLS[spellId];
+                        const needsTarget = spell.target === "enemyGroup" && !selectedTarget;
+                        return (
+                          <button
+                            key={spellId}
+                            type="button"
+                            disabled={selectedActor.mp < spell.mpCost || needsTarget}
+                            onClick={() => queueSelectedCombatSpell(spellId)}
+                          >
+                            <Wand2 size={18} />
+                            {t(SPELL_LABEL_KEY[spellId])} · {t("play.mpShort")} {spell.mpCost}
+                          </button>
+                        );
+                      })}
                     {combatHealingItem && selectedActor && (
                       <button
                         type="button"

@@ -112,6 +112,8 @@ export interface Character {
   level: number;
   hp: number;
   maxHp: number;
+  mp: number;
+  maxMp: number;
   attack: number;
   damageMin: number;
   damageMax: number;
@@ -261,7 +263,7 @@ export interface CombatActionDeclaration {
   targetGroupId?: string;
   targetCharacterId?: string;
   itemId?: string;
-  spellId?: "heal" | "ward" | "sleep";
+  spellId?: "heal" | "firebolt" | "sleep";
 }
 
 export interface DungeonPosition {

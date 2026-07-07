@@ -116,6 +116,8 @@ const CharacterSchema = z.object({
   level: z.number().int().positive().default(1),
   hp: z.number().int().nonnegative(),
   maxHp: z.number().int().positive(),
+  mp: z.number().int().nonnegative().default(0),
+  maxMp: z.number().int().nonnegative().default(0),
   attack: z.number().int().nonnegative(),
   damageMin: z.number().int().nonnegative().default(1),
   damageMax: z.number().int().nonnegative().default(4),
@@ -187,7 +189,7 @@ const CombatActionDeclarationSchema = z.object({
   targetGroupId: z.string().min(1).optional(),
   targetCharacterId: z.string().min(1).optional(),
   itemId: z.string().min(1).optional(),
-  spellId: z.enum(["heal", "ward", "sleep"]).optional()
+  spellId: z.enum(["heal", "firebolt", "sleep"]).optional()
 });
 
 const CombatEnemyGroupSchema = z.object({

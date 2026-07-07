@@ -21,7 +21,9 @@ test("resolves tactical combat through visible actor, target, and combat command
   await expect(page.getByRole("button", { name: "Attack" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Target" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Resolve round" })).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "Sleep" })).toBeVisible();
+  // Spells are class-gated now, so a lone vanguard has no cast buttons — but the
+  // universal Defend command is always present.
+  await expect(page.getByRole("button", { name: "Defend" })).toBeVisible();
 
   const combatBoardHeight = await page.getByLabel("Battle screen").evaluate((element) => element.getBoundingClientRect().height);
   expect(combatBoardHeight).toBeLessThan(390);

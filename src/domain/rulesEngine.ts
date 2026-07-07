@@ -1,5 +1,6 @@
 import { appendEventLogs } from "./replayLog";
 import { applyLevelUps } from "./leveling";
+import { SPELLS, knownSpells } from "./spells";
 import {
   getExit,
   getFloorIdForRoom,
@@ -576,11 +577,47 @@ function declareRound(state: GameState, world: ScenarioWorld, actions: CombatAct
       continue;
     }
 
-    if (action.action === "cast" && action.spellId === "sleep" && action.targetGroupId) {
-      enemyGroups = enemyGroups.map((group) =>
-        group.id === action.targetGroupId ? { ...group, status: uniqueStatuses([...(group.status ?? []), "sleep"]) } : group
-      );
-      summaries.push(`${actor.name} casts Sleep on ${findGroupName(enemyGroups, action.targetGroupId)}.`);
+    if (action.action === "cast" && action.spellId) {
+      const spell = SPELLS[action.spellId];
+      if (!spell || !knownSpells(actor.classId, actor.level).includes(spell.id)) {
+        continue;
+      }
+      if (actor.status?.includes("silence")) {
+        summaries.push(`${actor.name} is silenced and cannot cast.`);
+        continue;
+      }
+      if (actor.mp < spell.mpCost) {
+        summaries.push(`${actor.name} lacks the focus to cast ${spell.id}.`);
+        continue;
+      }
+      party = party.map((member) => (member.id === actor.id ? { ...member, mp: member.mp - spell.mpCost } : member));
+
+      if (spell.effect.kind === "heal" && action.targetCharacterId) {
+        const amount = spell.effect.amount;
+        let healedName = "";
+        party = party.map((member) => {
+          if (member.id !== action.targetCharacterId) {
+            return member;
+          }
+          healedName = member.name;
+          return { ...member, hp: Math.min(member.maxHp, member.hp + amount) };
+        });
+        summaries.push(`${actor.name} heals ${healedName}.`);
+      } else if (spell.effect.kind === "damage" && action.targetGroupId) {
+        const group = enemyGroups.find((candidate) => candidate.id === action.targetGroupId && candidate.count > 0);
+        if (group) {
+          const damage = rollDamage(`${state.turn}:${combat.round}:${actor.id}:${group.id}:spell`, spell.effect.min, spell.effect.max, 0);
+          enemyGroups = damageGroup(enemyGroups, group.id, damage);
+          const updated = enemyGroups.find((candidate) => candidate.id === group.id);
+          summaries.push(`${actor.name} scorches ${group.name} for ${damage}. ${updated?.count ?? 0} remain.`);
+        }
+      } else if (spell.effect.kind === "status" && action.targetGroupId) {
+        const ailment = spell.effect.status;
+        enemyGroups = enemyGroups.map((group) =>
+          group.id === action.targetGroupId ? { ...group, status: uniqueStatuses([...(group.status ?? []), ailment]) } : group
+        );
+        summaries.push(`${actor.name} casts ${spell.id} on ${findGroupName(enemyGroups, action.targetGroupId)}.`);
+      }
       continue;
     }
 
@@ -1230,7 +1267,7 @@ function recoverParty(state: GameState): CommandResult {
 
   const next: GameState = {
     ...state,
-    party: state.party.map((member) => ({ ...member, hp: member.maxHp, injury: undefined })),
+    party: state.party.map((member) => ({ ...member, hp: member.maxHp, mp: member.maxMp, injury: undefined })),
     partyGold: state.partyGold - cost,
     turn: state.turn + 1
   };

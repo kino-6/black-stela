@@ -8,6 +8,7 @@ import type {
   CombatRow,
   EquipmentSlot
 } from "./types";
+import { baseMaxMpForClass } from "./spells";
 
 export interface LocalizedLabel {
   en: string;
@@ -440,6 +441,8 @@ export function createGuildCharacter(input: GuildCharacterInput): Character {
     level: 1,
     hp: stats.maxHp,
     maxHp: stats.maxHp,
+    mp: baseMaxMpForClass(classDef.id, aptitude),
+    maxMp: baseMaxMpForClass(classDef.id, aptitude),
     attack: stats.attack,
     damageMin: stats.damageMin,
     damageMax: stats.damageMax,
