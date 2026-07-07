@@ -803,7 +803,10 @@ export function App() {
   }, [debugMode, locale, saveRepository, scenarioValidationErrors.length, screen, state]);
 
   return (
-    <main className={screen === "game" ? "app-shell" : "app-shell title-shell"}>
+    <main
+      className={screen === "game" ? "app-shell" : "app-shell title-shell"}
+      data-phase={screen === "game" ? state.phase : undefined}
+    >
       {screen !== "game" && (
         <section className="title-screen" aria-labelledby="title-heading">
           <div className="title-mark">
@@ -2082,16 +2085,15 @@ export function App() {
             </div>
           ) : (
             <div className={`adventure-cockpit ${state.phase === "combat" ? "combat-cockpit" : "dungeon-cockpit"}`}>
-              <div className="scene-deck">
-                <DungeonView state={state} world={defaultWorld} label={t("play.dungeonView")} />
-                {state.phase === "dungeon" && (
-                  <aside className="navigation-board" aria-label={t("map.heading")}>
-                    <MapPanel state={state} world={defaultWorld} locale={locale} t={t} />
-                  </aside>
-                )}
-              </div>
-
-              {state.phase === "dungeon" && (
+              {state.phase === "dungeon" ? (
+                <>
+                  <div className="cockpit-scene">
+                    <DungeonView state={state} world={defaultWorld} label={t("play.dungeonView")} />
+                  </div>
+                  <aside className="cockpit-rail" aria-label={t("play.partyStatus")}>
+                    <div className="navigation-board" aria-label={t("map.heading")}>
+                      <MapPanel state={state} world={defaultWorld} locale={locale} t={t} />
+                    </div>
                 <div className="party-hud" data-testid="party-hud" aria-label={t("play.partyStatus")}>
                   {(["front", "back"] as const).map((row) => (
                     <div className="party-row-strip" data-testid={`party-${row}-row`} key={row}>
@@ -2135,9 +2137,9 @@ export function App() {
                                   <span>Lv {member.level}</span>
                                   <span>HP {member.hp}/{member.maxHp}</span>
                                   {member.maxMp > 0 && <span>{t("play.mpShort")} {member.mp}/{member.maxMp}</span>}
-                                  <span>{t("party.damage")} {stats.damageMin}-{stats.damageMax}</span>
-                                  <span>{t("party.armor")} {stats.armor}</span>
-                                  <span>{t("party.speed")} {stats.speed}</span>
+                                  <span className="party-token-detail">{t("party.damage")} {stats.damageMin}-{stats.damageMax}</span>
+                                  <span className="party-token-detail">{t("party.armor")} {stats.armor}</span>
+                                  <span className="party-token-detail">{t("party.speed")} {stats.speed}</span>
                                 </div>
                               </div>
                             </div>
@@ -2147,14 +2149,22 @@ export function App() {
                     </div>
                   ))}
                 </div>
-              )}
-
-              {state.phase === "dungeon" && (
-                <div className="room-copy cockpit-copy">
-                  <p>{roomText?.description}</p>
+                  </aside>
+                </>
+              ) : (
+                <div className="scene-deck">
+                  <DungeonView state={state} world={defaultWorld} label={t("play.dungeonView")} />
                 </div>
               )}
-              <p className="event-window cockpit-message" aria-live="polite">{tempoStatus || latestLogText || "\u00a0"}</p>
+
+              {state.phase === "dungeon" ? (
+                <div className="cockpit-message">
+                  <p className="room-copy">{roomText?.description}</p>
+                  <p className="event-window" aria-live="polite">{tempoStatus || latestLogText || "\u00a0"}</p>
+                </div>
+              ) : (
+                <p className="event-window cockpit-message" aria-live="polite">{tempoStatus || latestLogText || "\u00a0"}</p>
+              )}
               {state.phase === "combat" ? (
                 <section className="battle-screen" aria-label={t("play.battleScreen")}>
                   <div className="battle-header">
