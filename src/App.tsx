@@ -56,6 +56,17 @@ import {
   isRecoveryEventType,
   isShopEventType
 } from "./ui/format";
+import {
+  SHOP_CATEGORY_ORDER,
+  equippedName,
+  findEquipmentById,
+  localizedCatalogDescription,
+  localizedCatalogName,
+  localizedEnemyGroupName,
+  previewEquipmentStats,
+  shopCategoryFor,
+  type ShopCategory
+} from "./ui/catalog";
 import { projectEventToLog } from "./domain/replayLog";
 import { calculateRecoveryCost, getEffectiveCharacterStats, isEquipmentUsableBy } from "./domain/economy";
 import type {
@@ -2242,75 +2253,6 @@ function formatCharacterNotes(notes: string, backgroundId: GameState["party"][nu
 
 function localizedShopName(shop: (typeof defaultWorld.shops)[number], locale: Locale) {
   return shop.locales?.[locale]?.name ?? shop.name;
-}
-
-function localizedCatalogName(itemId: string | undefined, locale: Locale) {
-  if (!itemId) {
-    return "-";
-  }
-
-  const item = defaultWorld.items.find((candidate) => candidate.id === itemId);
-  if (item) {
-    return item.locales?.[locale]?.name ?? item.name;
-  }
-
-  const equipment = defaultWorld.equipment.find((candidate) => candidate.id === itemId);
-  return equipment?.locales?.[locale]?.name ?? equipment?.name ?? itemId;
-}
-
-function localizedCatalogDescription(itemId: string | undefined, locale: Locale) {
-  if (!itemId) {
-    return "";
-  }
-
-  const item = defaultWorld.items.find((candidate) => candidate.id === itemId);
-  if (item) {
-    return item.locales?.[locale]?.description ?? "";
-  }
-
-  const equipment = findEquipmentById(itemId);
-  return equipment?.locales?.[locale]?.description ?? equipment?.description ?? "";
-}
-
-function equippedName(itemId: string | undefined, locale: Locale) {
-  return itemId ? localizedCatalogName(itemId, locale) : "-";
-}
-
-function localizedEnemyGroupName(group: { enemyId: string; name: string }, locale: Locale) {
-  const enemy = defaultWorld.enemies.find((candidate) => candidate.id === group.enemyId);
-  return enemy?.locales?.[locale]?.name ?? enemy?.name ?? group.name;
-}
-
-function previewEquipmentStats(member: Character, equipment: ScenarioEquipment) {
-  return getEffectiveCharacterStats(
-    {
-      ...member,
-      equipment: {
-        ...member.equipment,
-        [equipment.slot]: equipment.id
-      }
-    },
-    defaultWorld
-  );
-}
-
-function findEquipmentById(itemId: string | undefined) {
-  return defaultWorld.equipment.find((candidate) => candidate.id === itemId);
-}
-
-type ShopCategory = "weapon" | "armor" | "offhand" | "trinket" | "tool" | "consumable";
-const SHOP_CATEGORY_ORDER: ShopCategory[] = ["weapon", "armor", "offhand", "trinket", "tool", "consumable"];
-
-function shopCategoryFor(itemId: string): ShopCategory {
-  const equipment = findEquipmentById(itemId);
-  if (equipment) {
-    if (equipment.slot === "weapon") return "weapon";
-    if (equipment.slot === "body") return "armor";
-    if (equipment.slot === "offhand") return "offhand";
-    return "trinket";
-  }
-  const item = defaultWorld.items.find((candidate) => candidate.id === itemId);
-  return item?.kind === "healing" || item?.kind === "escape" ? "consumable" : "tool";
 }
 
 function getScenarioValidationErrorsFromLocation(): ScenarioValidationError[] {
