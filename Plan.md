@@ -102,8 +102,11 @@ proof of UX, fun, fairness, visual legibility, or grid-maze honesty.
 - [x] Dense floor maps + backward movement + honest first-person rendering (see
   [DungeonPlan.md](DungeonPlan.md)). Floors converted so far: B1F, B3F. **Pending:
   B2F, B4F–B8F.**
-- [~] Lane R: Source Decomposition and Refactoring — first four slices shipped;
-  remainder (hooks / JSX split / DungeonView scene) deferred to a follow-up.
+- [~] Lane R: Source Decomposition and Refactoring — seven slices shipped
+  (tempo rules, controller focus, presentation + catalog helpers, DungeonView
+  scene split, character-draft helpers, remaining format helpers). Remaining:
+  the ~1600-line per-phase JSX split (deferred, biggest/riskiest); save/load hook
+  and rulesEngine grouping judged low-value/skip.
 - [ ] Lane X: Repeat and Auto Action Tempo Feedback.
 - [~] **Lane Y (IN PROGRESS): Guild Roster Management, Registration Lifecycle, and
   Cross-Scenario Adventurers.** Slice A (roster bench/recall) shipped; slices B
@@ -313,19 +316,26 @@ after each):
   `formatEquipmentEffect`, …) into `src/ui/format.ts`, and catalog lookups
   (`localizedCatalogName`, `equippedName`, `previewEquipmentStats`,
   `shopCategoryFor`, `ShopCategory`, …) into `src/ui/catalog.ts`.
-- [ ] Lift the **character-draft / guild** state and handlers (`createFreshDraft`,
-  bonus-pool rolls, identity/origin rerolls, suggestion logic) into a
-  `useCharacterDraft` hook (or `src/ui/guild/`).
-- [ ] Lift **save/load/import** (`saveGame`, `loadGame`, `importScenarioPackFiles`,
-  `createBrowserSaveRepository`) into a `useSaveLoad` hook / module.
-- [ ] Split the giant **per-phase JSX render** into panel components (Town,
-  Guild, Combat, Dungeon) alongside the existing `MapPanel`/`DungeonView`, so
-  `App.tsx` becomes an orchestrator.
-- [ ] Split `DungeonView.tsx`: move the Three.js scene construction into a
-  `dungeonScene.ts` builder, leaving the React component thin.
-- [ ] Consider grouping `rulesEngine.ts` by concern (movement / combat /
-  town-economy / gates-gimmicks) behind the same public API, only if it does not
-  fragment tightly-coupled logic.
+- [x] Split `DungeonView.tsx`: moved the Three.js scene construction into
+  `src/components/dungeonScene.ts` (`buildDungeonScene`), leaving the React
+  component thin (514 → 222 lines).
+- [x] Extract the **pure character-draft helpers** (`CharacterDraft`,
+  `createFreshDraft`, bonus-pool rolls, `getAllocatedBonusPoints`, guild-recruit
+  suggestion) into `src/ui/characterDraft.ts`. (The remaining *stateful* draft
+  handlers stay wired in App; a `useCharacterDraft` hook is optional follow-up.)
+- [x] Move the **remaining presentation helpers** out of App: pure-t
+  combat/aptitude formatters into `src/ui/format.ts`; world-aware character/shop
+  formatters into `src/ui/catalog.ts`.
+- [ ] (Deferred) Lift **save/load/import** into a `useSaveLoad` hook — low value:
+  the handlers are thin view-glue over `saveRepository`, so a hook mostly shuffles
+  ~10 setter deps rather than decomposing logic.
+- [ ] (Deferred, largest/riskiest) Split the ~1600-line **per-phase JSX render**
+  into panel components (Town, Guild, Combat, Dungeon) so `App.tsx` becomes an
+  orchestrator. Best done as its own focused effort with heavy prop-threading.
+- [ ] (Skip) Grouping `rulesEngine.ts` by concern — the movement/combat/gate logic
+  is tightly coupled; splitting would fragment it against the lane's own guidance.
+
+App.tsx: 2624 (lane start) → 2436 after these slices; DungeonView 514 → 222.
 
 Guardrails: behaviour-preserving only; no API/UX changes in this lane; prefer
 moving code verbatim then re-wiring imports; run `tsc`, unit, and e2e after each

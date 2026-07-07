@@ -46,9 +46,11 @@ import {
   moveControllerFocus
 } from "./ui/controllerFocus";
 import {
+  formatAptitudes,
   formatBonusParts,
   formatCombatRow,
   formatDebugProgress,
+  formatEnemyGroupStatus,
   formatEquipmentEffect,
   formatEquipmentSlot,
   formatInventoryEffect,
@@ -64,9 +66,13 @@ import {
   SHOP_CATEGORY_ORDER,
   equippedName,
   findEquipmentById,
+  formatCharacterNotes,
+  formatCharacterSummary,
+  formatCombatOrder,
   localizedCatalogDescription,
   localizedCatalogName,
   localizedEnemyGroupName,
+  localizedShopName,
   previewEquipmentStats,
   shopCategoryFor,
   type ShopCategory
@@ -103,23 +109,15 @@ import { loadLocale, saveLocale as persistLocale } from "./services/settingsRepo
 import type { ScenarioValidationError } from "./domain/scenarioPack";
 import { loadScenarioPack, type ScenarioPackFiles } from "./services/scenarioPackLoader";
 import { formatScenarioSummary, summarizeScenario } from "./services/scenarioSummary";
-
-interface CharacterDraft {
-  name: string;
-  notes: string;
-  title: string;
-  classId: CharacterClassId;
-  backgroundId: CharacterBackgroundId;
-  traitId: CharacterTraitId;
-  aptitudeFocus: "balanced" | "might" | "agility" | "spirit" | "wit" | "luck";
-  bonusPool: number;
-  bonusAptitude: CharacterAptitudes;
-  bonusSeed: number;
-  originSeed: number;
-  identitySeed: number;
-  accentColor: string;
-  portraitRef?: string;
-}
+import {
+  aptitudeKeys,
+  createEmptyBonusAptitude,
+  createFreshDraft,
+  createSuggestedRecruitForParty,
+  getAllocatedBonusPoints,
+  rollBonusPool,
+  type CharacterDraft
+} from "./ui/characterDraft";
 
 type GuildCreationStep = "briefing" | "class" | "appearance" | "bonus" | "name";
 type GuildOfferState = "ask" | "suggestion" | "dismissed";
@@ -133,23 +131,6 @@ const SPELL_LABEL_KEY: Record<SpellId, "play.spellHeal" | "play.spellFirebolt" |
 };
 
 const AUTO_SAVE_SLOT = "autosave";
-const defaultDraft: CharacterDraft = {
-  name: "",
-  notes: "",
-  title: "",
-  classId: "vanguard",
-  backgroundId: "watch",
-  traitId: "steady",
-  aptitudeFocus: "balanced",
-  bonusPool: 5,
-  bonusAptitude: { might: 0, agility: 0, spirit: 0, wit: 0, luck: 0 },
-  bonusSeed: 1,
-  originSeed: 1,
-  identitySeed: 1,
-  accentColor: "#c9a765"
-};
-
-const aptitudeKeys: (keyof CharacterAptitudes)[] = ["might", "agility", "spirit", "wit", "luck"];
 const guildStepOrder: GuildCreationStep[] = ["briefing", "class", "appearance", "bonus", "name"];
 const equipmentSlotOrder: EquipmentSlot[] = ["weapon", "offhand", "body", "head", "hands", "accessory"];
 
@@ -2385,87 +2366,6 @@ function isDebugModeEnabled() {
   return typeof window !== "undefined" && new URLSearchParams(window.location.search).get("debug") === "1";
 }
 
-function createFreshDraft(overrides: Partial<CharacterDraft> = {}): CharacterDraft {
-  const seed = overrides.bonusSeed ?? Date.now();
-  const backgroundId = overrides.backgroundId ?? defaultDraft.backgroundId;
-  const background = findBackground(backgroundId);
-  return {
-    ...defaultDraft,
-    backgroundId,
-    bonusSeed: seed,
-    originSeed: overrides.originSeed ?? seed,
-    identitySeed: overrides.identitySeed ?? seed,
-    bonusPool: rollBonusPool(seed),
-    bonusAptitude: createEmptyBonusAptitude(),
-    ...overrides,
-    accentColor: overrides.accentColor ?? background.accentColor
-  };
-}
-
-function createEmptyBonusAptitude(): CharacterAptitudes {
-  return { might: 0, agility: 0, spirit: 0, wit: 0, luck: 0 };
-}
-
-function rollBonusPool(seed: number) {
-  return 4 + (Math.floor(Math.abs(Math.sin(seed * 12.9898) * 10_000)) % 5);
-}
-
-function createSuggestedRecruitForParty(party: Character[], turn: number, locale: Locale) {
-  const classId = chooseSuggestedClassId(party);
-  const background = backgroundCatalog[(party.length + turn) % backgroundCatalog.length];
-  const trait = traitCatalog[(party.length * 3 + turn + 1) % traitCatalog.length];
-  const identity = createIdentitySuggestion({
-    seed: turn + party.length * 19 + classCatalog.findIndex((classDef) => classDef.id === classId) * 5,
-    locale,
-    classId,
-    backgroundId: background.id,
-    traitId: trait.id
-  });
-
-  return createGuildCharacter({
-    ...identity,
-    classId,
-    backgroundId: background.id,
-    traitIds: [trait.id],
-    method: "quick",
-    seed: `guild-suggestion:${turn}:${party.length}:${classId}`,
-    registeredAtTurn: turn
-  });
-}
-
-function chooseSuggestedClassId(party: Character[]): CharacterClassId {
-  const roleCount = (role: string) => party.filter((member) => member.roleTags.includes(role)).length;
-  const frontCount = party.filter((member) => member.row === "front").length;
-  const backCount = party.filter((member) => member.row === "back").length;
-  const partyIndex = party.length % 3;
-
-  if (frontCount < 2) {
-    return ["vanguard", "bulwark", "sellsword"][partyIndex] as CharacterClassId;
-  }
-
-  if (roleCount("healing") < 1) {
-    return party.some((member) => member.classId === "mender") ? "chanter" : "mender";
-  }
-
-  if (roleCount("trap_handling") < 1) {
-    return party.some((member) => member.classId === "cutpurse") ? "seeker" : "cutpurse";
-  }
-
-  if (roleCount("mapping") < 1) {
-    return backCount <= frontCount ? "wayfinder" : "scout";
-  }
-
-  if (roleCount("damage") < 2) {
-    return frontCount < 3 ? "duelist" : "arcanist";
-  }
-
-  if (roleCount("status_safety") < 1) {
-    return "occultist";
-  }
-
-  return backCount < 3 ? "arcanist" : "sellsword";
-}
-
 function renderPortraitContent({
   portraitRef,
   backgroundId,
@@ -2496,10 +2396,6 @@ function renderPortraitContent({
   );
 }
 
-function getAllocatedBonusPoints(bonus: CharacterAptitudes) {
-  return aptitudeKeys.reduce((total, key) => total + bonus[key], 0);
-}
-
 function getDebugProgressFromLocation() {
   if (typeof window === "undefined") {
     return "ready";
@@ -2520,87 +2416,6 @@ function createBrowserSaveRepository() {
   return new LocalStorageSaveRepository(window.localStorage);
 }
 
-
-function formatCombatOrder(order: CombatActionDeclaration, state: GameState, locale: Locale, t: Translator) {
-  const actor = state.party.find((member) => member.id === order.actorId);
-  const target = state.combat?.enemyGroups.find((group) => group.id === order.targetGroupId);
-  const action = formatCombatAction(order.action, t);
-  if (target) {
-    return t("play.orderWithTarget", { actor: actor?.name ?? order.actorId, action, target: localizedEnemyGroupName(target, locale) });
-  }
-
-  return t("play.orderWithoutTarget", { actor: actor?.name ?? order.actorId, action });
-}
-
-function formatEnemyGroupStatus(group: CombatEnemyGroup, t: Translator) {
-  const ratio = group.maxHpEach > 0 ? group.hpEach / group.maxHpEach : 0;
-  const condition = ratio <= 0.35
-    ? t("play.enemyConditionWeak")
-    : ratio < 1
-      ? t("play.enemyConditionWounded")
-      : t("play.enemyConditionFresh");
-  return t("play.enemyGroupStatus", { count: group.count, condition });
-}
-
-function formatCombatAction(action: CombatActionKind, t: Translator) {
-  switch (action) {
-    case "attack":
-      return t("play.attack");
-    case "defend":
-      return t("play.defend");
-    case "use_item":
-      return t("play.useItem");
-    case "cast":
-      return t("play.sleep");
-  }
-}
-
-function formatAptitudes(aptitude: CharacterAptitudes, t: Translator) {
-  return (["might", "agility", "spirit", "wit", "luck"] as const)
-    .map((key) => `${t(`aptitude.${key}` as Parameters<Translator>[0])} ${aptitude[key]}`)
-    .join(" / ");
-}
-
-function formatCharacterTitle(title: string, classId: GameState["party"][number]["classId"], locale: Locale) {
-  const classDef = findClass(classId);
-  return title === classDef.label.en ? classDef.label[locale] : title;
-}
-
-function formatCharacterSummary(
-  member: GameState["party"][number],
-  locale: Locale,
-  t: Translator,
-  options: { includeRow?: boolean } = {}
-) {
-  const classDef = findClass(member.classId);
-  const title = formatCharacterTitle(member.title, member.classId, locale);
-  const row = options.includeRow === false ? "" : formatCombatRow(member.row, t);
-  const parts = isDefaultClassTitle(member.title, member.classId)
-    ? [classDef.label[locale], row]
-    : [title, classDef.label[locale], row];
-
-  return Array.from(new Set(parts.filter(Boolean))).join(" / ");
-}
-
-function isDefaultClassTitle(title: string, classId: GameState["party"][number]["classId"]) {
-  const classDef = findClass(classId);
-  const defaultAliases: Partial<Record<GameState["party"][number]["classId"], string[]>> = {
-    vanguard: ["Vanguard", "前衛"],
-    seeker: ["Seeker", "探索者"],
-    mender: ["Mender", "癒し手"],
-    occultist: ["Occultist", "秘術師"]
-  };
-  return [classDef.label.en, classDef.label.ja, ...(defaultAliases[classId] ?? [])].includes(title);
-}
-
-function formatCharacterNotes(notes: string, backgroundId: GameState["party"][number]["backgroundId"], locale: Locale) {
-  const background = findBackground(backgroundId);
-  return notes === background.notes.en ? background.notes[locale] : notes;
-}
-
-function localizedShopName(shop: (typeof defaultWorld.shops)[number], locale: Locale) {
-  return shop.locales?.[locale]?.name ?? shop.name;
-}
 
 function getScenarioValidationErrorsFromLocation(): ScenarioValidationError[] {
   if (typeof window === "undefined") {
