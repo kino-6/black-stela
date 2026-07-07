@@ -210,6 +210,7 @@ export interface Enemy {
   gold?: number;
   resistances?: Partial<Record<CombatStatus, number>>;
   inflicts?: { status: CombatStatus; chance: number };
+  weaknesses?: Partial<Record<Element, number>>;
   drops?: string[];
   role?: EnemyRole;
   dangerTier?: number;
@@ -238,6 +239,8 @@ export interface CombatState {
 
 export type CombatStatus = "poison" | "fear" | "silence" | "sleep" | "ward";
 
+export type Element = "physical" | "fire" | "frost";
+
 export interface CombatEnemyGroup {
   id: string;
   enemyId: string;
@@ -258,6 +261,7 @@ export interface CombatEnemyGroup {
   status?: CombatStatus[];
   resistances?: Partial<Record<CombatStatus, number>>;
   inflicts?: { status: CombatStatus; chance: number };
+  weaknesses?: Partial<Record<Element, number>>;
 }
 
 export interface CombatActionDeclaration {

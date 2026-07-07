@@ -31,6 +31,7 @@ import type {
   Command,
   Direction,
   DungeonRoom,
+  Element,
   Enemy,
   ExplorationGate,
   GameEvent,
@@ -63,6 +64,17 @@ const OPPOSITE_DIRECTION: Record<Direction, Direction> = {
   east: "west",
   west: "east"
 };
+
+// Criticals: a small base chance plus the actor's luck, dealing bonus damage.
+const CRIT_BASE_CHANCE = 5;
+const CRIT_PER_LUCK = 3;
+const CRIT_MULTIPLIER = 1.5;
+
+// Element weakness multiplier applied to incoming damage of a given element
+// (>1 = weak, <1 = resistant, default 1).
+function elementMultiplier(weaknesses: Partial<Record<Element, number>> | undefined, element: Element): number {
+  return weaknesses?.[element] ?? 1;
+}
 
 export function executeCommand(state: GameState, world: ScenarioWorld, command: Command): GameState {
   return resolveCommand(state, world, command).state;
@@ -612,10 +624,14 @@ function declareRound(state: GameState, world: ScenarioWorld, actions: CombatAct
       } else if (spell.effect.kind === "damage" && action.targetGroupId) {
         const group = enemyGroups.find((candidate) => candidate.id === action.targetGroupId && candidate.count > 0);
         if (group) {
-          const damage = rollDamage(`${state.turn}:${combat.round}:${actor.id}:${group.id}:spell`, spell.effect.min, spell.effect.max, 0);
+          const raw = rollDamage(`${state.turn}:${combat.round}:${actor.id}:${group.id}:spell`, spell.effect.min, spell.effect.max, 0);
+          const weakness = elementMultiplier(group.weaknesses, spell.effect.element);
+          const damage = Math.round(raw * weakness);
           enemyGroups = damageGroup(enemyGroups, group.id, damage);
           const updated = enemyGroups.find((candidate) => candidate.id === group.id);
-          summaries.push(`${actor.name} scorches ${group.name} for ${damage}. ${updated?.count ?? 0} remain.`);
+          summaries.push(
+            `${actor.name} scorches ${group.name} for ${damage}${weakness > 1 ? " (weak!)" : ""}. ${updated?.count ?? 0} remain.`
+          );
         }
       } else if (spell.effect.kind === "status" && action.targetGroupId) {
         const ailment = spell.effect.status;
@@ -652,10 +668,16 @@ function declareRound(state: GameState, world: ScenarioWorld, actions: CombatAct
       continue;
     }
 
-    const damage = rollDamage(`${state.turn}:${combat.round}:${actor.id}:${group.id}:damage`, actorStats.damageMin, actorStats.damageMax, group.armor);
+    const rawDamage = rollDamage(`${state.turn}:${combat.round}:${actor.id}:${group.id}:damage`, actorStats.damageMin, actorStats.damageMax, group.armor);
+    const weakened = Math.round(rawDamage * elementMultiplier(group.weaknesses, "physical"));
+    const critChance = CRIT_BASE_CHANCE + (actor.aptitude.luck ?? 0) * CRIT_PER_LUCK;
+    const crit = rollPercent(`${state.turn}:${combat.round}:${actor.id}:${group.id}:crit`) < critChance;
+    const damage = crit ? Math.round(weakened * CRIT_MULTIPLIER) : weakened;
     enemyGroups = damageGroup(enemyGroups, group.id, damage);
     const updated = enemyGroups.find((candidate) => candidate.id === group.id);
-    summaries.push(`${actor.name} hits ${group.name} for ${damage}. ${updated?.count ?? 0} remain.`);
+    summaries.push(
+      `${actor.name} ${crit ? "crits" : "hits"} ${group.name} for ${damage}. ${updated?.count ?? 0} remain.`
+    );
   }
 
   const livingGroups = enemyGroups.filter((group) => group.count > 0);
@@ -1002,7 +1024,7 @@ function retreat(state: GameState): CommandResult {
   return withEvents(next, [{ type: "party_retreated" }]);
 }
 
-function createCombatState(roomId: string, enemy: Enemy, count = 1): CombatState {
+export function createCombatState(roomId: string, enemy: Enemy, count = 1): CombatState {
   const group = createEnemyGroup(enemy, count);
   return {
     enemy: { ...enemy },
@@ -1057,7 +1079,8 @@ function createEnemyGroup(enemy: Enemy, count: number): CombatEnemyGroup {
     role: enemy.role,
     status: [],
     resistances: enemy.resistances,
-    inflicts: enemy.inflicts
+    inflicts: enemy.inflicts,
+    weaknesses: enemy.weaknesses
   };
 }
 

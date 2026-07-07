@@ -51,6 +51,13 @@ const enemySchema = z.object({
       chance: z.number().int().min(0).max(100)
     })
     .optional(),
+  weaknesses: z
+    .object({
+      physical: z.number().min(0).max(4).optional(),
+      fire: z.number().min(0).max(4).optional(),
+      frost: z.number().min(0).max(4).optional()
+    })
+    .optional(),
   drops: z.array(z.string().min(1)).optional(),
   role: enemyRoleSchema.optional(),
   dangerTier: z.number().int().positive().optional(),

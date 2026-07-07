@@ -55,6 +55,8 @@ enemies:
     inflicts:
       status: poison
       chance: 45
+    weaknesses:
+      fire: 1.5
     dangerTier: 3
     tags: [status]
   - id: enemy.b4f.lantern-ward
@@ -94,6 +96,8 @@ enemies:
     dangerTier: 4
     isBoss: true
     tags: [midpoint, boss]
+    weaknesses:
+      fire: 0.5
   - id: enemy.b3f.cistern-warden
     name: Cistern Warden
     locales:

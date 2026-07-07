@@ -1,4 +1,4 @@
-import type { CharacterAptitudes, CharacterClassId, CombatStatus } from "./types";
+import type { CharacterAptitudes, CharacterClassId, CombatStatus, Element } from "./types";
 
 /**
  * Spell/skill system. A small Famicom-era set: a heal, an attack bolt, and a
@@ -12,7 +12,7 @@ export type SpellTarget = "ally" | "enemyGroup";
 
 export type SpellEffect =
   | { kind: "heal"; amount: number }
-  | { kind: "damage"; min: number; max: number }
+  | { kind: "damage"; min: number; max: number; element: Element }
   | { kind: "status"; status: CombatStatus };
 
 export interface Spell {
@@ -24,7 +24,7 @@ export interface Spell {
 
 export const SPELLS: Record<SpellId, Spell> = {
   heal: { id: "heal", mpCost: 3, target: "ally", effect: { kind: "heal", amount: 8 } },
-  firebolt: { id: "firebolt", mpCost: 4, target: "enemyGroup", effect: { kind: "damage", min: 4, max: 9 } },
+  firebolt: { id: "firebolt", mpCost: 4, target: "enemyGroup", effect: { kind: "damage", min: 4, max: 9, element: "fire" } },
   sleep: { id: "sleep", mpCost: 3, target: "enemyGroup", effect: { kind: "status", status: "sleep" } }
 };
 
