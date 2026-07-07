@@ -91,10 +91,21 @@ proof of UX, fun, fairness, visual legibility, or grid-maze honesty.
   Archived: [docs/archive/Tasks.completed-text-externalization-line-layout.md](docs/archive/Tasks.completed-text-externalization-line-layout.md).
 - [x] Lane W: Starting Gear, Categorized Shop, and Pre-Purchase Preview.
   Archived: [docs/archive/Tasks.completed-starting-gear-categorized-shop.md](docs/archive/Tasks.completed-starting-gear-categorized-shop.md).
+- [x] Lane Z: Dungeon Structure, Checkpoints, and Wiz/Etrian Gimmicks.
+  Shipped: rest points, checkpoint resume, emergency return item, shortcuts, and
+  the spinner/teleporter/damage/darkness/gather/hidden-passage gimmicks. Deferred
+  gimmicks: pit/chute, FOE roamers.
+- [x] Combat Overhaul (see [CombatPlan.md](CombatPlan.md)): level growth, MP +
+  class spells, status ailments, elements/weakness, criticals, enemy AI. Balance
+  numbers first-pass.
+- [x] Dense floor maps + backward movement + honest first-person rendering (see
+  [DungeonPlan.md](DungeonPlan.md)). Floors converted so far: B1F, B3F. **Pending:
+  B2F, B4F–B8F.**
+- [~] Lane R: Source Decomposition and Refactoring — first four slices shipped;
+  remainder (hooks / JSX split / DungeonView scene) deferred to a follow-up.
 - [ ] Lane X: Repeat and Auto Action Tempo Feedback.
-- [ ] Lane Y: Guild Roster Management, Registration Lifecycle, and
-  Cross-Scenario Adventurers.
-- [ ] Lane Z: Dungeon Structure, Checkpoints, and Wiz/Etrian Gimmicks.
+- [ ] **Lane Y (ACTIVE NEXT): Guild Roster Management, Registration Lifecycle, and
+  Cross-Scenario Adventurers.**
 
 ### [x] Lane W: Starting Gear, Categorized Shop, and Pre-Purchase Preview
 
