@@ -4,6 +4,7 @@ export type Command =
   | { type: "enter_dungeon" }
   | { type: "bench_member"; characterId: string }
   | { type: "recall_member"; characterId: string }
+  | { type: "reclass_member"; characterId: string; classId: CharacterClassId }
   | { type: "resume_at_checkpoint"; roomId: string }
   | { type: "move_forward" }
   | { type: "move_backward" }
@@ -155,6 +156,7 @@ export type GameEvent =
   | { type: "party_member_joined"; characterId: string; characterName: string }
   | { type: "party_member_benched"; characterName: string }
   | { type: "party_member_recalled"; characterName: string }
+  | { type: "party_member_reclassed"; characterName: string; className: string }
   | { type: "command_blocked"; reason: "party_required" | "town_return_unavailable" | "stairs_unavailable"; command: Command["type"] }
   | { type: "dungeon_entered"; roomId: string; facing: Direction }
   | { type: "party_turned"; side: "left" | "right"; facing: Direction }

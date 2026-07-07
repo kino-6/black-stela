@@ -179,6 +179,7 @@ export function App() {
   const [selectedTargetId, setSelectedTargetId] = useState<string | null>(null);
   const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null);
   const [shopCategory, setShopCategory] = useState<ShopCategory>("weapon");
+  const [reclassClassId, setReclassClassId] = useState<CharacterClassId | "">("");
   const [scenarioImportStatus, setScenarioImportStatus] = useState("");
   const [scenarioImportErrors, setScenarioImportErrors] = useState<ScenarioValidationError[]>([]);
   const autosaveSummary = saveSlots.find((slot) => slot.slotId === AUTO_SAVE_SLOT);
@@ -1539,6 +1540,39 @@ export function App() {
                           <div><dt>{t("party.victories")}</dt><dd>{selectedProfile.memory.notableVictories.length}</dd></div>
                           <div><dt>{t("party.injuries")}</dt><dd>{selectedProfile.memory.injuries}</dd></div>
                         </dl>
+                        {state.phase === "town" && (
+                          <div className="reclass-control" data-testid="reclass-control">
+                            <label>
+                              {t("party.reclass")}
+                              <select
+                                value={reclassClassId}
+                                onChange={(event) => setReclassClassId(event.target.value as CharacterClassId | "")}
+                              >
+                                <option value="">{t("party.reclassPick")}</option>
+                                {classCatalog
+                                  .filter((classDef) => classDef.id !== selectedProfile.classId)
+                                  .map((classDef) => (
+                                    <option key={classDef.id} value={classDef.id}>
+                                      {classDef.label[locale]}
+                                    </option>
+                                  ))}
+                              </select>
+                            </label>
+                            <button
+                              type="button"
+                              className="roster-action"
+                              disabled={!reclassClassId}
+                              onClick={() => {
+                                if (reclassClassId) {
+                                  run({ type: "reclass_member", characterId: selectedProfile.id, classId: reclassClassId });
+                                  setReclassClassId("");
+                                }
+                              }}
+                            >
+                              {t("party.reclassConfirm")}
+                            </button>
+                          </div>
+                        )}
                       </article>
                       )}
                     </section>

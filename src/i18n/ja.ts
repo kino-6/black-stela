@@ -109,6 +109,9 @@ export const ja = {
     bench: "控えに下げる",
     recall: "復帰",
     reserveHeading: "ギルドの控え",
+    reclass: "転職",
+    reclassPick: "新しい職を選ぶ…",
+    reclassConfirm: "転職する",
     hpAtk: "HP {hp}/{maxHp} · 攻撃 {attack}"
   },
   aptitude: {
@@ -307,6 +310,7 @@ export const ja = {
     partyJoined: "{name} が隊列に加わった。",
     partyBenched: "{name} はギルドの控えに下がった。",
     partyRecalled: "{name} が隊列に復帰した。",
+    partyReclassed: "{name} は {className} に転職した。",
     dungeonEntered: "隊列は黒い石碑の下へ降りた。",
     partyTurned: "隊列は{side}を向き、{facing}を正面にした。",
     sideLeft: "左",

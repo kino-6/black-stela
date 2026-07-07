@@ -6,9 +6,12 @@ import type {
   CharacterCreationMethod,
   CharacterTraitId,
   CombatRow,
-  EquipmentSlot
+  EquipmentSlot,
+  ScenarioWorld
 } from "./types";
 import { baseMaxMpForClass } from "./spells";
+import { applyLevelUps } from "./leveling";
+import { findEquipment, isEquipmentUsableBy } from "./economy";
 
 export interface LocalizedLabel {
   en: string;
@@ -454,6 +457,52 @@ export function createGuildCharacter(input: GuildCharacterInput): Character {
     status: [],
     injury: undefined
   };
+}
+
+// Retrain an adventurer into a new class: recompute stats from the new class
+// baseline plus their retained aptitude, re-level from XP with the new class's
+// growth, drop gear the new class cannot use, and keep identity, portrait,
+// memory, XP, gold, and gold-carried progress. Restores HP/MP.
+export function reclassCharacter(character: Character, newClassId: CharacterClassId, world: ScenarioWorld): Character {
+  const classDef = findClass(newClassId);
+  const stats = deriveStats(classDef, character.aptitude);
+  const maxMp = baseMaxMpForClass(newClassId, character.aptitude);
+
+  const base: Character = {
+    ...character,
+    classId: classDef.id,
+    roleTags: classDef.roleTags,
+    rowPreference: classDef.rowPreference,
+    row: classDef.rowPreference,
+    startingEquipment: Object.values(classDef.equipment).filter((id): id is string => Boolean(id)),
+    level: 1,
+    hp: stats.maxHp,
+    maxHp: stats.maxHp,
+    mp: maxMp,
+    maxMp,
+    attack: stats.attack,
+    damageMin: stats.damageMin,
+    damageMax: stats.damageMax,
+    accuracy: stats.accuracy,
+    armor: stats.armor,
+    speed: stats.speed,
+    status: [],
+    injury: undefined
+  };
+  const releveled = applyLevelUps(base).character;
+
+  const equipment: Partial<Record<EquipmentSlot, string>> = {};
+  for (const [slot, equipmentId] of Object.entries(releveled.equipment) as [EquipmentSlot, string | undefined][]) {
+    if (!equipmentId) {
+      continue;
+    }
+    const equip = findEquipment(world, equipmentId);
+    if (equip && isEquipmentUsableBy(equip, releveled)) {
+      equipment[slot] = equipmentId;
+    }
+  }
+
+  return { ...releveled, hp: releveled.maxHp, mp: releveled.maxMp, equipment };
 }
 
 export function createLegacyGuildCharacter(input: { name: string; notes: string; portraitRef?: string }): Character {

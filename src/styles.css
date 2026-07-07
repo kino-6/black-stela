@@ -974,7 +974,7 @@ textarea {
 }
 
 .guild-studio-grid.full-party .character-profile {
-  display: none;
+  grid-column: 1 / -1;
 }
 
 .stat-preview,

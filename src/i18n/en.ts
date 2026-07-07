@@ -107,6 +107,9 @@ export const en = {
     bench: "Bench",
     recall: "Recall",
     reserveHeading: "Guild bench",
+    reclass: "Retrain",
+    reclassPick: "Choose a new calling…",
+    reclassConfirm: "Retrain",
     hpAtk: "HP {hp}/{maxHp} · ATK {attack}"
   },
   aptitude: {
@@ -305,6 +308,7 @@ export const en = {
     partyJoined: "{name} joined the roster.",
     partyBenched: "{name} steps back to the guild bench.",
     partyRecalled: "{name} rejoins the marching party.",
+    partyReclassed: "{name} retrains as a {className}.",
     dungeonEntered: "The party descends beneath the black stela.",
     partyTurned: "The party turns {side}, now facing {facing}.",
     sideLeft: "left",

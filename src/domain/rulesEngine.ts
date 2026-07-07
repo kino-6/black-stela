@@ -1,6 +1,6 @@
 import { appendEventLogs } from "./replayLog";
 import { applyLevelUps } from "./leveling";
-import { PARTY_SIZE_LIMIT } from "./characterCreation";
+import { PARTY_SIZE_LIMIT, findClass, reclassCharacter } from "./characterCreation";
 import { SPELLS, knownSpells } from "./spells";
 import { FEAR_ACCURACY_PENALTY, POISON_DAMAGE, STATUS_WEAR_OFF, statusResistPct } from "./status";
 import {
@@ -25,6 +25,7 @@ import {
 } from "./economy";
 import type {
   Character,
+  CharacterClassId,
   CombatActionDeclaration,
   CombatEnemyGroup,
   CombatStatus,
@@ -127,6 +128,8 @@ export function resolveCommand(state: GameState, world: ScenarioWorld, command: 
       return benchMember(state, command.characterId);
     case "recall_member":
       return recallMember(state, command.characterId);
+    case "reclass_member":
+      return reclassMemberCommand(state, world, command.characterId, command.classId);
     case "resume_at_checkpoint":
       return resumeAtCheckpoint(state, world, command.roomId);
     case "turn_left":
@@ -206,6 +209,33 @@ function recallMember(state: GameState, characterId: string): CommandResult {
     reserve: state.reserve.filter((candidate) => candidate.id !== characterId)
   };
   return withEvents(next, [{ type: "party_member_recalled", characterName: member.name }]);
+}
+
+// Retrain a party or benched adventurer into a new class. Town-only.
+function reclassMemberCommand(
+  state: GameState,
+  world: ScenarioWorld,
+  characterId: string,
+  classId: CharacterClassId
+): CommandResult {
+  if (state.phase !== "town") {
+    return noChange(state);
+  }
+  const inParty = state.party.find((candidate) => candidate.id === characterId);
+  const inReserve = state.reserve.find((candidate) => candidate.id === characterId);
+  const member = inParty ?? inReserve;
+  if (!member || member.classId === classId) {
+    return noChange(state);
+  }
+  const reclassed = reclassCharacter(member, classId, world);
+  const next: GameState = {
+    ...state,
+    party: state.party.map((candidate) => (candidate.id === characterId ? reclassed : candidate)),
+    reserve: state.reserve.map((candidate) => (candidate.id === characterId ? reclassed : candidate))
+  };
+  return withEvents(next, [
+    { type: "party_member_reclassed", characterName: reclassed.name, className: findClass(classId).label.en }
+  ]);
 }
 
 function enterDungeon(state: GameState, world: ScenarioWorld): CommandResult {
