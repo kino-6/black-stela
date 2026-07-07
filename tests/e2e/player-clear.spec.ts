@@ -20,8 +20,8 @@ test("clears the MVP route through visible player controls only", async ({ page 
   await expect(page.getByLabel("Mini-map")).toBeVisible();
   await expect(page.getByTestId("minimap-current")).toHaveCount(1);
   await expect(page.getByRole("button", { name: "Return", exact: true })).toHaveCount(0);
-  // The entrance is the town gate, so the return marker is available from the start.
-  await expect(page.getByRole("button", { name: "Use return marker" })).toBeVisible();
+  // The entrance is the town gate — stairs back up are available from the start.
+  await expect(page.getByRole("button", { name: "Climb the stairs to town" })).toBeVisible();
 
   await page.getByRole("button", { name: "Move" }).click();
 

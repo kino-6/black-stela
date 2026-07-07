@@ -196,6 +196,9 @@ const roomSchema = z.object({
   exits: z.record(directionSchema, z.string().min(1)).default({}),
   doors: z.array(directionSchema).optional(),
   stairsToTown: z.boolean().optional(),
+  // How a town-return reads to the player: literal stairs up (e.g. the floor-1
+  // entrance) or the mystical return waystone. Defaults to the waystone.
+  returnStyle: z.enum(["stairs", "marker"]).optional(),
   restPoint: z.boolean().optional(),
   spinner: z.boolean().optional(),
   teleportTo: z.string().optional(),

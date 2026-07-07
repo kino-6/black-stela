@@ -1975,7 +1975,7 @@ export function App() {
                   {canReturnToTown && (
                     <button type="button" className="context-command" onClick={() => run({ type: "return_to_town" })}>
                       <LogOut size={18} />
-                      {t("play.useReturnMarker")}
+                      {currentRoom?.returnStyle === "stairs" ? t("play.useReturnStairs") : t("play.useReturnMarker")}
                     </button>
                   )}
                   {canUseEscapeItem && escapeItem && (

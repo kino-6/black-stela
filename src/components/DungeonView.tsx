@@ -202,7 +202,13 @@ export function DungeonView({ state, world, label }: DungeonViewProps) {
     }
 
     if (room.stairsToTown) {
-      scene.add(createReturnMarker(returnMarkerMaterial));
+      // The floor-1 entrance is a literal stairway up to town; other return
+      // points are the mystical waystone sprite.
+      if (room.returnStyle === "stairs") {
+        scene.add(createReturnStairs(floorMaterial, edgeMaterial));
+      } else {
+        scene.add(createReturnMarker(returnMarkerMaterial));
+      }
     }
 
     renderScene();
@@ -471,6 +477,26 @@ function createReturnMarker(material: THREE.SpriteMaterial) {
   marker.position.set(0, 0.92, 0.4);
   marker.scale.set(1.6, 2.15, 1);
   return marker;
+}
+
+// A stairway up to town, set against the near-left of the cell so it reads as
+// "the way back" without blocking the corridor ahead.
+function createReturnStairs(stepMaterial: THREE.Material, edgeMaterial: THREE.Material) {
+  const group = new THREE.Group();
+  const stepCount = 6;
+  for (let index = 0; index < stepCount; index += 1) {
+    const step = new THREE.Mesh(new THREE.BoxGeometry(2.1, 0.26, 0.5), stepMaterial);
+    step.position.set(0, 0.13 + index * 0.28, 1.1 - index * 0.42);
+    group.add(step);
+  }
+  const rail = new THREE.LineSegments(
+    new THREE.EdgesGeometry(new THREE.BoxGeometry(2.2, stepCount * 0.28, 0.04)),
+    edgeMaterial
+  );
+  rail.position.set(0, stepCount * 0.14, 1.1 - ((stepCount - 1) / 2) * 0.42);
+  group.add(rail);
+  group.position.set(-2.4, 0, 0.6);
+  return group;
 }
 
 function addStoneCourses(scene: THREE.Scene, material: THREE.Material, z: number) {

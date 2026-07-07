@@ -170,6 +170,7 @@ export const ja = {
     listen: "聞く",
     useStairs: "階段を使う",
     useReturnMarker: "帰還標を使う",
+    useReturnStairs: "階段で町へ戻る",
     useReturnCharm: "帰還の割符を使う",
     partyStatus: "隊列状態",
     memberStatus: "冒険者の戦闘状態",

@@ -358,6 +358,7 @@ export interface DungeonRoom {
   exits: Partial<Record<Direction, string>>;
   doors?: Direction[];
   stairsToTown?: boolean;
+  returnStyle?: "stairs" | "marker";
   restPoint?: boolean;
   spinner?: boolean;
   teleportTo?: string;
