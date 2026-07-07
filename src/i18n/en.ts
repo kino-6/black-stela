@@ -164,6 +164,7 @@ export const en = {
     turnLeft: "Turn left",
     turnRight: "Turn right",
     move: "Move",
+    moveBack: "Back",
     search: "Search",
     listen: "Listen",
     useStairs: "Use stairs",

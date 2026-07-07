@@ -54,6 +54,13 @@ const rightOf: Record<Direction, Direction> = {
   west: "north"
 };
 
+const OPPOSITE_DIRECTION: Record<Direction, Direction> = {
+  north: "south",
+  south: "north",
+  east: "west",
+  west: "east"
+};
+
 export function executeCommand(state: GameState, world: ScenarioWorld, command: Command): GameState {
   return resolveCommand(state, world, command).state;
 }
@@ -70,6 +77,8 @@ export function resolveCommand(state: GameState, world: ScenarioWorld, command: 
       return turn(state, "right");
     case "move_forward":
       return moveForward(state, world);
+    case "move_backward":
+      return moveForward(state, world, state.position ? OPPOSITE_DIRECTION[state.position.facing] : undefined);
     case "use_stairs":
       return useStairs(state, world);
     case "inspect_wall":
@@ -208,12 +217,18 @@ function turn(state: GameState, side: "left" | "right"): CommandResult {
   return withEvents(next, [{ type: "party_turned", side, facing }]);
 }
 
-function moveForward(state: GameState, world: ScenarioWorld): CommandResult {
+// Moves the party one cell along `requestedDirection` (their facing by default,
+// or the opposite direction for a backward step). The party's facing never
+// changes here — only their position — so forward and backward share all of the
+// edge/gate/secret/treasure/encounter handling below.
+function moveForward(state: GameState, world: ScenarioWorld, requestedDirection?: Direction): CommandResult {
   if (!state.position || state.phase !== "dungeon") {
     return noChange(state);
   }
 
-  const forwardEdge = getGridEdge(world, state.position.roomId, state.position.facing);
+  const moveDirection = requestedDirection ?? state.position.facing;
+
+  const forwardEdge = getGridEdge(world, state.position.roomId, moveDirection);
   if (forwardEdge?.kind === "stairs") {
     const next: GameState = {
       ...state,
@@ -225,21 +240,19 @@ function moveForward(state: GameState, world: ScenarioWorld): CommandResult {
         type: "movement_blocked",
         reason: "stairs",
         roomId: state.position.roomId,
-        facing: state.position.facing
+        facing: moveDirection
       }
     ]);
   }
 
-  const forwardGate = getRoom(world, state.position.roomId).gates?.find(
-    (gate) => gate.direction === state.position!.facing
-  );
+  const forwardGate = getRoom(world, state.position.roomId).gates?.find((gate) => gate.direction === moveDirection);
   if (forwardGate && !isGateOpen(forwardGate, state)) {
     return withEvents({ ...state, turn: state.turn + 1 }, [
       {
         type: "movement_blocked",
         reason: "locked",
         roomId: state.position.roomId,
-        facing: state.position.facing
+        facing: moveDirection
       }
     ]);
   }
@@ -250,18 +263,18 @@ function moveForward(state: GameState, world: ScenarioWorld): CommandResult {
   const secretRevealed =
     forwardEdge?.kind === "secret" &&
     Boolean(forwardEdge.targetRoomId) &&
-    state.discoveredSecrets.includes(secretKey(state.position.roomId, state.position.facing));
+    state.discoveredSecrets.includes(secretKey(state.position.roomId, moveDirection));
   const exit =
     (forwardGate && forwardEdge?.targetRoomId) || secretRevealed
       ? forwardEdge?.targetRoomId
-      : getExit(world, state.position.roomId, state.position.facing);
+      : getExit(world, state.position.roomId, moveDirection);
   if (!exit) {
     const floorId = state.map.floorId ?? getFloorIdForRoom(world, state.position.roomId);
     const next: GameState = {
       ...state,
       map: {
         ...state.map,
-        blockedExits: appendDirection(state.map.blockedExits, state.position.roomId, state.position.facing)
+        blockedExits: appendDirection(state.map.blockedExits, state.position.roomId, moveDirection)
       },
       turn: state.turn + 1
     };
@@ -271,13 +284,13 @@ function moveForward(state: GameState, world: ScenarioWorld): CommandResult {
         type: "movement_blocked",
         reason: "wall",
         roomId: state.position.roomId,
-        facing: state.position.facing
+        facing: moveDirection
       },
       {
         type: "map_exit_blocked",
         floorId,
         roomId: state.position.roomId,
-        direction: state.position.facing
+        direction: moveDirection
       }
     ]);
   }

@@ -20,8 +20,8 @@ test("normal play surfaces support directional focus, confirm, and cancel", asyn
   await page.keyboard.press("Enter");
   await expect(page.getByRole("heading", { name: "Silent Stone Chamber" })).toBeVisible();
 
-  await focusControllerButton(page, "Move");
-  await page.keyboard.press("Enter");
+  // In the dungeon the arrow keys move the party; step forward into the fight.
+  await page.keyboard.press("ArrowUp");
   await expect(page.getByLabel("Battle screen")).toBeVisible();
 
   await focusControllerButton(page, "Attack");

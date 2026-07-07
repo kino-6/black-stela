@@ -139,6 +139,30 @@ describe("rules engine", () => {
     expect(descended.position?.roomId).toBe("room.b2f.001");
     expect(descended.map.floorId).toBe("dungeon.b2f");
   });
+
+  it("steps backward one cell without changing facing", () => {
+    const at: GameState = {
+      ...stateWithParty(),
+      phase: "dungeon",
+      position: { roomId: "room.b1f.c11_9", facing: "east" }
+    };
+    const back = executeCommand(at, defaultWorld, { type: "move_backward" });
+
+    expect(back.position?.roomId).toBe("room.b1f.c10_9");
+    expect(back.position?.facing).toBe("east");
+  });
+
+  it("blocks a backward step into the wall behind the party", () => {
+    const at: GameState = {
+      ...stateWithParty(),
+      phase: "dungeon",
+      position: { roomId: "room.b1f.001", facing: "east" }
+    };
+    const back = executeCommand(at, defaultWorld, { type: "move_backward" });
+
+    expect(back.position?.roomId).toBe("room.b1f.001");
+    expect(back.log.at(-1)?.text).toBe("A cold wall blocks the way.");
+  });
 });
 
 describe("rest points and scarce return", () => {

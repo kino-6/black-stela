@@ -166,6 +166,7 @@ export const ja = {
     turnLeft: "左を向く",
     turnRight: "右を向く",
     move: "進む",
+    moveBack: "後退",
     search: "探索",
     listen: "聞く",
     useStairs: "階段を使う",

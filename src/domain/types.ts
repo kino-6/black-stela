@@ -4,6 +4,7 @@ export type Command =
   | { type: "enter_dungeon" }
   | { type: "resume_at_checkpoint"; roomId: string }
   | { type: "move_forward" }
+  | { type: "move_backward" }
   | { type: "use_stairs" }
   | { type: "turn_left" }
   | { type: "turn_right" }

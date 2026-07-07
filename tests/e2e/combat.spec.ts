@@ -116,8 +116,7 @@ test("keyboard-only command flow keeps command windows stable", async ({ page })
   const dungeonDockBefore = await page
     .getByTestId("dungeon-command-window")
     .evaluate((element) => element.getBoundingClientRect().top);
-  await focusControllerButton(page, "Move");
-  await page.keyboard.press("Enter");
+  await page.keyboard.press("ArrowUp");
   await expect(page.getByLabel("Battle screen")).toBeVisible();
 
   const combatDockBefore = await page

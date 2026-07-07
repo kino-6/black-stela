@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
+  ArrowDown,
   ArrowLeft,
   ArrowRight,
   DoorOpen,
@@ -639,6 +640,25 @@ export function App() {
         return;
       }
 
+      // In the dungeon the arrow keys drive the party (up = forward, down =
+      // step back, left/right = turn) rather than moving button focus.
+      if (
+        state.phase === "dungeon" &&
+        (key === "arrowup" || key === "arrowdown" || key === "arrowleft" || key === "arrowright")
+      ) {
+        event.preventDefault();
+        if (key === "arrowup") {
+          run({ type: "move_forward" });
+        } else if (key === "arrowdown") {
+          run({ type: "move_backward" });
+        } else if (key === "arrowleft") {
+          run({ type: "turn_left" });
+        } else {
+          run({ type: "turn_right" });
+        }
+        return;
+      }
+
       if (key === "arrowdown" || key === "arrowright" || key === "arrowup" || key === "arrowleft") {
         if (moveControllerFocus(key === "arrowup" || key === "arrowleft" ? -1 : 1)) {
           event.preventDefault();
@@ -670,6 +690,9 @@ export function App() {
         event.preventDefault();
         run({ type: "turn_right" });
       } else if (state.phase === "dungeon" && key === "s") {
+        event.preventDefault();
+        run({ type: "move_backward" });
+      } else if (state.phase === "dungeon" && key === "q") {
         event.preventDefault();
         run({ type: "search" });
       } else if (state.phase === "dungeon" && key === "e") {
@@ -1987,6 +2010,10 @@ export function App() {
                   <button type="button" onClick={() => run({ type: "move_forward" })}>
                     <Footprints size={18} />
                     {t("play.move")}
+                  </button>
+                  <button type="button" onClick={() => run({ type: "move_backward" })}>
+                    <ArrowDown size={18} />
+                    {t("play.moveBack")}
                   </button>
                   <button type="button" aria-label={t("play.turnRight")} onClick={() => run({ type: "turn_right" })}>
                     <ArrowRight size={18} />
