@@ -430,7 +430,11 @@ export function App() {
       method: "detailed",
       registeredAtTurn: state.turn
     });
-    setState((current) => addCharacter(current, character));
+    setState((current) =>
+      current.party.length < PARTY_SIZE_LIMIT
+        ? addCharacter(current, character)
+        : { ...current, reserve: [...current.reserve, character] }
+    );
     setSelectedProfileId(character.id);
     setDraft(createFreshDraft({ classId: draft.classId, backgroundId: draft.backgroundId, traitId: draft.traitId }));
     setGuildCreationStep("class");
@@ -1434,26 +1438,34 @@ export function App() {
                                 <h4>{formatCombatRow(row, t)}</h4>
                                 <div className="formation-slots">
                                   {rowMembers.map((member) => (
-                                    <button
-                                      type="button"
-                                      className={member.id === selectedProfile.id ? "party-member selected" : "party-member"}
-                                      key={member.id}
-                                      style={{ borderColor: member.accentColor }}
-                                      onClick={() => setSelectedProfileId(member.id)}
-                                    >
-                                      <div className="portrait">
-                                        {renderPortraitContent({
-                                          portraitRef: member.portraitRef,
-                                          backgroundId: member.backgroundId,
-                                          fallback: member.name
-                                        })}
-                                      </div>
-                                      <div>
-                                        <strong>{member.name}</strong>
-                                        <span>{formatCharacterSummary(member, locale, t)}</span>
-                                        <small>{t("party.hpAtk", { hp: member.hp, maxHp: member.maxHp, attack: member.attack })}</small>
-                                      </div>
-                                    </button>
+                                    <div className="formation-slot" key={member.id}>
+                                      <button
+                                        type="button"
+                                        className={member.id === selectedProfile.id ? "party-member selected" : "party-member"}
+                                        style={{ borderColor: member.accentColor }}
+                                        onClick={() => setSelectedProfileId(member.id)}
+                                      >
+                                        <div className="portrait">
+                                          {renderPortraitContent({
+                                            portraitRef: member.portraitRef,
+                                            backgroundId: member.backgroundId,
+                                            fallback: member.name
+                                          })}
+                                        </div>
+                                        <div>
+                                          <strong>{member.name}</strong>
+                                          <span>{formatCharacterSummary(member, locale, t)}</span>
+                                          <small>{t("party.hpAtk", { hp: member.hp, maxHp: member.maxHp, attack: member.attack })}</small>
+                                        </div>
+                                      </button>
+                                      <button
+                                        type="button"
+                                        className="roster-action"
+                                        onClick={() => run({ type: "bench_member", characterId: member.id })}
+                                      >
+                                        {t("party.bench")}
+                                      </button>
+                                    </div>
                                   ))}
                                   {Array.from({ length: Math.max(0, 3 - rowMembers.length) }).map((_, index) => (
                                     <div className="formation-slot-empty" aria-hidden="true" key={`${row}-${index}`} />
@@ -1464,6 +1476,39 @@ export function App() {
                           })
                         )}
                       </div>
+
+                      {state.reserve.length > 0 && (
+                        <section className="formation-row reserve-row" aria-label={t("party.reserveHeading")} data-testid="guild-reserve">
+                          <h4>{t("party.reserveHeading")} ({state.reserve.length})</h4>
+                          <div className="formation-slots">
+                            {state.reserve.map((member) => (
+                              <div className="formation-slot" key={member.id}>
+                                <div className="party-member reserve-member" style={{ borderColor: member.accentColor }}>
+                                  <div className="portrait">
+                                    {renderPortraitContent({
+                                      portraitRef: member.portraitRef,
+                                      backgroundId: member.backgroundId,
+                                      fallback: member.name
+                                    })}
+                                  </div>
+                                  <div>
+                                    <strong>{member.name}</strong>
+                                    <span>{formatCharacterSummary(member, locale, t)}</span>
+                                  </div>
+                                </div>
+                                <button
+                                  type="button"
+                                  className="roster-action"
+                                  disabled={state.party.length >= PARTY_SIZE_LIMIT}
+                                  onClick={() => run({ type: "recall_member", characterId: member.id })}
+                                >
+                                  {t("party.recall")}
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        </section>
+                      )}
 
                       {state.party.length > 0 && (
                       <article className="character-profile" data-testid="character-profile" aria-label={t("party.profile")}>

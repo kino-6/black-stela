@@ -42,6 +42,7 @@ export function createDebugStateFromProgress(world: ScenarioWorld, progress: Deb
   const base: GameState = {
     phase: "town",
     party,
+    reserve: [],
     position: null,
     combat: null,
     defeatedEnemies: [],

@@ -104,6 +104,9 @@ export const en = {
     notesPlaceholder: "Rumor, habit, debt, scar, or promise",
     noNotes: "No record yet.",
     add: "Register adventurer",
+    bench: "Bench",
+    recall: "Recall",
+    reserveHeading: "Guild bench",
     hpAtk: "HP {hp}/{maxHp} · ATK {attack}"
   },
   aptitude: {
@@ -300,6 +303,8 @@ export const en = {
   },
   events: {
     partyJoined: "{name} joined the roster.",
+    partyBenched: "{name} steps back to the guild bench.",
+    partyRecalled: "{name} rejoins the marching party.",
     dungeonEntered: "The party descends beneath the black stela.",
     partyTurned: "The party turns {side}, now facing {facing}.",
     sideLeft: "left",

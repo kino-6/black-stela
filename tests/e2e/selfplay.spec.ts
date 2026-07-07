@@ -105,8 +105,8 @@ test("browser self-play completes the visible dungeon loop without headless shor
       await capture("guild-start");
       await createStarterParty(page);
       await expect(page.getByText("6/6")).toBeVisible();
-      await expect(page.getByTestId("guild-front-row").getByRole("button")).toHaveCount(3);
-      await expect(page.getByTestId("guild-back-row").getByRole("button")).toHaveCount(3);
+      await expect(page.getByTestId("guild-front-row").locator(".party-member")).toHaveCount(3);
+      await expect(page.getByTestId("guild-back-row").locator(".party-member")).toHaveCount(3);
       await assertNormalPlayHasNoDebugControls(page);
       await capture("guild-party-ready");
     });

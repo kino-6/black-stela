@@ -106,6 +106,9 @@ export const ja = {
     notesPlaceholder: "酒場で聞いた噂、癖、借り、古傷",
     noNotes: "まだ覚え書きはありません。",
     add: "冒険者を登録",
+    bench: "控えに下げる",
+    recall: "復帰",
+    reserveHeading: "ギルドの控え",
     hpAtk: "HP {hp}/{maxHp} · 攻撃 {attack}"
   },
   aptitude: {
@@ -302,6 +305,8 @@ export const ja = {
   },
   events: {
     partyJoined: "{name} が隊列に加わった。",
+    partyBenched: "{name} はギルドの控えに下がった。",
+    partyRecalled: "{name} が隊列に復帰した。",
     dungeonEntered: "隊列は黒い石碑の下へ降りた。",
     partyTurned: "隊列は{side}を向き、{facing}を正面にした。",
     sideLeft: "左",

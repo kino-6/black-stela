@@ -92,8 +92,8 @@ test("guild master proposals can fill a legal party", async ({ page }) => {
   await createStarterParty(page);
 
   await expect(page.getByText("6/6")).toBeVisible();
-  await expect(page.getByTestId("guild-front-row").getByRole("button")).toHaveCount(3);
-  await expect(page.getByTestId("guild-back-row").getByRole("button")).toHaveCount(3);
+  await expect(page.getByTestId("guild-front-row").locator(".party-member")).toHaveCount(3);
+  await expect(page.getByTestId("guild-back-row").locator(".party-member")).toHaveCount(3);
   await expect(page.getByText("Bulwark / Bulwark")).toHaveCount(0);
   await expect(page.getByText("Arcanist / Arcanist")).toHaveCount(0);
   await expect(page.getByText("Wayfinder / Wayfinder")).toHaveCount(0);
@@ -107,8 +107,8 @@ test("Japanese starter roster shows front and back rows without duplicate class 
 
   await expect(page.getByTestId("guild-front-row")).toContainText("前衛");
   await expect(page.getByTestId("guild-back-row")).toContainText("後衛");
-  await expect(page.getByTestId("guild-front-row").getByRole("button")).toHaveCount(3);
-  await expect(page.getByTestId("guild-back-row").getByRole("button")).toHaveCount(3);
+  await expect(page.getByTestId("guild-front-row").locator(".party-member")).toHaveCount(3);
+  await expect(page.getByTestId("guild-back-row").locator(".party-member")).toHaveCount(3);
   await expect(page.getByText("探索者 / 探索者")).toHaveCount(0);
   await expect(page.getByText("癒し手 / 癒し手")).toHaveCount(0);
 });

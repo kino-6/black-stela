@@ -1,5 +1,6 @@
 import { appendEventLogs } from "./replayLog";
 import { applyLevelUps } from "./leveling";
+import { PARTY_SIZE_LIMIT } from "./characterCreation";
 import { SPELLS, knownSpells } from "./spells";
 import { FEAR_ACCURACY_PENALTY, POISON_DAMAGE, STATUS_WEAR_OFF, statusResistPct } from "./status";
 import {
@@ -122,6 +123,10 @@ export function resolveCommand(state: GameState, world: ScenarioWorld, command: 
   switch (command.type) {
     case "enter_dungeon":
       return enterDungeon(state, world);
+    case "bench_member":
+      return benchMember(state, command.characterId);
+    case "recall_member":
+      return recallMember(state, command.characterId);
     case "resume_at_checkpoint":
       return resumeAtCheckpoint(state, world, command.roomId);
     case "turn_left":
@@ -167,6 +172,40 @@ export function resolveCommand(state: GameState, world: ScenarioWorld, command: 
     default:
       return noChange(state);
   }
+}
+
+// Move an active party member to the guild bench (reserve). Town-only.
+function benchMember(state: GameState, characterId: string): CommandResult {
+  if (state.phase !== "town") {
+    return noChange(state);
+  }
+  const member = state.party.find((candidate) => candidate.id === characterId);
+  if (!member) {
+    return noChange(state);
+  }
+  const next: GameState = {
+    ...state,
+    party: state.party.filter((candidate) => candidate.id !== characterId),
+    reserve: [...state.reserve, member]
+  };
+  return withEvents(next, [{ type: "party_member_benched", characterName: member.name }]);
+}
+
+// Recall a benched adventurer into the active party (up to the size limit). Town-only.
+function recallMember(state: GameState, characterId: string): CommandResult {
+  if (state.phase !== "town" || state.party.length >= PARTY_SIZE_LIMIT) {
+    return noChange(state);
+  }
+  const member = state.reserve.find((candidate) => candidate.id === characterId);
+  if (!member) {
+    return noChange(state);
+  }
+  const next: GameState = {
+    ...state,
+    party: [...state.party, member],
+    reserve: state.reserve.filter((candidate) => candidate.id !== characterId)
+  };
+  return withEvents(next, [{ type: "party_member_recalled", characterName: member.name }]);
 }
 
 function enterDungeon(state: GameState, world: ScenarioWorld): CommandResult {
