@@ -2966,3 +2966,177 @@ textarea {
   overflow: auto;
   margin-inline: auto;
 }
+
+/* ============================================================
+   DRPG fixed combat frame (phase=combat) — same single-screen
+   regions as the dungeon: large first-person scene with the
+   enemy, a rail with enemy groups + the front/back formation
+   (current/ordered actor highlighted), a message band with the
+   round + battle order, and a fixed pad-friendly command window
+   that advances through the party in formation order.
+   ============================================================ */
+.app-shell[data-phase="combat"] .game-grid {
+  grid-template-columns: minmax(0, 1fr);
+  max-width: none;
+  justify-content: stretch;
+}
+
+.app-shell[data-phase="combat"] .play-panel {
+  overflow: hidden;
+}
+
+.combat-cockpit {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) clamp(17rem, 24vw, 22rem);
+  grid-template-rows: minmax(0, 1fr) auto auto;
+  grid-template-areas:
+    "scene   rail"
+    "message rail"
+    "command command";
+  gap: 0.6rem;
+  height: 100%;
+  min-height: 0;
+}
+
+.combat-cockpit .cockpit-message {
+  grid-area: message;
+}
+
+.combat-rail {
+  gap: 0.5rem;
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+.combat-rail .battle-side {
+  display: grid;
+  gap: 0.3rem;
+  align-content: start;
+}
+
+.combat-rail .battle-side h3 {
+  margin: 0;
+  color: #c9a765;
+  font-size: 0.74rem;
+  text-transform: uppercase;
+}
+
+.combat-rail .battle-row {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.combat-rail .battle-row > span {
+  color: #c9a765;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+}
+
+.combat-rail .formation-slots {
+  grid-template-columns: 1fr;
+  gap: 0.25rem;
+}
+
+.combat-rail .battle-choice {
+  padding: 0.32rem 0.45rem;
+}
+
+.combat-message {
+  align-content: center;
+  gap: 0.3rem;
+}
+
+.combat-message .battle-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.6rem;
+}
+
+.combat-message .battle-header strong {
+  color: #eee8d8;
+}
+
+.combat-message .event-window {
+  margin: 0;
+  color: #e7dcc2;
+}
+
+.combat-message .battle-order {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.combat-message .battle-order-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin: 0;
+}
+
+.combat-message .battle-order-header h3 {
+  color: #c9a765;
+  font-size: 0.74rem;
+  text-transform: uppercase;
+}
+
+.combat-message .battle-order-header span {
+  color: #c9a765;
+  font-size: 0.72rem;
+}
+
+.combat-message .battle-order ol {
+  margin: 0;
+  padding-left: 1.15rem;
+  font-size: 0.82rem;
+}
+
+.combat-command-window {
+  grid-area: command;
+  position: static;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(7rem, 1fr));
+  gap: 0.5rem;
+  align-items: stretch;
+}
+
+.combat-command-window button {
+  min-height: 3.05rem;
+  justify-content: center;
+  font-size: 0.95rem;
+}
+
+@media (max-width: 1100px) {
+  .app-shell[data-phase="combat"] {
+    height: auto;
+    overflow: visible;
+  }
+
+  .app-shell[data-phase="combat"] .game-grid,
+  .app-shell[data-phase="combat"] .play-panel {
+    overflow: visible;
+  }
+
+  .combat-cockpit {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto auto;
+    grid-template-areas:
+      "scene"
+      "rail"
+      "message"
+      "command";
+    height: auto;
+  }
+
+  .combat-rail {
+    overflow: visible;
+  }
+
+  .combat-rail .formation-slots {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .combat-cockpit .cockpit-scene .dungeon-canvas {
+    height: clamp(11rem, 34vh, 18rem);
+  }
+}
