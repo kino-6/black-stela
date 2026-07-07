@@ -2757,3 +2757,212 @@ textarea {
     position: static;
   }
 }
+
+/* ============================================================
+   DRPG fixed dungeon frame (phase=dungeon) — single-screen,
+   no page scroll: large first-person scene on the left, a rail
+   with minimap + compact party formation on the right, a short
+   message band, and a fixed pad-friendly command window.
+   Scoped to [data-phase="dungeon"] so town/combat are untouched.
+   ============================================================ */
+.app-shell[data-phase="dungeon"] .game-grid {
+  grid-template-columns: minmax(0, 1fr);
+  max-width: none;
+  justify-content: stretch;
+}
+
+.app-shell[data-phase="dungeon"] .play-panel {
+  overflow: hidden;
+}
+
+.dungeon-cockpit {
+  grid-template-columns: minmax(0, 1fr) clamp(17rem, 24vw, 22rem);
+  grid-template-rows: minmax(0, 1fr) auto auto;
+  grid-template-areas:
+    "scene   rail"
+    "message rail"
+    "command command";
+  gap: 0.6rem;
+  height: 100%;
+  min-height: 0;
+}
+
+.cockpit-scene {
+  grid-area: scene;
+  min-height: 0;
+  border: 1px solid #2a2c27;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.cockpit-scene .dungeon-view,
+.cockpit-scene .dungeon-canvas {
+  height: 100%;
+  min-height: 0;
+}
+
+.cockpit-rail {
+  grid-area: rail;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 0.6rem;
+  min-height: 0;
+  overflow: auto;
+}
+
+.dungeon-cockpit .cockpit-message {
+  grid-area: message;
+  display: grid;
+  gap: 0.25rem;
+  align-content: center;
+  min-height: 3.2rem;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid #2a2c27;
+  border-radius: 4px;
+  background: #0c0d0b;
+}
+
+.dungeon-cockpit .cockpit-message .room-copy {
+  margin: 0;
+  font-size: 0.86rem;
+}
+
+.dungeon-cockpit .cockpit-message .event-window {
+  margin: 0;
+  color: #e7dcc2;
+}
+
+/* Compact the party formation for the narrow rail: label over slots,
+   tokens stacked so front/back stays readable without a wide row. */
+.cockpit-rail .party-hud {
+  grid-template-columns: 1fr;
+  align-content: start;
+}
+
+.cockpit-rail .party-row-strip {
+  grid-template-columns: 1fr;
+  gap: 0.25rem;
+}
+
+.cockpit-rail .party-row-slots {
+  grid-template-columns: 1fr;
+}
+
+/* Pad-friendly command window: a grid of large, evenly sized targets
+   pinned to the bottom, stable when the message band updates. */
+.dungeon-cockpit .command-dock {
+  grid-area: command;
+  position: static;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(6.75rem, 1fr));
+  gap: 0.5rem;
+  align-items: stretch;
+}
+
+.dungeon-cockpit .command-dock button {
+  min-height: 3.05rem;
+  justify-content: center;
+  font-size: 0.95rem;
+}
+
+@media (max-width: 1100px) {
+  .app-shell[data-phase="dungeon"] {
+    height: auto;
+    overflow: visible;
+  }
+
+  .app-shell[data-phase="dungeon"] .game-grid,
+  .app-shell[data-phase="dungeon"] .play-panel {
+    overflow: visible;
+  }
+
+  .dungeon-cockpit {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto auto;
+    grid-template-areas:
+      "scene"
+      "rail"
+      "message"
+      "command";
+    height: auto;
+  }
+
+  .cockpit-rail {
+    overflow: visible;
+  }
+
+  .cockpit-rail .party-row-slots {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .cockpit-scene .dungeon-canvas {
+    height: clamp(12rem, 40vh, 20rem);
+  }
+}
+
+/* Compact the party tokens for the dungeon rail so all six + the minimap
+   fit at a glance; drop the detail stats (kept in the roster/profile view). */
+.cockpit-rail .navigation-board .mini-map {
+  max-width: 12rem;
+  margin-inline: auto;
+}
+
+.cockpit-rail .party-hud {
+  gap: 0.25rem;
+  padding: 0.3rem;
+}
+
+.cockpit-rail .party-row-strip {
+  gap: 0.15rem;
+}
+
+.cockpit-rail .party-row-slots {
+  gap: 0.25rem;
+}
+
+.cockpit-rail .party-token {
+  min-height: 0;
+  padding: 0.28rem 0.4rem;
+  grid-template-columns: 2.1rem minmax(0, 1fr);
+  gap: 0.45rem;
+}
+
+.cockpit-rail .party-token-portrait {
+  width: 2.1rem;
+  height: 2.1rem;
+  min-height: 0;
+}
+
+.cockpit-rail .party-token-body {
+  gap: 0.08rem;
+}
+
+.cockpit-rail .party-token-heading small {
+  font-size: 0.66rem;
+}
+
+.cockpit-rail .party-token-stats {
+  gap: 0.05rem 0.55rem;
+  font-size: 0.68rem;
+}
+
+.cockpit-rail .party-token-detail {
+  display: none;
+}
+
+@media (max-width: 1100px) {
+  .party-token-detail {
+    display: none;
+  }
+}
+
+/* Cap the rail minimap so all six party tokens keep their place below it. */
+.cockpit-rail .navigation-board {
+  align-self: start;
+}
+
+.cockpit-rail .mini-map {
+  max-height: 8.4rem;
+  overflow: auto;
+  margin-inline: auto;
+}
