@@ -439,8 +439,9 @@ export function App() {
   }
 
   function runHeadless() {
-    // Dense floors need a larger walk budget than the old linear layout.
-    const result = runHeadlessClear(state, defaultWorld, 300);
+    // Dense floors need a larger walk budget than the old linear layout, and a
+    // deep-floor probe may cross several to reach a town-return anchor.
+    const result = runHeadlessClear(state, defaultWorld, 900);
     setState(result.state);
     setHeadlessStatus(
       t("debug.headlessReachabilityStatus", {

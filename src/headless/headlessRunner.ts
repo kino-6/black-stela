@@ -98,7 +98,10 @@ export function runHeadlessClear(initialState: GameState, world: ScenarioWorld, 
   };
 }
 
-export function runHeadlessProbes(world: ScenarioWorld, maxSteps = 300): HeadlessProbeResult[] {
+// Dense 20x20 floors cost the greedy explorer far more steps than the old linear
+// layout, and a deep-floor probe may cross several of them to reach a town-return
+// anchor — so the walk budget is generous.
+export function runHeadlessProbes(world: ScenarioWorld, maxSteps = 900): HeadlessProbeResult[] {
   return debugProgressValues
     .filter((progress) => progress !== "ready")
     .map((progress) => ({

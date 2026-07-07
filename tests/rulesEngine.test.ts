@@ -275,7 +275,7 @@ describe("runtime gates and shortcuts", () => {
   it("opens the B3F drop-shaft shortcut only after the winch is wound", () => {
     // Entering the winch grants the flag and logs the shortcut opening.
     const atWinch = executeCommand(
-      dungeonAt("room.b3f.c1_8", { position: { roomId: "room.b3f.c1_8", facing: "west" } }),
+      dungeonAt("room.b3f.c3_2", { position: { roomId: "room.b3f.c3_2", facing: "west" } }),
       defaultWorld,
       { type: "move_forward" }
     );

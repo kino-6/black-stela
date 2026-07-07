@@ -11,27 +11,46 @@ tags:
   - block-1
   - block-cap
 authorNotes: >-
-  Dense cistern grid: looping north galleries, a dead-end reliquary nook, a
-  warden choke guarding the descent, and a wound-winch shortcut back to the
-  entry. Authored as an ASCII map; corridors are auto-expanded by the loader.
+  Dense cistern floor on the full 20x20 frame. A looping north gallery holds the
+  drowned winch, the drop-shaft landing, a dead-end reliquary, and a bitter-mote
+  warren; a second gallery to the south adds another warren and a niche. The only
+  way down is the one-wide warden choke — the Cistern Warden and its bitter needle
+  guard the descent. Winding the winch opens the drop-shaft shortcut back to the
+  entry. Stairs climb west to B2F; the chain descent falls east to B4F and holds a
+  town-return rest ring.
 startRoom: room.b3f.001
 map: |
-  E.......T
-  .#.###.##
-  .........
-  .###.###.
-  .........
-  ####M####
-  .........
-  .#.#.#.#.
-  W.H.....D
+  ####################
+  ####################
+  ##W...............##
+  ##.......A........T#
+  #E...#...#...#....##
+  ##...........B....##
+  ##..............H.##
+  ###.#######.########
+  ###.#######.########
+  ###.#######M########
+  ##.......##.########
+  ##.......##D########
+  ##...S...###########
+  ##.......###########
+  ##.G.....###########
+  ##.......###########
+  ####################
+  ####################
+  ####################
+  ####################
 symbols:
   E: room.b3f.001
-  M: room.b3f.002
-  D: room.b3f.003
-  T: room.b3f.cache
   W: room.b3f.winch
   H: room.b3f.hub
+  T: room.b3f.cache
+  A: room.b3f.004
+  B: room.b3f.005
+  M: room.b3f.002
+  D: room.b3f.003
+  S: room.b3f.006
+  G: room.b3f.007
 corridor:
   name: Cistern Gallery
   description: A low gallery of fitted stone, the floor scored by old water-lines and drifting ash.
@@ -71,6 +90,31 @@ rooms:
       ja:
         name: 泥の小祠
         description: 水が引いたあとの行き止まりの窪み。固まった泥の棚に、油布に包まれた何かが残されている。
+    treasureTable: treasure.b3f.side
+  - id: room.b3f.004
+    name: Silt Warren
+    description: The middle of the north gallery, where bitter-motes drift over a silt bank and the herbs grow rank.
+    locales:
+      ja:
+        name: 泥の巣
+        description: 北回廊の中ほど。泥の土手の上を苦水の綿毛が漂い、薬草が濃く茂っている。
+    encounter:
+      id: enemy.b3f.bitter-mote
+      name: Bitter Mote
+      hp: 6
+      attack: 3
+      role: status
+      dangerTier: 3
+      tags:
+        - status
+    treasureTable: treasure.b3f.side
+  - id: room.b3f.005
+    name: Waterline Cache
+    description: A silt-caked shelf along the gallery wall where an oilcloth bundle was set above the old waterline.
+    locales:
+      ja:
+        name: 水位の隠し
+        description: 回廊の壁沿いの泥に固まった棚。古い水位線の上に、油布の包みが置かれている。
     treasureTable: treasure.b3f.side
   - id: room.b3f.002
     name: Bitter Water Mark
@@ -127,6 +171,31 @@ rooms:
         locales:
           ja:
             clue: 巻き上げ機が締まっていなければ、竪坑の籠は保たない。
+  - id: room.b3f.006
+    name: Sunken Warren
+    description: The lower gallery, half-choked with dried silt where more of the bitter drift has gathered.
+    locales:
+      ja:
+        name: 沈んだ巣
+        description: 下の回廊。乾いた泥に半ば塞がれ、苦水の綿毛がさらに寄り集まっている。
+    encounter:
+      id: enemy.b3f.bitter-mote
+      name: Bitter Mote
+      hp: 6
+      attack: 3
+      role: status
+      dangerTier: 3
+      tags:
+        - status
+    treasureTable: treasure.b3f.side
+  - id: room.b3f.007
+    name: Silt Niche
+    description: A dead-end pocket off the lower gallery, a bundle left drying on a silt shelf.
+    locales:
+      ja:
+        name: 泥の小間
+        description: 下の回廊から外れた行き止まりの窪み。泥の棚の上に包みが干されている。
+    treasureTable: treasure.b3f.side
   - id: room.b3f.003
     name: Chain Descent
     description: A chain ladder descends through a square well of silent air. A worn rope-ring by the well still holds the way back to town.
@@ -140,6 +209,8 @@ rooms:
 
 # B3F - Cistern Teeth
 
-A dense cistern grid. Looping northern galleries hide a dead-end reliquary; the
-warden's mark is the only way down; and a wound winch opens a drop-shaft
-shortcut straight back to the entry for the return climb.
+A dense cistern floor. A looping north gallery hides the drowned winch, the
+drop-shaft landing, a dead-end reliquary, and a bitter-mote warren; a second
+gallery to the south adds another warren and a niche. The only way down is the
+one-wide warden choke, where the Cistern Warden and its bitter needle guard the
+descent. A wound winch opens the drop-shaft shortcut straight back to the entry.
