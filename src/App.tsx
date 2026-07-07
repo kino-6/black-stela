@@ -180,6 +180,7 @@ export function App() {
   const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null);
   const [shopCategory, setShopCategory] = useState<ShopCategory>("weapon");
   const [reclassClassId, setReclassClassId] = useState<CharacterClassId | "">("");
+  const [eraseConfirmId, setEraseConfirmId] = useState<string | null>(null);
   const [scenarioImportStatus, setScenarioImportStatus] = useState("");
   const [scenarioImportErrors, setScenarioImportErrors] = useState<ScenarioValidationError[]>([]);
   const autosaveSummary = saveSlots.find((slot) => slot.slotId === AUTO_SAVE_SLOT);
@@ -1511,6 +1512,59 @@ export function App() {
                         </section>
                       )}
 
+                      {state.retired.length > 0 && (
+                        <section className="formation-row retired-row" aria-label={t("party.retiredHeading")} data-testid="guild-retired">
+                          <h4>{t("party.retiredHeading")} ({state.retired.length})</h4>
+                          <div className="formation-slots">
+                            {state.retired.map((member) => (
+                              <div className="formation-slot" key={member.id}>
+                                <div className="party-member retired-member" style={{ borderColor: member.accentColor }}>
+                                  <div>
+                                    <strong>{member.name}</strong>
+                                    <span>{formatCharacterSummary(member, locale, t)}</span>
+                                  </div>
+                                </div>
+                                {state.phase === "town" && eraseConfirmId !== member.id && (
+                                  <div className="retired-actions">
+                                    <button
+                                      type="button"
+                                      className="roster-action"
+                                      disabled={state.party.length >= PARTY_SIZE_LIMIT}
+                                      onClick={() => run({ type: "unretire_member", characterId: member.id })}
+                                    >
+                                      {t("party.unretire")}
+                                    </button>
+                                    <button type="button" className="roster-action danger" onClick={() => setEraseConfirmId(member.id)}>
+                                      {t("party.erase")}
+                                    </button>
+                                  </div>
+                                )}
+                                {state.phase === "town" && eraseConfirmId === member.id && (
+                                  <div className="erase-confirm" data-testid="erase-confirm">
+                                    <p>{t("party.eraseWarning", { name: member.name })}</p>
+                                    <div className="retired-actions">
+                                      <button
+                                        type="button"
+                                        className="roster-action danger"
+                                        onClick={() => {
+                                          run({ type: "erase_member", characterId: member.id });
+                                          setEraseConfirmId(null);
+                                        }}
+                                      >
+                                        {t("party.eraseConfirm")}
+                                      </button>
+                                      <button type="button" className="roster-action" onClick={() => setEraseConfirmId(null)}>
+                                        {t("party.eraseCancel")}
+                                      </button>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </section>
+                      )}
+
                       {state.party.length > 0 && (
                       <article className="character-profile" data-testid="character-profile" aria-label={t("party.profile")}>
                         <div className="profile-heading">
@@ -1570,6 +1624,13 @@ export function App() {
                               }}
                             >
                               {t("party.reclassConfirm")}
+                            </button>
+                            <button
+                              type="button"
+                              className="roster-action"
+                              onClick={() => run({ type: "retire_member", characterId: selectedProfile.id })}
+                            >
+                              {t("party.retire")}
                             </button>
                           </div>
                         )}

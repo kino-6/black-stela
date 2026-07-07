@@ -130,6 +130,12 @@ export function resolveCommand(state: GameState, world: ScenarioWorld, command: 
       return recallMember(state, command.characterId);
     case "reclass_member":
       return reclassMemberCommand(state, world, command.characterId, command.classId);
+    case "retire_member":
+      return retireMember(state, command.characterId);
+    case "unretire_member":
+      return unretireMember(state, command.characterId);
+    case "erase_member":
+      return eraseMember(state, command.characterId);
     case "resume_at_checkpoint":
       return resumeAtCheckpoint(state, world, command.roomId);
     case "turn_left":
@@ -236,6 +242,64 @@ function reclassMemberCommand(
   return withEvents(next, [
     { type: "party_member_reclassed", characterName: reclassed.name, className: findClass(classId).label.en }
   ]);
+}
+
+// Reversible retire: move an active/benched adventurer to the retired roll,
+// records preserved and recallable later. Town-only.
+function retireMember(state: GameState, characterId: string): CommandResult {
+  if (state.phase !== "town") {
+    return noChange(state);
+  }
+  const member = state.party.find((c) => c.id === characterId) ?? state.reserve.find((c) => c.id === characterId);
+  if (!member) {
+    return noChange(state);
+  }
+  const next: GameState = {
+    ...state,
+    party: state.party.filter((c) => c.id !== characterId),
+    reserve: state.reserve.filter((c) => c.id !== characterId),
+    retired: [...state.retired, member]
+  };
+  return withEvents(next, [{ type: "party_member_retired", characterName: member.name }]);
+}
+
+// Recall a retired adventurer back to the guild bench. Town-only.
+function unretireMember(state: GameState, characterId: string): CommandResult {
+  if (state.phase !== "town") {
+    return noChange(state);
+  }
+  const member = state.retired.find((c) => c.id === characterId);
+  if (!member) {
+    return noChange(state);
+  }
+  const next: GameState = {
+    ...state,
+    retired: state.retired.filter((c) => c.id !== characterId),
+    reserve: [...state.reserve, member]
+  };
+  return withEvents(next, [{ type: "party_member_unretired", characterName: member.name }]);
+}
+
+// Permanent erasure: irreversibly remove an adventurer from every roster. The
+// two-step confirmation that guards this lives in the UI. Town-only.
+function eraseMember(state: GameState, characterId: string): CommandResult {
+  if (state.phase !== "town") {
+    return noChange(state);
+  }
+  const member =
+    state.party.find((c) => c.id === characterId) ??
+    state.reserve.find((c) => c.id === characterId) ??
+    state.retired.find((c) => c.id === characterId);
+  if (!member) {
+    return noChange(state);
+  }
+  const next: GameState = {
+    ...state,
+    party: state.party.filter((c) => c.id !== characterId),
+    reserve: state.reserve.filter((c) => c.id !== characterId),
+    retired: state.retired.filter((c) => c.id !== characterId)
+  };
+  return withEvents(next, [{ type: "party_member_erased", characterName: member.name }]);
 }
 
 function enterDungeon(state: GameState, world: ScenarioWorld): CommandResult {

@@ -110,6 +110,13 @@ export const en = {
     reclass: "Retrain",
     reclassPick: "Choose a new calling…",
     reclassConfirm: "Retrain",
+    retire: "Retire",
+    retiredHeading: "Retired",
+    unretire: "Return to duty",
+    erase: "Erase forever",
+    eraseWarning: "Strike {name} from the ledger forever? Their record is lost and cannot be recovered.",
+    eraseConfirm: "Yes, erase forever",
+    eraseCancel: "Keep them",
     hpAtk: "HP {hp}/{maxHp} · ATK {attack}"
   },
   aptitude: {
@@ -309,6 +316,9 @@ export const en = {
     partyBenched: "{name} steps back to the guild bench.",
     partyRecalled: "{name} rejoins the marching party.",
     partyReclassed: "{name} retrains as a {className}.",
+    partyRetired: "{name} hangs up their gear and retires to the guild.",
+    partyUnretired: "{name} comes out of retirement.",
+    partyErased: "{name}'s name is struck from the ledger for good.",
     dungeonEntered: "The party descends beneath the black stela.",
     partyTurned: "The party turns {side}, now facing {facing}.",
     sideLeft: "left",

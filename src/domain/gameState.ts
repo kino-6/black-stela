@@ -8,6 +8,7 @@ export function createInitialGameState(): GameState {
     phase: "town",
     party: [],
     reserve: [],
+    retired: [],
     position: null,
     combat: null,
     defeatedEnemies: [],

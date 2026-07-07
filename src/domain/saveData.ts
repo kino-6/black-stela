@@ -253,6 +253,7 @@ export const GameStateSchema = z.object({
   phase: GamePhaseSchema,
   party: z.array(CharacterSchema),
   reserve: z.array(CharacterSchema).default([]),
+  retired: z.array(CharacterSchema).default([]),
   position: DungeonPositionSchema.nullable(),
   combat: CombatStateSchema.nullable(),
   defeatedEnemies: z.array(z.string()),

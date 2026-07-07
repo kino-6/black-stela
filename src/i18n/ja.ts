@@ -112,6 +112,13 @@ export const ja = {
     reclass: "転職",
     reclassPick: "新しい職を選ぶ…",
     reclassConfirm: "転職する",
+    retire: "引退させる",
+    retiredHeading: "引退した冒険者",
+    unretire: "現役に戻す",
+    erase: "永久に消去",
+    eraseWarning: "{name} を台帳から永久に消しますか？記録は失われ、二度と戻せません。",
+    eraseConfirm: "はい、永久に消去する",
+    eraseCancel: "思いとどまる",
     hpAtk: "HP {hp}/{maxHp} · 攻撃 {attack}"
   },
   aptitude: {
@@ -311,6 +318,9 @@ export const ja = {
     partyBenched: "{name} はギルドの控えに下がった。",
     partyRecalled: "{name} が隊列に復帰した。",
     partyReclassed: "{name} は {className} に転職した。",
+    partyRetired: "{name} は得物を置き、ギルドを引退した。",
+    partyUnretired: "{name} が引退から復帰した。",
+    partyErased: "{name} の名は台帳から永久に消された。",
     dungeonEntered: "隊列は黒い石碑の下へ降りた。",
     partyTurned: "隊列は{side}を向き、{facing}を正面にした。",
     sideLeft: "左",

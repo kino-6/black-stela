@@ -5,6 +5,9 @@ export type Command =
   | { type: "bench_member"; characterId: string }
   | { type: "recall_member"; characterId: string }
   | { type: "reclass_member"; characterId: string; classId: CharacterClassId }
+  | { type: "retire_member"; characterId: string }
+  | { type: "unretire_member"; characterId: string }
+  | { type: "erase_member"; characterId: string }
   | { type: "resume_at_checkpoint"; roomId: string }
   | { type: "move_forward" }
   | { type: "move_backward" }
@@ -157,6 +160,9 @@ export type GameEvent =
   | { type: "party_member_benched"; characterName: string }
   | { type: "party_member_recalled"; characterName: string }
   | { type: "party_member_reclassed"; characterName: string; className: string }
+  | { type: "party_member_retired"; characterName: string }
+  | { type: "party_member_unretired"; characterName: string }
+  | { type: "party_member_erased"; characterName: string }
   | { type: "command_blocked"; reason: "party_required" | "town_return_unavailable" | "stairs_unavailable"; command: Command["type"] }
   | { type: "dungeon_entered"; roomId: string; facing: Direction }
   | { type: "party_turned"; side: "left" | "right"; facing: Direction }
@@ -311,6 +317,7 @@ export interface GameState {
   phase: "town" | "dungeon" | "combat";
   party: Character[];
   reserve: Character[];
+  retired: Character[];
   position: DungeonPosition | null;
   combat: CombatState | null;
   defeatedEnemies: string[];
