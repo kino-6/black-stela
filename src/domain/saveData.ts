@@ -113,6 +113,7 @@ const CharacterSchema = z.object({
     .default({ injuries: 0, retreats: 0, notableVictories: [], deeds: [] }),
   portraitRef: z.string().optional(),
   row: z.enum(["front", "back"]).default("front"),
+  level: z.number().int().positive().default(1),
   hp: z.number().int().nonnegative(),
   maxHp: z.number().int().positive(),
   attack: z.number().int().nonnegative(),

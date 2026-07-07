@@ -57,9 +57,9 @@ describe("headless reachability runner", () => {
     const results = runHeadlessProbes(defaultWorld);
 
     expect(results.map((result) => result.progress)).toContain("floor_8");
-    expect(results.some((result) => !result.cleared)).toBe(true);
+    // With level growth the party can now clear every authored start state.
+    expect(results.every((result) => result.cleared)).toBe(true);
     expect(results.find((result) => result.progress === "floor_8")?.state.phase).toBe("town");
-    expect(results.find((result) => result.progress === "floor_2")?.diagnostic?.phase).toBe("combat");
   });
 });
 

@@ -326,6 +326,7 @@ export const en = {
     combatRewards: "Victory. The party earns {xp} XP and {gold} gold.",
     partyWounded: "{enemy} reels, then wounds the front line.",
     characterInjured: "{name} is wounded but remains in the party.",
+    characterLeveledUp: "{name} reaches level {level}!",
     partyDefended: "{enemy} presses in, but the party holds formation.",
     itemUsed: "{target} uses {item} and recovers {hp} HP.",
     inventoryItemGained: "Found {item} x{quantity}.",

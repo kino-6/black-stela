@@ -115,6 +115,8 @@ export function projectEventToLog(event: GameEvent, locale: Locale = "en", world
       return { text: t("events.partyWounded", { enemy: resolveEnemyName(event.enemyId, event.enemyName, world, locale) }), tags: ["combat"] };
     case "character_injured":
       return { text: t("events.characterInjured", { name: event.characterName }), tags: ["injury"] };
+    case "character_leveled_up":
+      return { text: t("events.characterLeveledUp", { name: event.characterName, level: event.level }), tags: ["level"] };
     case "party_defended":
       return { text: t("events.partyDefended", { enemy: resolveEnemyName(event.enemyId, event.enemyName, world, locale) }), tags: ["combat", "defend"] };
     case "item_used":

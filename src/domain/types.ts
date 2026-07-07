@@ -109,6 +109,7 @@ export interface Character {
   memory: RosterMemory;
   portraitRef?: string;
   row: CombatRow;
+  level: number;
   hp: number;
   maxHp: number;
   attack: number;
@@ -178,6 +179,7 @@ export type GameEvent =
   | { type: "combat_rewards"; xp: number; gold: number; enemyNames: string[] }
   | { type: "party_wounded"; enemyId: string; enemyName: string; damage: number }
   | { type: "character_injured"; characterId: string; characterName: string; injury: "wounded" }
+  | { type: "character_leveled_up"; characterId: string; characterName: string; level: number }
   | { type: "party_defended"; enemyId: string; enemyName: string; damage: number }
   | { type: "item_used"; itemId: string; itemName: string; targetCharacterId: string; targetName: string; healAmount: number }
   | { type: "inventory_item_gained"; itemId: string; itemName: string; quantity: number; source: "treasure" | "reward" }

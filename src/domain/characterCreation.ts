@@ -437,6 +437,7 @@ export function createGuildCharacter(input: GuildCharacterInput): Character {
     memory: createEmptyRosterMemory(),
     portraitRef: input.portraitRef,
     row: classDef.rowPreference,
+    level: 1,
     hp: stats.maxHp,
     maxHp: stats.maxHp,
     attack: stats.attack,

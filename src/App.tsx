@@ -1845,6 +1845,7 @@ export function App() {
                                   <small>{formatCharacterSummary(member, locale, t, { includeRow: false })}</small>
                                 </div>
                                 <div className="party-token-stats" aria-label={t("play.memberStatus")}>
+                                  <span>Lv {member.level}</span>
                                   <span>HP {member.hp}/{member.maxHp}</span>
                                   <span>{t("party.damage")} {stats.damageMin}-{stats.damageMax}</span>
                                   <span>{t("party.armor")} {stats.armor}</span>

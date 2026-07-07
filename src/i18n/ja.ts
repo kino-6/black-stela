@@ -328,6 +328,7 @@ export const ja = {
     combatRewards: "勝利。隊列は経験値 {xp} と {gold}G を得た。",
     partyWounded: "{enemy} は前衛に傷を負わせた。",
     characterInjured: "{name} は負傷したが、隊列には残っている。",
+    characterLeveledUp: "{name} はレベル {level} に上がった！",
     partyDefended: "{enemy} が迫るが、隊列は防御の構えを保った。",
     itemUsed: "{target} は {item} を使い、HPを {hp} 回復した。",
     inventoryItemGained: "{item} を {quantity} 個見つけた。",

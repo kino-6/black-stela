@@ -1,4 +1,5 @@
 import { appendEventLogs } from "./replayLog";
+import { applyLevelUps } from "./leveling";
 import {
   getExit,
   getFloorIdForRoom,
@@ -611,11 +612,9 @@ function declareRound(state: GameState, world: ScenarioWorld, actions: CombatAct
     const gold = combat.enemyGroups.reduce((total, group) => total + group.gold * group.count, 0);
     const defeatedEnemyIds = combat.enemyGroups.map((group) => group.enemyId);
     const defeatedNames = combat.enemyGroups.map((group) => group.name);
-    const next: GameState = {
-      ...state,
-      phase: "dungeon",
-      combat: null,
-      party: party.map((member) => ({
+    const levelEvents: GameEvent[] = [];
+    const grownParty = party.map((member) => {
+      const rewarded: typeof member = {
         ...member,
         xp: member.xp + xp,
         gold: member.gold + gold,
@@ -623,7 +622,16 @@ function declareRound(state: GameState, world: ScenarioWorld, actions: CombatAct
           ...member.memory,
           notableVictories: Array.from(new Set([...member.memory.notableVictories, ...defeatedNames]))
         }
-      })),
+      };
+      const leveled = applyLevelUps(rewarded);
+      levelEvents.push(...leveled.events);
+      return leveled.character;
+    });
+    const next: GameState = {
+      ...state,
+      phase: "dungeon",
+      combat: null,
+      party: grownParty,
       partyGold: state.partyGold + gold,
       inventory,
       defeatedEnemies: Array.from(new Set([...state.defeatedEnemies, ...defeatedEnemyIds])),
@@ -637,7 +645,8 @@ function declareRound(state: GameState, world: ScenarioWorld, actions: CombatAct
         enemyId: defeatedEnemyIds[index],
         enemyName
       })),
-      { type: "combat_rewards", xp, gold, enemyNames: defeatedNames }
+      { type: "combat_rewards", xp, gold, enemyNames: defeatedNames },
+      ...levelEvents
     ]);
   }
 
