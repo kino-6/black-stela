@@ -112,6 +112,13 @@ treasureTables:
     entries:
       - itemId: item.stela-shard
         weight: 10
+  - id: treasure.b8f.side
+    tier: 5
+    entries:
+      - itemId: item.healing-draught
+        weight: 5
+      - itemId: item.lantern-oil
+        weight: 3
 ---
 
 # Treasure Tables

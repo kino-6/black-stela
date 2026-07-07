@@ -22,30 +22,29 @@ test("B3F block-cap rest point offers return to town", async ({ page }) => {
   // A mid-floor cell must not offer return.
   await expect(page.getByRole("button", { name: "Use return marker" })).toHaveCount(0);
 
-  // Entry (0,0) faces east. Route: S,S down the west wall, E along the y2 gallery
-  // to the warden column, S through the warden (4,5), then E along y6 and S to
-  // the descent at (8,8).
+  // Entry (1,4) faces east. Route: E into the gallery, S to the y6 aisle, E along
+  // it to the warden column at x=11, then S through the warden (11,9) to the
+  // Chain Descent at (11,11).
+  await move(page); // -> (2,4)
   await page.getByRole("button", { name: "Turn right" }).click(); // face south
-  await move(page); // -> (0,1)
-  await move(page); // -> (0,2)
+  await move(page); // -> (2,5)
+  await move(page); // -> (2,6)
   await page.getByRole("button", { name: "Turn left" }).click(); // face east
-  await move(page); // -> (1,2)
-  await move(page); // -> (2,2)
-  await move(page); // -> (3,2)
-  await move(page); // -> (4,2)
-  await page.getByRole("button", { name: "Turn right" }).click(); // face south
-  await move(page); // -> (4,3)
-  await move(page); // -> (4,4)
-  await move(page); // -> (4,5) warden choke (combat)
+  await move(page); // -> (3,6)
   await move(page); // -> (4,6)
-  await page.getByRole("button", { name: "Turn left" }).click(); // face east
   await move(page); // -> (5,6)
   await move(page); // -> (6,6)
   await move(page); // -> (7,6)
   await move(page); // -> (8,6)
+  await move(page); // -> (9,6)
+  await move(page); // -> (10,6)
+  await move(page); // -> (11,6)
   await page.getByRole("button", { name: "Turn right" }).click(); // face south
-  await move(page); // -> (8,7)
-  await move(page); // -> (8,8) Chain Descent
+  await move(page); // -> (11,7)
+  await move(page); // -> (11,8)
+  await move(page); // -> (11,9) warden choke (combat)
+  await move(page); // -> (11,10)
+  await move(page); // -> (11,11) Chain Descent
 
   await expect(page.getByTestId("map-current")).toContainText("Chain Descent");
   const returnBtn = page.getByRole("button", { name: "Use return marker" });
