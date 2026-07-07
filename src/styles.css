@@ -678,6 +678,7 @@ textarea {
 .guild-studio {
   display: grid;
   gap: 1rem;
+  align-content: start;
 }
 
 .studio-header {
@@ -705,6 +706,7 @@ textarea {
   display: grid;
   grid-template-columns: minmax(24rem, 1fr) minmax(18rem, 0.58fr);
   gap: 1rem;
+  align-items: start;
 }
 
 .guild-studio-grid.full-party {
@@ -719,7 +721,6 @@ textarea {
 
 .guild-flow {
   align-content: start;
-  min-height: 34rem;
 }
 
 .guild-ready-panel {
@@ -771,7 +772,7 @@ textarea {
   isolation: isolate;
   display: grid;
   gap: 0.8rem;
-  min-height: 24rem;
+  min-height: 15rem;
   align-content: start;
   padding: 0.85rem;
   border: 1px solid #30372f;
