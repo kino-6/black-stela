@@ -34,6 +34,14 @@ Active plan: [../../Plan.md](../../Plan.md)
   [Tasks.completed-browser-selfplay-gate.md](Tasks.completed-browser-selfplay-gate.md)
 - [x] BS-183..BS-188 town return loop:
   [Tasks.completed-town-return-loop.md](Tasks.completed-town-return-loop.md)
+- [x] Lane W starting gear / categorized shop plan detail:
+  [Plan.completed-starting-gear-shop.md](Plan.completed-starting-gear-shop.md)
+- [x] Lane Z dungeon structure / checkpoints / gimmicks plan detail:
+  [Plan.completed-dungeon-gimmicks.md](Plan.completed-dungeon-gimmicks.md)
+- [x] Combat overhaul (growth / MP magic / status / elements / crits / enemy AI):
+  [../../CombatPlan.md](../../CombatPlan.md)
+- [x] Dense floor maps + first-person rendering + backward movement:
+  [../../DungeonPlan.md](../../DungeonPlan.md)
 
 ## Completed Lane Status
 
