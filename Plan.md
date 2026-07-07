@@ -417,6 +417,55 @@ after Lane X/Y):
   resume is recoverable.
 - Reference dial per block: how hard each gimmick family leans Wiz vs Etrian.
 
+### [ ] Lane R: Source Decomposition and Refactoring
+
+Goal: cut the largest files down to focused modules without changing behaviour,
+so the codebase stays workable as the dungeon/roster features grow. This is a
+structural clean-up lane — **no functional changes** — and the existing suite
+(125 unit + 52 e2e) is the safety net: every slice must keep it green.
+
+Measured hot spots (lines, at time of writing):
+
+- `src/App.tsx` — **2624**. A God component: UI state, ~40 handlers, guild/draft
+  flow, save/load, keyboard controller, per-phase JSX render, *and* domain rules
+  (`runTempoDungeonStep`/`runTempoCombatStep`) that do not belong in the view.
+- `src/domain/rulesEngine.ts` — 1408. Cohesive but broad (movement, combat,
+  town/economy, gates/gimmicks) in one file.
+- `src/domain/characterCreation.ts` — 585; `src/services/scenarioPackLoader.ts`
+  — 568; `src/components/DungeonView.tsx` — 488 (React component + Three.js
+  scene builder in one).
+
+Planned slices (ordered by value/risk; one extraction per commit, suite green
+after each):
+
+- [ ] Extract the tempo/auto-move **rules** out of `App.tsx` into
+  `src/domain/tempo.ts` (`runTempoStep`, `runTempoCombatStep`,
+  `runTempoDungeonStep`, `getTempoModeForPhase`). These are pure game rules;
+  move them to the domain and add unit tests (they currently have none).
+- [ ] Extract the **keyboard controller / focus** helpers (`getActiveController*`,
+  `moveControllerFocus`, `activateControllerCancel`, `isTypingTarget`, …) into
+  `src/ui/controllerFocus.ts`.
+- [ ] Extract **presentation helpers** (`formatPhase`, `equippedName`,
+  `previewEquipmentStats`, `formatStatDelta`, `formatEquipmentEffect`,
+  `shopCategoryFor`, …) into `src/ui/format.ts` / `src/ui/shop.ts`.
+- [ ] Lift the **character-draft / guild** state and handlers (`createFreshDraft`,
+  bonus-pool rolls, identity/origin rerolls, suggestion logic) into a
+  `useCharacterDraft` hook (or `src/ui/guild/`).
+- [ ] Lift **save/load/import** (`saveGame`, `loadGame`, `importScenarioPackFiles`,
+  `createBrowserSaveRepository`) into a `useSaveLoad` hook / module.
+- [ ] Split the giant **per-phase JSX render** into panel components (Town,
+  Guild, Combat, Dungeon) alongside the existing `MapPanel`/`DungeonView`, so
+  `App.tsx` becomes an orchestrator.
+- [ ] Split `DungeonView.tsx`: move the Three.js scene construction into a
+  `dungeonScene.ts` builder, leaving the React component thin.
+- [ ] Consider grouping `rulesEngine.ts` by concern (movement / combat /
+  town-economy / gates-gimmicks) behind the same public API, only if it does not
+  fragment tightly-coupled logic.
+
+Guardrails: behaviour-preserving only; no API/UX changes in this lane; prefer
+moving code verbatim then re-wiring imports; run `tsc`, unit, and e2e after each
+slice; do not mix a refactor with a feature change in the same commit.
+
 ## Deferred Lanes
 
 - [ ] Lane G: Desktop Productization.
