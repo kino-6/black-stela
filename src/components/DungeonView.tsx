@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef } from "react";
-import { getGridCellForRoom, getGridEdge, getRoom, isTraversableEdge, secretKey } from "../domain/scenario";
+import { getFloorIdForRoom, getGridCellForRoom, getGridEdge, getRoom, isTraversableEdge, secretKey } from "../domain/scenario";
 import type { Direction, GameState, ScenarioWorld } from "../domain/types";
 import { buildDungeonScene, type CorridorSegment, type EdgeKindVisual } from "./dungeonScene";
 
@@ -52,7 +52,8 @@ export function DungeonView({ state, world, label }: DungeonViewProps) {
     const room = getRoom(world, state.position.roomId);
     return buildDungeonScene(mountRef.current, {
       corridor,
-      showEnemy: state.phase === "combat" && Boolean(state.combat),
+      floorId: getFloorIdForRoom(world, state.position.roomId),
+      enemyId: state.phase === "combat" ? state.combat?.enemy.id ?? null : null,
       showTrap: Boolean(room.trap) && !state.resolvedTraps.includes(room.trap!.id),
       returnMarker: room.stairsToTown ? (room.returnStyle === "stairs" ? "stairs" : "marker") : null
     });

@@ -1,9 +1,20 @@
 import * as THREE from "three";
 import ashSlimeTextureUrl from "../assets/dungeon/ash-slime.png";
+import ashVotaryTextureUrl from "../assets/dungeon/ash-votary.png";
+import bitterMoteTextureUrl from "../assets/dungeon/bitter-mote.png";
+import cinderKeeperTextureUrl from "../assets/dungeon/cinder-keeper.png";
+import cisternWardenTextureUrl from "../assets/dungeon/cistern-warden.png";
+import dustCrawlerTextureUrl from "../assets/dungeon/dust-crawler.png";
+import hookRatTextureUrl from "../assets/dungeon/hook-rat.png";
+import lanternWardTextureUrl from "../assets/dungeon/lantern-ward.png";
+import oathCutterTextureUrl from "../assets/dungeon/oath-cutter.png";
+import oathWardenTextureUrl from "../assets/dungeon/oath-warden.png";
 import returnMarkerTextureUrl from "../assets/dungeon/return-marker.png";
 import stoneFloorTextureUrl from "../assets/dungeon/stone-floor.jpg";
 import stoneWallTextureUrl from "../assets/dungeon/stone-wall.jpg";
+import vaultHuskTextureUrl from "../assets/dungeon/vault-husk.png";
 import woodDoorTextureUrl from "../assets/dungeon/wood-door.jpg";
+import { dungeonBlockTextureUrls } from "../ui/artAssets";
 
 // Geometry distinguishes stairs from a plain opening; the view model keeps the
 // coarser three-value language. Both the projection (DungeonView) and this
@@ -20,13 +31,29 @@ export interface CorridorSegment {
 
 export interface DungeonSceneInput {
   corridor: CorridorSegment[];
-  /** Draw the enemy sprite ahead (in combat). */
-  showEnemy: boolean;
+  /** Current dungeon floor id for block-specific wall/floor textures. */
+  floorId: string | null;
+  /** Enemy id to draw ahead while in combat. */
+  enemyId: string | null;
   /** Draw the hazard marker on the floor (armed trap in this room). */
   showTrap: boolean;
   /** Draw the town-return feature: the entrance stairway or the waystone. */
   returnMarker: "stairs" | "marker" | null;
 }
+
+const enemySpriteTextureUrls: Record<string, string> = {
+  "enemy.b1f.ash-slime": ashSlimeTextureUrl,
+  "enemy.b1f.dust-crawler": dustCrawlerTextureUrl,
+  "enemy.b2f.hook-rat": hookRatTextureUrl,
+  "enemy.b3f.bitter-mote": bitterMoteTextureUrl,
+  "enemy.b4f.lantern-ward": lanternWardTextureUrl,
+  "enemy.b6f.oath-cutter": oathCutterTextureUrl,
+  "enemy.b7f.vault-husk": vaultHuskTextureUrl,
+  "enemy.b3f.cistern-warden": cisternWardenTextureUrl,
+  "enemy.b5f.cinder-keeper": cinderKeeperTextureUrl,
+  "enemy.b6f.oath-warden": oathWardenTextureUrl,
+  "enemy.b8f.ash-votary": ashVotaryTextureUrl
+};
 
 // One grid cell is CELL deep; the camera stands in the current cell looking down
 // the corridor, and successive cells recede toward the fog.
@@ -74,10 +101,11 @@ export function buildDungeonScene(mount: HTMLDivElement, input: DungeonSceneInpu
     return texture;
   };
 
-  const wallTexture = loadTexture(stoneWallTextureUrl, [1.35, 1]);
-  const floorTexture = loadTexture(stoneFloorTextureUrl, [2.1, 3.2]);
+  const dungeonTextures = getDungeonBlockTextureUrls(input.floorId);
+  const wallTexture = loadTexture(dungeonTextures.wall, [1.35, 1]);
+  const floorTexture = loadTexture(dungeonTextures.floor, [2.1, 3.2]);
   const doorTexture = loadTexture(woodDoorTextureUrl);
-  const ashSlimeTexture = loadTexture(ashSlimeTextureUrl);
+  const enemyTexture = input.enemyId ? loadTexture(getEnemySpriteTextureUrl(input.enemyId)) : null;
   const returnMarkerTexture = loadTexture(returnMarkerTextureUrl);
 
   const ambient = new THREE.AmbientLight("#9a9383", 1.7);
@@ -111,7 +139,9 @@ export function buildDungeonScene(mount: HTMLDivElement, input: DungeonSceneInpu
     emissive: "#3a0905",
     roughness: 0.5
   });
-  const enemyMaterial = new THREE.SpriteMaterial({ map: ashSlimeTexture, transparent: true, depthWrite: false });
+  const enemyMaterial = enemyTexture
+    ? new THREE.SpriteMaterial({ map: enemyTexture, transparent: true, depthWrite: false })
+    : null;
   const enemyShadowMaterial = new THREE.MeshBasicMaterial({
     color: "#070504",
     transparent: true,
@@ -147,7 +177,7 @@ export function buildDungeonScene(mount: HTMLDivElement, input: DungeonSceneInpu
     }
   }
 
-  if (input.showEnemy) {
+  if (enemyMaterial) {
     const enemyShadow = new THREE.Mesh(new THREE.CircleGeometry(1.22, 32), enemyShadowMaterial);
     enemyShadow.position.set(0, 0.035, -2.86);
     enemyShadow.rotation.x = -Math.PI / 2;
@@ -185,6 +215,30 @@ export function buildDungeonScene(mount: HTMLDivElement, input: DungeonSceneInpu
     renderer.dispose();
     mount.removeChild(renderer.domElement);
   };
+}
+
+export function getEnemySpriteTextureUrl(enemyId: string) {
+  return enemySpriteTextureUrls[enemyId] ?? ashSlimeTextureUrl;
+}
+
+export function hasEnemySpriteTexture(enemyId: string) {
+  return Object.hasOwn(enemySpriteTextureUrls, enemyId);
+}
+
+export function getDungeonBlockTextureUrls(floorId: string | null) {
+  if (floorId && /b[7-8]f/i.test(floorId)) {
+    return dungeonBlockTextureUrls.block3;
+  }
+
+  if (floorId && /b[4-6]f/i.test(floorId)) {
+    return dungeonBlockTextureUrls.block2;
+  }
+
+  if (floorId && /b[1-3]f/i.test(floorId)) {
+    return dungeonBlockTextureUrls.block1;
+  }
+
+  return { wall: stoneWallTextureUrl, floor: stoneFloorTextureUrl };
 }
 
 function addSideFeature(
