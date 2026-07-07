@@ -7,6 +7,17 @@ encounterTables:
         weight: 10
         minCount: 1
         maxCount: 1
+  - id: encounters.b1f.chambers
+    floorId: dungeon.b1f
+    entries:
+      - enemyId: enemy.b1f.ash-slime
+        weight: 6
+        minCount: 1
+        maxCount: 2
+      - enemyId: enemy.b1f.dust-crawler
+        weight: 4
+        minCount: 1
+        maxCount: 1
   - id: encounters.b2f.branches
     floorId: dungeon.b2f
     entries:

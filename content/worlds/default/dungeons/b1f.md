@@ -10,47 +10,56 @@ tags:
   - mapping
   - block-1
 authorNotes: >-
-  Onboarding floor on a 20x20 frame. A short forced trunk teaches the grammar in
-  order (move, first fight, read the map, search the trap, reach the marker),
-  while two wings off the central hub reward exploration. A one-way winch cage
-  from the marker collapses the return climb. Entrance opens east so the fixed
-  starting facing walks the party inward.
+  Onboarding floor filling the full 20x20 frame. A short forced trunk teaches the
+  grammar in order (move east into the first fight, cross the central hub, search
+  the needle plate, reach the black marker), and off the hub two open halls reward
+  exploration — a guarded reliquary to the north and a warden's hall to the south,
+  each an open Wizardry-style room with a fight and a cache. Side galleries loop
+  the halls back to the trunk so the floor reads as a weave, not a line; dead-end
+  niches hide extra treasure. The trunk stays one-wide from the trap to the marker
+  so the descent always passes the searched plate. The marker's winch cage opens a
+  one-way shortcut back to the entrance. The entrance opens east so the fixed
+  starting facing walks the party straight into the teaching fight.
 startRoom: room.b1f.001
 map: |
   ####################
-  ######1#############
-  ######.....#########
-  ######.#.###########
-  ######...###########
-  ########.###########
-  ########.###########
-  ########.###########
-  #######...##########
+  ######D#############
+  ###............#####
+  ###............#####
+  ###...A....B...#####
+  ###............#####
+  ###............#####
+  ###.####.#.###.#####
+  ###.####.#.###.#####
   #EC.....H......N..M#
-  #######...##########
-  ########.###########
-  ########.###########
-  ########.###########
-  ######...###########
-  ######.#.###########
-  ######.....#########
-  ######2#############
+  ###.####.#.###.#####
+  ###.####.#.###.#####
+  ###............#####
+  ###............#####
+  ###...S....K...#####
+  ###............#####
+  ###............#####
+  ######G#############
   ####################
   ####################
 symbols:
   E: room.b1f.001
   C: room.b1f.002
   H: room.b1f.003
-  "1": room.b1f.004
+  D: room.b1f.004
   N: room.b1f.005
   M: room.b1f.006
-  "2": room.b1f.007
+  G: room.b1f.007
+  A: room.b1f.008
+  B: room.b1f.009
+  S: room.b1f.010
+  K: room.b1f.011
 corridor:
-  name: Dust-Choked Corridor
+  name: Dust-Choked Gallery
   description: A low run of fitted stone, dust banked along the walls and broken only by the party's own tracks.
   locales:
     ja:
-      name: 塵の廊下
+      name: 塵の広廊
       description: 切石の低い通路。壁際に塵が積もり、隊列自身の足跡だけがそれを乱している。
 edges:
   - from: room.b1f.006
@@ -92,18 +101,19 @@ rooms:
     encounterTable: encounters.b1f.halls
   - id: room.b1f.003
     name: Ashfall Crossing
-    description: A wider chamber where four ways meet under a slow fall of ash. It is the one room you keep coming back to.
+    description: A wide chamber where the ways from every quarter meet under a slow fall of ash. It is the room you keep coming back to.
     locales:
       ja:
         name: 灰降りの辻
-        description: ゆっくりと灰の降る下で四方の道が交わる、やや広い部屋。何度も戻ってくることになる場所だ。
+        description: ゆっくりと灰の降る下で、四方の道が交わる広い部屋。何度も戻ってくることになる場所だ。
+    encounterTable: encounters.b1f.chambers
   - id: room.b1f.004
     name: Chalk-Marked Niche
-    description: A dead-end niche crowded with old chalk tallies, and a cloth bundle someone tucked behind them.
+    description: A dead-end niche off the north hall, an old cloth bundle wedged behind the chalk tallies.
     locales:
       ja:
         name: 白墨の小間
-        description: 古い白墨の刻み書きがひしめく行き止まりの小間。その裏に、誰かが押し込んだ布包みがある。
+        description: 北の広間から外れた行き止まりの小間。白墨の刻み書きの裏に、古い布包みが挟まっている。
     treasureTable: treasure.b1f.nook
   - id: room.b1f.005
     name: Smoke-Bent Passage
@@ -127,6 +137,7 @@ rooms:
         description: 蓋をされた竪坑と、東へ巻く階段のそばに、細い黒石の標が傾いている。竪坑の上には籠が掛かっている。
         event: 標石は手に温かい。竪坑の籠は、入口まで一気に戻る道を約束している。
     stairsToTown: true
+    returnStyle: marker
     gates:
       - id: gate.b1f.first-descent
         direction: east
@@ -138,18 +149,73 @@ rooms:
             clue: 下り階段は、帰還を知る隊列だけを受け入れる。
     event: The marker is warm to the touch; the shaft cage promises a quick way back to the entrance.
   - id: room.b1f.007
+    name: Drift Cache
+    description: A dead-end pocket off the south hall where ash drifted deep over a forgotten satchel.
+    locales:
+      ja:
+        name: 吹き溜まりの隠し
+        description: 南の広間から外れた行き止まりの窪み。灰が深く吹き溜まり、忘れられた鞄を覆っている。
+    treasureTable: treasure.b1f.nook
+  - id: room.b1f.008
+    name: Chalk-Marked Reliquary
+    description: The heart of the north hall — old chalk tallies crowd the walls, a cloth-wrapped offering rests on a ledge, and a pale crawler coils to guard it.
+    locales:
+      ja:
+        name: 白墨の宝処
+        description: 北の広間の中心。古い白墨の刻み書きが壁を埋め、棚には布に包まれた供物が置かれ、それを守るように青白い這い者がとぐろを巻いている。
+    encounter:
+      id: enemy.b1f.dust-crawler
+      name: Dust Crawler
+      hp: 6
+      attack: 2
+      role: attrition
+      dangerTier: 1
+      tags:
+        - beast
+    treasureTable: treasure.b1f.chamber
+  - id: room.b1f.009
+    name: Ledger Ledge
+    description: A stone shelf along the north hall where a stitched pouch was tucked behind the tallies.
+    locales:
+      ja:
+        name: 帳面の棚
+        description: 北の広間沿いの石棚。刻み書きの裏に、縫い綴じられた小袋が押し込まれている。
+    treasureTable: treasure.b1f.nook
+  - id: room.b1f.010
+    name: Warden's Hall
+    description: The heart of the south hall, cinders drifted into the corners. Something heavier than a slime shifts its weight in the dark.
+    locales:
+      ja:
+        name: 番人の広間
+        description: 南の広間の中心。燃え殻が隅に吹き溜まっている。前方の闇で、泥よりも重い何かが身じろぎする。
+    encounter:
+      id: enemy.b1f.dust-crawler
+      name: Dust Crawler
+      hp: 6
+      attack: 2
+      role: attrition
+      dangerTier: 1
+      tags:
+        - beast
+    treasureTable: treasure.b1f.chamber
+  - id: room.b1f.011
     name: Cinder Cache
-    description: A dead-end cache where cinders drifted into a dry corner, half-burying a stitched pouch.
+    description: A cinder-choked corner of the warden's hall, a stitched pouch half-buried in the drift.
     locales:
       ja:
         name: 燃え殻の隠し
-        description: 燃え殻が乾いた隅に吹き溜まった行き止まり。縫い綴じられた小袋が半ば埋もれている。
-    treasureTable: treasure.b1f.nook
+        description: 番人の広間の燃え殻に塞がれた隅。縫い綴じの小袋が吹き溜まりに半ば埋もれている。
+    treasureTable: treasure.b1f.chamber
 ---
 
 # B1F - Silent Approach
 
-The first floor on a full 20x20 frame. A short forced trunk carries the teaching
-beats in order — move, the first fight, the anchor hub, the searched trap, the
-marker — while two wings off the hub reward the curious with dead-end caches. The
-marker's winch cage opens a one-way shortcut straight back to the entrance.
+The first floor, filling the full 20x20 frame. A short forced trunk carries the
+teaching beats in order — move east into the first fight, cross the central
+Ashfall Crossing, search the needle plate, reach the black marker — while two
+open halls off the hub reward the curious: a guarded reliquary to the north and a
+warden's hall to the south, each an open room with a fight and a cache, looped
+back to the trunk by side galleries. Dead-end niches hide extra treasure. From
+the trap to the marker the trunk stays one-wide, so the descent always passes the
+searched plate; the marker's winch cage opens a one-way shortcut back to the
+entrance.
