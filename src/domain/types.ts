@@ -209,6 +209,7 @@ export interface Enemy {
   xp?: number;
   gold?: number;
   resistances?: Partial<Record<CombatStatus, number>>;
+  inflicts?: { status: CombatStatus; chance: number };
   drops?: string[];
   role?: EnemyRole;
   dangerTier?: number;
@@ -255,6 +256,8 @@ export interface CombatEnemyGroup {
   gold: number;
   role?: EnemyRole;
   status?: CombatStatus[];
+  resistances?: Partial<Record<CombatStatus, number>>;
+  inflicts?: { status: CombatStatus; chance: number };
 }
 
 export interface CombatActionDeclaration {

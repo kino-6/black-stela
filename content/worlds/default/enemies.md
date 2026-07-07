@@ -52,6 +52,9 @@ enemies:
     xp: 7
     gold: 4
     role: status
+    inflicts:
+      status: poison
+      chance: 45
     dangerTier: 3
     tags: [status]
   - id: enemy.b4f.lantern-ward

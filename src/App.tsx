@@ -1875,6 +1875,11 @@ export function App() {
                                 <div className="party-token-heading">
                                   <strong>{member.name}</strong>
                                   <small>{formatCharacterSummary(member, locale, t, { includeRow: false })}</small>
+                                  {member.status && member.status.filter((status) => status !== "ward").length > 0 && (
+                                    <small className="party-token-status">
+                                      {member.status.filter((status) => status !== "ward").join(" · ")}
+                                    </small>
+                                  )}
                                 </div>
                                 <div className="party-token-stats" aria-label={t("play.memberStatus")}>
                                   <span>Lv {member.level}</span>

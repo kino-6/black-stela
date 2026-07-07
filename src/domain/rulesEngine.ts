@@ -1,6 +1,7 @@
 import { appendEventLogs } from "./replayLog";
 import { applyLevelUps } from "./leveling";
 import { SPELLS, knownSpells } from "./spells";
+import { FEAR_ACCURACY_PENALTY, POISON_DAMAGE, STATUS_WEAR_OFF, statusResistPct } from "./status";
 import {
   getExit,
   getFloorIdForRoom,
@@ -563,6 +564,11 @@ function declareRound(state: GameState, world: ScenarioWorld, actions: CombatAct
       continue;
     }
 
+    if (actor.status?.includes("sleep")) {
+      summaries.push(`${actor.name} is fast asleep.`);
+      continue;
+    }
+
     if (action.action === "defend") {
       party = party.map((member) => (member.id === actor.id ? { ...member, status: uniqueStatuses([...(member.status ?? []), "ward"]) } : member));
       summaries.push(`${actor.name} holds the line.`);
@@ -613,10 +619,17 @@ function declareRound(state: GameState, world: ScenarioWorld, actions: CombatAct
         }
       } else if (spell.effect.kind === "status" && action.targetGroupId) {
         const ailment = spell.effect.status;
-        enemyGroups = enemyGroups.map((group) =>
-          group.id === action.targetGroupId ? { ...group, status: uniqueStatuses([...(group.status ?? []), ailment]) } : group
-        );
-        summaries.push(`${actor.name} casts ${spell.id} on ${findGroupName(enemyGroups, action.targetGroupId)}.`);
+        const targetGroup = enemyGroups.find((group) => group.id === action.targetGroupId);
+        const resist = statusResistPct(targetGroup?.resistances, ailment);
+        const roll = rollPercent(`${state.turn}:${combat.round}:${actor.id}:${targetGroup?.id}:ailment`);
+        if (roll < resist) {
+          summaries.push(`${findGroupName(enemyGroups, action.targetGroupId)} resists ${spell.id}.`);
+        } else {
+          enemyGroups = enemyGroups.map((group) =>
+            group.id === action.targetGroupId ? { ...group, status: uniqueStatuses([...(group.status ?? []), ailment]) } : group
+          );
+          summaries.push(`${actor.name} casts ${spell.id} on ${findGroupName(enemyGroups, action.targetGroupId)}.`);
+        }
       }
       continue;
     }
@@ -631,9 +644,11 @@ function declareRound(state: GameState, world: ScenarioWorld, actions: CombatAct
     }
 
     const actorStats = getEffectiveCharacterStats(actor, world);
+    const feared = actor.status?.includes("fear");
+    const effectiveAccuracy = actorStats.accuracy - (feared ? FEAR_ACCURACY_PENALTY : 0);
     const hitRoll = rollPercent(`${state.turn}:${combat.round}:${actor.id}:${group.id}:hit`);
-    if (hitRoll > actorStats.accuracy) {
-      summaries.push(`${actor.name} misses ${group.name}.`);
+    if (hitRoll > effectiveAccuracy) {
+      summaries.push(`${actor.name} ${feared ? "flinches and misses" : "misses"} ${group.name}.`);
       continue;
     }
 
@@ -731,13 +746,43 @@ function declareRound(state: GameState, world: ScenarioWorld, actions: CombatAct
       return { ...member, hp, status: clearRoundStatuses(member.status) };
     });
     summaries.push(`${group.name} wounds ${target.name} for ${damage}.`);
+
+    if (group.inflicts) {
+      const ailment = group.inflicts;
+      const resist = statusResistPct(target.resistance, ailment.status);
+      const inflictRoll = rollPercent(`${state.turn}:${combat.round}:${group.id}:${target.id}:inflict`);
+      const resistRoll = rollPercent(`${state.turn}:${combat.round}:${group.id}:${target.id}:resist`);
+      if (inflictRoll < ailment.chance && resistRoll >= resist) {
+        party = party.map((member) =>
+          member.id === target.id && !member.injury
+            ? { ...member, status: uniqueStatuses([...(member.status ?? []), ailment.status]) }
+            : member
+        );
+        summaries.push(`${target.name} is afflicted with ${ailment.status}.`);
+      }
+    }
   }
 
-  party = party.map((member) => ({ ...member, status: clearRoundStatuses(member.status) }));
+  // Round-end: poison bites the party and ailments roll to wear off.
+  party = party.map((member) => {
+    const tick = tickStatusList(member.status, `${state.turn}:${combat.round}:${member.id}`);
+    if (tick.poisonDamage > 0 && !member.injury) {
+      summaries.push(`Poison gnaws ${member.name} for ${tick.poisonDamage}.`);
+    }
+    const hp = member.injury ? member.hp : Math.max(1, member.hp - tick.poisonDamage);
+    return { ...member, hp, status: tick.statuses };
+  });
+  const tickedGroups = livingGroups.map((group) => {
+    const tick = tickStatusList(group.status, `${state.turn}:${combat.round}:${group.id}`);
+    tick.wornOff
+      .filter((status) => status !== "ward")
+      .forEach((status) => summaries.push(`${group.name} shakes off ${status}.`));
+    return { ...group, status: tick.statuses };
+  });
   const nextCombat = syncCombatEnemy({
     ...combat,
     round: combat.round + 1,
-    enemyGroups: livingGroups,
+    enemyGroups: tickedGroups,
     pendingActions: []
   });
 
@@ -1010,7 +1055,9 @@ function createEnemyGroup(enemy: Enemy, count: number): CombatEnemyGroup {
     xp: enemy.xp ?? Math.max(1, enemy.dangerTier ?? 1),
     gold: enemy.gold ?? Math.max(0, enemy.dangerTier ?? 1),
     role: enemy.role,
-    status: []
+    status: [],
+    resistances: enemy.resistances,
+    inflicts: enemy.inflicts
   };
 }
 
@@ -1220,6 +1267,32 @@ function uniqueStatuses(statuses: CombatStatus[]) {
 
 function clearRoundStatuses(statuses: CombatStatus[] = []) {
   return statuses.filter((status) => status !== "ward");
+}
+
+// Round-end processing for one combatant's ailments: poison bites, ward drops,
+// and each persistent ailment rolls to wear off.
+function tickStatusList(
+  statuses: CombatStatus[] = [],
+  seed: string
+): { statuses: CombatStatus[]; poisonDamage: number; wornOff: CombatStatus[] } {
+  let poisonDamage = 0;
+  const kept: CombatStatus[] = [];
+  const wornOff: CombatStatus[] = [];
+  for (const status of statuses) {
+    if (status === "ward") {
+      wornOff.push(status);
+      continue;
+    }
+    if (status === "poison") {
+      poisonDamage += POISON_DAMAGE;
+    }
+    if (rollPercent(`${seed}:${status}:wearoff`) < (STATUS_WEAR_OFF[status] ?? 0)) {
+      wornOff.push(status);
+      continue;
+    }
+    kept.push(status);
+  }
+  return { statuses: kept, poisonDamage, wornOff };
 }
 
 function returnToTown(state: GameState, world: ScenarioWorld): CommandResult {

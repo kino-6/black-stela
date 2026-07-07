@@ -45,6 +45,12 @@ const enemySchema = z.object({
       ward: z.number().int().min(0).max(100).optional()
     })
     .optional(),
+  inflicts: z
+    .object({
+      status: z.enum(["poison", "fear", "silence", "sleep", "ward"]),
+      chance: z.number().int().min(0).max(100)
+    })
+    .optional(),
   drops: z.array(z.string().min(1)).optional(),
   role: enemyRoleSchema.optional(),
   dangerTier: z.number().int().positive().optional(),
