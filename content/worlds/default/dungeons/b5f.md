@@ -86,7 +86,7 @@ rooms:
     locales:
       ja:
         name: 北の税の広間
-        description: 上の灰税の広間。隅に燃え殻が吹き溜まり、徴収する者が待っている。
+        description: 上の灰税の広間。隅に燃え殻が吹き溜まり、徴収する者がその奥に潜む。
     encounterTable: encounters.b5f.gate
     treasureTable: treasure.b5f.side
   - id: room.b5f.005
@@ -125,7 +125,7 @@ rooms:
     treasureTable: treasure.b5f.keeper
   - id: room.b5f.003
     name: Lifted Bar
-    description: A heavy bar can be lifted to make a shorter return route. Beyond it a walled vault waits, and a chain falls to B6F.
+    description: A heavy bar can be lifted to make a shorter return route. Beyond it a walled vault stands sealed, and a chain falls to B6F.
     locales:
       ja:
         name: 上がる横木
