@@ -2084,7 +2084,10 @@ export function App() {
               )}
             </div>
           ) : (
-            <div className={`adventure-cockpit ${state.phase === "combat" ? "combat-cockpit" : "dungeon-cockpit"}`}>
+            <div
+              className={`adventure-cockpit ${state.phase === "combat" ? "combat-cockpit" : "dungeon-cockpit"}`}
+              aria-label={state.phase === "combat" ? t("play.battleScreen") : undefined}
+            >
               {state.phase === "dungeon" ? (
                 <>
                   <div className="cockpit-scene">
@@ -2152,34 +2155,12 @@ export function App() {
                   </aside>
                 </>
               ) : (
-                <div className="scene-deck">
-                  <DungeonView state={state} world={defaultWorld} label={t("play.dungeonView")} />
-                </div>
-              )}
-
-              {state.phase === "dungeon" ? (
-                <div className="cockpit-message">
-                  <p className="room-copy">{roomText?.description}</p>
-                  <p className="event-window" aria-live="polite">{tempoStatus || latestLogText || "\u00a0"}</p>
-                </div>
-              ) : (
-                <p className="event-window cockpit-message" aria-live="polite">{tempoStatus || latestLogText || "\u00a0"}</p>
-              )}
-              {state.phase === "combat" ? (
-                <section className="battle-screen" aria-label={t("play.battleScreen")}>
-                  <div className="battle-header">
-                    <strong>{t("play.round", { round: state.combat?.round ?? 1 })}</strong>
-                    <span>
-                      {selectedActor && selectedTarget
-                        ? t("play.selectedOrder", { actor: selectedActor.name, target: localizedEnemyGroupName(selectedTarget, locale) })
-                        : combatOrdersReady
-                          ? t("play.orderReady")
-                          : t("play.selectOrder")}
-                    </span>
+                <>
+                  <div className="cockpit-scene">
+                    <DungeonView state={state} world={defaultWorld} label={t("play.dungeonView")} />
                   </div>
-
-                  <div className="battle-grid">
-                    <div className="battle-side" aria-label={t("play.enemyGroups")}>
+                  <aside className="cockpit-rail combat-rail" aria-label={t("play.partyFormation")}>
+                    <div className="battle-side enemy-side" aria-label={t("play.enemyGroups")}>
                       <h3>{t("play.enemyGroups")}</h3>
                       {livingEnemyGroups.map((group) => (
                         <div
@@ -2194,7 +2175,6 @@ export function App() {
                         </div>
                       ))}
                     </div>
-
                     <div className="battle-side formation-side" aria-label={t("play.partyFormation")}>
                       <h3>{t("play.partyFormation")}</h3>
                       {(["front", "back"] as const).map((row) => (
@@ -2219,8 +2199,28 @@ export function App() {
                         </div>
                       ))}
                     </div>
-                  </div>
+                  </aside>
+                </>
+              )}
 
+              {state.phase === "dungeon" ? (
+                <div className="cockpit-message">
+                  <p className="room-copy">{roomText?.description}</p>
+                  <p className="event-window" aria-live="polite">{tempoStatus || latestLogText || "\u00a0"}</p>
+                </div>
+              ) : (
+                <div className="cockpit-message combat-message">
+                  <div className="battle-header">
+                    <strong>{t("play.round", { round: state.combat?.round ?? 1 })}</strong>
+                    <span>
+                      {selectedActor && selectedTarget
+                        ? t("play.selectedOrder", { actor: selectedActor.name, target: localizedEnemyGroupName(selectedTarget, locale) })
+                        : combatOrdersReady
+                          ? t("play.orderReady")
+                          : t("play.selectOrder")}
+                    </span>
+                  </div>
+                  <p className="event-window" aria-live="polite">{tempoStatus || latestLogText || "\u00a0"}</p>
                   <div className="battle-order" aria-label={t("play.battleOrder")}>
                     <div className="battle-order-header">
                       <h3>{t("play.battleOrder")}</h3>
@@ -2233,17 +2233,19 @@ export function App() {
                         ))}
                       </ol>
                     ) : (
-                      <p data-testid="combat-order-list">{t("play.orderEmpty")}</p>
+                      <span data-testid="combat-order-list">{t("play.orderEmpty")}</span>
                     )}
                   </div>
-
-                  <div
-                    className="command-bar command-dock"
-                    aria-label={t("play.combatCommands")}
-                    data-controller-active="true"
-                    data-controller-surface="combat-commands"
-                    data-testid="combat-command-window"
-                  >
+                </div>
+              )}
+              {state.phase === "combat" ? (
+                <div
+                  className="command-bar command-dock combat-command-window"
+                  aria-label={t("play.combatCommands")}
+                  data-controller-active="true"
+                  data-controller-surface="combat-commands"
+                  data-testid="combat-command-window"
+                >
                     <button type="button" aria-pressed={isTempoRunning} onClick={() => toggleTempoMode("combat")}>
                       {isTempoRunning ? <Square size={18} /> : <Repeat2 size={18} />}
                       {isTempoRunning ? t("tempo.stop") : t("tempo.repeat")}
@@ -2302,7 +2304,6 @@ export function App() {
                       {t("play.retreat")}
                     </button>
                   </div>
-                </section>
               ) : (
                 <div
                   className="command-bar command-dock"

@@ -25,13 +25,18 @@ test("resolves tactical combat through visible actor, target, and combat command
   // universal Defend command is always present.
   await expect(page.getByRole("button", { name: "Defend" })).toBeVisible();
 
-  const combatBoardHeight = await page.getByLabel("Battle screen").evaluate((element) => element.getBoundingClientRect().height);
-  expect(combatBoardHeight).toBeLessThan(390);
+  // Combat is a single-screen fixed frame: the cockpit fills but does not exceed
+  // the viewport, and the page itself does not scroll.
   const cockpitFitsViewport = await page.locator(".adventure-cockpit").evaluate((element) => {
     const bounds = element.getBoundingClientRect();
     return bounds.bottom <= window.innerHeight + 1;
   });
   expect(cockpitFitsViewport).toBe(true);
+  const noPageScroll = await page.evaluate(() => {
+    const el = document.scrollingElement ?? document.documentElement;
+    return el.scrollHeight <= el.clientHeight + 1;
+  });
+  expect(noPageScroll).toBe(true);
 
   await resolveVisibleCombat(page);
 
