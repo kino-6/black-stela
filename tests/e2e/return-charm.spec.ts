@@ -13,6 +13,6 @@ test("return charm escapes mid-floor but is barred on the boss floor", async ({ 
 
   // The finale floor is a commitment: the charm is not offered there.
   await page.goto("/?debug=1&progress=floor_8");
-  await expect(page.getByText("dungeon.b8f").first()).toBeVisible();
+  await expect(page.getByText("B8F - Gate of Ash").first()).toBeVisible();
   await expect(page.getByTestId("use-return-charm")).toHaveCount(0);
 });

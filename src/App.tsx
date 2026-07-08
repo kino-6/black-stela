@@ -41,7 +41,7 @@ import {
   traitCatalog
 } from "./domain/characterCreation";
 import { readVault, depositToVault, removeFromVault, type VaultEntry } from "./domain/adventurerVault";
-import { getGridEdge, getLocalizedRoomText, getRoom, isBossFloor } from "./domain/scenario";
+import { floorName, getGridEdge, getLocalizedRoomText, getRoom, isBossFloor } from "./domain/scenario";
 import { createIdentitySuggestion } from "./domain/identitySuggestion";
 import { executeCommand, listUnlockedCheckpoints } from "./domain/rulesEngine";
 import { getTempoModeForPhase, runTempoStep, type TempoMode } from "./domain/tempo";
@@ -2545,7 +2545,7 @@ export function App() {
             >
               <header className="floor-map-head">
                 <h3>{t("play.fullMapTitle")}</h3>
-                <span>{state.map.floorId ?? ""}</span>
+                <span>{floorName(defaultWorld, state.map.floorId)}</span>
               </header>
               <div className="floor-map-scroll">
                 <FloorMapView state={state} world={defaultWorld} locale={locale} t={t} />
