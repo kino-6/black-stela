@@ -45,9 +45,10 @@ import { SPELLS, knownSpells, type SpellId } from "./domain/spells";
 import {
   activateControllerCancel,
   focusFirstControllerChoice,
+  moveControllerFocus,
+  moveControllerFocusDirection,
   isControllerInteractiveTarget,
-  isTypingTarget,
-  moveControllerFocus
+  isTypingTarget
 } from "./ui/controllerFocus";
 import {
   formatAptitudes,
@@ -712,7 +713,15 @@ export function App() {
       }
 
       if (key === "arrowdown" || key === "arrowright" || key === "arrowup" || key === "arrowleft") {
-        if (moveControllerFocus(key === "arrowup" || key === "arrowleft" ? -1 : 1)) {
+        // Left/Right keep the linear focus ring (traverses every control);
+        // Up/Down navigate spatially so a card grid moves row-by-row as it looks.
+        const handled =
+          key === "arrowleft"
+            ? moveControllerFocus(-1)
+            : key === "arrowright"
+              ? moveControllerFocus(1)
+              : moveControllerFocusDirection(key === "arrowup" ? "up" : "down");
+        if (handled) {
           event.preventDefault();
           return;
         }
@@ -1161,7 +1170,16 @@ export function App() {
                                 type="button"
                                 className={draft.classId === classDef.id ? "class-card selected" : "class-card"}
                                 key={classDef.id}
-                                onClick={() => setDraft((current) => ({ ...current, classId: classDef.id }))}
+                                aria-pressed={draft.classId === classDef.id}
+                                onClick={(event) => {
+                                  setDraft((current) => ({ ...current, classId: classDef.id }));
+                                  // Jump focus to the confirm button so picking a
+                                  // class and proceeding is two presses, not a hunt.
+                                  event.currentTarget
+                                    .closest("section")
+                                    ?.querySelector<HTMLButtonElement>("[data-guild-advance]")
+                                    ?.focus();
+                                }}
                               >
                                 <strong>{classDef.label[locale]}</strong>
                                 <span>{formatCombatRow(classDef.rowPreference, t)}</span>
@@ -1172,7 +1190,7 @@ export function App() {
                           </div>
                           <div className="flow-actions">
                             <button type="button" data-controller-cancel="true" onClick={() => setGuildCreationStep("briefing")}>{t("party.back")}</button>
-                            <button type="button" className="primary-action" onClick={() => setGuildCreationStep("appearance")}>{t("party.next")}</button>
+                            <button type="button" className="primary-action" data-guild-advance="true" onClick={() => setGuildCreationStep("appearance")}>{t("party.next")}</button>
                           </div>
                         </section>
                       )}
@@ -1345,7 +1363,9 @@ export function App() {
                     <section
                       className="studio-roster guild-side-panel"
                       aria-label={t("party.heading")}
-                      data-controller-active={state.party.length >= PARTY_SIZE_LIMIT ? "true" : undefined}
+                      data-controller-active={
+                        state.party.length >= PARTY_SIZE_LIMIT || showGuildFallbackRecruit ? "true" : undefined
+                      }
                       data-controller-surface="guild-roster"
                     >
                       {state.party.length < PARTY_SIZE_LIMIT && (

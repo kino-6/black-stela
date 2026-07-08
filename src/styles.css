@@ -794,19 +794,24 @@ textarea {
 .class-card-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
+  /* Fixed, uniform row height: tall enough for name + role + a two-line
+     description + the equipment line, so no card ever compresses or clips and
+     paired cards always match (no jagged bottoms). The list scrolls instead. */
+  grid-auto-rows: 7.6rem;
   gap: 0.55rem;
-  align-items: start;
-  max-height: clamp(16rem, 44vh, 30rem);
+  max-height: clamp(18rem, 58vh, 34rem);
   overflow-y: auto;
   padding-right: 0.3rem;
 }
 
 .class-card {
-  display: grid;
-  gap: 0.35rem;
-  min-height: 6.2rem;
-  align-content: start;
-  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.24rem;
+  align-items: stretch;
+  justify-content: flex-start;
+  overflow: hidden;
+  padding: 0.6rem 0.7rem;
   text-align: left;
   border-color: #30372f;
 }
@@ -816,18 +821,41 @@ textarea {
   background: #211d13;
 }
 
-.class-card strong {
+.class-card > strong {
   color: #f2efe5;
-  font-size: 1rem;
+  font-size: 0.98rem;
+  line-height: 1.2;
 }
 
-.class-card span,
-.class-card small {
+.class-card > span,
+.class-card > small {
   color: #bdb8aa;
 }
 
-.class-card small.class-gear {
+.class-card > span {
+  font-size: 0.82rem;
+}
+
+/* Clamp the flavor line to at most two rows so long JA text can't push the card
+   past its fixed row height. The row height (not this line) keeps cards uniform,
+   so no min-height is forced here — that space is left for the equipment line. */
+.class-card > small:not(.class-gear) {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  font-size: 0.8rem;
+  line-height: 1.35;
+}
+
+/* Equipment always sits pinned at the bottom edge, single line, never clipped. */
+.class-card > small.class-gear {
+  margin-top: auto;
   color: #b9a06a;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.8rem;
 }
 
 .flow-actions {

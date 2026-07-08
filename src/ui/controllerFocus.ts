@@ -91,6 +91,78 @@ export function moveControllerFocus(step: 1 | -1) {
   return true;
 }
 
+/**
+ * Directional (spatial) focus: pick the nearest focusable that actually lies in
+ * the pressed direction, comparing on-screen positions. This makes a 2-D grid
+ * (e.g. the class cards) navigate the way it looks — Down moves to the card
+ * below, not the next element in DOM order. Falls back to the linear ring at the
+ * edges so reaching neighbouring controls (Back/Next) still works and the arrow
+ * keys keep capturing exactly as before.
+ */
+export function moveControllerFocusDirection(direction: "up" | "down" | "left" | "right") {
+  const focusable = getAllControllerFocusableElements();
+  if (focusable.length === 0) {
+    return false;
+  }
+
+  const active = document.activeElement;
+  if (!(active instanceof HTMLElement) || !focusable.includes(active)) {
+    focusable[0]?.focus();
+    return true;
+  }
+
+  const current = active.getBoundingClientRect();
+  const cx = current.left + current.width / 2;
+  const cy = current.top + current.height / 2;
+
+  let best: HTMLElement | null = null;
+  let bestScore = Infinity;
+  for (const element of focusable) {
+    if (element === active) {
+      continue;
+    }
+
+    const rect = element.getBoundingClientRect();
+    const dx = rect.left + rect.width / 2 - cx;
+    const dy = rect.top + rect.height / 2 - cy;
+
+    let primary: number;
+    let cross: number;
+    if (direction === "up") {
+      if (dy >= -1) continue;
+      primary = -dy;
+      cross = Math.abs(dx);
+    } else if (direction === "down") {
+      if (dy <= 1) continue;
+      primary = dy;
+      cross = Math.abs(dx);
+    } else if (direction === "left") {
+      if (dx >= -1) continue;
+      primary = -dx;
+      cross = Math.abs(dy);
+    } else {
+      if (dx <= 1) continue;
+      primary = dx;
+      cross = Math.abs(dy);
+    }
+
+    // Weight cross-axis drift heavily so focus stays in the same row/column.
+    const score = primary + cross * 2;
+    if (score < bestScore) {
+      bestScore = score;
+      best = element;
+    }
+  }
+
+  if (best) {
+    best.focus();
+    return true;
+  }
+
+  // No candidate in that direction — keep the old wrap-around ring behaviour.
+  return moveControllerFocus(direction === "up" || direction === "left" ? -1 : 1);
+}
+
 export function activateControllerCancel() {
   const surface = getActiveControllerSurface();
   const cancel = surface?.querySelector<HTMLButtonElement>("[data-controller-cancel]:not([disabled])");
