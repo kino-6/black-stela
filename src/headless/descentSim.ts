@@ -2,16 +2,22 @@
 //
 // The headless *reachability* probes already prove the party can physically walk
 // each floor and reach a town-return anchor. What they do NOT prove is whether a
-// starter party's *growth* keeps pace with the encounter difficulty as it
-// descends B1F -> B8F. This module answers that with logic, not walking: it feeds
-// the fights a descent would face through the real combat engine (createCombatState
-// + declare_round + applyLevelUps), carrying party level/HP forward, and reports
-// the survival margin per floor.
+// starter party's *growth* keeps it alive through the fights of a full B1F -> B8F
+// descent. This module answers that with logic, not walking: it feeds the fights a
+// descent would face through the real combat engine (createCombatState +
+// declare_round + applyLevelUps), carrying party level/HP forward, and reports the
+// survival margin per floor.
+//
+// It mirrors the engine's first-contact encounter model (rulesEngine: an encounter
+// only fires while `!defeatedEnemies.includes(enemy.id)`): each enemy *type* is
+// fought exactly once per run, in the group size its table declares. So the sim
+// fights, per floor, each not-yet-seen fixed encounter and each new random-table
+// enemy type once — not a fabricated stream of random battles.
 //
 // Two recovery models bracket the truth:
 //   "town" — full heal between floors (standard DRPG play: return to town to heal).
-//            Isolates the difficulty *curve*: is any single floor lethal at the
-//            level you would naturally have reached by then?
+//            Isolates the difficulty curve: is any single floor lethal at the level
+//            you would naturally have reached by then?
 //   "none" — carry HP across floors, healing only from level-ups (pessimistic
 //            one-push lower bound with no consumables).
 import { createCombatState, executeCommand } from "../domain/rulesEngine";
@@ -45,20 +51,9 @@ export interface FloorSimResult {
 
 export interface DescentSimResult {
   heal: "town" | "none";
-  randomLoad: number;
-  seed: number;
   floors: FloorSimResult[];
   survived: boolean;
   finalLevel: number;
-}
-
-// Small deterministic LCG so a (seed, load) pair reproduces the same descent.
-function makeRng(seed: number): () => number {
-  let state = (seed >>> 0) || 1;
-  return () => {
-    state = (Math.imul(state, 1664525) + 1013904223) >>> 0;
-    return state / 0x100000000;
-  };
 }
 
 const alive = (member: Character) => member.hp > 0 && !member.injury;
@@ -73,22 +68,33 @@ interface PlannedEncounter {
   count: number;
 }
 
-// The fights a descent of one floor would face: every fixed room encounter, plus
-// `randomLoad` weighted draws from the floor's random encounter tables.
-function planFloor(world: ScenarioWorld, floorId: string, randomLoad: number, rng: () => number): PlannedEncounter[] {
+// The distinct enemy types a floor introduces, in the group sizes its content
+// declares: fixed room encounters (count 1) plus each new random-table type at its
+// maxCount (the fuller, harder group). `seen` gates by type across the whole run,
+// exactly like the engine's defeatedEnemies check.
+function planFloor(world: ScenarioWorld, floorId: string, seen: Set<string>): PlannedEncounter[] {
   const floor = world.dungeons.find((dungeon) => dungeon.id === floorId);
   if (!floor) {
     return [];
   }
 
   const encounters: PlannedEncounter[] = [];
+  const planned = new Set<string>();
+  const take = (enemy: Enemy, count: number) => {
+    if (seen.has(enemy.id) || planned.has(enemy.id)) {
+      return;
+    }
+    planned.add(enemy.id);
+    encounters.push({ enemy, count });
+  };
+
   for (const room of floor.rooms) {
     if (room.encounter) {
-      encounters.push({ enemy: room.encounter, count: 1 });
+      const enemy = world.enemies.find((candidate) => candidate.id === room.encounter?.id) ?? room.encounter;
+      take(enemy, 1);
     }
   }
 
-  const pool: Array<{ enemy: Enemy; weight: number; minCount: number; maxCount: number }> = [];
   const tableIds = new Set<string>();
   for (const room of floor.rooms) {
     if (room.encounterTable) {
@@ -103,23 +109,9 @@ function planFloor(world: ScenarioWorld, floorId: string, randomLoad: number, rn
     for (const entry of table.entries) {
       const enemy = world.enemies.find((candidate) => candidate.id === entry.enemyId);
       if (enemy) {
-        pool.push({
-          enemy,
-          weight: entry.weight,
-          minCount: entry.minCount ?? 1,
-          maxCount: entry.maxCount ?? entry.minCount ?? 1
-        });
+        take(enemy, entry.maxCount ?? entry.minCount ?? 1);
       }
     }
-  }
-
-  const totalWeight = pool.reduce((total, item) => total + item.weight, 0);
-  for (let i = 0; i < randomLoad && totalWeight > 0; i += 1) {
-    let roll = rng() * totalWeight;
-    const picked = pool.find((item) => (roll -= item.weight) < 0) ?? pool[pool.length - 1];
-    const span = picked.maxCount - picked.minCount;
-    const count = picked.minCount + Math.floor(rng() * (span + 1));
-    encounters.push({ enemy: picked.enemy, count });
   }
 
   return encounters;
@@ -161,17 +153,12 @@ function resolveFight(
   return { state: current, midFightLow };
 }
 
-export function simulateDescent(
-  world: ScenarioWorld,
-  options: { heal?: "town" | "none"; randomLoad?: number; seed?: number } = {}
-): DescentSimResult {
+export function simulateDescent(world: ScenarioWorld, options: { heal?: "town" | "none" } = {}): DescentSimResult {
   const heal = options.heal ?? "town";
-  const randomLoad = options.randomLoad ?? 4;
-  const seed = options.seed ?? 1;
-  const rng = makeRng(seed);
 
   const base = createDebugStateFromProgress(world, "ready");
   let party = base.party.map((member) => ({ ...member }));
+  const seen = new Set<string>();
   const floors: FloorSimResult[] = [];
 
   for (const floorId of DESCENT_ORDER) {
@@ -179,7 +166,7 @@ export function simulateDescent(
       party = party.map((member) => ({ ...member, hp: member.maxHp, mp: member.maxMp, injury: undefined, status: [] }));
     }
 
-    const encounters = planFloor(world, floorId, randomLoad, rng);
+    const encounters = planFloor(world, floorId, seen);
     const arrivalLevel = avgLevel(party);
     const arrivalHpPct = avgHpPct(party);
     let lowest = arrivalHpPct;
@@ -192,6 +179,7 @@ export function simulateDescent(
       const outcome = resolveFight(workState, world, encounter);
       workState = outcome.state;
       party = workState.party;
+      seen.add(encounter.enemy.id);
       lowest = Math.min(lowest, outcome.midFightLow);
       if (party.filter(alive).length === 0) {
         wiped = true;
@@ -219,8 +207,6 @@ export function simulateDescent(
 
   return {
     heal,
-    randomLoad,
-    seed,
     floors,
     survived: !floors.some((floor) => floor.wiped),
     finalLevel: floors.length ? floors[floors.length - 1].departLevel : avgLevel(party)

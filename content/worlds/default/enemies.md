@@ -13,7 +13,7 @@ enemies:
     damageMax: 2
     speed: 4
     morale: 7
-    xp: 3
+    xp: 1
     gold: 2
     role: attrition
     dangerTier: 1
@@ -31,7 +31,7 @@ enemies:
     damageMax: 3
     speed: 5
     morale: 6
-    xp: 5
+    xp: 2
     gold: 3
     role: attrition
     dangerTier: 1
@@ -51,7 +51,7 @@ enemies:
     damageMax: 3
     speed: 8
     morale: 6
-    xp: 5
+    xp: 2
     gold: 3
     role: ambusher
     dangerTier: 2
@@ -69,7 +69,7 @@ enemies:
     damageMax: 2
     speed: 6
     morale: 8
-    xp: 7
+    xp: 3
     gold: 4
     role: status
     inflicts:
@@ -93,7 +93,7 @@ enemies:
     damageMax: 4
     speed: 3
     morale: 10
-    xp: 9
+    xp: 4
     gold: 6
     role: blocker
     dangerTier: 3
@@ -125,7 +125,7 @@ enemies:
     damageMax: 5
     speed: 5
     morale: 11
-    xp: 18
+    xp: 7
     gold: 12
     role: miniboss
     dangerTier: 4
@@ -146,7 +146,7 @@ enemies:
     damageMax: 5
     speed: 6
     morale: 10
-    xp: 12
+    xp: 5
     gold: 9
     role: miniboss
     dangerTier: 2
@@ -165,7 +165,7 @@ enemies:
     damageMax: 6
     speed: 6
     morale: 11
-    xp: 22
+    xp: 9
     gold: 15
     role: miniboss
     dangerTier: 4
@@ -184,7 +184,7 @@ enemies:
     damageMax: 5
     speed: 9
     morale: 8
-    xp: 12
+    xp: 5
     gold: 8
     role: ambusher
     dangerTier: 4
@@ -202,7 +202,7 @@ enemies:
     damageMax: 5
     speed: 3
     morale: 10
-    xp: 14
+    xp: 6
     gold: 10
     role: blocker
     dangerTier: 5
@@ -220,7 +220,7 @@ enemies:
     damageMax: 6
     speed: 6
     morale: 12
-    xp: 32
+    xp: 13
     gold: 20
     role: boss
     dangerTier: 5
