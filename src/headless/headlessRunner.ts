@@ -48,6 +48,10 @@ export function runHeadlessClear(initialState: GameState, world: ScenarioWorld, 
   // room offers no unexplored exit, so it walks out of dense loops instead of
   // ping-ponging between two already-seen cells.
   const visitCounts = new Map<string, number>();
+  // Stairs the engine has refused to descend (a locked gate bars them). Cleared
+  // whenever a flag/secret is discovered, so a freshly-turned crank re-opens the
+  // descent on the next pass.
+  const blockedStairs = new Set<string>();
 
   for (let step = 0; step < maxSteps; step += 1) {
     if (isMvpCleared(state)) {
@@ -58,13 +62,26 @@ export function runHeadlessClear(initialState: GameState, world: ScenarioWorld, 
       visitCounts.set(state.position.roomId, (visitCounts.get(state.position.roomId) ?? 0) + 1);
     }
 
-    const decision = chooseNextCommand(state, world, visitCounts);
+    const decision = chooseNextCommand(state, world, visitCounts, blockedStairs);
     if (!decision.command) {
       return { cleared: false, reason: "stuck", state, commands, trace, diagnostic: decision.diagnostic };
     }
 
     commands.push(decision.command);
     const nextState = executeCommand(state, world, decision.command);
+
+    // A use_stairs that left the party in place hit a locked gate — defer it.
+    if (
+      decision.command.type === "use_stairs" &&
+      state.position &&
+      nextState.position?.roomId === state.position.roomId
+    ) {
+      blockedStairs.add(`${state.position.roomId}:${state.position.facing}`);
+    }
+    // A newly discovered flag/secret may have freed a deferred stair.
+    if (nextState.discoveredSecrets.length !== state.discoveredSecrets.length) {
+      blockedStairs.clear();
+    }
     trace.push({
       command: decision.command.type,
       fromPhase: state.phase,
@@ -139,7 +156,12 @@ const leftOf: Record<Direction, Direction> = {
   east: "north"
 };
 
-function chooseNextCommand(state: GameState, world: ScenarioWorld, visitCounts: Map<string, number> = new Map()): HeadlessDecision {
+function chooseNextCommand(
+  state: GameState,
+  world: ScenarioWorld,
+  visitCounts: Map<string, number> = new Map(),
+  blockedStairs: Set<string> = new Set()
+): HeadlessDecision {
   if (state.phase === "town") {
     return state.party.length > 0
       ? { command: { type: "enter_dungeon" }, knowledge: "town_state" }
@@ -177,7 +199,9 @@ function chooseNextCommand(state: GameState, world: ScenarioWorld, visitCounts: 
     state,
     room.exits,
     state.map.knownExits[state.position.roomId] ?? [],
-    visitCounts
+    visitCounts,
+    state.position.roomId,
+    blockedStairs
   );
   if (!direction) {
     return { command: null, knowledge: "known_map_exits", diagnostic: describeState(state, "no_route") };
@@ -198,28 +222,36 @@ function chooseExplorationDirection(
   state: GameState,
   exits: Partial<Record<Direction, string>>,
   knownDirections: Direction[],
-  visitCounts: Map<string, number>
+  visitCounts: Map<string, number>,
+  roomId: string,
+  blockedStairs: Set<string>
 ): Direction | null {
-  const directions = directionOrder.filter((direction) => knownDirections.includes(direction) && exits[direction]);
-  const unexplored = directions.find((direction) => {
-    const roomId = exits[direction];
-    return roomId ? !state.map.visitedRooms.includes(roomId) : false;
+  const all = directionOrder.filter((direction) => knownDirections.includes(direction) && exits[direction]);
+  // Defer a stair the engine just refused to descend (a locked gate bars it):
+  // explore the rest of the floor to find the crank that frees it, then the
+  // stair is cleared from this set once a flag is granted and we come back.
+  const directions = all.filter((direction) => !blockedStairs.has(`${roomId}:${direction}`));
+  const pool = directions.length > 0 ? directions : all;
+
+  const unexplored = pool.find((direction) => {
+    const target = exits[direction];
+    return target ? !state.map.visitedRooms.includes(target) : false;
   });
   if (unexplored) {
     return unexplored;
   }
 
-  if (directions.length === 0) {
+  if (pool.length === 0) {
     return null;
   }
 
   // No unexplored exit: head toward the least-visited neighbour (ties broken by
   // the fixed direction order) so dense loops unwind instead of oscillating.
-  return directions.reduce((best, direction) => {
+  return pool.reduce((best, direction) => {
     const cost = visitCounts.get(exits[direction] ?? "") ?? 0;
     const bestCost = visitCounts.get(exits[best] ?? "") ?? 0;
     return cost < bestCost ? direction : best;
-  }, directions[0]);
+  }, pool[0]);
 }
 
 function turnToward(facing: Direction, target: Direction): Command {

@@ -111,6 +111,14 @@ rooms:
         locales:
           ja:
             clue: きれいすぎる石板の裏に掛け金が隠れている。
+      - id: gate.b2f.descent
+        direction: east
+        kind: lock
+        requiredFlag: flag.b2f.descent
+        clue: The shaft's fall-gate is barred; the crank that lifts it sits back in the hook warrens.
+        locales:
+          ja:
+            clue: 竪坑の落とし戸は閂で塞がれている。それを上げる巻き手は、鉤の巣の奥にある。
   - id: room.b2f.004
     name: North Hook Warren
     description: The heart of the north hall, where hook-rats nest in the drift and drag their spoil into a corner.
@@ -138,11 +146,19 @@ rooms:
     treasureTable: treasure.b2f.cache
   - id: room.b2f.006
     name: South Hook Warren
-    description: The south hall's nest, its floor scored by dragged iron and the tracks of something quick.
+    description: The south hall's nest, its floor scored by dragged iron and the tracks of something quick. A bar-crank for the shaft's fall-gate is chained beyond the rats.
     locales:
       ja:
         name: 南の鉤の巣
-        description: 南の広間の巣。床は引きずられた鉄と、素早い何かの足跡で削られている。
+        description: 南の広間の巣。床は引きずられた鉄と、素早い何かの足跡で削られている。竪坑の落とし戸の巻き手が、鼠の奥に鎖で留められている。
+    gates:
+      - id: gate.b2f.descent-crank
+        kind: shortcut
+        grantsFlag: flag.b2f.descent
+        clue: The bar-crank turns; the shaft's fall-gate lifts open below.
+        locales:
+          ja:
+            clue: 巻き手が回る。下で竪坑の落とし戸が持ち上がる。
     encounter:
       id: enemy.b2f.hook-rat
       name: Hook Rat

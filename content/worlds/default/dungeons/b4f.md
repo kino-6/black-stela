@@ -130,11 +130,19 @@ rooms:
     treasureTable: treasure.b1f.nook
   - id: room.b4f.007
     name: Lower Lantern Hall
-    description: The south hall, reached down the one-way slope, where more wards gather in the failing light.
+    description: The south hall, reached down the one-way slope, where more wards gather in the failing light. A winch for the descent chain hangs past them.
     locales:
       ja:
         name: 下灯の広間
-        description: 一方坂を下った先の南の広間。衰える光の中に、さらに守り火が集まっている。
+        description: 一方坂を下った先の南の広間。衰える光の中に、さらに守り火が集まっている。降りの鎖の巻き上げが、その奥に垂れている。
+    gates:
+      - id: gate.b4f.descent-crank
+        kind: shortcut
+        grantsFlag: flag.b4f.descent
+        clue: The winch pays out; far off, the chain to B5F comes free.
+        locales:
+          ja:
+            clue: 巻き上げが繰り出される。遠くで、B5Fへの鎖が外れる。
     encounter:
       id: enemy.b4f.lantern-ward
       name: Lantern Ward
@@ -175,6 +183,14 @@ rooms:
         locales:
           ja:
             clue: 影ではなく歩数を数えよ。
+      - id: gate.b4f.descent
+        direction: east
+        kind: lock
+        requiredFlag: flag.b4f.descent
+        clue: The chain's release is seized fast; the winch that frees it hangs in the lower lantern hall.
+        locales:
+          ja:
+            clue: 鎖の外し金は固く噛んでいる。それを解く巻き上げは、下灯の広間に垂れている。
     treasureTable: treasure.b4f.dark
 ---
 

@@ -87,14 +87,31 @@ rooms:
       ja:
         name: 静かな納骨庫の分岐
         description: 低い通路は西の塩の迫持へ上り、東は終幕へ落ちる。南には封じ石があり、北へ納骨の回廊が開く。
+    gates:
+      - id: gate.b7f.descent
+        direction: east
+        kind: lock
+        requiredFlag: flag.b7f.descent
+        clue: The fall east to the finale is pinned shut; the release is set deep in the vault gallery north.
+        locales:
+          ja:
+            clue: 終幕へ東に落ちる道は栓で封じられている。その外しは、北の納骨回廊の奥にある。
     encounterTable: encounters.b7f.vaults
   - id: room.b7f.005
     name: Vault Gallery Hall
-    description: The heart of the quiet gallery, where a vault-husk drags itself between the sealed niches.
+    description: The heart of the quiet gallery, where a vault-husk drags itself between the sealed niches — and a release-pin for the eastern fall is bolted to the wall beyond it.
     locales:
       ja:
         name: 納骨回廊の広間
-        description: 静かな回廊の中心。封じられた龕の間を、納骨の殻が身を引きずって渡る。
+        description: 静かな回廊の中心。封じられた龕の間を納骨の殻が身を引きずって渡り、その奥の壁に、東の落とし戸の外し栓が留められている。
+    gates:
+      - id: gate.b7f.descent-release
+        kind: shortcut
+        grantsFlag: flag.b7f.descent
+        clue: The release-pin gives; far east, the fall to the finale opens.
+        locales:
+          ja:
+            clue: 外し栓が外れる。東の彼方で、終幕への落とし戸が開く。
     encounterTable: encounters.b7f.vaults
     treasureTable: treasure.b7f.side
   - id: room.b7f.006

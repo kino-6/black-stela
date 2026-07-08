@@ -654,6 +654,16 @@ function useStairs(state: GameState, world: ScenarioWorld): CommandResult {
     return logOnly(state, { type: "command_blocked", reason: "stairs_unavailable", command: "use_stairs" });
   }
 
+  // A locked gate on the stair direction bars the descent until it is opened
+  // (e.g. a branch crank frees the drop-pin), so a gated stair can't be used by
+  // walking straight onto it.
+  const stairGate = getRoom(world, state.position.roomId).gates?.find((gate) => gate.direction === state.position!.facing);
+  if (stairGate && !isGateOpen(stairGate, state)) {
+    return withEvents({ ...state, turn: state.turn + 1 }, [
+      { type: "movement_blocked", reason: "locked", roomId: state.position.roomId, facing: state.position.facing }
+    ]);
+  }
+
   const targetRoom = getRoom(world, edge.targetRoomId);
   const roomVisit = visitRoom(state, world, targetRoom.id, state.position.facing);
   const targetCell = getGridCellForRoom(world, targetRoom.id);

@@ -380,6 +380,21 @@ describe("runtime gates and shortcuts", () => {
     expect(spun.map.currentFacing).toBe(spun.position?.facing);
     expect(spun.log.some((entry) => entry.tags.includes("spinner"))).toBe(true);
   });
+
+  it("bars a gated descent stair until the branch crank flag is set", () => {
+    const atStair = dungeonAt("room.b2f.003", { position: { roomId: "room.b2f.003", facing: "east" } });
+    const blocked = executeCommand(atStair, defaultWorld, { type: "use_stairs" });
+    expect(blocked.position?.roomId).toBe("room.b2f.003");
+    expect(blocked.log.at(-1)?.tags).toContain("locked");
+
+    const unlocked = dungeonAt("room.b2f.003", {
+      position: { roomId: "room.b2f.003", facing: "east" },
+      discoveredSecrets: ["flag.b2f.descent"]
+    });
+    const descended = executeCommand(unlocked, defaultWorld, { type: "use_stairs" });
+    expect(descended.position?.roomId).toBe("room.b3f.001");
+    expect(descended.map.floorId).toBe("dungeon.b3f");
+  });
 });
 
 describe("three-block dungeon structure", () => {

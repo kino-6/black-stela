@@ -18,7 +18,7 @@ describe("scenario summary", () => {
       shopStockReferenceCount: 14,
       returnAnchorCount: 3,
       nextFloorLinkCount: 7,
-      lockCount: 2,
+      lockCount: 5,
       lootReferenceCount: 44,
       missingJapaneseRooms: 0,
       pacing: {
