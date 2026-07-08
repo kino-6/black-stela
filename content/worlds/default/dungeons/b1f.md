@@ -12,13 +12,14 @@ tags:
 authorNotes: >-
   Onboarding floor filling the full 20x20 frame. A short forced trunk teaches the
   grammar in order (move east into the first fight, cross the central hub, search
-  the needle plate, reach the black marker), and off the hub two open halls reward
+  the needle plate, take the east stair down), and off the hub two open halls reward
   exploration — a guarded reliquary to the north and a warden's hall to the south,
   each an open Wizardry-style room with a fight and a cache. Side galleries loop
   the halls back to the trunk so the floor reads as a weave, not a line; dead-end
-  niches hide extra treasure. The trunk stays one-wide from the trap to the marker
-  so the descent always passes the searched plate. The marker's winch cage opens a
-  one-way shortcut back to the entrance. The entrance opens east so the fixed
+  niches hide extra treasure. The trunk stays one-wide from the trap to the stair
+  so the descent always passes the searched plate; a south alcove one step short of
+  the stair holds the marker's winch cage, whose one-way shortcut home is a separate
+  turn from the way down. The entrance opens east so the fixed
   starting facing walks the party straight into the teaching fight.
 startRoom: room.b1f.001
 map: |
@@ -31,9 +32,9 @@ map: |
   ###............#####
   ###.####.#.###.#####
   ###.####.#.###.#####
-  #EC.....H......N.MX#
-  ###.####.#.###.#####
-  ###.####.#.###.#####
+  #EC.....H......N..X#
+  ###.####.#.###.#.###
+  ###.####.#.###.#M###
   ###............#####
   ###............#####
   ###...S....K...#####
@@ -70,7 +71,7 @@ edges:
     to: room.b2f.001
     targetFloorId: dungeon.b2f
   - from: room.b1f.006
-    direction: north
+    direction: south
     kind: shortcut
     to: room.b1f.001
   - from: room.b1f.c14_4
@@ -136,14 +137,22 @@ rooms:
       warning: A line of pinholes breaks the dust ahead.
   - id: room.b1f.006
     name: Black Marker
-    description: A narrow marker of black stone leans over a capped shaft, a winch cage hung above it. The stair down curls off its landing to the east.
+    description: A narrow marker of black stone leans over a capped shaft in a niche off the corridor, a winch cage hung above it. Its chain hauls a climber straight back up to the entrance.
     locales:
       ja:
         name: 黒い標石
-        description: 蓋をされた竪坑の上に、細い黒石の標が傾き、籠が掛かっている。下りの階段は、その踊り場から東へ巻いている。
+        description: 通路脇の窪みに、蓋をされた竪坑の上に細い黒石の標が傾き、籠が掛かっている。その鎖は、入口まで一気に引き上げてくれる。
         event: 標石は手に温かい。竪坑の籠は、入口まで一気に戻る道を約束している。
     stairsToTown: true
     returnStyle: marker
+    event: The marker is warm to the touch; the shaft cage promises a quick way back to the entrance.
+  - id: room.b1f.012
+    name: Winding Stair
+    description: The stair curls east off the trunk's end, biting down through the stone toward B2F.
+    locales:
+      ja:
+        name: 巻き階段
+        description: 通路の突き当たりから東へ、階段が渦を巻いて石を噛み下り、B2Fへ続いている。
     gates:
       - id: gate.b1f.descent
         direction: east
@@ -153,14 +162,6 @@ rooms:
         locales:
           ja:
             clue: 階段の落とし込みは固く留められている。それを外す巻き手は、広間のどこかの壁に留められている。
-    event: The marker is warm to the touch; the shaft cage promises a quick way back to the entrance.
-  - id: room.b1f.012
-    name: Winding Stair
-    description: The stair curls east off the marker's landing, biting down through the stone toward B2F.
-    locales:
-      ja:
-        name: 巻き階段
-        description: 標石の踊り場から東へ、階段が渦を巻いて石を噛み下り、B2Fへ続いている。
   - id: room.b1f.013
     name: Ashen Reliquary
     description: A slot of dry air hides behind the north hall's east wall, missed by every dusty boot before. A cloth-bound offering rests in the dark, richer than the open caches.

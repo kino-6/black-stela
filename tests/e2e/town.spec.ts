@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import type { Page } from "@playwright/test";
-import { createStarterParty, openTownService, registerAdventurer, resolveVisibleCombat, setTitleLanguage, startNewExpedition } from "./helpers";
+import { advanceToB1fMarker, createStarterParty, openTownService, registerAdventurer, resolveVisibleCombat, setTitleLanguage, startNewExpedition } from "./helpers";
 
 test("town modes expose guild, recovery, records, and dungeon entry", async ({ page }) => {
   await startNewExpedition(page);
@@ -120,14 +120,3 @@ test("combat exposes defend and item use choices", async ({ page }) => {
   await expect(page.getByRole("button", { name: "Use item" })).toBeVisible();
 });
 
-async function advanceToB1fMarker(page: Page) {
-  for (let step = 0; step < 40; step += 1) {
-    if (await page.getByRole("heading", { name: "Black Marker" }).isVisible().catch(() => false)) {
-      return;
-    }
-    await page.getByRole("button", { name: "Move", exact: true }).click();
-    if (await page.getByLabel("Battle screen").isVisible().catch(() => false)) {
-      await resolveVisibleCombat(page);
-    }
-  }
-}

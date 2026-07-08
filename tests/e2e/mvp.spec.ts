@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import type { Page } from "@playwright/test";
-import { registerAdventurer, resolveVisibleCombat, startNewExpedition } from "./helpers";
+import { registerAdventurer, resolveVisibleCombat, startNewExpedition, walkB1fStairToMarker } from "./helpers";
 
 test("create party, import portrait, enter dungeon, fight, use stairs, and view log", async ({ page }) => {
   await startNewExpedition(page);
@@ -49,15 +49,17 @@ test("create party, import portrait, enter dungeon, fight, use stairs, and view 
 });
 
 async function advanceToB1fMarker(page: Page) {
-  // B1F's trunk runs straight east to the Black Marker; walk it, clearing any
-  // fight along the way, until the marker chamber is on screen.
+  // Walk the trunk east onto the Winding Stair (reachable without the crank — only
+  // the descent itself is gated), then thread into the south alcove that holds the
+  // Black Marker, since the return shortcut now sits off the trunk.
   for (let step = 0; step < 40; step += 1) {
-    if (await page.getByRole("heading", { name: "Black Marker" }).isVisible().catch(() => false)) {
-      return;
+    if (await page.getByRole("heading", { name: "Winding Stair" }).isVisible().catch(() => false)) {
+      break;
     }
     await page.getByRole("button", { name: "Move", exact: true }).click();
     if (await page.getByLabel("Battle screen").isVisible().catch(() => false)) {
       await resolveVisibleCombat(page);
     }
   }
+  await walkB1fStairToMarker(page);
 }

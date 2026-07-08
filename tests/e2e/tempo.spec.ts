@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import type { Page } from "@playwright/test";
-import { registerAdventurer, resolveVisibleCombat, setTitleLanguage, startNewExpedition } from "./helpers";
+import { advanceToB1fMarker, registerAdventurer, resolveVisibleCombat, setTitleLanguage, startNewExpedition } from "./helpers";
 
 test("repeat and keyboard commands keep the dungeon loop fast", async ({ page }) => {
   await startNewExpedition(page);
@@ -61,14 +61,3 @@ test("Japanese tempo controls fit on mobile", async ({ page }) => {
   expect(horizontalOverflow).toBe(false);
 });
 
-async function advanceToB1fMarker(page: Page) {
-  for (let step = 0; step < 40; step += 1) {
-    if (await page.getByRole("heading", { name: "Black Marker" }).isVisible().catch(() => false)) {
-      return;
-    }
-    await page.getByRole("button", { name: "Move", exact: true }).click();
-    if (await page.getByLabel("Battle screen").isVisible().catch(() => false)) {
-      await resolveVisibleCombat(page);
-    }
-  }
-}

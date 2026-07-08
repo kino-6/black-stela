@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import type { Page } from "@playwright/test";
-import { createStarterParty, descendB1fViaWarden, registerAdventurer, resolveVisibleCombat, startNewExpedition } from "./helpers";
+import { advanceToB1fMarker, createStarterParty, descendB1fViaWarden, registerAdventurer, resolveVisibleCombat, startNewExpedition, walkB1fStairToMarker } from "./helpers";
 
 test("clears the MVP route through visible player controls only", async ({ page }) => {
   await startNewExpedition(page);
@@ -73,9 +73,9 @@ test("visible controls can descend to B2F and still return through the authored 
   await page.getByLabel("Turn left").click();
   await page.getByRole("button", { name: "Use stairs" }).click();
 
-  // Climbing back up lands on the stair cell; step west to the return marker.
+  // Climbing back up lands on the stair cell; thread to the return marker's alcove.
   await expect(page.getByRole("heading", { name: "Winding Stair" })).toBeVisible();
-  await page.getByRole("button", { name: "Move" }).click();
+  await walkB1fStairToMarker(page);
   await expect(page.getByRole("heading", { name: "Black Marker" })).toBeVisible();
   await page.getByRole("button", { name: "Use return marker" }).click();
   await expect(page.getByRole("heading", { name: "Town", exact: true })).toBeVisible();
@@ -117,16 +117,16 @@ test("first-person view, minimap, and movement agree when forward is blocked", a
   await advanceToB1fMarker(page);
   await expect(page.getByRole("heading", { name: "Black Marker" })).toBeVisible();
 
-  // North is the winch shortcut and east opens to the Winding Stair, so face the
-  // solid south wall to test a blocked step.
-  await page.getByLabel("Turn right").click();
-  await expect(page.getByTestId("minimap-facing")).toHaveClass(/facing-south/);
+  // The marker sits in a dead-end alcove entered from the north; its east and west
+  // are solid stone and the winch shortcut is south. Face the east wall to test a
+  // blocked step. (Arrives facing south, having stepped into the alcove.)
+  await page.getByLabel("Turn left").click();
+  await expect(page.getByTestId("minimap-facing")).toHaveClass(/facing-east/);
 
   const canvasShell = page.getByTestId("dungeon-canvas");
   await expect(canvasShell).toHaveAttribute("data-front-edge", "wall");
   await expect(canvasShell).toHaveAttribute("data-front-traversable", "false");
   await expect(canvasShell).toHaveAttribute("data-left-edge", "open");
-  await expect(canvasShell).toHaveAttribute("data-right-edge", "open");
 
   await page.getByRole("button", { name: "Move" }).click();
   await expect(page.getByRole("heading", { name: "Black Marker" })).toBeVisible();
@@ -134,16 +134,3 @@ test("first-person view, minimap, and movement agree when forward is blocked", a
   await expect(canvasShell).toHaveAttribute("data-front-edge", "wall");
 });
 
-async function advanceToB1fMarker(page: Page) {
-  // The B1F trunk runs straight east to the Black Marker; walk it, clearing any
-  // fight, until the marker chamber is on screen.
-  for (let step = 0; step < 40; step += 1) {
-    if (await page.getByRole("heading", { name: "Black Marker" }).isVisible().catch(() => false)) {
-      return;
-    }
-    await page.getByRole("button", { name: "Move", exact: true }).click();
-    if (await page.getByLabel("Battle screen").isVisible().catch(() => false)) {
-      await resolveVisibleCombat(page);
-    }
-  }
-}

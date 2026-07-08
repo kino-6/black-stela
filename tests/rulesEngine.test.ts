@@ -21,14 +21,31 @@ function resolveCombat(state: GameState) {
 
 // B1F's trunk runs due east from the entrance; walk it, resolving the placed
 // slime fight along the way, until the party reaches the Black Marker.
-function advanceToB1fMarker(state: GameState) {
+// Walk the trunk east onto the Winding Stair (room.b1f.012), clearing the slime
+// fight and crossing the needle plate along the way.
+function advanceToB1fStair(state: GameState) {
   let current = state;
-  for (let step = 0; step < 40 && current.position?.roomId !== "room.b1f.006"; step += 1) {
+  for (let step = 0; step < 40 && current.position?.roomId !== "room.b1f.012"; step += 1) {
     current = executeCommand(current, defaultWorld, { type: "move_forward" });
     if (current.phase === "combat") {
       current = resolveCombat(current);
     }
   }
+  return current;
+}
+
+// The Black Marker now sits in a south alcove off the trunk, a separate turn from
+// the descent: reach the stair, then thread west two cells and south into the
+// alcove.
+function advanceToB1fMarker(state: GameState) {
+  let current = advanceToB1fStair(state); // at room.b1f.012, facing east
+  current = executeCommand(current, defaultWorld, { type: "turn_left" }); // north
+  current = executeCommand(current, defaultWorld, { type: "turn_left" }); // west
+  current = executeCommand(current, defaultWorld, { type: "move_forward" }); // -> c17_9
+  current = executeCommand(current, defaultWorld, { type: "move_forward" }); // -> c16_9
+  current = executeCommand(current, defaultWorld, { type: "turn_left" }); // south
+  current = executeCommand(current, defaultWorld, { type: "move_forward" }); // -> alcove
+  current = executeCommand(current, defaultWorld, { type: "move_forward" }); // -> room.b1f.006
   return current;
 }
 
@@ -127,24 +144,21 @@ describe("rules engine", () => {
 
   it("gates the descent behind the warden's crank, then needs an explicit stair command", () => {
     const entered = executeCommand(stateWithParty(), defaultWorld, { type: "enter_dungeon" });
-    const marker = advanceToB1fMarker(entered);
-    expect(marker.position?.roomId).toBe("room.b1f.006");
+    const stair = advanceToB1fStair(entered);
+    expect(stair.position?.roomId).toBe("room.b1f.012");
+    expect(stair.position?.facing).toBe("east");
 
-    // Without the crank flag the stair's drop-pin holds fast: east is locked.
-    const lockedTry = executeCommand(marker, defaultWorld, { type: "move_forward" });
-    expect(lockedTry.position?.roomId).toBe("room.b1f.006");
+    // Reaching the stair is ungated, but without the crank flag its drop-pin holds
+    // fast: the descent itself is locked.
+    const lockedTry = executeCommand(stair, defaultWorld, { type: "use_stairs" });
+    expect(lockedTry.position?.roomId).toBe("room.b1f.012");
+    expect(lockedTry.map.floorId).not.toBe("dungeon.b2f");
     expect(lockedTry.log.at(-1)?.tags).toContain("locked");
 
-    // Turning the Warden's Hall crank frees it; the marker then opens east onto
-    // the Winding Stair, which still needs an explicit stair command to descend.
-    const unlocked = { ...marker, discoveredSecrets: [...marker.discoveredSecrets, "flag.b1f.descent"] };
-    const stair = executeCommand(unlocked, defaultWorld, { type: "move_forward" });
-    const moved = executeCommand(stair, defaultWorld, { type: "move_forward" });
-    const descended = executeCommand(stair, defaultWorld, { type: "use_stairs" });
+    // Turning the Warden's Hall crank frees the pin; use stairs then descends.
+    const unlocked = { ...stair, discoveredSecrets: [...stair.discoveredSecrets, "flag.b1f.descent"] };
+    const descended = executeCommand(unlocked, defaultWorld, { type: "use_stairs" });
 
-    expect(stair.position?.roomId).toBe("room.b1f.012");
-    expect(moved.position?.roomId).toBe("room.b1f.012");
-    expect(moved.log.at(-1)?.text).toBe("A stair waits ahead. Choose Use stairs to descend.");
     expect(descended.position?.roomId).toBe("room.b2f.001");
     expect(descended.map.floorId).toBe("dungeon.b2f");
   });

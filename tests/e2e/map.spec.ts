@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { registerAdventurer, resolveVisibleCombat, startNewExpedition } from "./helpers";
+import { advanceToB1fMarker, registerAdventurer, resolveVisibleCombat, startNewExpedition } from "./helpers";
 
 for (const viewport of [
   { name: "desktop", width: 1440, height: 900 },
@@ -61,15 +61,7 @@ test("minimap centers the party and shows walls, doors, and landmarks", async ({
   await expect(current).toHaveClass(/edge-west-wall/);
 
   // Advance to the black-marker cell and confirm its return landmark shows.
-  for (let step = 0; step < 40; step += 1) {
-    if (await page.getByRole("button", { name: "Use return marker" }).isVisible().catch(() => false)) {
-      break;
-    }
-    await page.getByRole("button", { name: "Move", exact: true }).click();
-    if (await page.getByLabel("Battle screen").isVisible().catch(() => false)) {
-      await resolveVisibleCombat(page);
-    }
-  }
+  await advanceToB1fMarker(page);
   await expect(page.getByRole("button", { name: "Use return marker" })).toBeVisible();
   await expect(page.getByTestId("minimap-marker-return")).toHaveCount(1);
 });

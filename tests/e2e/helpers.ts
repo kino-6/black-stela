@@ -161,7 +161,7 @@ export async function resolveVisibleCombat(page: Page) {
 
 // Clear B1F's gated descent: beeline down the col-3 south corridor to the
 // Warden's Hall (whose crank frees the stair's drop-pin), return to the trunk,
-// walk east to the Black Marker, and descend the Winding Stair. Kept to a tight
+// walk east along it onto the freed Winding Stair, and descend. Kept to a tight
 // path so the starter party isn't ground down by stray encounters. Returns once
 // the party stands on B2F's landing.
 export async function descendB1fViaWarden(page: Page) {
@@ -203,15 +203,14 @@ export async function descendB1fViaWarden(page: Page) {
   await moveUntil("Warden's Hall", 3); // crank -> frees the drop-pin
 
   // Return to the trunk via the col-8 corridor (which lands on the central hub),
-  // then east to the marker, now that the stair is freed.
+  // then east along the trunk onto the freed stair.
   await turn("left"); // face east (was facing south)
   await move();
   await move(); // east to the col-8 corridor
   await turn("left"); // face north
   await moveUntil("Ashfall Crossing", 8); // up to the hub
   await turn("right"); // face east
-  await moveUntil("Black Marker", 14);
-  await move(); // east onto the now-unlocked Winding Stair
+  await moveUntil("Winding Stair", 14); // east along the trunk onto the freed stair
   const stairs = page.getByRole("button", { name: "Use stairs" });
   if (await stairs.isVisible().catch(() => false)) {
     await stairs.click();
@@ -221,4 +220,57 @@ export async function descendB1fViaWarden(page: Page) {
     }
   }
   return (await current()).includes("Landing of Split Dust");
+}
+
+async function currentFacing(page: Page): Promise<string> {
+  const text = (await page.getByText(/Facing (north|south|east|west)/i).first().textContent().catch(() => "")) ?? "";
+  return (text.match(/Facing (\w+)/i)?.[1] ?? "").toLowerCase();
+}
+
+async function faceDirection(page: Page, dir: "north" | "south" | "east" | "west") {
+  for (let i = 0; i < 4; i += 1) {
+    if ((await currentFacing(page)) === dir) {
+      return;
+    }
+    await page.getByLabel("Turn right").click();
+    await page.waitForTimeout(30);
+  }
+}
+
+// From the Winding Stair cell (B1F's down-stair), thread back to the Black Marker.
+// The return shortcut now sits in a south alcove off the trunk, a separate turn
+// from the descent, so reaching it is west two cells then south into the alcove.
+export async function walkB1fStairToMarker(page: Page) {
+  const step = async () => {
+    await page.getByRole("button", { name: "Move", exact: true }).click();
+    await page.waitForTimeout(60);
+    if (await page.getByLabel("Battle screen").isVisible().catch(() => false)) {
+      await resolveVisibleCombat(page);
+    }
+  };
+  await faceDirection(page, "west");
+  await step(); // -> corridor
+  await step(); // -> trunk cell that branches to the alcove
+  await faceDirection(page, "south");
+  await step(); // -> alcove corridor
+  await step(); // -> Black Marker
+}
+
+// Reach the Black Marker from the B1F entrance: walk the trunk east onto the
+// Winding Stair (ungated — only the descent itself is locked), then thread into
+// the south alcove. Ends facing south on the marker.
+export async function advanceToB1fMarker(page: Page) {
+  for (let step = 0; step < 40; step += 1) {
+    if (await page.getByRole("heading", { name: "Black Marker" }).isVisible().catch(() => false)) {
+      return;
+    }
+    if (await page.getByRole("heading", { name: "Winding Stair" }).isVisible().catch(() => false)) {
+      break;
+    }
+    await page.getByRole("button", { name: "Move", exact: true }).click();
+    if (await page.getByLabel("Battle screen").isVisible().catch(() => false)) {
+      await resolveVisibleCombat(page);
+    }
+  }
+  await walkB1fStairToMarker(page);
 }

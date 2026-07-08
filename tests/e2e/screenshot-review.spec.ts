@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 import type { Page } from "@playwright/test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { createStarterParty, resolveVisibleCombat, setTitleLanguage, startNewExpedition } from "./helpers";
+import { advanceToB1fMarker, createStarterParty, resolveVisibleCombat, setTitleLanguage, startNewExpedition } from "./helpers";
 
 test("captures desktop screenshot review states", async ({ page }) => {
   await page.goto("/");
@@ -89,14 +89,3 @@ function defaultPackFiles(relativePaths: string[]) {
   }));
 }
 
-async function advanceToB1fMarker(page: Page) {
-  for (let step = 0; step < 40; step += 1) {
-    if (await page.getByRole("heading", { name: "Black Marker" }).isVisible().catch(() => false)) {
-      return;
-    }
-    await page.getByRole("button", { name: "Move", exact: true }).click();
-    if (await page.getByLabel("Battle screen").isVisible().catch(() => false)) {
-      await resolveVisibleCombat(page);
-    }
-  }
-}

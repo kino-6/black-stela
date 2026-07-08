@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 import type { Page } from "@playwright/test";
 import { mkdir, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import { createStarterParty, descendB1fViaWarden, resolveVisibleCombat, startNewExpedition } from "./helpers";
+import { createStarterParty, descendB1fViaWarden, resolveVisibleCombat, startNewExpedition, walkB1fStairToMarker } from "./helpers";
 
 type FailureCategory =
   | "blocked_control"
@@ -151,8 +151,9 @@ test("browser self-play completes the visible dungeon loop without headless shor
     });
 
     await recordStep("return marker brings the party back to town services", "hidden_affordance", async () => {
-      // Step west off the stair cell back onto the return marker.
-      await clickCommand("Move");
+      // The return marker now sits in a south alcove off the trunk, a separate
+      // turn from the descent; thread back to it from the stair cell.
+      await walkB1fStairToMarker(page);
       await expect(page.getByRole("heading", { name: "Black Marker" })).toBeVisible();
       await clickCommand("Use return marker");
       await expect(page.getByRole("heading", { name: "Town", exact: true })).toBeVisible();
