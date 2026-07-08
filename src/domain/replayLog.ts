@@ -1,4 +1,4 @@
-import type { AdventureLogEntry, GameEvent } from "./types";
+import type { AdventureLogEntry, GameEvent, RoomEntryMotion } from "./types";
 import { getLocalizedRoomText } from "./scenario";
 import type { ScenarioWorld } from "./types";
 import { createTranslator, type Locale, type Translator } from "../i18n";
@@ -6,6 +6,16 @@ import { createTranslator, type Locale, type Translator } from "../i18n";
 interface LogProjection {
   text: string;
   tags: string[];
+}
+
+function roomEntryTextKey(motion?: RoomEntryMotion) {
+  if (motion === "backward") {
+    return "events.roomEnteredBack";
+  }
+  if (motion === "left" || motion === "right") {
+    return "events.roomEnteredSide";
+  }
+  return "events.roomEntered";
 }
 
 export function appendEventLogs(state: { log: AdventureLogEntry[]; turn: number }, events: GameEvent[]): AdventureLogEntry[] {
@@ -39,6 +49,11 @@ export function projectEventToLog(event: GameEvent, locale: Locale = "en", world
       return { text: t("events.partyBenched", { name: event.characterName }), tags: ["party"] };
     case "party_member_recalled":
       return { text: t("events.partyRecalled", { name: event.characterName }), tags: ["party"] };
+    case "party_member_reformed":
+      return {
+        text: t(event.row === "front" ? "events.partyToFront" : "events.partyToBack", { name: event.characterName }),
+        tags: ["party"]
+      };
     case "party_member_reclassed":
       return { text: t("events.partyReclassed", { name: event.characterName, className: event.className }), tags: ["party"] };
     case "party_member_retired":
@@ -90,7 +105,7 @@ export function projectEventToLog(event: GameEvent, locale: Locale = "en", world
       return null;
     case "room_entered":
       return {
-        text: t(event.backward ? "events.roomEnteredBack" : "events.roomEntered", {
+        text: t(roomEntryTextKey(event.motion), {
           room: resolveRoomName(event.roomId, event.roomName, world, locale)
         }),
         tags: ["move"]

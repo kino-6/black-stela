@@ -167,6 +167,46 @@ describe("rules engine", () => {
     expect(back.position?.roomId).toBe("room.b1f.001");
     expect(back.log.at(-1)?.text).toBe("A cold wall blocks the way.");
   });
+
+  it("sidesteps left and right through open halls without changing facing", () => {
+    const at: GameState = {
+      ...stateWithParty(),
+      phase: "dungeon",
+      position: { roomId: "room.b1f.c11_3", facing: "east" }
+    };
+
+    // Facing east: left is north, right is south. Neither turns the party.
+    const left = executeCommand(at, defaultWorld, { type: "strafe_left" });
+    expect(left.position?.roomId).toBe("room.b1f.c11_2");
+    expect(left.position?.facing).toBe("east");
+    expect(left.log.at(-1)?.text).toBe("The party sidesteps into Dust-Choked Gallery.");
+
+    const right = executeCommand(at, defaultWorld, { type: "strafe_right" });
+    expect(right.position?.roomId).toBe("room.b1f.009");
+    expect(right.position?.facing).toBe("east");
+  });
+
+  it("reforms a member's combat row while exploring but never mid-combat", () => {
+    const base: GameState = {
+      ...stateWithParty(),
+      phase: "dungeon",
+      position: { roomId: "room.b1f.001", facing: "east" }
+    };
+    const member = base.party[0];
+    const target = member.row === "front" ? "back" : "front";
+
+    const reformed = executeCommand(base, defaultWorld, { type: "set_member_row", characterId: member.id, row: target });
+    expect(reformed.party[0].row).toBe(target);
+    expect(reformed.log.at(-1)?.tags).toContain("party");
+
+    // The formation is locked once blades are drawn.
+    const locked = executeCommand({ ...base, phase: "combat" }, defaultWorld, {
+      type: "set_member_row",
+      characterId: member.id,
+      row: target
+    });
+    expect(locked.party[0].row).toBe(member.row);
+  });
 });
 
 describe("rest points and scarce return", () => {

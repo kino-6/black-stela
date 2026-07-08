@@ -29,6 +29,7 @@ import type {
   CombatActionDeclaration,
   CombatEnemyGroup,
   CombatStatus,
+  CombatRow,
   CombatState,
   Command,
   Direction,
@@ -40,6 +41,7 @@ import type {
   GameEvent,
   GameState,
   PortableAdventurer,
+  RoomEntryMotion,
   ScenarioWorld
 } from "./types";
 
@@ -150,7 +152,11 @@ export function resolveCommand(state: GameState, world: ScenarioWorld, command: 
     case "move_forward":
       return moveForward(state, world);
     case "move_backward":
-      return moveForward(state, world, state.position ? OPPOSITE_DIRECTION[state.position.facing] : undefined);
+      return moveForward(state, world, state.position ? OPPOSITE_DIRECTION[state.position.facing] : undefined, "backward");
+    case "strafe_left":
+      return moveForward(state, world, state.position ? leftOf[state.position.facing] : undefined, "left");
+    case "strafe_right":
+      return moveForward(state, world, state.position ? rightOf[state.position.facing] : undefined, "right");
     case "use_stairs":
       return useStairs(state, world);
     case "inspect_wall":
@@ -169,6 +175,8 @@ export function resolveCommand(state: GameState, world: ScenarioWorld, command: 
       return defend(state);
     case "use_item":
       return useItem(state, world, command.itemId, command.targetCharacterId);
+    case "set_member_row":
+      return setMemberRow(state, command.characterId, command.row);
     case "buy_item":
       return buyItem(state, world, command.shopId, command.itemId);
     case "sell_item":
@@ -186,6 +194,24 @@ export function resolveCommand(state: GameState, world: ScenarioWorld, command: 
     default:
       return noChange(state);
   }
+}
+
+// Move an active member between the front and back combat rows. Available while
+// exploring (the camp menu) or in town — never mid-combat, when the formation is
+// locked. A no-op if the member is missing or already in that row.
+function setMemberRow(state: GameState, characterId: string, row: CombatRow): CommandResult {
+  if (state.phase === "combat") {
+    return noChange(state);
+  }
+  const member = state.party.find((candidate) => candidate.id === characterId);
+  if (!member || member.row === row) {
+    return noChange(state);
+  }
+  const next: GameState = {
+    ...state,
+    party: state.party.map((candidate) => (candidate.id === characterId ? { ...candidate, row } : candidate))
+  };
+  return withEvents(next, [{ type: "party_member_reformed", characterName: member.name, row }]);
 }
 
 // Move an active party member to the guild bench (reserve). Town-only.
@@ -457,7 +483,12 @@ function turn(state: GameState, side: "left" | "right"): CommandResult {
 // or the opposite direction for a backward step). The party's facing never
 // changes here — only their position — so forward and backward share all of the
 // edge/gate/secret/treasure/encounter handling below.
-function moveForward(state: GameState, world: ScenarioWorld, requestedDirection?: Direction): CommandResult {
+function moveForward(
+  state: GameState,
+  world: ScenarioWorld,
+  requestedDirection?: Direction,
+  motion?: RoomEntryMotion
+): CommandResult {
   if (!state.position || state.phase !== "dungeon") {
     return noChange(state);
   }
@@ -534,9 +565,8 @@ function moveForward(state: GameState, world: ScenarioWorld, requestedDirection?
   const room = getRoom(world, exit);
   const roomVisit = visitRoom(state, world, exit, state.position.facing);
   const targetCell = getGridCellForRoom(world, exit);
-  const isBackward = moveDirection !== state.position.facing;
   const events: GameEvent[] = [
-    { type: "room_entered", roomId: room.id, roomName: room.name, backward: isBackward },
+    { type: "room_entered", roomId: room.id, roomName: room.name, motion },
     ...roomVisit.events
   ];
   let next: GameState = {

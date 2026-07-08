@@ -3323,3 +3323,85 @@ textarea {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
+/* Camp — an in-dungeon overlay for reforming the party and sharing supplies. */
+.camp-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  background: rgba(4, 5, 4, 0.72);
+}
+
+.camp-panel {
+  width: min(32rem, 100%);
+  max-height: 90vh;
+  overflow-y: auto;
+  display: grid;
+  gap: 0.9rem;
+  padding: 1.1rem 1.2rem;
+  border: 1px solid #4b5148;
+  border-radius: 8px;
+  background: #12140f;
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.55);
+}
+
+.camp-head h3 {
+  margin: 0;
+  color: #f2efe5;
+}
+
+.camp-head p {
+  margin: 0.2rem 0 0;
+  color: #9c988b;
+  font-size: 0.85rem;
+}
+
+.camp-roster {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.camp-member {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.6rem 0.7rem;
+  border: 1px solid #30372f;
+  border-radius: 6px;
+  background: #0d100d;
+}
+
+.camp-member-info {
+  display: grid;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.camp-member-info strong {
+  color: #f2efe5;
+}
+
+.camp-member-info span {
+  color: #bdb8aa;
+  font-size: 0.8rem;
+}
+
+.camp-member-actions {
+  display: flex;
+  gap: 0.4rem;
+  flex-shrink: 0;
+}
+
+.camp-member-actions button {
+  min-height: 2.1rem;
+  padding: 0.4rem 0.7rem;
+  font-size: 0.85rem;
+}

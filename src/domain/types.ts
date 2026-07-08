@@ -1,5 +1,8 @@
 export type Direction = "north" | "east" | "south" | "west";
 
+// How the party entered a room, for narration. Forward is the default (omitted).
+export type RoomEntryMotion = "backward" | "left" | "right";
+
 export type Command =
   | { type: "enter_dungeon" }
   | { type: "bench_member"; characterId: string }
@@ -13,6 +16,8 @@ export type Command =
   | { type: "resume_at_checkpoint"; roomId: string }
   | { type: "move_forward" }
   | { type: "move_backward" }
+  | { type: "strafe_left" }
+  | { type: "strafe_right" }
   | { type: "use_stairs" }
   | { type: "turn_left" }
   | { type: "turn_right" }
@@ -24,6 +29,7 @@ export type Command =
   | { type: "attack" }
   | { type: "defend" }
   | { type: "use_item"; itemId: string; targetCharacterId: string }
+  | { type: "set_member_row"; characterId: string; row: CombatRow }
   | { type: "buy_item"; shopId: string; itemId: string }
   | { type: "sell_item"; itemId: string }
   | { type: "equip_item"; characterId: string; equipmentId: string }
@@ -203,6 +209,7 @@ export type GameEvent =
   | { type: "party_member_joined"; characterId: string; characterName: string }
   | { type: "party_member_benched"; characterName: string }
   | { type: "party_member_recalled"; characterName: string }
+  | { type: "party_member_reformed"; characterName: string; row: CombatRow }
   | { type: "party_member_reclassed"; characterName: string; className: string }
   | { type: "party_member_retired"; characterName: string }
   | { type: "party_member_unretired"; characterName: string }
@@ -223,7 +230,7 @@ export type GameEvent =
   | { type: "map_exits_known"; floorId: string; roomId: string; exits: Direction[] }
   | { type: "map_exit_blocked"; floorId: string | null; roomId: string; direction: Direction }
   | { type: "map_secret_candidate_added"; floorId: string | null; roomId: string; direction: Direction }
-  | { type: "room_entered"; roomId: string; roomName: string; backward?: boolean }
+  | { type: "room_entered"; roomId: string; roomName: string; motion?: RoomEntryMotion }
   | { type: "trap_triggered"; trapId: string; trapName: string; damage: number }
   | { type: "room_event_triggered"; roomId: string; text: string }
   | { type: "enemy_encountered"; enemyId: string; enemyName: string; roomId: string }

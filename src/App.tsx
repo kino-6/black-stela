@@ -3,6 +3,8 @@ import {
   ArrowDown,
   ArrowLeft,
   ArrowRight,
+  ChevronsLeft,
+  ChevronsRight,
   DoorOpen,
   Footprints,
   FolderOpen,
@@ -17,6 +19,7 @@ import {
   ShoppingBag,
   Square,
   Sword,
+  Tent,
   Upload,
   Users,
   Wand2
@@ -164,6 +167,7 @@ export function App() {
   const [tempoMode, setTempoMode] = useState<TempoMode>("idle");
   const [guildCreationStep, setGuildCreationStep] = useState<GuildCreationStep>("briefing");
   const [guildOfferState, setGuildOfferState] = useState<GuildOfferState>("ask");
+  const [campOpen, setCampOpen] = useState(false);
   const [combatOrders, setCombatOrders] = useState<CombatActionDeclaration[]>([]);
   const [selectedTargetId, setSelectedTargetId] = useState<string | null>(null);
   const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null);
@@ -755,8 +759,14 @@ export function App() {
         run({ type: "move_backward" });
       } else if (state.phase === "dungeon" && key === "q") {
         event.preventDefault();
-        run({ type: "search" });
+        run({ type: "strafe_left" });
       } else if (state.phase === "dungeon" && key === "e") {
+        event.preventDefault();
+        run({ type: "strafe_right" });
+      } else if (state.phase === "dungeon" && key === "f") {
+        event.preventDefault();
+        run({ type: "search" });
+      } else if (state.phase === "dungeon" && key === "g") {
         event.preventDefault();
         run({ type: "use_stairs" });
       } else if (state.phase === "combat" && (key === "f" || key === "enter")) {
@@ -784,6 +794,13 @@ export function App() {
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [combatOrdersReady, isTempoRunning, selectedActor, selectedTarget, state, t, tempoMode]);
+
+  // Camp is an exploration-only menu; a fight or a return to town breaks it.
+  useEffect(() => {
+    if (state.phase !== "dungeon") {
+      setCampOpen(false);
+    }
+  }, [state.phase]);
 
   useEffect(() => {
     if (isTypingTarget(document.activeElement)) {
@@ -2363,6 +2380,9 @@ export function App() {
                   <button type="button" aria-label={t("play.turnLeft")} onClick={() => run({ type: "turn_left" })}>
                     <ArrowLeft size={18} />
                   </button>
+                  <button type="button" aria-label={t("play.strafeLeft")} onClick={() => run({ type: "strafe_left" })}>
+                    <ChevronsLeft size={18} />
+                  </button>
                   <button type="button" onClick={() => run({ type: "move_forward" })}>
                     <Footprints size={18} />
                     {t("play.move")}
@@ -2370,6 +2390,9 @@ export function App() {
                   <button type="button" onClick={() => run({ type: "move_backward" })}>
                     <ArrowDown size={18} />
                     {t("play.moveBack")}
+                  </button>
+                  <button type="button" aria-label={t("play.strafeRight")} onClick={() => run({ type: "strafe_right" })}>
+                    <ChevronsRight size={18} />
                   </button>
                   <button type="button" aria-label={t("play.turnRight")} onClick={() => run({ type: "turn_right" })}>
                     <ArrowRight size={18} />
@@ -2381,6 +2404,10 @@ export function App() {
                   <button type="button" onClick={() => run({ type: "listen" })}>
                     <Volume2 size={18} />
                     {t("play.listen")}
+                  </button>
+                  <button type="button" onClick={() => setCampOpen(true)} data-testid="camp-open">
+                    <Tent size={18} />
+                    {t("play.camp")}
                   </button>
                   {canUseStairs && (
                     <button type="button" className="context-command" onClick={() => run({ type: "use_stairs" })}>
@@ -2411,6 +2438,69 @@ export function App() {
           )}
         </section>
       </section>
+        {campOpen && state.phase === "dungeon" && (
+          <div className="camp-overlay" data-testid="camp-panel">
+            <section
+              className="camp-panel"
+              role="dialog"
+              aria-label={t("play.campTitle")}
+              data-controller-active="true"
+              data-controller-surface="camp"
+            >
+              <header className="camp-head">
+                <h3>{t("play.campTitle")}</h3>
+                <p>{t("play.campSubtitle")}</p>
+              </header>
+              <ul className="camp-roster">
+                {state.party.map((member) => {
+                  const healItem = state.inventory.find((entry) => entry.kind === "healing" && entry.quantity > 0);
+                  return (
+                    <li key={member.id} className="camp-member">
+                      <div className="camp-member-info">
+                        <strong>{member.name}</strong>
+                        <span>{member.row === "front" ? t("play.rowFront") : t("play.rowBack")}</span>
+                        <span>
+                          HP {member.hp}/{member.maxHp}
+                          {member.maxMp ? ` · MP ${member.mp}/${member.maxMp}` : ""}
+                        </span>
+                      </div>
+                      <div className="camp-member-actions">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            run({
+                              type: "set_member_row",
+                              characterId: member.id,
+                              row: member.row === "front" ? "back" : "front"
+                            })
+                          }
+                        >
+                          {member.row === "front" ? t("play.moveToBack") : t("play.moveToFront")}
+                        </button>
+                        {healItem && member.hp < member.maxHp && (
+                          <button
+                            type="button"
+                            onClick={() => run({ type: "use_item", itemId: healItem.id, targetCharacterId: member.id })}
+                          >
+                            {t("play.campHeal", { item: healItem.name })}
+                          </button>
+                        )}
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+              <button
+                type="button"
+                className="primary-action"
+                data-controller-cancel="true"
+                onClick={() => setCampOpen(false)}
+              >
+                {t("play.breakCamp")}
+              </button>
+            </section>
+          </div>
+        )}
         </>
       ) : null}
     </main>
