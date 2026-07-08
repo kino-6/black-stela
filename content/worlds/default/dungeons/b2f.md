@@ -33,7 +33,7 @@ map: |
   ####.###.###.###.###
   ##...............###
   #G...............###
-  ##....S.....K....###
+  ##....S.....K....V##
   ##...............###
   ##...............###
   ####################
@@ -49,6 +49,7 @@ symbols:
   K: room.b2f.007
   D: room.b2f.008
   G: room.b2f.009
+  V: room.b2f.010
 corridor:
   name: Hooked Gallery
   description: A run of fitted stone where iron hooks jut from the mortar gaps, most too old and rust-locked to move.
@@ -71,6 +72,10 @@ edges:
     direction: north
     kind: shortcut
     to: room.b2f.001
+  - from: room.b2f.c16_14
+    direction: east
+    kind: secret
+    to: room.b2f.010
 rooms:
   - id: room.b2f.001
     name: Landing of Split Dust
@@ -193,6 +198,14 @@ rooms:
         name: 西の煤の小間
         description: 南の広間から外れた行き止まりの窪み。煤が深く積もり、縫い綴じの包みを覆っている。
     treasureTable: treasure.b1f.nook
+  - id: room.b2f.010
+    name: Hooked Cache
+    description: A slot of dead air hides behind the south warren's east wall, its seam lost under soot — a cloth-bound cache rests within, richer than the open niches.
+    locales:
+      ja:
+        name: 鉤の隠し宝処
+        description: 南の巣の東壁の裏に、淀んだ空気の隙間が隠れている。継ぎ目は煤に紛れ、布に包まれた蓄えが中に置かれ、開けた小間よりも実り多い。
+    treasureTable: treasure.b2f.secret
 ---
 
 # B2F - Split Dust

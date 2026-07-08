@@ -25,7 +25,7 @@ map: |
   #G....#.A..#..B#..##
   ##................##
   ##....#.S..#..K#..##
-  ##...............P##
+  ##...............PH#
   ##................##
   ##.#################
   ##F#################
@@ -49,6 +49,7 @@ symbols:
   K: room.b7f.008
   G: room.b7f.009
   P: room.b7f.010
+  H: room.b7f.011
 corridor:
   name: Quiet Vault Gallery
   description: A low gallery of sealed niches, the ash undisturbed but for the party's own tracks.
@@ -79,6 +80,10 @@ edges:
     direction: south
     kind: secret
     to: room.b7f.004
+  - from: room.b7f.010
+    direction: east
+    kind: secret
+    to: room.b7f.011
 rooms:
   - id: room.b7f.001
     name: Fork of Quiet Vaults
@@ -187,6 +192,14 @@ rooms:
         name: 隠し物置
         description: 偽りの壁の奥、乾いた窪みに、誰かが取り戻すはずだった物が隠されている。
     treasureTable: treasure.b7f.cache
+  - id: room.b7f.011
+    name: Sealed Cache
+    description: A slot of dead air hides behind the east niche's back wall, its seam packed with cold ash — a cloth-bound cache rests within, richer than the open niches.
+    locales:
+      ja:
+        name: 封じ龕の隠し宝処
+        description: 東の龕の奥壁の裏に、淀んだ空気の隙間が隠れている。継ぎ目は冷えた灰で詰まり、布に包まれた蓄えが中に置かれ、開けた小間よりも実り多い。
+    treasureTable: treasure.b7f.secret
 ---
 
 # B7F - Side Ash Vaults

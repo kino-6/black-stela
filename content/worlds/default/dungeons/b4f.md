@@ -29,7 +29,7 @@ map: |
   ####.####.####.##.M#
   ##................##
   ##................##
-  #G....S.....K.....##
+  #G....S.....K.....V#
   ##................##
   ##................##
   ####################
@@ -47,6 +47,7 @@ symbols:
   S: room.b4f.007
   K: room.b4f.008
   G: room.b4f.009
+  V: room.b4f.010
 corridor:
   name: Lantern Gallery
   description: A gallery where the lantern hooks all lean the same way, and the floor gives back no echo.
@@ -69,6 +70,10 @@ edges:
     direction: south
     kind: one_way
     to: room.b4f.007
+  - from: room.b4f.c17_12
+    direction: east
+    kind: secret
+    to: room.b4f.010
 rooms:
   - id: room.b4f.001
     name: Lanterns Facing Inward
@@ -192,6 +197,14 @@ rooms:
           ja:
             clue: 鎖の外し金は固く噛んでいる。それを解く巻き上げは、下灯の広間に垂れている。
     treasureTable: treasure.b4f.dark
+  - id: room.b4f.010
+    name: Unlit Cache
+    description: A slot of dead air hides behind the lower hall's east wall, its seam lost in the failing light — a cloth-bound cache rests within, richer than the open niches.
+    locales:
+      ja:
+        name: 灯なき隠し宝処
+        description: 下の広間の東壁の裏に、淀んだ空気の隙間が隠れている。継ぎ目は衰える光に紛れ、布に包まれた蓄えが中に置かれ、開けた小間よりも実り多い。
+    treasureTable: treasure.b4f.secret
 ---
 
 # B4F - Turned Lanterns

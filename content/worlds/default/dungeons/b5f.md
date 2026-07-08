@@ -22,7 +22,7 @@ map: |
   ####################
   ##..........########
   #P........B.########
-  ##....A.....########
+  ##....A.....T#######
   ##..........########
   ##..........########
   ###.###.###.########
@@ -48,6 +48,7 @@ symbols:
   K: room.b5f.008
   G: room.b5f.009
   V: room.b5f.010
+  T: room.b5f.011
 corridor:
   name: Toll Gallery
   description: A gallery of gray cinder-drift, finger bones ground into the grit underfoot.
@@ -71,6 +72,10 @@ edges:
     kind: stairs
     to: room.b6f.001
     targetFloorId: dungeon.b6f
+  - from: room.b5f.c11_5
+    direction: east
+    kind: secret
+    to: room.b5f.011
 rooms:
   - id: room.b5f.001
     name: Cinder Toll Hall
@@ -172,6 +177,14 @@ rooms:
         name: 燃え殻の小間
         description: 南の広間から外れた行き止まりの窪み。灰色の灰に包みが半ば沈んでいる。
     treasureTable: treasure.b1f.nook
+  - id: room.b5f.011
+    name: Toll Cache
+    description: A slot of dead air hides behind the north toll hall's east wall, its seam banked over with cold cinders — a cloth-bound cache rests within, richer than the open niches.
+    locales:
+      ja:
+        name: 通行料の隠し宝処
+        description: 北の関門の東壁の裏に、淀んだ空気の隙間が隠れている。継ぎ目は冷えた燃え殻に埋もれ、布に包まれた蓄えが中に置かれ、開けた小間よりも実り多い。
+    treasureTable: treasure.b5f.secret
 ---
 
 # B5F - Toll of Cinders

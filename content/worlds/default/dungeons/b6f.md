@@ -32,7 +32,7 @@ map: |
   #########.##########
   ######.......#######
   ######.......#######
-  ######D....K.#######
+  ######D....K.V######
   ######.......#######
   ######.......#######
   ####################
@@ -48,6 +48,7 @@ symbols:
   D: room.b6f.003
   K: room.b6f.007
   G: room.b6f.008
+  V: room.b6f.009
 corridor:
   name: Oath Gallery
   description: A gallery whose walls are scratched over with names, each crossed out by a different hand.
@@ -66,6 +67,10 @@ edges:
     kind: stairs
     to: room.b7f.001
     targetFloorId: dungeon.b7f
+  - from: room.b6f.c12_13
+    direction: east
+    kind: secret
+    to: room.b6f.009
 rooms:
   - id: room.b6f.001
     name: Vow Passage
@@ -148,6 +153,14 @@ rooms:
         name: 塩の宝庫
         description: 迫持の脇の塩にまみれた宝庫。棚には、先の誓約破りが取りに戻らなかったものが残っている。
     treasureTable: treasure.b6f.side
+  - id: room.b6f.009
+    name: Vault Cache
+    description: A slot of dead air hides behind the lower chamber's east wall, its seam sealed with old salt — a cloth-bound cache rests within, richer than the open niches.
+    locales:
+      ja:
+        name: 誓いの隠し宝処
+        description: 下の広間の東壁の裏に、淀んだ空気の隙間が隠れている。継ぎ目は古い塩で固められ、布に包まれた蓄えが中に置かれ、開けた小間よりも実り多い。
+    treasureTable: treasure.b6f.secret
 ---
 
 # B6F - Narrow Oaths

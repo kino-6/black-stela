@@ -23,7 +23,7 @@ map: |
   ####################
   ####################
   ##W...............##
-  ##.......A........T#
+  ##.......A........TV
   #E...#...#...#....##
   ##...........B....##
   ##..............H.##
@@ -51,6 +51,7 @@ symbols:
   D: room.b3f.003
   S: room.b3f.006
   G: room.b3f.007
+  V: room.b3f.008
 corridor:
   name: Cistern Gallery
   description: A low gallery of fitted stone, the floor scored by old water-lines and drifting ash.
@@ -73,6 +74,10 @@ edges:
     direction: south
     kind: shortcut
     to: room.b3f.001
+  - from: room.b3f.cache
+    direction: east
+    kind: secret
+    to: room.b3f.008
 rooms:
   - id: room.b3f.001
     name: Dry Cistern Mouth
@@ -205,6 +210,14 @@ rooms:
         description: 鎖梯子が、音のない四角い井戸を下っている。井戸端の擦り切れた綱の環が、まだ帰り道を保っている。
     restPoint: true
     event: The chain is cold enough to numb fingers through leather.
+  - id: room.b3f.008
+    name: Silt Vault
+    description: A slot of dead air hides behind the reliquary's east wall, its seam caked over with dried silt — a cloth-bound cache rests within, richer than the open niches.
+    locales:
+      ja:
+        name: 泥の隠し宝処
+        description: 小祠の東壁の裏に、淀んだ空気の隙間が隠れている。継ぎ目は乾いた泥で固まり、布に包まれた蓄えが中に置かれ、開けた小間よりも実り多い。
+    treasureTable: treasure.b3f.secret
 ---
 
 # B3F - Cistern Teeth

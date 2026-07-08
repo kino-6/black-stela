@@ -23,7 +23,7 @@ map: |
   ####################
   ##.........#########
   #P.......B.#########
-  ##....A....#########
+  ##....A....T########
   ##.........#########
   ##.........#########
   ###.##.##.##########
@@ -49,6 +49,7 @@ symbols:
   K: room.b8f.008
   G: room.b8f.009
   V: room.b8f.010
+  T: room.b8f.011
 corridor:
   name: Gate Approach
   description: A gallery that tastes of a candle just after it dies, ash hanging in the still air.
@@ -62,6 +63,10 @@ edges:
     kind: stairs
     to: room.b7f.001
     targetFloorId: dungeon.b7f
+  - from: room.b8f.c10_5
+    direction: east
+    kind: secret
+    to: room.b8f.011
 rooms:
   - id: room.b8f.001
     name: Ash Gate Approach
@@ -156,6 +161,14 @@ rooms:
         name: 門灰の小間
         description: 南の広間から外れた行き止まりの窪み。灰色の灰に包みが半ば沈んでいる。
     treasureTable: treasure.b1f.nook
+  - id: room.b8f.011
+    name: Gate Cache
+    description: A slot of dead air hides behind the north gate hall's east wall, its seam grey with settled ash — a cloth-bound cache rests within, richer than the open niches.
+    locales:
+      ja:
+        name: 門の隠し宝処
+        description: 北の門の広間の東壁の裏に、淀んだ空気の隙間が隠れている。継ぎ目は積もった灰で灰色に霞み、布に包まれた蓄えが中に置かれ、開けた小間よりも実り多い。
+    treasureTable: treasure.b8f.secret
 ---
 
 # B8F - Gate of Ash

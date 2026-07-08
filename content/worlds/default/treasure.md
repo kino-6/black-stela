@@ -128,6 +128,69 @@ treasureTables:
         weight: 5
       - itemId: item.lantern-oil
         weight: 3
+  - id: treasure.b2f.secret
+    tier: 2
+    entries:
+      - itemId: equip.militia-sabre
+        weight: 4
+      - itemId: equip.padded-jack
+        weight: 3
+      - itemId: item.stela-shard
+        weight: 3
+  - id: treasure.b3f.secret
+    tier: 2
+    entries:
+      - itemId: equip.ring-mail
+        weight: 4
+      - itemId: equip.candle-ward
+        weight: 3
+      - itemId: item.stela-shard
+        weight: 3
+  - id: treasure.b4f.secret
+    tier: 3
+    entries:
+      - itemId: equip.grip-gloves
+        weight: 4
+      - itemId: equip.iron-cap
+        weight: 3
+      - itemId: item.stela-shard
+        weight: 3
+  - id: treasure.b5f.secret
+    tier: 4
+    entries:
+      - itemId: equip.ashwood-staff
+        weight: 4
+      - itemId: equip.ring-mail
+        weight: 3
+      - itemId: item.stela-shard
+        weight: 3
+  - id: treasure.b6f.secret
+    tier: 4
+    entries:
+      - itemId: equip.black-thread-ring
+        weight: 4
+      - itemId: equip.chalk-cord
+        weight: 3
+      - itemId: item.stela-shard
+        weight: 3
+  - id: treasure.b7f.secret
+    tier: 5
+    entries:
+      - itemId: equip.militia-sabre
+        weight: 3
+      - itemId: equip.black-thread-ring
+        weight: 4
+      - itemId: item.stela-shard
+        weight: 3
+  - id: treasure.b8f.secret
+    tier: 5
+    entries:
+      - itemId: equip.black-thread-ring
+        weight: 4
+      - itemId: equip.ring-mail
+        weight: 3
+      - itemId: item.stela-shard
+        weight: 3
 ---
 
 # Treasure Tables
