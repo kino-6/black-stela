@@ -5,6 +5,7 @@ import { SPELLS, knownSpells } from "./spells";
 import { FEAR_ACCURACY_PENALTY, POISON_DAMAGE, STATUS_WEAR_OFF, statusResistPct } from "./status";
 import {
   getExit,
+  getFloorForRoom,
   getFloorIdForRoom,
   getGridCellForRoom,
   getGridEdge,
@@ -515,7 +516,7 @@ function moveForward(
   }
 
   const forwardGate = getRoom(world, state.position.roomId).gates?.find((gate) => gate.direction === moveDirection);
-  if (forwardGate && !isGateOpen(forwardGate, state)) {
+  if (forwardGate && !isGateOpen(forwardGate, state, world)) {
     return withEvents({ ...state, turn: state.turn + 1 }, [
       {
         type: "movement_blocked",
@@ -658,7 +659,7 @@ function useStairs(state: GameState, world: ScenarioWorld): CommandResult {
   // (e.g. a branch crank frees the drop-pin), so a gated stair can't be used by
   // walking straight onto it.
   const stairGate = getRoom(world, state.position.roomId).gates?.find((gate) => gate.direction === state.position!.facing);
-  if (stairGate && !isGateOpen(stairGate, state)) {
+  if (stairGate && !isGateOpen(stairGate, state, world)) {
     return withEvents({ ...state, turn: state.turn + 1 }, [
       { type: "movement_blocked", reason: "locked", roomId: state.position.roomId, facing: state.position.facing }
     ]);
@@ -1875,11 +1876,28 @@ function applyCellEffects(
   return applyTeleport(next, world, room, events);
 }
 
-function isGateOpen(gate: ExplorationGate, state: GameState): boolean {
+// Fraction of the current floor's reachable grid cells the party has visited.
+export function floorExploredRatio(world: ScenarioWorld, state: GameState): number {
+  if (!state.position) {
+    return 0;
+  }
+  const cells = getFloorForRoom(world, state.position.roomId)?.grid?.cells ?? [];
+  if (cells.length === 0) {
+    return 0;
+  }
+  const visited = new Set(state.map.visitedRooms);
+  const seen = cells.filter((cell: { roomId: string }) => visited.has(cell.roomId)).length;
+  return seen / cells.length;
+}
+
+function isGateOpen(gate: ExplorationGate, state: GameState, world: ScenarioWorld): boolean {
   if (gate.requiredKeyId && !state.inventory.some((item) => item.id === gate.requiredKeyId && item.quantity > 0)) {
     return false;
   }
   if (gate.requiredFlag && !state.discoveredSecrets.includes(gate.requiredFlag)) {
+    return false;
+  }
+  if (gate.requiredExploredRatio != null && floorExploredRatio(world, state) < gate.requiredExploredRatio) {
     return false;
   }
   return true;

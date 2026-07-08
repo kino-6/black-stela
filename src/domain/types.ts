@@ -566,6 +566,10 @@ export interface ExplorationGate {
   requiredKeyId?: string;
   requiredFlag?: string;
   grantsFlag?: string;
+  // Fraction (0-1) of the floor's reachable cells that must be visited before the
+  // gate opens — an exploration-gated descent, so the stairs can't be reached by a
+  // straight shot without mapping most of the floor.
+  requiredExploredRatio?: number;
   clue?: string;
   locales?: Partial<Record<string, { clue?: string }>>;
 }
