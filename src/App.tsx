@@ -72,6 +72,7 @@ import {
 } from "./ui/format";
 import {
   SHOP_CATEGORY_ORDER,
+  describeEquipmentInstance,
   equippedName,
   findEquipmentById,
   formatCharacterNotes,
@@ -85,6 +86,7 @@ import {
   shopCategoryFor,
   type ShopCategory
 } from "./ui/catalog";
+import { equipmentInstanceKey } from "./domain/affixes";
 import { projectEventToLog } from "./domain/replayLog";
 import { calculateRecoveryCost, getEffectiveCharacterStats, isEquipmentUsableBy } from "./domain/economy";
 import type {
@@ -2034,10 +2036,13 @@ export function App() {
                           <p className="empty-state">{t("town.inventoryEmpty")}</p>
                         ) : (
                           state.inventory.map((item) => (
-                            <article className="shop-row shop-row-with-icon" key={item.id}>
+                            <article
+                              className="shop-row shop-row-with-icon"
+                              key={equipmentInstanceKey(item.id, item.plus, item.affix)}
+                            >
                               {renderCatalogIcon(item.id)}
                               <div>
-                                <strong>{localizedCatalogName(item.id, locale)}</strong>
+                                <strong>{describeEquipmentInstance(item.id, locale, t, item.plus, item.affix)}</strong>
                                 <span>
                                   {item.kind === "equipment" && item.slot
                                     ? `${formatEquipmentSlot(item.slot, t)} · ${formatInventoryEffect(item, t)}`
@@ -2048,8 +2053,18 @@ export function App() {
                               </div>
                               <button
                                 type="button"
-                                disabled={(item.sellValue ?? 0) <= 0 || state.party.some((member) => Object.values(member.equipment).includes(item.id))}
-                                onClick={() => run({ type: "sell_item", itemId: item.id })}
+                                disabled={
+                                  (item.sellValue ?? 0) <= 0 ||
+                                  state.party.some((member) =>
+                                    Object.values(member.equipment).some(
+                                      (equipped) =>
+                                        equipped &&
+                                        equipmentInstanceKey(equipped.id, equipped.plus, equipped.affix) ===
+                                          equipmentInstanceKey(item.id, item.plus, item.affix)
+                                    )
+                                  )
+                                }
+                                onClick={() => run({ type: "sell_item", itemId: item.id, plus: item.plus, affix: item.affix })}
                               >
                                 {t("town.sell")}
                               </button>
@@ -2076,7 +2091,7 @@ export function App() {
                           {equipmentSlotOrder.map((slot) => (
                             <div key={`${selectedProfile.id}:${slot}`}>
                               <dt>{formatEquipmentSlot(slot, t)}</dt>
-                              <dd>{equippedName(selectedProfile.equipment[slot], locale)}</dd>
+                              <dd>{equippedName(selectedProfile.equipment[slot], locale, t)}</dd>
                             </div>
                           ))}
                         </dl>
@@ -2088,13 +2103,21 @@ export function App() {
                           return (
                             <button
                               type="button"
-                              key={`${selectedProfile.id}:${item.id}`}
-                              aria-label={`${t("town.equip")} ${localizedCatalogName(item.id, locale)} to ${selectedProfile.name}`}
+                              key={`${selectedProfile.id}:${equipmentInstanceKey(item.id, item.plus, item.affix)}`}
+                              aria-label={`${t("town.equip")} ${describeEquipmentInstance(item.id, locale, t, item.plus, item.affix)} to ${selectedProfile.name}`}
                               disabled={!usable}
-                              onClick={() => run({ type: "equip_item", characterId: selectedProfile.id, equipmentId: item.id })}
+                              onClick={() =>
+                                run({
+                                  type: "equip_item",
+                                  characterId: selectedProfile.id,
+                                  equipmentId: item.id,
+                                  plus: item.plus,
+                                  affix: item.affix
+                                })
+                              }
                             >
                               {renderCatalogIcon(item.id)}
-                              {localizedCatalogName(item.id, locale)}
+                              {describeEquipmentInstance(item.id, locale, t, item.plus, item.affix)}
                               <small>{usable ? t("town.allowed") : t("town.ineligible")}</small>
                             </button>
                           );

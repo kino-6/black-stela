@@ -47,7 +47,7 @@ describe("save data", () => {
     expect(parsed.state.claimedTreasures).toEqual([]);
   });
 
-  it("normalizes legacy armor equipment into the body slot", () => {
+  it("round trips affixed and upgraded equipment instances", () => {
     const save = toSaveDataV1(progressedState(), defaultWorld, { savedAt: "2026-07-03T00:00:00.000Z" });
     const parsed = parseSaveDataV1({
       ...save,
@@ -55,13 +55,13 @@ describe("save data", () => {
         ...save.state,
         party: save.state.party.map((member) => ({
           ...member,
-          equipment: { weapon: "equip.militia-sabre", armor: "equip.padded-jack" }
+          equipment: { weapon: { id: "equip.militia-sabre", plus: 1, affix: "keen" }, body: { id: "equip.padded-jack" } }
         }))
       }
     });
 
-    expect(parsed.state.party[0].equipment.weapon).toBe("equip.militia-sabre");
-    expect(parsed.state.party[0].equipment.body).toBe("equip.padded-jack");
+    expect(parsed.state.party[0].equipment.weapon).toEqual({ id: "equip.militia-sabre", plus: 1, affix: "keen" });
+    expect(parsed.state.party[0].equipment.body).toEqual({ id: "equip.padded-jack" });
   });
 
   it("round trips economy and equipment state", () => {

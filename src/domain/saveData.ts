@@ -10,20 +10,19 @@ const LocalizedNameDescriptionSchema = z
     ja: z.object({ name: z.string().optional(), description: z.string().optional() }).optional()
   });
 const EquipmentSlotSchema = z.enum(["weapon", "offhand", "body", "head", "hands", "accessory"]);
-const EquipmentRecordSchema = z
-  .object({
-    weapon: z.string().min(1).optional(),
-    offhand: z.string().min(1).optional(),
-    body: z.string().min(1).optional(),
-    armor: z.string().min(1).optional(),
-    head: z.string().min(1).optional(),
-    hands: z.string().min(1).optional(),
-    accessory: z.string().min(1).optional()
-  })
-  .transform(({ armor, ...equipment }) => ({
-    ...equipment,
-    body: equipment.body ?? armor
-  }));
+const EquippedItemSchema = z.object({
+  id: z.string().min(1),
+  plus: z.number().int().positive().optional(),
+  affix: z.string().min(1).optional()
+});
+const EquipmentRecordSchema = z.object({
+  weapon: EquippedItemSchema.optional(),
+  offhand: EquippedItemSchema.optional(),
+  body: EquippedItemSchema.optional(),
+  head: EquippedItemSchema.optional(),
+  hands: EquippedItemSchema.optional(),
+  accessory: EquippedItemSchema.optional()
+});
 
 const CharacterSchema = z.object({
   id: z.string().min(1),
@@ -150,7 +149,9 @@ const InventoryItemSchema = z.object({
   defenseBonus: z.number().int().optional(),
   accuracyBonus: z.number().int().optional(),
   speedBonus: z.number().int().optional(),
-  sellValue: z.number().int().nonnegative().optional()
+  sellValue: z.number().int().nonnegative().optional(),
+  plus: z.number().int().positive().optional(),
+  affix: z.string().min(1).optional()
 });
 
 const EnemySchema = z.object({

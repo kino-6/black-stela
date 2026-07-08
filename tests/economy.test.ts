@@ -38,14 +38,14 @@ describe("economy and equipment", () => {
 
     expect(bought.partyGold).toBe(state.partyGold - 45);
     expect(bought.inventory.find((item) => item.id === "equip.militia-sabre")?.quantity).toBe(1);
-    expect(equipped.party[0].equipment.weapon).toBe("equip.militia-sabre");
+    expect(equipped.party[0].equipment.weapon?.id).toBe("equip.militia-sabre");
     expect(getEffectiveCharacterStats(equipped.party[0], defaultWorld).damageMax).toBe(
       state.party[0].damageMax + 2
     );
 
     const sellEquipped = executeCommand(equipped, defaultWorld, { type: "sell_item", itemId: "equip.militia-sabre" });
     expect(sellEquipped.partyGold).toBe(equipped.partyGold);
-    expect(sellEquipped.party[0].equipment.weapon).toBe("equip.militia-sabre");
+    expect(sellEquipped.party[0].equipment.weapon?.id).toBe("equip.militia-sabre");
   });
 
   it("supports DRPG equipment slots, stat tradeoffs, and class restrictions", () => {
@@ -90,9 +90,9 @@ describe("economy and equipment", () => {
       }
     );
 
-    expect(withGrip.party[0].equipment.offhand).toBe("equip.split-buckler");
-    expect(withGrip.party[0].equipment.head).toBe("equip.iron-cap");
-    expect(withGrip.party[0].equipment.hands).toBe("equip.grip-gloves");
+    expect(withGrip.party[0].equipment.offhand?.id).toBe("equip.split-buckler");
+    expect(withGrip.party[0].equipment.head?.id).toBe("equip.iron-cap");
+    expect(withGrip.party[0].equipment.hands?.id).toBe("equip.grip-gloves");
     expect(getEffectiveCharacterStats(withGrip.party[0], defaultWorld)).toMatchObject({
       armor: state.party[0].armor + 2,
       accuracy: state.party[0].accuracy + 4,

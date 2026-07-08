@@ -7,6 +7,7 @@ import type {
   CharacterTraitId,
   CombatRow,
   EquipmentSlot,
+  EquippedItem,
   ImportAdjustmentKind,
   PortableAdventurer,
   ScenarioImportPolicy,
@@ -435,7 +436,7 @@ export function createGuildCharacter(input: GuildCharacterInput): Character {
     traitIds,
     accentColor: input.accentColor ?? background.accentColor,
     startingEquipment: Object.values(loadout),
-    equipment: loadout,
+    equipment: toEquippedSlots(loadout),
     creation: {
       method: input.method ?? "detailed",
       seed: input.seed,
@@ -494,18 +495,29 @@ export function reclassCharacter(character: Character, newClassId: CharacterClas
   };
   const releveled = applyLevelUps(base).character;
 
-  const equipment: Partial<Record<EquipmentSlot, string>> = {};
-  for (const [slot, equipmentId] of Object.entries(releveled.equipment) as [EquipmentSlot, string | undefined][]) {
-    if (!equipmentId) {
+  const equipment: Partial<Record<EquipmentSlot, EquippedItem>> = {};
+  for (const [slot, equipped] of Object.entries(releveled.equipment) as [EquipmentSlot, EquippedItem | undefined][]) {
+    if (!equipped) {
       continue;
     }
-    const equip = findEquipment(world, equipmentId);
+    const equip = findEquipment(world, equipped.id);
     if (equip && isEquipmentUsableBy(equip, releveled)) {
-      equipment[slot] = equipmentId;
+      equipment[slot] = equipped;
     }
   }
 
   return { ...releveled, hp: releveled.maxHp, mp: releveled.maxMp, equipment };
+}
+
+// Turn a template's slot->id map into equipped instances (plain, no affix).
+function toEquippedSlots(ids: Partial<Record<EquipmentSlot, string>>): Partial<Record<EquipmentSlot, EquippedItem>> {
+  const slots: Partial<Record<EquipmentSlot, EquippedItem>> = {};
+  for (const [slot, id] of Object.entries(ids) as [EquipmentSlot, string | undefined][]) {
+    if (id) {
+      slots[slot] = { id };
+    }
+  }
+  return slots;
 }
 
 // Capture a registered adventurer as a scenario-independent snapshot. Identity,

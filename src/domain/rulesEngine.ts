@@ -23,6 +23,7 @@ import {
   isEquipmentUsableBy,
   removeInventoryItem
 } from "./economy";
+import { EQUIPMENT_AFFIXES, equipmentInstanceKey } from "./affixes";
 import type {
   Character,
   CharacterClassId,
@@ -36,6 +37,7 @@ import type {
   DungeonRoom,
   Element,
   Enemy,
+  EquipmentSlot,
   EnemyAbility,
   ExplorationGate,
   GameEvent,
@@ -180,9 +182,9 @@ export function resolveCommand(state: GameState, world: ScenarioWorld, command: 
     case "buy_item":
       return buyItem(state, world, command.shopId, command.itemId);
     case "sell_item":
-      return sellItem(state, world, command.itemId);
+      return sellItem(state, world, command.itemId, command.plus, command.affix);
     case "equip_item":
-      return equipItem(state, world, command.characterId, command.equipmentId);
+      return equipItem(state, world, command.characterId, command.equipmentId, command.plus, command.affix);
     case "declare_round":
       return declareRound(state, world, command.actions);
     case "retreat":
@@ -1201,16 +1203,24 @@ function buyItem(state: GameState, world: ScenarioWorld, shopId: string, itemId:
   return withEvents(next, [{ type: "item_bought", itemId, itemName: item.name, gold: stock.price }]);
 }
 
-function sellItem(state: GameState, world: ScenarioWorld, itemId: string): CommandResult {
+function sellItem(state: GameState, world: ScenarioWorld, itemId: string, plus?: number, affix?: string): CommandResult {
   if (state.phase !== "town") {
     return noChange(state);
   }
 
-  const item = state.inventory.find((candidate) => candidate.id === itemId && candidate.quantity > 0);
+  const key = equipmentInstanceKey(itemId, plus, affix);
+  const item = state.inventory.find(
+    (candidate) => equipmentInstanceKey(candidate.id, candidate.plus, candidate.affix) === key && candidate.quantity > 0
+  );
   if (!item) {
     return noChange(state);
   }
-  if (state.party.some((member) => Object.values(member.equipment).includes(itemId))) {
+  // Only the exact equipped instance is protected from selling.
+  if (
+    state.party.some((member) =>
+      Object.values(member.equipment).some((slot) => slot && equipmentInstanceKey(slot.id, slot.plus, slot.affix) === key)
+    )
+  ) {
     return noChange(state);
   }
 
@@ -1226,19 +1236,29 @@ function sellItem(state: GameState, world: ScenarioWorld, itemId: string): Comma
   const next: GameState = {
     ...state,
     partyGold: state.partyGold + catalogValue,
-    inventory: removeInventoryItem(state.inventory, itemId, 1),
+    inventory: removeInventoryItem(state.inventory, itemId, 1, plus, affix),
     turn: state.turn + 1
   };
 
   return withEvents(next, [{ type: "item_sold", itemId, itemName: item.name, gold: catalogValue }]);
 }
 
-function equipItem(state: GameState, world: ScenarioWorld, characterId: string, equipmentId: string): CommandResult {
+function equipItem(
+  state: GameState,
+  world: ScenarioWorld,
+  characterId: string,
+  equipmentId: string,
+  plus?: number,
+  affix?: string
+): CommandResult {
   if (state.phase !== "town") {
     return noChange(state);
   }
 
-  const item = state.inventory.find((candidate) => candidate.id === equipmentId && candidate.quantity > 0);
+  const key = equipmentInstanceKey(equipmentId, plus, affix);
+  const item = state.inventory.find(
+    (candidate) => equipmentInstanceKey(candidate.id, candidate.plus, candidate.affix) === key && candidate.quantity > 0
+  );
   const equipment = findEquipment(world, equipmentId);
   const slot = getEquipmentSlot(world, equipmentId);
   const character = state.party.find((member) => member.id === characterId);
@@ -1254,7 +1274,7 @@ function equipItem(state: GameState, world: ScenarioWorld, characterId: string, 
             ...member,
             equipment: {
               ...member.equipment,
-              [slot]: equipmentId
+              [slot]: { id: equipmentId, plus, affix }
             }
           }
         : member
@@ -1367,6 +1387,17 @@ function collectRoomTreasure(
     return { state, events: [] };
   }
 
+  // Dropped equipment can roll a numeric "+N" upgrade and/or a named enchant,
+  // scaled by floor depth. Deterministic on (room, turn) so replays match.
+  if (item.kind === "equipment") {
+    const equipment = findEquipment(world, entry.itemId);
+    if (equipment) {
+      const rolled = rollEquipmentInstance(equipment.slot, floorNumberForRoom(world, roomId), `${roomId}:${state.turn}`);
+      item.plus = rolled.plus;
+      item.affix = rolled.affix;
+    }
+  }
+
   return {
     state: {
       ...state,
@@ -1379,10 +1410,41 @@ function collectRoomTreasure(
         itemId: item.id,
         itemName: item.name,
         quantity: item.quantity,
-        source: "treasure"
+        source: "treasure",
+        plus: item.plus,
+        affix: item.affix
       }
     ]
   };
+}
+
+function floorNumberForRoom(world: ScenarioWorld, roomId: string): number {
+  const match = (getFloorIdForRoom(world, roomId) ?? "").match(/b(\d+)f/);
+  return match ? Number(match[1]) : 1;
+}
+
+// Roll instance data for a dropped equipment piece. Chances rise with depth; a
+// "+2" only appears from floor 4, and enchants are drawn from the slot- and
+// depth-appropriate pool.
+export function rollEquipmentInstance(
+  slot: EquipmentSlot,
+  floor: number,
+  seed: string
+): { plus?: number; affix?: string } {
+  const result: { plus?: number; affix?: string } = {};
+
+  if (hashSeed(`${seed}:plus`) % 100 < 20 + floor * 5) {
+    result.plus = floor >= 4 && hashSeed(`${seed}:plus2`) % 100 < 30 ? 2 : 1;
+  }
+
+  if (hashSeed(`${seed}:affix`) % 100 < 15 + floor * 5) {
+    const pool = EQUIPMENT_AFFIXES.filter((affix) => affix.slots.includes(slot) && affix.minFloor <= floor);
+    if (pool.length > 0) {
+      result.affix = pool[hashSeed(`${seed}:affixpick`) % pool.length].id;
+    }
+  }
+
+  return result;
 }
 
 function resolveTreasureTable(world: ScenarioWorld, tableId: string, seed: string) {

@@ -1,8 +1,8 @@
 import { defaultWorld } from "../data/defaultWorld";
 import { findBackground, findClass } from "../domain/characterCreation";
 import { getEffectiveCharacterStats } from "../domain/economy";
-import type { Character, CombatActionDeclaration, GameState, ScenarioEquipment } from "../domain/types";
-import type { Locale, Translator } from "../i18n";
+import type { Character, CombatActionDeclaration, EquippedItem, GameState, ScenarioEquipment } from "../domain/types";
+import type { Locale, TranslationKey, Translator } from "../i18n";
 import { formatCombatAction, formatCombatRow } from "./format";
 
 /**
@@ -39,8 +39,25 @@ export function localizedCatalogDescription(itemId: string | undefined, locale: 
   return equipment?.locales?.[locale]?.description ?? equipment?.description ?? "";
 }
 
-export function equippedName(itemId: string | undefined, locale: Locale) {
-  return itemId ? localizedCatalogName(itemId, locale) : "-";
+// Decorate a base equipment name with its enchant prefix and "+N" suffix, e.g.
+// "Keen Militia Sabre +1". Plain gear returns just the base name.
+export function describeEquipmentInstance(
+  itemId: string | undefined,
+  locale: Locale,
+  t: Translator,
+  plus?: number,
+  affix?: string
+) {
+  if (!itemId) {
+    return "-";
+  }
+  const prefix = affix ? `${t(`affix.${affix}` as TranslationKey)} ` : "";
+  const suffix = plus ? ` +${plus}` : "";
+  return `${prefix}${localizedCatalogName(itemId, locale)}${suffix}`;
+}
+
+export function equippedName(equipped: EquippedItem | undefined, locale: Locale, t: Translator) {
+  return equipped ? describeEquipmentInstance(equipped.id, locale, t, equipped.plus, equipped.affix) : "-";
 }
 
 export function localizedEnemyGroupName(group: { enemyId: string; name: string }, locale: Locale) {
@@ -54,7 +71,7 @@ export function previewEquipmentStats(member: Character, equipment: ScenarioEqui
       ...member,
       equipment: {
         ...member.equipment,
-        [equipment.slot]: equipment.id
+        [equipment.slot]: { id: equipment.id }
       }
     },
     defaultWorld

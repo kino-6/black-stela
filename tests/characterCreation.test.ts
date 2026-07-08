@@ -70,8 +70,8 @@ describe("character creation", () => {
 
   it("equips the class starting loadout so adventurers are not empty-handed", () => {
     const vanguard = createGuildCharacter({ name: "Mira", classId: "vanguard" });
-    expect(vanguard.equipment.weapon).toBe("equip.militia-sabre");
-    expect(vanguard.equipment.body).toBe("equip.padded-jack");
+    expect(vanguard.equipment.weapon?.id).toBe("equip.militia-sabre");
+    expect(vanguard.equipment.body?.id).toBe("equip.padded-jack");
     const effective = getEffectiveCharacterStats(vanguard, defaultWorld);
     expect(effective.attack).toBeGreaterThan(vanguard.attack);
     expect(effective.armor).toBeGreaterThan(vanguard.armor);

@@ -224,6 +224,15 @@ export const en = {
     retreat: "Retreat",
     enemyHp: "Enemy HP {hp}"
   },
+  affix: {
+    keen: "Keen",
+    heavy: "Heavy",
+    cruel: "Cruel",
+    warding: "Warding",
+    bulwark: "Bulwark",
+    fleet: "Fleet",
+    deft: "Deft"
+  },
   town: {
     guild: "Guild",
     shop: "Shop",

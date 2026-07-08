@@ -159,11 +159,15 @@ export function projectEventToLog(event: GameEvent, locale: Locale = "en", world
         }),
         tags: ["item"]
       };
-    case "inventory_item_gained":
+    case "inventory_item_gained": {
+      const base = resolveCatalogName(event.itemId, event.itemName, world, locale);
+      const prefix = event.affix ? `${t(`affix.${event.affix}` as Parameters<typeof t>[0])} ` : "";
+      const suffix = event.plus ? ` +${event.plus}` : "";
       return {
-        text: t("events.inventoryItemGained", { item: resolveCatalogName(event.itemId, event.itemName, world, locale), quantity: event.quantity }),
+        text: t("events.inventoryItemGained", { item: `${prefix}${base}${suffix}`, quantity: event.quantity }),
         tags: ["item", event.source]
       };
+    }
     case "item_bought":
       return {
         text: t("events.itemBought", { item: resolveCatalogName(event.itemId, event.itemName, world, locale), gold: event.gold }),

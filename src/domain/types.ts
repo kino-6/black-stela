@@ -31,8 +31,8 @@ export type Command =
   | { type: "use_item"; itemId: string; targetCharacterId: string }
   | { type: "set_member_row"; characterId: string; row: CombatRow }
   | { type: "buy_item"; shopId: string; itemId: string }
-  | { type: "sell_item"; itemId: string }
-  | { type: "equip_item"; characterId: string; equipmentId: string }
+  | { type: "sell_item"; itemId: string; plus?: number; affix?: string }
+  | { type: "equip_item"; characterId: string; equipmentId: string; plus?: number; affix?: string }
   | { type: "declare_round"; actions: CombatActionDeclaration[] }
   | { type: "retreat" }
   | { type: "recover_party" }
@@ -160,7 +160,7 @@ export interface Character {
   traitIds: CharacterTraitId[];
   accentColor: string;
   startingEquipment: string[];
-  equipment: Partial<Record<EquipmentSlot, string>>;
+  equipment: Partial<Record<EquipmentSlot, EquippedItem>>;
   creation: CharacterCreationHistory;
   memory: RosterMemory;
   portraitRef?: string;
@@ -183,6 +183,14 @@ export interface Character {
   injury?: "wounded";
 }
 
+// A single equipped item: the base catalog id plus its rolled instance data (a
+// numeric "+N" upgrade and/or a named enchant). Plain gear is just { id }.
+export interface EquippedItem {
+  id: string;
+  plus?: number;
+  affix?: string;
+}
+
 export interface InventoryItem {
   id: string;
   name: string;
@@ -195,6 +203,10 @@ export interface InventoryItem {
   accuracyBonus?: number;
   speedBonus?: number;
   sellValue?: number;
+  // Instance data for affixed / upgraded equipment. Rows only stack when the
+  // base id, plus, and affix all match (see equipmentInstanceKey).
+  plus?: number;
+  affix?: string;
 }
 
 export interface AdventureLogEntry {
@@ -249,7 +261,7 @@ export type GameEvent =
   | { type: "character_leveled_up"; characterId: string; characterName: string; level: number }
   | { type: "party_defended"; enemyId: string; enemyName: string; damage: number }
   | { type: "item_used"; itemId: string; itemName: string; targetCharacterId: string; targetName: string; healAmount: number }
-  | { type: "inventory_item_gained"; itemId: string; itemName: string; quantity: number; source: "treasure" | "reward" }
+  | { type: "inventory_item_gained"; itemId: string; itemName: string; quantity: number; source: "treasure" | "reward"; plus?: number; affix?: string }
   | { type: "item_bought"; itemId: string; itemName: string; gold: number }
   | { type: "item_sold"; itemId: string; itemName: string; gold: number }
   | { type: "equipment_changed"; itemId: string; characterName: string; itemName: string; slot: EquipmentSlot }

@@ -226,6 +226,15 @@ export const ja = {
     retreat: "退却",
     enemyHp: "敵HP {hp}"
   },
+  affix: {
+    keen: "鋭利な",
+    heavy: "重厚な",
+    cruel: "苛烈な",
+    warding: "守りの",
+    bulwark: "堅牢な",
+    fleet: "俊足の",
+    deft: "巧みな"
+  },
   town: {
     guild: "ギルド",
     shop: "商店",
