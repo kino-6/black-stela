@@ -214,7 +214,7 @@ export const ja = {
     closeMap: "閉じる",
     moveToFront: "前列へ",
     moveToBack: "後列へ",
-    campHeal: "{item}を使う",
+    campHeal: "{item}を使う（×{count}）",
     rowFront: "前列",
     rowBack: "後列",
     partyStatus: "隊列状態",

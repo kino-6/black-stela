@@ -212,7 +212,7 @@ export const en = {
     closeMap: "Close map",
     moveToFront: "To front row",
     moveToBack: "To rear row",
-    campHeal: "Use {item}",
+    campHeal: "Use {item} (×{count})",
     rowFront: "Front row",
     rowBack: "Rear row",
     partyStatus: "Party status",

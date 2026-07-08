@@ -12,6 +12,8 @@ import {
   LogOut,
   Map as MapIcon,
   Repeat2,
+  RotateCcw,
+  RotateCw,
   Save,
   ScrollText,
   Volume2,
@@ -2407,25 +2409,29 @@ export function App() {
                     {isTempoRunning ? <Square size={18} /> : <Repeat2 size={18} />}
                     {isTempoRunning ? t("tempo.stop") : t("tempo.repeat")}
                   </button>
-                  <button type="button" aria-label={t("play.turnLeft")} onClick={() => run({ type: "turn_left" })}>
-                    <ArrowLeft size={18} />
+                  <button type="button" className="move-command" aria-label={t("play.turnLeft")} onClick={() => run({ type: "turn_left" })}>
+                    <RotateCcw size={18} />
+                    {t("play.turnLeft")}
                   </button>
-                  <button type="button" aria-label={t("play.strafeLeft")} onClick={() => run({ type: "strafe_left" })}>
+                  <button type="button" className="move-command" aria-label={t("play.strafeLeft")} onClick={() => run({ type: "strafe_left" })}>
                     <ChevronsLeft size={18} />
+                    {t("play.strafeLeft")}
                   </button>
-                  <button type="button" onClick={() => run({ type: "move_forward" })}>
+                  <button type="button" className="move-command" onClick={() => run({ type: "move_forward" })}>
                     <Footprints size={18} />
                     {t("play.move")}
                   </button>
-                  <button type="button" onClick={() => run({ type: "move_backward" })}>
+                  <button type="button" className="move-command" onClick={() => run({ type: "move_backward" })}>
                     <ArrowDown size={18} />
                     {t("play.moveBack")}
                   </button>
-                  <button type="button" aria-label={t("play.strafeRight")} onClick={() => run({ type: "strafe_right" })}>
+                  <button type="button" className="move-command" aria-label={t("play.strafeRight")} onClick={() => run({ type: "strafe_right" })}>
                     <ChevronsRight size={18} />
+                    {t("play.strafeRight")}
                   </button>
-                  <button type="button" aria-label={t("play.turnRight")} onClick={() => run({ type: "turn_right" })}>
-                    <ArrowRight size={18} />
+                  <button type="button" className="move-command" aria-label={t("play.turnRight")} onClick={() => run({ type: "turn_right" })}>
+                    <RotateCw size={18} />
+                    {t("play.turnRight")}
                   </button>
                   <button type="button" onClick={() => run({ type: "search" })}>
                     <Search size={18} />
@@ -2516,7 +2522,7 @@ export function App() {
                             type="button"
                             onClick={() => run({ type: "use_item", itemId: healItem.id, targetCharacterId: member.id })}
                           >
-                            {t("play.campHeal", { item: healItem.name })}
+                            {t("play.campHeal", { item: healItem.name, count: healItem.quantity })}
                           </button>
                         )}
                       </div>

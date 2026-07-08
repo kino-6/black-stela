@@ -2907,6 +2907,12 @@ textarea {
   font-size: 0.95rem;
 }
 
+/* Group the movement controls (turn/sidestep/forward/back) with a subtle warm
+   border so they read as one cluster, distinct from Search/Listen/Camp/Map. */
+.dungeon-cockpit .command-dock button.move-command {
+  border-color: rgba(201, 168, 74, 0.28);
+}
+
 @media (max-width: 1100px) {
   .app-shell[data-phase="dungeon"] {
     height: auto;
