@@ -205,8 +205,8 @@ feature will read as an obvious grid. Keep them even and non-directional.
 | `ui/combat-vignette.jpg` | 1600×900 | combat UI backdrop | wired in combat frame CSS |
 | `title/black-stela-title.jpg` | 1920×1080 | title background | wired in title screen CSS |
 
-Remaining geometry/CSS-only pieces: return stairs, traps, and stela root.
-Player-imported portraits still override generated origin portraits.
+Remaining geometry/CSS-only pieces: descent stairs (see P6), traps, and stela
+root. Player-imported portraits still override generated origin portraits.
 
 ---
 
@@ -298,6 +298,47 @@ Inventory, shop, and equipment actions now show icons. **Format: PNG RGBA
 - **Combat backdrop**: subtle dark encounter vignette generated and wired behind
   combat information/command regions.
 
+### P6 — Descent stair prop  ⬜ requested
+
+The return device (black marker + capped shaft / winch cage) and the descent
+stair now live in **separate cells** — `room.b1f.006` (Black Marker, return to
+town) and `room.b1f.012` (Winding Stair, down to B2F). The stair currently draws
+as geometry only. Wanted: a first-person **down-stair prop** that reads clearly
+as "descend" from the corridor view, distinct from the return marker.
+
+- **Asset**: `dungeon/stair-down.png` (transparent PNG, billboard-style like the
+  enemy sprites, ~768² source), a stone stair curling/biting downward into dark.
+- **Read**: must be unmistakably a *down* stair at corridor depth, and must not
+  be confused with the return marker (which is a standing black stela + shaft
+  cage, not a stair).
+- **Tone**: match per-block wall/floor palette; darker lower steps to sell depth.
+- **Wiring target**: a stairs-edge prop lookup analogous to
+  `getEnemySpriteTextureUrl`, keyed by floor/edge, with a geometry fallback so an
+  unmapped floor still renders the current CSS stair.
+- **Optional**: a matching **up-stair** variant (`dungeon/stair-up.png`) for the
+  arrival-from-below cell.
+
+### P7 — Guild & town still art  ⬜ requested
+
+The town hub and the guild character-creation screen currently render their
+scenes as **CSS gradient placeholders** (a dim vignette with a stylized figure).
+They want real establishing stills to give the town/guild a sense of place —
+these are backdrops, not interactive props.
+
+- **Guild interior still** (`ui/guild-hall.jpg`, ~1600×900): the recruiting hall
+  where the guild master sits — a lamplit stone room, a ledger desk, the black
+  stela's presence felt. Must sit *behind* the guild master dialogue + class
+  panels without fighting their legibility (dark, low-contrast, vignetted edges),
+  same treatment as the combat vignette.
+- **Town / castle-hub still** (`ui/town-hub.jpg`, ~1600×900): the Wizardry-style
+  castle hub the party returns to — gate, shop, recovery, records read as a
+  place. Backdrop behind the town service menu.
+- **Tone**: match the portrait/title palette (warm lamp against near-black); keep
+  the center calm so overlaid text/menus stay readable.
+- **Wiring target**: same pattern as `ui/combat-vignette.jpg` (CSS
+  `background-image` on the guild scene / town scene containers), added to
+  `src/ui/artAssets.ts`. Fallback = keep the current CSS gradient if unset.
+
 ---
 
 ## 5. Suggested order of work
@@ -307,6 +348,8 @@ Inventory, shop, and equipment actions now show icons. **Format: PNG RGBA
 3. **P2 block textures (3 wall/floor sets)** — complete.
 4. **P3 portraits (12)** and **P4 icons (16)** — complete.
 5. **P5 title + minimap markers + combat vignette** — complete.
+6. **P6 descent stair prop** — requested (not yet generated).
+7. **P7 guild & town still art** — requested (not yet generated).
 
 ## 6. Wiring notes (so art actually shows up)
 
@@ -323,20 +366,17 @@ Inventory, shop, and equipment actions now show icons. **Format: PNG RGBA
 ## 8. Retake queue (post-integration review)
 
 Everything is generated, wired, and browser-verified (title, enemy sprites,
-block textures, portraits, icons, minimap markers, combat vignette; build +
-174 unit + 54 e2e green). Integration is **not blocked** by the items below —
-they are art-tone retakes to re-instruct later.
+block textures, portraits, icons, minimap markers, combat vignette). Keep this
+section for post-integration art-tone corrections that should not be forgotten.
 
-- [ ] **Item / equipment icons (P4) read too dark.** In the shop and inventory
-  the 256px icons sit low-contrast against the near-black `.shop-row` panel and
-  are hard to read at a glance. Retake per the "Color and lighting production
-  rule": raise midtones/highlights and local-color separation (dull brass,
-  rust, bone, pale ash, faded umber) so each object reads on a dark panel
-  without the UI adding a lighter plate. Review on a mid-gray background first.
-  Affects all 16 item/equipment icons.
-- [ ] **Verify portraits at rail size.** Portraits render in the party rail at
-  ~2.1rem; confirm each of the 12 origin busts still reads (silhouette + value
-  separation) when cropped that small, and regenerate any that muddy down.
+- [x] **Item / equipment icons (P4) read too dark.** Retaken as brighter,
+  higher-contrast 256px icons with stronger local material separation. Future
+  icon work must review on a near-black shop-row background and keep object
+  silhouettes readable at 32-48px.
+- [x] **Portraits lacked party individuality and read too dark in the rail.**
+  Retaken as more distinct origin busts with larger faces, clearer props, and
+  brighter face/gear midtones. Party rail portrait display was also enlarged
+  from 2.75rem to 3.25rem with a slight brightness/contrast lift.
 
 Strong as-is, no retake needed: title key art, enemy sprites (bosses + regulars),
 per-block wall/floor textures, combat vignette.
