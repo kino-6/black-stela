@@ -128,12 +128,15 @@ describe("rules engine", () => {
   it("requires an explicit stair command instead of descending on move", () => {
     const entered = executeCommand(stateWithParty(), defaultWorld, { type: "enter_dungeon" });
     const marker = advanceToB1fMarker(entered);
+    // The marker only returns to town; the descent stair sits one cell east.
+    const stair = executeCommand(marker, defaultWorld, { type: "move_forward" });
 
-    const moved = executeCommand(marker, defaultWorld, { type: "move_forward" });
-    const descended = executeCommand(marker, defaultWorld, { type: "use_stairs" });
+    const moved = executeCommand(stair, defaultWorld, { type: "move_forward" });
+    const descended = executeCommand(stair, defaultWorld, { type: "use_stairs" });
 
     expect(marker.position?.roomId).toBe("room.b1f.006");
-    expect(moved.position?.roomId).toBe("room.b1f.006");
+    expect(stair.position?.roomId).toBe("room.b1f.012");
+    expect(moved.position?.roomId).toBe("room.b1f.012");
     expect(moved.map.floorId).toBe("dungeon.b1f");
     expect(moved.log.at(-1)?.text).toBe("A stair waits ahead. Choose Use stairs to descend.");
     expect(descended.position?.roomId).toBe("room.b2f.001");

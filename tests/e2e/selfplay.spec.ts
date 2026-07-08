@@ -142,6 +142,9 @@ test("browser self-play completes the visible dungeon loop without headless shor
       await expect(page.getByRole("button", { name: "Use return marker" })).toBeVisible();
       await capture("return-marker");
 
+      // The descent stair sits one cell east of the return marker (separate cells).
+      await clickCommand("Move");
+      await expect(page.getByRole("heading", { name: "Winding Stair" })).toBeVisible();
       await clickCommand("Move");
       await expect(page.getByText("A stair waits ahead. Choose Use stairs to descend.")).toBeVisible();
       await clickCommand("Use stairs");
@@ -154,11 +157,14 @@ test("browser self-play completes the visible dungeon loop without headless shor
       await clickCommand("Turn left");
       await clickCommand("Turn left");
       await clickCommand("Use stairs");
-      await expect(page.getByRole("heading", { name: "Black Marker" })).toBeVisible();
+      await expect(page.getByRole("heading", { name: "Winding Stair" })).toBeVisible();
       await capture("b1f-return-stair");
     });
 
     await recordStep("return marker brings the party back to town services", "hidden_affordance", async () => {
+      // Step west off the stair cell back onto the return marker.
+      await clickCommand("Move");
+      await expect(page.getByRole("heading", { name: "Black Marker" })).toBeVisible();
       await clickCommand("Use return marker");
       await expect(page.getByRole("heading", { name: "Town", exact: true })).toBeVisible();
       await expect(page.getByText("The party returns to town.")).toBeVisible();

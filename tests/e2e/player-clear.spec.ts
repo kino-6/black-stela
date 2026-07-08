@@ -69,8 +69,10 @@ test("visible controls can descend to B2F and still return through the authored 
   await expect(page.getByRole("heading", { name: "Black Marker" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Use return marker" })).toBeVisible();
 
+  // The descent stair sits one cell east of the return marker (separate cells).
   await page.getByRole("button", { name: "Move" }).click();
-  await expect(page.getByRole("heading", { name: "Black Marker" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Winding Stair" })).toBeVisible();
+  await page.getByRole("button", { name: "Move" }).click();
   await expect(page.getByText("A stair waits ahead. Choose Use stairs to descend.")).toBeVisible();
   await page.getByRole("button", { name: "Use stairs" }).click();
 
@@ -84,6 +86,9 @@ test("visible controls can descend to B2F and still return through the authored 
   await page.getByLabel("Turn left").click();
   await page.getByRole("button", { name: "Use stairs" }).click();
 
+  // Climbing back up lands on the stair cell; step west to the return marker.
+  await expect(page.getByRole("heading", { name: "Winding Stair" })).toBeVisible();
+  await page.getByRole("button", { name: "Move" }).click();
   await expect(page.getByRole("heading", { name: "Black Marker" })).toBeVisible();
   await page.getByRole("button", { name: "Use return marker" }).click();
   await expect(page.getByRole("heading", { name: "Town", exact: true })).toBeVisible();
@@ -125,7 +130,7 @@ test("first-person view, minimap, and movement agree when forward is blocked", a
   await advanceToB1fMarker(page);
   await expect(page.getByRole("heading", { name: "Black Marker" })).toBeVisible();
 
-  // North is the winch shortcut and east is the descent stair, so face the
+  // North is the winch shortcut and east opens to the Winding Stair, so face the
   // solid south wall to test a blocked step.
   await page.getByLabel("Turn right").click();
   await expect(page.getByTestId("minimap-facing")).toHaveClass(/facing-south/);

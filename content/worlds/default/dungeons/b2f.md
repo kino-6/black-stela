@@ -60,7 +60,7 @@ edges:
   - from: room.b2f.001
     direction: west
     kind: stairs
-    to: room.b1f.006
+    to: room.b1f.012
     targetFloorId: dungeon.b1f
   - from: room.b2f.003
     direction: east

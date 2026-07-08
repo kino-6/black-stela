@@ -31,7 +31,7 @@ map: |
   ###............#####
   ###.####.#.###.#####
   ###.####.#.###.#####
-  #EC.....H......N..M#
+  #EC.....H......N.MX#
   ###.####.#.###.#####
   ###.####.#.###.#####
   ###............#####
@@ -54,6 +54,7 @@ symbols:
   B: room.b1f.009
   S: room.b1f.010
   K: room.b1f.011
+  X: room.b1f.012
 corridor:
   name: Dust-Choked Gallery
   description: A low run of fitted stone, dust banked along the walls and broken only by the party's own tracks.
@@ -62,7 +63,7 @@ corridor:
       name: 塵の広廊
       description: 切石の低い通路。壁際に塵が積もり、隊列自身の足跡だけがそれを乱している。
 edges:
-  - from: room.b1f.006
+  - from: room.b1f.012
     direction: east
     kind: stairs
     to: room.b2f.001
@@ -130,24 +131,22 @@ rooms:
       warning: A line of pinholes breaks the dust ahead.
   - id: room.b1f.006
     name: Black Marker
-    description: A narrow marker of black stone leans beside a capped shaft and a stair curling east. A winch cage hangs over the shaft.
+    description: A narrow marker of black stone leans over a capped shaft, a winch cage hung above it. The stair down curls off its landing to the east.
     locales:
       ja:
         name: 黒い標石
-        description: 蓋をされた竪坑と、東へ巻く階段のそばに、細い黒石の標が傾いている。竪坑の上には籠が掛かっている。
+        description: 蓋をされた竪坑の上に、細い黒石の標が傾き、籠が掛かっている。下りの階段は、その踊り場から東へ巻いている。
         event: 標石は手に温かい。竪坑の籠は、入口まで一気に戻る道を約束している。
     stairsToTown: true
     returnStyle: marker
-    gates:
-      - id: gate.b1f.first-descent
-        direction: east
-        kind: shortcut
-        grantsFlag: flag.b1f.marker-read
-        clue: The lower stair accepts only a party that knows how to return.
-        locales:
-          ja:
-            clue: 下り階段は、帰還を知る隊列だけを受け入れる。
     event: The marker is warm to the touch; the shaft cage promises a quick way back to the entrance.
+  - id: room.b1f.012
+    name: Winding Stair
+    description: The stair curls east off the marker's landing, biting down through the stone toward B2F.
+    locales:
+      ja:
+        name: 巻き階段
+        description: 標石の踊り場から東へ、階段が渦を巻いて石を噛み下り、B2Fへ続いている。
   - id: room.b1f.007
     name: Drift Cache
     description: A dead-end pocket off the south hall where ash drifted deep over a forgotten satchel.
