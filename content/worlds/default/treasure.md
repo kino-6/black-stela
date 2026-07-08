@@ -22,6 +22,15 @@ treasureTables:
         weight: 3
       - itemId: equip.rusted-dirk
         weight: 2
+  - id: treasure.b1f.secret
+    tier: 1
+    entries:
+      - itemId: equip.iron-cap
+        weight: 4
+      - itemId: equip.split-buckler
+        weight: 3
+      - itemId: item.stela-shard
+        weight: 3
   - id: treasure.b2f.risk
     tier: 2
     entries:

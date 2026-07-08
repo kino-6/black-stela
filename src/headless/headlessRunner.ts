@@ -48,10 +48,12 @@ export function runHeadlessClear(initialState: GameState, world: ScenarioWorld, 
   // room offers no unexplored exit, so it walks out of dense loops instead of
   // ping-ponging between two already-seen cells.
   const visitCounts = new Map<string, number>();
-  // Stairs the engine has refused to descend (a locked gate bars them). Cleared
-  // whenever a flag/secret is discovered, so a freshly-turned crank re-opens the
-  // descent on the next pass.
-  const blockedStairs = new Set<string>();
+  // Exits the engine refused to traverse this pass — a locked gate on a stair or
+  // corridor, or an unrevealed secret wall. Deferring them lets the explorer go
+  // find the crank (or simply route around an optional secret) instead of
+  // looping on the blocked exit. Cleared whenever a flag/secret is discovered, so
+  // a freshly-freed passage is retried on the next pass.
+  const blockedMoves = new Set<string>();
 
   for (let step = 0; step < maxSteps; step += 1) {
     if (isMvpCleared(state)) {
@@ -62,7 +64,7 @@ export function runHeadlessClear(initialState: GameState, world: ScenarioWorld, 
       visitCounts.set(state.position.roomId, (visitCounts.get(state.position.roomId) ?? 0) + 1);
     }
 
-    const decision = chooseNextCommand(state, world, visitCounts, blockedStairs);
+    const decision = chooseNextCommand(state, world, visitCounts, blockedMoves);
     if (!decision.command) {
       return { cleared: false, reason: "stuck", state, commands, trace, diagnostic: decision.diagnostic };
     }
@@ -70,17 +72,18 @@ export function runHeadlessClear(initialState: GameState, world: ScenarioWorld, 
     commands.push(decision.command);
     const nextState = executeCommand(state, world, decision.command);
 
-    // A use_stairs that left the party in place hit a locked gate — defer it.
+    // A move or stair that left the party in place hit a locked gate or an
+    // unrevealed secret wall — defer that exit and explore elsewhere.
     if (
-      decision.command.type === "use_stairs" &&
+      (decision.command.type === "use_stairs" || decision.command.type === "move_forward") &&
       state.position &&
       nextState.position?.roomId === state.position.roomId
     ) {
-      blockedStairs.add(`${state.position.roomId}:${state.position.facing}`);
+      blockedMoves.add(`${state.position.roomId}:${state.position.facing}`);
     }
-    // A newly discovered flag/secret may have freed a deferred stair.
+    // A newly discovered flag/secret may have freed a deferred passage.
     if (nextState.discoveredSecrets.length !== state.discoveredSecrets.length) {
-      blockedStairs.clear();
+      blockedMoves.clear();
     }
     trace.push({
       command: decision.command.type,
@@ -160,7 +163,7 @@ function chooseNextCommand(
   state: GameState,
   world: ScenarioWorld,
   visitCounts: Map<string, number> = new Map(),
-  blockedStairs: Set<string> = new Set()
+  blockedMoves: Set<string> = new Set()
 ): HeadlessDecision {
   if (state.phase === "town") {
     return state.party.length > 0
@@ -201,7 +204,7 @@ function chooseNextCommand(
     state.map.knownExits[state.position.roomId] ?? [],
     visitCounts,
     state.position.roomId,
-    blockedStairs
+    blockedMoves
   );
   if (!direction) {
     return { command: null, knowledge: "known_map_exits", diagnostic: describeState(state, "no_route") };
@@ -224,13 +227,13 @@ function chooseExplorationDirection(
   knownDirections: Direction[],
   visitCounts: Map<string, number>,
   roomId: string,
-  blockedStairs: Set<string>
+  blockedMoves: Set<string>
 ): Direction | null {
   const all = directionOrder.filter((direction) => knownDirections.includes(direction) && exits[direction]);
   // Defer a stair the engine just refused to descend (a locked gate bars it):
   // explore the rest of the floor to find the crank that frees it, then the
   // stair is cleared from this set once a flag is granted and we come back.
-  const directions = all.filter((direction) => !blockedStairs.has(`${roomId}:${direction}`));
+  const directions = all.filter((direction) => !blockedMoves.has(`${roomId}:${direction}`));
   const pool = directions.length > 0 ? directions : all;
 
   const unexplored = pool.find((direction) => {

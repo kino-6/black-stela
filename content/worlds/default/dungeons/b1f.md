@@ -26,7 +26,7 @@ map: |
   ######D#############
   ###............#####
   ###............#####
-  ###...A....B...#####
+  ###...A....B...V####
   ###............#####
   ###............#####
   ###.####.#.###.#####
@@ -55,6 +55,7 @@ symbols:
   S: room.b1f.010
   K: room.b1f.011
   X: room.b1f.012
+  V: room.b1f.013
 corridor:
   name: Dust-Choked Gallery
   description: A low run of fitted stone, dust banked along the walls and broken only by the party's own tracks.
@@ -72,6 +73,10 @@ edges:
     direction: north
     kind: shortcut
     to: room.b1f.001
+  - from: room.b1f.c14_4
+    direction: east
+    kind: secret
+    to: room.b1f.013
 rooms:
   - id: room.b1f.001
     name: Silent Stone Chamber
@@ -156,6 +161,14 @@ rooms:
       ja:
         name: 巻き階段
         description: 標石の踊り場から東へ、階段が渦を巻いて石を噛み下り、B2Fへ続いている。
+  - id: room.b1f.013
+    name: Ashen Reliquary
+    description: A slot of dry air hides behind the north hall's east wall, missed by every dusty boot before. A cloth-bound offering rests in the dark, richer than the open caches.
+    locales:
+      ja:
+        name: 灰の隠し宝処
+        description: 北の広間の東壁の裏に、乾いた空気の隙間が隠れている。塵まみれの足はどれも見落としてきた。布に包まれた供物が暗がりに置かれ、開けた隠しよりも実り多い。
+    treasureTable: treasure.b1f.secret
   - id: room.b1f.007
     name: Drift Cache
     description: A dead-end pocket off the south hall where ash drifted deep over a forgotten satchel.

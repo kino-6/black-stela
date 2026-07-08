@@ -395,6 +395,23 @@ describe("runtime gates and shortcuts", () => {
     expect(descended.position?.roomId).toBe("room.b3f.001");
     expect(descended.map.floorId).toBe("dungeon.b3f");
   });
+
+  it("hides the B1F ashen reliquary behind a searchable secret wall", () => {
+    const facing = dungeonAt("room.b1f.c14_4", { position: { roomId: "room.b1f.c14_4", facing: "east" } });
+
+    const blocked = executeCommand(facing, defaultWorld, { type: "move_forward" });
+    expect(blocked.position?.roomId).toBe("room.b1f.c14_4");
+
+    const searched = executeCommand(facing, defaultWorld, { type: "search" });
+    expect(searched.discoveredSecrets).toContain("secret:room.b1f.c14_4:east");
+
+    const revealed = executeCommand(
+      { ...searched, position: { roomId: "room.b1f.c14_4", facing: "east" } },
+      defaultWorld,
+      { type: "move_forward" }
+    );
+    expect(revealed.position?.roomId).toBe("room.b1f.013");
+  });
 });
 
 describe("three-block dungeon structure", () => {
