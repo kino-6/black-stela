@@ -252,6 +252,10 @@ export type GameEvent =
   | { type: "returned_to_town" }
   | { type: "debug_started"; text: string };
 
+// Vertical placement of the combat sprite: planted on the floor, hovering at
+// mid height, or drifting well above it. Omitted defaults to "ground".
+export type EnemyElevation = "ground" | "mid" | "air";
+
 export interface Enemy {
   id: string;
   name: string;
@@ -275,6 +279,7 @@ export interface Enemy {
   dangerTier?: number;
   tags?: string[];
   isBoss?: boolean;
+  elevation?: EnemyElevation;
 }
 
 export interface Trap {

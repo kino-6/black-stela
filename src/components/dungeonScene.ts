@@ -4,6 +4,7 @@ import stoneFloorTextureUrl from "../assets/dungeon/stone-floor.jpg";
 import stoneWallTextureUrl from "../assets/dungeon/stone-wall.jpg";
 import woodDoorTextureUrl from "../assets/dungeon/wood-door.jpg";
 import { dungeonBlockTextureUrls, getEnemySpriteTextureUrl } from "../ui/artAssets";
+import type { EnemyElevation } from "../domain/types";
 
 // Geometry distinguishes stairs from a plain opening; the view model keeps the
 // coarser three-value language. Both the projection (DungeonView) and this
@@ -24,6 +25,8 @@ export interface DungeonSceneInput {
   floorId: string | null;
   /** Enemy id to draw ahead while in combat. */
   enemyId: string | null;
+  /** Where the enemy sprite sits vertically: planted, mid-air, or high. */
+  enemyElevation?: EnemyElevation;
   /** Draw the hazard marker on the floor (armed trap in this room). */
   showTrap: boolean;
   /** Draw the town-return feature: the entrance stairway or the waystone. */
@@ -153,15 +156,28 @@ export function buildDungeonScene(mount: HTMLDivElement, input: DungeonSceneInpu
   }
 
   if (enemyMaterial) {
-    const enemyShadow = new THREE.Mesh(new THREE.CircleGeometry(1.22, 32), enemyShadowMaterial);
-    enemyShadow.position.set(0, 0.035, -2.86);
-    enemyShadow.rotation.x = -Math.PI / 2;
-    enemyShadow.scale.set(1.85, 0.55, 1);
-    scene.add(enemyShadow);
+    // Plant the sprite on the floor by default; a mid or air enemy is lifted off
+    // it. The baseline sits the creature's feet at the floor plane so it reads as
+    // grounded rather than floating in the frame.
+    const elevation = input.enemyElevation ?? "ground";
+    const lift = elevation === "air" ? 1.7 : elevation === "mid" ? 0.9 : 0;
+    const baseY = 0.6;
+
+    // A grounded or hovering enemy casts a contact shadow (fainter and smaller
+    // the higher it hovers); a true flyer leaves the floor beneath it clear.
+    if (elevation !== "air") {
+      const shadowScale = elevation === "mid" ? 0.72 : 1;
+      enemyShadowMaterial.opacity = elevation === "mid" ? 0.3 : 0.52;
+      const enemyShadow = new THREE.Mesh(new THREE.CircleGeometry(1.22, 32), enemyShadowMaterial);
+      enemyShadow.position.set(0, 0.035, -2.86);
+      enemyShadow.rotation.x = -Math.PI / 2;
+      enemyShadow.scale.set(1.85 * shadowScale, 0.55 * shadowScale, 1);
+      scene.add(enemyShadow);
+    }
 
     const enemy = new THREE.Sprite(enemyMaterial);
     enemy.center.set(0.5, 0.38);
-    enemy.position.set(0, 0.74, -2.82);
+    enemy.position.set(0, baseY + lift, -2.82);
     enemy.scale.set(4.35, 2.82, 1);
     scene.add(enemy);
   }

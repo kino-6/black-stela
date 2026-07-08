@@ -79,6 +79,7 @@ enemies:
       fire: 1.5
     dangerTier: 3
     tags: [status]
+    elevation: air
   - id: enemy.b4f.lantern-ward
     name: Lantern Ward
     locales:
@@ -97,6 +98,7 @@ enemies:
     role: blocker
     dangerTier: 3
     tags: [construct]
+    elevation: mid
     abilities:
       - name: Lantern Flare
         chance: 40

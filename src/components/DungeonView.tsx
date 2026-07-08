@@ -54,10 +54,20 @@ export function DungeonView({ state, world, label }: DungeonViewProps) {
       corridor,
       floorId: getFloorIdForRoom(world, state.position.roomId),
       enemyId: state.phase === "combat" ? state.combat?.enemy.id ?? null : null,
+      enemyElevation: state.phase === "combat" ? state.combat?.enemy.elevation ?? "ground" : "ground",
       showTrap: Boolean(room.trap) && !state.resolvedTraps.includes(room.trap!.id),
       returnMarker: room.stairsToTown ? (room.returnStyle === "stairs" ? "stairs" : "marker") : null
     });
-  }, [state.position, state.phase, state.combat?.enemy.id, state.resolvedTraps, corridor, viewModel, world]);
+  }, [
+    state.position,
+    state.phase,
+    state.combat?.enemy.id,
+    state.combat?.enemy.elevation,
+    state.resolvedTraps,
+    corridor,
+    viewModel,
+    world
+  ]);
 
   return (
     <div className="dungeon-view" aria-label={label}>

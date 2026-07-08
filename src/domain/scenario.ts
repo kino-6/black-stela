@@ -79,7 +79,8 @@ const enemySchema = z.object({
   role: enemyRoleSchema.optional(),
   dangerTier: z.number().int().positive().optional(),
   tags: z.array(z.string().min(1)).default([]),
-  isBoss: z.boolean().optional()
+  isBoss: z.boolean().optional(),
+  elevation: z.enum(["ground", "mid", "air"]).optional()
 });
 
 const trapSchema = z.object({
