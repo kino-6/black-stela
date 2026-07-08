@@ -1,5 +1,7 @@
 ---
 progressionFlags:
+  - id: flag.b1f.descent
+    description: The Warden's Hall crank is turned; the winding stair's drop-pin is freed for the descent.
   - id: flag.b2f.soot-shortcut
     description: The soot-locked shortcut can be opened from the lower side.
   - id: flag.b3f.winch

@@ -139,6 +139,15 @@ rooms:
         event: 標石は手に温かい。竪坑の籠は、入口まで一気に戻る道を約束している。
     stairsToTown: true
     returnStyle: marker
+    gates:
+      - id: gate.b1f.descent
+        direction: east
+        kind: lock
+        requiredFlag: flag.b1f.descent
+        clue: The stair's drop-pin is set fast; the crank that frees it is bolted up somewhere in the halls.
+        locales:
+          ja:
+            clue: 階段の落とし込みは固く留められている。それを外す巻き手は、広間のどこかの壁に留められている。
     event: The marker is warm to the touch; the shaft cage promises a quick way back to the entrance.
   - id: room.b1f.012
     name: Winding Stair
@@ -182,11 +191,19 @@ rooms:
     treasureTable: treasure.b1f.nook
   - id: room.b1f.010
     name: Warden's Hall
-    description: The heart of the south hall, cinders drifted into the corners. Something heavier than a slime shifts its weight in the dark.
+    description: The heart of the south hall, cinders drifted into the corners. A hand-crank for the stair's drop-pin is bolted to the far wall — and something heavier than a slime shifts its weight before it.
     locales:
       ja:
         name: 番人の広間
-        description: 南の広間の中心。燃え殻が隅に吹き溜まっている。前方の闇で、泥よりも重い何かが身じろぎする。
+        description: 南の広間の中心。燃え殻が隅に吹き溜まっている。奥の壁には階段の落とし込みを外す手回しが留められ、その前で、泥よりも重い何かが身じろぎする。
+    gates:
+      - id: gate.b1f.crank
+        kind: shortcut
+        grantsFlag: flag.b1f.descent
+        clue: The hand-crank turns; far off, the stair's drop-pin lifts free.
+        locales:
+          ja:
+            clue: 手回しが回る。遠くで、階段の落とし込みが外れる。
     encounter:
       id: enemy.b1f.dust-crawler
       name: Dust Crawler

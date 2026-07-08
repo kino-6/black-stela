@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import type { Page } from "@playwright/test";
-import { createStarterParty, registerAdventurer, resolveVisibleCombat, startNewExpedition } from "./helpers";
+import { createStarterParty, descendB1fViaWarden, registerAdventurer, resolveVisibleCombat, startNewExpedition } from "./helpers";
 
 test("clears the MVP route through visible player controls only", async ({ page }) => {
   await startNewExpedition(page);
@@ -58,28 +58,15 @@ test("clears the MVP route through visible player controls only", async ({ page 
 });
 
 test("visible controls can descend to B2F and still return through the authored stair", async ({ page }) => {
+  test.setTimeout(120000);
   await startNewExpedition(page);
 
   await createStarterParty(page);
   await page.getByRole("button", { name: "Enter dungeon" }).click();
-  await page.getByRole("button", { name: "Move" }).click();
-  await resolveVisibleCombat(page);
-  await advanceToB1fMarker(page);
 
-  await expect(page.getByRole("heading", { name: "Black Marker" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Use return marker" })).toBeVisible();
-
-  // The descent stair sits one cell east of the return marker (separate cells).
-  await page.getByRole("button", { name: "Move" }).click();
-  await expect(page.getByRole("heading", { name: "Winding Stair" })).toBeVisible();
-  await page.getByRole("button", { name: "Move" }).click();
-  await expect(page.getByText("A stair waits ahead. Choose Use stairs to descend.")).toBeVisible();
-  await page.getByRole("button", { name: "Use stairs" }).click();
-
-  if (await page.getByRole("heading", { name: "Combat" }).isVisible()) {
-    await resolveVisibleCombat(page);
-  }
-
+  // The descent is gated behind the Warden's Hall crank, so a straight walk to
+  // the stair no longer works — clear the south branch to unlock it and descend.
+  expect(await descendB1fViaWarden(page)).toBe(true);
   await expect(page.getByTestId("map-current")).toContainText("Landing of Split Dust");
 
   await page.getByLabel("Turn left").click();

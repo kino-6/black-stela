@@ -158,3 +158,67 @@ export async function resolveVisibleCombat(page: Page) {
 
   await expect(page.getByRole("heading", { name: "Combat" })).toHaveCount(0);
 }
+
+// Clear B1F's gated descent: beeline down the col-3 south corridor to the
+// Warden's Hall (whose crank frees the stair's drop-pin), return to the trunk,
+// walk east to the Black Marker, and descend the Winding Stair. Kept to a tight
+// path so the starter party isn't ground down by stray encounters. Returns once
+// the party stands on B2F's landing.
+export async function descendB1fViaWarden(page: Page) {
+  const current = async () => (await page.getByTestId("map-current").textContent().catch(() => "")) ?? "";
+  const move = async () => {
+    await page.getByRole("button", { name: "Move", exact: true }).click();
+    await page.waitForTimeout(70);
+    if (await page.getByLabel("Battle screen").isVisible().catch(() => false)) {
+      await resolveVisibleCombat(page);
+    }
+  };
+  const turn = async (dir: "left" | "right") => {
+    await page.getByLabel(dir === "left" ? "Turn left" : "Turn right").click();
+    await page.waitForTimeout(30);
+  };
+  const moveUntil = async (name: string, max = 14) => {
+    for (let i = 0; i < max && !(await current()).includes(name); i += 1) {
+      await move();
+    }
+  };
+
+  // Reset to the entrance (facing east) so the path is deterministic regardless
+  // of where prior steps left the party. Assumes the party is on the trunk
+  // facing east; walking west lands on the Silent Stone Chamber entrance.
+  await turn("left");
+  await turn("left"); // face west
+  await moveUntil("Silent Stone Chamber", 20);
+  await turn("left");
+  await turn("left"); // face east again
+
+  // Entrance east into the first fight, then drop into the col-3 south corridor.
+  await move(); // -> Hall of Old Dust (ash slime)
+  await move(); // -> corridor at col 3
+  await turn("right"); // face south
+  for (let i = 0; i < 3; i += 1) await move(); // into the south gallery
+  await turn("left"); // face east
+  for (let i = 0; i < 3; i += 1) await move(); // toward the warden's column
+  await turn("right"); // face south
+  await moveUntil("Warden's Hall", 3); // crank -> frees the drop-pin
+
+  // Return to the trunk via the col-8 corridor (which lands on the central hub),
+  // then east to the marker, now that the stair is freed.
+  await turn("left"); // face east (was facing south)
+  await move();
+  await move(); // east to the col-8 corridor
+  await turn("left"); // face north
+  await moveUntil("Ashfall Crossing", 8); // up to the hub
+  await turn("right"); // face east
+  await moveUntil("Black Marker", 14);
+  await move(); // east onto the now-unlocked Winding Stair
+  const stairs = page.getByRole("button", { name: "Use stairs" });
+  if (await stairs.isVisible().catch(() => false)) {
+    await stairs.click();
+    await page.waitForTimeout(160);
+    if (await page.getByLabel("Battle screen").isVisible().catch(() => false)) {
+      await resolveVisibleCombat(page);
+    }
+  }
+  return (await current()).includes("Landing of Split Dust");
+}

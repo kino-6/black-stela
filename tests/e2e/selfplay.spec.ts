@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 import type { Page } from "@playwright/test";
 import { mkdir, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import { createStarterParty, resolveVisibleCombat, startNewExpedition } from "./helpers";
+import { createStarterParty, descendB1fViaWarden, resolveVisibleCombat, startNewExpedition } from "./helpers";
 
 type FailureCategory =
   | "blocked_control"
@@ -136,21 +136,10 @@ test("browser self-play completes the visible dungeon loop without headless shor
       await capture("post-combat");
     });
 
-    await recordStep("visible controls reach B2F stair and return to B1F", "impossible_route", async () => {
-      await advanceToB1fMarker(page, report);
-      await expect(page.getByRole("heading", { name: "Black Marker" })).toBeVisible();
-      await expect(page.getByRole("button", { name: "Use return marker" })).toBeVisible();
-      await capture("return-marker");
-
-      // The descent stair sits one cell east of the return marker (separate cells).
-      await clickCommand("Move");
-      await expect(page.getByRole("heading", { name: "Winding Stair" })).toBeVisible();
-      await clickCommand("Move");
-      await expect(page.getByText("A stair waits ahead. Choose Use stairs to descend.")).toBeVisible();
-      await clickCommand("Use stairs");
-      if (await page.getByRole("heading", { name: "Combat" }).isVisible()) {
-        await resolveVisibleCombat(page);
-      }
+    await recordStep("visible controls clear the gated descent to B2F and return", "impossible_route", async () => {
+      // Descending requires clearing the Warden's Hall crank first — the stair is
+      // no longer a straight walk from the trunk.
+      expect(await descendB1fViaWarden(page)).toBe(true);
       await expect(page.getByTestId("map-current")).toContainText("Landing of Split Dust");
       await capture("b2f-landing");
 
@@ -236,20 +225,6 @@ test("browser self-play completes the visible dungeon loop without headless shor
 async function assertNormalPlayHasNoDebugControls(page: Page) {
   await expect(page.getByRole("button", { name: /Headless|Debug|Save game|Load game/i })).toHaveCount(0);
   await expect(page.getByText(/provider|endpoint|local ai|ローカルAI|プロバイダー|デバッグ/i)).toHaveCount(0);
-}
-
-async function advanceToB1fMarker(page: Page, report: SelfPlayReport) {
-  // Walk the straight east trunk to the Black Marker, clearing any fight en route.
-  for (let step = 0; step < 40; step += 1) {
-    if (await page.getByRole("button", { name: "Use return marker" }).isVisible().catch(() => false)) {
-      return;
-    }
-    await page.getByRole("button", { name: "Move", exact: true }).click();
-    report.commands.push("Move");
-    if (await page.getByLabel("Battle screen").isVisible().catch(() => false)) {
-      await resolveVisibleCombat(page);
-    }
-  }
 }
 
 async function collectFinalState(page: Page): Promise<SelfPlayReport["finalState"]> {
