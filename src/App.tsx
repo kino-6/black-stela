@@ -10,6 +10,7 @@ import {
   FolderOpen,
   HeartPulse,
   LogOut,
+  Map as MapIcon,
   Repeat2,
   Save,
   ScrollText,
@@ -25,7 +26,7 @@ import {
   Wand2
 } from "lucide-react";
 import { DungeonView } from "./components/DungeonView";
-import { MapPanel } from "./components/MapPanel";
+import { FloorMapView, MapPanel } from "./components/MapPanel";
 import { ScenarioValidationPanel } from "./components/ScenarioValidationPanel";
 import { createInitialGameState, addCharacter } from "./domain/gameState";
 import {
@@ -170,6 +171,7 @@ export function App() {
   const [guildCreationStep, setGuildCreationStep] = useState<GuildCreationStep>("briefing");
   const [guildOfferState, setGuildOfferState] = useState<GuildOfferState>("ask");
   const [campOpen, setCampOpen] = useState(false);
+  const [fullMapOpen, setFullMapOpen] = useState(false);
   const [combatOrders, setCombatOrders] = useState<CombatActionDeclaration[]>([]);
   const [selectedTargetId, setSelectedTargetId] = useState<string | null>(null);
   const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null);
@@ -771,6 +773,9 @@ export function App() {
       } else if (state.phase === "dungeon" && key === "g") {
         event.preventDefault();
         run({ type: "use_stairs" });
+      } else if (state.phase === "dungeon" && key === "m") {
+        event.preventDefault();
+        setFullMapOpen((open) => !open);
       } else if (state.phase === "combat" && (key === "f" || key === "enter")) {
         event.preventDefault();
         if (combatOrdersReady && key === "enter") {
@@ -797,10 +802,12 @@ export function App() {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [combatOrdersReady, isTempoRunning, selectedActor, selectedTarget, state, t, tempoMode]);
 
-  // Camp is an exploration-only menu; a fight or a return to town breaks it.
+  // Camp and the full-floor map are exploration-only; a fight or a return to
+  // town closes them.
   useEffect(() => {
     if (state.phase !== "dungeon") {
       setCampOpen(false);
+      setFullMapOpen(false);
     }
   }, [state.phase]);
 
@@ -2432,6 +2439,10 @@ export function App() {
                     <Tent size={18} />
                     {t("play.camp")}
                   </button>
+                  <button type="button" onClick={() => setFullMapOpen(true)} data-testid="full-map-open">
+                    <MapIcon size={18} />
+                    {t("play.fullMap")}
+                  </button>
                   {canUseStairs && (
                     <button type="button" className="context-command" onClick={() => run({ type: "use_stairs" })}>
                       <DoorOpen size={18} />
@@ -2520,6 +2531,27 @@ export function App() {
                 onClick={() => setCampOpen(false)}
               >
                 {t("play.breakCamp")}
+              </button>
+            </section>
+          </div>
+        )}
+        {fullMapOpen && state.phase === "dungeon" && (
+          <div className="floor-map-overlay" data-testid="floor-map" onClick={() => setFullMapOpen(false)}>
+            <section
+              className="floor-map-panel"
+              role="dialog"
+              aria-label={t("play.fullMapTitle")}
+              onClick={(event) => event.stopPropagation()}
+            >
+              <header className="floor-map-head">
+                <h3>{t("play.fullMapTitle")}</h3>
+                <span>{state.map.floorId ?? ""}</span>
+              </header>
+              <div className="floor-map-scroll">
+                <FloorMapView state={state} world={defaultWorld} locale={locale} t={t} />
+              </div>
+              <button type="button" className="primary-action" onClick={() => setFullMapOpen(false)}>
+                {t("play.closeMap")}
               </button>
             </section>
           </div>

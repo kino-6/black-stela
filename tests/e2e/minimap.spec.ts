@@ -21,3 +21,20 @@ test("stepping onto a warp registers the warp cell on the minimap", async ({ pag
   await expect(page.getByTestId("minimap-marker-teleporter")).toBeVisible();
   expect(await drawnCells.count()).toBeGreaterThan(before);
 });
+
+test("the full-floor map view opens over the whole explored floor and closes", async ({ page }) => {
+  await page.goto("/?debug=1&progress=floor_4");
+  await expect(page.getByTestId("minimap")).toBeVisible();
+  await page.keyboard.press("ArrowUp"); // register a second cell on this floor
+  await expect(page.getByTestId("map-current")).toContainText("Lanterns Facing Inward");
+
+  // Open the whole-floor map from the dock; it shows the explored cells at once.
+  await page.getByTestId("full-map-open").click();
+  await expect(page.getByTestId("floor-map")).toBeVisible();
+  await expect(page.getByTestId("floor-map-current")).toBeVisible();
+  expect(await page.locator(".floor-map-grid .mini-map-cell:not(.empty)").count()).toBeGreaterThanOrEqual(2);
+
+  // The M key toggles it closed.
+  await page.keyboard.press("m");
+  await expect(page.getByTestId("floor-map")).toHaveCount(0);
+});

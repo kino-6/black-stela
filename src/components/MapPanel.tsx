@@ -107,6 +107,56 @@ export function MapPanel({ state, world, locale, t }: MapPanelProps) {
   );
 }
 
+// Whole-floor map overlay: renders every explored cell of the current floor at
+// a compact scale, reusing the minimap cell styling (edges, markers, current).
+export function FloorMapView({ state, world, locale, t }: MapPanelProps) {
+  const currentRoomId = state.map.currentRoomId ?? state.position?.roomId ?? null;
+  const floorMap = useMemo(() => buildFloorMap(state, world, locale, currentRoomId), [state, world, locale, currentRoomId]);
+  const facing = state.position?.facing ?? state.map.currentFacing ?? null;
+  const cellsByPosition = new Map(floorMap.cells.map((cell) => [`${cell.x},${cell.y}`, cell]));
+
+  if (floorMap.cells.length === 0) {
+    return <p className="floor-map-empty">{t("map.noFloor")}</p>;
+  }
+
+  return (
+    <div
+      className="floor-map-grid"
+      data-testid="floor-map-grid"
+      style={{
+        gridTemplateColumns: `repeat(${floorMap.width}, 1.15rem)`,
+        gridTemplateRows: `repeat(${floorMap.height}, 1.15rem)`
+      }}
+    >
+      {Array.from({ length: floorMap.width * floorMap.height }).map((_, index) => {
+        const x = index % floorMap.width;
+        const y = Math.floor(index / floorMap.width);
+        const cell = cellsByPosition.get(`${x},${y}`);
+        if (!cell) {
+          return <span key={`empty-${index}`} className="mini-map-cell empty" aria-hidden="true" />;
+        }
+
+        const edgeClasses = DIRECTIONS.map((direction) => `edge-${direction}-${cell.edges[direction]}`).join(" ");
+        const markerLabel = cell.marker ? `, ${t(`map.marker.${cell.marker}`)}` : "";
+        return (
+          <span
+            aria-label={`${cell.label}: ${t(`map.${cell.status}`)}${markerLabel}`}
+            className={`mini-map-cell ${cell.status} ${edgeClasses}`}
+            data-testid={`floor-map-${cell.status}`}
+            key={cell.id}
+            title={cell.label}
+          >
+            {cell.marker && <i className={`mini-map-marker marker-${cell.marker}`} aria-hidden="true" />}
+            {cell.status === "current" && facing && (
+              <b aria-label={t(`direction.${facing}`)} className={`mini-map-facing facing-${facing}`} />
+            )}
+          </span>
+        );
+      })}
+    </div>
+  );
+}
+
 function edgeRenderKind(edge: DungeonGridEdge | undefined, secretRevealed = false): EdgeKind {
   if (!edge) {
     return "wall";
@@ -190,28 +240,63 @@ function buildGridMiniMap(
         cell.x >= originX && cell.x < originX + MINI_MAP_SIZE && cell.y >= originY && cell.y < originY + MINI_MAP_SIZE
     );
 
-  const cells: MiniMapCell[] = visibleCells.map((cell) => {
-    const room = getRoom(world, cell.roomId);
-    const isRevealed = (direction: Direction) => state.discoveredSecrets.includes(secretKey(cell.roomId, direction));
-    const edges: Record<Direction, EdgeKind> = {
-      north: edgeRenderKind(cell.edges.north, isRevealed("north")),
-      east: edgeRenderKind(cell.edges.east, isRevealed("east")),
-      south: edgeRenderKind(cell.edges.south, isRevealed("south")),
-      west: edgeRenderKind(cell.edges.west, isRevealed("west"))
-    };
-
-    return {
-      id: cell.id,
-      x: cell.x - originX,
-      y: cell.y - originY,
-      status: cell.roomId === currentRoomId ? "current" : "visited",
-      edges,
-      marker: cellMarker(room, state, edges),
-      label: getLocalizedRoomText(world, cell.roomId, locale).name
-    };
-  });
+  const cells = visibleCells.map((cell) => buildMiniMapCell(cell, originX, originY, state, world, locale, currentRoomId));
 
   return { cells };
+}
+
+type GridCell = NonNullable<NonNullable<ScenarioWorld["dungeons"][number]["grid"]>["cells"]>[number];
+
+function buildMiniMapCell(
+  cell: GridCell,
+  originX: number,
+  originY: number,
+  state: GameState,
+  world: ScenarioWorld,
+  locale: Locale,
+  currentRoomId: string
+): MiniMapCell {
+  const room = getRoom(world, cell.roomId);
+  const isRevealed = (direction: Direction) => state.discoveredSecrets.includes(secretKey(cell.roomId, direction));
+  const edges: Record<Direction, EdgeKind> = {
+    north: edgeRenderKind(cell.edges.north, isRevealed("north")),
+    east: edgeRenderKind(cell.edges.east, isRevealed("east")),
+    south: edgeRenderKind(cell.edges.south, isRevealed("south")),
+    west: edgeRenderKind(cell.edges.west, isRevealed("west"))
+  };
+
+  return {
+    id: cell.id,
+    x: cell.x - originX,
+    y: cell.y - originY,
+    status: cell.roomId === currentRoomId ? "current" : "visited",
+    edges,
+    marker: cellMarker(room, state, edges),
+    label: getLocalizedRoomText(world, cell.roomId, locale).name
+  };
+}
+
+// The whole explored floor (no 5x5 window): every visited cell, offset to a
+// bounding box, for the full-floor map view.
+export function buildFloorMap(state: GameState, world: ScenarioWorld, locale: Locale, currentRoomId: string | null) {
+  const floor = world.dungeons.find((dungeon) => dungeon.id === state.map.floorId);
+  const gridCells = floor?.grid?.cells ?? [];
+  const visited = new Set(state.map.visitedRooms);
+  if (currentRoomId) {
+    visited.add(currentRoomId);
+  }
+  const shown = gridCells.filter((cell) => visited.has(cell.roomId));
+  if (!currentRoomId || shown.length === 0) {
+    return { cells: [] as MiniMapCell[], width: 0, height: 0 };
+  }
+
+  const minX = Math.min(...shown.map((cell) => cell.x));
+  const minY = Math.min(...shown.map((cell) => cell.y));
+  const width = Math.max(...shown.map((cell) => cell.x)) - minX + 1;
+  const height = Math.max(...shown.map((cell) => cell.y)) - minY + 1;
+  const cells = shown.map((cell) => buildMiniMapCell(cell, minX, minY, state, world, locale, currentRoomId));
+
+  return { cells, width, height };
 }
 
 function buildGraphMiniMap(state: GameState, world: ScenarioWorld, locale: Locale, currentRoomId: string | null) {
