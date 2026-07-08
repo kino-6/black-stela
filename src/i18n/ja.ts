@@ -326,6 +326,7 @@ export const ja = {
     heading: "周辺",
     noFloor: "階層なし",
     current: "現在地",
+    coverage: "この階の踏破 {percent}%",
     town: "街",
     miniMap: "ミニマップ",
     darkness: "視界不良 — 歩数を数えよ",

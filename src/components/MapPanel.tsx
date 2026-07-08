@@ -1,4 +1,5 @@
 import { floorName, getGridCellForRoom, getLocalizedRoomText, getRoom, secretKey } from "../domain/scenario";
+import { floorExploredRatio } from "../domain/rulesEngine";
 import { useMemo } from "react";
 import type { Direction, DungeonGridEdge, DungeonRoom, GameState, ScenarioWorld } from "../domain/types";
 import type { Locale, Translator } from "../i18n";
@@ -54,6 +55,11 @@ export function MapPanel({ state, world, locale, t }: MapPanelProps) {
         <small>{t("map.current")}</small>
         <strong>{currentRoomId ? getLocalizedRoomText(world, currentRoomId, locale).name : t("map.town")}</strong>
       </div>
+      {state.map.floorId && (
+        <div className="floor-coverage" data-testid="floor-coverage">
+          {t("map.coverage", { percent: Math.round(floorExploredRatio(world, state) * 100) })}
+        </div>
+      )}
       {miniMap.cells.length > 0 && (
         <div className={`mini-map${inDarkZone ? " dark" : ""}`} aria-label={t("map.miniMap")} data-testid="minimap">
           {inDarkZone && (

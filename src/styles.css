@@ -1154,6 +1154,13 @@ textarea {
   font-size: 1rem;
 }
 
+.floor-coverage {
+  margin-top: 0.35rem;
+  font-size: 0.8rem;
+  letter-spacing: 0.02em;
+  color: rgba(201, 168, 74, 0.85);
+}
+
 .map-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(12rem, 0.8fr);

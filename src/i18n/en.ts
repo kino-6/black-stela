@@ -324,6 +324,7 @@ export const en = {
     heading: "Area",
     noFloor: "No floor",
     current: "Current room",
+    coverage: "Mapped {percent}% of this floor",
     town: "Town",
     miniMap: "Mini-map",
     darkness: "Darkness — count your steps",
