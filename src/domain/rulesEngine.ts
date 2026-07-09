@@ -1890,7 +1890,21 @@ export function floorExploredRatio(world: ScenarioWorld, state: GameState): numb
   return seen / cells.length;
 }
 
-function isGateOpen(gate: ExplorationGate, state: GameState, world: ScenarioWorld): boolean {
+// The gate barring the stair the party currently faces (if any), so the UI can
+// show why a descent is refused instead of a dead "Use stairs" button.
+export function stairGateAhead(world: ScenarioWorld, state: GameState): ExplorationGate | null {
+  if (!state.position) {
+    return null;
+  }
+  const edge = getGridEdge(world, state.position.roomId, state.position.facing);
+  if (edge?.kind !== "stairs") {
+    return null;
+  }
+  const gate = getRoom(world, state.position.roomId).gates?.find((g) => g.direction === state.position!.facing);
+  return gate && !isGateOpen(gate, state, world) ? gate : null;
+}
+
+export function isGateOpen(gate: ExplorationGate, state: GameState, world: ScenarioWorld): boolean {
   if (gate.requiredKeyId && !state.inventory.some((item) => item.id === gate.requiredKeyId && item.quantity > 0)) {
     return false;
   }

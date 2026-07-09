@@ -5,6 +5,7 @@ import {
   ArrowRight,
   ChevronsLeft,
   ChevronsRight,
+  DoorClosed,
   DoorOpen,
   Footprints,
   FolderOpen,
@@ -45,7 +46,7 @@ import {
 import { readVault, depositToVault, removeFromVault, type VaultEntry } from "./domain/adventurerVault";
 import { floorName, getGridEdge, getLocalizedRoomText, getRoom, isBossFloor } from "./domain/scenario";
 import { createIdentitySuggestion } from "./domain/identitySuggestion";
-import { executeCommand, listUnlockedCheckpoints } from "./domain/rulesEngine";
+import { executeCommand, listUnlockedCheckpoints, stairGateAhead } from "./domain/rulesEngine";
 import { getTempoModeForPhase, runTempoStep, type TempoMode } from "./domain/tempo";
 import { SPELLS, knownSpells, type SpellId } from "./domain/spells";
 import {
@@ -226,6 +227,11 @@ export function App() {
   const canUseStairs = Boolean(
     state.position && getGridEdge(defaultWorld, state.position.roomId, state.position.facing)?.kind === "stairs"
   );
+  // A stair the party faces but can't yet use (crank not turned, floor not mapped).
+  const blockingStairGate = stairGateAhead(defaultWorld, state);
+  const stairGateClue = blockingStairGate
+    ? blockingStairGate.locales?.[locale]?.clue ?? blockingStairGate.clue ?? null
+    : null;
 
   const latestLogText = useMemo(() => {
     const entry = state.log.at(-1);
@@ -2449,11 +2455,17 @@ export function App() {
                     <MapIcon size={18} />
                     {t("play.fullMap")}
                   </button>
-                  {canUseStairs && (
+                  {canUseStairs && !blockingStairGate && (
                     <button type="button" className="context-command" onClick={() => run({ type: "use_stairs" })}>
                       <DoorOpen size={18} />
                       {t("play.useStairs")}
                     </button>
+                  )}
+                  {canUseStairs && blockingStairGate && (
+                    <div className="descent-locked" data-testid="descent-locked">
+                      <DoorClosed size={18} />
+                      <span>{stairGateClue ?? t("play.descentLocked")}</span>
+                    </div>
                   )}
                   {canReturnToTown && (
                     <button type="button" className="context-command" onClick={() => run({ type: "return_to_town" })}>

@@ -2920,6 +2920,19 @@ textarea {
   border-color: rgba(201, 168, 74, 0.28);
 }
 
+/* A faced-but-locked stair: show the clue in place of the Use-stairs button. */
+.descent-locked {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px dashed rgba(201, 168, 74, 0.4);
+  border-radius: 0.4rem;
+  color: rgba(229, 224, 210, 0.85);
+  font-size: 0.85rem;
+  line-height: 1.35;
+}
+
 @media (max-width: 1100px) {
   .app-shell[data-phase="dungeon"] {
     height: auto;

@@ -200,6 +200,7 @@ export const en = {
     search: "Search",
     listen: "Listen",
     useStairs: "Use stairs",
+    descentLocked: "The stair won't take you yet — something on this floor is unfinished.",
     useReturnMarker: "Use return marker",
     useReturnStairs: "Climb the stairs to town",
     useReturnCharm: "Use return charm",

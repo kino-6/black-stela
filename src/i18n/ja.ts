@@ -202,6 +202,7 @@ export const ja = {
     search: "探索",
     listen: "聞く",
     useStairs: "階段を使う",
+    descentLocked: "この階段はまだ通れない——この階に、やり残したことがある。",
     useReturnMarker: "帰還標を使う",
     useReturnStairs: "階段で町へ戻る",
     useReturnCharm: "帰還の割符を使う",
