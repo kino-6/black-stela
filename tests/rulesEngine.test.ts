@@ -409,18 +409,18 @@ describe("runtime gates and shortcuts", () => {
   });
 
   it("hides the ash-vault cache behind a secret wall until the party searches", () => {
-    const facingSecret = dungeonAt("room.b7f.002", { position: { roomId: "room.b7f.002", facing: "south" } });
+    const facingSecret = dungeonAt("room.b7f.c11_6", { position: { roomId: "room.b7f.c11_6", facing: "south" } });
 
     const blocked = executeCommand(facingSecret, defaultWorld, { type: "move_forward" });
-    expect(blocked.position?.roomId).toBe("room.b7f.002");
+    expect(blocked.position?.roomId).toBe("room.b7f.c11_6");
     expect(blocked.log.at(-1)?.tags).toContain("blocked");
 
     const searched = executeCommand(facingSecret, defaultWorld, { type: "search" });
-    expect(searched.discoveredSecrets).toContain("secret:room.b7f.002:south");
+    expect(searched.discoveredSecrets).toContain("secret:room.b7f.c11_6:south");
     expect(searched.log.some((entry) => entry.tags.includes("secret"))).toBe(true);
 
     const revealed = executeCommand(
-      { ...searched, position: { roomId: "room.b7f.002", facing: "south" } },
+      { ...searched, position: { roomId: "room.b7f.c11_6", facing: "south" } },
       defaultWorld,
       { type: "move_forward" }
     );

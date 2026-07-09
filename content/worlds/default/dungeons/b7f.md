@@ -18,25 +18,25 @@ authorNotes: >-
   false face. Prepared parties get a reason to return.
 startRoom: room.b7f.001
 map: |
-  ####################
-  ####################
-  ##................##
-  ##................##
-  #G....#.A..#..B#..##
-  ##................##
-  ##....#.S..#..K#..##
-  ##...............PH#
-  ##................##
-  ##.#################
-  ##F#################
-  ##VR################
-  ##X#################
-  ####################
-  ####################
-  ####################
-  ####################
-  ####################
-  ####################
+  ###################
+  #F#.......#.......#
+  #.#.#.#.#####.###.#
+  #...#.#........B#.#
+  #.###.#####.#.###.#
+  #.........#.......#
+  #.###.#.#.#.#.###.#
+  #.....#.#.#X#.VR#.#
+  #.#####....##.###.#
+  #....G#..A..#...#P#
+  #.######...####.###
+  #.............#...#
+  #######.#.#####.###
+  #........S........#
+  #.#.#####.###.###.#
+  #.#.........#..K#.#
+  #.#####.#####.###.#
+  #.....#.....#...#H#
+  ###################
   ####################
 symbols:
   F: room.b7f.001
@@ -68,30 +68,26 @@ edges:
     kind: stairs
     to: room.b8f.001
     targetFloorId: dungeon.b8f
-  - from: room.b7f.001
-    direction: south
-    kind: door
-    to: room.b7f.002
   - from: room.b7f.002
     direction: east
     kind: locked
     to: room.b7f.003
-  - from: room.b7f.002
+  - from: room.b7f.c11_6
     direction: south
     kind: secret
     to: room.b7f.004
-  - from: room.b7f.010
-    direction: east
+  - from: room.b7f.c17_16
+    direction: south
     kind: secret
     to: room.b7f.011
 rooms:
   - id: room.b7f.001
     name: Fork of Quiet Vaults
-    description: A lower passage climbs west to the salted arch and falls east toward the finale; a sealed vault lies south, and the vault gallery opens north.
+    description: A lower passage climbs west to the salted arch and falls east toward the finale; the vault gallery winds off south, and a sealed ash vault sits somewhere in its aisles.
     locales:
       ja:
         name: 静かな納骨庫の分岐
-        description: 低い通路は西の塩の迫持へ上り、東は終幕へ落ちる。南には封じ石があり、北へ納骨の回廊が開く。
+        description: 低い通路は西の塩の迫持へ上り、東は終幕へ落ちる。納骨の回廊は南へ折れ、その通路のどこかに封灰の納骨庫が控えている。
     gates:
       - id: gate.b7f.descent
         direction: east
@@ -162,11 +158,11 @@ rooms:
     treasureTable: treasure.b1f.nook
   - id: room.b7f.002
     name: Sealed Ash Vault
-    description: A keyhole of black glass watches from the sealed slab. The south wall rings hollow when struck.
+    description: A keyhole of black glass watches from the sealed slab beyond, where the reliquary is pinned shut against everything but cooled ash.
     locales:
       ja:
         name: 封灰の納骨庫
-        description: 封じ石の黒硝子の鍵穴がこちらを見ている。南の壁を叩くと空洞の音が返る。
+        description: この先の封じ石から、黒硝子の鍵穴がこちらを見ている。聖遺物室は、冷えた灰のほかすべてを拒んで封じられている。
     gates:
       - id: gate.b7f.ash-vault
         direction: east
@@ -194,11 +190,11 @@ rooms:
     treasureTable: treasure.b7f.cache
   - id: room.b7f.011
     name: Sealed Cache
-    description: A slot of dead air hides behind the east niche's back wall, its seam packed with cold ash — a cloth-bound cache rests within, richer than the open niches.
+    description: A slot of dead air hides behind an ash-packed seam off the south aisle — a cloth-bound cache rests within, richer than the open niches.
     locales:
       ja:
         name: 封じ龕の隠し宝処
-        description: 東の龕の奥壁の裏に、淀んだ空気の隙間が隠れている。継ぎ目は冷えた灰で詰まり、布に包まれた蓄えが中に置かれ、開けた小間よりも実り多い。
+        description: 南の通路の脇、冷えた灰で詰めた継ぎ目の裏に淀んだ空気の隙間が隠れている。布に包まれた蓄えが中に置かれ、開けた小間よりも実り多い。
     treasureTable: treasure.b7f.secret
 ---
 
