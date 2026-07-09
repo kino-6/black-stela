@@ -8,26 +8,21 @@ encounterTables:
         weight: 10
         minCount: 2
         maxCount: 3
+  # Chambers roll ONLY a fresh type (the ash-slime is already down from B1F 002), so
+  # a table can never "roll a defeated type and skip" — the玄室 fight is guaranteed.
   - id: encounters.b1f.chambers
     floorId: dungeon.b1f
     entries:
-      - enemyId: enemy.b1f.ash-slime
-        weight: 6
-        minCount: 3
-        maxCount: 4
       - enemyId: enemy.b1f.dust-crawler
-        weight: 4
+        weight: 10
         minCount: 3
         maxCount: 4
+  # B2F's on-path table drops the already-beaten ash-slime so the landing always fights.
   - id: encounters.b2f.branches
     floorId: dungeon.b2f
     entries:
-      - enemyId: enemy.b1f.ash-slime
-        weight: 6
-        minCount: 3
-        maxCount: 3
       - enemyId: enemy.b2f.hook-rat
-        weight: 4
+        weight: 10
         minCount: 3
         maxCount: 3
   - id: encounters.b3f.cistern

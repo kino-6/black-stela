@@ -115,7 +115,7 @@ import {
   parseDebugProgress,
   type DebugProgress
 } from "./debug/debugStart";
-import { runHeadlessClear } from "./headless/headlessRunner";
+import { debugAutoExplore, runHeadlessClear } from "./headless/headlessRunner";
 import { defaultWorld } from "./data/defaultWorld";
 import { fromSaveDataV1, toSaveDataV1 } from "./domain/saveData";
 import { LocalStorageSaveRepository, type SaveSlotSummary } from "./services/saveRepository";
@@ -2463,6 +2463,17 @@ export function App() {
                     <MapIcon size={18} />
                     {t("play.fullMap")}
                   </button>
+                  {debugMode && (
+                    <button
+                      type="button"
+                      className="context-command"
+                      data-testid="debug-auto-explore"
+                      onClick={() => setState((current) => debugAutoExplore(current, defaultWorld))}
+                    >
+                      <MapIcon size={18} />
+                      {t("debug.autoExplore")}
+                    </button>
+                  )}
                   {canUseStairs && !blockingStairGate && (
                     <button type="button" className="context-command" onClick={() => run({ type: "use_stairs" })}>
                       <DoorOpen size={18} />

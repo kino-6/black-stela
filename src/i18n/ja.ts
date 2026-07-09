@@ -38,6 +38,7 @@ export const ja = {
     floorStart: "{floor} 開始",
     loadProgress: "進捗を読込",
     reached: "到達",
+    autoExplore: "自動探索",
     headlessReachability: "Headless到達性",
     headlessReachabilityStatus: "Headless到達性: {reason} ({count} commands)"
   },

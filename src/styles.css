@@ -1986,14 +1986,14 @@ textarea {
   align-items: stretch;
   justify-items: stretch;
   width: max-content;
-  min-width: calc(5 * 1.7rem);
-  min-height: calc(5 * 1.7rem);
+  min-width: calc(5 * 2.3rem);
+  min-height: calc(5 * 2.3rem);
 }
 
 .mini-map-cell {
   position: relative;
   display: block;
-  width: 1.7rem;
+  width: 2.3rem;
   aspect-ratio: 1;
   margin: -1px 0 0 -1px;
   border: 2px solid transparent;
@@ -2030,10 +2030,17 @@ textarea {
 }
 
 /* Corridor walls: closed edges read as a solid, bright stone border. */
-.mini-map-cell.edge-north-wall { border-top-color: #6f7a63; }
-.mini-map-cell.edge-east-wall { border-right-color: #6f7a63; }
-.mini-map-cell.edge-south-wall { border-bottom-color: #6f7a63; }
-.mini-map-cell.edge-west-wall { border-left-color: #6f7a63; }
+.mini-map-cell.edge-north-wall { border-top-color: #b3bfa0; }
+.mini-map-cell.edge-east-wall { border-right-color: #b3bfa0; }
+.mini-map-cell.edge-south-wall { border-bottom-color: #b3bfa0; }
+.mini-map-cell.edge-west-wall { border-left-color: #b3bfa0; }
+
+/* On the bright "you are here" cell, walls are drawn dark so they stay legible
+   against the highlight instead of washing out. */
+.mini-map-cell.current.edge-north-wall { border-top-color: #241d04; }
+.mini-map-cell.current.edge-east-wall { border-right-color: #241d04; }
+.mini-map-cell.current.edge-south-wall { border-bottom-color: #241d04; }
+.mini-map-cell.current.edge-west-wall { border-left-color: #241d04; }
 
 /* Open passages: no border, so connected cells read as one corridor. */
 .mini-map-cell.edge-north-open { border-top-color: transparent; }
@@ -2118,27 +2125,27 @@ textarea {
   z-index: 3;
   transform: translate(-50%, -50%);
   border-style: solid;
-  filter: drop-shadow(0 0 1.5px rgba(10, 6, 4, 0.95));
+  filter: drop-shadow(0 0 2px rgba(12, 8, 4, 1)) drop-shadow(0 0 1px rgba(255, 240, 200, 0.9));
 }
 
 .mini-map-facing.facing-north {
-  border-width: 0 0.32rem 0.52rem;
-  border-color: transparent transparent #e23a2a;
+  border-width: 0 0.46rem 0.74rem;
+  border-color: transparent transparent #e8241a;
 }
 
 .mini-map-facing.facing-east {
-  border-width: 0.32rem 0 0.32rem 0.52rem;
-  border-color: transparent transparent transparent #e23a2a;
+  border-width: 0.46rem 0 0.46rem 0.74rem;
+  border-color: transparent transparent transparent #e8241a;
 }
 
 .mini-map-facing.facing-south {
-  border-width: 0.52rem 0.32rem 0;
-  border-color: #e23a2a transparent transparent;
+  border-width: 0.74rem 0.46rem 0;
+  border-color: #e8241a transparent transparent;
 }
 
 .mini-map-facing.facing-west {
-  border-width: 0.32rem 0.52rem 0.32rem 0;
-  border-color: transparent #e23a2a transparent transparent;
+  border-width: 0.46rem 0.74rem 0.46rem 0;
+  border-color: transparent #e8241a transparent transparent;
 }
 
 .command-bar {

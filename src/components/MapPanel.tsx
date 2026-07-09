@@ -71,8 +71,8 @@ export function MapPanel({ state, world, locale, t }: MapPanelProps) {
             data-testid="minimap-grid"
             className="mini-map-grid"
             style={{
-              gridTemplateColumns: `repeat(${MINI_MAP_SIZE}, 1.62rem)`,
-              gridTemplateRows: `repeat(${MINI_MAP_SIZE}, 1.62rem)`
+              gridTemplateColumns: `repeat(${MINI_MAP_SIZE}, 2.3rem)`,
+              gridTemplateRows: `repeat(${MINI_MAP_SIZE}, 2.3rem)`
             }}
           >
             {Array.from({ length: MINI_MAP_SIZE * MINI_MAP_SIZE }).map((_, index) => {

@@ -36,6 +36,7 @@ export const en = {
     floorStart: "{floor} start",
     loadProgress: "Load progress",
     reached: "reached",
+    autoExplore: "Auto-explore",
     headlessReachability: "Headless reachability",
     headlessReachabilityStatus: "Headless reachability: {reason} ({count} commands)"
   },

@@ -1,5 +1,6 @@
 import { executeCommand } from "../domain/rulesEngine";
 import { getFloorIdForRoom, getGridEdge, getRoom } from "../domain/scenario";
+import { analyzeFloorGraph } from "../domain/floorGraph";
 import { createDebugStateFromProgress, debugProgressValues, type DebugProgress } from "../debug/debugStart";
 import type { Command, Direction, GameState, ScenarioWorld } from "../domain/types";
 
@@ -128,6 +129,104 @@ export function runHeadlessProbes(world: ScenarioWorld, maxSteps = 1800): Headle
       progress,
       ...runHeadlessClear(createDebugStateFromProgress(world, progress), world, maxSteps)
     }));
+}
+
+const floorDepthOf = (id: string | undefined | null) => Number(id?.match(/b(\d+)f/)?.[1] ?? 0);
+
+function downStairRoomOnFloor(world: ScenarioWorld, floorId: string): string | null {
+  const floor = world.dungeons.find((dungeon) => dungeon.id === floorId);
+  const depth = floorDepthOf(floorId);
+  for (const cell of floor?.grid?.cells ?? []) {
+    for (const edge of Object.values(cell.edges)) {
+      if (edge?.kind === "stairs" && edge.targetFloorId && floorDepthOf(edge.targetFloorId) > depth) {
+        return cell.roomId;
+      }
+    }
+  }
+  return null;
+}
+
+// One command that walks one cell along the shortest route toward a target room.
+function stepTowardRoom(state: GameState, world: ScenarioWorld, floorId: string, targetRoomId: string): Command | null {
+  if (!state.position) {
+    return null;
+  }
+  const path = analyzeFloorGraph(world, floorId).shortestPathCells(state.position.roomId, targetRoomId);
+  if (path.length < 2) {
+    return null;
+  }
+  const floor = world.dungeons.find((dungeon) => dungeon.id === floorId);
+  const byId = new Map((floor?.grid?.cells ?? []).map((cell) => [cell.id, cell]));
+  const here = byId.get(path[0]);
+  const next = byId.get(path[1]);
+  if (!here || !next) {
+    return null;
+  }
+  const dir: Direction =
+    next.x - here.x === 1 ? "east" : next.x - here.x === -1 ? "west" : next.y - here.y === 1 ? "south" : "north";
+  return state.position.facing === dir ? { type: "move_forward" } : turnToward(state.position.facing, dir);
+}
+
+// Debug convenience: auto-walk the current floor so a tester need not tap WASD
+// dozens of times. It greedily visits unexplored cells (real movement, so encounters
+// fire and the map reveals), STOPS on combat so the player fights, then heads to the
+// down-stair and stops there — ready to descend, but never descending or returning
+// to town on its own.
+export function debugAutoExplore(initialState: GameState, world: ScenarioWorld, maxSteps = 800): GameState {
+  let current = initialState;
+  const visitCounts = new Map<string, number>();
+  const blockedMoves = new Set<string>();
+
+  for (let step = 0; step < maxSteps; step += 1) {
+    if (current.phase !== "dungeon" || !current.position) {
+      break;
+    }
+    visitCounts.set(current.position.roomId, (visitCounts.get(current.position.roomId) ?? 0) + 1);
+    const decision = chooseNextCommand(current, world, visitCounts, blockedMoves);
+    // Leaving the floor (a town return or a descent) is the player's call — stop here.
+    if (!decision.command || decision.command.type === "return_to_town" || decision.command.type === "use_stairs") {
+      break;
+    }
+    const next = executeCommand(current, world, decision.command);
+    if (decision.command.type === "move_forward" && current.position && next.position?.roomId === current.position.roomId) {
+      blockedMoves.add(`${current.position.roomId}:${current.position.facing}`);
+    }
+    if (next.discoveredSecrets.length !== current.discoveredSecrets.length) {
+      blockedMoves.clear();
+    }
+    if (next === current) {
+      break;
+    }
+    current = next;
+    if (current.phase === "combat") {
+      return current; // hand the fight to the player
+    }
+  }
+
+  // Explored: thread to the down-stair and stop, ready to descend.
+  if (current.phase === "dungeon" && current.position) {
+    const downStair = downStairRoomOnFloor(world, current.map.floorId ?? "");
+    if (downStair && current.position.roomId !== downStair) {
+      for (let step = 0; step < maxSteps; step += 1) {
+        const command = stepTowardRoom(current, world, current.map.floorId ?? "", downStair);
+        if (!command) {
+          break;
+        }
+        const next = executeCommand(current, world, command);
+        if (next === current) {
+          break;
+        }
+        current = next;
+        if (current.phase === "combat") {
+          return current;
+        }
+        if (current.position?.roomId === downStair) {
+          break;
+        }
+      }
+    }
+  }
+  return current;
 }
 
 // Reachability sentinel: the explorer fought B1F's intro slime and found its way
