@@ -2348,6 +2348,19 @@ textarea {
   cursor: pointer;
 }
 
+/* Keyboard shortcut chip shown on a command button so the key is discoverable. */
+.key-hint {
+  margin-left: 0.4rem;
+  padding: 0.02rem 0.32rem;
+  border: 1px solid rgba(201, 168, 74, 0.38);
+  border-radius: 0.25rem;
+  background: rgba(0, 0, 0, 0.28);
+  font: inherit;
+  font-size: 0.66rem;
+  line-height: 1.3;
+  color: rgba(224, 210, 170, 0.82);
+}
+
 .dev-save-controls {
   display: flex;
   flex-wrap: wrap;

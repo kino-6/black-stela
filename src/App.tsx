@@ -383,6 +383,16 @@ export function App() {
     setCombatOrders(nextOrders);
   }
 
+  // The keyboard "act" key (F): queue the current actor's sensible default — attack
+  // if it can reach, otherwise defend — so the round never STALLS on a back-row
+  // member who can't strike. Every press advances to the next actor.
+  function queueSmartCombatAction() {
+    if (!selectedActor) {
+      return;
+    }
+    queueSelectedCombatAction(canSelectedActorAttack ? "attack" : "defend");
+  }
+
   function queueSelectedCombatSpell(spellId: SpellId) {
     if (!selectedActor) {
       return;
@@ -801,7 +811,7 @@ export function App() {
         if (combatOrdersReady && key === "enter") {
           executeCombatOrders();
         } else {
-          queueSelectedCombatAction("attack");
+          queueSmartCombatAction();
         }
       } else if (state.phase === "combat" && key === "g") {
         event.preventDefault();
@@ -2381,10 +2391,12 @@ export function App() {
                     <button type="button" aria-pressed={isTempoRunning} onClick={() => toggleTempoMode("combat")}>
                       {isTempoRunning ? <Square size={18} /> : <Repeat2 size={18} />}
                       {isTempoRunning ? t("tempo.stop") : t("tempo.repeat")}
+                      <kbd className="key-hint">R</kbd>
                     </button>
                     <button type="button" disabled={!canSelectedActorAttack} onClick={() => queueSelectedCombatAction("attack")}>
                       <Sword size={18} />
                       {t("play.attack")}
+                      <kbd className="key-hint">F</kbd>
                     </button>
                     <button type="button" disabled={!canCycleCombatTarget} onClick={() => cycleSelectedTarget(1)}>
                       <ArrowRight size={18} />
@@ -2393,6 +2405,7 @@ export function App() {
                     <button type="button" disabled={!selectedActor} onClick={() => queueSelectedCombatAction("defend")}>
                       <ShieldCheck size={18} />
                       {t("play.defend")}
+                      <kbd className="key-hint">G</kbd>
                     </button>
                     {selectedActor &&
                       knownSpells(selectedActor.classId, selectedActor.level).map((spellId) => {
@@ -2422,10 +2435,12 @@ export function App() {
                     <button type="button" disabled={!combatOrdersReady} onClick={executeCombatOrders}>
                       <Sword size={18} />
                       {t("play.fight")}
+                      <kbd className="key-hint">X</kbd>
                     </button>
                     <button type="button" data-controller-cancel="true" disabled={combatOrders.length === 0} onClick={takeBackCombatOrder}>
                       <ShieldCheck size={18} />
                       {t("play.takeBack")}
+                      <kbd className="key-hint">⌫</kbd>
                     </button>
                     <button type="button" disabled={combatOrders.length === 0} onClick={clearCombatOrders}>
                       <Square size={18} />
