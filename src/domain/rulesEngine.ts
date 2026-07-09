@@ -35,6 +35,7 @@ import type {
   CombatState,
   Command,
   Direction,
+  DungeonFloor,
   DungeonRoom,
   Element,
   Enemy,
@@ -627,6 +628,7 @@ function moveForward(
   const effects = applyCellEffects(next, world, room, events);
   next = effects.state;
 
+  const fixedFight = Boolean(room.encounter);
   const encounter = room.encounter
     ? { enemy: world.enemies.find((enemy) => enemy.id === room.encounter?.id) ?? room.encounter, count: 1 }
     : room.encounterTable
@@ -634,15 +636,17 @@ function moveForward(
       : null;
 
   if (!effects.teleported && encounter && !state.defeatedEnemies.includes(encounter.enemy.id)) {
+    // A rolled pack swells for an under-strength party; the fixed teaching fight does not.
+    const count = fixedFight ? encounter.count : scaledEncounterCount(encounter.count, state.party, floorForRoom(world, room.id));
     next = {
       ...next,
       phase: "combat",
-      combat: createCombatState(room.id, encounter.enemy, encounter.count)
+      combat: createCombatState(room.id, encounter.enemy, count)
     };
     events.push({
       type: "enemy_encountered",
       enemyId: encounter.enemy.id,
-      enemyName: encounter.count > 1 ? `${encounter.enemy.name} x${encounter.count}` : encounter.enemy.name,
+      enemyName: count > 1 ? `${encounter.enemy.name} x${count}` : encounter.enemy.name,
       roomId: room.id
     });
   }
@@ -706,6 +710,7 @@ function useStairs(state: GameState, world: ScenarioWorld): CommandResult {
   const effects = applyCellEffects(next, world, targetRoom, events);
   next = effects.state;
 
+  const fixedFight = Boolean(targetRoom.encounter);
   const encounter = targetRoom.encounter
     ? { enemy: world.enemies.find((enemy) => enemy.id === targetRoom.encounter?.id) ?? targetRoom.encounter, count: 1 }
     : targetRoom.encounterTable
@@ -713,15 +718,16 @@ function useStairs(state: GameState, world: ScenarioWorld): CommandResult {
       : null;
 
   if (!effects.teleported && encounter && !state.defeatedEnemies.includes(encounter.enemy.id)) {
+    const count = fixedFight ? encounter.count : scaledEncounterCount(encounter.count, state.party, floorForRoom(world, targetRoom.id));
     next = {
       ...next,
       phase: "combat",
-      combat: createCombatState(targetRoom.id, encounter.enemy, encounter.count)
+      combat: createCombatState(targetRoom.id, encounter.enemy, count)
     };
     events.push({
       type: "enemy_encountered",
       enemyId: encounter.enemy.id,
-      enemyName: encounter.count > 1 ? `${encounter.enemy.name} x${encounter.count}` : encounter.enemy.name,
+      enemyName: count > 1 ? `${encounter.enemy.name} x${count}` : encounter.enemy.name,
       roomId: targetRoom.id
     });
   }
@@ -1320,6 +1326,35 @@ function retreat(state: GameState): CommandResult {
   };
 
   return withEvents(next, [{ type: "party_retreated" }]);
+}
+
+// Under-strength descents are punished by numbers, not by a gate: a party below a
+// floor's recommended level and/or head-count meets bigger packs. Tuned so an
+// adequate party sees the base count, while a low-level solo faces a swarm.
+const UNDERPOWER = { levelWeight: 0.5, sizeWeight: 0.35, maxFactor: 2.5, maxExtraUnits: 4, absoluteMax: 8 };
+
+export function floorForRoom(world: ScenarioWorld, roomId: string): DungeonFloor | undefined {
+  return world.dungeons.find((dungeon) => dungeon.rooms.some((room) => room.id === roomId));
+}
+
+export function underpowerFactor(party: Character[], floor: DungeonFloor | undefined): number {
+  if (!floor || party.length === 0) {
+    return 1;
+  }
+  const recommendedLevel = floor.recommendedPartyLevel ?? 1;
+  const recommendedSize = floor.recommendedPartySize ?? 1;
+  const averageLevel = party.reduce((total, member) => total + (member.level ?? 1), 0) / party.length;
+  const levelShortfall = Math.max(0, recommendedLevel - averageLevel);
+  const sizeShortfall = Math.max(0, recommendedSize - party.length);
+  const factor = 1 + UNDERPOWER.levelWeight * levelShortfall + UNDERPOWER.sizeWeight * sizeShortfall;
+  return Math.min(factor, UNDERPOWER.maxFactor);
+}
+
+// Scale a rolled pack up for an under-strength party (capped so a group stays
+// readable). Fixed single-enemy teaching fights are never routed through this.
+export function scaledEncounterCount(baseCount: number, party: Character[], floor: DungeonFloor | undefined): number {
+  const scaled = Math.round(baseCount * underpowerFactor(party, floor));
+  return Math.min(scaled, baseCount + UNDERPOWER.maxExtraUnits, UNDERPOWER.absoluteMax);
 }
 
 export function createCombatState(roomId: string, enemy: Enemy, count = 1): CombatState {

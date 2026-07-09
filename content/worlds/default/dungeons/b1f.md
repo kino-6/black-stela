@@ -5,6 +5,7 @@ level: 1
 role: onboarding
 dangerTier: 1
 recommendedPartyLevel: 1
+recommendedPartySize: 1
 recommendedClearLevel: 2
 tags:
   - onboarding

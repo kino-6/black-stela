@@ -41,16 +41,20 @@ function walkTo(state: GameState, toRoomId: string, via?: string): GameState {
   return walkLeg(state, toRoomId);
 }
 
-function stateWithParty() {
-  return addCharacter(
-    createInitialGameState(),
-    createCharacter({ name: "Mira", notes: "Mapper", portraitRef: "data:image/png;base64,AAA" })
-  );
+function stateWithParty(size = 1) {
+  let state = createInitialGameState();
+  for (let index = 0; index < size; index += 1) {
+    state = addCharacter(
+      state,
+      createCharacter({ name: `Mira${index}`, notes: "Mapper", portraitRef: "data:image/png;base64,AAA" })
+    );
+  }
+  return state;
 }
 
 function resolveCombat(state: GameState) {
   let current = state;
-  for (let round = 0; round < 6 && current.phase === "combat"; round += 1) {
+  for (let round = 0; round < 16 && current.phase === "combat"; round += 1) {
     current = executeCommand(current, defaultWorld, { type: "attack" });
   }
   return current;
@@ -129,7 +133,7 @@ describe("rules engine", () => {
   it("triggers the placed slime fight and the searched trap along the B1F maze", () => {
     // Entrance faces south straight into the slime hall; the needle plate sits in
     // the Smoke-Bent chamber, which the route to the stair crosses.
-    const entered = executeCommand(stateWithParty(), defaultWorld, { type: "enter_dungeon" });
+    const entered = executeCommand(stateWithParty(3), defaultWorld, { type: "enter_dungeon" });
     const current = executeCommand(entered, defaultWorld, { type: "move_forward" });
 
     expect(current.phase).toBe("combat");
@@ -165,7 +169,8 @@ describe("rules engine", () => {
   });
 
   it("descends freely from the winding stair — no contrived lock", () => {
-    const entered = executeCommand(stateWithParty(), defaultWorld, { type: "enter_dungeon" });
+    // An adequate party (no under-strength pack swell) threads the maze to the stair.
+    const entered = executeCommand(stateWithParty(3), defaultWorld, { type: "enter_dungeon" });
     const stair = advanceToB1fStair(entered);
     expect(stair.position?.roomId).toBe("room.b1f.012");
     expect(stair.position?.facing).toBe("south");

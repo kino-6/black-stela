@@ -4,7 +4,9 @@ name: B2F - Split Dust
 level: 2
 role: attrition
 dangerTier: 2
-recommendedPartyLevel: 1
+recommendedPartyLevel: 2
+recommendedPartySize: 3
+recommendedClearLevel: 3
 tags:
   - branching
   - shortcut

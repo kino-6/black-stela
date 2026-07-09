@@ -203,6 +203,7 @@ export const ja = {
     listen: "聞く",
     useStairs: "階段を使う",
     descentLocked: "この階段はまだ通れない——この階に、やり残したことがある。",
+    descentUnderLevel: "降下の推奨レベル{level}に届いていない——下の敵はより群れる。",
     useReturnMarker: "帰還標を使う",
     useReturnStairs: "階段で町へ戻る",
     useReturnCharm: "帰還の割符を使う",

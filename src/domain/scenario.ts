@@ -253,6 +253,8 @@ export const dungeonFloorSchema = z.object({
   role: floorRoleSchema.optional(),
   dangerTier: z.number().int().positive().optional(),
   recommendedPartyLevel: z.number().int().positive().optional(),
+  recommendedPartySize: z.number().int().positive().optional(),
+  recommendedClearLevel: z.number().int().positive().optional(),
   tags: z.array(z.string().min(1)).default([]),
   authorNotes: z.string().min(1).optional(),
   rooms: z.array(roomSchema).min(1)

@@ -434,6 +434,11 @@ export interface DungeonFloor {
   role?: FloorRole;
   dangerTier?: number;
   recommendedPartyLevel?: number;
+  /** Party head-count this floor is balanced around; under it, packs swell. */
+  recommendedPartySize?: number;
+  /** Level a party should reach before descending past this floor. Surfaced as a
+   *  soft warning at the down-stair — the descent itself is never locked. */
+  recommendedClearLevel?: number;
   tags?: string[];
   authorNotes?: string;
 }

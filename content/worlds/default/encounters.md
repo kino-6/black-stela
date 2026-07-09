@@ -1,11 +1,12 @@
 ---
 encounterTables:
+  # Corridor/hall fights: smaller packs. Chambers (玄室) below run larger.
   - id: encounters.b1f.halls
     floorId: dungeon.b1f
     entries:
       - enemyId: enemy.b1f.ash-slime
         weight: 10
-        minCount: 3
+        minCount: 2
         maxCount: 3
   - id: encounters.b1f.chambers
     floorId: dungeon.b1f
@@ -17,7 +18,7 @@ encounterTables:
       - enemyId: enemy.b1f.dust-crawler
         weight: 4
         minCount: 3
-        maxCount: 3
+        maxCount: 4
   - id: encounters.b2f.branches
     floorId: dungeon.b2f
     entries:

@@ -233,6 +233,22 @@ export function App() {
   const stairGateClue = blockingStairGate
     ? blockingStairGate.locales?.[locale]?.clue ?? blockingStairGate.clue ?? null
     : null;
+  // A soft warning (never a lock) when facing a DOWN-stair below the floor's
+  // recommended clear level — the deeper packs swell for an under-strength party.
+  const descentUnderLevel = useMemo(() => {
+    if (!canUseStairs || blockingStairGate || !state.position) {
+      return null;
+    }
+    const edge = getGridEdge(defaultWorld, state.position.roomId, state.position.facing);
+    const floor = defaultWorld.dungeons.find((dungeon) => dungeon.id === state.map.floorId);
+    const recommended = floor?.recommendedClearLevel;
+    const depth = (id: string | undefined) => Number(id?.match(/b(\d+)f/)?.[1] ?? 0);
+    if (!edge?.targetFloorId || !recommended || depth(edge.targetFloorId) <= depth(floor?.id)) {
+      return null;
+    }
+    const topLevel = state.party.reduce((max, member) => Math.max(max, member.level ?? 1), 0);
+    return topLevel < recommended ? recommended : null;
+  }, [canUseStairs, blockingStairGate, state.position, state.map.floorId, state.party]);
 
   const latestLogText = useMemo(() => {
     const entry = state.log.at(-1);
@@ -2467,6 +2483,11 @@ export function App() {
                       <DoorOpen size={18} />
                       {t("play.useStairs")}
                     </button>
+                  )}
+                  {descentUnderLevel !== null && (
+                    <div className="descent-warning" data-testid="descent-underlevel">
+                      <span>{t("play.descentUnderLevel", { level: descentUnderLevel })}</span>
+                    </div>
                   )}
                   {canUseStairs && blockingStairGate && (
                     <div className="descent-locked" data-testid="descent-locked">

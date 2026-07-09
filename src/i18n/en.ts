@@ -201,6 +201,7 @@ export const en = {
     listen: "Listen",
     useStairs: "Use stairs",
     descentLocked: "The stair won't take you yet — something on this floor is unfinished.",
+    descentUnderLevel: "Below the recommended level {level} for the descent — the deeper packs will run thick.",
     useReturnMarker: "Use return marker",
     useReturnStairs: "Climb the stairs to town",
     useReturnCharm: "Use return charm",
