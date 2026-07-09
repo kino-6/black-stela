@@ -188,7 +188,7 @@ export const ja = {
     enemyConditionFresh: "健在",
     enemyConditionWounded: "傷あり",
     enemyConditionWeak: "弱り",
-    actorStatus: "HP {hp}/{maxHp} · {row}",
+    actorStatus: "HP {hp}/{maxHp}",
     sleep: "睡眠",
     spellHeal: "ヒール",
     spellFirebolt: "ファイアボルト",

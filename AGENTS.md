@@ -146,3 +146,40 @@ debug/developer workflow. Normal character creation must be staged as command
 windows and focused choices: one decision at a time, visible preview, stable
 next/back or confirm/cancel actions, no layout shift when messages update, and
 browser evidence for keyboard/controller-style operation before completion.
+
+## Combat & Party UI Standards
+
+The SNES JRPG baseline (FF IV–VI, Dragon Quest, Chrono Trigger) is the solved
+minimum; classic DRPGs (Wizardry, Etrian Odyssey, SMT) add grid party + front/back
+rows; Persona 5 / SMT V / Octopath are the readability bar. Combat and party UI must
+follow these conventions (researched — see docs/dungeon-patterns.md sources list):
+
+1. **Always-on vitals.** Every party member's HP, MP/SP, level, and status-ailment
+   icons are visible at all times in combat — never hidden behind a submenu. Show HP/MP
+   as both a number and a bar/color.
+2. **Stable roster.** Members are one row each in a fixed order; never reorder, re-sort,
+   or reflow the panel mid-battle. Highlight the active actor by moving a cursor/glow onto
+   their existing row, not by resizing or re-sorting.
+3. **Row by position, not label.** Front/back row is conveyed by the member's slot/section
+   position, NOT by a redundant per-character "front row / back row" tag. (This was a real
+   mistake — the combat roster printed "· 前衛" on every row under a 前衛 header.)
+4. **Docked, constant command menu.** The command menu sits in a fixed region with the same
+   item order every turn (no layout shift). Core is Attack, Skill/Magic, Item, Guard/Defend;
+   game-specific commands append, not interleave. Offensive actions open a separate target
+   step over the enemy field, leaving the command window in place.
+5. **Enemy readouts.** Enemies show a name + a health/state cue + status icons; same-type
+   enemies stack and the target cursor cycles them.
+6. **Turn economy shown.** If any action grants extra turns (press-turn / one-more), show the
+   turn economy on screen (depleting icons or a turn-order rail).
+7. **Keyboard AND gamepad, never mouse-only.** A directional focus cursor drives everything;
+   Confirm = advance phase (command → target → execute), Cancel = back one phase without
+   losing prior choices; shoulder keys cycle actors and jump the target cursor. Combat must be
+   fully playable without the mouse (blocking completion rule, proven by e2e).
+8. **Repeat + auto-battle.** Provide "repeat last action/turn" for trivial fights and an
+   auto-battle + battle-speed toggle; ANY button press instantly interrupts auto and restores
+   manual control. Disable auto/repeat during bosses and minibosses.
+
+Common mistakes to avoid: redundant per-character row labels; hidden/omitted MP; layout shift
+that makes the cursor jump; mouse-only interaction; re-sorting the party by turn order;
+numbers-only or bar-only HP; extra-turn mechanics with no on-screen indicator; auto-battle that
+can't be interrupted or stays on during bosses; a command menu that repositions between turns.

@@ -64,7 +64,8 @@ export function DungeonView({ state, world, label }: DungeonViewProps) {
       enemyElevation: state.phase === "combat" ? state.combat?.enemy.elevation ?? "ground" : "ground",
       showTrap: Boolean(room.trap) && !state.resolvedTraps.includes(room.trap!.id),
       returnMarker: room.stairsToTown ? (room.returnStyle === "stairs" ? "stairs" : "marker") : null,
-      stairDescends
+      stairDescends,
+      frontWallIndex: corridor.findIndex((segment) => segment.frontCap)
     });
   }, [
     state.position,

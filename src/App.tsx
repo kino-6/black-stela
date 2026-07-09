@@ -2321,7 +2321,10 @@ export function App() {
                                 aria-current={member.id === selectedActor?.id ? "step" : undefined}
                               >
                                 <strong>{member.name}</strong>
-                                <span>{t("play.actorStatus", { hp: member.hp, maxHp: member.maxHp, row: formatCombatRow(member.row, t) })}</span>
+                                <span>
+                                  {t("play.actorStatus", { hp: member.hp, maxHp: member.maxHp })}
+                                  {member.maxMp > 0 && <> · {t("play.mpShort")} {member.mp}/{member.maxMp}</>}
+                                </span>
                               </div>
                             ))}
                           </div>

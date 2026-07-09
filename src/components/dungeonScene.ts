@@ -34,6 +34,9 @@ export interface DungeonSceneInput {
   /** When the faced edge is a stair: true = descends (down to a deeper floor),
    *  false = ascends (up), null = not a stair. Drives the up/down stair visual. */
   stairDescends?: boolean | null;
+  /** Corridor index of the first wall ahead (-1/omitted if the view runs open),
+   *  used to keep the combat enemy sprite in front of a close wall. */
+  frontWallIndex?: number;
 }
 
 // One grid cell is CELL deep; the camera stands in the current cell looking down
@@ -159,29 +162,39 @@ export function buildDungeonScene(mount: HTMLDivElement, input: DungeonSceneInpu
   }
 
   if (enemyMaterial) {
-    // Plant the sprite on the floor by default; a mid or air enemy is lifted off
-    // it. The baseline sits the creature's feet at the floor plane so it reads as
-    // grounded rather than floating in the frame.
+    // Stand the enemy in the visible space ahead, ALWAYS in front of the nearest
+    // wall — a fixed depth would sink it behind a close dead-end wall (which sits
+    // near z=0), making it vanish. The closer it stands, the smaller it draws, and
+    // its feet always meet the floor plane so it never looks planted in the ground.
     const elevation = input.enemyElevation ?? "ground";
     const lift = elevation === "air" ? 1.7 : elevation === "mid" ? 0.9 : 0;
-    const baseY = 0.6;
+    const frontWallIndex = input.frontWallIndex ?? -1;
+    const wallZ = frontWallIndex >= 0 ? -frontWallIndex * CELL : -Infinity;
+    // Default depth when the corridor runs on; otherwise sit ~1.4 in front of the wall.
+    const enemyZ = frontWallIndex >= 0 ? Math.min(-1.4, Math.max(-2.82, wallZ + 1.4)) : -2.82;
+    const distanceScale = Math.min(1, Math.max(0.55, Math.abs(enemyZ) / 2.82 + 0.12));
+    const scaleY = 2.82 * distanceScale;
+    const scaleX = 4.35 * distanceScale;
+    const feetY = 0.05; // just above the floor plane
+    const centerY = 0.38;
 
     // A grounded or hovering enemy casts a contact shadow (fainter and smaller
     // the higher it hovers); a true flyer leaves the floor beneath it clear.
     if (elevation !== "air") {
-      const shadowScale = elevation === "mid" ? 0.72 : 1;
+      const shadowScale = (elevation === "mid" ? 0.72 : 1) * distanceScale;
       enemyShadowMaterial.opacity = elevation === "mid" ? 0.3 : 0.52;
       const enemyShadow = new THREE.Mesh(new THREE.CircleGeometry(1.22, 32), enemyShadowMaterial);
-      enemyShadow.position.set(0, 0.035, -2.86);
+      enemyShadow.position.set(0, 0.035, enemyZ - 0.04);
       enemyShadow.rotation.x = -Math.PI / 2;
       enemyShadow.scale.set(1.85 * shadowScale, 0.55 * shadowScale, 1);
       scene.add(enemyShadow);
     }
 
     const enemy = new THREE.Sprite(enemyMaterial);
-    enemy.center.set(0.5, 0.38);
-    enemy.position.set(0, baseY + lift, -2.82);
-    enemy.scale.set(4.35, 2.82, 1);
+    enemy.center.set(0.5, centerY);
+    // Feet on the floor: position.y − centerY·scaleY = feetY, regardless of scale.
+    enemy.position.set(0, feetY + centerY * scaleY + lift, enemyZ);
+    enemy.scale.set(scaleX, scaleY, 1);
     scene.add(enemy);
   }
 

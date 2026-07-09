@@ -186,7 +186,7 @@ export const en = {
     enemyConditionFresh: "steady",
     enemyConditionWounded: "wounded",
     enemyConditionWeak: "wavering",
-    actorStatus: "HP {hp}/{maxHp} · {row}",
+    actorStatus: "HP {hp}/{maxHp}",
     sleep: "Sleep",
     spellHeal: "Heal",
     spellFirebolt: "Firebolt",
