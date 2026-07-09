@@ -25,15 +25,12 @@ encounterTables:
         weight: 10
         minCount: 3
         maxCount: 3
+  # Chamber table rolls only the fresh B3F type so the玄室 fight is guaranteed.
   - id: encounters.b3f.cistern
     floorId: dungeon.b3f
     entries:
-      - enemyId: enemy.b2f.hook-rat
-        weight: 5
-        minCount: 3
-        maxCount: 3
       - enemyId: enemy.b3f.bitter-mote
-        weight: 5
+        weight: 10
         minCount: 3
         maxCount: 3
   - id: encounters.b4f.dark

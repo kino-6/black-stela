@@ -370,9 +370,9 @@ describe("runtime gates and shortcuts", () => {
   });
 
   it("opens the B3F drop-shaft shortcut only after the winch is wound", () => {
-    // Entering the winch grants the flag and logs the shortcut opening.
+    // Entering the winch chamber grants the flag and logs the shortcut opening.
     const atWinch = executeCommand(
-      dungeonAt("room.b3f.c3_2", { position: { roomId: "room.b3f.c3_2", facing: "west" } }),
+      dungeonAt("room.b3f.c4_5", { position: { roomId: "room.b3f.c4_5", facing: "east" } }),
       defaultWorld,
       { type: "move_forward" }
     );
@@ -380,19 +380,19 @@ describe("runtime gates and shortcuts", () => {
     expect(atWinch.discoveredSecrets).toContain("flag.b3f.winch");
     expect(atWinch.log.some((entry) => entry.tags.includes("shortcut"))).toBe(true);
 
-    // Without the flag, the hub's shaft cage will not hold.
+    // Without the flag, the Chain Descent's shaft cage will not hold.
     const blocked = executeCommand(
-      dungeonAt("room.b3f.hub", { position: { roomId: "room.b3f.hub", facing: "south" } }),
+      dungeonAt("room.b3f.003", { position: { roomId: "room.b3f.003", facing: "south" } }),
       defaultWorld,
       { type: "move_forward" }
     );
-    expect(blocked.position?.roomId).toBe("room.b3f.hub");
+    expect(blocked.position?.roomId).toBe("room.b3f.003");
     expect(blocked.log.at(-1)?.tags).toContain("locked");
 
     // With the winch wound, the shortcut rides straight back to the entry.
     const rode = executeCommand(
-      dungeonAt("room.b3f.hub", {
-        position: { roomId: "room.b3f.hub", facing: "south" },
+      dungeonAt("room.b3f.003", {
+        position: { roomId: "room.b3f.003", facing: "south" },
         discoveredSecrets: ["flag.b3f.winch"]
       }),
       defaultWorld,

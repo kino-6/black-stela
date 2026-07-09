@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { resolveVisibleCombat } from "./helpers";
+import { faceDirection, resolveVisibleCombat } from "./helpers";
 
 /**
  * Lane Z slice A: return-to-town is available only at block-cap rest points
@@ -22,29 +22,18 @@ test("B3F block-cap rest point offers return to town", async ({ page }) => {
   // A mid-floor cell must not offer return.
   await expect(page.getByRole("button", { name: "Use return marker" })).toHaveCount(0);
 
-  // Entry (1,4) faces east. Route: E into the gallery, S to the y6 aisle, E along
-  // it to the warden column at x=11, then S through the warden (11,9) to the
-  // Chain Descent at (11,11).
-  await move(page); // -> (2,4)
-  await page.getByRole("button", { name: "Turn right" }).click(); // face south
-  await move(page); // -> (2,5)
-  await move(page); // -> (2,6)
-  await page.getByRole("button", { name: "Turn left" }).click(); // face east
-  await move(page); // -> (3,6)
-  await move(page); // -> (4,6)
-  await move(page); // -> (5,6)
-  await move(page); // -> (6,6)
-  await move(page); // -> (7,6)
-  await move(page); // -> (8,6)
-  await move(page); // -> (9,6)
-  await move(page); // -> (10,6)
-  await move(page); // -> (11,6)
-  await page.getByRole("button", { name: "Turn right" }).click(); // face south
-  await move(page); // -> (11,7)
-  await move(page); // -> (11,8)
-  await move(page); // -> (11,9) warden choke (combat)
-  await move(page); // -> (11,10)
-  await move(page); // -> (11,11) Chain Descent
+  // Thread the maze down to the Chain Descent (the block-1 cap rest point),
+  // resolving the cistern-crossing fight on the way (scripts/genFloorMaze.mjs path).
+  const toChainDescent: Array<"north" | "south" | "east" | "west"> = [
+    "south", "south", "east", "east", "east", "east", "south", "south", "east", "east",
+    "south", "south", "east", "south", "south", "south", "south", "east", "south", "south",
+    "east", "east", "north", "north", "east", "east", "south", "south", "east", "east",
+    "south", "south", "south", "south", "west", "west"
+  ];
+  for (const dir of toChainDescent) {
+    await faceDirection(page, dir);
+    await move(page);
+  }
 
   await expect(page.getByTestId("map-current")).toContainText("Chain Descent");
   const returnBtn = page.getByRole("button", { name: "Use return marker" });
