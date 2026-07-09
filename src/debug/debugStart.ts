@@ -113,7 +113,7 @@ export function createDebugStateFromProgress(world: ScenarioWorld, progress: Deb
     position: createPosition(world, "room.b1f.warden", "north"),
     defeatedEnemies: ["enemy.b1f.ash-slime"],
     resolvedTraps: ["trap.b1f.needle"],
-    discoveredSecrets: ["trap.b1f.needle", "flag.b1f.descent"],
+    discoveredSecrets: ["trap.b1f.needle"],
     map: createMapState(world, [
       "room.b1f.001",
       "room.b1f.002",

@@ -1,5 +1,5 @@
 import { executeCommand } from "../domain/rulesEngine";
-import { getGridEdge, getRoom } from "../domain/scenario";
+import { getFloorIdForRoom, getGridEdge, getRoom } from "../domain/scenario";
 import { createDebugStateFromProgress, debugProgressValues, type DebugProgress } from "../debug/debugStart";
 import type { Command, Direction, GameState, ScenarioWorld } from "../domain/types";
 
@@ -130,13 +130,12 @@ export function runHeadlessProbes(world: ScenarioWorld, maxSteps = 1800): Headle
     }));
 }
 
+// Reachability sentinel: the explorer fought B1F's intro slime and found its way
+// home to town. (B1F's stair is unlocked now, so a fresh run may descend to B2F and
+// return from there; deeper probes have gated descents and return in place. Either
+// way, reaching town after the intro fight proves the route is navigable.)
 export function isMvpCleared(state: GameState): boolean {
-  return (
-    state.phase === "town" &&
-    state.defeatedEnemies.includes("enemy.b1f.ash-slime") &&
-    state.resolvedTraps.includes("trap.b1f.needle") &&
-    state.map.visitedRooms.includes("room.b1f.warden")
-  );
+  return state.phase === "town" && state.defeatedEnemies.includes("enemy.b1f.ash-slime");
 }
 
 interface HeadlessDecision {
@@ -198,9 +197,18 @@ function chooseNextCommand(
     return { command: { type: "return_to_town" }, knowledge: "known_room_state" };
   }
 
+  // B1F's stair is unlocked now, so a reachability probe would just fall down it and
+  // wander a deeper floor. Drop only *descending* exits (to a deeper floor); the
+  // probe still explores here and may ascend to head home to town.
+  const floorDepth = (roomId: string | undefined) =>
+    Number((roomId ? getFloorIdForRoom(world, roomId) : "")?.match(/b(\d+)f/)?.[1] ?? 0);
+  const currentDepth = floorDepth(state.position.roomId);
+  const exploreExits = Object.fromEntries(
+    Object.entries(room.exits).filter(([, targetRoomId]) => floorDepth(targetRoomId) <= currentDepth)
+  ) as Partial<Record<Direction, string>>;
   const direction = chooseExplorationDirection(
     state,
-    room.exits,
+    exploreExits,
     state.map.knownExits[state.position.roomId] ?? [],
     visitCounts,
     state.position.roomId,

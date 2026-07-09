@@ -149,34 +149,15 @@ describe("rules engine", () => {
     expect(town.party[0].hp).toBeLessThanOrEqual(town.party[0].maxHp);
   });
 
-  it("gates the descent behind the warden's crank AND an 80% sweep of the floor", () => {
+  it("descends freely from the winding stair — no contrived lock", () => {
     const entered = executeCommand(stateWithParty(), defaultWorld, { type: "enter_dungeon" });
     const stair = advanceToB1fStair(entered);
     expect(stair.position?.roomId).toBe("room.b1f.012");
+    expect(stair.position?.facing).toBe("east");
 
-    // No crank flag and little explored: the descent is locked.
-    const raw = executeCommand(stair, defaultWorld, { type: "use_stairs" });
-    expect(raw.map.floorId).not.toBe("dungeon.b2f");
-    expect(raw.log.at(-1)?.tags).toContain("locked");
-
-    // Reaching the Warden's Hall turns the crank, granting the drop-pin flag.
-    const cranked = advanceToB1fMarker(entered);
-    expect(cranked.discoveredSecrets).toContain("flag.b1f.descent");
-
-    const b1fCells = defaultWorld.dungeons.find((d) => d.id === "dungeon.b1f")!.grid!.cells.map((c) => c.roomId);
-    const atStair = (visited: string[]): GameState => ({
-      ...cranked,
-      position: { roomId: "room.b1f.012", facing: "east" },
-      map: { ...cranked.map, currentRoomId: "room.b1f.012", visitedRooms: visited }
-    });
-
-    // Flag set but under 80% mapped: still locked (no beeline descent).
-    expect(executeCommand(atStair(["room.b1f.012"]), defaultWorld, { type: "use_stairs" }).map.floorId).not.toBe(
-      "dungeon.b2f"
-    );
-
-    // Flag set and the floor swept past 80%: the stair opens.
-    const descended = executeCommand(atStair(b1fCells), defaultWorld, { type: "use_stairs" });
+    // The shallow public floor puts nothing between the party and the stair: using
+    // it descends immediately. Exploration is pressured by difficulty, not a gate.
+    const descended = executeCommand(stair, defaultWorld, { type: "use_stairs" });
     expect(descended.position?.roomId).toBe("room.b2f.001");
     expect(descended.map.floorId).toBe("dungeon.b2f");
   });

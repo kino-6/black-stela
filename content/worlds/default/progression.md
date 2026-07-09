@@ -1,7 +1,5 @@
 ---
 progressionFlags:
-  - id: flag.b1f.descent
-    description: The Warden's Hall crank is turned; the winding stair's drop-pin is freed for the descent.
   - id: flag.b2f.descent
     description: The South Hook Warren bar-crank is turned; the shaft's fall-gate to B3F lifts open.
   - id: flag.b4f.descent

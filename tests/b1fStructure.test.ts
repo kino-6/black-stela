@@ -46,13 +46,15 @@ describe("B1F structure", () => {
     });
   });
 
-  describe("③ the descent demands exploration, not a beeline", () => {
-    it("gates the down-stairs behind an 80% floor sweep", () => {
-      const gate = roomById.get(DOWN_STAIRS)?.gates?.find((g) => g.id === "gate.b1f.descent");
-      expect(gate?.requiredExploredRatio).toBeGreaterThanOrEqual(0.8);
+  describe("③ the floor is meaningful, not a beeline to free loot", () => {
+    it("the down-stairs are freely usable — no contrived lock", () => {
+      // No arbitrary auth on a shallow public floor: exploration is driven by reward
+      // and the difficulty below, not a gate. See AGENTS.md dungeon-design rules.
+      const gates = roomById.get(DOWN_STAIRS)?.gates ?? [];
+      expect(gates).toHaveLength(0);
     });
 
-    it("forces combat on the descent route (encounter rooms on the shortest path)", () => {
+    it("puts combat on the descent route (encounter rooms on the shortest path)", () => {
       const cellRoom = new Map(floor.grid!.cells.map((cell) => [cell.id, cell.roomId]));
       const pathRooms = new Set(graph.shortestPathCells(ENTRANCE, DOWN_STAIRS).map((id) => cellRoom.get(id)));
       const encounterRooms = [...pathRooms].filter((rid) => {

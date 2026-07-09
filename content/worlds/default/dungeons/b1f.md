@@ -11,17 +11,17 @@ tags:
   - mapping
   - block-1
 authorNotes: >-
-  Onboarding floor rebuilt as a Wizardry-style wheel so the descent can't be
-  walked in a straight line. A perimeter ring joins four corner rooms; four spokes
-  run from the ring to a central hub (hub-and-spoke + nested loops). The forced
-  intro fight sits on the entry spoke; the needle plate sits on the east spoke by
-  the stair. Two deep objectives pull the party across the whole floor: the
-  Guarded Reliquary in the north-west and the Warden's Hall crank in the
-  south-east, whose winch also opens a one-way shortcut home. The Winding Stair is
-  gated on both the crank flag and an 80% sweep of the floor (two-key + threshold),
-  so a beeline covers only ~30% and cannot leave. Treasure hides in two dead-end
-  niches off the top ring, and a premium cache sits behind a searched wall south
-  of the hub's south room.
+  Onboarding floor built as a Wizardry-style wheel of meaningful space: a perimeter
+  ring joins four corner rooms, and four spokes run from the ring to a central hub
+  (hub-and-spoke + nested loops). Every reachable cell serves a path, a room, a
+  reward, or a hazard — no dead filler. The intro fight sits on the entry spoke, the
+  needle plate on the east spoke by the stair. The Winding Stair is NOT locked — the
+  party may descend whenever it likes — but the floor is laid out and balanced so a
+  party that has read ~80% of it arrives at B2F ready, while a half-blind dash leaves
+  it under-levelled and punished below (pressure by difficulty, not by a gate).
+  Rewards pull the party outward: the Guarded Reliquary (NW), the Warden's Hall
+  strongbox + winch home (SE), two dead-end niches off the top ring, and a premium
+  cache behind a searched wall south of the hub.
 startRoom: room.b1f.001
 map: |
   ####################
@@ -172,39 +172,21 @@ rooms:
     encounterTable: encounters.b1f.chambers
   - id: room.b1f.warden
     name: Warden's Hall
-    description: A south-east hall of chained machinery. A crank the size of a wheel frees the stair's drop-pin, and a winch cage above hauls a climber straight back to the entrance.
+    description: A south-east hall of chained machinery, long stilled. A winch cage above hauls a climber straight back up to the entrance, and a strongbox sits forgotten in the gears.
     locales:
       ja:
         name: 番人の広間
-        description: 南東の、鎖につながれた機構の広間。車輪ほどの巻き手が階段の落とし込みを外し、頭上の籠は登る者を入口まで一気に引き上げる。
+        description: 南東の、鎖につながれた機構の広間。今は静まっている。頭上の籠は登る者を入口まで一気に引き上げ、歯車の間には忘れられた頑丈な箱が残されている。
     stairsToTown: true
     returnStyle: marker
-    gates:
-      - id: gate.b1f.crank
-        kind: shortcut
-        grantsFlag: flag.b1f.descent
-        clue: The crank gives with a groan; somewhere east the stair's drop-pin lets go.
-        locales:
-          ja:
-            clue: 巻き手が呻いて動く。東のどこかで、階段の落とし込みが外れた。
-    event: The crank gives under both hands; far off, a pin drops free.
+    treasureTable: treasure.b1f.safe
   - id: room.b1f.012
     name: Winding Stair
-    description: The stair curls east off the trunk's end, biting down through the stone toward B2F.
+    description: The stair curls east off the trunk's end, biting down through the stone toward B2F. Nothing bars it — but the party that walks down half-blind pays for it below.
     locales:
       ja:
         name: 巻き階段
-        description: 通路の突き当たりから東へ、階段が渦を巻いて石を噛み下り、B2Fへ続いている。
-    gates:
-      - id: gate.b1f.descent
-        direction: east
-        kind: lock
-        requiredFlag: flag.b1f.descent
-        requiredExploredRatio: 0.8
-        clue: The drop-pin is freed, but the dark below won't take a party that hasn't read the floor — most of these halls stay unwalked.
-        locales:
-          ja:
-            clue: 落とし込みは外れた。だが、まだ大半を歩いていないこの階を、下の闇は受け入れない。まず坑道を読み切れ。
+        description: 通路の突き当たりから東へ、階段が渦を巻いて石を噛み下り、B2Fへ続いている。塞ぐものは何もない——が、この階を半ば手探りのまま降りた隊列は、下でその報いを受ける。
   - id: room.b1f.niche1
     name: West Offering Niche
     description: A dead-end slot off the top ring, a cloth-wrapped offering left in the dark.
@@ -234,4 +216,5 @@ rooms:
 # B1F - Silent Approach
 
 The onboarding floor: a wheel of ring, spokes, and hub that teaches movement,
-combat, searching, and the exploration-gated descent in one sweep.
+combat, and searching. The stair is never locked — the floor earns its exploration
+through rewards and the difficulty waiting below, not through a gate.

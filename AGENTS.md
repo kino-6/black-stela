@@ -92,6 +92,38 @@ to keep restating them.
   (grid maze, party order, attrition, town prep, command windows), not surface
   flavor or copied proprietary content.
 
+## Dungeon Design Rules
+
+Learned from research (`docs/dungeon-patterns.md`) and hard user feedback. These
+are enforced by `tests/dungeonDesign.test.ts` (the Gate) and `tests/b1fStructure.test.ts`,
+using the graph metrics in `src/domain/floorGraph.ts`. Do not hand-wave "make it
+fun" — a floor either meets these or the Gate fails.
+
+1. **Meaningful, dense space.** A floor fills its ~20×20 frame with purposeful,
+   connected space: every reachable cell serves a path, a room, a reward, or a
+   hazard. No large dead regions, no single thin corridor. (Gate: reachable cells
+   ≥ 80; every authored room is a junction or carries content.)
+2. **Non-linear (Jaquays).** Loops, branches, and multiple connections — the player
+   chooses route and order, and the shortest solution doesn't reuse one corridor.
+   (Gate: cyclomatic loops ≥ 4; on-path branch points ≥ 3 on the entrance→down-stair
+   route.)
+3. **No contrived gates on shallow public floors.** Do NOT lock descent behind
+   unexplained "authentication" — cranks, keys, or coverage-% thresholds — on a
+   shallow, publicly-accessible floor. Stairs are freely usable. Locks belong only
+   where diegetically justified (a sealed vault, a thematic ward), never as a generic
+   anti-skip device. (This was a real mistake on B1F. B2/B4/B7 still carry crank-gated
+   descents — pending rollout removal.)
+4. **Pressure is reward + difficulty, not a gate.** Lay out and balance the floor so
+   a party that has read ~80% of it reaches the next floor ready, while a half-blind
+   dash arrives under-levelled and is punished below. "80% explored" is a *balance
+   target*, not a lock condition.
+5. **Rewards pull outward.** Treasure in dead-end niches, premium loot behind
+   searchable secrets, meaningful rooms at spoke/corner ends — so covering the whole
+   floor is worth it.
+6. **Adopt patterns deliberately.** Use the catalog in `docs/dungeon-patterns.md`
+   (hub-and-spoke, loops, figure-eight, loop-back shortcut, secret vault, gauntlet,
+   …) and note which a floor uses in its `authorNotes`.
+
 ## Controller-First Player UI Contract
 
 All normal-play UI is designed for controller and keyboard first, then mouse.

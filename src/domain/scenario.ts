@@ -192,7 +192,6 @@ const explorationGateSchema = z.object({
   requiredKeyId: z.string().min(1).optional(),
   requiredFlag: z.string().min(1).optional(),
   grantsFlag: z.string().min(1).optional(),
-  requiredExploredRatio: z.number().min(0).max(1).optional(),
   clue: z.string().min(1).optional(),
   locales: z.record(z.object({ clue: z.string().min(1).optional() })).optional()
 });
