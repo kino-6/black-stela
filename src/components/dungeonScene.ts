@@ -31,6 +31,9 @@ export interface DungeonSceneInput {
   showTrap: boolean;
   /** Draw the town-return feature: the entrance stairway or the waystone. */
   returnMarker: "stairs" | "marker" | null;
+  /** When the faced edge is a stair: true = descends (down to a deeper floor),
+   *  false = ascends (up), null = not a stair. Drives the up/down stair visual. */
+  stairDescends?: boolean | null;
 }
 
 // One grid cell is CELL deep; the camera stands in the current cell looking down
@@ -151,7 +154,7 @@ export function buildDungeonScene(mount: HTMLDivElement, input: DungeonSceneInpu
     addSideFeature(scene, wallMaterial, doorMaterial, edgeMaterial, "right", segment.right, zCenter);
 
     if (segment.frontCap) {
-      addFrontCap(scene, wallMaterial, doorMaterial, floorMaterial, edgeMaterial, segment.frontCap, zCenter);
+      addFrontCap(scene, wallMaterial, doorMaterial, floorMaterial, edgeMaterial, segment.frontCap, zCenter, input.stairDescends ?? false);
     }
   }
 
@@ -259,7 +262,8 @@ function addFrontCap(
   floorMaterial: THREE.Material,
   edgeMaterial: THREE.Material,
   kind: EdgeKindVisual,
-  zCenter: number
+  zCenter: number,
+  descends = false
 ) {
   // The view fades into fog when the corridor runs past the depth limit.
   if (kind === "open") {
@@ -277,7 +281,7 @@ function addFrontCap(
     door.position.set(0, 1.15, z + 0.14);
     scene.add(door);
   } else if (kind === "stairs") {
-    scene.add(createStairs(floorMaterial, edgeMaterial, z));
+    scene.add(createStairs(floorMaterial, edgeMaterial, z, descends));
   }
 }
 
@@ -302,19 +306,26 @@ function createSideDoor(material: THREE.Material, edgeMaterial: THREE.Material) 
   return group;
 }
 
-function createStairs(stepMaterial: THREE.Material, edgeMaterial: THREE.Material, z: number) {
+// A flight of stairs ahead. Ascending (up to the previous floor) rises away from the
+// party; descending (down to the next floor) drops away and sinks below the floor,
+// so up and down read as clearly different at a glance.
+function createStairs(stepMaterial: THREE.Material, edgeMaterial: THREE.Material, z: number, descends = false) {
   const group = new THREE.Group();
   const stepCount = 5;
   for (let index = 0; index < stepCount; index += 1) {
     const step = new THREE.Mesh(new THREE.BoxGeometry(3.2, 0.24, 0.46), stepMaterial);
-    step.position.set(0, 0.12 + index * 0.26, z + 1.4 - index * 0.46);
+    // Ascending: each receding step rises. Descending: each receding step drops
+    // below the floor plane, cutting a stairwell down into the stone.
+    const y = descends ? -0.02 - index * 0.3 : 0.12 + index * 0.26;
+    step.position.set(0, y, z + 1.4 - index * 0.46);
     group.add(step);
   }
+  const frameHeight = stepCount * (descends ? 0.3 : 0.26);
   const frame = new THREE.LineSegments(
-    new THREE.EdgesGeometry(new THREE.BoxGeometry(3.3, stepCount * 0.26, 0.05)),
+    new THREE.EdgesGeometry(new THREE.BoxGeometry(3.3, frameHeight, 0.05)),
     edgeMaterial
   );
-  frame.position.set(0, stepCount * 0.13, z + 0.2);
+  frame.position.set(0, descends ? -frameHeight / 2 : stepCount * 0.13, z + 0.2);
   group.add(frame);
   return group;
 }

@@ -50,13 +50,21 @@ export function DungeonView({ state, world, label }: DungeonViewProps) {
     }
 
     const room = getRoom(world, state.position.roomId);
+    // A faced stair reads as up or down by comparing the target floor's depth.
+    const facedEdge = getGridEdge(world, state.position.roomId, state.position.facing);
+    const floorDepth = (id: string | null) => Number(id?.match(/b(\d+)f/)?.[1] ?? 0);
+    const stairDescends =
+      facedEdge?.kind === "stairs" && facedEdge.targetFloorId
+        ? floorDepth(facedEdge.targetFloorId) > floorDepth(getFloorIdForRoom(world, state.position.roomId))
+        : null;
     return buildDungeonScene(mountRef.current, {
       corridor,
       floorId: getFloorIdForRoom(world, state.position.roomId),
       enemyId: state.phase === "combat" ? state.combat?.enemy.id ?? null : null,
       enemyElevation: state.phase === "combat" ? state.combat?.enemy.elevation ?? "ground" : "ground",
       showTrap: Boolean(room.trap) && !state.resolvedTraps.includes(room.trap!.id),
-      returnMarker: room.stairsToTown ? (room.returnStyle === "stairs" ? "stairs" : "marker") : null
+      returnMarker: room.stairsToTown ? (room.returnStyle === "stairs" ? "stairs" : "marker") : null,
+      stairDescends
     });
   }, [
     state.position,
