@@ -25,6 +25,7 @@ test("scenario validation UI supports Japanese labels", async ({ page }) => {
 test("debug scenario import reports success for a local pack file set", async ({ page }) => {
   await page.goto("/?debug=1");
 
+  await page.getByTestId("debug-panel-toggle").click(); // expand the collapsed debug panel
   await page.getByTestId("scenario-pack-input").setInputFiles(
     defaultPackFiles([
       "manifest.md",

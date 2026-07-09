@@ -152,6 +152,10 @@ const equipmentSlotOrder: EquipmentSlot[] = ["weapon", "offhand", "body", "head"
 
 export function App() {
   const [debugMode] = useState(() => isDebugModeEnabled());
+  // Debug tools collapse to a thin bar by default so debug mode stays playable —
+  // the full panel otherwise shrinks the game view. Auto-explore lives in the
+  // dungeon command dock, so it's reachable while the panel is collapsed.
+  const [debugPanelOpen, setDebugPanelOpen] = useState(false);
   const [debugProgress, setDebugProgress] = useState<DebugProgress>(() => getDebugProgressFromLocation());
   const scenarioValidationErrors = useMemo(() => getScenarioValidationErrorsFromLocation(), []);
   const [state, setState] = useState<GameState>(() =>
@@ -902,7 +906,7 @@ export function App() {
       ) : screen === "game" ? (
         <>
       {debugMode && (
-        <section className="debug-panel" aria-labelledby="debug-heading">
+        <section className={`debug-panel${debugPanelOpen ? "" : " collapsed"}`} aria-labelledby="debug-heading">
           <div>
             <h2 id="debug-heading">{t("debug.heading")}</h2>
             <p>
@@ -913,6 +917,16 @@ export function App() {
               })}
             </p>
           </div>
+          <button
+            type="button"
+            className="debug-panel-toggle"
+            data-testid="debug-panel-toggle"
+            onClick={() => setDebugPanelOpen((open) => !open)}
+          >
+            {debugPanelOpen ? t("debug.collapse") : t("debug.expand")}
+          </button>
+          {debugPanelOpen && (
+          <>
           <label>
             {t("debug.progress")}
             <select
@@ -968,6 +982,8 @@ export function App() {
           {headlessStatus && <strong>{headlessStatus}</strong>}
           {saveStatus && <strong>{saveStatus}</strong>}
           {scenarioImportStatus && <strong>{scenarioImportStatus}</strong>}
+          </>
+          )}
         </section>
       )}
       {debugMode && scenarioImportErrors.length > 0 && (

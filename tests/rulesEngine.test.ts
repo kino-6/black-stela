@@ -355,7 +355,8 @@ describe("runtime gates and shortcuts", () => {
   });
 
   it("bleeds the party on the hooked-corridor damage floor", () => {
-    const before = dungeonAt("room.b2f.001");
+    // The Hooked Corridor sits two cells south of the landing in the maze; step in.
+    const before = dungeonAt("room.b2f.c1_2", { position: { roomId: "room.b2f.c1_2", facing: "south" } });
     const stepped = executeCommand(before, defaultWorld, { type: "move_forward" });
     expect(stepped.position?.roomId).toBe("room.b2f.002");
     expect(stepped.log.some((entry) => entry.tags.includes("hazard"))).toBe(true);

@@ -37,6 +37,8 @@ export const en = {
     loadProgress: "Load progress",
     reached: "reached",
     autoExplore: "Auto-explore",
+    expand: "Debug ▾",
+    collapse: "Debug ▴",
     headlessReachability: "Headless reachability",
     headlessReachabilityStatus: "Headless reachability: {reason} ({count} commands)"
   },
