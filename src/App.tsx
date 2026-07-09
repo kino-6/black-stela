@@ -104,6 +104,7 @@ import type {
   CombatActionKind,
   CombatEnemyGroup,
   Command,
+  Direction,
   EquipmentSlot,
   GameState,
   InventoryItem,
@@ -113,6 +114,7 @@ import {
   createDebugStateFromProgress,
   debugProgressValues,
   parseDebugProgress,
+  withDebugStartCell,
   type DebugProgress
 } from "./debug/debugStart";
 import { debugAutoExplore, runHeadlessClear } from "./headless/headlessRunner";
@@ -159,7 +161,7 @@ export function App() {
   const [debugProgress, setDebugProgress] = useState<DebugProgress>(() => getDebugProgressFromLocation());
   const scenarioValidationErrors = useMemo(() => getScenarioValidationErrorsFromLocation(), []);
   const [state, setState] = useState<GameState>(() =>
-    debugMode ? createDebugStateFromProgress(defaultWorld, getDebugProgressFromLocation()) : createInitialGameState()
+    debugMode ? createDebugStateFromLocation() : createInitialGameState()
   );
   const stateRef = useRef(state);
   const [screen, setScreen] = useState<AppScreen>(() =>
@@ -2693,6 +2695,22 @@ function getDebugProgressFromLocation() {
   }
 
   return parseDebugProgress(new URLSearchParams(window.location.search).get("progress"));
+}
+
+// Seed a debug state, then honor an optional `&at=<roomId>&facing=<dir>` override
+// so mechanic e2es can start on the exact cell under test (see withDebugStartCell).
+function createDebugStateFromLocation(): GameState {
+  const state = createDebugStateFromProgress(defaultWorld, getDebugProgressFromLocation());
+  if (typeof window === "undefined") {
+    return state;
+  }
+  const params = new URLSearchParams(window.location.search);
+  const at = params.get("at");
+  if (!at) {
+    return state;
+  }
+  const facing = params.get("facing") as Direction | null;
+  return withDebugStartCell(state, defaultWorld, at, facing ?? undefined);
 }
 
 function getTotalRoomCount() {

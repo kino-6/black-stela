@@ -134,6 +134,28 @@ export function createDebugStateFromProgress(world: ScenarioWorld, progress: Deb
   };
 }
 
+// Reposition a seeded debug state directly onto a specific room (and facing).
+// Lets a mechanic e2e (secret search, choke, trap) start ON the cell under test
+// instead of walking a long maze path — which is what made those specs brittle
+// every time a floor's layout changed. Unknown room id is a no-op.
+export function withDebugStartCell(
+  state: GameState,
+  world: ScenarioWorld,
+  roomId: string,
+  facing: Direction = "north"
+): GameState {
+  if (!getGridCellForRoom(world, roomId)) {
+    return state;
+  }
+  const visitedRooms = [...state.map.visitedRooms.filter((id) => id !== roomId), roomId];
+  return {
+    ...state,
+    phase: "dungeon",
+    position: createPosition(world, roomId, facing),
+    map: createMapState(world, visitedRooms, facing)
+  };
+}
+
 function createFloorDebugState(base: GameState, world: ScenarioWorld, progress: DebugProgress): GameState {
   const floorNumber = Number(progress.replace("floor_", ""));
   const roomId = `room.b${floorNumber}f.001`;
