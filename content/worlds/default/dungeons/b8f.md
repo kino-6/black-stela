@@ -18,26 +18,25 @@ authorNotes: >-
   the town stair that carries the first proof home.
 startRoom: room.b8f.001
 map: |
-  ####################
-  ####################
-  ####################
-  ##.........#########
-  #P.......B.#########
-  ##....A....T########
-  ##.........#########
-  ##.........#########
-  ###.##.##.##########
-  #E.........MD#######
-  ###.##.##.##.#######
-  ##.........#....####
-  ##.........#..V.####
-  ##....S....#....####
-  #G.......K.#########
-  ##.........#########
-  ####################
-  ####################
-  ####################
-  ####################
+  ###################
+  #E#...#.......#...#
+  #.#.###.#.#####.###
+  #.......#.........#
+  #.#.#.#.###.#.###.#
+  #.#..A....#..B..#.#
+  #.###.#.#.###.###.#
+  #..P#...#.#.......#
+  #.######....#####.#
+  #........K......#.#
+  ###.#.##...##.#.#.#
+  #...#.....#...#.#.#
+  #.###.#.#.#.#.#.#.#
+  #.#...#..S..#.#.#T#
+  #.#######.#####.###
+  #.......#.#DM....V#
+  #.###.###.#########
+  #...#..G#.........#
+  ###################
 symbols:
   E: room.b8f.001
   M: room.b8f.002
@@ -63,8 +62,8 @@ edges:
     kind: stairs
     to: room.b7f.001
     targetFloorId: dungeon.b7f
-  - from: room.b8f.c10_5
-    direction: east
+  - from: room.b8f.c17_12
+    direction: south
     kind: secret
     to: room.b8f.011
 rooms:
@@ -75,7 +74,6 @@ rooms:
       ja:
         name: 灰門の前庭
         description: 空気は、蝋燭が消えた直後の味がする。西の階段はB7Fへ上り、二つの門の広間が先で交わる。
-    encounterTable: encounters.b8f.gate
   - id: room.b8f.004
     name: North Gate Hall
     description: The upper gate hall, where votary-kin drift through the hanging ash toward the buried root.
@@ -121,20 +119,20 @@ rooms:
     treasureTable: treasure.b8f.final
   - id: room.b8f.003
     name: Return Scar
-    description: A scar in the wall opens toward the town stair only after the ash quiets. A last alcove stands open beside it.
+    description: A scar in the wall opens toward the town stair only after the ash quiets, past where the buried root fell.
     locales:
       ja:
         name: 帰還の傷跡
-        description: 壁の傷跡は、灰が静まった後でだけ街への階段へ開く。その脇に、最後の窪みが残っている。
+        description: 壁の傷跡は、灰が静まった後でだけ街への階段へ開く。埋もれた根が斃れた、その先にある。
     stairsToTown: true
     event: The ash gate grows quiet. The party can carry the first proof home.
   - id: room.b8f.010
     name: Scar Antechamber
-    description: The alcove past the root, its shelf holding what the last party to reach the gate left behind.
+    description: An alcove off the gate approach, its shelf holding what the last party to reach the gate left behind.
     locales:
       ja:
         name: 傷跡の前室
-        description: 根の先の窪み。棚には、門へ辿り着いた最後の隊列が残したものが置かれている。
+        description: 門への前庭から外れた窪み。棚には、門へ辿り着いた最後の隊列が残したものが置かれている。
     treasureTable: treasure.b8f.side
   - id: room.b8f.007
     name: South Gate Hall
@@ -163,11 +161,11 @@ rooms:
     treasureTable: treasure.b1f.nook
   - id: room.b8f.011
     name: Gate Cache
-    description: A slot of dead air hides behind the north gate hall's east wall, its seam grey with settled ash — a cloth-bound cache rests within, richer than the open niches.
+    description: A slot of dead air hides behind an ash-grey seam off the gate approach — a cloth-bound cache rests within, richer than the open niches.
     locales:
       ja:
         name: 門の隠し宝処
-        description: 北の門の広間の東壁の裏に、淀んだ空気の隙間が隠れている。継ぎ目は積もった灰で灰色に霞み、布に包まれた蓄えが中に置かれ、開けた小間よりも実り多い。
+        description: 門への前庭の脇、積もった灰で灰色に霞む継ぎ目の裏に淀んだ空気の隙間が隠れている。布に包まれた蓄えが中に置かれ、開けた小間よりも実り多い。
     treasureTable: treasure.b8f.secret
 ---
 
