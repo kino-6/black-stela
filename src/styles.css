@@ -2920,6 +2920,26 @@ textarea {
   border-color: rgba(201, 168, 74, 0.28);
 }
 
+.scene-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+}
+
+.scene-facing {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+/* Small dim build stamp (git sha + start time) so a stale bundle is obvious. */
+.build-stamp {
+  font-size: 0.7rem;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+  color: rgba(229, 224, 210, 0.38);
+}
+
 /* A faced-but-locked stair: show the clue in place of the Use-stairs button. */
 .descent-locked {
   display: flex;

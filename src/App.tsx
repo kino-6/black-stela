@@ -5,6 +5,7 @@ import {
   ArrowRight,
   ChevronsLeft,
   ChevronsRight,
+  Compass,
   DoorClosed,
   DoorOpen,
   Footprints,
@@ -1130,7 +1131,13 @@ export function App() {
         <section className="panel play-panel" aria-labelledby="location-heading">
           <div className="section-title">
             <h2 id="location-heading">{state.phase === "town" ? t("play.town") : state.phase === "combat" ? t("play.combat") : roomText?.name}</h2>
-            <span>{state.position ? t("play.facing", { direction: t(`direction.${state.position.facing}`) }) : t("play.safe")}</span>
+            <div className="scene-meta">
+              <span className="scene-facing">
+                {state.position && <Compass size={13} aria-hidden="true" />}
+                {state.position ? t("play.facing", { direction: t(`direction.${state.position.facing}`) }) : t("play.safe")}
+              </span>
+              <span className="build-stamp" title="build">{__APP_BUILD__}</span>
+            </div>
           </div>
 
           {state.phase === "town" ? (
