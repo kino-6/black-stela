@@ -5,58 +5,60 @@ level: 1
 role: onboarding
 dangerTier: 1
 recommendedPartyLevel: 1
+recommendedClearLevel: 2
 tags:
   - onboarding
   - mapping
   - block-1
 authorNotes: >-
-  Onboarding floor filling the full 20x20 frame. A short forced trunk teaches the
-  grammar in order (move east into the first fight, cross the central hub, search
-  the needle plate, take the east stair down), and off the hub two open halls reward
-  exploration — a guarded reliquary to the north and a warden's hall to the south,
-  each an open Wizardry-style room with a fight and a cache. Side galleries loop
-  the halls back to the trunk so the floor reads as a weave, not a line; dead-end
-  niches hide extra treasure. The trunk stays one-wide from the trap to the stair
-  so the descent always passes the searched plate; a south alcove one step short of
-  the stair holds the marker's winch cage, whose one-way shortcut home is a separate
-  turn from the way down. The entrance opens east so the fixed
-  starting facing walks the party straight into the teaching fight.
+  Onboarding floor rebuilt as a Wizardry-style wheel so the descent can't be
+  walked in a straight line. A perimeter ring joins four corner rooms; four spokes
+  run from the ring to a central hub (hub-and-spoke + nested loops). The forced
+  intro fight sits on the entry spoke; the needle plate sits on the east spoke by
+  the stair. Two deep objectives pull the party across the whole floor: the
+  Guarded Reliquary in the north-west and the Warden's Hall crank in the
+  south-east, whose winch also opens a one-way shortcut home. The Winding Stair is
+  gated on both the crank flag and an 80% sweep of the floor (two-key + threshold),
+  so a beeline covers only ~30% and cannot leave. Treasure hides in two dead-end
+  niches off the top ring, and a premium cache sits behind a searched wall south
+  of the hub's south room.
 startRoom: room.b1f.001
 map: |
   ####################
-  ######D#############
-  ###............#####
-  ###............#####
-  ###...A....B...V####
-  ###............#####
-  ###............#####
-  ###.####.#.###.#####
-  ###.####.#.###.#####
-  #EC.....H......N..X#
-  ###.####.#.###.#.###
-  ###.####.#.###.#M###
-  ###............#####
-  ###............#####
-  ###...S....K...#####
-  ###............#####
-  ###............#####
-  ######G#############
+  ######T#####U#######
+  ###A.....N......B###
+  ###.#####.######.###
+  ###.#####.######.###
+  ###.#####.######.###
+  ###.#####.######.###
+  ###.#####.######.###
+  ###.#####.######.###
+  #ED......H......Q.X#
+  ###.#####.######.###
+  ###.#####.######.###
+  ###.#####.######.###
+  ###.#####.######.###
+  ###.#####.######.###
+  ###.#####.######.###
+  ###C.....S......K###
+  #########V##########
   ####################
   ####################
 symbols:
   E: room.b1f.001
-  C: room.b1f.002
-  H: room.b1f.003
-  D: room.b1f.004
-  N: room.b1f.005
-  M: room.b1f.006
-  G: room.b1f.007
-  A: room.b1f.008
-  B: room.b1f.009
-  S: room.b1f.010
-  K: room.b1f.011
+  D: room.b1f.002
+  H: room.b1f.hub
+  A: room.b1f.reliquary
+  N: room.b1f.north
+  B: room.b1f.ne
+  Q: room.b1f.east
   X: room.b1f.012
-  V: room.b1f.013
+  C: room.b1f.sw
+  S: room.b1f.south
+  K: room.b1f.warden
+  T: room.b1f.niche1
+  U: room.b1f.niche2
+  V: room.b1f.vault
 corridor:
   name: Dust-Choked Gallery
   description: A low run of fitted stone, dust banked along the walls and broken only by the party's own tracks.
@@ -70,14 +72,14 @@ edges:
     kind: stairs
     to: room.b2f.001
     targetFloorId: dungeon.b2f
-  - from: room.b1f.006
+  - from: room.b1f.south
+    direction: south
+    kind: secret
+    to: room.b1f.vault
+  - from: room.b1f.warden
     direction: south
     kind: shortcut
     to: room.b1f.001
-  - from: room.b1f.c14_4
-    direction: east
-    kind: secret
-    to: room.b1f.013
 rooms:
   - id: room.b1f.001
     name: Silent Stone Chamber
@@ -106,46 +108,86 @@ rooms:
       tags:
         - tutorial
     encounterTable: encounters.b1f.halls
-  - id: room.b1f.003
+  - id: room.b1f.hub
     name: Ashfall Crossing
-    description: A wide chamber where the ways from every quarter meet under a slow fall of ash. It is the room you keep coming back to.
+    description: A wide chamber where the ways from every quarter meet under a slow fall of ash. It is the room the party keeps coming back to.
     locales:
       ja:
-        name: 灰降りの辻
-        description: ゆっくりと灰の降る下で、四方の道が交わる広い部屋。何度も戻ってくることになる場所だ。
+        name: 灰の辻
+        description: 四方の道が、絶え間なく降る灰の下で交わる広間。隊列が何度も戻ってくることになる部屋だ。
     encounterTable: encounters.b1f.chambers
-  - id: room.b1f.004
-    name: Chalk-Marked Niche
-    description: A dead-end niche off the north hall, an old cloth bundle wedged behind the chalk tallies.
+  - id: room.b1f.north
+    name: Cold Antechamber
+    description: A bare northern room, its far wall sweating cold. Two ways out flank a shelf of split stone.
     locales:
       ja:
-        name: 白墨の小間
-        description: 北の広間から外れた行き止まりの小間。白墨の刻み書きの裏に、古い布包みが挟まっている。
-    treasureTable: treasure.b1f.nook
-  - id: room.b1f.005
+        name: 冷えた前室
+        description: 何もない北の部屋。奥の壁が冷たく汗をかいている。割れた石棚の両脇に、二つの出口。
+    encounterTable: encounters.b1f.chambers
+  - id: room.b1f.east
     name: Smoke-Bent Passage
-    description: Smoke stains lean along the ceiling. A line of pinholes breaks the dust just where a boot would fall.
+    description: Smoke stains lean along the ceiling. A line of pinholes breaks the dust just where a boot would fall, and the stair curls off to the east.
     locales:
       ja:
         name: 煙に曲がる通路
-        description: 天井の煤が斜めに流れている。ちょうど足を下ろす所で、細かな針穴の列が塵を破っている。
+        description: 天井の煤が斜めに流れている。ちょうど足を下ろす所で、細かな針穴の列が塵を破り、東には階段が渦を巻く。
     trap:
       id: trap.b1f.needle
       name: A hidden needle plate
       damage: 2
       detectDc: 10
       warning: A line of pinholes breaks the dust ahead.
-  - id: room.b1f.006
-    name: Black Marker
-    description: A narrow marker of black stone leans over a capped shaft in a niche off the corridor, a winch cage hung above it. Its chain hauls a climber straight back up to the entrance.
+    encounterTable: encounters.b1f.halls
+  - id: room.b1f.reliquary
+    name: Guarded Reliquary
+    description: A north-west vault of niched stone, each hollow once meant for an offering. Most are empty; one is not.
     locales:
       ja:
-        name: 黒い標石
-        description: 通路脇の窪みに、蓋をされた竪坑の上に細い黒石の標が傾き、籠が掛かっている。その鎖は、入口まで一気に引き上げてくれる。
-        event: 標石は手に温かい。竪坑の籠は、入口まで一気に戻る道を約束している。
+        name: 守られた聖遺室
+        description: 北西の、壁龕を穿った石室。それぞれの窪みはかつて供物のためのもの。大半は空だが、一つは違う。
+    treasureTable: treasure.b1f.safe
+  - id: room.b1f.ne
+    name: Cracked Rotunda
+    description: A round north-east room, its dome split by a hairline seam that lets down a thread of grey light.
+    locales:
+      ja:
+        name: 罅割れた円堂
+        description: 北東の丸い部屋。円蓋には髪ほどの裂け目が走り、灰色の光が一筋差し込む。
+    encounterTable: encounters.b1f.halls
+  - id: room.b1f.sw
+    name: Sunken Gallery
+    description: The floor dips here in the south-west, dust pooled in the low center like still water.
+    locales:
+      ja:
+        name: 沈んだ回廊
+        description: 南西で床が窪み、低い中央に塵が水のように溜まっている。
+    encounterTable: encounters.b1f.chambers
+  - id: room.b1f.south
+    name: Guide Stone Chamber
+    description: A sunken guide stone squats at the center, and the south wall rings hollow under a knuckle.
+    locales:
+      ja:
+        name: 導石の間
+        description: 中央に沈んだ導石がうずくまり、南の壁は指で叩くと空ろに鳴る。
+    encounterTable: encounters.b1f.chambers
+  - id: room.b1f.warden
+    name: Warden's Hall
+    description: A south-east hall of chained machinery. A crank the size of a wheel frees the stair's drop-pin, and a winch cage above hauls a climber straight back to the entrance.
+    locales:
+      ja:
+        name: 番人の広間
+        description: 南東の、鎖につながれた機構の広間。車輪ほどの巻き手が階段の落とし込みを外し、頭上の籠は登る者を入口まで一気に引き上げる。
     stairsToTown: true
     returnStyle: marker
-    event: The marker is warm to the touch; the shaft cage promises a quick way back to the entrance.
+    gates:
+      - id: gate.b1f.crank
+        kind: shortcut
+        grantsFlag: flag.b1f.descent
+        clue: The crank gives with a groan; somewhere east the stair's drop-pin lets go.
+        locales:
+          ja:
+            clue: 巻き手が呻いて動く。東のどこかで、階段の落とし込みが外れた。
+    event: The crank gives under both hands; far off, a pin drops free.
   - id: room.b1f.012
     name: Winding Stair
     description: The stair curls east off the trunk's end, biting down through the stone toward B2F.
@@ -158,94 +200,38 @@ rooms:
         direction: east
         kind: lock
         requiredFlag: flag.b1f.descent
-        clue: The stair's drop-pin is set fast; the crank that frees it is bolted up somewhere in the halls.
+        requiredExploredRatio: 0.8
+        clue: The drop-pin is freed, but the dark below won't take a party that hasn't read the floor — most of these halls stay unwalked.
         locales:
           ja:
-            clue: 階段の落とし込みは固く留められている。それを外す巻き手は、広間のどこかの壁に留められている。
-  - id: room.b1f.013
+            clue: 落とし込みは外れた。だが、まだ大半を歩いていないこの階を、下の闇は受け入れない。まず坑道を読み切れ。
+  - id: room.b1f.niche1
+    name: West Offering Niche
+    description: A dead-end slot off the top ring, a cloth-wrapped offering left in the dark.
+    locales:
+      ja:
+        name: 西の供物龕
+        description: 上部の環から外れた行き止まりの窪み。布に包まれた供物が闇に残されている。
+    treasureTable: treasure.b1f.safe
+  - id: room.b1f.niche2
+    name: East Offering Niche
+    description: A second dead-end slot off the top ring, its offering long since gone grey with ash.
+    locales:
+      ja:
+        name: 東の供物龕
+        description: 上部の環から外れた二つ目の行き止まり。供物はとうに灰をかぶって灰色だ。
+    treasureTable: treasure.b1f.safe
+  - id: room.b1f.vault
     name: Ashen Reliquary
-    description: A slot of dry air hides behind the north hall's east wall, missed by every dusty boot before. A cloth-bound offering rests in the dark, richer than the open caches.
+    description: A slot of dry air hides behind the guide chamber's south wall, missed by every dusty boot before. A cloth-bound offering rests in the dark, richer than the open caches.
     locales:
       ja:
-        name: 灰の隠し宝処
-        description: 北の広間の東壁の裏に、乾いた空気の隙間が隠れている。塵まみれの足はどれも見落としてきた。布に包まれた供物が暗がりに置かれ、開けた隠しよりも実り多い。
+        name: 灰の宝室
+        description: 導石の間の南壁の奥に、乾いた空気の隙間が隠れている。これまでどの足も見落としてきた。開けた物置より豊かな、布に包まれた供物が闇に鎮まる。
     treasureTable: treasure.b1f.secret
-  - id: room.b1f.007
-    name: Drift Cache
-    description: A dead-end pocket off the south hall where ash drifted deep over a forgotten satchel.
-    locales:
-      ja:
-        name: 吹き溜まりの隠し
-        description: 南の広間から外れた行き止まりの窪み。灰が深く吹き溜まり、忘れられた鞄を覆っている。
-    treasureTable: treasure.b1f.nook
-  - id: room.b1f.008
-    name: Chalk-Marked Reliquary
-    description: The heart of the north hall — old chalk tallies crowd the walls, a cloth-wrapped offering rests on a ledge, and a pale crawler coils to guard it.
-    locales:
-      ja:
-        name: 白墨の宝処
-        description: 北の広間の中心。古い白墨の刻み書きが壁を埋め、棚には布に包まれた供物が置かれ、それを守るように青白い這い者がとぐろを巻いている。
-    encounter:
-      id: enemy.b1f.dust-crawler
-      name: Dust Crawler
-      hp: 6
-      attack: 2
-      role: attrition
-      dangerTier: 1
-      tags:
-        - beast
-    treasureTable: treasure.b1f.chamber
-  - id: room.b1f.009
-    name: Ledger Ledge
-    description: A stone shelf along the north hall where a stitched pouch was tucked behind the tallies.
-    locales:
-      ja:
-        name: 帳面の棚
-        description: 北の広間沿いの石棚。刻み書きの裏に、縫い綴じられた小袋が押し込まれている。
-    treasureTable: treasure.b1f.nook
-  - id: room.b1f.010
-    name: Warden's Hall
-    description: The heart of the south hall, cinders drifted into the corners. A hand-crank for the stair's drop-pin is bolted to the far wall — and something heavier than a slime shifts its weight before it.
-    locales:
-      ja:
-        name: 番人の広間
-        description: 南の広間の中心。燃え殻が隅に吹き溜まっている。奥の壁には階段の落とし込みを外す手回しが留められ、その前で、泥よりも重い何かが身じろぎする。
-    gates:
-      - id: gate.b1f.crank
-        kind: shortcut
-        grantsFlag: flag.b1f.descent
-        clue: The hand-crank turns; far off, the stair's drop-pin lifts free.
-        locales:
-          ja:
-            clue: 手回しが回る。遠くで、階段の落とし込みが外れる。
-    encounter:
-      id: enemy.b1f.dust-crawler
-      name: Dust Crawler
-      hp: 6
-      attack: 2
-      role: attrition
-      dangerTier: 1
-      tags:
-        - beast
-    treasureTable: treasure.b1f.chamber
-  - id: room.b1f.011
-    name: Cinder Cache
-    description: A cinder-choked corner of the warden's hall, a stitched pouch half-buried in the drift.
-    locales:
-      ja:
-        name: 燃え殻の隠し
-        description: 番人の広間の燃え殻に塞がれた隅。縫い綴じの小袋が吹き溜まりに半ば埋もれている。
-    treasureTable: treasure.b1f.chamber
 ---
 
 # B1F - Silent Approach
 
-The first floor, filling the full 20x20 frame. A short forced trunk carries the
-teaching beats in order — move east into the first fight, cross the central
-Ashfall Crossing, search the needle plate, reach the black marker — while two
-open halls off the hub reward the curious: a guarded reliquary to the north and a
-warden's hall to the south, each an open room with a fight and a cache, looped
-back to the trunk by side galleries. Dead-end niches hide extra treasure. From
-the trap to the marker the trunk stays one-wide, so the descent always passes the
-searched plate; the marker's winch cage opens a one-way shortcut back to the
-entrance.
+The onboarding floor: a wheel of ring, spokes, and hub that teaches movement,
+combat, searching, and the exploration-gated descent in one sweep.

@@ -15,9 +15,9 @@ describe("headless reachability runner", () => {
     expect(result.state.phase).toBe("town");
     expect(result.state.defeatedEnemies).toContain("enemy.b1f.ash-slime");
     expect(result.state.resolvedTraps).toContain("trap.b1f.needle");
-    expect(result.state.map.visitedRooms).toContain("room.b1f.006");
+    expect(result.state.map.visitedRooms).toContain("room.b1f.warden");
     expect(result.trace.find((step) => step.command === "return_to_town")).toMatchObject({
-      fromRoomId: "room.b1f.006",
+      fromRoomId: "room.b1f.warden",
       toPhase: "town",
       knowledge: "known_room_state"
     });
@@ -30,7 +30,7 @@ describe("headless reachability runner", () => {
     expect(result.cleared).toBe(true);
     expect(result.state.defeatedEnemies).toContain("enemy.b1f.ash-slime");
     expect(result.state.resolvedTraps).toContain("trap.b1f.needle");
-    expect(result.state.map.visitedRooms).toContain("room.b1f.006");
+    expect(result.state.map.visitedRooms).toContain("room.b1f.warden");
   });
 
   it("reports a stuck room when no scenario route is available", () => {

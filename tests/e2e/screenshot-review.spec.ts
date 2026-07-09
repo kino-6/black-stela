@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 import type { Page } from "@playwright/test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { advanceToB1fMarker, createStarterParty, resolveVisibleCombat, setTitleLanguage, startNewExpedition } from "./helpers";
+import { advanceToB1fMarker, createStarterParty, faceDirection, resolveVisibleCombat, setTitleLanguage, startNewExpedition } from "./helpers";
 
 test("captures desktop screenshot review states", async ({ page }) => {
   await page.goto("/");
@@ -39,11 +39,12 @@ test("captures desktop screenshot review states", async ({ page }) => {
   await page.screenshot({ path: "test-results/screenshot-review/desktop-map-after-move.png", fullPage: true });
 
   await advanceToB1fMarker(page);
-  await expect(page.getByRole("heading", { name: "Black Marker" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Warden's Hall" })).toBeVisible();
   await page.screenshot({ path: "test-results/screenshot-review/desktop-return-stair.png", fullPage: true });
 
-  // North is the winch shortcut and east is the descent stair; the south wall is solid.
-  await page.getByLabel("Turn right").click();
+  // The warden's east face is solid stone (the ring runs north/west, the winch
+  // drops south); face it to show a blocked front wall.
+  await faceDirection(page, "east");
   await expect(page.getByTestId("dungeon-canvas")).toHaveAttribute("data-front-edge", "wall");
   await page.screenshot({ path: "test-results/screenshot-review/desktop-return-stair-front-wall.png", fullPage: true });
 

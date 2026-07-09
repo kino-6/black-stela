@@ -34,18 +34,24 @@ function advanceToB1fStair(state: GameState) {
   return current;
 }
 
-// The Black Marker now sits in a south alcove off the trunk, a separate turn from
-// the descent: reach the stair, then thread west two cells and south into the
-// alcove.
+// The return marker is the Warden's Hall crank in the south-east: east along the
+// trunk to the hub, south down the central spoke to the south room, then east
+// along the bottom ring to the warden.
 function advanceToB1fMarker(state: GameState) {
-  let current = advanceToB1fStair(state); // at room.b1f.012, facing east
-  current = executeCommand(current, defaultWorld, { type: "turn_left" }); // north
-  current = executeCommand(current, defaultWorld, { type: "turn_left" }); // west
-  current = executeCommand(current, defaultWorld, { type: "move_forward" }); // -> c17_9
-  current = executeCommand(current, defaultWorld, { type: "move_forward" }); // -> c16_9
-  current = executeCommand(current, defaultWorld, { type: "turn_left" }); // south
-  current = executeCommand(current, defaultWorld, { type: "move_forward" }); // -> alcove
-  current = executeCommand(current, defaultWorld, { type: "move_forward" }); // -> room.b1f.006
+  let current = state;
+  const moveUntil = (roomId: string, max = 20) => {
+    for (let i = 0; i < max && current.position?.roomId !== roomId; i += 1) {
+      current = executeCommand(current, defaultWorld, { type: "move_forward" });
+      if (current.phase === "combat") {
+        current = resolveCombat(current);
+      }
+    }
+  };
+  moveUntil("room.b1f.hub"); // east to the central hub
+  current = executeCommand(current, defaultWorld, { type: "turn_right" }); // face south
+  moveUntil("room.b1f.south"); // south spoke to the south room
+  current = executeCommand(current, defaultWorld, { type: "turn_left" }); // face east
+  moveUntil("room.b1f.warden"); // bottom ring east to the warden
   return current;
 }
 
@@ -106,7 +112,8 @@ describe("rules engine", () => {
   });
 
   it("triggers the placed slime fight and the searched trap along the B1F trunk", () => {
-    // Entrance faces east straight into the slime hall; the trap is deeper in.
+    // Entrance faces east straight into the slime hall; the needle plate sits on
+    // the east spoke by the stair.
     const entered = executeCommand(stateWithParty(), defaultWorld, { type: "enter_dungeon" });
     const current = executeCommand(entered, defaultWorld, { type: "move_forward" });
 
@@ -114,12 +121,12 @@ describe("rules engine", () => {
     expect(current.position?.roomId).toBe("room.b1f.002");
     expect(current.combat?.enemy.name).toBe("Ash Slime");
 
-    // Walking on to the marker crosses the needle-trap chamber, resolving it.
-    const marker = advanceToB1fMarker(resolveCombat(current));
-    expect(marker.position?.roomId).toBe("room.b1f.006");
-    expect(marker.defeatedEnemies).toContain("enemy.b1f.ash-slime");
-    expect(marker.resolvedTraps).toContain("trap.b1f.needle");
-    expect(marker.party[0].hp).toBeLessThan(marker.party[0].maxHp);
+    // Walking on east to the stair crosses the needle-trap chamber, resolving it.
+    const stair = advanceToB1fStair(resolveCombat(current));
+    expect(stair.position?.roomId).toBe("room.b1f.012");
+    expect(stair.defeatedEnemies).toContain("enemy.b1f.ash-slime");
+    expect(stair.resolvedTraps).toContain("trap.b1f.needle");
+    expect(stair.party[0].hp).toBeLessThan(stair.party[0].maxHp);
   });
 
   it("blocks return to town until the party reaches a return stair", () => {
@@ -135,30 +142,41 @@ describe("rules engine", () => {
     expect(blocked.phase).toBe("dungeon");
     expect(blocked.position?.roomId).toBe("room.b1f.002");
     expect(blocked.log.at(-1)?.text).toBe("There is no stair or return seal here.");
-    expect(marker.position?.roomId).toBe("room.b1f.006");
+    expect(marker.position?.roomId).toBe("room.b1f.warden");
     expect(town.phase).toBe("town");
     expect(town.party).toHaveLength(1);
     expect(town.party[0].hp).toBeGreaterThan(0);
     expect(town.party[0].hp).toBeLessThanOrEqual(town.party[0].maxHp);
   });
 
-  it("gates the descent behind the warden's crank, then needs an explicit stair command", () => {
+  it("gates the descent behind the warden's crank AND an 80% sweep of the floor", () => {
     const entered = executeCommand(stateWithParty(), defaultWorld, { type: "enter_dungeon" });
     const stair = advanceToB1fStair(entered);
     expect(stair.position?.roomId).toBe("room.b1f.012");
-    expect(stair.position?.facing).toBe("east");
 
-    // Reaching the stair is ungated, but without the crank flag its drop-pin holds
-    // fast: the descent itself is locked.
-    const lockedTry = executeCommand(stair, defaultWorld, { type: "use_stairs" });
-    expect(lockedTry.position?.roomId).toBe("room.b1f.012");
-    expect(lockedTry.map.floorId).not.toBe("dungeon.b2f");
-    expect(lockedTry.log.at(-1)?.tags).toContain("locked");
+    // No crank flag and little explored: the descent is locked.
+    const raw = executeCommand(stair, defaultWorld, { type: "use_stairs" });
+    expect(raw.map.floorId).not.toBe("dungeon.b2f");
+    expect(raw.log.at(-1)?.tags).toContain("locked");
 
-    // Turning the Warden's Hall crank frees the pin; use stairs then descends.
-    const unlocked = { ...stair, discoveredSecrets: [...stair.discoveredSecrets, "flag.b1f.descent"] };
-    const descended = executeCommand(unlocked, defaultWorld, { type: "use_stairs" });
+    // Reaching the Warden's Hall turns the crank, granting the drop-pin flag.
+    const cranked = advanceToB1fMarker(entered);
+    expect(cranked.discoveredSecrets).toContain("flag.b1f.descent");
 
+    const b1fCells = defaultWorld.dungeons.find((d) => d.id === "dungeon.b1f")!.grid!.cells.map((c) => c.roomId);
+    const atStair = (visited: string[]): GameState => ({
+      ...cranked,
+      position: { roomId: "room.b1f.012", facing: "east" },
+      map: { ...cranked.map, currentRoomId: "room.b1f.012", visitedRooms: visited }
+    });
+
+    // Flag set but under 80% mapped: still locked (no beeline descent).
+    expect(executeCommand(atStair(["room.b1f.012"]), defaultWorld, { type: "use_stairs" }).map.floorId).not.toBe(
+      "dungeon.b2f"
+    );
+
+    // Flag set and the floor swept past 80%: the stair opens.
+    const descended = executeCommand(atStair(b1fCells), defaultWorld, { type: "use_stairs" });
     expect(descended.position?.roomId).toBe("room.b2f.001");
     expect(descended.map.floorId).toBe("dungeon.b2f");
   });
@@ -192,17 +210,17 @@ describe("rules engine", () => {
     const at: GameState = {
       ...stateWithParty(),
       phase: "dungeon",
-      position: { roomId: "room.b1f.c11_3", facing: "east" }
+      position: { roomId: "room.b1f.hub", facing: "east" }
     };
 
     // Facing east: left is north, right is south. Neither turns the party.
     const left = executeCommand(at, defaultWorld, { type: "strafe_left" });
-    expect(left.position?.roomId).toBe("room.b1f.c11_2");
+    expect(left.position?.roomId).toBe("room.b1f.c9_8");
     expect(left.position?.facing).toBe("east");
     expect(left.log.at(-1)?.text).toBe("The party sidesteps into Dust-Choked Gallery.");
 
     const right = executeCommand(at, defaultWorld, { type: "strafe_right" });
-    expect(right.position?.roomId).toBe("room.b1f.009");
+    expect(right.position?.roomId).toBe("room.b1f.c9_10");
     expect(right.position?.facing).toBe("east");
   });
 
@@ -235,7 +253,7 @@ describe("rest points and scarce return", () => {
   }
 
   it("allows return to town at block-cap rest points but not mid-floor", () => {
-    for (const restRoom of ["room.b1f.006", "room.b3f.003", "room.b6f.003"]) {
+    for (const restRoom of ["room.b1f.warden", "room.b3f.003", "room.b6f.003"]) {
       const returned = executeCommand(dungeonAt(restRoom), defaultWorld, { type: "return_to_town" });
       expect(returned.phase, `${restRoom} should allow return`).toBe("town");
     }
@@ -411,20 +429,20 @@ describe("runtime gates and shortcuts", () => {
   });
 
   it("hides the B1F ashen reliquary behind a searchable secret wall", () => {
-    const facing = dungeonAt("room.b1f.c14_4", { position: { roomId: "room.b1f.c14_4", facing: "east" } });
+    const facing = dungeonAt("room.b1f.south", { position: { roomId: "room.b1f.south", facing: "south" } });
 
     const blocked = executeCommand(facing, defaultWorld, { type: "move_forward" });
-    expect(blocked.position?.roomId).toBe("room.b1f.c14_4");
+    expect(blocked.position?.roomId).toBe("room.b1f.south");
 
     const searched = executeCommand(facing, defaultWorld, { type: "search" });
-    expect(searched.discoveredSecrets).toContain("secret:room.b1f.c14_4:east");
+    expect(searched.discoveredSecrets).toContain("secret:room.b1f.south:south");
 
     const revealed = executeCommand(
-      { ...searched, position: { roomId: "room.b1f.c14_4", facing: "east" } },
+      { ...searched, position: { roomId: "room.b1f.south", facing: "south" } },
       defaultWorld,
       { type: "move_forward" }
     );
-    expect(revealed.position?.roomId).toBe("room.b1f.013");
+    expect(revealed.position?.roomId).toBe("room.b1f.vault");
   });
 });
 

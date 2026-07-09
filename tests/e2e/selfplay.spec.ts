@@ -154,7 +154,7 @@ test("browser self-play completes the visible dungeon loop without headless shor
       // The return marker now sits in a south alcove off the trunk, a separate
       // turn from the descent; thread back to it from the stair cell.
       await walkB1fStairToMarker(page);
-      await expect(page.getByRole("heading", { name: "Black Marker" })).toBeVisible();
+      await expect(page.getByRole("heading", { name: "Warden's Hall" })).toBeVisible();
       await clickCommand("Use return marker");
       await expect(page.getByRole("heading", { name: "Town", exact: true })).toBeVisible();
       await expect(page.getByText("The party returns to town.")).toBeVisible();

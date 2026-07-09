@@ -135,7 +135,7 @@ export function isMvpCleared(state: GameState): boolean {
     state.phase === "town" &&
     state.defeatedEnemies.includes("enemy.b1f.ash-slime") &&
     state.resolvedTraps.includes("trap.b1f.needle") &&
-    state.map.visitedRooms.includes("room.b1f.006")
+    state.map.visitedRooms.includes("room.b1f.warden")
   );
 }
 

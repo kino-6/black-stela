@@ -17,8 +17,8 @@ describe("buildFloorMap", () => {
   it("returns every explored cell of the floor, not just a 5x5 window", () => {
     // Two rooms at opposite ends of B1F's east-west trunk — the marker sits far
     // outside any 5x5 window centred on the entrance.
-    const visited = ["room.b1f.001", "room.b1f.006"];
-    const map = buildFloorMap(b1fStateWith(visited), defaultWorld, "en", "room.b1f.006");
+    const visited = ["room.b1f.001", "room.b1f.warden"];
+    const map = buildFloorMap(b1fStateWith(visited), defaultWorld, "en", "room.b1f.warden");
 
     expect(map.cells).toHaveLength(2);
     expect(map.cells.some((cell) => cell.status === "current")).toBe(true);

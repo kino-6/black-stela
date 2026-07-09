@@ -31,9 +31,9 @@ describe("tempo rules", () => {
 
   it("stops at a branching junction", () => {
     // The hub is a four-way chamber.
-    const result = runTempoStep(dungeonAt("room.b1f.003"), "dungeon", defaultWorld, t);
+    const result = runTempoStep(dungeonAt("room.b1f.hub"), "dungeon", defaultWorld, t);
     expect(result.keepRunning).toBe(false);
-    expect(result.state.position?.roomId).toBe("room.b1f.003");
+    expect(result.state.position?.roomId).toBe("room.b1f.hub");
   });
 
   it("stops on a tile with an encounter", () => {

@@ -9,7 +9,7 @@ describe("scenario summary", () => {
     expect(summary).toMatchObject({
       title: "Black Stela - Gate of Ash",
       floorCount: 8,
-      roomCount: 1134,
+      roomCount: 1060,
       itemCount: 5,
       equipmentCount: 11,
       shopCount: 1,
@@ -19,7 +19,7 @@ describe("scenario summary", () => {
       returnAnchorCount: 3,
       nextFloorLinkCount: 7,
       lockCount: 5,
-      lootReferenceCount: 68,
+      lootReferenceCount: 63,
       missingJapaneseRooms: 0,
       pacing: {
         midpointFloor: "dungeon.b5f",

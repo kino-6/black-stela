@@ -159,58 +159,54 @@ export async function resolveVisibleCombat(page: Page) {
   await expect(page.getByRole("heading", { name: "Combat" })).toHaveCount(0);
 }
 
-// Clear B1F's gated descent: beeline down the col-3 south corridor to the
-// Warden's Hall (whose crank frees the stair's drop-pin), return to the trunk,
-// walk east along it onto the freed Winding Stair, and descend. Kept to a tight
-// path so the starter party isn't ground down by stray encounters. Returns once
-// the party stands on B2F's landing.
+// Clear B1F's gated descent by circling the wheel: trunk east to the hub, up the
+// north spoke, around the ring past the Warden's Hall crank (which frees the
+// stair's drop-pin) — a lap that sweeps past the 80% exploration gate — then to
+// the freed Winding Stair and down. Returns once the party stands on B2F's landing.
 export async function descendB1fViaWarden(page: Page) {
   const current = async () => (await page.getByTestId("map-current").textContent().catch(() => "")) ?? "";
+  const coverage = async () => {
+    const text = (await page.getByTestId("floor-coverage").textContent().catch(() => "")) ?? "";
+    return Number(text.match(/(\d+)\s*%/)?.[1] ?? "0");
+  };
   const move = async () => {
     await page.getByRole("button", { name: "Move", exact: true }).click();
-    await page.waitForTimeout(70);
+    await page.waitForTimeout(55);
     if (await page.getByLabel("Battle screen").isVisible().catch(() => false)) {
       await resolveVisibleCombat(page);
     }
   };
-  const turn = async (dir: "left" | "right") => {
-    await page.getByLabel(dir === "left" ? "Turn left" : "Turn right").click();
-    await page.waitForTimeout(30);
-  };
-  const moveUntil = async (name: string, max = 14) => {
+  const moveUntil = async (name: string, max = 16) => {
     for (let i = 0; i < max && !(await current()).includes(name); i += 1) {
       await move();
     }
   };
+  const go = async (dir: "north" | "south" | "east" | "west", name: string, max = 16) => {
+    await faceDirection(page, dir);
+    await moveUntil(name, max);
+  };
 
-  // Reset to the entrance (facing east) so the path is deterministic regardless
-  // of where prior steps left the party. Assumes the party is on the trunk
-  // facing east; walking west lands on the Silent Stone Chamber entrance.
-  await turn("left");
-  await turn("left"); // face west
-  await moveUntil("Silent Stone Chamber", 20);
-  await turn("left");
-  await turn("left"); // face east again
+  await go("east", "Ashfall Crossing", 16); // entrance -> slime fight -> central hub
+  await go("south", "Guide Stone Chamber", 14); // hub -> south spoke (covers the interior)
+  await go("north", "Ashfall Crossing", 14); // back to the hub
+  await go("north", "Cold Antechamber", 14); // hub -> north spoke room
+  await go("west", "Guarded Reliquary", 16); // top ring -> NW reliquary
+  await go("south", "Sunken Gallery", 20); // left ring -> SW room
+  await go("east", "Warden's Hall", 20); // bottom ring -> SE warden crank (frees the pin)
+  await go("north", "Cracked Rotunda", 20); // right ring -> NE (past the east room + needle)
 
-  // Entrance east into the first fight, then drop into the col-3 south corridor.
-  await move(); // -> Hall of Old Dust (ash slime)
-  await move(); // -> corridor at col 3
-  await turn("right"); // face south
-  for (let i = 0; i < 3; i += 1) await move(); // into the south gallery
-  await turn("left"); // face east
-  for (let i = 0; i < 3; i += 1) await move(); // toward the warden's column
-  await turn("right"); // face south
-  await moveUntil("Warden's Hall", 3); // crank -> frees the drop-pin
+  // Top up if the lap fell short of the 80% gate.
+  for (let i = 0; i < 80 && (await coverage()) < 80; i += 1) {
+    const before = await current();
+    await move();
+    if ((await current()) === before) {
+      await page.getByLabel("Turn right").click();
+      await page.waitForTimeout(25);
+    }
+  }
 
-  // Return to the trunk via the col-8 corridor (which lands on the central hub),
-  // then east along the trunk onto the freed stair.
-  await turn("left"); // face east (was facing south)
-  await move();
-  await move(); // east to the col-8 corridor
-  await turn("left"); // face north
-  await moveUntil("Ashfall Crossing", 8); // up to the hub
-  await turn("right"); // face east
-  await moveUntil("Winding Stair", 14); // east along the trunk onto the freed stair
+  await go("south", "Smoke-Bent Passage", 20); // right ring down to the east room by the stair
+  await go("east", "Winding Stair", 6); // east onto the freed stair
   const stairs = page.getByRole("button", { name: "Use stairs" });
   if (await stairs.isVisible().catch(() => false)) {
     await stairs.click();
@@ -227,7 +223,7 @@ async function currentFacing(page: Page): Promise<string> {
   return (text.match(/Facing (\w+)/i)?.[1] ?? "").toLowerCase();
 }
 
-async function faceDirection(page: Page, dir: "north" | "south" | "east" | "west") {
+export async function faceDirection(page: Page, dir: "north" | "south" | "east" | "west") {
   for (let i = 0; i < 4; i += 1) {
     if ((await currentFacing(page)) === dir) {
       return;
@@ -237,7 +233,7 @@ async function faceDirection(page: Page, dir: "north" | "south" | "east" | "west
   }
 }
 
-// From the Winding Stair cell (B1F's down-stair), thread back to the Black Marker.
+// From the Winding Stair cell (B1F's down-stair), thread back to the Warden's Hall.
 // The return shortcut now sits in a south alcove off the trunk, a separate turn
 // from the descent, so reaching it is west two cells then south into the alcove.
 export async function walkB1fStairToMarker(page: Page) {
@@ -248,29 +244,29 @@ export async function walkB1fStairToMarker(page: Page) {
       await resolveVisibleCombat(page);
     }
   };
-  await faceDirection(page, "west");
-  await step(); // -> corridor
-  await step(); // -> trunk cell that branches to the alcove
-  await faceDirection(page, "south");
-  await step(); // -> alcove corridor
-  await step(); // -> Black Marker
+  const cur = async () => (await page.getByTestId("map-current").textContent().catch(() => "")) ?? "";
+  await faceDirection(page, "west"); // stair -> east room
+  for (let i = 0; i < 4 && !(await cur()).includes("Smoke-Bent Passage"); i += 1) await step();
+  await faceDirection(page, "south"); // right ring down to the warden
+  for (let i = 0; i < 12 && !(await cur()).includes("Warden's Hall"); i += 1) await step();
 }
 
-// Reach the Black Marker from the B1F entrance: walk the trunk east onto the
-// Winding Stair (ungated — only the descent itself is locked), then thread into
-// the south alcove. Ends facing south on the marker.
+// Reach the Warden's Hall (the return marker) from the B1F entrance: trunk east to
+// the hub, south down the spoke to the south room, then east along the bottom ring.
 export async function advanceToB1fMarker(page: Page) {
-  for (let step = 0; step < 40; step += 1) {
-    if (await page.getByRole("heading", { name: "Black Marker" }).isVisible().catch(() => false)) {
-      return;
-    }
-    if (await page.getByRole("heading", { name: "Winding Stair" }).isVisible().catch(() => false)) {
-      break;
-    }
+  const cur = async () => (await page.getByTestId("map-current").textContent().catch(() => "")) ?? "";
+  const step = async () => {
     await page.getByRole("button", { name: "Move", exact: true }).click();
+    await page.waitForTimeout(55);
     if (await page.getByLabel("Battle screen").isVisible().catch(() => false)) {
       await resolveVisibleCombat(page);
     }
-  }
-  await walkB1fStairToMarker(page);
+  };
+  const goTo = async (dir: "north" | "south" | "east" | "west", name: string, max: number) => {
+    await faceDirection(page, dir);
+    for (let i = 0; i < max && !(await cur()).includes(name); i += 1) await step();
+  };
+  await goTo("east", "Ashfall Crossing", 16); // entrance -> hub
+  await goTo("south", "Guide Stone Chamber", 14); // hub -> south spoke room
+  await goTo("east", "Warden's Hall", 16); // bottom ring -> warden
 }

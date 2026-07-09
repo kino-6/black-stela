@@ -39,7 +39,7 @@ test("combat and town recovery keep the loop playable", async ({ page }) => {
   await expect(page.getByRole("button", { name: "Use return marker" })).toHaveCount(0);
 
   await advanceToB1fMarker(page);
-  await expect(page.getByRole("heading", { name: "Black Marker" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Warden's Hall" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Return", exact: true })).toHaveCount(0);
   await page.getByRole("button", { name: "Use return marker" }).click();
   await expect(page.getByRole("heading", { name: "Town", exact: true })).toBeVisible();

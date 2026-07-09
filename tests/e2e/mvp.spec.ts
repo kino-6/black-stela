@@ -40,7 +40,7 @@ test("create party, import portrait, enter dungeon, fight, use stairs, and view 
   await expect(page.getByRole("button", { name: "Use return marker" })).toHaveCount(0);
 
   await advanceToB1fMarker(page);
-  await expect(page.getByRole("heading", { name: "Black Marker" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Warden's Hall" })).toBeVisible();
 
   await expect(page.getByRole("button", { name: "Return", exact: true })).toHaveCount(0);
   await page.getByRole("button", { name: "Use return marker" }).click();
@@ -51,7 +51,7 @@ test("create party, import portrait, enter dungeon, fight, use stairs, and view 
 async function advanceToB1fMarker(page: Page) {
   // Walk the trunk east onto the Winding Stair (reachable without the crank — only
   // the descent itself is gated), then thread into the south alcove that holds the
-  // Black Marker, since the return shortcut now sits off the trunk.
+  // Warden's Hall, since the return shortcut now sits off the trunk.
   for (let step = 0; step < 40; step += 1) {
     if (await page.getByRole("heading", { name: "Winding Stair" }).isVisible().catch(() => false)) {
       break;
