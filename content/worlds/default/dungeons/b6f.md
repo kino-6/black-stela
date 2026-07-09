@@ -19,26 +19,25 @@ authorNotes: >-
   is hard-locked out.
 startRoom: room.b6f.001
 map: |
-  ####################
-  ####################
-  ##E...............##
-  ##............B...##
-  #G....#.A..#...#..##
-  ##................##
-  ##...............P##
-  #########.##########
-  #########.##########
-  #########M##########
-  #########.##########
-  ######.......#######
-  ######.......#######
-  ######D....K.V######
-  ######.......#######
-  ######.......#######
-  ####################
-  ####################
-  ####################
-  ####################
+  ###################
+  #E#...............#
+  #.#.#####.###.#.###
+  #.......#.#...#...#
+  #.###.#.#.###.###.#
+  #....A..#....B....#
+  ###.#.#.#.###.#####
+  #...#...#.........#
+  #.#.#.##....#####.#
+  #.#.#.........#...#
+  ###.#.#.....###.###
+  #...#.#.#.#.#.....#
+  #.#.#.###.#.#.#.#.#
+  #.#.#.......#.#.#.#
+  #.#######.###.#.#.#
+  #......P#.#DM.#K#.#
+  #.###############.#
+  #..............G#V#
+  ###################
 symbols:
   E: room.b6f.001
   A: room.b6f.004
@@ -63,12 +62,12 @@ edges:
     to: room.b5f.003
     targetFloorId: dungeon.b5f
   - from: room.b6f.003
-    direction: east
+    direction: south
     kind: stairs
     to: room.b7f.001
     targetFloorId: dungeon.b7f
-  - from: room.b6f.c12_13
-    direction: east
+  - from: room.b6f.c17_16
+    direction: south
     kind: secret
     to: room.b6f.009
 rooms:
@@ -79,7 +78,6 @@ rooms:
       ja:
         name: 誓いの通路
         description: 壁に刻まれた名は、それぞれ別の手で線を引かれている。西の階段はB5Fへ上り、誓いの広間が先に開く。
-    encounterTable: encounters.b6f.oaths
   - id: room.b6f.004
     name: Broken Vow Hall
     description: The vow hall proper, where oath-cutters work the aisles between the scratched-out names.
@@ -155,11 +153,11 @@ rooms:
     treasureTable: treasure.b6f.side
   - id: room.b6f.009
     name: Vault Cache
-    description: A slot of dead air hides behind the lower chamber's east wall, its seam sealed with old salt — a cloth-bound cache rests within, richer than the open niches.
+    description: A slot of dead air hides behind a salt-sealed seam off the deep corridor — a cloth-bound cache rests within, richer than the open niches.
     locales:
       ja:
         name: 誓いの隠し宝処
-        description: 下の広間の東壁の裏に、淀んだ空気の隙間が隠れている。継ぎ目は古い塩で固められ、布に包まれた蓄えが中に置かれ、開けた小間よりも実り多い。
+        description: 深部の通路の脇、塩で固めた継ぎ目の裏に淀んだ空気の隙間が隠れている。布に包まれた蓄えが中に置かれ、開けた小間よりも実り多い。
     treasureTable: treasure.b6f.secret
 ---
 
