@@ -116,9 +116,6 @@ test("first-person view, minimap, and movement agree when forward is blocked", a
   await resolveVisibleCombat(page);
   await walkB1fToStair(page);
   await expect(page.getByRole("heading", { name: "Winding Stair" })).toBeVisible();
-  // Facing the down-stair under the recommended clear level shows a soft warning
-  // (the party is level 1; B1F recommends level 2 before descending). Never a lock.
-  await expect(page.getByTestId("descent-underlevel")).toBeVisible();
 
   // The Winding Stair is a dead-end at the maze's deepest turn: the corridor comes
   // in from the east and the stair drops south, so north and west are solid stone.

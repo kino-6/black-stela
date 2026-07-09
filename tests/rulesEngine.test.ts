@@ -64,9 +64,9 @@ function resolveCombat(state: GameState) {
 // slime fight along the way, until the party reaches the Black Marker.
 // Walk through the maze to the Winding Stair (room.b1f.012), routing via the
 // Smoke-Bent needle chamber so the trap resolves, and ending faced at the stair
-// (its edge is to the south). The slime fight along the way is resolved too.
+// (its edge is to the west — the way you arrive). The slime fight is resolved too.
 function advanceToB1fStair(state: GameState) {
-  return faceTo(walkTo(state, "room.b1f.012", "room.b1f.east"), "south");
+  return faceTo(walkTo(state, "room.b1f.012", "room.b1f.east"), "west");
 }
 
 // Walk through the maze to the Warden's Hall (the return marker, deep to the south).
@@ -173,13 +173,27 @@ describe("rules engine", () => {
     const entered = executeCommand(stateWithParty(3), defaultWorld, { type: "enter_dungeon" });
     const stair = advanceToB1fStair(entered);
     expect(stair.position?.roomId).toBe("room.b1f.012");
-    expect(stair.position?.facing).toBe("south");
+    expect(stair.position?.facing).toBe("west");
 
     // The shallow public floor puts nothing between the party and the stair: using
     // it descends immediately. Exploration is pressured by difficulty, not a gate.
     const descended = executeCommand(stair, defaultWorld, { type: "use_stairs" });
     expect(descended.position?.roomId).toBe("room.b2f.001");
     expect(descended.map.floorId).toBe("dungeon.b2f");
+  });
+
+  it("descends from the stair cell no matter which way the party faces", () => {
+    // Descending is a current-cell action: the engine finds the stair on the cell,
+    // so it must not depend on facing its authored direction (a data-brittle trap).
+    for (const facing of ["north", "east", "south", "west"] as const) {
+      const onStair: GameState = {
+        ...stateWithParty(3),
+        phase: "dungeon",
+        position: { roomId: "room.b1f.012", facing }
+      };
+      const descended = executeCommand(onStair, defaultWorld, { type: "use_stairs" });
+      expect(descended.position?.roomId).toBe("room.b2f.001");
+    }
   });
 
   it("steps backward one cell without changing facing", () => {

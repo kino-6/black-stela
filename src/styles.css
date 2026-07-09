@@ -2953,14 +2953,6 @@ textarea {
   line-height: 1.35;
 }
 
-.descent-warning {
-  padding: 0.4rem 0.75rem;
-  border-left: 3px solid rgba(201, 168, 74, 0.6);
-  color: rgba(224, 198, 132, 0.9);
-  font-size: 0.8rem;
-  line-height: 1.35;
-}
-
 @media (max-width: 1100px) {
   .app-shell[data-phase="dungeon"] {
     height: auto;

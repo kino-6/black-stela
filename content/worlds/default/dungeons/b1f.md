@@ -66,7 +66,7 @@ corridor:
       description: 切石の低い通路。壁際に塵が積もり、隊列自身の足跡だけがそれを乱している。
 edges:
   - from: room.b1f.012
-    direction: south
+    direction: west
     kind: stairs
     to: room.b2f.001
     targetFloorId: dungeon.b2f

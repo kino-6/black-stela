@@ -642,22 +642,23 @@ function useStairs(state: GameState, world: ScenarioWorld): CommandResult {
     return noChange(state);
   }
 
-  const edge = getGridEdge(world, state.position.roomId, state.position.facing);
-  if (edge?.kind !== "stairs" || !edge.targetRoomId) {
+  const stair = roomStairsEdge(world, state.position.roomId, state.position.facing);
+  if (!stair?.edge.targetRoomId) {
     return logOnly(state, { type: "command_blocked", reason: "stairs_unavailable", command: "use_stairs" });
   }
+  const edge = stair.edge;
 
-  // A locked gate on the stair direction bars the descent until it is opened
-  // (e.g. a branch crank frees the drop-pin), so a gated stair can't be used by
-  // walking straight onto it.
-  const stairGate = getRoom(world, state.position.roomId).gates?.find((gate) => gate.direction === state.position!.facing);
+  // A locked gate on the stair's direction bars the descent until it is opened
+  // (e.g. a branch crank frees the drop-pin) — checked on the stair itself, not the
+  // way the party happens to face, since descending is a current-cell action.
+  const stairGate = getRoom(world, state.position.roomId).gates?.find((gate) => gate.direction === stair.direction);
   if (stairGate && !isGateOpen(stairGate, state)) {
     return withEvents({ ...state, turn: state.turn + 1 }, [
       { type: "movement_blocked", reason: "locked", roomId: state.position.roomId, facing: state.position.facing }
     ]);
   }
 
-  const targetRoom = getRoom(world, edge.targetRoomId);
+  const targetRoom = getRoom(world, edge.targetRoomId!);
   const roomVisit = visitRoom(state, world, targetRoom.id, state.position.facing);
   const targetCell = getGridCellForRoom(world, targetRoom.id);
   const events: GameEvent[] = [
@@ -1985,15 +1986,38 @@ export function floorExploredRatio(world: ScenarioWorld, state: GameState): numb
 
 // The gate barring the stair the party currently faces (if any), so the UI can
 // show why a descent is refused instead of a dead "Use stairs" button.
+// The stair a party standing on this cell can take: the one it faces if that's a
+// stair, else the cell's sole stair. Descending is a current-cell action, so the
+// command must not depend on which way the party looks or on the authored edge
+// direction — the engine finds the stair, the data just says where it goes.
+const STAIR_DIRECTIONS: Direction[] = ["north", "east", "south", "west"];
+export function roomStairsEdge(
+  world: ScenarioWorld,
+  roomId: string,
+  facing: Direction
+): { edge: NonNullable<ReturnType<typeof getGridEdge>>; direction: Direction } | null {
+  const faced = getGridEdge(world, roomId, facing);
+  if (faced?.kind === "stairs") {
+    return { edge: faced, direction: facing };
+  }
+  for (const direction of STAIR_DIRECTIONS) {
+    const edge = getGridEdge(world, roomId, direction);
+    if (edge?.kind === "stairs") {
+      return { edge, direction };
+    }
+  }
+  return null;
+}
+
 export function stairGateAhead(world: ScenarioWorld, state: GameState): ExplorationGate | null {
   if (!state.position) {
     return null;
   }
-  const edge = getGridEdge(world, state.position.roomId, state.position.facing);
-  if (edge?.kind !== "stairs") {
+  const stair = roomStairsEdge(world, state.position.roomId, state.position.facing);
+  if (!stair) {
     return null;
   }
-  const gate = getRoom(world, state.position.roomId).gates?.find((g) => g.direction === state.position!.facing);
+  const gate = getRoom(world, state.position.roomId).gates?.find((g) => g.direction === stair.direction);
   return gate && !isGateOpen(gate, state) ? gate : null;
 }
 

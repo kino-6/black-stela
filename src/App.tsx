@@ -47,7 +47,7 @@ import {
 import { readVault, depositToVault, removeFromVault, type VaultEntry } from "./domain/adventurerVault";
 import { floorName, getGridEdge, getLocalizedRoomText, getRoom, isBossFloor } from "./domain/scenario";
 import { createIdentitySuggestion } from "./domain/identitySuggestion";
-import { executeCommand, listUnlockedCheckpoints, stairGateAhead } from "./domain/rulesEngine";
+import { executeCommand, listUnlockedCheckpoints, roomStairsEdge, stairGateAhead } from "./domain/rulesEngine";
 import { getTempoModeForPhase, runTempoStep, type TempoMode } from "./domain/tempo";
 import { SPELLS, knownSpells, type SpellId } from "./domain/spells";
 import {
@@ -225,30 +225,15 @@ export function App() {
   const escapeItem = state.inventory.find((item) => item.kind === "escape" && item.quantity > 0);
   const canUseEscapeItem =
     Boolean(escapeItem) && state.phase === "dungeon" && !isBossFloor(defaultWorld, state.map.floorId);
+  // A stair is used from the current cell, regardless of which way the party faces.
   const canUseStairs = Boolean(
-    state.position && getGridEdge(defaultWorld, state.position.roomId, state.position.facing)?.kind === "stairs"
+    state.position && roomStairsEdge(defaultWorld, state.position.roomId, state.position.facing)
   );
   // A stair the party faces but can't yet use (crank not turned, floor not mapped).
   const blockingStairGate = stairGateAhead(defaultWorld, state);
   const stairGateClue = blockingStairGate
     ? blockingStairGate.locales?.[locale]?.clue ?? blockingStairGate.clue ?? null
     : null;
-  // A soft warning (never a lock) when facing a DOWN-stair below the floor's
-  // recommended clear level — the deeper packs swell for an under-strength party.
-  const descentUnderLevel = useMemo(() => {
-    if (!canUseStairs || blockingStairGate || !state.position) {
-      return null;
-    }
-    const edge = getGridEdge(defaultWorld, state.position.roomId, state.position.facing);
-    const floor = defaultWorld.dungeons.find((dungeon) => dungeon.id === state.map.floorId);
-    const recommended = floor?.recommendedClearLevel;
-    const depth = (id: string | undefined) => Number(id?.match(/b(\d+)f/)?.[1] ?? 0);
-    if (!edge?.targetFloorId || !recommended || depth(edge.targetFloorId) <= depth(floor?.id)) {
-      return null;
-    }
-    const topLevel = state.party.reduce((max, member) => Math.max(max, member.level ?? 1), 0);
-    return topLevel < recommended ? recommended : null;
-  }, [canUseStairs, blockingStairGate, state.position, state.map.floorId, state.party]);
 
   const latestLogText = useMemo(() => {
     const entry = state.log.at(-1);
@@ -2483,11 +2468,6 @@ export function App() {
                       <DoorOpen size={18} />
                       {t("play.useStairs")}
                     </button>
-                  )}
-                  {descentUnderLevel !== null && (
-                    <div className="descent-warning" data-testid="descent-underlevel">
-                      <span>{t("play.descentUnderLevel", { level: descentUnderLevel })}</span>
-                    </div>
                   )}
                   {canUseStairs && blockingStairGate && (
                     <div className="descent-locked" data-testid="descent-locked">

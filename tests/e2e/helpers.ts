@@ -206,7 +206,7 @@ async function walkB1fPath(page: Page, dirs: Dir[]) {
 // (its edge is south), without descending.
 export async function walkB1fToStair(page: Page) {
   await walkB1fPath(page, B1F_ENTRANCE_TO_STAIR);
-  await faceDirection(page, "south"); // the stair edge faces south
+  await faceDirection(page, "west"); // the stair edge faces west (the way you arrive)
 }
 
 // Descend from B1F: thread the maze to the Winding Stair and use it. The stair
