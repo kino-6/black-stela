@@ -364,7 +364,12 @@ describe("runtime gates and shortcuts", () => {
   });
 
   it("teleports the party back when they step onto the one-way walk", () => {
-    const stepped = executeCommand(dungeonAt("room.b4f.001"), defaultWorld, { type: "move_forward" });
+    // The One-Way Walk is now a trap niche off the maze; stepping in slopes you home.
+    const stepped = executeCommand(
+      dungeonAt("room.b4f.c16_11", { position: { roomId: "room.b4f.c16_11", facing: "west" } }),
+      defaultWorld,
+      { type: "move_forward" }
+    );
     expect(stepped.position?.roomId).toBe("room.b4f.001");
     expect(stepped.log.some((entry) => entry.tags.includes("teleport"))).toBe(true);
   });
