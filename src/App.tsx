@@ -754,6 +754,12 @@ export function App() {
         if (activateControllerCancel()) {
           return;
         }
+        // Escape closes an open overlay first (full map, camp) before anything else.
+        if (fullMapOpen || campOpen) {
+          setFullMapOpen(false);
+          setCampOpen(false);
+          return;
+        }
         if (tempoMode !== "idle") {
           setTempoMode("idle");
           setTempoStatus(t("tempo.repeatStopped"));
@@ -814,7 +820,7 @@ export function App() {
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [combatOrdersReady, isTempoRunning, selectedActor, selectedTarget, state, t, tempoMode]);
+  }, [campOpen, combatOrdersReady, fullMapOpen, isTempoRunning, selectedActor, selectedTarget, state, t, tempoMode]);
 
   // Camp and the full-floor map are exploration-only; a fight or a return to
   // town closes them.

@@ -167,63 +167,78 @@ function stepTowardRoom(state: GameState, world: ScenarioWorld, floorId: string,
   return state.position.facing === dir ? { type: "move_forward" } : turnToward(state.position.facing, dir);
 }
 
-// Debug convenience: auto-walk the current floor so a tester need not tap WASD
-// dozens of times. It greedily visits unexplored cells (real movement, so encounters
-// fire and the map reveals), STOPS on combat so the player fights, then heads to the
-// down-stair and stops there — ready to descend, but never descending or returning
-// to town on its own.
+// Debug convenience: auto-walk the dungeon so a tester need not tap WASD dozens of
+// times. It BLITZES floor by floor — greedily visiting unexplored cells (real
+// movement, so encounters fire and the map reveals), then walking to the down-stair
+// and descending — and STOPS on any combat so the player fights, or when a descent
+// is barred (a gate/crank it hasn't opened). Never returns to town on its own.
 export function debugAutoExplore(initialState: GameState, world: ScenarioWorld, maxSteps = 800): GameState {
   let current = initialState;
-  const visitCounts = new Map<string, number>();
-  const blockedMoves = new Set<string>();
 
-  for (let step = 0; step < maxSteps; step += 1) {
-    if (current.phase !== "dungeon" || !current.position) {
-      break;
-    }
-    visitCounts.set(current.position.roomId, (visitCounts.get(current.position.roomId) ?? 0) + 1);
-    const decision = chooseNextCommand(current, world, visitCounts, blockedMoves);
-    // Leaving the floor (a town return or a descent) is the player's call — stop here.
-    if (!decision.command || decision.command.type === "return_to_town" || decision.command.type === "use_stairs") {
-      break;
-    }
-    const next = executeCommand(current, world, decision.command);
-    if (decision.command.type === "move_forward" && current.position && next.position?.roomId === current.position.roomId) {
-      blockedMoves.add(`${current.position.roomId}:${current.position.facing}`);
-    }
-    if (next.discoveredSecrets.length !== current.discoveredSecrets.length) {
-      blockedMoves.clear();
-    }
-    if (next === current) {
-      break;
-    }
-    current = next;
-    if (current.phase === "combat") {
-      return current; // hand the fight to the player
-    }
-  }
+  for (let floorPass = 0; floorPass < 10; floorPass += 1) {
+    const visitCounts = new Map<string, number>();
+    const blockedMoves = new Set<string>();
 
-  // Explored: thread to the down-stair and stop, ready to descend.
-  if (current.phase === "dungeon" && current.position) {
-    const downStair = downStairRoomOnFloor(world, current.map.floorId ?? "");
-    if (downStair && current.position.roomId !== downStair) {
-      for (let step = 0; step < maxSteps; step += 1) {
-        const command = stepTowardRoom(current, world, current.map.floorId ?? "", downStair);
-        if (!command) {
-          break;
-        }
-        const next = executeCommand(current, world, command);
-        if (next === current) {
-          break;
-        }
-        current = next;
-        if (current.phase === "combat") {
-          return current;
-        }
-        if (current.position?.roomId === downStair) {
-          break;
-        }
+    // Phase 1: explore this floor until nothing new is reachable (or a fight).
+    for (let step = 0; step < maxSteps; step += 1) {
+      if (current.phase !== "dungeon" || !current.position) {
+        return current; // combat or town
       }
+      visitCounts.set(current.position.roomId, (visitCounts.get(current.position.roomId) ?? 0) + 1);
+      const decision = chooseNextCommand(current, world, visitCounts, blockedMoves);
+      // Leaving the floor is handled below — stop the explore loop here.
+      if (!decision.command || decision.command.type === "return_to_town" || decision.command.type === "use_stairs") {
+        break;
+      }
+      const next = executeCommand(current, world, decision.command);
+      if (decision.command.type === "move_forward" && current.position && next.position?.roomId === current.position.roomId) {
+        blockedMoves.add(`${current.position.roomId}:${current.position.facing}`);
+      }
+      if (next.discoveredSecrets.length !== current.discoveredSecrets.length) {
+        blockedMoves.clear();
+      }
+      if (next === current) {
+        break;
+      }
+      current = next;
+      if (current.phase === "combat") {
+        return current; // hand the fight to the player
+      }
+    }
+
+    // Phase 2: thread to the down-stair.
+    const downStair = downStairRoomOnFloor(world, current.map.floorId ?? "");
+    if (!downStair) {
+      return current; // finale floor, no descent
+    }
+    for (let step = 0; step < maxSteps && current.position?.roomId !== downStair; step += 1) {
+      const command = stepTowardRoom(current, world, current.map.floorId ?? "", downStair);
+      if (!command) {
+        break;
+      }
+      const next = executeCommand(current, world, command);
+      if (next === current) {
+        break;
+      }
+      current = next;
+      if (current.phase === "combat") {
+        return current;
+      }
+    }
+
+    // Phase 3: descend and repeat on the next floor. If the stair is barred (a
+    // gate/crank not yet opened) the floor won't change — stop for the player.
+    if (current.position?.roomId !== downStair) {
+      return current;
+    }
+    const beforeFloor = current.map.floorId;
+    const descended = executeCommand(current, world, { type: "use_stairs" });
+    if (descended.map.floorId === beforeFloor) {
+      return current; // descent barred
+    }
+    current = descended;
+    if (current.phase === "combat") {
+      return current; // the landing fight
     }
   }
   return current;

@@ -33,20 +33,21 @@ describe("debug auto-explore", () => {
     expect(stepped.position?.roomId).toBe("room.b1f.002");
   });
 
-  it("reveals the floor and ends on the down-stair once fights are cleared", () => {
+  it("blitzes down through floors, clearing fights, and descends past B1F", () => {
     let state = executeCommand(party(3), defaultWorld, { type: "enter_dungeon" });
     const startVisited = state.map.visitedRooms.length;
-    // Alternate auto-explore with clearing whatever fight it stops on, a few times.
-    for (let pass = 0; pass < 8; pass += 1) {
+    const depth = (id: string | null | undefined) => Number(id?.match(/b(\d+)f/)?.[1] ?? 0);
+    // Alternate auto-explore with clearing whatever fight it stops on. Auto-explore
+    // now descends on its own, so this should reach a deeper floor.
+    for (let pass = 0; pass < 20; pass += 1) {
       state = debugAutoExplore(state, defaultWorld);
       if (state.phase === "combat") {
         state = resolveCombat(state);
+        continue;
       }
-      if (state.position?.roomId === "room.b1f.012") {
-        break;
-      }
+      break; // no fight left: stopped at a barred descent or the finale
     }
     expect(state.map.visitedRooms.length).toBeGreaterThan(startVisited + 10);
-    expect(state.position?.roomId).toBe("room.b1f.012");
+    expect(depth(state.map.floorId)).toBeGreaterThanOrEqual(2); // descended off B1F on its own
   });
 });

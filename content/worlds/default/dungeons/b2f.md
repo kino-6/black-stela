@@ -86,7 +86,6 @@ rooms:
       ja:
         name: 分かれ塵の踊り場
         description: 沈んだ導石を挟み、二本の塵の道が分かれている。西の階段はB1Fの標石へ上り、鉤の道は東へ続く。
-    encounterTable: encounters.b2f.branches
   - id: room.b2f.002
     name: Hooked Corridor
     damageTile: 2

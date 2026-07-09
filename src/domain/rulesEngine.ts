@@ -694,11 +694,8 @@ function useStairs(state: GameState, world: ScenarioWorld): CommandResult {
   const effects = applyCellEffects(next, world, targetRoom, events);
   next = effects.state;
 
-  const started = effects.teleported ? null : beginRoomEncounter(world, targetRoom, state);
-  if (started) {
-    next = { ...next, phase: "combat", combat: started.combat };
-    events.push(started.event);
-  }
+  // Arriving on a floor by stairs is SAFE — no forced fight on the landing. Monsters
+  // are met by walking the floor (chambers, corridors), never the moment you descend.
 
   return withEvents(next, events);
 }
