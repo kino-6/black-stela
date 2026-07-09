@@ -628,27 +628,10 @@ function moveForward(
   const effects = applyCellEffects(next, world, room, events);
   next = effects.state;
 
-  const fixedFight = Boolean(room.encounter);
-  const encounter = room.encounter
-    ? { enemy: world.enemies.find((enemy) => enemy.id === room.encounter?.id) ?? room.encounter, count: 1 }
-    : room.encounterTable
-      ? resolveEncounterTable(world, room.encounterTable, state.turn)
-      : null;
-
-  if (!effects.teleported && encounter && !state.defeatedEnemies.includes(encounter.enemy.id)) {
-    // A rolled pack swells for an under-strength party; the fixed teaching fight does not.
-    const count = fixedFight ? encounter.count : scaledEncounterCount(encounter.count, state.party, floorForRoom(world, room.id));
-    next = {
-      ...next,
-      phase: "combat",
-      combat: createCombatState(room.id, encounter.enemy, count)
-    };
-    events.push({
-      type: "enemy_encountered",
-      enemyId: encounter.enemy.id,
-      enemyName: count > 1 ? `${encounter.enemy.name} x${count}` : encounter.enemy.name,
-      roomId: room.id
-    });
+  const started = effects.teleported ? null : beginRoomEncounter(world, room, state);
+  if (started) {
+    next = { ...next, phase: "combat", combat: started.combat };
+    events.push(started.event);
   }
 
   return withEvents(next, events);
@@ -710,26 +693,10 @@ function useStairs(state: GameState, world: ScenarioWorld): CommandResult {
   const effects = applyCellEffects(next, world, targetRoom, events);
   next = effects.state;
 
-  const fixedFight = Boolean(targetRoom.encounter);
-  const encounter = targetRoom.encounter
-    ? { enemy: world.enemies.find((enemy) => enemy.id === targetRoom.encounter?.id) ?? targetRoom.encounter, count: 1 }
-    : targetRoom.encounterTable
-      ? resolveEncounterTable(world, targetRoom.encounterTable, state.turn)
-      : null;
-
-  if (!effects.teleported && encounter && !state.defeatedEnemies.includes(encounter.enemy.id)) {
-    const count = fixedFight ? encounter.count : scaledEncounterCount(encounter.count, state.party, floorForRoom(world, targetRoom.id));
-    next = {
-      ...next,
-      phase: "combat",
-      combat: createCombatState(targetRoom.id, encounter.enemy, count)
-    };
-    events.push({
-      type: "enemy_encountered",
-      enemyId: encounter.enemy.id,
-      enemyName: count > 1 ? `${encounter.enemy.name} x${count}` : encounter.enemy.name,
-      roomId: targetRoom.id
-    });
+  const started = effects.teleported ? null : beginRoomEncounter(world, targetRoom, state);
+  if (started) {
+    next = { ...next, phase: "combat", combat: started.combat };
+    events.push(started.event);
   }
 
   return withEvents(next, events);
@@ -814,7 +781,10 @@ function attack(state: GameState, world: ScenarioWorld): CommandResult {
 
   const combat = normalizeCombat(state.combat);
   const actor = state.party.find((member) => member.hp > 0 && !member.injury && member.row === "front") ?? state.party[0];
-  const target = combat.enemyGroups.find((group) => group.count > 0);
+  // Melee lands on the front line first; the back line only once it is exposed.
+  const target =
+    combat.enemyGroups.find((group) => meleeTargetableGroup(group, combat.enemyGroups)) ??
+    combat.enemyGroups.find((group) => group.count > 0);
   if (!actor || !target) {
     return noChange(state);
   }
@@ -1357,6 +1327,46 @@ export function scaledEncounterCount(baseCount: number, party: Character[], floo
   return Math.min(scaled, baseCount + UNDERPOWER.maxExtraUnits, UNDERPOWER.absoluteMax);
 }
 
+// Resolve whatever fight a room begins on entry: a fixed squad (front + back line),
+// a fixed teaching fight, or a rolled pack (swelled for an under-strength party).
+// Returns null when nothing fires (already cleared, or no encounter).
+function beginRoomEncounter(
+  world: ScenarioWorld,
+  room: DungeonRoom,
+  state: GameState
+): { combat: CombatState; event: GameEvent } | null {
+  const squad = room.encounterSquad
+    ?.map((enemyId) => world.enemies.find((enemy) => enemy.id === enemyId))
+    .filter((enemy): enemy is Enemy => Boolean(enemy));
+  if (squad && squad.length >= 2 && !state.defeatedEnemies.includes(squad[0].id)) {
+    return {
+      combat: createSquadCombatState(room.id, squad),
+      event: { type: "enemy_encountered", enemyId: squad[0].id, enemyName: squad.map((enemy) => enemy.name).join(" & "), roomId: room.id }
+    };
+  }
+
+  const fixedFight = Boolean(room.encounter);
+  const encounter = room.encounter
+    ? { enemy: world.enemies.find((enemy) => enemy.id === room.encounter?.id) ?? room.encounter, count: 1 }
+    : room.encounterTable
+      ? resolveEncounterTable(world, room.encounterTable, state.turn)
+      : null;
+  if (!encounter || state.defeatedEnemies.includes(encounter.enemy.id)) {
+    return null;
+  }
+  // A rolled pack swells for an under-strength party; the fixed teaching fight does not.
+  const count = fixedFight ? encounter.count : scaledEncounterCount(encounter.count, state.party, floorForRoom(world, room.id));
+  return {
+    combat: createCombatState(room.id, encounter.enemy, count),
+    event: {
+      type: "enemy_encountered",
+      enemyId: encounter.enemy.id,
+      enemyName: count > 1 ? `${encounter.enemy.name} x${count}` : encounter.enemy.name,
+      roomId: room.id
+    }
+  };
+}
+
 export function createCombatState(roomId: string, enemy: Enemy, count = 1): CombatState {
   const group = createEnemyGroup(enemy, count);
   return {
@@ -1410,11 +1420,46 @@ function createEnemyGroup(enemy: Enemy, count: number): CombatEnemyGroup {
     xp: enemy.xp ?? Math.max(1, enemy.dangerTier ?? 1),
     gold: enemy.gold ?? Math.max(0, enemy.dangerTier ?? 1),
     role: enemy.role,
+    elevation: enemy.elevation,
     status: [],
     resistances: enemy.resistances,
     inflicts: enemy.inflicts,
     weaknesses: enemy.weaknesses,
     abilities: enemy.abilities
+  };
+}
+
+// Enemy line: a group standing back (mid/air) is shielded from melee while any
+// front (ground/default) group still stands — the party must break the front line
+// or reach past it with a spell. This is what stops Repeat-spam on a squad.
+function enemyGroupIsBack(group: CombatEnemyGroup): boolean {
+  return group.elevation === "air" || group.elevation === "mid";
+}
+
+export function hasStandingFrontEnemy(groups: CombatEnemyGroup[]): boolean {
+  return groups.some((group) => group.count > 0 && !enemyGroupIsBack(group));
+}
+
+// A group a melee attack may land on: front groups always; a back group only once
+// no front group shields it.
+export function meleeTargetableGroup(group: CombatEnemyGroup, groups: CombatEnemyGroup[]): boolean {
+  return group.count > 0 && (!enemyGroupIsBack(group) || !hasStandingFrontEnemy(groups));
+}
+
+// A fixed squad fight: the first enemy is the front line, the rest hang back.
+export function createSquadCombatState(roomId: string, enemies: Enemy[]): CombatState {
+  const groups = enemies.map((enemy, index) => {
+    const group = createEnemyGroup(enemy, 1);
+    // Force the intended line even if content omits elevation: first = front, rest = back.
+    return { ...group, id: `${group.id}.${index}`, elevation: enemy.elevation ?? (index === 0 ? "ground" : "air") };
+  });
+  return {
+    enemy: { ...enemies[0] },
+    roomId,
+    round: 1,
+    enemyGroups: groups,
+    pendingActions: [],
+    selectedTargetId: groups.find((group) => meleeTargetableGroup(group, groups))?.id ?? groups[0].id
   };
 }
 
@@ -1579,6 +1624,14 @@ function validateRoundActions(
         return {
           actions: [],
           event: { type: "combat_action_blocked", reason: "invalid_target", actorName: actor.name }
+        };
+      }
+
+      // A back-line enemy can't be reached by melee while the front line shields it.
+      if (!meleeTargetableGroup(target, combat.enemyGroups)) {
+        return {
+          actions: [],
+          event: { type: "combat_action_blocked", reason: "enemy_guarded", actorName: actor.name }
         };
       }
     }

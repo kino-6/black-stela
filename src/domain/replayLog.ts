@@ -135,7 +135,9 @@ export function projectEventToLog(event: GameEvent, locale: Locale = "en", world
         text:
           event.reason === "back_row_blocked"
             ? t("events.combatActionBackRow", { actor: event.actorName ?? t("events.backRowFallback") })
-            : t("events.combatActionBlocked"),
+            : event.reason === "enemy_guarded"
+              ? t("events.combatActionGuarded", { actor: event.actorName ?? t("events.backRowFallback") })
+              : t("events.combatActionBlocked"),
         tags: ["combat", "blocked"]
       };
     case "combat_round_resolved":

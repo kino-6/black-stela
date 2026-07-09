@@ -237,6 +237,7 @@ const roomSchema = z.object({
   gatherItem: z.string().optional(),
   trap: trapSchema.optional(),
   encounter: enemySchema.optional(),
+  encounterSquad: z.array(z.string().min(1)).min(2).optional(),
   encounterTable: z.string().min(1).optional(),
   treasureTable: z.string().min(1).optional(),
   gates: z.array(explorationGateSchema).default([]),

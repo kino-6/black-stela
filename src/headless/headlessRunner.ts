@@ -204,7 +204,17 @@ function chooseNextCommand(
     Number((roomId ? getFloorIdForRoom(world, roomId) : "")?.match(/b(\d+)f/)?.[1] ?? 0);
   const currentDepth = floorDepth(state.position.roomId);
   const exploreExits = Object.fromEntries(
-    Object.entries(room.exits).filter(([, targetRoomId]) => floorDepth(targetRoomId) <= currentDepth)
+    Object.entries(room.exits).filter(([, targetRoomId]) => {
+      if (floorDepth(targetRoomId) > currentDepth) {
+        return false; // don't fall down a deeper-floor stair
+      }
+      // Skip an unwinnable tactical squad room — a greedy single-target walker can't
+      // clear a shielded front + back-line caster. These sit in dead-end reward rooms,
+      // so avoiding them never removes the path home.
+      const target = targetRoomId ? getRoom(world, targetRoomId) : null;
+      const squad = target?.encounterSquad;
+      return !(squad && squad.length >= 2 && !state.defeatedEnemies.includes(squad[0]));
+    })
   ) as Partial<Record<Direction, string>>;
   const direction = chooseExplorationDirection(
     state,

@@ -56,6 +56,59 @@ enemies:
     role: ambusher
     dangerTier: 2
     tags: [beast]
+  # Squad pair: the warden shields the caller from melee. Mashing Attack barely
+  # dents the warden (physical 0.5); fire cuts it, or a spell reaches the caller.
+  - id: enemy.b2f.ash-warden
+    name: Ash Warden
+    locales:
+      ja:
+        name: 灰の番衛
+    hp: 14
+    attack: 2
+    armor: 3
+    accuracy: 70
+    damageMin: 1
+    damageMax: 3
+    speed: 3
+    morale: 10
+    xp: 4
+    gold: 5
+    role: blocker
+    weaknesses:
+      physical: 0.5
+      fire: 1.5
+    dangerTier: 2
+    tags: [construct]
+    elevation: ground
+  - id: enemy.b2f.ash-caller
+    name: Ash Caller
+    locales:
+      ja:
+        name: 灰の呼び手
+    hp: 5
+    attack: 1
+    armor: 0
+    accuracy: 65
+    damageMin: 1
+    damageMax: 2
+    speed: 6
+    morale: 6
+    xp: 5
+    gold: 6
+    role: caster
+    weaknesses:
+      physical: 1.5
+    dangerTier: 2
+    tags: [caster]
+    elevation: air
+    abilities:
+      - name: Cinder Lash
+        chance: 80
+        effect:
+          kind: damage
+          min: 3
+          max: 5
+          element: fire
   - id: enemy.b3f.bitter-mote
     name: Bitter Mote
     locales:

@@ -145,11 +145,14 @@ rooms:
     treasureTable: treasure.b2f.risk
   - id: room.b2f.005
     name: North Spoil Cache
-    description: A cleft in the north hall wall where the rats piled a stitched satchel out of the wet.
+    description: A cleft in the north hall wall where the rats piled a stitched satchel out of the wet. An ash-caked warden stands over it, and something small mutters sparks behind its shoulder.
     locales:
       ja:
         name: 北の獲物置き
-        description: 北の広間の壁の裂け目。鼠が濡れを避けて縫い綴じの鞄を積み上げている。
+        description: 北の広間の壁の裂け目。鼠が濡れを避けて縫い綴じの鞄を積み上げている。灰にまみれた番衛がその上に立ち、肩の陰で小さな何かが火花を呟いている。
+    encounterSquad:
+      - enemy.b2f.ash-warden
+      - enemy.b2f.ash-caller
     treasureTable: treasure.b2f.cache
   - id: room.b2f.006
     name: South Hook Warren

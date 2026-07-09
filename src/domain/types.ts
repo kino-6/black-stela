@@ -253,7 +253,7 @@ export type GameEvent =
   | { type: "trap_disarmed"; trapId: string; trapName: string }
   | { type: "enemy_damaged"; enemyId: string; enemyName: string; remainingHp: number }
   | { type: "enemy_defeated"; enemyId: string; enemyName: string }
-  | { type: "combat_action_blocked"; reason: "back_row_blocked" | "invalid_actor" | "invalid_target"; actorName?: string }
+  | { type: "combat_action_blocked"; reason: "back_row_blocked" | "invalid_actor" | "invalid_target" | "enemy_guarded"; actorName?: string }
   | { type: "combat_round_resolved"; round: number; summaries: string[] }
   | { type: "combat_rewards"; xp: number; gold: number; enemyNames: string[] }
   | { type: "party_wounded"; enemyId: string; enemyName: string; damage: number }
@@ -349,6 +349,8 @@ export interface CombatEnemyGroup {
   xp: number;
   gold: number;
   role?: EnemyRole;
+  /** Front line (ground) shields the back line (mid/air) from melee until it falls. */
+  elevation?: EnemyElevation;
   status?: CombatStatus[];
   resistances?: Partial<Record<CombatStatus, number>>;
   inflicts?: { status: CombatStatus; chance: number };
@@ -478,6 +480,9 @@ export interface DungeonRoom {
   gatherItem?: string;
   trap?: Trap;
   encounter?: Enemy;
+  /** A fixed multi-group fight, by enemy id: the first is the front line, the rest
+   *  hang back (mid/air) and are shielded from melee until the front falls. */
+  encounterSquad?: string[];
   encounterTable?: string;
   treasureTable?: string;
   gates?: ExplorationGate[];

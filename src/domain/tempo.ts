@@ -51,6 +51,17 @@ function runTempoCombatStep(state: GameState, world: ScenarioWorld, t: Translato
     return { state, keepRunning: false, status: t("tempo.autoStoppedBoss") };
   }
 
+  // A tactical squad (a shielding front line or a back-line caster) can't be won by
+  // mashing Repeat — hand control back so the player targets and casts deliberately.
+  const tacticalSquad = state.combat.enemyGroups.some(
+    (group) =>
+      group.count > 0 &&
+      (group.role === "blocker" || group.role === "caster" || group.elevation === "air" || group.elevation === "mid")
+  );
+  if (tacticalSquad) {
+    return { state, keepRunning: false, status: t("tempo.autoStoppedTactical") };
+  }
+
   if (state.party.some((member) => member.injury || member.hp <= Math.ceil(member.maxHp * 0.35))) {
     return { state, keepRunning: false, status: t("tempo.autoStoppedDanger") };
   }

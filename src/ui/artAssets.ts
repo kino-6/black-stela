@@ -93,6 +93,9 @@ export const enemySpriteTextureUrls: Record<string, string> = {
   "enemy.b1f.ash-slime": ashSlimeTextureUrl,
   "enemy.b1f.dust-crawler": dustCrawlerTextureUrl,
   "enemy.b2f.hook-rat": hookRatTextureUrl,
+  // Squad pair — reuse themed sprites (warden construct / caster mote) until dedicated art lands.
+  "enemy.b2f.ash-warden": cisternWardenTextureUrl,
+  "enemy.b2f.ash-caller": bitterMoteTextureUrl,
   "enemy.b3f.bitter-mote": bitterMoteTextureUrl,
   "enemy.b4f.lantern-ward": lanternWardTextureUrl,
   "enemy.b6f.oath-cutter": oathCutterTextureUrl,
