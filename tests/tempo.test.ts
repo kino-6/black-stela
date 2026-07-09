@@ -24,9 +24,9 @@ describe("tempo rules", () => {
   });
 
   it("auto-walks a straight corridor and keeps running", () => {
-    const result = runTempoStep(dungeonAt("room.b1f.c11_9"), "dungeon", defaultWorld, t);
+    const result = runTempoStep(dungeonAt("room.b1f.c8_3"), "dungeon", defaultWorld, t);
     expect(result.keepRunning).toBe(true);
-    expect(result.state.position?.roomId).toBe("room.b1f.c12_9");
+    expect(result.state.position?.roomId).toBe("room.b1f.c9_3");
   });
 
   it("stops at a branching junction", () => {

@@ -12,6 +12,8 @@ progressionFlags:
     description: The cistern winch is wound; the drop-shaft shortcut back to the entry is open.
   - id: flag.b5f.mid-shortcut
     description: The midpoint shortcut from B5F to the upper dust is open.
+  - id: flag.b1f.shortcut
+    description: The warden's winch is wound; the sealed passage by the entrance now runs straight to the deep stair.
 ---
 
 # Progression Flags

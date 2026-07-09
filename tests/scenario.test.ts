@@ -60,7 +60,7 @@ rooms:
     const room = defaultWorld.dungeons[0].rooms.find((candidate) => candidate.id === "room.b1f.001")!;
 
     expect(room.id).toBe("room.b1f.001");
-    expect(room.exits.east).toMatch(/^room\.b1f\./);
+    expect(room.exits.south).toMatch(/^room\.b1f\./);
     expect(getLocalizedRoomText(defaultWorld, room.id, "ja").name).toBe("静まり返った石室");
   });
 });

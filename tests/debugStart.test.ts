@@ -18,16 +18,16 @@ describe("debug start state", () => {
 
     expect(state.party.map((member) => member.name)).toEqual(["Mira", "Sei", "Rook", "Vale", "Bran", "Lio"]);
     expect(state.phase).toBe("dungeon");
-    expect(state.position).toEqual({ roomId: "room.b1f.002", cellId: "cell.b1f.002", facing: "east" });
+    expect(state.position).toEqual({ roomId: "room.b1f.002", cellId: "cell.b1f.002", facing: "south" });
     expect(state.defeatedEnemies).toContain("enemy.b1f.ash-slime");
     expect(state.resolvedTraps).toContain("trap.b1f.needle");
     expect(state.map.floorId).toBe("dungeon.b1f");
     expect(state.map.currentRoomId).toBe("room.b1f.002");
     expect(state.map.currentCellId).toBe("cell.b1f.002");
-    expect(state.map.currentFacing).toBe("east");
+    expect(state.map.currentFacing).toBe("south");
     expect(state.map.visitedRooms).toEqual(["room.b1f.001", "room.b1f.002"]);
     expect(state.map.visitedCells).toEqual(["cell.b1f.001", "cell.b1f.002"]);
-    expect(state.map.knownExits["room.b1f.002"]).toEqual(["east", "west"]);
+    expect(state.map.knownExits["room.b1f.002"]).toEqual(["north", "south"]);
     expect(state.map.blockedExits).toEqual({});
     expect(state.map.secretCandidates).toEqual({});
   });

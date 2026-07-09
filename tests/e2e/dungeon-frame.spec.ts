@@ -40,7 +40,7 @@ test("dungeon frame shows scene, minimap, six-member formation, and a fixed comm
 
 test("dungeon party is driven by the keyboard (controller-first movement)", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
-  // Past the first fight and facing east down an open corridor, so forward walks
+  // Past the first fight and facing south into the maze, so forward walks
   // room-to-room instead of triggering the teaching encounter.
   await page.goto("/?debug=1&progress=after_encounter");
   await page.getByTestId("dungeon-canvas").waitFor();

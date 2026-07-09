@@ -54,11 +54,11 @@ test("minimap centers the party and shows walls, doors, and landmarks", async ({
   await expect(page.locator(".mini-map-cell")).toHaveCount(25);
   await expect(page.locator(".mini-map-cell").nth(12)).toHaveClass(/(^|\s)current(\s|$)/);
 
-  // Starting cell reads its real edges: an open corridor east, stone elsewhere.
+  // Starting cell reads its real edges: an open corridor south, stone elsewhere.
   const current = page.getByTestId("minimap-current");
-  await expect(current).toHaveClass(/edge-east-open/);
+  await expect(current).toHaveClass(/edge-south-open/);
   await expect(current).toHaveClass(/edge-north-wall/);
-  await expect(current).toHaveClass(/edge-west-wall/);
+  await expect(current).toHaveClass(/edge-east-wall/);
 
   // Advance to the black-marker cell and confirm its return landmark shows.
   await advanceToB1fMarker(page);

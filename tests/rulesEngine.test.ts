@@ -2,7 +2,44 @@ import { describe, expect, it } from "vitest";
 import { addCharacter, createCharacter, createInitialGameState } from "../src/domain/gameState";
 import { executeCommand, listUnlockedCheckpoints, resolveCommand } from "../src/domain/rulesEngine";
 import { defaultWorld } from "../src/data/defaultWorld";
-import type { GameState } from "../src/domain/types";
+import { analyzeFloorGraph } from "../src/domain/floorGraph";
+import type { Direction, GameState } from "../src/domain/types";
+
+// B1F is a maze now, so navigation can't beeline: walk the shortest walkable path
+// to a target room, turning to face each step and resolving any fight in the way.
+const B1F = defaultWorld.dungeons.find((dungeon) => dungeon.id === "dungeon.b1f")!;
+const b1fCellById = new Map(B1F.grid!.cells.map((cell) => [cell.id, cell]));
+const b1fGraph = analyzeFloorGraph(defaultWorld, "dungeon.b1f");
+
+function faceTo(state: GameState, dir: Direction): GameState {
+  for (let i = 0; i < 3 && state.position?.facing !== dir; i += 1) {
+    state = executeCommand(state, defaultWorld, { type: "turn_right" });
+  }
+  return state;
+}
+
+function walkLeg(state: GameState, toRoomId: string): GameState {
+  const cells = b1fGraph.shortestPathCells(state.position!.roomId, toRoomId);
+  for (let i = 1; i < cells.length; i += 1) {
+    const a = b1fCellById.get(cells[i - 1])!;
+    const b = b1fCellById.get(cells[i])!;
+    const dir: Direction = b.x - a.x === 1 ? "east" : b.x - a.x === -1 ? "west" : b.y - a.y === 1 ? "south" : "north";
+    state = faceTo(state, dir);
+    state = executeCommand(state, defaultWorld, { type: "move_forward" });
+    if (state.phase === "combat") {
+      state = resolveCombat(state);
+    }
+  }
+  return state;
+}
+
+// Walk to a room, optionally via a waypoint (used to route across the needle trap).
+function walkTo(state: GameState, toRoomId: string, via?: string): GameState {
+  if (via) {
+    state = walkLeg(state, via);
+  }
+  return walkLeg(state, toRoomId);
+}
 
 function stateWithParty() {
   return addCharacter(
@@ -21,38 +58,16 @@ function resolveCombat(state: GameState) {
 
 // B1F's trunk runs due east from the entrance; walk it, resolving the placed
 // slime fight along the way, until the party reaches the Black Marker.
-// Walk the trunk east onto the Winding Stair (room.b1f.012), clearing the slime
-// fight and crossing the needle plate along the way.
+// Walk through the maze to the Winding Stair (room.b1f.012), routing via the
+// Smoke-Bent needle chamber so the trap resolves, and ending faced at the stair
+// (its edge is to the south). The slime fight along the way is resolved too.
 function advanceToB1fStair(state: GameState) {
-  let current = state;
-  for (let step = 0; step < 40 && current.position?.roomId !== "room.b1f.012"; step += 1) {
-    current = executeCommand(current, defaultWorld, { type: "move_forward" });
-    if (current.phase === "combat") {
-      current = resolveCombat(current);
-    }
-  }
-  return current;
+  return faceTo(walkTo(state, "room.b1f.012", "room.b1f.east"), "south");
 }
 
-// The return marker is the Warden's Hall crank in the south-east: east along the
-// trunk to the hub, south down the central spoke to the south room, then east
-// along the bottom ring to the warden.
+// Walk through the maze to the Warden's Hall (the return marker, deep to the south).
 function advanceToB1fMarker(state: GameState) {
-  let current = state;
-  const moveUntil = (roomId: string, max = 20) => {
-    for (let i = 0; i < max && current.position?.roomId !== roomId; i += 1) {
-      current = executeCommand(current, defaultWorld, { type: "move_forward" });
-      if (current.phase === "combat") {
-        current = resolveCombat(current);
-      }
-    }
-  };
-  moveUntil("room.b1f.hub"); // east to the central hub
-  current = executeCommand(current, defaultWorld, { type: "turn_right" }); // face south
-  moveUntil("room.b1f.south"); // south spoke to the south room
-  current = executeCommand(current, defaultWorld, { type: "turn_left" }); // face east
-  moveUntil("room.b1f.warden"); // bottom ring east to the warden
-  return current;
+  return walkTo(state, "room.b1f.warden");
 }
 
 describe("rules engine", () => {
@@ -69,7 +84,7 @@ describe("rules engine", () => {
     expect(result.events).toContainEqual({
       type: "dungeon_entered",
       roomId: "room.b1f.001",
-      facing: "east"
+      facing: "south"
     });
     expect(result.events).toContainEqual({
       type: "map_room_visited",
@@ -90,9 +105,9 @@ describe("rules engine", () => {
       floorId: "dungeon.b1f",
       currentRoomId: "room.b1f.001",
       currentCellId: "cell.b1f.001",
-      currentFacing: "east",
+      currentFacing: "south",
       visitedCells: ["cell.b1f.001"],
-      knownExits: { "room.b1f.001": ["east"] }
+      knownExits: { "room.b1f.001": ["south"] }
     });
   });
 
@@ -105,15 +120,15 @@ describe("rules engine", () => {
       type: "map_exit_blocked",
       floorId: "dungeon.b1f",
       roomId: "room.b1f.001",
-      direction: "north"
+      direction: "east"
     });
-    expect(result.state.map.blockedExits["room.b1f.001"]).toEqual(["north"]);
+    expect(result.state.map.blockedExits["room.b1f.001"]).toEqual(["east"]);
     expect(result.state.log.at(-1)?.text).toBe("A cold wall blocks the way.");
   });
 
-  it("triggers the placed slime fight and the searched trap along the B1F trunk", () => {
-    // Entrance faces east straight into the slime hall; the needle plate sits on
-    // the east spoke by the stair.
+  it("triggers the placed slime fight and the searched trap along the B1F maze", () => {
+    // Entrance faces south straight into the slime hall; the needle plate sits in
+    // the Smoke-Bent chamber, which the route to the stair crosses.
     const entered = executeCommand(stateWithParty(), defaultWorld, { type: "enter_dungeon" });
     const current = executeCommand(entered, defaultWorld, { type: "move_forward" });
 
@@ -121,7 +136,7 @@ describe("rules engine", () => {
     expect(current.position?.roomId).toBe("room.b1f.002");
     expect(current.combat?.enemy.name).toBe("Ash Slime");
 
-    // Walking on east to the stair crosses the needle-trap chamber, resolving it.
+    // Walking on through the maze to the stair crosses the needle-trap chamber.
     const stair = advanceToB1fStair(resolveCombat(current));
     expect(stair.position?.roomId).toBe("room.b1f.012");
     expect(stair.defeatedEnemies).toContain("enemy.b1f.ash-slime");
@@ -153,7 +168,7 @@ describe("rules engine", () => {
     const entered = executeCommand(stateWithParty(), defaultWorld, { type: "enter_dungeon" });
     const stair = advanceToB1fStair(entered);
     expect(stair.position?.roomId).toBe("room.b1f.012");
-    expect(stair.position?.facing).toBe("east");
+    expect(stair.position?.facing).toBe("south");
 
     // The shallow public floor puts nothing between the party and the stair: using
     // it descends immediately. Exploration is pressured by difficulty, not a gate.
@@ -410,16 +425,18 @@ describe("runtime gates and shortcuts", () => {
   });
 
   it("hides the B1F ashen reliquary behind a searchable secret wall", () => {
-    const facing = dungeonAt("room.b1f.south", { position: { roomId: "room.b1f.south", facing: "south" } });
+    // A dead-end corridor deep in the maze rings hollow to the east; searching it
+    // reveals the way into the Ashen Reliquary.
+    const facing = dungeonAt("room.b1f.c6_17", { position: { roomId: "room.b1f.c6_17", facing: "east" } });
 
     const blocked = executeCommand(facing, defaultWorld, { type: "move_forward" });
-    expect(blocked.position?.roomId).toBe("room.b1f.south");
+    expect(blocked.position?.roomId).toBe("room.b1f.c6_17");
 
     const searched = executeCommand(facing, defaultWorld, { type: "search" });
-    expect(searched.discoveredSecrets).toContain("secret:room.b1f.south:south");
+    expect(searched.discoveredSecrets).toContain("secret:room.b1f.c6_17:east");
 
     const revealed = executeCommand(
-      { ...searched, position: { roomId: "room.b1f.south", facing: "south" } },
+      { ...searched, position: { roomId: "room.b1f.c6_17", facing: "east" } },
       defaultWorld,
       { type: "move_forward" }
     );

@@ -35,6 +35,12 @@ export interface FloorGraphAnalysis {
   shortestPathCells(fromRoomId: string, toRoomId: string): string[];
   /** Count of cells on that shortest path that are branch points (degree >= 3). */
   branchPointsOnPath(fromRoomId: string, toRoomId: string): number;
+  /**
+   * Moves a blind party makes to visit every reachable cell from a start room,
+   * backtracking each dead-end — the "honest sweep" cost of clearing the floor.
+   * A perfect maze runs ~2x its edges; a wide-open field is near-linear.
+   */
+  fullSweepSteps(fromRoomId: string): number;
 }
 
 export function analyzeFloorGraph(world: ScenarioWorld, floorId: string): FloorGraphAnalysis {
@@ -159,6 +165,44 @@ export function analyzeFloorGraph(world: ScenarioWorld, floorId: string): FloorG
     },
     shortestPathCells,
     branchPointsOnPath: (fromRoomId, toRoomId) =>
-      shortestPathCells(fromRoomId, toRoomId).filter((cellId) => degree(cellId) >= 3).length
+      shortestPathCells(fromRoomId, toRoomId).filter((cellId) => degree(cellId) >= 3).length,
+    fullSweepSteps: (fromRoomId) => {
+      const start = firstCellForRoom.get(fromRoomId);
+      if (!start) {
+        return 0;
+      }
+      const reachable = new Set([start.id]);
+      const queue = [start.id];
+      while (queue.length) {
+        const current = queue.shift()!;
+        for (const next of adj.get(current)!) {
+          if (!reachable.has(next)) {
+            reachable.add(next);
+            queue.push(next);
+          }
+        }
+      }
+      const visited = new Set([start.id]);
+      const stack = [start.id];
+      let steps = 0;
+      while (visited.size < reachable.size && stack.length) {
+        const current = stack[stack.length - 1];
+        let advanced = false;
+        for (const next of adj.get(current)!) {
+          if (!visited.has(next)) {
+            visited.add(next);
+            stack.push(next);
+            steps += 1;
+            advanced = true;
+            break;
+          }
+        }
+        if (!advanced) {
+          stack.pop();
+          steps += 1;
+        }
+      }
+      return steps;
+    }
   };
 }

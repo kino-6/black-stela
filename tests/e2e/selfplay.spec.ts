@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 import type { Page } from "@playwright/test";
 import { mkdir, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import { createStarterParty, descendB1fViaWarden, resolveVisibleCombat, startNewExpedition, walkB1fStairToMarker } from "./helpers";
+import { createStarterParty, descendB1fViaWarden, faceDirection, resolveVisibleCombat, startNewExpedition, walkB1fStairToMarker } from "./helpers";
 
 type FailureCategory =
   | "blocked_control"
@@ -136,23 +136,22 @@ test("browser self-play completes the visible dungeon loop without headless shor
       await capture("post-combat");
     });
 
-    await recordStep("visible controls clear the gated descent to B2F and return", "impossible_route", async () => {
-      // Descending requires clearing the Warden's Hall crank first — the stair is
-      // no longer a straight walk from the trunk.
+    await recordStep("visible controls thread the maze to B2F and return", "impossible_route", async () => {
+      // The descent is never locked on this shallow floor; thread the maze to the
+      // Winding Stair and use it.
       expect(await descendB1fViaWarden(page)).toBe(true);
       await expect(page.getByTestId("map-current")).toContainText("Landing of Split Dust");
       await capture("b2f-landing");
 
-      await clickCommand("Turn left");
-      await clickCommand("Turn left");
+      await faceDirection(page, "west"); // the B2F landing's up-stair to B1F faces west
       await clickCommand("Use stairs");
       await expect(page.getByRole("heading", { name: "Winding Stair" })).toBeVisible();
       await capture("b1f-return-stair");
     });
 
     await recordStep("return marker brings the party back to town services", "hidden_affordance", async () => {
-      // The return marker now sits in a south alcove off the trunk, a separate
-      // turn from the descent; thread back to it from the stair cell.
+      // The return marker (Warden's Hall) sits deep in the maze; thread back to it
+      // from the stair cell.
       await walkB1fStairToMarker(page);
       await expect(page.getByRole("heading", { name: "Warden's Hall" })).toBeVisible();
       await clickCommand("Use return marker");

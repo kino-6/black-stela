@@ -87,11 +87,11 @@ export function createDebugStateFromProgress(world: ScenarioWorld, progress: Deb
     const state: GameState = {
       ...base,
       phase: "dungeon",
-      position: createPosition(world, "room.b1f.002", "east"),
+      position: createPosition(world, "room.b1f.002", "south"),
       defeatedEnemies: ["enemy.b1f.ash-slime"],
       resolvedTraps: ["trap.b1f.needle"],
       discoveredSecrets: ["trap.b1f.needle"],
-      map: createMapState(world, ["room.b1f.001", "room.b1f.002"]),
+      map: createMapState(world, ["room.b1f.001", "room.b1f.002"], "south"),
       turn: 4
     };
 
@@ -118,9 +118,9 @@ export function createDebugStateFromProgress(world: ScenarioWorld, progress: Deb
       "room.b1f.001",
       "room.b1f.002",
       "room.b1f.hub",
-      "room.b1f.north",
+      "room.b1f.gate",
       "room.b1f.east",
-      "room.b1f.south",
+      "room.b1f.reliquary",
       "room.b1f.warden"
     ]),
     turn: 5
@@ -177,9 +177,9 @@ function createVisitedPathToFloor(floorNumber: number) {
     "room.b1f.001",
     "room.b1f.002",
     "room.b1f.hub",
-    "room.b1f.north",
+    "room.b1f.gate",
     "room.b1f.east",
-    "room.b1f.south",
+    "room.b1f.reliquary",
     "room.b1f.warden"
   ];
   for (let floor = 2; floor <= floorNumber; floor += 1) {
@@ -189,7 +189,7 @@ function createVisitedPathToFloor(floorNumber: number) {
   return visited;
 }
 
-export function createMapState(world: ScenarioWorld, visitedRooms: string[]) {
+export function createMapState(world: ScenarioWorld, visitedRooms: string[], facing: Direction = "east") {
   const currentRoomId = visitedRooms.at(-1) ?? null;
   const floorId = currentRoomId ? getFloorIdForRoom(world, currentRoomId) : null;
   const currentCell = currentRoomId ? getGridCellForRoom(world, currentRoomId) : null;
@@ -201,7 +201,7 @@ export function createMapState(world: ScenarioWorld, visitedRooms: string[]) {
     floorId,
     currentRoomId,
     currentCellId: currentCell?.id ?? null,
-    currentFacing: "east" as Direction,
+    currentFacing: facing,
     visitedRooms,
     visitedCells,
     knownExits: Object.fromEntries(

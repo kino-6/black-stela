@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 import type { Page } from "@playwright/test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { advanceToB1fMarker, createStarterParty, faceDirection, resolveVisibleCombat, setTitleLanguage, startNewExpedition } from "./helpers";
+import { advanceToB1fMarker, createStarterParty, resolveVisibleCombat, setTitleLanguage, startNewExpedition } from "./helpers";
 
 test("captures desktop screenshot review states", async ({ page }) => {
   await page.goto("/");
@@ -24,9 +24,9 @@ test("captures desktop screenshot review states", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "Silent Stone Chamber" })).toBeVisible();
   await page.screenshot({ path: "test-results/screenshot-review/desktop-dungeon-start.png", fullPage: true });
   await page.getByLabel("Turn right").click();
-  await expect(page.getByTestId("minimap-facing")).toHaveClass(/facing-south/);
+  await expect(page.getByTestId("minimap-facing")).toHaveClass(/facing-west/);
   await expect(page.getByTestId("dungeon-canvas")).toHaveAttribute("data-front-visual", "blocked-wall");
-  await page.screenshot({ path: "test-results/screenshot-review/desktop-dungeon-start-south-wall.png", fullPage: true });
+  await page.screenshot({ path: "test-results/screenshot-review/desktop-dungeon-start-west-wall.png", fullPage: true });
   await page.getByLabel("Turn left").click();
 
   await page.getByRole("button", { name: "Move" }).click();
@@ -41,12 +41,6 @@ test("captures desktop screenshot review states", async ({ page }) => {
   await advanceToB1fMarker(page);
   await expect(page.getByRole("heading", { name: "Warden's Hall" })).toBeVisible();
   await page.screenshot({ path: "test-results/screenshot-review/desktop-return-stair.png", fullPage: true });
-
-  // The warden's east face is solid stone (the ring runs north/west, the winch
-  // drops south); face it to show a blocked front wall.
-  await faceDirection(page, "east");
-  await expect(page.getByTestId("dungeon-canvas")).toHaveAttribute("data-front-edge", "wall");
-  await page.screenshot({ path: "test-results/screenshot-review/desktop-return-stair-front-wall.png", fullPage: true });
 
   await page.getByRole("button", { name: "Use return marker" }).click();
   await expect(page.getByRole("heading", { name: "Town", exact: true })).toBeVisible();

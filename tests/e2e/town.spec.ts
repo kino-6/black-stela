@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import type { Page } from "@playwright/test";
-import { advanceToB1fMarker, createStarterParty, openTownService, registerAdventurer, resolveVisibleCombat, setTitleLanguage, startNewExpedition } from "./helpers";
+import { advanceToB1fMarkerViaNeedle, createStarterParty, openTownService, registerAdventurer, resolveVisibleCombat, setTitleLanguage, startNewExpedition } from "./helpers";
 
 test("town modes expose guild, recovery, records, and dungeon entry", async ({ page }) => {
   await startNewExpedition(page);
@@ -71,9 +71,8 @@ test("recovery costs gold and blocks free healing", async ({ page }) => {
 
   await registerAdventurer(page, { name: "Mira" });
   await page.getByRole("button", { name: "Enter dungeon" }).click();
-  await page.getByRole("button", { name: "Move" }).click();
-  await resolveVisibleCombat(page);
-  await advanceToB1fMarker(page);
+  // Route across the needle trap so the party returns injured and recovery has a cost.
+  await advanceToB1fMarkerViaNeedle(page);
   await page.getByRole("button", { name: "Use return marker" }).click();
   await expect(page.getByTestId("town-cockpit")).toBeVisible();
   await expect(page.getByRole("heading", { name: "Adventurer Registration" })).toHaveCount(0);

@@ -159,21 +159,62 @@ export async function resolveVisibleCombat(page: Page) {
   await expect(page.getByRole("heading", { name: "Combat" })).toHaveCount(0);
 }
 
-// Descend from B1F: walk the trunk east onto the Winding Stair and use it. The
-// stair carries no lock — the floor pressures exploration by reward and difficulty,
-// not a gate — so this is a plain beeline. Returns once on B2F's landing.
-export async function descendB1fViaWarden(page: Page) {
-  const current = async () => (await page.getByTestId("map-current").textContent().catch(() => "")) ?? "";
-  const move = async () => {
+// B1F is a maze (see scripts/genFloorMaze.mjs, seed 20250709). Navigation replays
+// the shortest walkable path as a fixed sequence of cardinal steps; a fight in the
+// way is resolved in place (position is unchanged by combat, so the sequence holds).
+type Dir = "north" | "south" | "east" | "west";
+
+// Entrance → Winding Stair (down-stairs); ends faced west, so turn south to descend.
+const B1F_ENTRANCE_TO_STAIR: Dir[] = [
+  "south", "south", "east", "east", "south", "south", "east", "east", "south", "south",
+  "south", "south", "east", "east", "south", "south", "south", "south", "east", "east",
+  "east", "east", "east", "east", "south", "south", "east", "east", "south", "south",
+  "west", "west", "west", "west"
+];
+// Entrance → Warden's Hall (the return marker).
+const B1F_ENTRANCE_TO_WARDEN: Dir[] = [
+  "south", "south", "east", "east", "south", "south", "east", "east", "south", "south",
+  "south", "south", "east", "east", "south", "south", "south", "south", "east", "east"
+];
+// Winding Stair → Warden's Hall.
+const B1F_STAIR_TO_WARDEN: Dir[] = [
+  "east", "east", "east", "east", "north", "north", "west", "west", "north", "north",
+  "west", "west", "west", "west"
+];
+// Entrance → Smoke-Bent needle chamber → Warden's Hall (routes across the trap so
+// the party takes injury; used by the recovery flow).
+const B1F_ENTRANCE_TO_NEEDLE: Dir[] = [
+  "south", "south", "east", "east", "north", "north", "east", "east", "east", "east",
+  "south", "south", "east", "east", "east", "east", "east", "east", "south", "south"
+];
+const B1F_NEEDLE_TO_WARDEN: Dir[] = [
+  "south", "south", "west", "west", "south", "south", "west", "south", "south", "west", "south", "south"
+];
+
+async function walkB1fPath(page: Page, dirs: Dir[]) {
+  for (const dir of dirs) {
+    await faceDirection(page, dir);
     await page.getByRole("button", { name: "Move", exact: true }).click();
     await page.waitForTimeout(55);
     if (await page.getByLabel("Battle screen").isVisible().catch(() => false)) {
       await resolveVisibleCombat(page);
     }
-  };
+  }
+}
 
-  await faceDirection(page, "east");
-  for (let i = 0; i < 22 && !(await current()).includes("Winding Stair"); i += 1) await move();
+// Thread the maze from the entrance to the Winding Stair cell, faced at the stair
+// (its edge is south), without descending.
+export async function walkB1fToStair(page: Page) {
+  await walkB1fPath(page, B1F_ENTRANCE_TO_STAIR);
+  await faceDirection(page, "south"); // the stair edge faces south
+}
+
+// Descend from B1F: thread the maze to the Winding Stair and use it. The stair
+// carries no lock — the floor pressures exploration by reward and difficulty, not a
+// gate. Returns once on B2F's landing.
+export async function descendB1fViaWarden(page: Page) {
+  const current = async () => (await page.getByTestId("map-current").textContent().catch(() => "")) ?? "";
+  await walkB1fToStair(page);
   const stairs = page.getByRole("button", { name: "Use stairs" });
   if (await stairs.isVisible().catch(() => false)) {
     await stairs.click();
@@ -200,39 +241,20 @@ export async function faceDirection(page: Page, dir: "north" | "south" | "east" 
   }
 }
 
-// From the Winding Stair cell (B1F's down-stair), thread back to the Warden's Hall.
-// The return shortcut now sits in a south alcove off the trunk, a separate turn
-// from the descent, so reaching it is west two cells then south into the alcove.
+// From the Winding Stair cell (B1F's down-stair), thread the maze back to the
+// Warden's Hall (the return marker).
 export async function walkB1fStairToMarker(page: Page) {
-  const step = async () => {
-    await page.getByRole("button", { name: "Move", exact: true }).click();
-    await page.waitForTimeout(60);
-    if (await page.getByLabel("Battle screen").isVisible().catch(() => false)) {
-      await resolveVisibleCombat(page);
-    }
-  };
-  const cur = async () => (await page.getByTestId("map-current").textContent().catch(() => "")) ?? "";
-  await faceDirection(page, "west"); // stair -> east room
-  for (let i = 0; i < 4 && !(await cur()).includes("Smoke-Bent Passage"); i += 1) await step();
-  await faceDirection(page, "south"); // right ring down to the warden
-  for (let i = 0; i < 12 && !(await cur()).includes("Warden's Hall"); i += 1) await step();
+  await walkB1fPath(page, B1F_STAIR_TO_WARDEN);
 }
 
-// Reach the Warden's Hall (the return marker) from the B1F entrance: trunk east to
-// the hub, south down the spoke to the south room, then east along the bottom ring.
+// Reach the Warden's Hall (the return marker) from the B1F entrance through the maze.
 export async function advanceToB1fMarker(page: Page) {
-  const cur = async () => (await page.getByTestId("map-current").textContent().catch(() => "")) ?? "";
-  const step = async () => {
-    await page.getByRole("button", { name: "Move", exact: true }).click();
-    await page.waitForTimeout(55);
-    if (await page.getByLabel("Battle screen").isVisible().catch(() => false)) {
-      await resolveVisibleCombat(page);
-    }
-  };
-  const goTo = async (dir: "north" | "south" | "east" | "west", name: string, max: number) => {
-    await faceDirection(page, dir);
-    for (let i = 0; i < max && !(await cur()).includes(name); i += 1) await step();
-  };
-  await goTo("east", "Smoke-Bent Passage", 18); // entrance -> trunk -> east room (needle plate)
-  await goTo("south", "Warden's Hall", 18); // right ring down to the warden
+  await walkB1fPath(page, B1F_ENTRANCE_TO_WARDEN);
+}
+
+// Reach the Warden's Hall via the Smoke-Bent needle chamber, so the party arrives
+// injured (used to exercise town recovery). Resolves the entrance slime fight en route.
+export async function advanceToB1fMarkerViaNeedle(page: Page) {
+  await walkB1fPath(page, B1F_ENTRANCE_TO_NEEDLE);
+  await walkB1fPath(page, B1F_NEEDLE_TO_WARDEN);
 }

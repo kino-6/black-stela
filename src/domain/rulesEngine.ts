@@ -386,7 +386,12 @@ function enterDungeon(state: GameState, world: ScenarioWorld): CommandResult {
     return logOnly(state, { type: "command_blocked", reason: "party_required", command: "enter_dungeon" });
   }
 
-  const roomVisit = visitRoom(state, world, world.startRoom, "east");
+  // Face the party into the dungeon: toward the entrance's actual open exit, not
+  // a hardcoded east. Prefer east when available so floors built around an eastward
+  // trunk read unchanged; otherwise turn to the way on (a corner maze mouth).
+  const entranceExits = Object.keys(getRoom(world, world.startRoom).exits ?? {}) as Direction[];
+  const entranceFacing: Direction = entranceExits.includes("east") ? "east" : entranceExits[0] ?? "east";
+  const roomVisit = visitRoom(state, world, world.startRoom, entranceFacing);
   const startCell = getGridCellForRoom(world, world.startRoom);
   let next: GameState = {
     ...state,
@@ -394,7 +399,7 @@ function enterDungeon(state: GameState, world: ScenarioWorld): CommandResult {
     position: {
       roomId: world.startRoom,
       cellId: startCell?.id,
-      facing: "east"
+      facing: entranceFacing
     },
     combat: null,
     party: markExpeditionStarted(state.party, roomVisit.map.floorId ?? world.startDungeon, state.turn + 1),
@@ -409,7 +414,7 @@ function enterDungeon(state: GameState, world: ScenarioWorld): CommandResult {
     {
       type: "dungeon_entered",
       roomId: world.startRoom,
-      facing: "east"
+      facing: entranceFacing
     },
     ...roomVisit.events,
     ...treasure.events
