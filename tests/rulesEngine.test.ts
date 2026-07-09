@@ -148,6 +148,34 @@ describe("rules engine", () => {
     expect(stair.party[0].hp).toBeLessThan(stair.party[0].maxHp);
   });
 
+  it("debug force-win ends the fight as a victory, awarding rewards and first contact", () => {
+    const entered = executeCommand(stateWithParty(3), defaultWorld, { type: "enter_dungeon" });
+    const inCombat = executeCommand(entered, defaultWorld, { type: "move_forward" });
+    expect(inCombat.phase).toBe("combat");
+    const xpBefore = inCombat.party[0].xp;
+
+    const won = executeCommand(inCombat, defaultWorld, { type: "debug_force_victory" });
+    expect(won.phase).toBe("dungeon");
+    expect(won.combat).toBeNull();
+    expect(won.defeatedEnemies).toContain("enemy.b1f.ash-slime");
+    expect(won.party[0].xp).toBeGreaterThan(xpBefore);
+  });
+
+  it("debug revive restores the party fully, in place, without ending combat", () => {
+    const entered = executeCommand(stateWithParty(3), defaultWorld, { type: "enter_dungeon" });
+    const inCombat = executeCommand(entered, defaultWorld, { type: "move_forward" });
+    const downed = {
+      ...inCombat,
+      party: inCombat.party.map((member) => ({ ...member, hp: 1, mp: 0, injury: "wounded" as const }))
+    };
+
+    const revived = executeCommand(downed, defaultWorld, { type: "debug_revive_party" });
+    expect(revived.phase).toBe("combat"); // revive does NOT end the fight
+    expect(revived.party.every((member) => member.hp === member.maxHp)).toBe(true);
+    expect(revived.party.every((member) => member.mp === member.maxMp)).toBe(true);
+    expect(revived.party.every((member) => !member.injury)).toBe(true);
+  });
+
   it("blocks return to town until the party reaches a return stair", () => {
     const entered = executeCommand(stateWithParty(), defaultWorld, { type: "enter_dungeon" });
     const moved = executeCommand(entered, defaultWorld, { type: "move_forward" });

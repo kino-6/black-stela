@@ -36,7 +36,9 @@ export type Command =
   | { type: "declare_round"; actions: CombatActionDeclaration[] }
   | { type: "retreat" }
   | { type: "recover_party" }
-  | { type: "return_to_town" };
+  | { type: "return_to_town" }
+  | { type: "debug_force_victory" }
+  | { type: "debug_revive_party" };
 
 export type CombatRow = "front" | "back";
 export type CombatActionKind = "attack" | "defend" | "use_item" | "cast";

@@ -37,6 +37,8 @@ export const en = {
     loadProgress: "Load progress",
     reached: "reached",
     autoExplore: "Auto-explore",
+    forceVictory: "Force win",
+    reviveParty: "Revive party",
     expand: "Debug ▾",
     collapse: "Debug ▴",
     headlessReachability: "Headless reachability",

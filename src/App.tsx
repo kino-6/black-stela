@@ -2452,6 +2452,28 @@ export function App() {
                       <ShieldCheck size={18} />
                       {t("play.retreat")}
                     </button>
+                    {debugMode && (
+                      <>
+                        <button
+                          type="button"
+                          className="context-command"
+                          data-testid="debug-force-victory"
+                          onClick={() => run({ type: "debug_force_victory" })}
+                        >
+                          <Sword size={18} />
+                          {t("debug.forceVictory")}
+                        </button>
+                        <button
+                          type="button"
+                          className="context-command"
+                          data-testid="debug-revive-party"
+                          onClick={() => run({ type: "debug_revive_party" })}
+                        >
+                          <ShieldCheck size={18} />
+                          {t("debug.reviveParty")}
+                        </button>
+                      </>
+                    )}
                   </div>
               ) : (
                 <div
@@ -2506,15 +2528,26 @@ export function App() {
                     {t("play.fullMap")}
                   </button>
                   {debugMode && (
-                    <button
-                      type="button"
-                      className="context-command"
-                      data-testid="debug-auto-explore"
-                      onClick={() => setState((current) => debugAutoExplore(current, defaultWorld))}
-                    >
-                      <MapIcon size={18} />
-                      {t("debug.autoExplore")}
-                    </button>
+                    <>
+                      <button
+                        type="button"
+                        className="context-command"
+                        data-testid="debug-auto-explore"
+                        onClick={() => setState((current) => debugAutoExplore(current, defaultWorld))}
+                      >
+                        <MapIcon size={18} />
+                        {t("debug.autoExplore")}
+                      </button>
+                      <button
+                        type="button"
+                        className="context-command"
+                        data-testid="debug-revive-party-dungeon"
+                        onClick={() => run({ type: "debug_revive_party" })}
+                      >
+                        <ShieldCheck size={18} />
+                        {t("debug.reviveParty")}
+                      </button>
+                    </>
                   )}
                   {canUseStairs && !blockingStairGate && (
                     <button type="button" className="context-command" onClick={() => run({ type: "use_stairs" })}>

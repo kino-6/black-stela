@@ -39,6 +39,8 @@ export const ja = {
     loadProgress: "進捗を読込",
     reached: "到達",
     autoExplore: "自動探索",
+    forceVictory: "強制勝利",
+    reviveParty: "完全回復・復活",
     expand: "デバッグ ▾",
     collapse: "デバッグ ▴",
     headlessReachability: "Headless到達性",

@@ -195,6 +195,10 @@ export function resolveCommand(state: GameState, world: ScenarioWorld, command: 
       return recoverParty(state);
     case "return_to_town":
       return returnToTown(state, world);
+    case "debug_force_victory":
+      return debugForceVictory(state);
+    case "debug_revive_party":
+      return debugReviveParty(state);
     default:
       return noChange(state);
   }
@@ -1095,6 +1099,73 @@ function defend(state: GameState): CommandResult {
       enemyName: state.combat.enemy.name,
       damage
     }
+  ]);
+}
+
+// Debug: end the current fight as a win, awarding the same rewards / level-ups /
+// first-contact bookkeeping the party would earn by clearing it normally. Lets a
+// playtester skip a fight that isn't what they're testing. No-op outside combat.
+function debugForceVictory(state: GameState): CommandResult {
+  const combat = state.combat;
+  if (state.phase !== "combat" || !combat) {
+    return noChange(state);
+  }
+
+  const xp = combat.enemyGroups.reduce((total, group) => total + group.xp * group.count, 0);
+  const gold = combat.enemyGroups.reduce((total, group) => total + group.gold * group.count, 0);
+  const defeatedEnemyIds = combat.enemyGroups.map((group) => group.enemyId);
+  const defeatedNames = combat.enemyGroups.map((group) => group.name);
+  const levelEvents: GameEvent[] = [];
+  const grownParty = state.party.map((member) => {
+    const rewarded: typeof member = {
+      ...member,
+      xp: member.xp + xp,
+      gold: member.gold + gold,
+      memory: {
+        ...member.memory,
+        notableVictories: Array.from(new Set([...member.memory.notableVictories, ...defeatedNames]))
+      }
+    };
+    const leveled = applyLevelUps(rewarded);
+    levelEvents.push(...leveled.events);
+    return leveled.character;
+  });
+
+  const next: GameState = {
+    ...state,
+    phase: "dungeon",
+    combat: null,
+    party: grownParty,
+    partyGold: state.partyGold + gold,
+    defeatedEnemies: Array.from(new Set([...state.defeatedEnemies, ...defeatedEnemyIds])),
+    turn: state.turn + 1
+  };
+
+  return withEvents(next, [
+    ...defeatedNames.map((enemyName, index) => ({
+      type: "enemy_defeated" as const,
+      enemyId: defeatedEnemyIds[index],
+      enemyName
+    })),
+    { type: "combat_rewards", xp, gold, enemyNames: defeatedNames },
+    ...levelEvents
+  ]);
+}
+
+// Debug: fully restore the party in place — HP, MP, injuries, and round statuses.
+// Meant for the "revive after a wipe and keep playing" playtest loop; works mid-
+// combat (unsticks a downed party) or while exploring.
+function debugReviveParty(state: GameState): CommandResult {
+  const party = state.party.map((member) => ({
+    ...member,
+    hp: member.maxHp,
+    mp: member.maxMp,
+    injury: undefined,
+    status: []
+  }));
+
+  return withEvents({ ...state, party }, [
+    { type: "debug_started", text: "Debug: party fully revived and restored." }
   ]);
 }
 
