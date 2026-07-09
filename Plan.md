@@ -100,8 +100,18 @@ proof of UX, fun, fairness, visual legibility, or grid-maze honesty.
   class spells, status ailments, elements/weakness, criticals, enemy AI. Balance
   numbers first-pass.
 - [x] Dense floor maps + backward movement + honest first-person rendering (see
-  [DungeonPlan.md](DungeonPlan.md)). Floors converted so far: B1F, B3F. **Pending:
-  B2F, B4F–B8F.**
+  [DungeonPlan.md](DungeonPlan.md)). **Complete: B1F–B8F are all generated 棒倒し法
+  mazes** (`scripts/genFloorMaze.mjs` + `scripts/placeFloor.mjs`). Each floor has a
+  sole-approach boss/toll choke to its descent (verified via `placeFloor --sole`), a
+  safe no-encounter stair landing, and a searchable secret vault. Honest full-sweep
+  292–338 steps per floor; universal maze Gate in `tests/dungeonDesign.test.ts`.
+- [x] Difficulty Pressure & Playability. Under-strength pack scaling (#3) +
+  front-blocker/back-caster squads (#4); safe stair landings (no forced stair
+  combat); keyboard/controller-playable combat with auto/repeat + an e2e Gate;
+  combat/party UI standards codified in `AGENTS.md`; enemy sprite anchored/visible;
+  DebugMode force-win + revive/full-heal aids. **Deferred: combat balance tuning** —
+  the descentSim difficulty Gate is armed (`deepestTrough < 0.72`, tightening toward
+  ~0.45) and waits on the player's own tuning pass.
 - [~] Lane R: Source Decomposition and Refactoring — seven slices shipped
   (tempo rules, controller focus, presentation + catalog helpers, DungeonView
   scene split, character-draft helpers, remaining format helpers). Remaining:
@@ -284,7 +294,7 @@ Open questions to resolve before opening tasks (BS-198+):
 Goal: cut the largest files down to focused modules without changing behaviour,
 so the codebase stays workable as the dungeon/roster features grow. This is a
 structural clean-up lane — **no functional changes** — and the existing suite
-(125 unit + 52 e2e) is the safety net: every slice must keep it green.
+(242 unit + 58 e2e) is the safety net: every slice must keep it green.
 
 Measured hot spots (lines, at time of writing):
 
@@ -363,15 +373,26 @@ slice; do not mix a refactor with a feature change in the same commit.
 
 ## Current Milestone Recommendation
 
-Lane V and Lane W are complete. Lane V moved event/combat/town log text into the
-localization dictionary and added a browser-enforced Japanese line-layout gate.
-Lane W equips class-appropriate starting gear at registration, splits the shop
-into controller-first categories, and shows starting gear during registration and
-suggested-recruit confirmation (equip eligibility and current-equipment comparison
-already existed). Lane X and Lane Y are the next open planning slices: Lane X makes
-repeat/auto visible, faster, cancellable, and interruption-safe; Lane Y gives the
-guild a real roster (add/remove/edit/retire/reclass) and portable cross-scenario
-adventurers. Lane G and Lane H remain deferred until explicitly re-scoped.
+Lanes V, W, Y, Z, the Combat Overhaul, and the full B1F–B8F maze rollout are
+complete, as is the Difficulty Pressure & Playability milestone (pack scaling,
+squads, safe landings, keyboard combat + auto/repeat, UI standards, enemy sprite,
+DebugMode force-win/revive). All green: 242 unit + 58 e2e.
+
+### NextAction (recommended order)
+
+1. **Player playtest pass** (owner: user). The DebugMode aids (force-win, revive)
+   exist precisely for this; balance tuning is deferred pending real-play feedback.
+2. **Combat balance tuning** (deferred by user, "おいおい"). The Sim Gate is armed:
+   drive `deepestTrough` from ~0.67 toward ~0.45 by making bosses/packs bite,
+   re-locking `tests/descentSim.test.ts`. Do NOT start without the user's go-ahead.
+3. **Lane X — Repeat/Auto tempo feedback** (partially covered by the keyboard-combat
+   auto/repeat work; audit what remains: on-screen active-mode indicator, speed
+   tiers, interrupt-safety evidence).
+4. **Lane R remainder** — the ~1600-line per-phase JSX split in `App.tsx` (deferred:
+   largest/riskiest; behaviour-preserving only).
+
+Lane G (desktop productization) and Lane H (hidden narration) remain deferred until
+explicitly re-scoped.
 
 ## Planning Rule
 

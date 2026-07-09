@@ -86,7 +86,6 @@ rooms:
         name: 乾いた貯水口
         description: 丸い貯水槽は乾き、縁は鈍い歯のように削られ、干からびた沢薬草が割れ目に残っている。西の階段はB2Fへ上る。
     gatherItem: item.healing-draught
-    encounterTable: encounters.b3f.cistern
   - id: room.b3f.cache
     name: Silt Reliquary
     description: A dead-end nook where the receding water left a caked shelf of silt, and something wrapped in oiled cloth.

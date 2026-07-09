@@ -7,7 +7,34 @@ Completed task slices and traceability are archived in:
 - [docs/archive/Tasks.completed-index.md](docs/archive/Tasks.completed-index.md)
 - [docs/archive/Plan.completed-index.md](docs/archive/Plan.completed-index.md)
 
-## Active Milestone: Lane Y — Guild Roster Lifecycle (slices B, C)
+## Active Milestone: Difficulty Pressure & Playability
+
+Goal: the descent is a real labyrinth the player fights through, playable by
+keyboard/controller, with playtest aids — not an open-room walk or a mouse-only
+button masher. **Shipped this milestone:**
+
+- [x] #3 Under-strength pack scaling + #4 front-blocker/back-caster squads
+  (`underpowerFactor`, `scaledEncounterCount`, `encounterSquad`; melee-shield,
+  auto-stop). B1F unscaled; B2F+ punish solo/low-level descents.
+- [x] Safe stair landings: `use_stairs` never triggers combat; every floor's 001
+  landing has no `encounterTable` (per "階段に強制戦闘置かないで").
+- [x] **Full B1F–B8F maze rollout** (generated 棒倒し法 mazes; sole-approach
+  boss/toll choke to each descent, searchable secret vault; honest sweep 292–338).
+- [x] #57 Keyboard/controller-playable combat + auto/repeat + e2e Gate.
+- [x] #54 Combat/party UI standards in `AGENTS.md`; #55 party panel (MP, de-dup
+  rows); #56 enemy sprite anchored/visible.
+- [x] DebugMode force-win (強制勝利) + revive/full-heal (完全回復・復活) playtest aids.
+- [ ] #58 Combat balance tuning — **DEFERRED by user** ("バランス調整はおいおい").
+  descentSim Gate armed (`deepestTrough < 0.72` → target ~0.45). Do not start
+  without the user's go-ahead.
+
+### NextAction
+
+1. Player playtest pass (owner: user) — the DebugMode aids exist for this.
+2. On the user's go-ahead: #58 balance tuning against the armed Sim Gate.
+3. Then Lane X (repeat/auto tempo feedback) or Lane R's JSX split (both deferred).
+
+## Archived Milestone: Lane Y — Guild Roster Lifecycle (slices A–C, shipped)
 
 Goal: the guild becomes a real home the player curates — edit, retire, and
 reclass registered adventurers, and carry them into other scenarios.

@@ -96,6 +96,21 @@ describe("dungeon design gate", () => {
     });
   }
 
+  it("rule — every floor's landing is safe (no forced combat on arrival by stair)", () => {
+    // The player must never be dropped into a fight the instant they take a stair
+    // ("階段に強制戦闘置かないで"). A floor's startRoom is its arrival cell (town
+    // entrance on B1F, the up-stair landing on B2F+); it must carry no encounter
+    // table. This locks the safe-landing invariant across the whole maze rollout.
+    for (const floor of defaultWorld.dungeons) {
+      const landing = floor.rooms.find((room) => room.id === floor.startRoom);
+      expect(landing, `${floor.id} startRoom ${floor.startRoom} not found`).toBeTruthy();
+      expect(
+        landing?.encounterTable,
+        `${floor.id} landing ${floor.startRoom} must not force combat on arrival`
+      ).toBeUndefined();
+    }
+  });
+
   it("rule 3 — no contrived descent lock outside the known rollout debt", () => {
     // Crank-gated descents on shallow public floors are a design smell. B1F is
     // fixed; B2/B4/B7 still carry them and are the documented rollout debt. This

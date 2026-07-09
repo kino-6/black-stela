@@ -93,11 +93,10 @@ rooms:
         direction: east
         kind: lock
         requiredFlag: flag.b7f.descent
-        clue: The fall east to the finale is pinned shut; the release is set deep in the vault gallery north.
+        clue: The fall east to the finale is pinned shut; the release is set deep in the vault gallery south.
         locales:
           ja:
-            clue: 終幕へ東に落ちる道は栓で封じられている。その外しは、北の納骨回廊の奥にある。
-    encounterTable: encounters.b7f.vaults
+            clue: 終幕へ東に落ちる道は栓で封じられている。その外しは、南の納骨回廊の奥にある。
   - id: room.b7f.005
     name: Vault Gallery Hall
     description: The heart of the quiet gallery, where a vault-husk drags itself between the sealed niches — and a release-pin for the eastern fall is bolted to the wall beyond it.
