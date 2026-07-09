@@ -336,7 +336,9 @@ describe("runtime gates and shortcuts", () => {
   });
 
   it("grants the shortcut flag and logs it when the party reaches the lifted bar", () => {
-    const atBar = executeCommand(dungeonAt("room.b5f.002"), defaultWorld, { type: "move_forward" });
+    const atNiche = dungeonAt("room.b5f.002");
+    const facingBar = { ...atNiche, position: { ...atNiche.position!, facing: "south" as const } };
+    const atBar = executeCommand(facingBar, defaultWorld, { type: "move_forward" });
     expect(atBar.position?.roomId).toBe("room.b5f.003");
     expect(atBar.discoveredSecrets).toContain("flag.b5f.mid-shortcut");
     expect(atBar.log.some((entry) => entry.tags.includes("shortcut"))).toBe(true);

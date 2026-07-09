@@ -17,26 +17,25 @@ authorNotes: >-
   hangs off it for the party that pays the price. Economy pressure by design.
 startRoom: room.b5f.001
 map: |
-  ####################
-  ####################
-  ####################
-  ##..........########
-  #P........B.########
-  ##....A.....T#######
-  ##..........########
-  ##..........########
-  ###.###.###.########
-  #E..........MD######
-  ###.###.###.#.######
-  ##..........#...####
-  ##..........#.V.####
-  ##....S.....#...####
-  #G........K.########
-  ##..........########
-  ####################
-  ####################
-  ####################
-  ####################
+  ###################
+  #E............#...#
+  #.#####.#.###.###.#
+  #.....#.#...#.....#
+  #.#.#.###.###.#.#.#
+  #.#..A..#....B..#.#
+  #.#.#.###.###.#####
+  #.#.....#.........#
+  #.#.#.#.....###.###
+  #.#.#.#..S....#...#
+  #.######...##.###.#
+  #.........#...#...#
+  ###.#.###.#.###.#.#
+  #...#.#..K....#.#T#
+  #####.###.###.#.###
+  #.........#V..#...#
+  #.#####.#.#####.#M#
+  #....P#.#.....#G#D#
+  ###################
 symbols:
   E: room.b5f.001
   M: room.b5f.002
@@ -63,7 +62,7 @@ edges:
     to: room.b4f.003
     targetFloorId: dungeon.b4f
   - from: room.b5f.003
-    direction: north
+    direction: west
     kind: shortcut
     to: room.b2f.001
     targetFloorId: dungeon.b2f
@@ -72,8 +71,8 @@ edges:
     kind: stairs
     to: room.b6f.001
     targetFloorId: dungeon.b6f
-  - from: room.b5f.c11_5
-    direction: east
+  - from: room.b5f.c17_12
+    direction: south
     kind: secret
     to: room.b5f.011
 rooms:
@@ -83,8 +82,7 @@ rooms:
     locales:
       ja:
         name: 灰税の広間
-        description: 台座の石鉢には、灰色の指骨が満ちている。西の階段はB4Fへ上り、南北に灰税の広間が開く。
-    encounterTable: encounters.b5f.gate
+        description: 台座の石鉢には、灰色の指骨が満ちている。西の階段はB4Fへ上り、灰税の回廊が奥へ折れていく。
   - id: room.b5f.004
     name: North Toll Hall
     description: The upper toll hall, cinder-drift banked in the corners where the tithe-takers wait.
@@ -137,7 +135,7 @@ rooms:
         description: 重い横木を上げれば、帰り道は短くなる。その先に壁で囲まれた宝庫が待ち、B6Fへ鎖が落ちている。
     gates:
       - id: gate.b5f.mid-shortcut
-        direction: north
+        direction: west
         kind: shortcut
         grantsFlag: flag.b5f.mid-shortcut
         clue: The bar opens toward the upper dust.
