@@ -32,6 +32,7 @@ import {
 import { DungeonView } from "./components/DungeonView";
 import { FloorMapView, MapPanel } from "./components/MapPanel";
 import { ScenarioValidationPanel } from "./components/ScenarioValidationPanel";
+import { TitleScreen } from "./components/TitleScreen";
 import { createInitialGameState, addCharacter } from "./domain/gameState";
 import {
   backgroundCatalog,
@@ -880,43 +881,18 @@ export function App() {
       data-phase={screen === "game" ? state.phase : undefined}
     >
       {screen !== "game" && (
-        <section className="title-screen" aria-labelledby="title-heading">
-          <div className="title-mark">
-            <span className="title-rule" />
-            <h1 id="title-heading">{t("app.title")}</h1>
-          </div>
-          <nav className="title-menu" aria-label={t("title.menu")} data-controller-active={screen === "title" ? "true" : undefined} data-controller-surface="title">
-            <button type="button" className="primary-action" onClick={startNewGame}>
-              {t("title.newGame")}
-            </button>
-            <button type="button" disabled={!hasAutosave} onClick={() => loadGame(AUTO_SAVE_SLOT)}>
-              {t("title.continue")}
-            </button>
-            <button type="button" onClick={() => setScreen(screen === "config" ? "title" : "config")}>
-              {t("title.config")}
-            </button>
-          </nav>
-          {screen === "config" && (
-            <section
-              className="title-config"
-              aria-labelledby="title-config-heading"
-              data-controller-active="true"
-              data-controller-surface="title-config"
-            >
-              <h2 id="title-config-heading">{t("title.config")}</h2>
-              <label>
-                {t("locale.label")}
-                <select value={locale} onChange={(event) => changeLocale(event.target.value as Locale)}>
-                  <option value="en">{t("locale.en")}</option>
-                  <option value="ja">{t("locale.ja")}</option>
-                </select>
-              </label>
-            </section>
-          )}
-          {(saveStatus || hasCorruptAutosave) && (
-            <p className="title-status" aria-live="polite">{saveStatus || t("save.corrupt")}</p>
-          )}
-        </section>
+        <TitleScreen
+          screen={screen}
+          t={t}
+          locale={locale}
+          hasAutosave={hasAutosave}
+          saveStatus={saveStatus}
+          hasCorruptAutosave={hasCorruptAutosave}
+          onNewGame={startNewGame}
+          onContinue={() => loadGame(AUTO_SAVE_SLOT)}
+          onToggleConfig={() => setScreen(screen === "config" ? "title" : "config")}
+          onChangeLocale={changeLocale}
+        />
       )}
 
       {screen === "game" && scenarioValidationErrors.length > 0 ? (
