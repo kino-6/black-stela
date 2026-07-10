@@ -2,6 +2,7 @@ import { parseLocale, type Locale } from "../i18n";
 
 const LOCALE_KEY = "black-stela:settings:locale";
 const AUTO_SAFETY_KEY = "black-stela:settings:auto-battle-safety-stops";
+const INSTANT_LOG_KEY = "black-stela:settings:instant-combat-log";
 
 export function loadLocale(storage: Storage | null = getBrowserStorage()): Locale {
   return parseLocale(storage?.getItem(LOCALE_KEY));
@@ -18,6 +19,16 @@ export function loadAutoBattleSafety(storage: Storage | null = getBrowserStorage
 
 export function saveAutoBattleSafety(enabled: boolean, storage: Storage | null = getBrowserStorage()): void {
   storage?.setItem(AUTO_SAFETY_KEY, enabled ? "on" : "off");
+}
+
+// Reveal the combat log blow-by-blow (default) or all at once. Default OFF = paced
+// reveal, so the fight reads with weight and 数字感 instead of collapsing to one line.
+export function loadInstantCombatLog(storage: Storage | null = getBrowserStorage()): boolean {
+  return storage?.getItem(INSTANT_LOG_KEY) === "on";
+}
+
+export function saveInstantCombatLog(enabled: boolean, storage: Storage | null = getBrowserStorage()): void {
+  storage?.setItem(INSTANT_LOG_KEY, enabled ? "on" : "off");
 }
 
 function getBrowserStorage() {

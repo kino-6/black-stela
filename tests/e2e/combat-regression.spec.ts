@@ -67,6 +67,34 @@ test("オート and リピート are distinct controls (Repeat disarmed until a 
   // The replay remap itself is unit-locked in tests/repeatOrders.test.ts.
 });
 
+test("combat plays out on-screen with damage numbers (数字感), and an instant-log toggle (#69)", async ({ page }) => {
+  await enterCombat(page);
+  // The blow-by-blow log panel is present in combat (collection unit-locked in
+  // tests/combatLog.test.ts). Before the first clash it shows the waiting line.
+  await expect(page.getByTestId("combat-log")).toBeVisible();
+
+  // Fight the intro to victory through the menu.
+  const menu = page.getByTestId("combat-command-menu");
+  for (let step = 0; step < 40 && (await menu.count()) > 0; step += 1) {
+    await menu.focus().catch(() => {});
+    await page.keyboard.press("Enter");
+    await page.waitForTimeout(80);
+  }
+
+  // The finishing blows linger as a readable beat log carrying a damage number,
+  // instead of the whole round flashing past in one line.
+  const beat = page.getByTestId("combat-log-beat").first();
+  await expect(beat).toBeVisible();
+  await expect(beat).toContainText(/\d/);
+
+  // Players who dislike the paced reveal can turn it off; it defaults to paced (off).
+  await page.goto("/");
+  await page.getByRole("button", { name: "Config" }).click();
+  const toggle = page.getByTestId("config-instant-combat-log");
+  await expect(toggle).toBeVisible();
+  await expect(toggle).not.toBeChecked();
+});
+
 test("auto-battle safety stops are a Config toggle (off by default)", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("button", { name: "Config" }).click();

@@ -10,7 +10,8 @@ export const ja = {
     ja: "日本語"
   },
   config: {
-    autoBattleSafety: "オートを危険時に停止する（ボス／低HP）"
+    autoBattleSafety: "オートを危険時に停止する（ボス／低HP）",
+    instantCombatLog: "戦闘ログを一気に表示（1手ずつの演出を省く）"
   },
   title: {
     menu: "タイトルメニュー",
@@ -176,6 +177,9 @@ export const ja = {
     combatDescription: "{enemy} が行く手を塞いでいる。",
     combatCommands: "戦闘コマンド",
     battleScreen: "戦闘画面",
+    combatLog: "戦闘ログ",
+    combatLogAdvance: "タップで残りを表示",
+    combatLogWaiting: "打ち合いを待つ……",
     round: "ラウンド {round}",
     enemyGroups: "敵群",
     partyFormation: "隊列",

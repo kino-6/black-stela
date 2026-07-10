@@ -8,7 +8,8 @@ export const en = {
     ja: "Japanese"
   },
   config: {
-    autoBattleSafety: "Auto-battle stops at danger (boss / low HP)"
+    autoBattleSafety: "Auto-battle stops at danger (boss / low HP)",
+    instantCombatLog: "Show the combat log all at once (skip the blow-by-blow reveal)"
   },
   title: {
     menu: "Title menu",
@@ -174,6 +175,9 @@ export const en = {
     combatDescription: "{enemy} stands in the party's path.",
     combatCommands: "Combat commands",
     battleScreen: "Battle screen",
+    combatLog: "Combat log",
+    combatLogAdvance: "Tap to reveal the rest",
+    combatLogWaiting: "Awaiting the clash...",
     round: "Round {round}",
     enemyGroups: "Enemy groups",
     partyFormation: "Party formation",

@@ -15,6 +15,7 @@ import { DebugPanel } from "./components/DebugPanel";
 import { DungeonCommandDock } from "./components/DungeonCommandDock";
 import { CombatCommandDock } from "./components/CombatCommandDock";
 import { CombatCommandMenu } from "./components/CombatCommandMenu";
+import { CombatLog } from "./components/CombatLog";
 import { RecoveryPanel } from "./components/RecoveryPanel";
 import { RecordsPanel } from "./components/RecordsPanel";
 import { TownEntryPanel } from "./components/TownEntryPanel";
@@ -68,6 +69,7 @@ import {
   type ShopCategory
 } from "./ui/catalog";
 import { equipmentInstanceKey } from "./domain/affixes";
+import { collectCombatBeats } from "./domain/combatLog";
 import { projectEventToLog } from "./domain/replayLog";
 import { calculateRecoveryCost, getEffectiveCharacterStats, isEquipmentUsableBy, weaponReaches } from "./domain/economy";
 import type {
@@ -96,7 +98,14 @@ import { defaultWorld } from "./data/defaultWorld";
 import { fromSaveDataV1, toSaveDataV1 } from "./domain/saveData";
 import { LocalStorageSaveRepository, type SaveSlotSummary } from "./services/saveRepository";
 import { createTranslator, type Locale, type Translator } from "./i18n";
-import { loadAutoBattleSafety, loadLocale, saveAutoBattleSafety, saveLocale as persistLocale } from "./services/settingsRepository";
+import {
+  loadAutoBattleSafety,
+  loadInstantCombatLog,
+  loadLocale,
+  saveAutoBattleSafety,
+  saveInstantCombatLog,
+  saveLocale as persistLocale
+} from "./services/settingsRepository";
 import type { ScenarioValidationError } from "./domain/scenarioPack";
 import { loadScenarioPack, type ScenarioPackFiles } from "./services/scenarioPackLoader";
 import { formatScenarioSummary, summarizeScenario } from "./services/scenarioSummary";
@@ -140,6 +149,8 @@ export function App() {
   const saveRepository = useMemo(() => createBrowserSaveRepository(), []);
   const [locale, setLocale] = useState<Locale>(() => loadLocale());
   const [autoBattleSafety, setAutoBattleSafety] = useState<boolean>(() => loadAutoBattleSafety());
+  const [instantCombatLog, setInstantCombatLog] = useState<boolean>(() => loadInstantCombatLog());
+  const [revealedBeats, setRevealedBeats] = useState(0);
   const t = useMemo(() => createTranslator(locale), [locale]);
   const [saveSlotId, setSaveSlotId] = useState(AUTO_SAVE_SLOT);
   const [saveSlots, setSaveSlots] = useState<SaveSlotSummary[]>(() => createBrowserSaveRepository()?.list() ?? []);
@@ -229,6 +240,13 @@ export function App() {
     return entry.event ? projectEventToLog(entry.event, locale, defaultWorld)?.text ?? entry.text : entry.text;
   }, [locale, state.log, state.phase]);
   const latestEventType = state.log.at(-1)?.event?.type;
+
+  // #69: every blow of the CURRENT fight as its own beat line (with numbers),
+  // gathered from the round-resolved events since the last encounter began. The
+  // view reveals them one at a time so a round no longer flashes past.
+  // Not gated on phase: a one-round kill flips straight to the dungeon, so the
+  // killing blows must still reveal there (see the post-combat tail below).
+  const combatBeats = useMemo(() => collectCombatBeats(state.log), [state.log]);
 
   const livingEnemyGroups = useMemo(
     () => state.combat?.enemyGroups.filter((group) => group.count > 0) ?? [],
@@ -325,9 +343,61 @@ export function App() {
     setCombatOrders([]);
   }, [state.phase, state.combat?.round, state.combat?.roomId]);
 
+  // Show the post-combat log tail in the dungeon only right after a fight ends
+  // (combat→dungeon), not on load or during ordinary exploration.
+  const prevPhaseRef = useRef(state.phase);
+  const [combatTailDismissed, setCombatTailDismissed] = useState(true);
+  useEffect(() => {
+    if (prevPhaseRef.current === "combat" && state.phase === "dungeon") {
+      setCombatTailDismissed(false);
+    }
+    prevPhaseRef.current = state.phase;
+  }, [state.phase]);
+
+  // On first mount (e.g. Continue into the dungeon) snap any beats already in the
+  // loaded log to fully-revealed, so a resumed game does not replay an old fight.
+  const combatLogHydratedRef = useRef(false);
+  useEffect(() => {
+    if (combatLogHydratedRef.current) {
+      return;
+    }
+    combatLogHydratedRef.current = true;
+    if (state.phase !== "combat") {
+      setRevealedBeats(combatBeats.length);
+    }
+  }, [combatBeats.length, state.phase]);
+
+  // #69 reveal pacing: keep the revealed count within bounds and honor the instant
+  // setting; a new fight (beats reset to empty) rewinds the reveal to zero.
+  useEffect(() => {
+    if (instantCombatLog || combatBeats.length === 0) {
+      setRevealedBeats(combatBeats.length);
+      return;
+    }
+    setRevealedBeats((current) => Math.min(current, combatBeats.length));
+  }, [combatBeats.length, instantCombatLog]);
+
+  // Tick the next beat into view; cadence tracks the tempo speed so auto-battle at
+  // ×2 reads faster without losing the blow-by-blow feel.
+  useEffect(() => {
+    if (instantCombatLog || revealedBeats >= combatBeats.length) {
+      return;
+    }
+    const delay = tempoSpeed === "fast" ? 120 : 300;
+    const timer = setTimeout(() => {
+      setRevealedBeats((current) => Math.min(current + 1, combatBeats.length));
+    }, delay);
+    return () => clearTimeout(timer);
+  }, [revealedBeats, combatBeats.length, instantCombatLog, tempoSpeed]);
+
   function run(command: Command, options: { remember?: boolean; confirm?: boolean } = {}) {
     if (isTempoRunning) {
       setTempoMode("idle");
+    }
+    // The post-combat log tail lingers after a fight so the player can read the
+    // finishing blows; their next dungeon action clears it.
+    if (state.phase === "dungeon") {
+      setCombatTailDismissed(true);
     }
     setState((current) => executeCommand(current, defaultWorld, command));
     void options;
@@ -947,6 +1017,11 @@ export function App() {
           onToggleAutoBattleSafety={(enabled) => {
             setAutoBattleSafety(enabled);
             saveAutoBattleSafety(enabled);
+          }}
+          instantCombatLog={instantCombatLog}
+          onToggleInstantCombatLog={(enabled) => {
+            setInstantCombatLog(enabled);
+            saveInstantCombatLog(enabled);
           }}
         />
       )}
@@ -2072,6 +2147,14 @@ export function App() {
                 <div className="cockpit-message">
                   <p className="room-copy">{roomText?.description}</p>
                   <p className="event-window" aria-live="polite">{tempoStatus || latestLogText || "\u00a0"}</p>
+                  {!combatTailDismissed && combatBeats.length > 0 && (
+                    <CombatLog
+                      t={t}
+                      beats={combatBeats}
+                      revealed={revealedBeats}
+                      onAdvance={() => setRevealedBeats(combatBeats.length)}
+                    />
+                  )}
                 </div>
               ) : (
                 <div className="cockpit-message combat-message">
@@ -2086,6 +2169,12 @@ export function App() {
                     </span>
                   </div>
                   <p className="event-window" aria-live="polite">{tempoStatus || latestLogText || "\u00a0"}</p>
+                  <CombatLog
+                    t={t}
+                    beats={combatBeats}
+                    revealed={revealedBeats}
+                    onAdvance={() => setRevealedBeats(combatBeats.length)}
+                  />
                   <div className="battle-order" aria-label={t("play.battleOrder")}>
                     <div className="battle-order-header">
                       <h3>{t("play.battleOrder")}</h3>
