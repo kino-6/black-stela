@@ -18,6 +18,7 @@ import { RecoveryPanel } from "./components/RecoveryPanel";
 import { RecordsPanel } from "./components/RecordsPanel";
 import { TownEntryPanel } from "./components/TownEntryPanel";
 import { ShopPanel } from "./components/ShopPanel";
+import { TempoIndicator } from "./components/TempoIndicator";
 import { createInitialGameState, addCharacter } from "./domain/gameState";
 import {
   backgroundCatalog,
@@ -143,6 +144,10 @@ export function App() {
   const [saveStatus, setSaveStatus] = useState("");
   const [tempoStatus, setTempoStatus] = useState("");
   const [tempoMode, setTempoMode] = useState<TempoMode>("idle");
+  // Repeat/auto tempo feedback (Lane X): a visible speed tier and a live step
+  // counter so the runner never reads as a stalled or hidden timer.
+  const [tempoSpeed, setTempoSpeed] = useState<"normal" | "fast">("normal");
+  const [tempoStep, setTempoStep] = useState(0);
   const [guildCreationStep, setGuildCreationStep] = useState<GuildCreationStep>("briefing");
   const [guildOfferState, setGuildOfferState] = useState<GuildOfferState>("ask");
   const [campOpen, setCampOpen] = useState(false);
@@ -416,6 +421,7 @@ export function App() {
     }
 
     setTempoStatus("");
+    setTempoStep(0);
     setTempoMode(preferredMode);
   }
 
@@ -670,15 +676,16 @@ export function App() {
       const result = runTempoStep(stateRef.current, tempoMode, defaultWorld, t);
       stateRef.current = result.state;
       setState(result.state);
+      setTempoStep((step) => step + 1);
 
       if (!result.keepRunning) {
         setTempoMode("idle");
         setTempoStatus(result.status);
       }
-    }, 320);
+    }, tempoSpeed === "fast" ? 130 : 320);
 
     return () => window.clearInterval(timer);
-  }, [tempoMode, t]);
+  }, [tempoMode, tempoSpeed, t]);
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
@@ -1965,6 +1972,16 @@ export function App() {
                     )}
                   </div>
                 </div>
+              )}
+              {tempoMode !== "idle" && (
+                <TempoIndicator
+                  mode={tempoMode}
+                  step={tempoStep}
+                  speed={tempoSpeed}
+                  t={t}
+                  onToggleSpeed={() => setTempoSpeed((current) => (current === "fast" ? "normal" : "fast"))}
+                  onStop={() => toggleTempoMode()}
+                />
               )}
               {state.phase === "combat" ? (
                 <CombatCommandDock

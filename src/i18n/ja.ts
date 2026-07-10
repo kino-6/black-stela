@@ -327,7 +327,12 @@ export const ja = {
     autoStoppedDanger: "自動停止: 隊列の危険を検知しました。",
     autoStoppedLimit: "自動停止: 手数上限に達しました。",
     autoMoveStoppedEvent: "自動移動停止: 注目イベントまたは危険状態です。",
-    autoMoveStoppedBranch: "自動移動停止: 分岐または未知の経路です。"
+    autoMoveStoppedBranch: "自動移動停止: 分岐または未知の経路です。",
+    modeDungeon: "自動探索",
+    modeCombat: "自動戦闘",
+    step: "{step}手目",
+    speedNormal: "×1",
+    speedFast: "×2"
   },
   map: {
     heading: "周辺",

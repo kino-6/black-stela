@@ -13,7 +13,7 @@ test("repeat and keyboard commands keep the dungeon loop fast", async ({ page })
   await expect(page.getByRole("heading", { name: "Combat" })).toBeVisible();
 
   await page.keyboard.press("Space");
-  await expect(page.getByRole("button", { name: "Stop" })).toBeVisible();
+  await expect(page.getByTestId("combat-command-window").getByRole("button", { name: "Stop" })).toBeVisible();
   await page.keyboard.press("Space");
   await expect(page.getByRole("heading", { name: "Combat" })).toBeVisible();
   await expect(page.getByText("Repeat stopped.")).toBeVisible();

@@ -2763,6 +2763,55 @@ textarea {
   background: rgba(8, 9, 8, 0.96);
 }
 
+/* Live repeat/auto tempo readout (Lane X). */
+.tempo-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: 0.1rem;
+  padding: 0.35rem 0.6rem;
+  border: 1px solid #6b5a2e;
+  border-radius: 4px;
+  background: rgba(43, 36, 16, 0.96);
+  font-size: 0.85rem;
+  color: #e8dcc0;
+}
+
+.tempo-indicator-dot {
+  width: 0.6rem;
+  height: 0.6rem;
+  border-radius: 50%;
+  background: #e0b64a;
+  animation: tempo-pulse 0.9s ease-in-out infinite;
+}
+
+@keyframes tempo-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.25; }
+}
+
+.tempo-indicator-mode {
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.tempo-indicator-step {
+  opacity: 0.85;
+  font-variant-numeric: tabular-nums;
+}
+
+.tempo-indicator button {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.tempo-indicator button + button {
+  margin-left: 0.35rem;
+}
+
 .command-dock button {
   min-width: 4.8rem;
 }

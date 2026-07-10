@@ -325,7 +325,12 @@ export const en = {
     autoStoppedDanger: "Auto stopped: party danger detected.",
     autoStoppedLimit: "Auto stopped: step limit reached.",
     autoMoveStoppedEvent: "Auto move stopped: interesting event or unsafe state.",
-    autoMoveStoppedBranch: "Auto move stopped: branch or unknown route."
+    autoMoveStoppedBranch: "Auto move stopped: branch or unknown route.",
+    modeDungeon: "Auto-explore",
+    modeCombat: "Auto-fight",
+    step: "step {step}",
+    speedNormal: "×1",
+    speedFast: "×2"
   },
   map: {
     heading: "Area",
