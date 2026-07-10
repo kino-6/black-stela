@@ -7,14 +7,19 @@ Completed task slices and traceability are archived in:
 - [docs/archive/Tasks.completed-index.md](docs/archive/Tasks.completed-index.md)
 - [docs/archive/Plan.completed-index.md](docs/archive/Plan.completed-index.md)
 
-## Active Milestone: Combat Feel & DRPG Depth (playtest review 2026-07-11)
+## Active Milestone: Command-Menu Combat UI ("コマンドRPG化")
 
-From a live combat playtest. Six items, tracked as tasks #64–#68 (+ config). Execute
-in order; each keeps the suite green + browser evidence. Human expectation and red
-flags per item; no piecemeal shipping without a Gate.
+From a live combat playtest, the verdict: individual button fixes don't add up to a
+command RPG — it still reads as "ボタンぽちぽち". **Design-first, research-grounded.**
+Plan + acceptance Gate in [docs/combat-command-ui-plan.md](docs/combat-command-ui-plan.md).
+A background research pass (what makes DRPGs fun + combat presentation / 数字感) is
+grounding the plan — **no implementation of the redesign until the plan is aligned**
+with the research and the user, so the invested player isn't betrayed by shallow fixes.
 
-- [ ] **#64 Command order** — command entry starts from the raw party-array member
-  (Mira, back row). Input front-row-first, then back, in formation order.
+- [x] **#64 Command order** — front-row-first formation order (shipped).
+- [ ] **#69 Combat presentation** — beat-by-beat on-screen log with damage NUMBERS +
+  HP changes (数字感), tap-to-advance / hold-to-fast-forward / message-speed setting;
+  combat currently resolves instantly with no tension or 納得感.
 - [ ] **#65 Back-row reach weapons** — back row can't attack behind a standing front
   (Wiz-authentic). Add a `reach`/back-capable weapon property (bow / long weapon),
   design 1–2 such weapons, equip back-row starters with one, make canAttack honor it.
