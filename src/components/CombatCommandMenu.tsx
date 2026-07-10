@@ -3,16 +3,20 @@ import { SPELLS, type SpellId } from "../domain/spells";
 import type { Character, CombatEnemyGroup } from "../domain/types";
 import type { Translator } from "../i18n";
 
-const SPELL_LABEL_KEY: Record<SpellId, "play.spellHeal" | "play.spellFirebolt" | "play.spellSleep"> = {
+const SPELL_LABEL_KEY: Record<SpellId, "play.spellHeal" | "play.spellFirebolt" | "play.spellSleep" | "play.skillPowerStrike"> = {
   heal: "play.spellHeal",
   firebolt: "play.spellFirebolt",
-  sleep: "play.spellSleep"
+  sleep: "play.spellSleep",
+  "power-strike": "play.skillPowerStrike"
 };
 
 interface CombatCommandMenuProps {
   actor: Character;
   livingGroups: CombatEnemyGroup[];
   spells: SpellId[];
+  // "skill" for front-row 特技 users, "spell" for arcane casters — drives the
+  // command label (特技 / 呪文) and its submenu heading.
+  abilityKind: "spell" | "skill";
   canAttack: boolean;
   itemLabel: string | null;
   partyTargets: { id: string; name: string }[];
@@ -36,6 +40,7 @@ export function CombatCommandMenu({
   actor,
   livingGroups,
   spells,
+  abilityKind,
   canAttack,
   itemLabel,
   partyTargets,
@@ -55,14 +60,14 @@ export function CombatCommandMenu({
     const list: { kind: CommandKind; label: string; enabled: boolean }[] = [];
     list.push({ kind: "attack", label: t("play.attack"), enabled: canAttack });
     if (spells.length > 0) {
-      list.push({ kind: "spell", label: t("play.spell"), enabled: true });
+      list.push({ kind: "spell", label: abilityKind === "skill" ? t("play.skill") : t("play.spell"), enabled: true });
     }
     if (itemLabel && partyTargets.length > 0) {
       list.push({ kind: "item", label: itemLabel, enabled: true });
     }
     list.push({ kind: "defend", label: t("play.defend"), enabled: true });
     return list;
-  }, [canAttack, spells.length, itemLabel, partyTargets.length, t]);
+  }, [abilityKind, canAttack, spells.length, itemLabel, partyTargets.length, t]);
 
   // Reset to the command list whenever the actor being commanded changes, landing
   // the cursor on the first ENABLED command so Enter always does something valid.
@@ -195,7 +200,9 @@ export function CombatCommandMenu({
     view === "command"
       ? t("play.commandFor", { name: actor.name })
       : view === "spell"
-        ? t("play.chooseSpell")
+        ? abilityKind === "skill"
+          ? t("play.chooseSkill")
+          : t("play.chooseSpell")
         : t("play.chooseTarget");
 
   return (

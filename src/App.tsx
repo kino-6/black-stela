@@ -38,7 +38,7 @@ import { getGridEdge, getLocalizedRoomText, getRoom, isBossFloor } from "./domai
 import { createIdentitySuggestion } from "./domain/identitySuggestion";
 import { executeCommand, listUnlockedCheckpoints, remapRepeatOrders, roomStairsEdge, stairGateAhead } from "./domain/rulesEngine";
 import { getTempoModeForPhase, runTempoStep, type TempoMode } from "./domain/tempo";
-import { SPELLS, knownSpells, type SpellId } from "./domain/spells";
+import { SPELLS, isCasterClass, knownSpells, type SpellId } from "./domain/spells";
 import {
   activateControllerCancel,
   focusFirstControllerChoice,
@@ -2209,6 +2209,7 @@ export function App() {
                       actor={selectedActor}
                       livingGroups={livingEnemyGroups}
                       spells={knownSpells(selectedActor.classId, selectedActor.level)}
+                      abilityKind={isCasterClass(selectedActor.classId) ? "spell" : "skill"}
                       canAttack={
                         livingEnemyGroups.length > 0 &&
                         !(selectedActor.row === "back" && frontRowStanding && !weaponReaches(selectedActor, defaultWorld))

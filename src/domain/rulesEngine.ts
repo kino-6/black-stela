@@ -877,8 +877,10 @@ function declareRound(state: GameState, world: ScenarioWorld, actions: CombatAct
           const damage = Math.round(raw * weakness);
           enemyGroups = damageGroup(enemyGroups, group.id, damage);
           const updated = enemyGroups.find((candidate) => candidate.id === group.id);
+          // Martial 特技 land as strikes; arcane bolts scorch.
+          const verb = spell.kind === "skill" ? "strikes" : "scorches";
           summaries.push(
-            `${actor.name} scorches ${group.name} for ${damage}${weakness > 1 ? " (weak!)" : ""}. ${updated?.count ?? 0} remain.`
+            `${actor.name} ${verb} ${group.name} for ${damage}${weakness > 1 ? " (weak!)" : ""}. ${updated?.count ?? 0} remain.`
           );
         }
       } else if (spell.effect.kind === "status" && action.targetGroupId) {

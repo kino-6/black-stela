@@ -16,19 +16,27 @@ function slimeFight(classId: "occultist" | "mender"): GameState {
 }
 
 describe("spells", () => {
-  it("teaches spells on a per-class level schedule", () => {
+  it("teaches abilities on a per-class level schedule", () => {
     expect(knownSpells("mender", 1)).toContain("heal");
     expect(knownSpells("occultist", 1)).toContain("firebolt");
     expect(knownSpells("occultist", 1)).not.toContain("sleep");
     expect(knownSpells("occultist", 3)).toContain("sleep");
-    expect(knownSpells("vanguard", 99)).toHaveLength(0);
+    // Front-row martial classes learn a 特技, not a spell.
+    expect(knownSpells("vanguard", 1)).toContain("power-strike");
+    // A class with neither spell nor 特技 has nothing to command.
+    expect(knownSpells("scout", 99)).toHaveLength(0);
   });
 
-  it("gives casters an MP pool and martials none", () => {
-    const arcane = { might: 0, agility: 0, spirit: 2, wit: 1, luck: 0 };
+  it("gives casters an MP pool, 特技 classes a smaller 気力 pool, and others none", () => {
+    const stats = { might: 2, agility: 0, spirit: 2, wit: 1, luck: 0 };
     expect(isCasterClass("occultist")).toBe(true);
-    expect(baseMaxMpForClass("occultist", arcane)).toBeGreaterThan(0);
-    expect(baseMaxMpForClass("vanguard", arcane)).toBe(0);
+    expect(isCasterClass("vanguard")).toBe(false); // 特技 user, not a caster
+    expect(baseMaxMpForClass("occultist", stats)).toBeGreaterThan(0);
+    // A front-row 特技 class has a pool, but a smaller one than a caster.
+    expect(baseMaxMpForClass("vanguard", stats)).toBeGreaterThan(0);
+    expect(baseMaxMpForClass("vanguard", stats)).toBeLessThan(baseMaxMpForClass("occultist", stats));
+    // A plain martial class (no abilities) still has no pool.
+    expect(baseMaxMpForClass("scout", stats)).toBe(0);
   });
 
   it("casts an attack spell, spending MP and damaging the enemy", () => {

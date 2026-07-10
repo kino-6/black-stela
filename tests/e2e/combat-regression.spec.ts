@@ -56,6 +56,14 @@ test("the front row's Attack is enabled (a real command, not a lone toolbar)", a
   await expect(page.getByTestId("combat-menu-attack")).toBeEnabled();
 });
 
+test("front-row members wield a 特技 (Skill) command, not just attack/defend (#8)", async ({ page }) => {
+  await enterCombat(page);
+  // The first actor is Rook (front-row vanguard); he now carries a 特技.
+  const skill = page.getByTestId("combat-menu-spell");
+  await expect(skill).toBeVisible();
+  await expect(skill).toContainText(/Skill/);
+});
+
 test("オート and リピート are distinct controls (Repeat disarmed until a round runs)", async ({ page }) => {
   await enterCombat(page);
   // オート (continuous auto-battle) and リピート (re-run last round) are separate

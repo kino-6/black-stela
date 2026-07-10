@@ -366,7 +366,7 @@ export interface CombatActionDeclaration {
   targetGroupId?: string;
   targetCharacterId?: string;
   itemId?: string;
-  spellId?: "heal" | "firebolt" | "sleep";
+  spellId?: "heal" | "firebolt" | "sleep" | "power-strike";
 }
 
 export interface DungeonPosition {

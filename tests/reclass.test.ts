@@ -13,14 +13,17 @@ describe("reclass (転職)", () => {
     expect(asVanguard.classId).toBe("vanguard");
     expect(asVanguard.id).toBe(mender.id);
     expect(asVanguard.name).toBe("Cael");
-    expect(asVanguard.maxMp).toBe(0); // martial class, no spell pool
+    expect(asVanguard.maxMp).toBeGreaterThan(0); // vanguard now carries a 特技 気力 pool
+
+    const asScout = reclassCharacter(mender, "scout", defaultWorld);
+    expect(asScout.maxMp).toBe(0); // a class with no abilities keeps no pool
   });
 
-  it("grants a spell pool when retraining a martial into a caster", () => {
-    const vanguard = createGuildCharacter({ name: "Rook", classId: "vanguard", seed: "r" });
-    expect(vanguard.maxMp).toBe(0);
+  it("grants a pool when retraining a plain martial into a caster", () => {
+    const scout = createGuildCharacter({ name: "Rook", classId: "scout", seed: "r" });
+    expect(scout.maxMp).toBe(0);
 
-    const asMender = reclassCharacter(vanguard, "mender", defaultWorld);
+    const asMender = reclassCharacter(scout, "mender", defaultWorld);
     expect(asMender.maxMp).toBeGreaterThan(0);
   });
 

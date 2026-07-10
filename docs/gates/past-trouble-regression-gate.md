@@ -78,7 +78,7 @@ automated regression check (see `tests/e2e/combat-regression.spec.ts` + others).
 | Auto-battle stops | Auto/Repeat kept stopping itself and popping a menu ("謎UIが出て止まる"). | Discretionary auto-stops are OFF by default and Config-gated; auto just runs. | `squadCombat.test.ts` |
 | UI reflow | Context buttons/clues reflowed the command dock (stretch/shrink). | The command area is fixed-footprint; contextual clues ride tooltips/log, not variable-width tiles. | `combat.spec.ts` (#68) |
 | Instant combat | A round resolved instantly with no felt weight or "数字感". | Results play beat-by-beat with damage numbers + HP change; a paced reveal (with an instant-log Config escape) lingers so the blows are readable. | `combatLog.test.ts`, `combat-regression.spec.ts` |
-| Front-row depth | Only casters had a non-attack action; front row had no skills/特技. | Front-row members can use class skills/特技, not just attack/defend. | (pending) |
+| Front-row depth | Only casters had a non-attack action; front row had no skills/特技. | Front-row members can use class 特技 (spending a 気力 pool), not just attack/defend. | `martialSkills.test.ts`, `combat-regression.spec.ts` |
 
 ## Browser Self-Play
 
