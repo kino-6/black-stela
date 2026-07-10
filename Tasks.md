@@ -7,29 +7,32 @@ Completed task slices and traceability are archived in:
 - [docs/archive/Tasks.completed-index.md](docs/archive/Tasks.completed-index.md)
 - [docs/archive/Plan.completed-index.md](docs/archive/Plan.completed-index.md)
 
-## Active Milestone: Lane R — Source Decomposition (final pass)
+## Active Milestone: all handheld Plan lanes cleared
 
-Goal: finish decomposing the `App.tsx` God component without changing behaviour.
-Pure-function helpers and 6 App panel extractions (title, camp, floor-map, debug,
-dungeon dock, combat dock) have shipped — **App.tsx 2624 → 2454**. Detail and
-guardrails in [Plan.md](Plan.md) (Lane R).
+The "clear everything" pass is done. All green: **production build + 251 unit +
+60 e2e**. Detail in [Plan.md](Plan.md).
 
-- [ ] Extract the town / guild / shop / records render into panel components —
-  the last large chunk, entangled with the stateful character-draft flow and
-  ~40 handlers. Own focused pass, heavy prop-threading, suite green after each
-  extraction, dead imports pruned, no feature change mixed in.
-- [ ] (Skip/defer) `useSaveLoad` hook and `rulesEngine.ts` regrouping — judged
-  low-value; leave unless a concrete need appears.
+- [x] #58 Combat balance tuning — deep floors + bosses bite (no-grind push
+  93→79→77→67→43→30%, zero downs); descentSim Gate `0.12 < deepestTrough < 0.55`.
+- [x] Lane R — all separable panels extracted (App.tsx 2778 → 2132); guild stepper
+  left inline (reducer refactor, gated below).
+- [x] Lane X — live tempo indicator (mode + step + ×1/×2 speed + immediate Stop).
+- [x] Lane G — save-schema migration seam + `npm run build` smoke; Tauri FS/bundle
+  work scoped in [docs/desktop-productization.md](docs/desktop-productization.md).
+- [x] Lane H — narration health/metadata/diagnostics + guard wiring + PC redaction.
 
-### NextAction (日本語での提示は会話側で共有済み)
+### Remaining (gated follow-ups, not deferred by choice)
 
-1. **Player playtest pass** (owner: user) — the DebugMode force-win / revive aids
-   exist for exactly this; balance tuning waits on the resulting feedback.
-2. **Lane R final pass**: the town/guild panel extraction above (ready to start).
-3. **On the user's go-ahead: #58 combat balance tuning** — descentSim Gate armed
-   (`deepestTrough < 0.72` → target ~0.45); **deferred** ("バランス調整はおいおい"),
-   do not start without a go-ahead.
-4. **Lane X** — repeat/auto tempo feedback (partly covered; audit what remains).
+1. Desktop bundle verification (macOS + Windows toolchain) — Lane G.
+2. Guild registration stepper decomposition — needs a `useReducer`/context refactor.
+3. Live-LLM narration generation — needs a real local provider endpoint.
+
+### NextAction
+
+1. **Player evaluation / playtest** (owner: user) — the product is coherent and
+   fully green; DebugMode aids + ×2 auto-runner make a full descent quick to walk.
+2. On feedback: re-tune balance (the Gate band is a dial), or open one gated
+   follow-up above (each is scoped + seamed).
 
 ## Recently Completed (archived)
 

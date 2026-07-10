@@ -110,25 +110,32 @@ suite and a real player playtest are.
   sole-approach boss/toll choke to its descent (verified via `placeFloor --sole`), a
   safe no-encounter stair landing, and a searchable secret vault. Honest full-sweep
   292–338 steps per floor; universal maze Gate in `tests/dungeonDesign.test.ts`.
-- [x] Difficulty Pressure & Playability. Under-strength pack scaling (#3) +
-  front-blocker/back-caster squads (#4); safe stair landings (no forced stair
-  combat); keyboard/controller-playable combat with auto/repeat + an e2e Gate;
-  combat/party UI standards codified in `AGENTS.md`; enemy sprite anchored/visible;
-  DebugMode force-win + revive/full-heal aids. **Deferred: combat balance tuning** —
-  the descentSim difficulty Gate is armed (`deepestTrough < 0.72`, tightening toward
-  ~0.45) and waits on the player's own tuning pass.
 - [x] Lane Y: Guild Roster Management, Registration Lifecycle, Cross-Scenario
   Adventurers (roster bench/recall, reclass, two-tier retire, portable vault).
   Archived: [docs/archive/Plan.completed-guild-roster-lifecycle.md](docs/archive/Plan.completed-guild-roster-lifecycle.md).
 - [x] Difficulty Pressure, Full B1–B8 Maze Rollout, Playability & App Decomposition.
   Archived: [docs/archive/Plan.completed-difficulty-maze-decomposition.md](docs/archive/Plan.completed-difficulty-maze-decomposition.md).
-  **Deferred within it: combat balance tuning** (descentSim Gate armed at
-  `deepestTrough < 0.72`, target ~0.45; awaits a player playtest + go-ahead).
-- [~] **Lane R (IN PROGRESS): Source Decomposition.** Pure-function slices +
-  6 App panel extractions shipped (App.tsx 2624 → 2132). **Remaining: the
-  town/guild/shop/records render** (largest/riskiest, own focused pass). See below.
-- [ ] Lane X: Repeat and Auto Action Tempo Feedback (partly covered by the
-  keyboard-combat auto/repeat work; remaining detail below).
+- [x] **#58 Combat balance tuning.** 12 enemies tuned; a no-grind push now ramps
+  93→79→77→67→43→30% (deep floors + bosses bite) and survives with zero downs.
+  descentSim Gate tightened to a two-sided band (`0.12 < deepestTrough < 0.55`).
+- [x] **Lane R — Source Decomposition.** All cleanly-separable panels extracted
+  (App.tsx 2778 → 2132): the 6 command/overlay/debug/title panels + the town
+  `RecoveryPanel`/`RecordsPanel`/`TownEntryPanel`/`ShopPanel`. Only the guild
+  registration stepper stays inline — a reducer/context refactor, tracked below.
+- [x] **Lane X — Repeat/Auto Tempo Feedback.** Live `TempoIndicator` (mode + step +
+  speed tier + immediate Stop) while the runner is active; ×1/×2 speed toggle; the
+  engine already stops on every interrupt (trap/encounter/event/stairs/branch/boss/
+  squad/danger). e2e-proven.
+- [x] **Lane G — Desktop Productization (completable scope).** Save-schema migration
+  seam (`migrateSaveData`/`parseSaveData`, forward-only, refuses newer; wired into
+  both repos); `npm run build` is the smoke test and passes. Env-gated Tauri FS /
+  portrait-file / per-OS bundle work scoped in
+  [docs/desktop-productization.md](docs/desktop-productization.md).
+- [x] **Lane H — Hidden Local Narration Operations.** Provider health checks,
+  prompt/version metadata, dev-only diagnostics ring buffer, guard wired into
+  `requestNarration`, and party-name redaction from the provider's input — all
+  background-only and player-hidden. Unit-tested; live-LLM generation still needs a
+  real local endpoint (inherent).
 
 ### [ ] Lane X: Repeat and Auto Action Tempo Feedback
 
@@ -228,8 +235,17 @@ slice; do not mix a refactor with a feature change in the same commit.
 
 ## Deferred Lanes
 
-- [ ] Lane G: Desktop Productization.
-- [ ] Lane H: Hidden Local Narration Operations.
+All previously-deferred lanes (G, H) have now had their completable scope shipped
+(see Active Lanes). The only remaining items are environment- or refactor-gated, not
+deferred by choice:
+
+- **Desktop bundle verification** (Lane G) — needs a desktop toolchain on macOS +
+  Windows; steps + ready seams in
+  [docs/desktop-productization.md](docs/desktop-productization.md).
+- **Guild registration stepper decomposition** (Lane R) — needs a `useReducer`/
+  context refactor of the draft state (feature-shaped, not a verbatim move).
+- **Live-LLM narration generation** (Lane H) — needs a real local provider endpoint;
+  the whole ops layer around it is done and mock-tested.
 
 ## Standing Guardrails
 
@@ -248,27 +264,20 @@ slice; do not mix a refactor with a feature change in the same commit.
 
 ## Current Milestone Recommendation
 
-Lanes V, W, Y, Z, the Combat Overhaul, and the full B1F–B8F maze rollout are
-complete, as is the Difficulty Pressure & Playability milestone (pack scaling,
-squads, safe landings, keyboard combat + auto/repeat, UI standards, enemy sprite,
-DebugMode force-win/revive), all now archived. All green: 243 unit + 59 e2e.
+**All handheld Plan lanes are cleared** (the "clear everything" pass): #58 balance,
+Lane R panel decomposition, Lane X tempo feedback, Lane G desktop (completable
+scope), and Lane H narration ops — on top of the earlier V/W/Y/Z, Combat Overhaul,
+and full B1F–B8F maze rollout. All green: **production build + 251 unit + 60 e2e**.
 
 ### NextAction (recommended order)
 
-1. **Player playtest pass** (owner: user). The DebugMode aids (force-win, revive)
-   exist precisely for this; balance tuning is deferred pending real-play feedback.
-2. **Lane R final pass** (in progress) — extract the town/guild/shop/records render,
-   the last large chunk in `App.tsx` (6 panels already extracted; behaviour-
-   preserving, suite green after each). Ready to start.
-3. **Combat balance tuning** (deferred by user, "おいおい"). The Sim Gate is armed:
-   drive `deepestTrough` from ~0.67 toward ~0.45 by making bosses/packs bite,
-   re-locking `tests/descentSim.test.ts`. Do NOT start without the user's go-ahead.
-4. **Lane X — Repeat/Auto tempo feedback** (partially covered by the keyboard-combat
-   auto/repeat work; audit what remains: on-screen active-mode indicator, speed
-   tiers, interrupt-safety evidence).
-
-Lane G (desktop productization) and Lane H (hidden narration) remain deferred until
-explicitly re-scoped.
+1. **Player evaluation / playtest.** The product is in a coherent, fully-green state
+   to assess; the DebugMode force-win / revive aids and the ×1/×2 auto-runner make a
+   full descent quick to walk through.
+2. **On evaluation feedback:** re-tune balance (the descentSim Gate band makes it a
+   dial), or open one of the three gated follow-ups (desktop bundle verification,
+   the guild-stepper reducer refactor, or live-LLM narration) — each is scoped and
+   seamed, none is blocked on unknowns.
 
 ## Planning Rule
 
