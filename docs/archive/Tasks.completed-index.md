@@ -84,5 +84,7 @@ Active tasks: [../../Tasks.md](../../Tasks.md)
 | Lane V: Scenario Text Externalization and Japanese Line Layout | BS-189..BS-193 archived | Completed event-text externalization and Japanese line-layout gate |
 | Lane W: Starting Gear, Categorized Shop, and Pre-Purchase Preview | BS-194..BS-197 archived | Completed starting-gear equipping, categorized shop, and registration gear display |
 | Lane U: Town Return Loop and Japanese DRPG Service UX | BS-183..BS-188 archived | Completed current town-loop slice |
+| Lane Y: Guild Roster Management / Lifecycle / Cross-Scenario Adventurers | slices A–C archived (Plan.completed-guild-roster-lifecycle.md) | Completed roster/reclass/retire/vault |
+| Difficulty Pressure, Maze Rollout, Playability & App Decomposition | commits f3f9d77..52cb3c6 archived (Plan.completed-difficulty-maze-decomposition.md) | Completed; balance tuning deferred |
 | Lane G: Desktop Productization | BS-034..BS-037 archived; no active new tasks | Deferred |
 | Lane H: Hidden Local Narration Operations | BS-019..BS-024 archived; no active new tasks | Deferred |

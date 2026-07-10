@@ -10,13 +10,18 @@ Completed plan lanes and task slices are archived in:
 ## Current Baseline
 
 Black Stela has deterministic rules, save/load, debug starts, headless probes,
-English/Japanese UI, scenario validation, authored multi-floor data, tactical
-combat, guild character authorship, economy, first-person rendering, minimap,
-and browser-visible route coverage.
+English/Japanese UI, scenario validation, tactical combat, guild character
+authorship + a curated roster (reclass/retire/portable vault), economy,
+first-person rendering, and minimap. All eight floors (B1F–B8F) are generated
+棒倒し法 mazes with sole-approach boss/toll chokes, safe stair landings, and
+secret vaults; under-strength descents are punished by pack scaling + squads;
+combat is keyboard/controller-playable with auto/repeat and DebugMode aids.
 
-The remaining problem is not engine reachability. It is whether the player feels
-they brought their own adventurers into a real labyrinth. Headless runs are not
-proof of UX, fun, fairness, visual legibility, or grid-maze honesty.
+The labyrinth is now real. The remaining problems are (a) combat *balance* — the
+descentSim Gate proves it is survivable but currently too easy (deferred tuning),
+and (b) finishing the `App.tsx` decomposition (Lane R). Headless runs are not
+proof of UX, fun, fairness, visual legibility, or grid-maze honesty — the e2e
+suite and a real player playtest are.
 
 ## UI Reference Findings
 
@@ -112,15 +117,18 @@ proof of UX, fun, fairness, visual legibility, or grid-maze honesty.
   DebugMode force-win + revive/full-heal aids. **Deferred: combat balance tuning** —
   the descentSim difficulty Gate is armed (`deepestTrough < 0.72`, tightening toward
   ~0.45) and waits on the player's own tuning pass.
-- [~] Lane R: Source Decomposition and Refactoring — seven slices shipped
-  (tempo rules, controller focus, presentation + catalog helpers, DungeonView
-  scene split, character-draft helpers, remaining format helpers). Remaining:
-  the ~1600-line per-phase JSX split (deferred, biggest/riskiest); save/load hook
-  and rulesEngine grouping judged low-value/skip.
-- [ ] Lane X: Repeat and Auto Action Tempo Feedback.
-- [~] **Lane Y (IN PROGRESS): Guild Roster Management, Registration Lifecycle, and
-  Cross-Scenario Adventurers.** Slice A (roster bench/recall) shipped; slices B
-  (edit / retire / reclass) and C (cross-scenario vault) next.
+- [x] Lane Y: Guild Roster Management, Registration Lifecycle, Cross-Scenario
+  Adventurers (roster bench/recall, reclass, two-tier retire, portable vault).
+  Archived: [docs/archive/Plan.completed-guild-roster-lifecycle.md](docs/archive/Plan.completed-guild-roster-lifecycle.md).
+- [x] Difficulty Pressure, Full B1–B8 Maze Rollout, Playability & App Decomposition.
+  Archived: [docs/archive/Plan.completed-difficulty-maze-decomposition.md](docs/archive/Plan.completed-difficulty-maze-decomposition.md).
+  **Deferred within it: combat balance tuning** (descentSim Gate armed at
+  `deepestTrough < 0.72`, target ~0.45; awaits a player playtest + go-ahead).
+- [~] **Lane R (IN PROGRESS): Source Decomposition.** Pure-function slices +
+  6 App panel extractions shipped (App.tsx 2624 → 2454). **Remaining: the
+  town/guild/shop/records render** (largest/riskiest, own focused pass). See below.
+- [ ] Lane X: Repeat and Auto Action Tempo Feedback (partly covered by the
+  keyboard-combat auto/repeat work; remaining detail below).
 
 ### [ ] Lane X: Repeat and Auto Action Tempo Feedback
 
@@ -144,157 +152,12 @@ Planned slice:
   starts, displays active state, speeds up, stops on command, and stops on
   meaningful interrupts.
 
-### [ ] Lane Y: Guild Roster Management, Registration Lifecycle, and Cross-Scenario Adventurers
-
-Goal: make the guild feel like a home for the adventurers the player authors.
-Today `GameState.party` *is* the whole roster: there is no reserve, no way to
-remove someone once registered, no way to edit or retrain an existing
-adventurer, and no way to bring an adventurer into another scenario. The player
-can only build a fresh six and descend. This lane gives the guild a real roster
-the player curates over time, a full registration lifecycle, and portable
-adventurers.
-
-Current baseline (grounded, do not re-discover):
-
-- `GameState.party: Character[]` is the only roster; save schema v1 persists
-  `party`, `partyGold`, and `scenario.worldId` — there is no reserve/vault store.
-- `Character` mixes portable identity (`name`, `title`, `notes`, `classId`,
-  `backgroundId`, `aptitude`, `traitIds`, `accentColor`, `portraitRef`,
-  `creation`, `memory`) with scenario-coupled state (`startingEquipment` and
-  `equipment` reference scenario catalog ids; `xp`, `gold`, derived combat stats,
-  `hp`, `injury`).
-- There is no reclass path anywhere in `src/`.
-
-Planned slice A — Roster and party membership:
-
-- [ ] Introduce a guild roster larger than the active party: registered
-  adventurers live in the guild; the party is up to six chosen from it, with
-  front/back rows still visible.
-- [ ] Add controller-first add-to-party / remove-from-party (bench) actions at
-  the guild/town, before descent, without deleting the adventurer.
-- [ ] Keep the six-person, front/back-row formation contract; benched
-  adventurers are visibly "in the guild, not in the party," not lost.
-- [ ] Guard membership edits to safe contexts (town/guild, not mid-dungeon), and
-  keep the party non-empty before "enter dungeon" is offered.
-
-Planned slice B — Registration lifecycle (add, edit, retire, reclass):
-
-- [ ] Add: keep the existing staged registration, but register into the guild
-  roster rather than straight into a fixed party.
-- [ ] Edit: let the player revise an existing adventurer's identity (name,
-  epithet, record, portrait, accent) through the same staged, in-world surface,
-  without re-rolling their build.
-- [ ] Retire (the "delete" the player asked for), two tiers (decided):
-  - Tier 1 — Retire: the safe default. A reversible, in-world dismissal that
-    moves the adventurer to a retired state, recallable to the guild later, with
-    canonical records preserved.
-  - Tier 2 — Permanent erasure: available only behind a deliberate two-step
-    confirmation, fully and irreversibly removes the adventurer. This is the
-    explicit, guarded opt-in the player asked for; the reversible default plus
-    the double confirmation is how we honor "no *silent* irreversible deletion,"
-    not a raw one-click delete.
-- [ ] Reclass (転職): change an adventurer's class at the guild. Recompute stats
-  from the new class baseline plus retained aptitude/origin, auto-unequip gear
-  the new class cannot use, and keep identity, portrait, and roster memory.
-- [ ] Do not turn any of these into an admin table or bulk form; each is a
-  staged, focused, confirm/cancel choice with stable command/message areas.
-
-Planned slice C — Cross-scenario adventurers (copy/migrate):
-
-- [ ] Define a portable adventurer format: identity + build (class, origin,
-  aptitude, traits, accent, portrait, creation history) + earned progress
-  (xp/level, gold, roster memory). Scenario-bound bindings — equipment catalog
-  ids and in-dungeon position/floor state — are deliberately excluded; carried
-  progress is re-fit and clamped by the target world on import (see below).
-- [ ] Export selected guild adventurers to a scenario-independent vault stored
-  outside a single world save.
-- [ ] Import (copy, not move) a vaulted adventurer into another scenario's
-  guild carrying earned progress (decided): xp/level, gold, and roster memory
-  travel with the adventurer, but the *target* scenario constrains them. The
-  imported build is validated and clamped against the target world's declared
-  import rules, then re-fit with class-appropriate starting gear from that
-  world's catalog.
-- [ ] Add optional per-scenario import constraints to scenario data (e.g. level
-  cap / clamp, gold cap, allowed classes, starting-floor limit) so each world
-  decides how much carried progress it accepts; validate them like other
-  scenario truth (Zod) and surface a clear message when an import is clamped or
-  rejected.
-- [ ] Keep AI policy intact: import is player-driven data, never AI-authored, and
-  never mutates scenario truth.
-
-Save/schema impact:
-
-- New save schema version (v2): add the guild roster/reserve plus a retired
-  state alongside `party`, with a v1→v2 migration that seeds the roster from the
-  existing party. Retire moves an adventurer to the retired state; permanent
-  erasure removes them from the roster (and vault) entirely.
-- New scenario-independent adventurer vault (its own localStorage/Tauri boundary,
-  keyed off adventurer identity, not `worldId`), plus a versioned portable-
-  character schema — carrying identity, build, and earned progress — validated on
-  import with Zod, like scenario packs.
-- Extend scenario schema with optional import constraints (level cap/clamp, gold
-  cap, allowed classes, starting-floor limit) applied when a vaulted adventurer
-  is imported into that world.
-
-Japanese/UI impact:
-
-- All new surfaces are controller-first, staged, and localized EN/JA. New copy
-  (bench, retire confirmation, reclass preview, export/import) goes through the
-  localization dictionary and must pass the
-  [Japanese Line-Layout Gate](docs/gates/japanese-line-layout-gate.md) and the
-  [Japanese Dialogue Gate](docs/gates/japanese-dialogue-gate.md).
-- Retire/reclass confirmations read as a guild master in-world, not as UI
-  instructions or a designer talking to the player. The permanent-erasure step
-  is a distinct, unmistakable second confirmation whose Japanese and English copy
-  makes the irreversibility obvious without lapsing into UI-speak.
-
-Verification (headless/browser parity):
-
-- Unit tests for roster membership, reclass stat recomputation, retire
-  record-preservation, v1→v2 save migration, and portable-character export/import
-  validation.
-- Unit + browser tests for the two-tier retire: reversible retire keeps records
-  and can recall; permanent erasure only fires after the two-step confirmation
-  and truly removes the adventurer.
-- Unit tests for import clamping against target-scenario constraints (level cap,
-  gold cap, disallowed class), so carried progress is bounded correctly.
-- Browser Self-Play / Playwright evidence for add/remove, edit, retire (with
-  confirm), permanent erasure (double confirm), reclass preview, and a
-  same-adventurer copy into a second scenario that clamps carried progress —
-  headless proves none of the UX.
-
-Human expectation and red flags:
-
-- Expectation: the player curates a lasting roster, fixes and retrains the
-  adventurers they made, and carries a favorite into a new scenario.
-- Red flags: an admin/table roster editor; a one-click destructive delete, or a
-  permanent erasure reachable without the deliberate two-step confirmation;
-  reclass that silently wrecks a build with no preview; membership edits allowed
-  mid-dungeon; a portable character that smuggles another world's equipment ids;
-  an import that ignores the target scenario's caps and lets carried progress
-  break the world's balance; roster "grading"/coverage lectures creeping back in.
-
-Resolved decisions:
-
-- Retire is two-tier: a reversible, recallable retire by default, plus a
-  permanent, complete erasure behind a deliberate two-step confirmation.
-- Cross-scenario import carries earned progress (xp/level, gold, roster memory),
-  but the target scenario constrains it via declared import rules; carried
-  progress is clamped/validated against the destination world, not accepted raw.
-
-Open questions to resolve before opening tasks (BS-198+):
-
-- Reserve model: is the guild roster hard-capped, and do benched/retired
-  adventurers heal or persist wounds while out of the party?
-- Reclass cost/consequence: free at the guild, or gated by gold/XP; and whether
-  reclass resets level/XP or preserves it.
-
 ### [ ] Lane R: Source Decomposition and Refactoring
 
 Goal: cut the largest files down to focused modules without changing behaviour,
 so the codebase stays workable as the dungeon/roster features grow. This is a
 structural clean-up lane — **no functional changes** — and the existing suite
-(242 unit + 58 e2e) is the safety net: every slice must keep it green.
+(243 unit + 59 e2e) is the safety net: every slice must keep it green.
 
 Measured hot spots (lines, at time of writing):
 
@@ -307,10 +170,12 @@ Measured hot spots (lines, at time of writing):
   — 568; `src/components/DungeonView.tsx` — 488 (React component + Three.js
   scene builder in one).
 
-Progress: the first four (low-risk, pure-function) slices below shipped to main
-(App.tsx 2624 → 2274; new modules `src/domain/tempo.ts`, `src/ui/controllerFocus.ts`,
-`src/ui/format.ts`, `src/ui/catalog.ts`; +5 tempo unit tests). The remaining
-slices are state-coupled / higher-risk and are deferred to a follow-up branch.
+Progress: the pure-function slices shipped first (new modules `src/domain/tempo.ts`,
+`src/ui/controllerFocus.ts`, `src/ui/format.ts`, `src/ui/catalog.ts`,
+`src/ui/characterDraft.ts`, `src/components/dungeonScene.ts`; +5 tempo unit tests).
+Then 6 App **panel extractions** (title, camp, floor-map, debug, dungeon dock,
+combat dock). App.tsx 2624 → 2454. The only remaining chunk is the town/guild
+render (state-coupled, its own focused pass).
 
 Planned slices (ordered by value/risk; one extraction per commit, suite green
 after each):
@@ -382,20 +247,21 @@ slice; do not mix a refactor with a feature change in the same commit.
 Lanes V, W, Y, Z, the Combat Overhaul, and the full B1F–B8F maze rollout are
 complete, as is the Difficulty Pressure & Playability milestone (pack scaling,
 squads, safe landings, keyboard combat + auto/repeat, UI standards, enemy sprite,
-DebugMode force-win/revive). All green: 242 unit + 58 e2e.
+DebugMode force-win/revive), all now archived. All green: 243 unit + 59 e2e.
 
 ### NextAction (recommended order)
 
 1. **Player playtest pass** (owner: user). The DebugMode aids (force-win, revive)
    exist precisely for this; balance tuning is deferred pending real-play feedback.
-2. **Combat balance tuning** (deferred by user, "おいおい"). The Sim Gate is armed:
+2. **Lane R final pass** (in progress) — extract the town/guild/shop/records render,
+   the last large chunk in `App.tsx` (6 panels already extracted; behaviour-
+   preserving, suite green after each). Ready to start.
+3. **Combat balance tuning** (deferred by user, "おいおい"). The Sim Gate is armed:
    drive `deepestTrough` from ~0.67 toward ~0.45 by making bosses/packs bite,
    re-locking `tests/descentSim.test.ts`. Do NOT start without the user's go-ahead.
-3. **Lane X — Repeat/Auto tempo feedback** (partially covered by the keyboard-combat
+4. **Lane X — Repeat/Auto tempo feedback** (partially covered by the keyboard-combat
    auto/repeat work; audit what remains: on-screen active-mode indicator, speed
    tiers, interrupt-safety evidence).
-4. **Lane R remainder** — the ~1600-line per-phase JSX split in `App.tsx` (deferred:
-   largest/riskiest; behaviour-preserving only).
 
 Lane G (desktop productization) and Lane H (hidden narration) remain deferred until
 explicitly re-scoped.

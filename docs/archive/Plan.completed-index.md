@@ -1,10 +1,15 @@
 # Completed Plan Archive Index
 
-Archived: 2026-07-05
+Archived: 2026-07-05 (last updated 2026-07-10)
 
 Active plan: [../../Plan.md](../../Plan.md)
 
 ## Completed Plan And Task Slices
+
+- [x] Lane Y guild roster / registration lifecycle / cross-scenario adventurers:
+  [Plan.completed-guild-roster-lifecycle.md](Plan.completed-guild-roster-lifecycle.md)
+- [x] Difficulty pressure, full B1–B8 maze rollout, playability & App decomposition:
+  [Plan.completed-difficulty-maze-decomposition.md](Plan.completed-difficulty-maze-decomposition.md)
 
 - [x] BS-001..BS-040 modernization detail:
   [Plan.completed-modernization.md](Plan.completed-modernization.md)
@@ -67,6 +72,8 @@ Active plan: [../../Plan.md](../../Plan.md)
 - [x] Lane S: Combat Cockpit and Map Presentation Repair.
 - [x] Lane T: Browser Self-Play Gate.
 - [x] Lane U: Town Return Loop and Japanese DRPG Service UX.
+- [x] Lane Y: Guild Roster Management, Registration Lifecycle, Cross-Scenario Adventurers.
+- [x] Difficulty Pressure, Full B1–B8 Maze Rollout, Playability & App Decomposition.
 
 ## Recent Archived Plan Details
 

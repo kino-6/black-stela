@@ -7,67 +7,38 @@ Completed task slices and traceability are archived in:
 - [docs/archive/Tasks.completed-index.md](docs/archive/Tasks.completed-index.md)
 - [docs/archive/Plan.completed-index.md](docs/archive/Plan.completed-index.md)
 
-## Active Milestone: Difficulty Pressure & Playability
+## Active Milestone: Lane R — Source Decomposition (final pass)
 
-Goal: the descent is a real labyrinth the player fights through, playable by
-keyboard/controller, with playtest aids — not an open-room walk or a mouse-only
-button masher. **Shipped this milestone:**
+Goal: finish decomposing the `App.tsx` God component without changing behaviour.
+Pure-function helpers and 6 App panel extractions (title, camp, floor-map, debug,
+dungeon dock, combat dock) have shipped — **App.tsx 2624 → 2454**. Detail and
+guardrails in [Plan.md](Plan.md) (Lane R).
 
-- [x] #3 Under-strength pack scaling + #4 front-blocker/back-caster squads
-  (`underpowerFactor`, `scaledEncounterCount`, `encounterSquad`; melee-shield,
-  auto-stop). B1F unscaled; B2F+ punish solo/low-level descents.
-- [x] Safe stair landings: `use_stairs` never triggers combat; every floor's 001
-  landing has no `encounterTable` (per "階段に強制戦闘置かないで").
-- [x] **Full B1F–B8F maze rollout** (generated 棒倒し法 mazes; sole-approach
-  boss/toll choke to each descent, searchable secret vault; honest sweep 292–338).
-- [x] #57 Keyboard/controller-playable combat + auto/repeat + e2e Gate.
-- [x] #54 Combat/party UI standards in `AGENTS.md`; #55 party panel (MP, de-dup
-  rows); #56 enemy sprite anchored/visible.
-- [x] DebugMode force-win (強制勝利) + revive/full-heal (完全回復・復活) playtest aids.
-- [ ] #58 Combat balance tuning — **DEFERRED by user** ("バランス調整はおいおい").
-  descentSim Gate armed (`deepestTrough < 0.72` → target ~0.45). Do not start
-  without the user's go-ahead.
+- [ ] Extract the town / guild / shop / records render into panel components —
+  the last large chunk, entangled with the stateful character-draft flow and
+  ~40 handlers. Own focused pass, heavy prop-threading, suite green after each
+  extraction, dead imports pruned, no feature change mixed in.
+- [ ] (Skip/defer) `useSaveLoad` hook and `rulesEngine.ts` regrouping — judged
+  low-value; leave unless a concrete need appears.
 
-### NextAction
+### NextAction (日本語での提示は会話側で共有済み)
 
-1. Player playtest pass (owner: user) — the DebugMode aids exist for this.
-2. On the user's go-ahead: #58 balance tuning against the armed Sim Gate.
-3. Then Lane X (repeat/auto tempo feedback) or Lane R's JSX split (both deferred).
+1. **Player playtest pass** (owner: user) — the DebugMode force-win / revive aids
+   exist for exactly this; balance tuning waits on the resulting feedback.
+2. **Lane R final pass**: the town/guild panel extraction above (ready to start).
+3. **On the user's go-ahead: #58 combat balance tuning** — descentSim Gate armed
+   (`deepestTrough < 0.72` → target ~0.45); **deferred** ("バランス調整はおいおい"),
+   do not start without a go-ahead.
+4. **Lane X** — repeat/auto tempo feedback (partly covered; audit what remains).
 
-## Archived Milestone: Lane Y — Guild Roster Lifecycle (slices A–C, shipped)
+## Recently Completed (archived)
 
-Goal: the guild becomes a real home the player curates — edit, retire, and
-reclass registered adventurers, and carry them into other scenarios.
-
-- [x] Slice A: roster bench/recall (party + reserve, save migration). Shipped.
-- [x] Slice B — Registration lifecycle: Shipped.
-  - [x] Reclass (転職): recompute stats from the new class baseline + retained
-    aptitude, auto-unequip gear the new class cannot use, keep identity/portrait/
-    memory/xp/level.
-  - [x] Retire (two-tier): reversible retire → recallable "retired" state with
-    records preserved; permanent erasure only behind a deliberate two-step
-    confirmation. Save schema gained a retired state.
-  - [x] Edit identity: revise name/epithet/record/accent through the member
-    detail surface without re-rolling the build.
-- [x] Slice C — Cross-scenario adventurers: Shipped.
-  - [x] Portable format (identity + build + earned progress; exclude scenario
-    equipment ids / dungeon position), versioned + Zod-validated
-    (`PortableAdventurer`, `toPortableAdventurer`).
-  - [x] Scenario-independent vault (own localStorage boundary
-    `black-stela:adventurer-vault:v1`), deposit selected, discard.
-  - [x] Import (copy) into a guild's reserve via `import_member`, clamped by the
-    world's `importPolicy` (level/gold caps, allowed-class remap, in-world
-    progress reset), returning applied adjustments.
-- Gate for each: human expectation + red flags explicit, unit tests for the
-  domain rule, browser evidence for the surface, Japanese copy passes the line-
-  layout/dialogue gates. Retire/reclass confirmations read in-world (guild
-  master), the permanent-erasure step is an unmistakable second confirmation.
-
-Recently completed (archived): Lane V, Lane W, Lane Z (dungeon gimmicks), the
-combat overhaul ([CombatPlan.md](CombatPlan.md)), dense floor maps + backward
-movement + honest rendering ([DungeonPlan.md](DungeonPlan.md)), Lane R refactor
-slices 1–4, and Lane Y slice A. Upcoming after Lane Y: Lane X (tempo feedback),
-Lane R remainder, dense-floor rollout B2/B4–B8. See [Plan.md](Plan.md).
+- Difficulty Pressure, Full B1–B8 Maze Rollout, Playability & App Decomposition —
+  [docs/archive/Plan.completed-difficulty-maze-decomposition.md](docs/archive/Plan.completed-difficulty-maze-decomposition.md).
+- Lane Y: Guild Roster Management / Lifecycle / Cross-Scenario Adventurers —
+  [docs/archive/Plan.completed-guild-roster-lifecycle.md](docs/archive/Plan.completed-guild-roster-lifecycle.md).
+- Lane V/W/Z, the combat overhaul ([CombatPlan.md](CombatPlan.md)), and dense
+  floor maps + rendering ([DungeonPlan.md](DungeonPlan.md)) — see the archive index.
 
 ## Deferred Lanes
 
