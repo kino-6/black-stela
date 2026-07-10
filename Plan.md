@@ -125,7 +125,7 @@ suite and a real player playtest are.
   **Deferred within it: combat balance tuning** (descentSim Gate armed at
   `deepestTrough < 0.72`, target ~0.45; awaits a player playtest + go-ahead).
 - [~] **Lane R (IN PROGRESS): Source Decomposition.** Pure-function slices +
-  6 App panel extractions shipped (App.tsx 2624 → 2454). **Remaining: the
+  6 App panel extractions shipped (App.tsx 2624 → 2132). **Remaining: the
   town/guild/shop/records render** (largest/riskiest, own focused pass). See below.
 - [ ] Lane X: Repeat and Auto Action Tempo Feedback (partly covered by the
   keyboard-combat auto/repeat work; remaining detail below).
@@ -174,7 +174,7 @@ Progress: the pure-function slices shipped first (new modules `src/domain/tempo.
 `src/ui/controllerFocus.ts`, `src/ui/format.ts`, `src/ui/catalog.ts`,
 `src/ui/characterDraft.ts`, `src/components/dungeonScene.ts`; +5 tempo unit tests).
 Then 6 App **panel extractions** (title, camp, floor-map, debug, dungeon dock,
-combat dock). App.tsx 2624 → 2454. The only remaining chunk is the town/guild
+combat dock). App.tsx 2624 → 2132. The only remaining chunk is the town/guild
 render (state-coupled, its own focused pass).
 
 Planned slices (ordered by value/risk; one extraction per commit, suite green
@@ -204,17 +204,21 @@ after each):
 - [ ] (Deferred) Lift **save/load/import** into a `useSaveLoad` hook — low value:
   the handlers are thin view-glue over `saveRepository`, so a hook mostly shuffles
   ~10 setter deps rather than decomposing logic.
-- [~] (In progress) Split the per-phase JSX render into panel components. Shipped
-  the self-contained command surfaces + overlays (one extraction per commit, suite
-  green after each): `TitleScreen`, `CampPanel`, `FloorMapOverlay`, `DebugPanel`,
-  `DungeonCommandDock`, `CombatCommandDock` (all under `src/components/`), each with
-  now-dead App imports pruned. **Remaining (largest/riskiest): the town / guild /
-  shop / records panels**, which are entangled with the stateful draft flow and
-  ~40 handlers — best done as its own focused pass with heavy prop-threading.
+- [x] Split the per-phase JSX render into panel components — **all cleanly-separable
+  panels extracted** (one per commit, suite green after each, dead imports pruned):
+  `TitleScreen`, `CampPanel`, `FloorMapOverlay`, `DebugPanel`, `DungeonCommandDock`,
+  `CombatCommandDock`, plus the town services `RecoveryPanel`, `RecordsPanel`,
+  `TownEntryPanel`, `ShopPanel` (all under `src/components/`). **App.tsx 2778 → 2132.**
+- [ ] (Deferred — needs a state refactor, not a verbatim move) The guild studio's
+  **registration stepper** (briefing/class/appearance/bonus/name) stays inline: it is
+  a stateful draft flow whose ~40 draft handlers would become a mega-prop component
+  (the anti-pattern this lane warns against). Decompose it only alongside a
+  `useReducer`/context refactor of the draft state — a feature-shaped change, tracked
+  separately from this behaviour-preserving lane.
 - [ ] (Skip) Grouping `rulesEngine.ts` by concern — the movement/combat/gate logic
   is tightly coupled; splitting would fragment it against the lane's own guidance.
 
-App.tsx: 2624 (lane start) → 2454 after the panel-extraction slices; DungeonView
+App.tsx: 2624 (lane start) → 2132 after the panel-extraction slices; DungeonView
 514 → 222. The command docks, overlays, debug panel, and title screen are all now
 their own components; the town/guild render remains the last large chunk in App.
 
