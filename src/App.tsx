@@ -30,10 +30,11 @@ import {
   Wand2
 } from "lucide-react";
 import { DungeonView } from "./components/DungeonView";
-import { FloorMapView, MapPanel } from "./components/MapPanel";
+import { MapPanel } from "./components/MapPanel";
 import { ScenarioValidationPanel } from "./components/ScenarioValidationPanel";
 import { TitleScreen } from "./components/TitleScreen";
 import { CampPanel } from "./components/CampPanel";
+import { FloorMapOverlay } from "./components/FloorMapOverlay";
 import { createInitialGameState, addCharacter } from "./domain/gameState";
 import {
   backgroundCatalog,
@@ -47,7 +48,7 @@ import {
   traitCatalog
 } from "./domain/characterCreation";
 import { readVault, depositToVault, removeFromVault, type VaultEntry } from "./domain/adventurerVault";
-import { floorName, getGridEdge, getLocalizedRoomText, getRoom, isBossFloor } from "./domain/scenario";
+import { getGridEdge, getLocalizedRoomText, getRoom, isBossFloor } from "./domain/scenario";
 import { createIdentitySuggestion } from "./domain/identitySuggestion";
 import { executeCommand, listUnlockedCheckpoints, roomStairsEdge, stairGateAhead } from "./domain/rulesEngine";
 import { getTempoModeForPhase, runTempoStep, type TempoMode } from "./domain/tempo";
@@ -2571,25 +2572,7 @@ export function App() {
           />
         )}
         {fullMapOpen && state.phase === "dungeon" && (
-          <div className="floor-map-overlay" data-testid="floor-map" onClick={() => setFullMapOpen(false)}>
-            <section
-              className="floor-map-panel"
-              role="dialog"
-              aria-label={t("play.fullMapTitle")}
-              onClick={(event) => event.stopPropagation()}
-            >
-              <header className="floor-map-head">
-                <h3>{t("play.fullMapTitle")}</h3>
-                <span>{floorName(defaultWorld, state.map.floorId)}</span>
-              </header>
-              <div className="floor-map-scroll">
-                <FloorMapView state={state} world={defaultWorld} locale={locale} t={t} />
-              </div>
-              <button type="button" className="primary-action" onClick={() => setFullMapOpen(false)}>
-                {t("play.closeMap")}
-              </button>
-            </section>
-          </div>
+          <FloorMapOverlay state={state} world={defaultWorld} locale={locale} t={t} onClose={() => setFullMapOpen(false)} />
         )}
         </>
       ) : null}
