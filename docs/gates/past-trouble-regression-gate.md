@@ -61,6 +61,25 @@ work.
 | Reference misuse | "Wiz-like" was treated as surface flavor while violating the play structure. | Use classic DRPGs for interaction structure only: party order, formation, attrition, grid maze, command windows, and town prep. Do not copy proprietary content. |
 | Claiming done | Codex declared completion before checking the actual browser UI. | Any player-facing change needs browser screenshot/DOM review and a remaining-risk note. |
 
+### Combat feel & command UX (2026-07-11 playtest — found by hand in ~3 minutes)
+
+These are the exact things a player found by touching combat; each now has an
+automated regression check (see `tests/e2e/combat-regression.spec.ts` + others).
+
+| Area | Past failure | Blocking expectation | Regression cover |
+| --- | --- | --- | --- |
+| Command order | Command entry started on a back-row caster (raw party-array order). | The front row is commanded first, then the back row, in formation order. | `combat-order.spec.ts` |
+| Command surface | Combat was a flat button toolbar ("ボタンぽちぽち"), not a command RPG. | Per-actor input is a nested command MENU (command → target/spell), cursor/keyboard-first. | `combat.spec.ts`, `keyboard-combat.spec.ts` |
+| Keyboard scheme | Combat could not be driven by WASD (only arrows). | The command menu accepts WASD (W/S cursor, A back, D confirm) as well as arrows. | `combat-regression.spec.ts` |
+| Back-row attack | Back-row members (incl. casters with a staff) could not attack at all. | Back-row members carry a reach weapon (bow / long spear / staff) and can attack over the front line. | `reachWeapons.test.ts`, `combat-regression.spec.ts` |
+| Lonely encounters | Combat fielded a single enemy — worse than an FC-era DRPG. | Encounters can field multiple groups of multiple monsters. | `multiGroupEncounter.test.ts` |
+| Item command | Using an item completed with no selection at all. | どうぐ opens an item/target submenu; a target must be chosen. | `combat-regression.spec.ts` |
+| Resource visibility | HP/MP were bare numbers; MP status was hard to read at a glance. | HP and MP render as gauge bars in the combat roster and dungeon formation. | `combat-regression.spec.ts` |
+| Auto-battle stops | Auto/Repeat kept stopping itself and popping a menu ("謎UIが出て止まる"). | Discretionary auto-stops are OFF by default and Config-gated; auto just runs. | `squadCombat.test.ts` |
+| UI reflow | Context buttons/clues reflowed the command dock (stretch/shrink). | The command area is fixed-footprint; contextual clues ride tooltips/log, not variable-width tiles. | `combat.spec.ts` (#68) |
+| Instant combat | A round resolved instantly with no felt weight or "数字感". | Results play beat-by-beat with damage numbers + HP change; speed is player-controlled. | (pending #69) |
+| Front-row depth | Only casters had a non-attack action; front row had no skills/特技. | Front-row members can use class skills/特技, not just attack/defend. | (pending) |
+
 ## Browser Self-Play
 
 Use [Browser Self-Play Gate](browser-selfplay-gate.md) when a change touches the

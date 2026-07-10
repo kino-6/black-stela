@@ -2892,11 +2892,21 @@ textarea {
 
 /* HP / MP gauges — visualize resource status at a glance (Pillar 9). */
 .stat-gauge {
+  width: 100%;
   height: 0.35rem;
   margin-top: 0.2rem;
   border-radius: 0.2rem;
   background: rgba(255, 255, 255, 0.12);
   overflow: hidden;
+}
+
+/* Combat roster cards stack name/status over full-width HP/MP bars; without the
+   column the gauges are flex-row children and collapse to zero width (invisible). */
+.combat-rail .formation-slots .battle-choice {
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: center;
+  gap: 0.18rem;
 }
 
 .stat-gauge-fill {
