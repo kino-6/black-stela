@@ -7,10 +7,32 @@ Completed task slices and traceability are archived in:
 - [docs/archive/Tasks.completed-index.md](docs/archive/Tasks.completed-index.md)
 - [docs/archive/Plan.completed-index.md](docs/archive/Plan.completed-index.md)
 
-## Active Milestone: all handheld Plan lanes cleared
+## Active Milestone: Combat Feel & DRPG Depth (playtest review 2026-07-11)
 
-The "clear everything" pass is done. All green: **production build + 251 unit +
-60 e2e**. Detail in [Plan.md](Plan.md).
+From a live combat playtest. Six items, tracked as tasks #64–#68 (+ config). Execute
+in order; each keeps the suite green + browser evidence. Human expectation and red
+flags per item; no piecemeal shipping without a Gate.
+
+- [ ] **#64 Command order** — command entry starts from the raw party-array member
+  (Mira, back row). Input front-row-first, then back, in formation order.
+- [ ] **#65 Back-row reach weapons** — back row can't attack behind a standing front
+  (Wiz-authentic). Add a `reach`/back-capable weapon property (bow / long weapon),
+  design 1–2 such weapons, equip back-row starters with one, make canAttack honor it.
+- [ ] **#66 Multi-enemy encounters** — normal fights are 1 enemy. Author encounters
+  with multiple groups of multiple monsters (FC Wiz-style; user chose *both* groups
+  and counts). Display / targeting / tempo / rewards must handle multi-group.
+- [ ] **#67 Auto/Repeat split + auto-stop → Config** — split the one tempo button into
+  オート (continuous auto-battle) and リピート (re-run last round's orders). The
+  discretionary combat auto-stops (boss/tactical/danger) default OFF; Config toggle
+  to re-enable. Keep terminal stops (combat ended / no one can act).
+- [ ] **#68 Fixed dock layout** — context buttons/clues (descent-locked clue, stairs,
+  return, charm) reflow the command dock (UI stretch/shrink). Move clue text to the
+  log/message window and/or keep fixed positions + disable (AGENTS "fixed command
+  areas").
+
+## Previous Milestone: all handheld Plan lanes cleared (shipped)
+
+All green: **production build + 251 unit + 60 e2e**. Detail in [Plan.md](Plan.md).
 
 - [x] #58 Combat balance tuning — deep floors + bosses bite (no-grind push
   93→79→77→67→43→30%, zero downs); descentSim Gate `0.12 < deepestTrough < 0.55`.
