@@ -92,6 +92,35 @@ equipment:
       ja:
         name: 灰木の杖
         description: 札を切る手に重さを合わせた黒ずんだ杖。
+  - id: equip.short-bow
+    name: Short Bow
+    description: A stub recurve that looses over the front line — a back-row striker's reach.
+    slot: weapon
+    tier: 1
+    attackBonus: 2
+    accuracyBonus: 1
+    price: 48
+    sellValue: 15
+    allowedClasses: [seeker, scout, cutpurse, wayfinder, chanter]
+    tags: [reach, ranged]
+    locales:
+      ja:
+        name: 短弓
+        description: 前列越しに射かける短い返し弓。後衛から届く間合いを持つ。
+  - id: equip.long-spear
+    name: Long Spear
+    description: A long haft that strikes from the second rank, past the shoulders ahead.
+    slot: weapon
+    tier: 1
+    attackBonus: 2
+    price: 44
+    sellValue: 14
+    allowedClasses: [vanguard, sellsword, bulwark, seeker, wayfinder]
+    tags: [reach, polearm]
+    locales:
+      ja:
+        name: 長柄槍
+        description: 前の肩越しに、二列目から突き出せる長い柄。
   - id: equip.split-buckler
     name: Split Buckler
     description: A small cracked shield; it catches knives but slows the hand.
@@ -227,6 +256,12 @@ shops:
         availability: always
       - itemId: equip.ashwood-staff
         price: 32
+        availability: always
+      - itemId: equip.short-bow
+        price: 48
+        availability: always
+      - itemId: equip.long-spear
+        price: 44
         availability: always
       - itemId: equip.split-buckler
         price: 24

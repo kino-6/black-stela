@@ -230,7 +230,7 @@ export const classCatalog: CharacterClassDefinition[] = [
     rowPreference: "back",
     aptitude: { agility: 1, spirit: 1, wit: 2 },
     base: { maxHp: 10, attack: 3, damageMin: 2, damageMax: 5, accuracy: 82, armor: 0, speed: 8 },
-    equipment: { accessory: "equip.chalk-cord", offhand: "equip.candle-ward" }
+    equipment: { weapon: "equip.short-bow", accessory: "equip.chalk-cord" }
   }
 ];
 

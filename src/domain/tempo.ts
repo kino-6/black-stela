@@ -1,4 +1,5 @@
 import { executeCommand } from "./rulesEngine";
+import { weaponReaches } from "./economy";
 import { getGridEdge, getRoom } from "./scenario";
 import type { CombatActionDeclaration, GameState, ScenarioWorld } from "./types";
 import type { Translator } from "../i18n";
@@ -74,7 +75,7 @@ function runTempoCombatStep(state: GameState, world: ScenarioWorld, t: Translato
 
   const hasStandingFront = activeParty.some((member) => member.row === "front");
   const actions: CombatActionDeclaration[] = activeParty.map((member) =>
-    member.row === "front" || !hasStandingFront
+    member.row === "front" || !hasStandingFront || weaponReaches(member, world)
       ? { actorId: member.id, action: "attack", targetGroupId: target.id }
       : { actorId: member.id, action: "defend" }
   );

@@ -67,6 +67,10 @@ export const catalogIconUrls: Record<string, string> = {
   "equip.grip-gloves": equipGripGlovesUrl,
   "equip.iron-cap": equipIronCapUrl,
   "equip.militia-sabre": equipMilitiaSabreUrl,
+  // Placeholder icons for the reach weapons (bow / long spear) — real art tracked in
+  // Art.md. Reuse existing weapon icons so the catalog-icon Gate stays green.
+  "equip.short-bow": equipRustedDirkUrl,
+  "equip.long-spear": equipMilitiaSabreUrl,
   "equip.padded-jack": equipPaddedJackUrl,
   "equip.ring-mail": equipRingMailUrl,
   "equip.rusted-dirk": equipRustedDirkUrl,

@@ -22,7 +22,8 @@ import {
   getEffectiveCharacterStats,
   getEquipmentSlot,
   isEquipmentUsableBy,
-  removeInventoryItem
+  removeInventoryItem,
+  weaponReaches
 } from "./economy";
 import { EQUIPMENT_AFFIXES, equipmentInstanceKey } from "./affixes";
 import type {
@@ -800,7 +801,7 @@ function declareRound(state: GameState, world: ScenarioWorld, actions: CombatAct
   }
 
   const combat = normalizeCombat(state.combat);
-  const validation = validateRoundActions(state.party, combat, actions);
+  const validation = validateRoundActions(state.party, combat, actions, world);
   if (validation.event) {
     return withEvents({ ...state, combat }, [validation.event]);
   }
@@ -1667,7 +1668,8 @@ function syncCombatEnemy(combat: CombatState): CombatState {
 function validateRoundActions(
   party: Character[],
   combat: CombatState,
-  actions: CombatActionDeclaration[]
+  actions: CombatActionDeclaration[],
+  world: ScenarioWorld
 ): { actions: CombatActionDeclaration[]; event?: GameEvent } {
   if (actions.length === 0) {
     return { actions: [] };
@@ -1681,7 +1683,9 @@ function validateRoundActions(
     }
 
     if (action.action === "attack") {
-      if (actor.row === "back" && standingFront) {
+      // Melee from the back row is blocked while a front line stands — unless the
+      // actor carries a reach weapon (bow / long spear), which strikes over it.
+      if (actor.row === "back" && standingFront && !weaponReaches(actor, world)) {
         return {
           actions: [],
           event: { type: "combat_action_blocked", reason: "back_row_blocked", actorName: actor.name }

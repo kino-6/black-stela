@@ -85,6 +85,14 @@ export function findEquipment(world: ScenarioWorld, equipmentId: string): Scenar
   return world.equipment.find((item) => item.id === equipmentId);
 }
 
+// A `reach` weapon (bow, long spear) lets its wielder strike from the back row
+// even while a front line stands — the melee-can't-reach rule is lifted for it.
+export function weaponReaches(character: Character, world: ScenarioWorld): boolean {
+  const weapon = character.equipment.weapon;
+  const catalog = weapon ? findEquipment(world, weapon.id) : undefined;
+  return catalog?.tags?.includes("reach") ?? false;
+}
+
 export function getEffectiveCharacterStats(character: Character, world: ScenarioWorld): EffectiveCharacterStats {
   let attackBonus = 0;
   let defenseBonus = 0;

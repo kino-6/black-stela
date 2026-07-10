@@ -281,6 +281,11 @@ Inventory, shop, and equipment actions now show icons. **Format: PNG RGBA
 256×256, single centered object, painterly, warm rim light.** File →
 `src/assets/icons/<id>.png`.
 
+**TODO (added 2026-07-11):** two reach weapons need real icons — `equip.short-bow`
+(短弓, a stub recurve bow) and `equip.long-spear` (長柄槍, a long pike/spear). They
+currently borrow placeholder icons (dirk / sabre) in `src/ui/artAssets.ts`; replace
+with painted icons in the P4 style.
+
 - **Items (5):** `item.healing-draught` (治癒の水薬), `item.lantern-oil` (灯油),
   `item.ashen-key` (灰の鍵 — pale ash-formed key), `item.stela-shard` (黒碑片 —
   shard of black stone), `item.return-charm` (帰還の割符).

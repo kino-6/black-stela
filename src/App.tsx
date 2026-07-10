@@ -68,7 +68,7 @@ import {
 } from "./ui/catalog";
 import { equipmentInstanceKey } from "./domain/affixes";
 import { projectEventToLog } from "./domain/replayLog";
-import { calculateRecoveryCost, getEffectiveCharacterStats, isEquipmentUsableBy } from "./domain/economy";
+import { calculateRecoveryCost, getEffectiveCharacterStats, isEquipmentUsableBy, weaponReaches } from "./domain/economy";
 import type {
   CharacterAptitudes,
   CharacterBackgroundId,
@@ -245,7 +245,9 @@ export function App() {
   const selectedActor = commandOrder.find((member) => !orderedActorIds.has(member.id)) ?? null;
   const frontRowStanding = activeParty.some((member) => member.row === "front");
   const canSelectedActorAttack = Boolean(
-    selectedActor && selectedTarget && !(selectedActor.row === "back" && frontRowStanding)
+    selectedActor &&
+      selectedTarget &&
+      !(selectedActor.row === "back" && frontRowStanding && !weaponReaches(selectedActor, defaultWorld))
   );
   const canCycleCombatTarget = livingEnemyGroups.length > 1;
   const combatOrdersReady = state.phase === "combat" && activeParty.length > 0 && activeParty.every((member) => orderedActorIds.has(member.id));
