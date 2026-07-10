@@ -33,15 +33,16 @@ describe("descent survivability (no grind)", () => {
 
   // Difficulty Gate (turns the balance Sim into an enforced band, not just a
   // survivability check). Two-sided: the descent must NOT wipe a no-grind party,
-  // and must NOT be a no-damage cakewalk. A full-party no-grind push currently
-  // bottoms out at ~0.67 HP at the finale and hovers ~0.9 elsewhere — far too easy
-  // (the player "reached B7F without any struggle"). The tuning pass is deferred,
-  // but this Gate FAILS if a change flattens the descent further into zero threat,
-  // and its bound tightens toward ~0.45 as bosses/packs are made to bite.
+  // and must NOT be a no-damage cakewalk. After the 2026-07 tuning pass a full-party
+  // no-grind push ramps 93→79→77→67→43→30% (deep floors bite, finale threatens) and
+  // survives with zero downs. This Gate FAILS if a change flattens the descent back
+  // toward zero threat (trough climbs above ~0.55) OR pushes it into a near-certain
+  // wipe (trough collapses below ~0.12), so the band stays honest as content changes.
   it("threatens the party somewhere on a no-grind descent (difficulty Gate)", () => {
     const result = simulateDescent(defaultWorld, { heal: "none" });
     const deepestTrough = Math.min(...result.floors.map((floor) => floor.lowestHpPct));
     expect(result.survived).toBe(true); // still survivable
-    expect(deepestTrough).toBeLessThan(0.72); // still meaningfully threatened somewhere
+    expect(deepestTrough).toBeLessThan(0.55); // deep floors must genuinely bite
+    expect(deepestTrough).toBeGreaterThan(0.12); // ...but not be a near-certain wipe
   });
 });

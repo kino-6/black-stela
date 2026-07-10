@@ -24,11 +24,11 @@ enemies:
       ja:
         name: 塵這い
     hp: 6
-    attack: 2
+    attack: 3
     armor: 0
     accuracy: 68
-    damageMin: 1
-    damageMax: 3
+    damageMin: 2
+    damageMax: 4
     speed: 5
     morale: 6
     xp: 2
@@ -44,11 +44,11 @@ enemies:
       ja:
         name: 鉤鼠
     hp: 5
-    attack: 2
+    attack: 3
     armor: 0
     accuracy: 75
-    damageMin: 1
-    damageMax: 3
+    damageMin: 2
+    damageMax: 4
     speed: 8
     morale: 6
     xp: 2
@@ -63,12 +63,12 @@ enemies:
     locales:
       ja:
         name: 灰の番衛
-    hp: 14
-    attack: 2
+    hp: 16
+    attack: 3
     armor: 3
     accuracy: 70
-    damageMin: 1
-    damageMax: 3
+    damageMin: 2
+    damageMax: 4
     speed: 3
     morale: 10
     xp: 4
@@ -86,11 +86,11 @@ enemies:
       ja:
         name: 灰の呼び手
     hp: 5
-    attack: 1
+    attack: 2
     armor: 0
     accuracy: 65
-    damageMin: 1
-    damageMax: 2
+    damageMin: 2
+    damageMax: 3
     speed: 6
     morale: 6
     xp: 5
@@ -115,11 +115,11 @@ enemies:
       ja:
         name: 苦い塵
     hp: 6
-    attack: 2
+    attack: 3
     armor: 0
     accuracy: 70
-    damageMin: 1
-    damageMax: 2
+    damageMin: 2
+    damageMax: 4
     speed: 6
     morale: 8
     xp: 3
@@ -138,12 +138,12 @@ enemies:
     locales:
       ja:
         name: 灯守
-    hp: 8
-    attack: 3
+    hp: 10
+    attack: 4
     armor: 2
     accuracy: 70
-    damageMin: 2
-    damageMax: 4
+    damageMin: 3
+    damageMax: 6
     speed: 3
     morale: 10
     xp: 4
@@ -170,12 +170,12 @@ enemies:
     locales:
       ja:
         name: 灰燼の番人
-    hp: 14
-    attack: 4
+    hp: 22
+    attack: 5
     armor: 2
-    accuracy: 80
-    damageMin: 3
-    damageMax: 5
+    accuracy: 82
+    damageMin: 4
+    damageMax: 7
     speed: 5
     morale: 11
     xp: 7
@@ -191,12 +191,12 @@ enemies:
     locales:
       ja:
         name: 貯水の番人
-    hp: 11
-    attack: 3
+    hp: 17
+    attack: 5
     armor: 1
-    accuracy: 78
-    damageMin: 2
-    damageMax: 5
+    accuracy: 82
+    damageMin: 4
+    damageMax: 7
     speed: 6
     morale: 10
     xp: 5
@@ -210,12 +210,12 @@ enemies:
     locales:
       ja:
         name: 誓いの番人
-    hp: 18
-    attack: 5
+    hp: 26
+    attack: 6
     armor: 2
-    accuracy: 82
-    damageMin: 3
-    damageMax: 6
+    accuracy: 84
+    damageMin: 4
+    damageMax: 7
     speed: 6
     morale: 11
     xp: 9
@@ -229,12 +229,12 @@ enemies:
     locales:
       ja:
         name: 誓い断ち
-    hp: 10
+    hp: 11
     attack: 4
     armor: 1
     accuracy: 80
-    damageMin: 2
-    damageMax: 5
+    damageMin: 3
+    damageMax: 6
     speed: 9
     morale: 8
     xp: 5
@@ -247,12 +247,12 @@ enemies:
     locales:
       ja:
         name: 納骨殻
-    hp: 12
-    attack: 4
+    hp: 13
+    attack: 5
     armor: 3
-    accuracy: 70
-    damageMin: 3
-    damageMax: 5
+    accuracy: 74
+    damageMin: 4
+    damageMax: 6
     speed: 3
     morale: 10
     xp: 6
@@ -265,12 +265,12 @@ enemies:
     locales:
       ja:
         name: 灰の奉者
-    hp: 22
-    attack: 5
+    hp: 28
+    attack: 6
     armor: 3
-    accuracy: 82
-    damageMin: 4
-    damageMax: 6
+    accuracy: 84
+    damageMin: 5
+    damageMax: 8
     speed: 6
     morale: 12
     xp: 13
