@@ -1,9 +1,18 @@
-import { buildPublicNarrationInput, type NarratorProvider } from "../narratorProvider";
+import { NARRATION_PROMPT_VERSION, buildPublicNarrationInput, type NarratorProvider } from "../narratorProvider";
 
 export const ollamaProvider: NarratorProvider = {
   metadata: {
     kind: "ollama",
-    label: "Ollama"
+    label: "Ollama",
+    promptVersion: NARRATION_PROMPT_VERSION
+  },
+  async checkHealth(request) {
+    try {
+      const response = await fetchWithTimeout(request.settings.endpoint, { method: "GET" }, request.settings.timeoutMs);
+      return { provider: "ollama", healthy: response.ok || response.status === 405, detail: `HTTP ${response.status}` };
+    } catch (error) {
+      return { provider: "ollama", healthy: false, detail: error instanceof Error ? error.message : "unreachable" };
+    }
   },
   async narrate(request) {
     try {
@@ -29,6 +38,8 @@ export const ollamaProvider: NarratorProvider = {
       return {
         status: "success",
         provider: "ollama",
+        promptVersion: NARRATION_PROMPT_VERSION,
+        model: request.settings.model,
         proposal: {
           source: "local_ai",
           prose: data.response ?? ""

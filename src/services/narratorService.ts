@@ -1,7 +1,12 @@
 import type { GameState, ScenarioWorld } from "../domain/types";
-import type { NarrationProposal } from "./aiPolicyGuard";
+import { guardNarration, type NarrationProposal } from "./aiPolicyGuard";
 import { defaultAiSettings, parseAiSettings, type AiSettings } from "./aiSettings";
-import { noneNarratorProvider, type NarratorProvider } from "./narratorProvider";
+import {
+  noneNarratorProvider,
+  type NarratorProvider,
+  type NarratorProviderHealth
+} from "./narratorProvider";
+import { recordNarrationDiagnostic } from "./narrationDiagnostics";
 import { ollamaProvider } from "./providers/ollamaProvider";
 import { openAiCompatibleProvider } from "./providers/openAiCompatibleProvider";
 
@@ -10,6 +15,10 @@ const providers: Record<AiSettings["provider"], NarratorProvider> = {
   ollama: ollamaProvider,
   "openai-compatible": openAiCompatibleProvider
 };
+
+function pickProvider(settings: AiSettings): NarratorProvider {
+  return settings.enabled ? providers[settings.provider] : noneNarratorProvider;
+}
 
 export async function requestLocalNarration(
   state: GameState,
@@ -24,6 +33,27 @@ export async function requestLocalNarration(
   });
 }
 
+// Hidden, developer-facing health probe. Background-only: it never throws and never
+// touches game state or the player-facing UI. Operators use it to see whether the
+// local provider is reachable when narration silently falls back.
+export async function checkNarratorHealth(
+  state: GameState,
+  world: ScenarioWorld,
+  inputSettings: Partial<AiSettings> = {}
+): Promise<NarratorProviderHealth> {
+  const settings = parseAiSettings({ ...defaultAiSettings, ...inputSettings });
+  const provider = pickProvider(settings);
+  try {
+    return await provider.checkHealth({ state, world, settings });
+  } catch (error) {
+    return {
+      provider: provider.metadata.kind,
+      healthy: false,
+      detail: error instanceof Error ? error.message : "health check failed"
+    };
+  }
+}
+
 export async function requestNarration(
   state: GameState,
   world: ScenarioWorld,
@@ -33,11 +63,30 @@ export async function requestNarration(
     ...defaultAiSettings,
     ...inputSettings
   });
-  const provider = settings.enabled ? providers[settings.provider] : noneNarratorProvider;
+  const provider = pickProvider(settings);
   const result = await provider.narrate({ state, world, settings });
 
   if (result.status === "success") {
-    return result.proposal;
+    // Background flavor is non-canonical: it must pass the policy guard (no speaking
+    // or acting for player characters, no scenario-forbidden content) before use.
+    // A blocked line is recorded for developers and replaced by deterministic text.
+    const guarded = guardNarration(state, world, result.proposal);
+    if (guarded.accepted) {
+      return { source: result.proposal.source, prose: guarded.prose };
+    }
+
+    recordNarrationDiagnostic({
+      provider: result.provider,
+      outcome: "guard_rejected",
+      message: guarded.reason ?? "Narration blocked by the policy guard.",
+      promptVersion: result.promptVersion,
+      model: result.model,
+      turn: state.turn
+    });
+    return {
+      source: "fallback",
+      prose: "The local narrator is unavailable. Exploration continues by deterministic rules."
+    };
   }
 
   if (result.provider === "none") {
@@ -47,6 +96,15 @@ export async function requestNarration(
     };
   }
 
+  // Unavailable or provider-rejected: record for developer diagnostics, fall back.
+  recordNarrationDiagnostic({
+    provider: result.provider,
+    outcome: result.status,
+    message: result.message,
+    promptVersion: provider.metadata.promptVersion,
+    model: settings.model,
+    turn: state.turn
+  });
   return {
     source: "fallback",
     prose: "The local narrator is unavailable. Exploration continues by deterministic rules."

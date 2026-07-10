@@ -1,9 +1,18 @@
-import { buildPublicNarrationInput, type NarratorProvider } from "../narratorProvider";
+import { NARRATION_PROMPT_VERSION, buildPublicNarrationInput, type NarratorProvider } from "../narratorProvider";
 
 export const openAiCompatibleProvider: NarratorProvider = {
   metadata: {
     kind: "openai-compatible",
-    label: "LocalAI / OpenAI-compatible"
+    label: "LocalAI / OpenAI-compatible",
+    promptVersion: NARRATION_PROMPT_VERSION
+  },
+  async checkHealth(request) {
+    try {
+      const response = await fetch(request.settings.endpoint, { method: "GET" });
+      return { provider: "openai-compatible", healthy: response.ok || response.status === 405, detail: `HTTP ${response.status}` };
+    } catch (error) {
+      return { provider: "openai-compatible", healthy: false, detail: error instanceof Error ? error.message : "unreachable" };
+    }
   },
   async narrate(request) {
     try {
@@ -39,6 +48,8 @@ export const openAiCompatibleProvider: NarratorProvider = {
       return {
         status: "success",
         provider: "openai-compatible",
+        promptVersion: NARRATION_PROMPT_VERSION,
+        model: request.settings.model,
         proposal: {
           source: "local_ai",
           prose: data.choices?.[0]?.message?.content ?? ""
