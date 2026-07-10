@@ -14,16 +14,17 @@ interface CombatCommandMenuProps {
   livingGroups: CombatEnemyGroup[];
   spells: SpellId[];
   canAttack: boolean;
-  hasItem: boolean;
+  itemLabel: string | null;
+  partyTargets: { id: string; name: string }[];
   t: Translator;
   onQueueAttack: (groupId: string) => void;
   onQueueSpell: (spellId: SpellId, groupId: string | null) => void;
   onQueueDefend: () => void;
-  onQueueItem: () => void;
+  onQueueItem: (targetCharacterId: string) => void;
   onUndo: () => void;
 }
 
-type MenuView = "command" | "attackTarget" | "spell" | "spellTarget";
+type MenuView = "command" | "attackTarget" | "spell" | "spellTarget" | "itemTarget";
 type CommandKind = "attack" | "spell" | "item" | "defend";
 
 // A nested, cursor-first combat command menu (コマンドRPG). The front-to-back actor
@@ -36,7 +37,8 @@ export function CombatCommandMenu({
   livingGroups,
   spells,
   canAttack,
-  hasItem,
+  itemLabel,
+  partyTargets,
   t,
   onQueueAttack,
   onQueueSpell,
@@ -55,12 +57,12 @@ export function CombatCommandMenu({
     if (spells.length > 0) {
       list.push({ kind: "spell", label: t("play.spell"), enabled: true });
     }
-    if (hasItem) {
-      list.push({ kind: "item", label: t("play.useItem"), enabled: true });
+    if (itemLabel && partyTargets.length > 0) {
+      list.push({ kind: "item", label: itemLabel, enabled: true });
     }
     list.push({ kind: "defend", label: t("play.defend"), enabled: true });
     return list;
-  }, [canAttack, spells.length, hasItem, t]);
+  }, [canAttack, spells.length, itemLabel, partyTargets.length, t]);
 
   // Reset to the command list whenever the actor being commanded changes, landing
   // the cursor on the first ENABLED command so Enter always does something valid.
@@ -106,12 +108,20 @@ export function CombatCommandMenu({
         };
       });
     }
-    // spellTarget
-    return livingGroups.map((group) => ({
-      key: group.id,
-      label: `${group.name} ×${group.count}`,
+    if (view === "spellTarget") {
+      return livingGroups.map((group) => ({
+        key: group.id,
+        label: `${group.name} ×${group.count}`,
+        enabled: true,
+        onSelect: () => pendingSpell && onQueueSpell(pendingSpell, group.id)
+      }));
+    }
+    // itemTarget — choose which ally to use the item on
+    return partyTargets.map((ally) => ({
+      key: ally.id,
+      label: ally.name,
       enabled: true,
-      onSelect: () => pendingSpell && onQueueSpell(pendingSpell, group.id)
+      onSelect: () => onQueueItem(ally.id)
     }));
   })();
 
@@ -123,7 +133,8 @@ export function CombatCommandMenu({
       setView("spell");
       setCursor(0);
     } else if (kind === "item") {
-      onQueueItem();
+      setView("itemTarget");
+      setCursor(0);
     } else {
       onQueueDefend();
     }

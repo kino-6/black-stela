@@ -449,9 +449,9 @@ export function App() {
     }
   }
 
-  function menuQueueItem() {
+  function menuQueueItem(targetCharacterId: string) {
     if (selectedActor && combatHealingItem) {
-      queueCombatOrder({ actorId: selectedActor.id, action: "use_item", itemId: combatHealingItem.id, targetCharacterId: selectedActor.id });
+      queueCombatOrder({ actorId: selectedActor.id, action: "use_item", itemId: combatHealingItem.id, targetCharacterId });
     }
   }
 
@@ -2090,7 +2090,8 @@ export function App() {
                         livingEnemyGroups.length > 0 &&
                         !(selectedActor.row === "back" && frontRowStanding && !weaponReaches(selectedActor, defaultWorld))
                       }
-                      hasItem={Boolean(combatHealingItem)}
+                      itemLabel={combatHealingItem ? `${t("play.useItem")} · ${combatHealingItem.name}` : null}
+                      partyTargets={activeParty.map((member) => ({ id: member.id, name: member.name }))}
                       t={t}
                       onQueueAttack={menuQueueAttack}
                       onQueueSpell={menuQueueSpell}
