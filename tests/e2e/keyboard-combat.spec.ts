@@ -3,37 +3,31 @@ import { createStarterParty, startNewExpedition } from "./helpers";
 
 /**
  * Gate (AGENTS §Combat & Party UI Standards, rule 7): combat must be fully playable
- * by keyboard alone — no mouse. Drive an entire fight from move-in to victory with
- * only key presses, using a FULL six-member party (three back-row who cannot strike),
- * so a stall on a back-row member would fail this. F = act (attack, else defend);
- * X = execute the round.
+ * by keyboard alone via the command menu — no mouse. The nested menu (command →
+ * target/spell) is driven with Enter: each press either descends a submenu or queues
+ * the current actor, front to back, and the round auto-resolves after the last actor.
+ * A full six-member party (three back-row who fall to Magic/Defend, not a stall) is
+ * fought to victory with Enter alone.
  */
 test("a fight can be fought to victory by keyboard alone", async ({ page }) => {
   await startNewExpedition(page);
   await createStarterParty(page);
-  // Entering the dungeon is a town action; from here on, keyboard only.
   await page.getByRole("button", { name: "Enter dungeon" }).click();
   await expect(page.getByRole("heading", { name: "Silent Stone Chamber" })).toBeVisible();
 
-  // Walk into the intro fight with the keyboard (ArrowUp = move forward).
   await page.keyboard.press("ArrowUp");
-  await expect(page.getByLabel("Battle screen")).toBeVisible();
+  await expect(page.getByTestId("combat-command-menu")).toBeVisible();
 
-  // Fight it out: F acts for each of the six actors in turn (back-row members
-  // fall back to Defend rather than stalling), then X executes the round.
-  for (let round = 0; round < 12; round += 1) {
+  // Drive the whole fight with Enter (the menu owns the keyboard while focused).
+  for (let step = 0; step < 80; step += 1) {
     if (await page.getByRole("heading", { name: "Combat" }).isHidden().catch(() => true)) {
       break;
     }
-    for (let actor = 0; actor < 6; actor += 1) {
-      await page.keyboard.press("f");
-      await page.waitForTimeout(25);
-    }
-    await page.keyboard.press("x");
-    await page.waitForTimeout(160);
+    await page.getByTestId("combat-command-menu").focus().catch(() => {});
+    await page.keyboard.press("Enter");
+    await page.waitForTimeout(50);
   }
 
-  // The fight is over (won) and we never touched the mouse in combat.
   await expect(page.getByRole("heading", { name: "Combat" })).toHaveCount(0);
   await expect(page.getByRole("heading", { name: "Hall of Old Dust" })).toBeVisible();
 });

@@ -8,17 +8,14 @@ test("repeat and keyboard commands keep the dungeon loop fast", async ({ page })
   await registerAdventurer(page, { name: "Mira" });
   await page.getByRole("button", { name: "Enter dungeon" }).click();
 
+  // Space starts auto-explore, which walks into the first fight and stops there.
   await expect(page.getByRole("button", { name: "Repeat" })).toBeVisible();
   await page.keyboard.press("Space");
   await expect(page.getByRole("heading", { name: "Combat" })).toBeVisible();
 
-  await page.keyboard.press("Space");
-  await expect(page.getByTestId("combat-command-window").getByRole("button", { name: "Stop" })).toBeVisible();
-  await page.keyboard.press("Space");
-  await expect(page.getByRole("heading", { name: "Combat" })).toBeVisible();
-  await expect(page.getByText("Repeat stopped.")).toBeVisible();
-
-  await page.keyboard.press("Space");
+  // Resolve the fight through the command menu, then auto-explore resumes on Repeat
+  // and stops at the next interesting tile — the loop stays fast and interruptible.
+  await resolveVisibleCombat(page);
   await expect(page.getByRole("heading", { name: "Hall of Old Dust" })).toBeVisible();
 
   await page.getByRole("button", { name: "Repeat" }).click();

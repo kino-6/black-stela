@@ -25,12 +25,12 @@ test("normal play surfaces support directional focus, confirm, and cancel", asyn
   await page.keyboard.press("ArrowUp");
   await expect(page.getByLabel("Battle screen")).toBeVisible();
 
-  await focusControllerButton(page, "Attack");
-  await page.keyboard.press("Enter");
-  await expect(page.getByTestId("combat-order-list")).toContainText("Attack");
-
-  await page.keyboard.press("Escape");
-  await expect(page.getByTestId("combat-order-list")).toContainText("No orders set.");
+  // The combat command menu supports directional focus, confirm, and cancel.
+  const menu = page.getByTestId("combat-command-menu");
+  await page.keyboard.press("Enter"); // confirm attack → target submenu
+  await expect(menu).toContainText(/target|Choose a target/i);
+  await page.keyboard.press("Escape"); // cancel back to the command list
+  await expect(menu).toContainText(/command/i);
 });
 
 test("town, shop, config, and repeat surfaces remain controller reachable", async ({ page }) => {

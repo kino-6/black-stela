@@ -130,33 +130,23 @@ export async function registerAdventurer(
   await page.getByRole("button", { name: labels.register }).click();
 }
 
+// Drive a fight to victory through the command menu using Enter alone — each press
+// descends command→target/spell or queues an actor; the round auto-resolves after
+// the last actor.
 export async function resolveVisibleCombat(page: Page) {
-  await expect(page.getByLabel("Battle screen")).toBeVisible();
-  await expect(page.getByTestId("combat-actor").first()).toBeVisible();
-  await expect(page.getByTestId("combat-enemy-group").first()).toBeVisible();
+  // Language-agnostic: wait for the command menu (testid), then Enter the focused row.
+  await expect(page.getByTestId("combat-command-menu")).toBeVisible();
 
-  for (let round = 0; round < 6; round += 1) {
-    if (await page.getByRole("heading", { name: "Combat" }).isHidden()) {
-      return;
+  for (let step = 0; step < 80; step += 1) {
+    if ((await page.getByTestId("combat-command-menu").count()) === 0) {
+      return; // combat ended — the menu unmounted
     }
-
-    for (let order = 0; order < 6; order += 1) {
-      const fight = page.getByRole("button", { name: "Fight" });
-      if (await fight.isEnabled()) {
-        break;
-      }
-
-      const attack = page.getByRole("button", { name: "Attack" });
-      if (await attack.isEnabled()) {
-        await attack.click();
-      } else {
-        await page.getByRole("button", { name: "Defend" }).click();
-      }
-    }
-    await page.getByRole("button", { name: "Fight" }).click();
+    // The selected row keeps focus (roving tabindex); Enter activates it.
+    await page.keyboard.press("Enter").catch(() => {});
+    await page.waitForTimeout(50).catch(() => {});
   }
 
-  await expect(page.getByRole("heading", { name: "Combat" })).toHaveCount(0);
+  await expect(page.getByTestId("combat-command-menu")).toHaveCount(0);
 }
 
 // B1F is a maze (see scripts/genFloorMaze.mjs, seed 20250709). Navigation replays

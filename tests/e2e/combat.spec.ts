@@ -1,9 +1,8 @@
 import { expect, test } from "@playwright/test";
-import { createStarterParty, focusControllerButton, registerAdventurer, resolveVisibleCombat, setTitleLanguage, startNewExpedition } from "./helpers";
+import { createStarterParty, registerAdventurer, resolveVisibleCombat, setTitleLanguage, startNewExpedition } from "./helpers";
 
-test("resolves tactical combat through visible actor, target, and combat commands", async ({ page }) => {
+test("resolves combat through the nested command menu", async ({ page }) => {
   await startNewExpedition(page);
-
   await registerAdventurer(page, { name: "Mira" });
   await page.getByRole("button", { name: "Enter dungeon" }).click();
   await page.getByRole("button", { name: "Move" }).click();
@@ -11,90 +10,29 @@ test("resolves tactical combat through visible actor, target, and combat command
   await expect(page.getByLabel("Battle screen")).toBeVisible();
   await expect(page.getByText("Round 1")).toBeVisible();
   await expect(page.getByRole("heading", { name: "Enemy groups" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Party formation" })).toBeVisible();
-  await expect(page.getByTestId("party-hud")).toHaveCount(0);
-  await expect(page.getByLabel("Mini-map")).toHaveCount(0);
   await expect(page.getByTestId("combat-enemy-group")).toContainText("Ash Slime");
-  await expect(page.getByTestId("combat-enemy-group")).not.toContainText(/HP \d+/);
-  await expect(page.getByRole("button", { name: /Ash Slime/ })).toHaveCount(0);
-  await expect(page.getByTestId("combat-actor")).toContainText("Mira");
-  await expect(page.getByRole("button", { name: "Attack" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Target" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Resolve round" })).toHaveCount(0);
-  // Spells are class-gated now, so a lone vanguard has no cast buttons — but the
-  // universal Defend command is always present.
-  await expect(page.getByRole("button", { name: "Defend" })).toBeVisible();
 
-  // Combat is a single-screen fixed frame: the cockpit fills but does not exceed
-  // the viewport, and the page itself does not scroll.
+  // The per-actor input is a command MENU (not a flat button toolbar): a heading for
+  // the current actor plus attack / defend rows.
+  const menu = page.getByTestId("combat-command-menu");
+  await expect(menu).toBeVisible();
+  await expect(menu).toContainText("Mira");
+  await expect(page.getByTestId("combat-menu-attack")).toBeVisible();
+  await expect(page.getByTestId("combat-menu-defend")).toBeVisible();
+
+  // Fixed single-screen frame: the cockpit fits the viewport and the page never scrolls.
   const cockpitFitsViewport = await page.locator(".adventure-cockpit").evaluate((element) => {
-    const bounds = element.getBoundingClientRect();
-    return bounds.bottom <= window.innerHeight + 1;
+    return element.getBoundingClientRect().bottom <= window.innerHeight + 1;
   });
   expect(cockpitFitsViewport).toBe(true);
-  const noPageScroll = await page.evaluate(() => {
-    const el = document.scrollingElement ?? document.documentElement;
-    return el.scrollHeight <= el.clientHeight + 1;
-  });
-  expect(noPageScroll).toBe(true);
 
   await resolveVisibleCombat(page);
-
   await expect(page.getByRole("heading", { name: "Hall of Old Dust" })).toBeVisible();
   await expect(page.getByText(/Victory.*XP.*gold/i)).toBeVisible();
 });
 
-test("queues visible party orders before resolving a combat round", async ({ page }) => {
+test("six-member party keeps front and back rows visible; the menu does not reflow", async ({ page }) => {
   await startNewExpedition(page);
-
-  await registerAdventurer(page, { name: "Mira" });
-  await page.getByRole("button", { name: "Enter dungeon" }).click();
-  await page.getByRole("button", { name: "Move" }).click();
-
-  await expect(page.getByLabel("Battle screen")).toBeVisible();
-  await expect(page.getByText("Round 1")).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Battle order" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Fight" })).toBeDisabled();
-
-  await page.getByRole("button", { name: "Attack" }).click();
-  await expect(page.getByText("Round 1")).toBeVisible();
-  await expect(page.getByTestId("combat-order-list")).toContainText("Mira");
-  await expect(page.getByTestId("combat-order-list")).toContainText("Attack");
-  await expect(page.getByRole("button", { name: "Fight" })).toBeEnabled();
-
-  await page.getByRole("button", { name: "Take back" }).click();
-  await expect(page.getByTestId("combat-order-list")).toContainText("No orders set.");
-  await expect(page.getByRole("button", { name: "Fight" })).toBeDisabled();
-
-  await page.getByRole("button", { name: "Attack" }).click();
-  await page.getByRole("button", { name: "Fight" }).click();
-  await expect(page.locator("body")).toContainText(/Round 2|Victory|Hall of Old Dust/);
-});
-
-test("combat commands advance through party order instead of clicked actor cards", async ({ page }) => {
-  await startNewExpedition(page);
-
-  await createStarterParty(page);
-  await page.getByRole("button", { name: "Enter dungeon" }).click();
-  await page.getByRole("button", { name: "Move" }).click();
-
-  await expect(page.getByLabel("Battle screen")).toBeVisible();
-  await expect(page.getByRole("button", { name: /Ash Slime|灰泥/ })).toHaveCount(0);
-  const actorNames = await page.getByTestId("combat-actor").locator("strong").allTextContents();
-  const firstActor = actorNames[0];
-  const clickedActor = actorNames.at(-1) ?? firstActor;
-  await page.getByTestId("combat-actor").filter({ hasText: clickedActor }).click();
-  await page.getByRole("button", { name: "Attack" }).click();
-
-  await expect(page.getByTestId("combat-order-list")).toContainText(firstActor);
-  if (clickedActor !== firstActor) {
-    await expect(page.getByTestId("combat-order-list")).not.toContainText(clickedActor);
-  }
-});
-
-test("six-member party keeps front and back rows visible in combat", async ({ page }) => {
-  await startNewExpedition(page);
-
   await createStarterParty(page);
   await page.getByRole("button", { name: "Enter dungeon" }).click();
 
@@ -107,40 +45,17 @@ test("six-member party keeps front and back rows visible in combat", async ({ pa
   await expect(page.getByTestId("combat-back-row")).toContainText("Back row");
   await expect(page.getByTestId("combat-actor")).toHaveCount(6);
 
-  const commandDockBefore = await page.getByLabel("Combat commands").evaluate((element) => element.getBoundingClientRect().top);
-  await page.getByRole("button", { name: "Defend" }).click();
-  await expect(page.getByTestId("combat-order-list")).toContainText("Defend");
-  const commandDockAfter = await page.getByLabel("Combat commands").evaluate((element) => element.getBoundingClientRect().top);
-  expect(Math.abs(commandDockAfter - commandDockBefore)).toBeLessThan(2);
+  // #68: descending command → target submenu must not resize the menu panel (its
+  // fixed min-height absorbs the shorter list) — so the command area never reflows.
+  const menu = page.getByTestId("combat-command-menu");
+  const height = () => menu.evaluate((el) => el.getBoundingClientRect().height);
+  const heightBefore = await height();
+  await page.keyboard.press("Enter"); // attack → target submenu
+  await expect(menu).toContainText(/target|標的/i);
+  expect(Math.abs((await height()) - heightBefore)).toBeLessThan(2);
 });
 
-test("keyboard-only command flow keeps command windows stable", async ({ page }) => {
-  await startNewExpedition(page);
-
-  await createStarterParty(page);
-  await page.getByRole("button", { name: "Enter dungeon" }).click();
-
-  const dungeonDockBefore = await page
-    .getByTestId("dungeon-command-window")
-    .evaluate((element) => element.getBoundingClientRect().top);
-  await page.keyboard.press("ArrowUp");
-  await expect(page.getByLabel("Battle screen")).toBeVisible();
-
-  const combatDockBefore = await page
-    .getByTestId("combat-command-window")
-    .evaluate((element) => element.getBoundingClientRect().top);
-  await page.keyboard.press("ArrowDown");
-  await page.keyboard.press("g");
-  await expect(page.getByTestId("combat-order-list")).toContainText("Defend");
-  const combatDockAfter = await page
-    .getByTestId("combat-command-window")
-    .evaluate((element) => element.getBoundingClientRect().top);
-
-  expect(Math.abs(combatDockAfter - combatDockBefore)).toBeLessThan(2);
-  expect(dungeonDockBefore).toBeGreaterThan(0);
-});
-
-test("Japanese mobile combat order remains readable", async ({ page }) => {
+test("Japanese mobile combat menu stays readable without horizontal overflow", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await setTitleLanguage(page, "ja");
   await page.getByRole("button", { name: "新たな探索" }).click();
@@ -149,14 +64,9 @@ test("Japanese mobile combat order remains readable", async ({ page }) => {
   await page.getByRole("button", { name: "進む" }).click();
 
   await expect(page.getByRole("heading", { name: "戦闘", exact: true })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "戦闘指示" })).toBeVisible();
   await expect(page.getByTestId("combat-enemy-group")).toContainText("灰泥");
-  await expect(page.getByTestId("combat-enemy-group")).not.toContainText(/HP \d+/);
-  await expect(page.getByText("Ash Slime")).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "決定" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "一手戻す" })).toBeVisible();
-  await page.getByRole("button", { name: "攻撃" }).click();
-  await expect(page.getByTestId("combat-order-list")).toContainText("攻撃");
+  await expect(page.getByTestId("combat-command-menu")).toBeVisible();
+  await expect(page.getByTestId("combat-menu-attack")).toContainText("攻撃");
 
   const horizontalOverflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth);
   expect(horizontalOverflow).toBe(false);

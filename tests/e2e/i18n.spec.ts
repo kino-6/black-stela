@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { registerAdventurer, setTitleLanguage } from "./helpers";
+import { registerAdventurer, resolveVisibleCombat, setTitleLanguage } from "./helpers";
 
 test("switches to Japanese from title config and persists the selected language", async ({ page }) => {
   await setTitleLanguage(page, "ja");
@@ -28,13 +28,7 @@ test("plays the MVP flow with Japanese room text and log projection", async ({ p
   await expect(page.getByTestId("combat-enemy-group")).toContainText("灰泥");
   await expect(page.getByText("Ash Slime")).toHaveCount(0);
   await expect(page.getByText("gold")).toHaveCount(0);
-  for (let round = 0; round < 6; round += 1) {
-    if (await page.getByRole("heading", { name: "戦闘", exact: true }).isHidden()) {
-      break;
-    }
-    await page.getByRole("button", { name: "攻撃" }).click();
-    await page.getByRole("button", { name: "決定" }).click();
-  }
+  await resolveVisibleCombat(page);
   await expect(page.getByRole("heading", { name: "古い塵の広間" })).toBeVisible();
   await expect(page.getByText("gold")).toHaveCount(0);
 });

@@ -14,6 +14,7 @@ import { FloorMapOverlay } from "./components/FloorMapOverlay";
 import { DebugPanel } from "./components/DebugPanel";
 import { DungeonCommandDock } from "./components/DungeonCommandDock";
 import { CombatCommandDock } from "./components/CombatCommandDock";
+import { CombatCommandMenu } from "./components/CombatCommandMenu";
 import { RecoveryPanel } from "./components/RecoveryPanel";
 import { RecordsPanel } from "./components/RecordsPanel";
 import { TownEntryPanel } from "./components/TownEntryPanel";
@@ -36,7 +37,7 @@ import { getGridEdge, getLocalizedRoomText, getRoom, isBossFloor } from "./domai
 import { createIdentitySuggestion } from "./domain/identitySuggestion";
 import { executeCommand, listUnlockedCheckpoints, roomStairsEdge, stairGateAhead } from "./domain/rulesEngine";
 import { getTempoModeForPhase, runTempoStep, type TempoMode } from "./domain/tempo";
-import { SPELLS, type SpellId } from "./domain/spells";
+import { SPELLS, knownSpells, type SpellId } from "./domain/spells";
 import {
   activateControllerCancel,
   focusFirstControllerChoice,
@@ -408,6 +409,52 @@ export function App() {
     setCombatOrders([]);
   }
 
+  // Queue one actor's order via the command menu; when the last active member is
+  // commanded the round resolves automatically (classic command-RPG flow — no
+  // separate "execute" press).
+  function queueCombatOrder(order: CombatActionDeclaration) {
+    const nextOrders = [...combatOrders.filter((queued) => queued.actorId !== order.actorId), order];
+    const allQueued = activeParty.length > 0 && activeParty.every((member) => nextOrders.some((queued) => queued.actorId === member.id));
+    if (allQueued) {
+      run({ type: "declare_round", actions: nextOrders }, { remember: false });
+      setCombatOrders([]);
+    } else {
+      setCombatOrders(nextOrders);
+    }
+  }
+
+  function menuQueueAttack(groupId: string) {
+    if (selectedActor) {
+      queueCombatOrder({ actorId: selectedActor.id, action: "attack", targetGroupId: groupId });
+    }
+  }
+
+  function menuQueueSpell(spellId: SpellId, groupId: string | null) {
+    if (!selectedActor || selectedActor.mp < SPELLS[spellId].mpCost) {
+      return;
+    }
+    if (SPELLS[spellId].target === "ally") {
+      const wounded = [...state.party]
+        .filter((member) => member.hp > 0)
+        .sort((left, right) => left.hp / left.maxHp - right.hp / right.maxHp)[0];
+      queueCombatOrder({ actorId: selectedActor.id, action: "cast", spellId, targetCharacterId: (wounded ?? selectedActor).id });
+    } else if (groupId) {
+      queueCombatOrder({ actorId: selectedActor.id, action: "cast", spellId, targetGroupId: groupId });
+    }
+  }
+
+  function menuQueueDefend() {
+    if (selectedActor) {
+      queueCombatOrder({ actorId: selectedActor.id, action: "defend" });
+    }
+  }
+
+  function menuQueueItem() {
+    if (selectedActor && combatHealingItem) {
+      queueCombatOrder({ actorId: selectedActor.id, action: "use_item", itemId: combatHealingItem.id, targetCharacterId: selectedActor.id });
+    }
+  }
+
   function takeBackCombatOrder() {
     const nextOrders = combatOrders.slice(0, -1);
     setCombatOrders(nextOrders);
@@ -708,6 +755,17 @@ export function App() {
         return;
       }
 
+      // The combat command menu owns its navigation keys while focused (↑↓ Enter
+      // Space Esc Backspace); skip the global movement/focus shortcuts for those so
+      // its own handler runs. Other keys (e.g. R for auto/repeat) still pass through.
+      const menuFocused =
+        event.target instanceof HTMLElement &&
+        Boolean(event.target.closest('[data-controller-surface="combat-menu"]'));
+      const menuKeys = ["arrowup", "arrowdown", "arrowleft", "arrowright", "enter", " ", "escape", "backspace"];
+      if (menuFocused && menuKeys.includes(key)) {
+        return;
+      }
+
       // In the dungeon the arrow keys drive the party (up = forward, down =
       // step back, left/right = turn) rather than moving button focus.
       if (
@@ -789,26 +847,10 @@ export function App() {
       } else if (state.phase === "dungeon" && key === "m") {
         event.preventDefault();
         setFullMapOpen((open) => !open);
-      } else if (state.phase === "combat" && (key === "f" || key === "enter")) {
-        event.preventDefault();
-        if (combatOrdersReady && key === "enter") {
-          executeCombatOrders();
-        } else {
-          queueSmartCombatAction();
-        }
-      } else if (state.phase === "combat" && key === "g") {
-        event.preventDefault();
-        queueSelectedCombatAction("defend");
-      } else if (state.phase === "combat" && key === "x") {
-        event.preventDefault();
-        executeCombatOrders();
-      } else if (state.phase === "combat" && key === "backspace") {
-        event.preventDefault();
-        takeBackCombatOrder();
-      } else if (state.phase === "combat" && (key === "arrowright" || key === "arrowleft")) {
-        event.preventDefault();
-        cycleSelectedTarget(key === "arrowright" ? 1 : -1);
       }
+      // Per-actor combat input is owned by the focused command menu (CombatCommandMenu);
+      // the round auto-resolves after the last actor, so there are no global combat
+      // action shortcuts here. R/Space still toggle auto-battle above.
     }
 
     window.addEventListener("keydown", onKeyDown);
@@ -1993,30 +2035,35 @@ export function App() {
                 />
               )}
               {state.phase === "combat" ? (
-                <CombatCommandDock
-                  t={t}
-                  isTempoRunning={isTempoRunning}
-                  onToggleTempo={() => toggleTempoMode("combat")}
-                  canSelectedActorAttack={canSelectedActorAttack}
-                  onAttack={() => queueSelectedCombatAction("attack")}
-                  canCycleTarget={canCycleCombatTarget}
-                  onCycleTarget={() => cycleSelectedTarget(1)}
-                  selectedActor={selectedActor}
-                  hasSelectedTarget={Boolean(selectedTarget)}
-                  onDefend={() => queueSelectedCombatAction("defend")}
-                  onCastSpell={(spellId) => queueSelectedCombatSpell(spellId)}
-                  showUseItem={Boolean(combatHealingItem)}
-                  onUseItem={() => queueSelectedCombatAction("use_item")}
-                  combatOrdersReady={combatOrdersReady}
-                  onExecute={executeCombatOrders}
-                  combatOrdersCount={combatOrders.length}
-                  onTakeBack={takeBackCombatOrder}
-                  onClear={clearCombatOrders}
-                  onRetreat={() => run({ type: "retreat" })}
-                  debugMode={debugMode}
-                  onForceVictory={() => run({ type: "debug_force_victory" })}
-                  onReviveParty={() => run({ type: "debug_revive_party" })}
-                />
+                <>
+                  {selectedActor && (
+                    <CombatCommandMenu
+                      actor={selectedActor}
+                      livingGroups={livingEnemyGroups}
+                      spells={knownSpells(selectedActor.classId, selectedActor.level)}
+                      canAttack={
+                        livingEnemyGroups.length > 0 &&
+                        !(selectedActor.row === "back" && frontRowStanding && !weaponReaches(selectedActor, defaultWorld))
+                      }
+                      hasItem={Boolean(combatHealingItem)}
+                      t={t}
+                      onQueueAttack={menuQueueAttack}
+                      onQueueSpell={menuQueueSpell}
+                      onQueueDefend={menuQueueDefend}
+                      onQueueItem={menuQueueItem}
+                      onUndo={takeBackCombatOrder}
+                    />
+                  )}
+                  <CombatCommandDock
+                    t={t}
+                    isTempoRunning={isTempoRunning}
+                    onToggleTempo={() => toggleTempoMode("combat")}
+                    onRetreat={() => run({ type: "retreat" })}
+                    debugMode={debugMode}
+                    onForceVictory={() => run({ type: "debug_force_victory" })}
+                    onReviveParty={() => run({ type: "debug_revive_party" })}
+                  />
+                </>
               ) : (
                 <DungeonCommandDock
                   t={t}

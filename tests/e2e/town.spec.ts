@@ -115,7 +115,9 @@ test("combat exposes defend and item use choices", async ({ page }) => {
   await page.getByRole("button", { name: "Enter dungeon" }).click();
   await page.getByRole("button", { name: "Move" }).click();
 
-  await expect(page.getByRole("button", { name: "Defend" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Use item" })).toBeVisible();
+  // The command menu exposes Defend (always) and Use item (when an item is carried).
+  await expect(page.getByTestId("combat-command-menu")).toBeVisible();
+  await expect(page.getByTestId("combat-menu-defend")).toBeVisible();
+  await expect(page.getByTestId("combat-menu-item")).toBeVisible();
 });
 
