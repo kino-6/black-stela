@@ -339,13 +339,19 @@ after each):
 - [ ] (Deferred) Lift **save/load/import** into a `useSaveLoad` hook — low value:
   the handlers are thin view-glue over `saveRepository`, so a hook mostly shuffles
   ~10 setter deps rather than decomposing logic.
-- [ ] (Deferred, largest/riskiest) Split the ~1600-line **per-phase JSX render**
-  into panel components (Town, Guild, Combat, Dungeon) so `App.tsx` becomes an
-  orchestrator. Best done as its own focused effort with heavy prop-threading.
+- [~] (In progress) Split the per-phase JSX render into panel components. Shipped
+  the self-contained command surfaces + overlays (one extraction per commit, suite
+  green after each): `TitleScreen`, `CampPanel`, `FloorMapOverlay`, `DebugPanel`,
+  `DungeonCommandDock`, `CombatCommandDock` (all under `src/components/`), each with
+  now-dead App imports pruned. **Remaining (largest/riskiest): the town / guild /
+  shop / records panels**, which are entangled with the stateful draft flow and
+  ~40 handlers — best done as its own focused pass with heavy prop-threading.
 - [ ] (Skip) Grouping `rulesEngine.ts` by concern — the movement/combat/gate logic
   is tightly coupled; splitting would fragment it against the lane's own guidance.
 
-App.tsx: 2624 (lane start) → 2436 after these slices; DungeonView 514 → 222.
+App.tsx: 2624 (lane start) → 2454 after the panel-extraction slices; DungeonView
+514 → 222. The command docks, overlays, debug panel, and title screen are all now
+their own components; the town/guild render remains the last large chunk in App.
 
 Guardrails: behaviour-preserving only; no API/UX changes in this lane; prefer
 moving code verbatim then re-wiring imports; run `tsc`, unit, and e2e after each
