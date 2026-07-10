@@ -19,6 +19,7 @@ import { DebugPanel } from "./components/DebugPanel";
 import { DungeonCommandDock } from "./components/DungeonCommandDock";
 import { CombatCommandDock } from "./components/CombatCommandDock";
 import { RecoveryPanel } from "./components/RecoveryPanel";
+import { RecordsPanel } from "./components/RecordsPanel";
 import { createInitialGameState, addCharacter } from "./domain/gameState";
 import {
   backgroundCatalog,
@@ -2050,20 +2051,7 @@ export function App() {
                 </section>
               )}
               {townMode === "records" && (
-                <section className="town-service" aria-labelledby="records-heading">
-                  <h3 id="records-heading">{t("town.recordsHeading")}</h3>
-                  <p>{t("town.logCount", { count: state.log.length })}</p>
-                  {state.log.length > 0 && (
-                    <ol className="records-list">
-                      {state.log.slice().reverse().slice(0, 8).map((entry) => (
-                        <li key={entry.id}>
-                          <small>{t("log.turn", { turn: entry.turn })}</small>
-                          <p>{entry.event ? projectEventToLog(entry.event, locale, defaultWorld)?.text ?? entry.text : entry.text}</p>
-                        </li>
-                      ))}
-                    </ol>
-                  )}
-                </section>
+                <RecordsPanel t={t} log={state.log} locale={locale} world={defaultWorld} />
               )}
               {townMode === "records" && (
                 <>
