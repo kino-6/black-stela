@@ -235,7 +235,14 @@ export function App() {
   );
   const selectedTarget = livingEnemyGroups.find((group) => group.id === selectedTargetId) ?? livingEnemyGroups[0] ?? null;
   const orderedActorIds = useMemo(() => new Set(combatOrders.map((order) => order.actorId)), [combatOrders]);
-  const selectedActor = activeParty.find((member) => !orderedActorIds.has(member.id)) ?? null;
+  // Command entry follows classic DRPG order: the front row receives commands
+  // first, then the back row, preserving formation order within each row (a stable
+  // sort). Without this the raw party-array order can start on a back-row caster.
+  const commandOrder = useMemo(
+    () => [...activeParty].sort((a, b) => (a.row === "front" ? 0 : 1) - (b.row === "front" ? 0 : 1)),
+    [activeParty]
+  );
+  const selectedActor = commandOrder.find((member) => !orderedActorIds.has(member.id)) ?? null;
   const frontRowStanding = activeParty.some((member) => member.row === "front");
   const canSelectedActorAttack = Boolean(
     selectedActor && selectedTarget && !(selectedActor.row === "back" && frontRowStanding)
