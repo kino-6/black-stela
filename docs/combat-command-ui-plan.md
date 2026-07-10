@@ -1,9 +1,17 @@
 # Plan: Command-Menu Combat UI (コマンドRPG化)
 
+Grounded in [drpg-design-pillars.md](drpg-design-pillars.md) (researched). This lane
+serves **Pillar 7 (combat = a war of decisions)**, **Pillar 9 (combat must FEEL
+weighty — presentation, pacing, speed control)**, and **Pillar 10 (purity)**, and
+undoes the matching betrayals the audit found: *flat button toolbar / attack-mash*,
+*instant feedback-less rounds*, *lonely 1-enemy fights*, *a back row that just can't
+act*. (Pillars 3 sticky-death and 6 FOEs are the next big design questions *after*
+this lane — flagged, not in scope here.)
+
 The playtest verdict: despite the docks, keyboard support, and per-actor queueing,
 combat still reads as **"ボタンぽちぽち"** — a flat toolbar of buttons — not a
 **command-menu RPG**. This lane rebuilds the combat command surface into a nested,
-cursor-first command menu, and folds the six playtest items (#64–#68) into it.
+cursor-first command menu, and folds the seven playtest items (#64–#69) into it.
 
 ## Human expectation
 
@@ -76,8 +84,15 @@ is the primary, complete path.
 3. **Command-menu core** — replace the flat combat dock with the nested command menu
    (command → target/spell), cursor/keyboard-first, wired to `declare_round`. Absorbs
    #68 (fixed panel) and the G1/G2/G3 Gate.
-4. **#67 Auto/Repeat** — オート (continuous auto-battle) + リピート (repeat last
-   round's orders) as distinct edge affordances; auto-stops Config-gated (default off).
+4. **#69 Combat presentation / 数字感 (Pillar 9)** — play the round beat-by-beat in an
+   on-screen log (hit/miss → damage NUMBER → HP change → status), animate HP drain,
+   proportional feedback (crits bigger). Speed control is load-bearing: tap-to-advance,
+   **hold confirm to fast-forward**, and a message-speed setting (slow/normal/fast/
+   instant). This is what turns "instant, weightless" into felt tension without slowing
+   grind.
+5. **#67 Auto/Repeat** — オート (continuous auto-battle, fast-forwards animation) +
+   リピート (repeat last round's orders) as distinct edge affordances; discretionary
+   auto-stops Config-gated (default off), keeping terminal stops.
 
 ## Status
 
