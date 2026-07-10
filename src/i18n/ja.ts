@@ -9,6 +9,9 @@ export const ja = {
     en: "英語",
     ja: "日本語"
   },
+  config: {
+    autoBattleSafety: "オートを危険時に停止する（ボス／低HP）"
+  },
   title: {
     menu: "タイトルメニュー",
     newGame: "新たな探索",

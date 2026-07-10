@@ -96,7 +96,7 @@ import { defaultWorld } from "./data/defaultWorld";
 import { fromSaveDataV1, toSaveDataV1 } from "./domain/saveData";
 import { LocalStorageSaveRepository, type SaveSlotSummary } from "./services/saveRepository";
 import { createTranslator, type Locale, type Translator } from "./i18n";
-import { loadLocale, saveLocale as persistLocale } from "./services/settingsRepository";
+import { loadAutoBattleSafety, loadLocale, saveAutoBattleSafety, saveLocale as persistLocale } from "./services/settingsRepository";
 import type { ScenarioValidationError } from "./domain/scenarioPack";
 import { loadScenarioPack, type ScenarioPackFiles } from "./services/scenarioPackLoader";
 import { formatScenarioSummary, summarizeScenario } from "./services/scenarioSummary";
@@ -139,6 +139,7 @@ export function App() {
   const [headlessStatus, setHeadlessStatus] = useState("");
   const saveRepository = useMemo(() => createBrowserSaveRepository(), []);
   const [locale, setLocale] = useState<Locale>(() => loadLocale());
+  const [autoBattleSafety, setAutoBattleSafety] = useState<boolean>(() => loadAutoBattleSafety());
   const t = useMemo(() => createTranslator(locale), [locale]);
   const [saveSlotId, setSaveSlotId] = useState(AUTO_SAVE_SLOT);
   const [saveSlots, setSaveSlots] = useState<SaveSlotSummary[]>(() => createBrowserSaveRepository()?.list() ?? []);
@@ -729,7 +730,7 @@ export function App() {
     }
 
     const timer = window.setInterval(() => {
-      const result = runTempoStep(stateRef.current, tempoMode, defaultWorld, t);
+      const result = runTempoStep(stateRef.current, tempoMode, defaultWorld, t, { safetyStops: autoBattleSafety });
       stateRef.current = result.state;
       setState(result.state);
       setTempoStep((step) => step + 1);
@@ -741,7 +742,7 @@ export function App() {
     }, tempoSpeed === "fast" ? 130 : 320);
 
     return () => window.clearInterval(timer);
-  }, [tempoMode, tempoSpeed, t]);
+  }, [tempoMode, tempoSpeed, autoBattleSafety, t]);
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
@@ -910,10 +911,15 @@ export function App() {
           hasAutosave={hasAutosave}
           saveStatus={saveStatus}
           hasCorruptAutosave={hasCorruptAutosave}
+          autoBattleSafety={autoBattleSafety}
           onNewGame={startNewGame}
           onContinue={() => loadGame(AUTO_SAVE_SLOT)}
           onToggleConfig={() => setScreen(screen === "config" ? "title" : "config")}
           onChangeLocale={changeLocale}
+          onToggleAutoBattleSafety={(enabled) => {
+            setAutoBattleSafety(enabled);
+            saveAutoBattleSafety(enabled);
+          }}
         />
       )}
 

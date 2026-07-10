@@ -7,10 +7,12 @@ interface TitleScreenProps {
   hasAutosave: boolean;
   saveStatus: string;
   hasCorruptAutosave: boolean;
+  autoBattleSafety: boolean;
   onNewGame: () => void;
   onContinue: () => void;
   onToggleConfig: () => void;
   onChangeLocale: (locale: Locale) => void;
+  onToggleAutoBattleSafety: (enabled: boolean) => void;
 }
 
 // The pre-game title + config screen (extracted verbatim from App's render).
@@ -21,10 +23,12 @@ export function TitleScreen({
   hasAutosave,
   saveStatus,
   hasCorruptAutosave,
+  autoBattleSafety,
   onNewGame,
   onContinue,
   onToggleConfig,
-  onChangeLocale
+  onChangeLocale,
+  onToggleAutoBattleSafety
 }: TitleScreenProps) {
   return (
     <section className="title-screen" aria-labelledby="title-heading">
@@ -57,6 +61,15 @@ export function TitleScreen({
               <option value="en">{t("locale.en")}</option>
               <option value="ja">{t("locale.ja")}</option>
             </select>
+          </label>
+          <label className="config-toggle">
+            <input
+              type="checkbox"
+              data-testid="config-auto-safety"
+              checked={autoBattleSafety}
+              onChange={(event) => onToggleAutoBattleSafety(event.target.checked)}
+            />
+            {t("config.autoBattleSafety")}
           </label>
         </section>
       )}

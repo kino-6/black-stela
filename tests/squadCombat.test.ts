@@ -83,10 +83,17 @@ describe("front-blocker / back-caster squad", () => {
     expect(warden.hp).toBeGreaterThanOrEqual(12);
   });
 
-  it("Repeat/tempo refuses to auto-grind the squad", () => {
+  it("with safety stops ON, Repeat/tempo hands the squad back to the player", () => {
     const t = createTranslator("en");
-    const result = runTempoStep(squadFight(), "combat", defaultWorld, t);
+    const result = runTempoStep(squadFight(), "combat", defaultWorld, t, { safetyStops: true });
     expect(result.keepRunning).toBe(false);
     expect(result.status).toBe(t("tempo.autoStoppedTactical"));
+  });
+
+  it("with safety stops OFF (default), auto-battle runs through the squad", () => {
+    const t = createTranslator("en");
+    const result = runTempoStep(squadFight(), "combat", defaultWorld, t);
+    // No discretionary tactical stop — it takes a round instead of handing back.
+    expect(result.status).not.toBe(t("tempo.autoStoppedTactical"));
   });
 });

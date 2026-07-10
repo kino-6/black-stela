@@ -7,6 +7,9 @@ export const en = {
     en: "English",
     ja: "Japanese"
   },
+  config: {
+    autoBattleSafety: "Auto-battle stops at danger (boss / low HP)"
+  },
   title: {
     menu: "Title menu",
     newGame: "New expedition",

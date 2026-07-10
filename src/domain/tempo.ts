@@ -18,6 +18,12 @@ export interface TempoStepResult {
   status: string;
 }
 
+export interface TempoOptions {
+  // When true, auto-battle hands control back at each risk point (boss / tactical
+  // squad / party danger). Default false — auto just runs.
+  safetyStops?: boolean;
+}
+
 export function getTempoModeForPhase(phase: GameState["phase"]): TempoMode {
   if (phase === "combat") {
     return "combat";
@@ -34,37 +40,44 @@ export function runTempoStep(
   state: GameState,
   mode: Exclude<TempoMode, "idle">,
   world: ScenarioWorld,
-  t: Translator
+  t: Translator,
+  options: TempoOptions = {}
 ): TempoStepResult {
   if (mode === "combat") {
-    return runTempoCombatStep(state, world, t);
+    return runTempoCombatStep(state, world, t, options);
   }
 
   return runTempoDungeonStep(state, world, t);
 }
 
-function runTempoCombatStep(state: GameState, world: ScenarioWorld, t: Translator): TempoStepResult {
+function runTempoCombatStep(
+  state: GameState,
+  world: ScenarioWorld,
+  t: Translator,
+  options: TempoOptions
+): TempoStepResult {
   if (state.phase !== "combat" || !state.combat) {
     return { state, keepRunning: false, status: t("tempo.autoStoppedClear") };
   }
 
-  if (state.combat.enemy.isBoss || state.combat.enemy.role === "boss" || state.combat.enemy.role === "miniboss") {
-    return { state, keepRunning: false, status: t("tempo.autoStoppedBoss") };
-  }
-
-  // A tactical squad (a shielding front line or a back-line caster) can't be won by
-  // mashing Repeat — hand control back so the player targets and casts deliberately.
-  const tacticalSquad = state.combat.enemyGroups.some(
-    (group) =>
-      group.count > 0 &&
-      (group.role === "blocker" || group.role === "caster" || group.elevation === "air" || group.elevation === "mid")
-  );
-  if (tacticalSquad) {
-    return { state, keepRunning: false, status: t("tempo.autoStoppedTactical") };
-  }
-
-  if (state.party.some((member) => member.injury || member.hp <= Math.ceil(member.maxHp * 0.35))) {
-    return { state, keepRunning: false, status: t("tempo.autoStoppedDanger") };
+  // Discretionary safety stops (boss / tactical squad / party danger) are OFF by
+  // default — auto-battle just runs until the fight ends or no one can act. A player
+  // can re-enable them in Config (they hand control back at each risk point).
+  if (options.safetyStops) {
+    if (state.combat.enemy.isBoss || state.combat.enemy.role === "boss" || state.combat.enemy.role === "miniboss") {
+      return { state, keepRunning: false, status: t("tempo.autoStoppedBoss") };
+    }
+    const tacticalSquad = state.combat.enemyGroups.some(
+      (group) =>
+        group.count > 0 &&
+        (group.role === "blocker" || group.role === "caster" || group.elevation === "air" || group.elevation === "mid")
+    );
+    if (tacticalSquad) {
+      return { state, keepRunning: false, status: t("tempo.autoStoppedTactical") };
+    }
+    if (state.party.some((member) => member.injury || member.hp <= Math.ceil(member.maxHp * 0.35))) {
+      return { state, keepRunning: false, status: t("tempo.autoStoppedDanger") };
+    }
   }
 
   const target = state.combat.enemyGroups.find((group) => group.count > 0);
@@ -88,7 +101,12 @@ function runTempoCombatStep(state: GameState, world: ScenarioWorld, t: Translato
     return { state: next, keepRunning: false, status: t("tempo.autoStoppedClear") };
   }
 
-  if (next.party.some((member) => member.injury || member.hp <= Math.ceil(member.maxHp * 0.35))) {
+  if (options.safetyStops && next.party.some((member) => member.injury || member.hp <= Math.ceil(member.maxHp * 0.35))) {
+    return { state: next, keepRunning: false, status: t("tempo.autoStoppedDanger") };
+  }
+
+  // Wiped (no one can still act) — auto must stop even with safety stops off.
+  if (next.phase === "combat" && next.party.every((member) => member.hp <= 0 || member.injury)) {
     return { state: next, keepRunning: false, status: t("tempo.autoStoppedDanger") };
   }
 
