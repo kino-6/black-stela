@@ -3,10 +3,6 @@ import {
   ArrowLeft,
   Compass,
   DoorOpen,
-  HeartPulse,
-  ScrollText,
-  ShoppingBag,
-  Users,
   Wand2
 } from "lucide-react";
 import { DungeonView } from "./components/DungeonView";
@@ -20,6 +16,7 @@ import { DungeonCommandDock } from "./components/DungeonCommandDock";
 import { CombatCommandDock } from "./components/CombatCommandDock";
 import { RecoveryPanel } from "./components/RecoveryPanel";
 import { RecordsPanel } from "./components/RecordsPanel";
+import { TownEntryPanel } from "./components/TownEntryPanel";
 import { createInitialGameState, addCharacter } from "./domain/gameState";
 import {
   backgroundCatalog,
@@ -1747,101 +1744,22 @@ export function App() {
                 </section>
               )}
               {townMode === "entry" && (
-                <section
-                  className="town-service town-cockpit"
-                  aria-labelledby="town-status-heading"
-                  data-testid="town-cockpit"
-                  data-controller-active="true"
-                  data-controller-surface="town-entry"
-                >
-                  <div className="service-heading">
-                    <div>
-                      <h3 id="town-status-heading">{t("town.statusHeading")}</h3>
-                      <p>{t("town.statusCopy")}</p>
-                    </div>
-                    <strong>{t("town.gold", { gold: state.partyGold })}</strong>
-                  </div>
-                  <div className="town-cockpit-grid">
-                    <div className="town-scene" aria-hidden="true">
-                      <div className="town-skyline" />
-                      <div className="town-gate">
-                        <span className="town-lantern left" />
-                        <span className="town-stela" />
-                        <span className="town-lantern right" />
-                      </div>
-                      <div className="town-steps" />
-                    </div>
-                    <dl className="town-status-ledger">
-                      <div>
-                        <dt>{t("town.expeditionResult")}</dt>
-                        <dd>{latestLogText || t("town.readyToDescend")}</dd>
-                      </div>
-                      <div>
-                        <dt>{t("town.wounds")}</dt>
-                        <dd>{injuredMembers.length > 0 ? injuredMembers.map((member) => `${member.name} ${member.hp}/${member.maxHp}`).join(" / ") : t("town.noWounds")}</dd>
-                      </div>
-                      <div>
-                        <dt>{t("town.loot")}</dt>
-                        <dd>{carriedLootCount > 0 ? carriedLootSummary : t("town.noLoot")}</dd>
-                      </div>
-                      <div>
-                        <dt>{t("town.nextPreparation")}</dt>
-                        <dd>{recoveryCost > 0 ? t("town.nextRecovery") : state.inventory.some((item) => item.kind === "equipment") ? t("town.nextShop") : t("town.readyToDescend")}</dd>
-                      </div>
-                    </dl>
-                  </div>
-                  {unlockedCheckpoints.length > 0 && (
-                    <div className="checkpoint-resume" data-testid="checkpoint-resume">
-                      <h4>{t("play.checkpointsHeading")}</h4>
-                      <div className="checkpoint-list">
-                        {unlockedCheckpoints.map((checkpoint) => (
-                          <button
-                            type="button"
-                            key={checkpoint.roomId}
-                            data-testid={`resume-${checkpoint.roomId}`}
-                            disabled={state.party.length === 0}
-                            onClick={() => run({ type: "resume_at_checkpoint", roomId: checkpoint.roomId })}
-                          >
-                            {t("play.resumeAt", { place: getLocalizedRoomText(defaultWorld, checkpoint.roomId, locale).name })}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  <nav
-                    className="town-service-menu"
-                    aria-label={t("town.servicesHeading")}
-                    data-controller-active="true"
-                    data-controller-surface="town-services"
-                  >
-                    <button type="button" data-testid="town-service-guild" onClick={() => enterTownMode("guild")}>
-                      <Users size={18} />
-                      {t("town.guild")}
-                    </button>
-                    <button type="button" onClick={() => enterTownMode("shop")}>
-                      <ShoppingBag size={18} />
-                      {t("town.shop")}
-                    </button>
-                    <button type="button" onClick={() => enterTownMode("recovery")}>
-                      <HeartPulse size={18} />
-                      {t("town.recovery")}
-                    </button>
-                    <button type="button" onClick={() => enterTownMode("records")}>
-                      <ScrollText size={18} />
-                      {t("town.records")}
-                    </button>
-                    <button
-                      type="button"
-                      className="primary-action"
-                      data-testid="town-enter-dungeon"
-                      disabled={state.party.length === 0}
-                      onClick={() => run({ type: "enter_dungeon" })}
-                    >
-                      <DoorOpen size={18} />
-                      {t("play.enterDungeon")}
-                    </button>
-                  </nav>
-                </section>
+                <TownEntryPanel
+                  t={t}
+                  world={defaultWorld}
+                  locale={locale}
+                  partyGold={state.partyGold}
+                  partyEmpty={state.party.length === 0}
+                  latestLogText={latestLogText}
+                  injuredMembers={injuredMembers}
+                  carriedLootCount={carriedLootCount}
+                  carriedLootSummary={carriedLootSummary}
+                  recoveryCost={recoveryCost}
+                  hasEquipmentLoot={state.inventory.some((item) => item.kind === "equipment")}
+                  unlockedCheckpoints={unlockedCheckpoints}
+                  onCommand={run}
+                  onEnterMode={enterTownMode}
+                />
               )}
               {townMode === "recovery" && (
                 <RecoveryPanel
