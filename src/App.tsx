@@ -18,6 +18,7 @@ import { FloorMapOverlay } from "./components/FloorMapOverlay";
 import { DebugPanel } from "./components/DebugPanel";
 import { DungeonCommandDock } from "./components/DungeonCommandDock";
 import { CombatCommandDock } from "./components/CombatCommandDock";
+import { RecoveryPanel } from "./components/RecoveryPanel";
 import { createInitialGameState, addCharacter } from "./domain/gameState";
 import {
   backgroundCatalog,
@@ -1842,46 +1843,16 @@ export function App() {
                 </section>
               )}
               {townMode === "recovery" && (
-                <section
-                  className="town-service"
-                  aria-labelledby="recovery-heading"
-                  data-controller-active="true"
-                  data-controller-surface="town-recovery"
-                >
-                  <h3 id="recovery-heading">{t("town.recoveryHeading")}</h3>
-                  {latestLogText && isRecoveryEventType(latestEventType) && <p className="event-window" aria-live="polite">{latestLogText}</p>}
-                  <p className="town-ledger">
-                    <strong>{t("town.gold", { gold: state.partyGold })}</strong>
-                    <span>{t("town.recoveryCost", { gold: recoveryCost })}</span>
-                  </p>
-                  <div className="recovery-plan" data-testid="recovery-plan">
-                    {state.party.map((member) => {
-                      const memberCost = getMemberRecoveryCost(member);
-                      return (
-                        <article className={memberCost > 0 ? "recovery-row injured" : "recovery-row"} key={member.id}>
-                          <strong>{member.name}</strong>
-                          <span>{member.hp}/{member.maxHp}</span>
-                          <small>
-                            {memberCost > 0
-                              ? t("town.recoveryMemberPlan", { cost: memberCost, after: member.maxHp })
-                              : t("town.noTreatmentNeeded")}
-                          </small>
-                        </article>
-                      );
-                    })}
-                  </div>
-                  <p className="town-ledger">
-                    <span>{recoveryCost > 0 ? t("town.afterRecovery", { count: injuredMembers.length }) : t("town.noRecoveryNeeded")}</span>
-                    {state.partyGold < recoveryCost && <strong>{t("town.cannotAffordRecovery")}</strong>}
-                  </p>
-                  <button
-                    type="button"
-                    disabled={recoveryCost <= 0 || state.partyGold < recoveryCost}
-                    onClick={() => run({ type: "recover_party" })}
-                  >
-                    {t("town.recoverParty")}
-                  </button>
-                </section>
+                <RecoveryPanel
+                  t={t}
+                  party={state.party}
+                  partyGold={state.partyGold}
+                  recoveryCost={recoveryCost}
+                  latestLogText={latestLogText}
+                  latestEventType={latestEventType}
+                  injuredCount={injuredMembers.length}
+                  onRecover={() => run({ type: "recover_party" })}
+                />
               )}
               {townMode === "shop" && townShop && (
                 <section
