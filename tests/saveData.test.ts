@@ -2,7 +2,14 @@ import { describe, expect, it } from "vitest";
 import { defaultWorld } from "../src/data/defaultWorld";
 import { addCharacter, createCharacter, createInitialGameState } from "../src/domain/gameState";
 import { executeCommand } from "../src/domain/rulesEngine";
-import { fromSaveDataV1, parseSaveDataV1, toSaveDataV1 } from "../src/domain/saveData";
+import {
+  LATEST_SAVE_SCHEMA_VERSION,
+  fromSaveDataV1,
+  migrateSaveData,
+  parseSaveData,
+  parseSaveDataV1,
+  toSaveDataV1
+} from "../src/domain/saveData";
 
 function progressedState() {
   const party = addCharacter(
@@ -87,6 +94,22 @@ describe("save data", () => {
 
     expect(() => parseSaveDataV1({ ...save, schemaVersion: 99 })).toThrow(
       "Unsupported save data schema version: 99"
+    );
+  });
+
+  // Lane G — save-schema migration seam. `parseSaveData` is the load entry point
+  // the repositories use; it migrates forward then validates.
+  it("migration seam loads a current-version save unchanged", () => {
+    const save = toSaveDataV1(progressedState(), defaultWorld);
+    expect(save.schemaVersion).toBe(LATEST_SAVE_SCHEMA_VERSION);
+    const restored = parseSaveData(save);
+    expect(restored.state.partyGold).toBe(save.state.partyGold);
+  });
+
+  it("migration refuses a save newer than this build (no silent data loss)", () => {
+    const save = toSaveDataV1(progressedState(), defaultWorld);
+    expect(() => migrateSaveData({ ...save, schemaVersion: LATEST_SAVE_SCHEMA_VERSION + 1 })).toThrow(
+      /newer than this build supports/
     );
   });
 });

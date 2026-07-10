@@ -1,4 +1,4 @@
-import { parseSaveDataV1, type SaveDataV1 } from "../domain/saveData";
+import { parseSaveData, type SaveDataV1 } from "../domain/saveData";
 
 const DEFAULT_PREFIX = "black-stela:save:";
 
@@ -78,7 +78,7 @@ export class LocalStorageSaveRepository implements SaveRepository {
 
   private parse(raw: string): SaveReadResult {
     try {
-      return { ok: true, save: parseSaveDataV1(JSON.parse(raw)) };
+      return { ok: true, save: parseSaveData(JSON.parse(raw)) };
     } catch (error) {
       return {
         ok: false,
@@ -159,7 +159,7 @@ export class TauriFileSaveRepository {
 
   private parse(raw: string): SaveReadResult {
     try {
-      return { ok: true, save: parseSaveDataV1(JSON.parse(raw)) };
+      return { ok: true, save: parseSaveData(JSON.parse(raw)) };
     } catch (error) {
       return {
         ok: false,

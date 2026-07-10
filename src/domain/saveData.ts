@@ -316,6 +316,57 @@ export function parseSaveDataV1(input: unknown): SaveDataV1 {
   return SaveDataV1Schema.parse(input);
 }
 
+// Save-schema migration policy (Lane G — Desktop Productization).
+// Every save carries a numeric `schemaVersion`. LATEST_SAVE_SCHEMA_VERSION is the
+// version this build writes. On load, an older save is upgraded FORWARD one version
+// at a time through the MIGRATIONS chain before validation, so old saves keep
+// working across releases. A save NEWER than LATEST is refused with a clear message
+// (a newer build wrote it — the user must update rather than silently lose data).
+//
+// To introduce SaveDataV2: (1) bump LATEST to 2; (2) add SaveDataV2Schema +
+// toSaveDataV2; (3) add MIGRATIONS[2] mapping a parsed V1 object to the V2 shape;
+// (4) point `parseSaveData` at SaveDataV2Schema. Nothing else changes — the repos
+// already call `parseSaveData`, so migration runs everywhere a save is read.
+export const LATEST_SAVE_SCHEMA_VERSION = 1;
+
+type SaveMigration = (input: Record<string, unknown>) => Record<string, unknown>;
+
+// MIGRATIONS[n] upgrades a v(n-1) save to v(n). Empty until V2 lands.
+const MIGRATIONS: Record<number, SaveMigration> = {};
+
+export function migrateSaveData(input: unknown): unknown {
+  const parsed = z.object({ schemaVersion: z.number() }).safeParse(input);
+  if (!parsed.success) {
+    return input; // not a versioned save — let the schema validator report it
+  }
+
+  let version = parsed.data.schemaVersion;
+  if (version > LATEST_SAVE_SCHEMA_VERSION) {
+    throw new Error(
+      `Save schema version ${version} is newer than this build supports (${LATEST_SAVE_SCHEMA_VERSION}); update the app.`
+    );
+  }
+
+  let data = input as Record<string, unknown>;
+  while (version < LATEST_SAVE_SCHEMA_VERSION) {
+    const next = version + 1;
+    const migrate = MIGRATIONS[next];
+    if (!migrate) {
+      throw new Error(`No migration registered to save schema version ${next}.`);
+    }
+    data = migrate(data);
+    version = next;
+  }
+
+  return data;
+}
+
+// Migrate an incoming save forward, then validate it against the current schema.
+// This is the single entry point the save repositories use on load.
+export function parseSaveData(input: unknown): SaveDataV1 {
+  return parseSaveDataV1(migrateSaveData(input));
+}
+
 export function fromSaveDataV1(input: SaveDataV1 | unknown): GameState {
-  return parseSaveDataV1(input).state;
+  return parseSaveData(input).state;
 }

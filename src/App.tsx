@@ -1764,7 +1764,7 @@ export function App() {
                   partyGold={state.partyGold}
                   recoveryCost={recoveryCost}
                   latestLogText={latestLogText}
-                  latestEventType={latestEventType}
+                  latestEventType={latestEventType ?? null}
                   injuredCount={injuredMembers.length}
                   onRecover={() => run({ type: "recover_party" })}
                 />
@@ -1779,7 +1779,7 @@ export function App() {
                   party={state.party}
                   inventory={state.inventory}
                   latestLogText={latestLogText}
-                  latestEventType={latestEventType}
+                  latestEventType={latestEventType ?? null}
                   selectedProfile={selectedProfile}
                   onSelectProfile={setSelectedProfileId}
                   availableShopCategories={availableShopCategories}
