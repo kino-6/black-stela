@@ -157,19 +157,26 @@ export function CombatCommandMenu({
     setPendingSpell(null);
   }
 
-  // Arrows move the cursor (and, via the roving-tabindex effect, focus); Esc backs
-  // out. Enter/Space activate the focused row button natively (its onClick).
+  // Arrows OR WASD move the cursor (S/W = down/up), A/Esc back out, D confirms;
+  // Enter/Space also activate the focused row button natively (its onClick).
   function onKeyDown(event: React.KeyboardEvent<HTMLDivElement>) {
-    const key = event.key;
-    if (key === "ArrowDown" || key === "ArrowUp") {
+    const key = event.key.toLowerCase();
+    const down = key === "arrowdown" || key === "s";
+    const up = key === "arrowup" || key === "w";
+    const back = key === "escape" || key === "backspace" || key === "a";
+    const confirm = key === "d";
+    if (down || up) {
       event.preventDefault();
-      setCursor((current) => {
-        const delta = key === "ArrowDown" ? 1 : -1;
-        return (current + delta + rows.length) % Math.max(1, rows.length);
-      });
-    } else if (key === "Escape" || key === "Backspace") {
+      setCursor((current) => (current + (down ? 1 : -1) + rows.length) % Math.max(1, rows.length));
+    } else if (back) {
       event.preventDefault();
       goBack();
+    } else if (confirm) {
+      event.preventDefault();
+      const row = rows[cursor];
+      if (row?.enabled) {
+        row.onSelect();
+      }
     }
   }
 

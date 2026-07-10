@@ -2890,6 +2890,34 @@ textarea {
   gap: 0.4rem;
 }
 
+/* HP / MP gauges — visualize resource status at a glance (Pillar 9). */
+.stat-gauge {
+  height: 0.35rem;
+  margin-top: 0.2rem;
+  border-radius: 0.2rem;
+  background: rgba(255, 255, 255, 0.12);
+  overflow: hidden;
+}
+
+.stat-gauge-fill {
+  display: block;
+  height: 100%;
+  border-radius: 0.2rem;
+  transition: width 0.25s ease;
+}
+
+.hp-gauge .stat-gauge-fill {
+  background: linear-gradient(90deg, #4f9d54, #7ec46f);
+}
+
+.hp-gauge.danger .stat-gauge-fill {
+  background: linear-gradient(90deg, #a83232, #d86b4a);
+}
+
+.mp-gauge .stat-gauge-fill {
+  background: linear-gradient(90deg, #3a6bb0, #5aa0e0);
+}
+
 .command-dock button {
   min-width: 4.8rem;
 }

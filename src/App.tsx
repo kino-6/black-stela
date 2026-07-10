@@ -1927,6 +1927,29 @@ export function App() {
                                   <span className="party-token-detail">{t("party.armor")} {stats.armor}</span>
                                   <span className="party-token-detail">{t("party.speed")} {stats.speed}</span>
                                 </div>
+                                <div className="party-token-gauges">
+                                  <div
+                                    className={`stat-gauge hp-gauge${member.hp <= Math.ceil(member.maxHp * 0.35) ? " danger" : ""}`}
+                                    role="meter"
+                                    aria-valuenow={member.hp}
+                                    aria-valuemax={member.maxHp}
+                                    aria-label={`${member.name} HP`}
+                                  >
+                                    <span className="stat-gauge-fill" style={{ width: `${Math.max(0, (member.hp / member.maxHp) * 100)}%` }} />
+                                  </div>
+                                  {member.maxMp > 0 && (
+                                    <div
+                                      className="stat-gauge mp-gauge"
+                                      data-testid="party-mp-gauge"
+                                      role="meter"
+                                      aria-valuenow={member.mp}
+                                      aria-valuemax={member.maxMp}
+                                      aria-label={`${member.name} MP`}
+                                    >
+                                      <span className="stat-gauge-fill" style={{ width: `${Math.max(0, (member.mp / member.maxMp) * 100)}%` }} />
+                                    </div>
+                                  )}
+                                </div>
                               </div>
                             </div>
                           );
@@ -1979,6 +2002,28 @@ export function App() {
                                   {t("play.actorStatus", { hp: member.hp, maxHp: member.maxHp })}
                                   {member.maxMp > 0 && <> · {t("play.mpShort")} {member.mp}/{member.maxMp}</>}
                                 </span>
+                                <div
+                                  className={`stat-gauge hp-gauge${member.hp <= Math.ceil(member.maxHp * 0.35) ? " danger" : ""}`}
+                                  data-testid="combat-hp-gauge"
+                                  role="meter"
+                                  aria-valuenow={member.hp}
+                                  aria-valuemax={member.maxHp}
+                                  aria-label={`${member.name} HP`}
+                                >
+                                  <span className="stat-gauge-fill" style={{ width: `${Math.max(0, (member.hp / member.maxHp) * 100)}%` }} />
+                                </div>
+                                {member.maxMp > 0 && (
+                                  <div
+                                    className="stat-gauge mp-gauge"
+                                    data-testid="combat-mp-gauge"
+                                    role="meter"
+                                    aria-valuenow={member.mp}
+                                    aria-valuemax={member.maxMp}
+                                    aria-label={`${member.name} MP`}
+                                  >
+                                    <span className="stat-gauge-fill" style={{ width: `${Math.max(0, (member.mp / member.maxMp) * 100)}%` }} />
+                                  </div>
+                                )}
                               </div>
                             ))}
                           </div>

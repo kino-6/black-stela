@@ -87,11 +87,11 @@ equipment:
     price: 32
     sellValue: 10
     allowedClasses: [mender, chanter, occultist, arcanist, wayfinder]
-    tags: [back_row, focus]
+    tags: [back_row, focus, reach]
     locales:
       ja:
         name: 灰木の杖
-        description: 札を切る手に重さを合わせた黒ずんだ杖。
+        description: 札を切る手に重さを合わせた黒ずんだ杖。二列目からでも打てる長さがある。
   - id: equip.short-bow
     name: Short Bow
     description: A stub recurve that looses over the front line — a back-row striker's reach.
