@@ -3,11 +3,19 @@ encounterTables:
   # Corridor/hall fights: smaller packs. Chambers (玄室) below run larger.
   - id: encounters.b1f.halls
     floorId: dungeon.b1f
+    # Corridors can field two kinds at once (slime pack + a crawler or two) so a
+    # fight reads as a real group, not a lone monster. Both types already appear on
+    # B1F, so the first-contact / balance model is unchanged.
+    groupsMax: 2
     entries:
       - enemyId: enemy.b1f.ash-slime
         weight: 10
         minCount: 2
         maxCount: 3
+      - enemyId: enemy.b1f.dust-crawler
+        weight: 7
+        minCount: 1
+        maxCount: 2
   # Chambers roll ONLY a fresh type (the ash-slime is already down from B1F 002), so
   # a table can never "roll a defeated type and skip" — the玄室 fight is guaranteed.
   - id: encounters.b1f.chambers

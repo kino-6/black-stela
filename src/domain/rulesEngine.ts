@@ -1416,22 +1416,34 @@ function beginRoomEncounter(
   }
 
   const fixedFight = Boolean(room.encounter);
-  const encounter = room.encounter
-    ? { enemy: world.enemies.find((enemy) => enemy.id === room.encounter?.id) ?? room.encounter, count: 1 }
+  const rolled = room.encounter
+    ? [{ enemy: world.enemies.find((enemy) => enemy.id === room.encounter?.id) ?? room.encounter, count: 1 }]
     : room.encounterTable
       ? resolveEncounterTable(world, room.encounterTable, state.turn)
-      : null;
-  if (!encounter || state.defeatedEnemies.includes(encounter.enemy.id)) {
+      : [];
+  // First-contact model: drop groups whose type is already down this run; if the
+  // whole roll is stale there is no fight.
+  const fresh = rolled.filter((group) => !state.defeatedEnemies.includes(group.enemy.id));
+  if (fresh.length === 0) {
     return null;
   }
+
+  const floorId = floorForRoom(world, room.id);
   // A rolled pack swells for an under-strength party; the fixed teaching fight does not.
-  const count = fixedFight ? encounter.count : scaledEncounterCount(encounter.count, state.party, floorForRoom(world, room.id));
+  const scaled = fresh.map((group) => ({
+    enemy: group.enemy,
+    count: fixedFight ? group.count : scaledEncounterCount(group.count, state.party, floorId)
+  }));
+  const combat = scaled.length === 1
+    ? createCombatState(room.id, scaled[0].enemy, scaled[0].count)
+    : createMultiGroupCombatState(room.id, scaled);
+  const label = scaled.map((group) => (group.count > 1 ? `${group.enemy.name} x${group.count}` : group.enemy.name)).join(" & ");
   return {
-    combat: createCombatState(room.id, encounter.enemy, count),
+    combat,
     event: {
       type: "enemy_encountered",
-      enemyId: encounter.enemy.id,
-      enemyName: count > 1 ? `${encounter.enemy.name} x${count}` : encounter.enemy.name,
+      enemyId: scaled[0].enemy.id,
+      enemyName: label,
       roomId: room.id
     }
   };
@@ -1449,27 +1461,56 @@ export function createCombatState(roomId: string, enemy: Enemy, count = 1): Comb
   };
 }
 
-function resolveEncounterTable(world: ScenarioWorld, tableId: string, seed: number): { enemy: Enemy; count: number } | null {
+// A multi-group encounter (distinct types side by side). All groups are front-line
+// and freely targetable — no squad shielding (that is createSquadCombatState).
+export function createMultiGroupCombatState(roomId: string, groups: { enemy: Enemy; count: number }[]): CombatState {
+  const enemyGroups = groups.map((group) => createEnemyGroup(group.enemy, group.count));
+  return {
+    enemy: { ...groups[0].enemy },
+    roomId,
+    round: 1,
+    enemyGroups,
+    pendingActions: [],
+    selectedTargetId: enemyGroups[0].id
+  };
+}
+
+// Roll an encounter into 1..groupsMax DISTINCT enemy groups (FC-style multi-group
+// fights), each with its own count. Distinct entries are drawn by weight without
+// replacement so a fight can field different monster types side by side.
+export function resolveEncounterTable(world: ScenarioWorld, tableId: string, seed: number): { enemy: Enemy; count: number }[] {
   const table = world.encounterTables.find((candidate) => candidate.id === tableId);
   if (!table || table.entries.length === 0) {
-    return null;
+    return [];
   }
 
-  const totalWeight = table.entries.reduce((total, entry) => total + entry.weight, 0);
-  let roll = hashSeed(`${tableId}:${seed}`) % totalWeight;
-  const entry = table.entries.find((candidate) => {
-    roll -= candidate.weight;
-    return roll < 0;
-  }) ?? table.entries[0];
-  const enemy = world.enemies.find((candidate) => candidate.id === entry.enemyId);
-  if (!enemy) {
-    return null;
+  const groupsMax = Math.min(Math.max(1, table.groupsMax ?? 1), table.entries.length);
+  const groupCount = 1 + (hashSeed(`${tableId}:${seed}:groups`) % groupsMax);
+
+  const remaining = [...table.entries];
+  const chosen: typeof table.entries = [];
+  for (let picked = 0; picked < groupCount && remaining.length > 0; picked += 1) {
+    const totalWeight = remaining.reduce((total, entry) => total + entry.weight, 0);
+    let roll = hashSeed(`${tableId}:${seed}:pick${picked}`) % totalWeight;
+    const index = remaining.findIndex((candidate) => {
+      roll -= candidate.weight;
+      return roll < 0;
+    });
+    chosen.push(remaining.splice(index < 0 ? 0 : index, 1)[0]);
   }
 
-  const min = entry.minCount ?? 1;
-  const max = entry.maxCount ?? min;
-  const count = min + (hashSeed(`${tableId}:${seed}:count`) % (max - min + 1));
-  return { enemy, count };
+  return chosen
+    .map((entry, groupIndex) => {
+      const enemy = world.enemies.find((candidate) => candidate.id === entry.enemyId);
+      if (!enemy) {
+        return null;
+      }
+      const min = entry.minCount ?? 1;
+      const max = entry.maxCount ?? min;
+      const count = min + (hashSeed(`${tableId}:${seed}:count${groupIndex}`) % (max - min + 1));
+      return { enemy, count };
+    })
+    .filter((group): group is { enemy: Enemy; count: number } => group !== null);
 }
 
 function createEnemyGroup(enemy: Enemy, count: number): CombatEnemyGroup {

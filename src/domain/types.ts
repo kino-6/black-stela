@@ -549,6 +549,7 @@ export interface ShopStockItem {
 export interface EncounterTable {
   id: string;
   floorId?: string;
+  groupsMax?: number;
   entries: EncounterEntry[];
 }
 

@@ -7,7 +7,7 @@ import { weaponReaches } from "../src/domain/economy";
 // front line; a melee weapon or an empty hand does not.
 describe("reach weapons", () => {
   const withWeapon = (weaponId?: string) => ({
-    ...createCharacter({ name: "Archer" }),
+    ...createCharacter({ name: "Archer", notes: "" }),
     equipment: weaponId ? { weapon: { id: weaponId } } : {}
   });
 

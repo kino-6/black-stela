@@ -154,6 +154,9 @@ const scenarioShopSchema = z.object({
 const encounterTableSchema = z.object({
   id: z.string().min(1),
   floorId: z.string().min(1).optional(),
+  // How many distinct enemy groups a roll may field at once (FC-style multi-group
+  // fights). Default 1 = single group. Capped at the number of distinct entries.
+  groupsMax: z.number().int().positive().optional(),
   entries: z
     .array(
       z.object({
