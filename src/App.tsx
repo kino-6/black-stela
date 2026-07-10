@@ -1,28 +1,16 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  ArrowDown,
   ArrowLeft,
   ArrowRight,
-  ChevronsLeft,
-  ChevronsRight,
   Compass,
-  DoorClosed,
   DoorOpen,
-  Footprints,
   HeartPulse,
-  LogOut,
-  Map as MapIcon,
   Repeat2,
-  RotateCcw,
-  RotateCw,
   ScrollText,
-  Volume2,
-  Search,
   ShieldCheck,
   ShoppingBag,
   Square,
   Sword,
-  Tent,
   Users,
   Wand2
 } from "lucide-react";
@@ -33,6 +21,7 @@ import { TitleScreen } from "./components/TitleScreen";
 import { CampPanel } from "./components/CampPanel";
 import { FloorMapOverlay } from "./components/FloorMapOverlay";
 import { DebugPanel } from "./components/DebugPanel";
+import { DungeonCommandDock } from "./components/DungeonCommandDock";
 import { createInitialGameState, addCharacter } from "./domain/gameState";
 import {
   backgroundCatalog,
@@ -2391,109 +2380,28 @@ export function App() {
                     )}
                   </div>
               ) : (
-                <div
-                  className="command-bar command-dock"
-                  aria-label={t("play.dungeonCommands")}
-                  data-controller-active="true"
-                  data-controller-surface="dungeon-commands"
-                  data-testid="dungeon-command-window"
-                >
-                  <button type="button" aria-pressed={isTempoRunning} onClick={() => toggleTempoMode("dungeon")}>
-                    {isTempoRunning ? <Square size={18} /> : <Repeat2 size={18} />}
-                    {isTempoRunning ? t("tempo.stop") : t("tempo.repeat")}
-                  </button>
-                  <button type="button" className="move-command" aria-label={t("play.turnLeft")} onClick={() => run({ type: "turn_left" })}>
-                    <RotateCcw size={18} />
-                    {t("play.turnLeft")}
-                  </button>
-                  <button type="button" className="move-command" aria-label={t("play.strafeLeft")} onClick={() => run({ type: "strafe_left" })}>
-                    <ChevronsLeft size={18} />
-                    {t("play.strafeLeft")}
-                  </button>
-                  <button type="button" className="move-command" onClick={() => run({ type: "move_forward" })}>
-                    <Footprints size={18} />
-                    {t("play.move")}
-                  </button>
-                  <button type="button" className="move-command" onClick={() => run({ type: "move_backward" })}>
-                    <ArrowDown size={18} />
-                    {t("play.moveBack")}
-                  </button>
-                  <button type="button" className="move-command" aria-label={t("play.strafeRight")} onClick={() => run({ type: "strafe_right" })}>
-                    <ChevronsRight size={18} />
-                    {t("play.strafeRight")}
-                  </button>
-                  <button type="button" className="move-command" aria-label={t("play.turnRight")} onClick={() => run({ type: "turn_right" })}>
-                    <RotateCw size={18} />
-                    {t("play.turnRight")}
-                  </button>
-                  <button type="button" onClick={() => run({ type: "search" })}>
-                    <Search size={18} />
-                    {t("play.search")}
-                  </button>
-                  <button type="button" onClick={() => run({ type: "listen" })}>
-                    <Volume2 size={18} />
-                    {t("play.listen")}
-                  </button>
-                  <button type="button" onClick={() => setCampOpen(true)} data-testid="camp-open">
-                    <Tent size={18} />
-                    {t("play.camp")}
-                  </button>
-                  <button type="button" onClick={() => setFullMapOpen(true)} data-testid="full-map-open">
-                    <MapIcon size={18} />
-                    {t("play.fullMap")}
-                  </button>
-                  {debugMode && (
-                    <>
-                      <button
-                        type="button"
-                        className="context-command"
-                        data-testid="debug-auto-explore"
-                        onClick={() => setState((current) => debugAutoExplore(current, defaultWorld))}
-                      >
-                        <MapIcon size={18} />
-                        {t("debug.autoExplore")}
-                      </button>
-                      <button
-                        type="button"
-                        className="context-command"
-                        data-testid="debug-revive-party-dungeon"
-                        onClick={() => run({ type: "debug_revive_party" })}
-                      >
-                        <ShieldCheck size={18} />
-                        {t("debug.reviveParty")}
-                      </button>
-                    </>
-                  )}
-                  {canUseStairs && !blockingStairGate && (
-                    <button type="button" className="context-command" onClick={() => run({ type: "use_stairs" })}>
-                      <DoorOpen size={18} />
-                      {t("play.useStairs")}
-                    </button>
-                  )}
-                  {canUseStairs && blockingStairGate && (
-                    <div className="descent-locked" data-testid="descent-locked">
-                      <DoorClosed size={18} />
-                      <span>{stairGateClue ?? t("play.descentLocked")}</span>
-                    </div>
-                  )}
-                  {canReturnToTown && (
-                    <button type="button" className="context-command" onClick={() => run({ type: "return_to_town" })}>
-                      <LogOut size={18} />
-                      {currentRoom?.returnStyle === "stairs" ? t("play.useReturnStairs") : t("play.useReturnMarker")}
-                    </button>
-                  )}
-                  {canUseEscapeItem && escapeItem && (
-                    <button
-                      type="button"
-                      className="context-command"
-                      data-testid="use-return-charm"
-                      onClick={() => run({ type: "use_item", itemId: escapeItem.id, targetCharacterId: state.party[0]?.id ?? "" })}
-                    >
-                      <LogOut size={18} />
-                      {t("play.useReturnCharm")}
-                    </button>
-                  )}
-                </div>
+                <DungeonCommandDock
+                  t={t}
+                  onCommand={run}
+                  isTempoRunning={isTempoRunning}
+                  onToggleTempo={() => toggleTempoMode("dungeon")}
+                  onOpenCamp={() => setCampOpen(true)}
+                  onOpenFullMap={() => setFullMapOpen(true)}
+                  debugMode={debugMode}
+                  onAutoExplore={() => setState((current) => debugAutoExplore(current, defaultWorld))}
+                  canUseStairs={canUseStairs}
+                  blockingStairGate={Boolean(blockingStairGate)}
+                  stairGateClue={stairGateClue ?? null}
+                  onUseStairs={() => run({ type: "use_stairs" })}
+                  canReturnToTown={canReturnToTown}
+                  returnViaStairs={currentRoom?.returnStyle === "stairs"}
+                  onReturnToTown={() => run({ type: "return_to_town" })}
+                  showEscapeItem={Boolean(canUseEscapeItem && escapeItem)}
+                  onUseEscapeItem={() =>
+                    escapeItem &&
+                    run({ type: "use_item", itemId: escapeItem.id, targetCharacterId: state.party[0]?.id ?? "" })
+                  }
+                />
               )}
             </div>
           )}
