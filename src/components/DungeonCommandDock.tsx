@@ -140,10 +140,20 @@ export function DungeonCommandDock({
         </button>
       )}
       {canUseStairs && blockingStairGate && (
-        <div className="descent-locked" data-testid="descent-locked">
+        // #68: a fixed disabled button (same footprint as Use stairs) instead of a
+        // variable-width clue tile — the dock never reflows. The clue rides in the
+        // tooltip/aria-label rather than stretching the command row.
+        <button
+          type="button"
+          className="context-command"
+          data-testid="descent-locked"
+          disabled
+          title={stairGateClue ?? t("play.descentLocked")}
+          aria-label={stairGateClue ?? t("play.descentLocked")}
+        >
           <DoorClosed size={18} />
-          <span>{stairGateClue ?? t("play.descentLocked")}</span>
-        </div>
+          {t("play.descentLockedShort")}
+        </button>
       )}
       {canReturnToTown && (
         <button type="button" className="context-command" onClick={onReturnToTown}>

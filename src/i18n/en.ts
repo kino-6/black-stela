@@ -206,6 +206,7 @@ export const en = {
     listen: "Listen",
     useStairs: "Use stairs",
     descentLocked: "The stair won't take you yet — something on this floor is unfinished.",
+    descentLockedShort: "Stair sealed",
     useReturnMarker: "Use return marker",
     useReturnStairs: "Climb the stairs to town",
     useReturnCharm: "Use return charm",
