@@ -9,14 +9,12 @@ import {
   DoorClosed,
   DoorOpen,
   Footprints,
-  FolderOpen,
   HeartPulse,
   LogOut,
   Map as MapIcon,
   Repeat2,
   RotateCcw,
   RotateCw,
-  Save,
   ScrollText,
   Volume2,
   Search,
@@ -25,7 +23,6 @@ import {
   Square,
   Sword,
   Tent,
-  Upload,
   Users,
   Wand2
 } from "lucide-react";
@@ -35,6 +32,7 @@ import { ScenarioValidationPanel } from "./components/ScenarioValidationPanel";
 import { TitleScreen } from "./components/TitleScreen";
 import { CampPanel } from "./components/CampPanel";
 import { FloorMapOverlay } from "./components/FloorMapOverlay";
+import { DebugPanel } from "./components/DebugPanel";
 import { createInitialGameState, addCharacter } from "./domain/gameState";
 import {
   backgroundCatalog,
@@ -65,12 +63,10 @@ import {
   formatAptitudes,
   formatBonusParts,
   formatCombatRow,
-  formatDebugProgress,
   formatEnemyGroupStatus,
   formatEquipmentEffect,
   formatEquipmentSlot,
   formatInventoryEffect,
-  formatPhase,
   formatSignedBonus,
   formatSignedDelta,
   formatStatDelta,
@@ -115,7 +111,6 @@ import type {
 } from "./domain/types";
 import {
   createDebugStateFromProgress,
-  debugProgressValues,
   parseDebugProgress,
   withDebugStartCell,
   type DebugProgress
@@ -902,85 +897,27 @@ export function App() {
       ) : screen === "game" ? (
         <>
       {debugMode && (
-        <section className={`debug-panel${debugPanelOpen ? "" : " collapsed"}`} aria-labelledby="debug-heading">
-          <div>
-            <h2 id="debug-heading">{t("debug.heading")}</h2>
-            <p>
-              {t("debug.visited", {
-                visited: state.map.visitedRooms.length,
-                total: getTotalRoomCount(),
-                phase: formatPhase(state.phase, t)
-              })}
-            </p>
-          </div>
-          <button
-            type="button"
-            className="debug-panel-toggle"
-            data-testid="debug-panel-toggle"
-            onClick={() => setDebugPanelOpen((open) => !open)}
-          >
-            {debugPanelOpen ? t("debug.collapse") : t("debug.expand")}
-          </button>
-          {debugPanelOpen && (
-          <>
-          <label>
-            {t("debug.progress")}
-            <select
-              value={debugProgress}
-              onChange={(event) => setDebugProgress(parseDebugProgress(event.target.value))}
-            >
-              {debugProgressValues.map((progress) => (
-                <option key={progress} value={progress}>
-                  {formatDebugProgress(progress, t)}
-                </option>
-              ))}
-            </select>
-          </label>
-          <button type="button" onClick={loadDebugProgress}>{t("debug.loadProgress")}</button>
-          <button type="button" onClick={runHeadless}>{t("debug.headlessReachability")}</button>
-          <label className="scenario-import-control">
-            <Upload size={18} />
-            {t("scenario.importPack")}
-            <input
-              data-testid="scenario-pack-input"
-              type="file"
-              multiple
-              accept=".md,.yaml,.yml,.json,text/markdown,text/plain"
-              onChange={(event) => importScenarioPackFiles(event.target.files)}
-            />
-          </label>
-          <div className="dev-save-controls" aria-label={t("save.devControls")}>
-            <label>
-              {t("save.slot")}
-              <input
-                list="save-slots"
-                value={saveSlotId}
-                onChange={(event) => setSaveSlotId(event.target.value)}
-                aria-label={t("save.slotInput")}
-              />
-            </label>
-            <datalist id="save-slots">
-              {saveSlots.map((slot) => (
-                <option key={slot.slotId} value={slot.slotId}>
-                  {slot.status === "valid" ? slot.savedAt : t("save.corrupt")}
-                </option>
-              ))}
-            </datalist>
-            <button type="button" onClick={() => saveGame(saveSlotId)}>
-              <Save size={18} />
-              {t("save.save")}
-            </button>
-            <button type="button" onClick={() => loadGame(saveSlotId, false)}>
-              <FolderOpen size={18} />
-              {t("save.load")}
-            </button>
-          </div>
-          {headlessStatus && <strong>{headlessStatus}</strong>}
-          {saveStatus && <strong>{saveStatus}</strong>}
-          {scenarioImportStatus && <strong>{scenarioImportStatus}</strong>}
-          </>
-          )}
-        </section>
+        <DebugPanel
+          open={debugPanelOpen}
+          onToggle={() => setDebugPanelOpen((open) => !open)}
+          visitedCount={state.map.visitedRooms.length}
+          roomTotal={getTotalRoomCount()}
+          phase={state.phase}
+          t={t}
+          progress={debugProgress}
+          onChangeProgress={(value) => setDebugProgress(parseDebugProgress(value))}
+          onLoadProgress={loadDebugProgress}
+          onRunHeadless={runHeadless}
+          onImportPack={importScenarioPackFiles}
+          saveSlotId={saveSlotId}
+          onChangeSlot={setSaveSlotId}
+          saveSlots={saveSlots}
+          onSave={() => saveGame(saveSlotId)}
+          onLoad={() => loadGame(saveSlotId, false)}
+          headlessStatus={headlessStatus}
+          saveStatus={saveStatus}
+          scenarioImportStatus={scenarioImportStatus}
+        />
       )}
       {debugMode && scenarioImportErrors.length > 0 && (
         <ScenarioValidationPanel errors={scenarioImportErrors} t={t} />
