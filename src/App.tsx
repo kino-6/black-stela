@@ -1,16 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowLeft,
-  ArrowRight,
   Compass,
   DoorOpen,
   HeartPulse,
-  Repeat2,
   ScrollText,
-  ShieldCheck,
   ShoppingBag,
-  Square,
-  Sword,
   Users,
   Wand2
 } from "lucide-react";
@@ -22,6 +17,7 @@ import { CampPanel } from "./components/CampPanel";
 import { FloorMapOverlay } from "./components/FloorMapOverlay";
 import { DebugPanel } from "./components/DebugPanel";
 import { DungeonCommandDock } from "./components/DungeonCommandDock";
+import { CombatCommandDock } from "./components/CombatCommandDock";
 import { createInitialGameState, addCharacter } from "./domain/gameState";
 import {
   backgroundCatalog,
@@ -39,7 +35,7 @@ import { getGridEdge, getLocalizedRoomText, getRoom, isBossFloor } from "./domai
 import { createIdentitySuggestion } from "./domain/identitySuggestion";
 import { executeCommand, listUnlockedCheckpoints, roomStairsEdge, stairGateAhead } from "./domain/rulesEngine";
 import { getTempoModeForPhase, runTempoStep, type TempoMode } from "./domain/tempo";
-import { SPELLS, knownSpells, type SpellId } from "./domain/spells";
+import { SPELLS, type SpellId } from "./domain/spells";
 import {
   activateControllerCancel,
   focusFirstControllerChoice,
@@ -128,12 +124,6 @@ type GuildCreationStep = "briefing" | "class" | "appearance" | "bonus" | "name";
 type GuildOfferState = "ask" | "suggestion" | "dismissed";
 type TownMode = "guild" | "shop" | "recovery" | "records" | "entry";
 type AppScreen = "title" | "config" | "game";
-
-const SPELL_LABEL_KEY: Record<SpellId, "play.spellHeal" | "play.spellFirebolt" | "play.spellSleep"> = {
-  heal: "play.spellHeal",
-  firebolt: "play.spellFirebolt",
-  sleep: "play.spellSleep"
-};
 
 const AUTO_SAVE_SLOT = "autosave";
 const guildStepOrder: GuildCreationStep[] = ["briefing", "class", "appearance", "bonus", "name"];
@@ -2287,98 +2277,30 @@ export function App() {
                 </div>
               )}
               {state.phase === "combat" ? (
-                <div
-                  className="command-bar command-dock combat-command-window"
-                  aria-label={t("play.combatCommands")}
-                  data-controller-active="true"
-                  data-controller-surface="combat-commands"
-                  data-testid="combat-command-window"
-                >
-                    <button type="button" aria-pressed={isTempoRunning} onClick={() => toggleTempoMode("combat")}>
-                      {isTempoRunning ? <Square size={18} /> : <Repeat2 size={18} />}
-                      {isTempoRunning ? t("tempo.stop") : t("tempo.repeat")}
-                      <kbd className="key-hint">R</kbd>
-                    </button>
-                    <button type="button" disabled={!canSelectedActorAttack} onClick={() => queueSelectedCombatAction("attack")}>
-                      <Sword size={18} />
-                      {t("play.attack")}
-                      <kbd className="key-hint">F</kbd>
-                    </button>
-                    <button type="button" disabled={!canCycleCombatTarget} onClick={() => cycleSelectedTarget(1)}>
-                      <ArrowRight size={18} />
-                      {t("play.targetNext")}
-                    </button>
-                    <button type="button" disabled={!selectedActor} onClick={() => queueSelectedCombatAction("defend")}>
-                      <ShieldCheck size={18} />
-                      {t("play.defend")}
-                      <kbd className="key-hint">G</kbd>
-                    </button>
-                    {selectedActor &&
-                      knownSpells(selectedActor.classId, selectedActor.level).map((spellId) => {
-                        const spell = SPELLS[spellId];
-                        const needsTarget = spell.target === "enemyGroup" && !selectedTarget;
-                        return (
-                          <button
-                            key={spellId}
-                            type="button"
-                            disabled={selectedActor.mp < spell.mpCost || needsTarget}
-                            onClick={() => queueSelectedCombatSpell(spellId)}
-                          >
-                            <Wand2 size={18} />
-                            {t(SPELL_LABEL_KEY[spellId])} · {t("play.mpShort")} {spell.mpCost}
-                          </button>
-                        );
-                      })}
-                    {combatHealingItem && selectedActor && (
-                      <button
-                        type="button"
-                        onClick={() => queueSelectedCombatAction("use_item")}
-                      >
-                        <ShieldCheck size={18} />
-                        {t("play.useItem")}
-                      </button>
-                    )}
-                    <button type="button" disabled={!combatOrdersReady} onClick={executeCombatOrders}>
-                      <Sword size={18} />
-                      {t("play.fight")}
-                      <kbd className="key-hint">X</kbd>
-                    </button>
-                    <button type="button" data-controller-cancel="true" disabled={combatOrders.length === 0} onClick={takeBackCombatOrder}>
-                      <ShieldCheck size={18} />
-                      {t("play.takeBack")}
-                      <kbd className="key-hint">⌫</kbd>
-                    </button>
-                    <button type="button" disabled={combatOrders.length === 0} onClick={clearCombatOrders}>
-                      <Square size={18} />
-                      {t("play.clearOrders")}
-                    </button>
-                    <button type="button" onClick={() => run({ type: "retreat" })}>
-                      <ShieldCheck size={18} />
-                      {t("play.retreat")}
-                    </button>
-                    {debugMode && (
-                      <>
-                        <button
-                          type="button"
-                          className="context-command"
-                          data-testid="debug-force-victory"
-                          onClick={() => run({ type: "debug_force_victory" })}
-                        >
-                          <Sword size={18} />
-                          {t("debug.forceVictory")}
-                        </button>
-                        <button
-                          type="button"
-                          className="context-command"
-                          data-testid="debug-revive-party"
-                          onClick={() => run({ type: "debug_revive_party" })}
-                        >
-                          <ShieldCheck size={18} />
-                          {t("debug.reviveParty")}
-                        </button>
-                      </>
-                    )}
-                  </div>
+                <CombatCommandDock
+                  t={t}
+                  isTempoRunning={isTempoRunning}
+                  onToggleTempo={() => toggleTempoMode("combat")}
+                  canSelectedActorAttack={canSelectedActorAttack}
+                  onAttack={() => queueSelectedCombatAction("attack")}
+                  canCycleTarget={canCycleCombatTarget}
+                  onCycleTarget={() => cycleSelectedTarget(1)}
+                  selectedActor={selectedActor}
+                  hasSelectedTarget={Boolean(selectedTarget)}
+                  onDefend={() => queueSelectedCombatAction("defend")}
+                  onCastSpell={(spellId) => queueSelectedCombatSpell(spellId)}
+                  showUseItem={Boolean(combatHealingItem)}
+                  onUseItem={() => queueSelectedCombatAction("use_item")}
+                  combatOrdersReady={combatOrdersReady}
+                  onExecute={executeCombatOrders}
+                  combatOrdersCount={combatOrders.length}
+                  onTakeBack={takeBackCombatOrder}
+                  onClear={clearCombatOrders}
+                  onRetreat={() => run({ type: "retreat" })}
+                  debugMode={debugMode}
+                  onForceVictory={() => run({ type: "debug_force_victory" })}
+                  onReviveParty={() => run({ type: "debug_revive_party" })}
+                />
               ) : (
                 <DungeonCommandDock
                   t={t}
