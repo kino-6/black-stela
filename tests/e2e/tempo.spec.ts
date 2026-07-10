@@ -9,7 +9,7 @@ test("repeat and keyboard commands keep the dungeon loop fast", async ({ page })
   await page.getByRole("button", { name: "Enter dungeon" }).click();
 
   // Space starts auto-explore, which walks into the first fight and stops there.
-  await expect(page.getByRole("button", { name: "Repeat" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Auto", exact: true })).toBeVisible();
   await page.keyboard.press("Space");
   await expect(page.getByRole("heading", { name: "Combat" })).toBeVisible();
 
@@ -18,7 +18,7 @@ test("repeat and keyboard commands keep the dungeon loop fast", async ({ page })
   await resolveVisibleCombat(page);
   await expect(page.getByRole("heading", { name: "Hall of Old Dust" })).toBeVisible();
 
-  await page.getByRole("button", { name: "Repeat" }).click();
+  await page.getByRole("button", { name: "Auto", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Hall of Old Dust" })).toBeVisible();
   await expect(page.getByText("Auto move stopped: interesting event or unsafe state.")).toBeVisible();
 });
@@ -52,7 +52,7 @@ test("Japanese tempo controls fit on mobile", async ({ page }) => {
   await registerAdventurer(page, { locale: "ja", name: "ミラ" });
   await page.getByRole("button", { name: "迷宮に入る" }).click();
 
-  await expect(page.getByRole("button", { name: "リピート" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "オート" })).toBeVisible();
 
   const horizontalOverflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth);
   expect(horizontalOverflow).toBe(false);

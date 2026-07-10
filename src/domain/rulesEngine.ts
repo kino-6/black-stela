@@ -1706,6 +1706,28 @@ function syncCombatEnemy(combat: CombatState): CombatState {
   };
 }
 
+// リピート (Repeat): re-issue a previous round's declared orders against the CURRENT
+// board. Actors who have fallen are dropped; attack/cast orders aimed at a group that
+// no longer stands are retargeted to the first living group (so a killed target does
+// not waste the swing). Pure so it can be unit-locked apart from the React wiring.
+export function remapRepeatOrders(
+  lastOrders: CombatActionDeclaration[],
+  livingActorIds: Set<string>,
+  livingGroupIds: string[]
+): CombatActionDeclaration[] {
+  const fallbackGroupId = livingGroupIds[0];
+  return lastOrders
+    .filter((order) => livingActorIds.has(order.actorId))
+    .map((order) => {
+      if ((order.action === "attack" || order.action === "cast") && order.targetGroupId) {
+        if (!livingGroupIds.includes(order.targetGroupId)) {
+          return fallbackGroupId ? { ...order, targetGroupId: fallbackGroupId } : order;
+        }
+      }
+      return order;
+    });
+}
+
 function validateRoundActions(
   party: Character[],
   combat: CombatState,

@@ -9,7 +9,7 @@ test("auto-explore shows a live tempo indicator with speed and stop", async ({ p
   await page.goto("/?debug=1&progress=floor_2");
 
   // Start auto-explore from the dungeon dock (the Repeat/tempo button).
-  await page.getByTestId("dungeon-command-window").getByRole("button", { name: "Repeat" }).click();
+  await page.getByTestId("dungeon-command-window").getByRole("button", { name: "Auto", exact: true }).click();
 
   // The live indicator appears with the active mode and a step readout.
   const indicator = page.getByTestId("tempo-indicator");

@@ -72,9 +72,9 @@ test("repeat mode can be started and stopped through confirm focus", async ({ pa
   await page.getByRole("button", { name: "Back to town" }).click();
   await page.getByRole("button", { name: "Enter dungeon" }).click();
 
-  await focusControllerButton(page, "Repeat");
+  await focusControllerButton(page, "Auto");
   await page.keyboard.press("Enter");
   await expect(page.getByTestId("dungeon-command-window").getByRole("button", { name: "Stop" })).toBeVisible();
   await page.keyboard.press("Enter");
-  await expect(page.getByText("Repeat stopped.")).toBeVisible();
+  await expect(page.getByText("Auto stopped.")).toBeVisible();
 });

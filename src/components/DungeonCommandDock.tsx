@@ -69,7 +69,7 @@ export function DungeonCommandDock({
     >
       <button type="button" aria-pressed={isTempoRunning} onClick={onToggleTempo}>
         {isTempoRunning ? <Square size={18} /> : <Repeat2 size={18} />}
-        {isTempoRunning ? t("tempo.stop") : t("tempo.repeat")}
+        {isTempoRunning ? t("tempo.stop") : t("tempo.auto")}
       </button>
       <button type="button" className="move-command" aria-label={t("play.turnLeft")} onClick={() => onCommand({ type: "turn_left" })}>
         <RotateCcw size={18} />

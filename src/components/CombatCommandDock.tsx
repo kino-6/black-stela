@@ -1,10 +1,12 @@
-import { Repeat2, ShieldCheck, Square, Sword } from "lucide-react";
+import { PlayCircle, RotateCcw, ShieldCheck, Square, Sword } from "lucide-react";
 import type { Translator } from "../i18n";
 
 interface CombatCommandDockProps {
   t: Translator;
   isTempoRunning: boolean;
   onToggleTempo: () => void;
+  onRepeatRound: () => void;
+  canRepeat: boolean;
   onRetreat: () => void;
   debugMode: boolean;
   onForceVictory: () => void;
@@ -18,6 +20,8 @@ export function CombatCommandDock({
   t,
   isTempoRunning,
   onToggleTempo,
+  onRepeatRound,
+  canRepeat,
   onRetreat,
   debugMode,
   onForceVictory,
@@ -31,10 +35,20 @@ export function CombatCommandDock({
       data-controller-surface="combat-meta"
       data-testid="combat-command-window"
     >
-      <button type="button" aria-pressed={isTempoRunning} onClick={onToggleTempo}>
-        {isTempoRunning ? <Square size={18} /> : <Repeat2 size={18} />}
-        {isTempoRunning ? t("tempo.stop") : t("tempo.repeat")}
+      <button type="button" aria-pressed={isTempoRunning} onClick={onToggleTempo} data-testid="combat-auto">
+        {isTempoRunning ? <Square size={18} /> : <PlayCircle size={18} />}
+        {isTempoRunning ? t("tempo.stop") : t("tempo.auto")}
         <kbd className="key-hint">R</kbd>
+      </button>
+      <button
+        type="button"
+        onClick={onRepeatRound}
+        disabled={!canRepeat}
+        data-testid="combat-repeat-round"
+        title={t("tempo.repeatRoundHint")}
+      >
+        <RotateCcw size={18} />
+        {t("tempo.repeatRound")}
       </button>
       <button type="button" onClick={onRetreat}>
         <ShieldCheck size={18} />

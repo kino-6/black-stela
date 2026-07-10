@@ -56,6 +56,17 @@ test("the front row's Attack is enabled (a real command, not a lone toolbar)", a
   await expect(page.getByTestId("combat-menu-attack")).toBeEnabled();
 });
 
+test("オート and リピート are distinct controls (Repeat disarmed until a round runs)", async ({ page }) => {
+  await enterCombat(page);
+  // オート (continuous auto-battle) and リピート (re-run last round) are separate
+  // buttons — the earlier confusion was one button that did neither clearly.
+  await expect(page.getByTestId("combat-auto")).toBeVisible();
+  await expect(page.getByTestId("combat-repeat-round")).toBeVisible();
+  // Nothing has been carried out yet, so リピート has nothing to repeat.
+  await expect(page.getByTestId("combat-repeat-round")).toBeDisabled();
+  // The replay remap itself is unit-locked in tests/repeatOrders.test.ts.
+});
+
 test("auto-battle safety stops are a Config toggle (off by default)", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("button", { name: "Config" }).click();

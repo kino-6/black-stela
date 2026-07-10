@@ -35,7 +35,7 @@ import {
 import { readVault, depositToVault, removeFromVault, type VaultEntry } from "./domain/adventurerVault";
 import { getGridEdge, getLocalizedRoomText, getRoom, isBossFloor } from "./domain/scenario";
 import { createIdentitySuggestion } from "./domain/identitySuggestion";
-import { executeCommand, listUnlockedCheckpoints, roomStairsEdge, stairGateAhead } from "./domain/rulesEngine";
+import { executeCommand, listUnlockedCheckpoints, remapRepeatOrders, roomStairsEdge, stairGateAhead } from "./domain/rulesEngine";
 import { getTempoModeForPhase, runTempoStep, type TempoMode } from "./domain/tempo";
 import { SPELLS, knownSpells, type SpellId } from "./domain/spells";
 import {
@@ -155,6 +155,9 @@ export function App() {
   const [campOpen, setCampOpen] = useState(false);
   const [fullMapOpen, setFullMapOpen] = useState(false);
   const [combatOrders, setCombatOrders] = useState<CombatActionDeclaration[]>([]);
+  // The last fully-declared round, remembered so リピート (Repeat) can re-run the
+  // same orders once without re-navigating the menu. Cleared when a fight ends.
+  const [lastCombatOrders, setLastCombatOrders] = useState<CombatActionDeclaration[]>([]);
   const [selectedTargetId, setSelectedTargetId] = useState<string | null>(null);
   const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null);
   const [shopCategory, setShopCategory] = useState<ShopCategory>("weapon");
@@ -309,6 +312,7 @@ export function App() {
     if (state.phase !== "combat") {
       setSelectedTargetId(null);
       setCombatOrders([]);
+      setLastCombatOrders([]);
       return;
     }
 
@@ -407,6 +411,7 @@ export function App() {
     }
 
     run({ type: "declare_round", actions: combatOrders }, { remember: false });
+    setLastCombatOrders(combatOrders);
     setCombatOrders([]);
   }
 
@@ -418,10 +423,33 @@ export function App() {
     const allQueued = activeParty.length > 0 && activeParty.every((member) => nextOrders.some((queued) => queued.actorId === member.id));
     if (allQueued) {
       run({ type: "declare_round", actions: nextOrders }, { remember: false });
+      setLastCombatOrders(nextOrders);
       setCombatOrders([]);
     } else {
       setCombatOrders(nextOrders);
     }
+  }
+
+  // リピート (Repeat): re-run the previous round's declared orders exactly once,
+  // remapping actors who fell (dropped) and orders aimed at a now-dead enemy group
+  // (retargeted to the first living group). オート (Auto) is the continuous loop;
+  // this is the single-shot "do that again".
+  function repeatLastRound() {
+    if (state.phase !== "combat" || combatOrders.length > 0 || tempoMode !== "idle") {
+      return;
+    }
+    const livingIds = new Set(activeParty.map((member) => member.id));
+    const replay = remapRepeatOrders(
+      lastCombatOrders,
+      livingIds,
+      livingEnemyGroups.map((group) => group.id)
+    );
+    if (replay.length === 0) {
+      setTempoStatus(t("tempo.repeatRoundUnavailable"));
+      return;
+    }
+    run({ type: "declare_round", actions: replay }, { remember: false });
+    setLastCombatOrders(replay);
   }
 
   function menuQueueAttack(groupId: string) {
@@ -2110,6 +2138,8 @@ export function App() {
                     t={t}
                     isTempoRunning={isTempoRunning}
                     onToggleTempo={() => toggleTempoMode("combat")}
+                    onRepeatRound={repeatLastRound}
+                    canRepeat={lastCombatOrders.length > 0 && !isTempoRunning && combatOrders.length === 0}
                     onRetreat={() => run({ type: "retreat" })}
                     debugMode={debugMode}
                     onForceVictory={() => run({ type: "debug_force_victory" })}
