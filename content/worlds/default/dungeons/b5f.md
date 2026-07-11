@@ -13,8 +13,9 @@ authorNotes: >-
   Midpoint gate on the full 20x20 frame. Two toll halls of cinder-drift flank the
   entry, each with a warren and a cache; the only way deeper is the Keeper's
   Niche, a one-wide choke where the Cinder Keeper takes its toll. Beyond it the
-  Lifted Bar throws a long shortcut up to B2F and drops to B6F, and a walled vault
-  hangs off it for the party that pays the price. Economy pressure by design.
+  Lifted Bar loops a return route back to the entry hall and drops to B6F, and a
+  walled vault hangs off it for the party that pays the price. Economy pressure by
+  design.
 startRoom: room.b5f.001
 map: |
   ###################
@@ -64,8 +65,7 @@ edges:
   - from: room.b5f.003
     direction: west
     kind: shortcut
-    to: room.b2f.001
-    targetFloorId: dungeon.b2f
+    to: room.b5f.001
   - from: room.b5f.003
     direction: east
     kind: stairs
