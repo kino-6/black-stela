@@ -125,7 +125,7 @@ import {
   rollBonusPool,
   type CharacterDraft
 } from "./ui/characterDraft";
-import { portraitAssetUrls } from "./ui/artAssets";
+import { cssArtVariables, portraitUrl, setActiveArtPack } from "./ui/artAssets";
 
 type GuildCreationStep = "briefing" | "class" | "appearance" | "bonus" | "name";
 type GuildOfferState = "ask" | "suggestion" | "dismissed";
@@ -161,6 +161,18 @@ export function App() {
   const [confirmRound, setConfirmRound] = useState<boolean>(() => loadConfirmRound());
   const [revealedBeats, setRevealedBeats] = useState(0);
   const t = useMemo(() => createTranslator(locale), [locale]);
+
+  // Point the art resolver at the active world's asset pack and publish the CSS-
+  // referenced art (minimap markers, title, combat vignette) as :root custom
+  // properties, so those resolve through the same pack-scoped resolver as sprites/
+  // icons instead of being pinned to one world's hard-coded file paths.
+  useEffect(() => {
+    setActiveArtPack(defaultWorld.assetPack ?? "default");
+    const root = document.documentElement;
+    for (const [name, value] of Object.entries(cssArtVariables())) {
+      root.style.setProperty(name, value);
+    }
+  }, []);
   const [saveSlotId, setSaveSlotId] = useState(AUTO_SAVE_SLOT);
   const [saveSlots, setSaveSlots] = useState<SaveSlotSummary[]>(() => createBrowserSaveRepository()?.list() ?? []);
   const [saveStatus, setSaveStatus] = useState("");
@@ -2427,7 +2439,7 @@ function renderPortraitContent({
   }
 
   const background = findBackground(backgroundId);
-  const portraitAssetUrl = portraitAssetUrls[background.portraitKey];
+  const portraitAssetUrl = portraitUrl(background.portraitKey);
   if (portraitAssetUrl) {
     return <img data-testid={testId} src={portraitAssetUrl} alt={alt || background.label.en} />;
   }

@@ -148,17 +148,32 @@ Notes from rejected attempts:
 ## 2. Technical conventions
 
 **Formats & placement (as of 2026-07 all art is externalized to content).** Every
-asset lives under **`content/worlds/default/assets/`** — subfolders `dungeon/`,
+asset lives under **`content/worlds/<pack>/assets/`** — subfolders `dungeon/`,
 `icons/`, `portraits/`, `minimap/`, `title/`, `ui/` — alongside the rest of the
 scenario data, NOT in `src/`. A single glob in `src/ui/artAssets.ts` pulls every
-file through Vite (hashed/bundled), keyed by **file basename** (no extension). To
-add or replace art: drop the file in the right `content/.../assets/` subfolder and,
-if it's a new id, point a map entry in `artAssets.ts` at its basename. The map's key
-is the catalog/enemy id; by convention the **basename = the id with dots→dashes**
-(e.g. `equip.steel-sabre` → `icons/equip-steel-sabre.png`). Enemy sprites, block
-textures, portraits, and CSS-referenced art (minimap markers, title, combat
-vignette) all resolve the same way. Codex should generate files into these
-`content/` folders using these basenames.
+file **from every pack** through Vite (hashed/bundled), keyed by **file basename**
+(no extension). The active pack is chosen at runtime by `setActiveArtPack(pack)`
+(App reads `world.assetPack`, default `"default"`); an unknown basename falls back
+to the `default` pack, so a partial pack still renders.
+
+**Resolution is own-basename-first.** An id resolves to a file whose basename is
+the id with **dots→dashes** (`equip.steel-sabre` → `icons/equip-steel-sabre.png`).
+If that file exists it is used with **no code change** — pure drop-in (a rebuild is
+always required; Vite's glob is build-time, there is no runtime folder scan). Only
+when no own-basename file exists does the resolver fall back to a **placeholder
+map** in `artAssets.ts` (`ICON_PLACEHOLDER` / `ENEMY_SPRITE_SHORT`) that points a
+new id at an existing icon/sprite until real art is dropped in. So: dropping the
+correctly-named file is enough; editing the map is only needed if you want a
+*temporary placeholder* before the real file exists, or a basename that doesn't
+follow the dots→dashes convention.
+
+Enemy sprites, block textures, portraits all resolve through this same resolver.
+**CSS-referenced art** (minimap markers, title, combat vignette) also resolves
+through it now: `cssArtVariables()` maps each to a `--art-*` custom property that
+App sets on `:root`, and `styles.css` reads `var(--art-marker-*)` / `var(--art-title)`
+/ `var(--art-combat-vignette)` — so these are drop-in and pack-scoped exactly like
+the icons/sprites, no longer pinned to one world's hard-coded file paths. Codex
+should generate files into these `content/` folders using these basenames.
 
 | Kind | Format | Size | Transparency | Notes |
 |------|--------|------|--------------|-------|
@@ -198,7 +213,9 @@ feature will read as an obvious grid. Keep them even and non-directional.
 
 ## 3. Current inventory (what already exists)
 
-`content/worlds/default/assets/` — **59 assets total**:
+`content/worlds/default/assets/` — **60 assets total** (21 `dungeon/` incl. 11
+enemy sprites + return marker + block/fallback textures + door, 16 `icons/`, 12
+`portraits/`, 9 `minimap/`, 1 `title/`, 1 `ui/`):
 
 | File | Size | Use | Gap it leaves |
 |------|------|-----|---------------|

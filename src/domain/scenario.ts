@@ -272,6 +272,7 @@ export const dungeonFloorSchema = z.object({
 export const scenarioWorldSchema = z.object({
   id: z.string().min(1),
   title: z.string().min(1),
+  assetPack: z.string().min(1).optional(),
   startDungeon: z.string().min(1),
   startRoom: z.string().min(1),
   aiPolicy: z.object({

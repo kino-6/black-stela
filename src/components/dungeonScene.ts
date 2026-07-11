@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { asset, dungeonBlockTextureUrls, getEnemySpriteTextureUrl } from "../ui/artAssets";
+import { asset, blockTextures, getEnemySpriteTextureUrl } from "../ui/artAssets";
 
 const returnMarkerTextureUrl = asset("return-marker");
 const stoneFloorTextureUrl = asset("stone-floor");
@@ -227,16 +227,17 @@ export function buildDungeonScene(mount: HTMLDivElement, input: DungeonSceneInpu
 }
 
 export function getDungeonBlockTextureUrls(floorId: string | null) {
+  const blocks = blockTextures();
   if (floorId && /b[7-8]f/i.test(floorId)) {
-    return dungeonBlockTextureUrls.block3;
+    return blocks.block3;
   }
 
   if (floorId && /b[4-6]f/i.test(floorId)) {
-    return dungeonBlockTextureUrls.block2;
+    return blocks.block2;
   }
 
   if (floorId && /b[1-3]f/i.test(floorId)) {
-    return dungeonBlockTextureUrls.block1;
+    return blocks.block1;
   }
 
   return { wall: stoneWallTextureUrl, floor: stoneFloorTextureUrl };

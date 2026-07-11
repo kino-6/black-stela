@@ -1,10 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { getDungeonRenderLayout } from "../src/components/DungeonView";
 import { getDungeonBlockTextureUrls } from "../src/components/dungeonScene";
-import { hasEnemySpriteTexture } from "../src/ui/artAssets";
+import { catalogIconUrl, hasEnemySpriteTexture, portraitUrl } from "../src/ui/artAssets";
 import { defaultWorld } from "../src/data/defaultWorld";
 import { backgroundCatalog } from "../src/domain/characterCreation";
-import { catalogIconUrls, portraitAssetUrls } from "../src/ui/artAssets";
 
 describe("DungeonView render layout", () => {
   it("has a dedicated combat sprite for every authored default-world enemy", () => {
@@ -12,10 +11,10 @@ describe("DungeonView render layout", () => {
   });
 
   it("has generated portrait and catalog icon assets for default content", () => {
-    expect(backgroundCatalog.map((background) => background.portraitKey).filter((key) => !portraitAssetUrls[key])).toEqual([]);
+    expect(backgroundCatalog.map((background) => background.portraitKey).filter((key) => !portraitUrl(key))).toEqual([]);
 
     const catalogIds = [...defaultWorld.items.map((item) => item.id), ...defaultWorld.equipment.map((item) => item.id)];
-    expect(catalogIds.filter((itemId) => !catalogIconUrls[itemId])).toEqual([]);
+    expect(catalogIds.filter((itemId) => !catalogIconUrl(itemId))).toEqual([]);
   });
 
   it("selects distinct dungeon wall and floor textures by floor block", () => {

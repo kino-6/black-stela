@@ -437,6 +437,9 @@ export interface GameState {
 export interface ScenarioWorld {
   id: string;
   title: string;
+  /** Art pack folder under content/worlds/<assetPack>/assets (defaults to "default").
+   *  Lets a scenario ship its own atmosphere pack. */
+  assetPack?: string;
   startDungeon: string;
   startRoom: string;
   aiPolicy: AiPolicy;

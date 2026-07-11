@@ -19,13 +19,13 @@ import {
   formatStatDelta,
   isShopEventType
 } from "../ui/format";
-import { catalogIconUrls } from "../ui/artAssets";
+import { catalogIconUrl } from "../ui/artAssets";
 import type { Locale, Translator } from "../i18n";
 
 const equipmentSlotOrder: EquipmentSlot[] = ["weapon", "offhand", "body", "head", "hands", "accessory"];
 
 function renderCatalogIcon(itemId: string) {
-  const iconUrl = catalogIconUrls[itemId];
+  const iconUrl = catalogIconUrl(itemId);
   if (!iconUrl) {
     return null;
   }
