@@ -2,8 +2,11 @@ import { describe, expect, it } from "vitest";
 import { addCharacter, createCharacter, createInitialGameState } from "../src/domain/gameState";
 import { executeCommand } from "../src/domain/rulesEngine";
 import { debugAutoExplore } from "../src/headless/headlessRunner";
+import { createDebugStateFromProgress, type DebugProgress } from "../src/debug/debugStart";
 import { defaultWorld } from "../src/data/defaultWorld";
 import type { GameState } from "../src/domain/types";
+
+const floorDepth = (id: string | null | undefined) => Number(id?.match(/b(\d+)f/)?.[1] ?? 0);
 
 function party(size: number): GameState {
   let state = createInitialGameState();
@@ -49,5 +52,31 @@ describe("debug auto-explore", () => {
     }
     expect(state.map.visitedRooms.length).toBeGreaterThan(startVisited + 10);
     expect(depth(state.map.floorId)).toBeGreaterThanOrEqual(2); // descended off B1F on its own
+  });
+
+  // Regression: a floor's always-open RETURN shortcut (e.g. B5F's bar → B2F) must
+  // never be treated as a forward exploration path. Before the descendOnly fix the
+  // auto-explorer walked B5F's west shortcut to B2F and then re-descended, so the
+  // party visibly warped "B5F → B3F". Auto-explore must only ever go deeper.
+  it("never warps backward up a return shortcut while auto-exploring", () => {
+    for (const progress of ["floor_2", "floor_3", "floor_5", "floor_6", "floor_7"] as DebugProgress[]) {
+      let state = createDebugStateFromProgress(defaultWorld, progress);
+      const startDepth = floorDepth(state.map.floorId);
+      let deepest = startDepth;
+      for (let pass = 0; pass < 30; pass += 1) {
+        const before = state;
+        state = debugAutoExplore(state, defaultWorld);
+        if (state.phase === "combat") {
+          state = resolveCombat(state);
+          continue;
+        }
+        deepest = Math.max(deepest, floorDepth(state.map.floorId));
+        // The party must never end a pass on a floor SHALLOWER than where it began.
+        expect(floorDepth(state.map.floorId)).toBeGreaterThanOrEqual(startDepth);
+        if (state === before || state.phase === "town") break;
+      }
+      // And it should have made downward progress (or already been at the finale).
+      expect(deepest).toBeGreaterThanOrEqual(startDepth);
+    }
   });
 });

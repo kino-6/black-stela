@@ -185,7 +185,7 @@ export function debugAutoExplore(initialState: GameState, world: ScenarioWorld, 
         return current; // combat or town
       }
       visitCounts.set(current.position.roomId, (visitCounts.get(current.position.roomId) ?? 0) + 1);
-      const decision = chooseNextCommand(current, world, visitCounts, blockedMoves);
+      const decision = chooseNextCommand(current, world, visitCounts, blockedMoves, true);
       // Leaving the floor is handled below — stop the explore loop here.
       if (!decision.command || decision.command.type === "return_to_town" || decision.command.type === "use_stairs") {
         break;
@@ -276,7 +276,13 @@ function chooseNextCommand(
   state: GameState,
   world: ScenarioWorld,
   visitCounts: Map<string, number> = new Map(),
-  blockedMoves: Set<string> = new Set()
+  blockedMoves: Set<string> = new Set(),
+  // descendOnly: the player-facing auto-explore only ever works its way DOWN. It
+  // must never wander off the current floor mid-pass — neither down a stair (Phase
+  // 2/3 threads to the intended down-stair) nor, crucially, BACKWARD through an
+  // always-open return shortcut (e.g. B5F's bar → B2F), which would silently warp
+  // the party up several floors and then re-descend, reading as a "B5F → B3F loop".
+  descendOnly = false
 ): HeadlessDecision {
   if (state.phase === "town") {
     return state.party.length > 0
@@ -319,8 +325,8 @@ function chooseNextCommand(
   const currentDepth = floorDepth(state.position.roomId);
   const exploreExits = Object.fromEntries(
     Object.entries(room.exits).filter(([, targetRoomId]) => {
-      if (floorDepth(targetRoomId) > currentDepth) {
-        return false; // don't fall down a deeper-floor stair
+      if (descendOnly ? floorDepth(targetRoomId) !== currentDepth : floorDepth(targetRoomId) > currentDepth) {
+        return false; // never leave this floor mid-pass (down-stair OR backward shortcut)
       }
       // Skip an unwinnable tactical squad room — a greedy single-target walker can't
       // clear a shielded front + back-line caster. These sit in dead-end reward rooms,
