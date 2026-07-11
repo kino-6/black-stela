@@ -253,6 +253,28 @@ export async function faceDirection(page: Page, dir: "north" | "south" | "east" 
   }
 }
 
+// Walk the entrance→stair path and, at each fight, count the distinct enemy figures
+// on the stage BEFORE resolving — returns the most types seen in any single fight.
+// Used to prove multi-type (複数種) encounters actually appear in play.
+export async function walkB1fMaxEnemyTypes(page: Page): Promise<number> {
+  let maxTypes = 0;
+  // The needle route crosses the halls-table chambers (room.b1f.east), where a
+  // designed multi-group fight fields two distinct types.
+  for (const dir of [...B1F_ENTRANCE_TO_NEEDLE, ...B1F_NEEDLE_TO_WARDEN]) {
+    await faceDirection(page, dir);
+    await page.getByRole("button", { name: "Move", exact: true }).click();
+    await page.waitForTimeout(55);
+    if (await page.getByLabel("Battle screen").isVisible().catch(() => false)) {
+      const names = await page.getByTestId("combat-enemy-group").locator(".enemy-figure-name").allTextContents().catch(() => []);
+      const distinct = new Set(names.map((name) => name.replace(/\s*×\d+/, "").trim()).filter(Boolean));
+      maxTypes = Math.max(maxTypes, distinct.size);
+      await resolveVisibleCombat(page);
+    }
+    if (maxTypes >= 2) break;
+  }
+  return maxTypes;
+}
+
 // From the Winding Stair cell (B1F's down-stair), thread the maze back to the
 // Warden's Hall (the return marker).
 export async function walkB1fStairToMarker(page: Page) {

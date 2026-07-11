@@ -25,22 +25,33 @@ encounterTables:
         weight: 10
         minCount: 3
         maxCount: 4
-  # B2F's on-path table drops the already-beaten ash-slime so the landing always fights.
+  # B2F branches: the fresh hook-rat pack, sometimes joined by a straggler crawler
+  # from above (groupsMax 2) so the corridor can field a mixed group, not just one kind.
   - id: encounters.b2f.branches
     floorId: dungeon.b2f
+    groupsMax: 2
     entries:
       - enemyId: enemy.b2f.hook-rat
         weight: 10
-        minCount: 3
+        minCount: 2
         maxCount: 3
-  # Chamber table rolls only the fresh B3F type so the玄室 fight is guaranteed.
+      - enemyId: enemy.b1f.dust-crawler
+        weight: 5
+        minCount: 1
+        maxCount: 2
+  # B3F cistern: the fresh bitter-mote, sometimes with a trailing hook-rat (groupsMax 2).
   - id: encounters.b3f.cistern
     floorId: dungeon.b3f
+    groupsMax: 2
     entries:
       - enemyId: enemy.b3f.bitter-mote
         weight: 10
-        minCount: 3
+        minCount: 2
         maxCount: 3
+      - enemyId: enemy.b2f.hook-rat
+        weight: 5
+        minCount: 1
+        maxCount: 2
   - id: encounters.b4f.dark
     floorId: dungeon.b4f
     entries:
@@ -61,15 +72,18 @@ encounterTables:
         maxCount: 1
   - id: encounters.b6f.oaths
     floorId: dungeon.b6f
+    groupsMax: 2
     entries:
       - enemyId: enemy.b6f.oath-cutter
         weight: 7
-        minCount: 3
-        maxCount: 3
+        minCount: 2
+        maxCount: 2
       - enemyId: enemy.b4f.lantern-ward
         weight: 3
-        minCount: 3
-        maxCount: 3
+        minCount: 1
+        maxCount: 1
+  # B7F stays single-type on the main path (deep floors bite hard enough); mixed
+  # groups live on B1–B3 and B6 where the player meets them first.
   - id: encounters.b7f.vaults
     floorId: dungeon.b7f
     entries:

@@ -1442,8 +1442,15 @@ function beginRoomEncounter(
       ? resolveEncounterTable(world, room.encounterTable, state.turn)
       : [];
   // First-contact model: drop groups whose type is already down this run; if the
-  // whole roll is stale there is no fight.
-  const fresh = rolled.filter((group) => !state.defeatedEnemies.includes(group.enemy.id));
+  // whole roll is stale there is no fight. EXCEPTION — a designed multi-group table
+  // (groupsMax >= 2) that rolled distinct types fires while ANY type is still fresh,
+  // keeping the whole pack, so mixed-type fights actually appear despite first
+  // contact (a carryover type may reappear once as a side group). Both types are
+  // then marked defeated, so the mixed fight never repeats.
+  const table = room.encounterTable
+    ? world.encounterTables.find((candidate) => candidate.id === room.encounterTable)
+    : undefined;
+  const fresh = selectEncounterGroups(rolled, state.defeatedEnemies, table?.groupsMax ?? 1);
   if (fresh.length === 0) {
     return null;
   }
@@ -1467,6 +1474,25 @@ function beginRoomEncounter(
       roomId: room.id
     }
   };
+}
+
+// Pick which rolled groups actually fight, honoring the first-contact model. A
+// single-type roll keeps only fresh (undefeated) types. A DESIGNED mixed roll
+// (groupsMax >= 2, more than one distinct type) fires while ANY type is still fresh
+// and keeps the whole pack — so mixed-type fights show up even when one type has
+// been met before (that carryover type reappears once, then is marked defeated with
+// the rest). This is the deliberate exception that makes 複数種 fights visible.
+export function selectEncounterGroups<T extends { enemy: { id: string } }>(
+  rolled: T[],
+  defeated: readonly string[],
+  groupsMax: number
+): T[] {
+  const isFresh = (id: string) => !defeated.includes(id);
+  const designedMixed = groupsMax >= 2 && rolled.length > 1;
+  if (designedMixed) {
+    return rolled.some((group) => isFresh(group.enemy.id)) ? rolled : [];
+  }
+  return rolled.filter((group) => isFresh(group.enemy.id));
 }
 
 export function createCombatState(roomId: string, enemy: Enemy, count = 1): CombatState {
@@ -1505,7 +1531,10 @@ export function resolveEncounterTable(world: ScenarioWorld, tableId: string, see
   }
 
   const groupsMax = Math.min(Math.max(1, table.groupsMax ?? 1), table.entries.length);
-  const groupCount = 1 + (hashSeed(`${tableId}:${seed}:groups`) % groupsMax);
+  // A designed multi-group table (groupsMax >= 2) reliably fields its full spread of
+  // distinct types — with only ~one fight per floor under first contact, a coin-flip
+  // group count would too often hide the mixed fight. Single tables field one group.
+  const groupCount = groupsMax;
 
   const remaining = [...table.entries];
   const chosen: typeof table.entries = [];
