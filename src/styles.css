@@ -2039,8 +2039,13 @@ textarea {
 .mini-map-cell.edge-south-wall { border-bottom-color: #b3bfa0; }
 .mini-map-cell.edge-west-wall { border-left-color: #b3bfa0; }
 
-/* The "you are here" cell keeps the SAME bright stone walls as every other cell
-   (the gold now fills only the floor, so walls no longer wash out). */
+/* On the bright gold "you are here" floor, bright stone walls wash out — draw them
+   DARK there for high contrast (the gold now fills only the floor via padding-box,
+   so a dark wall reads as a crisp line on top of the gold rather than being covered). */
+.mini-map-cell.current.edge-north-wall { border-top-color: #241d04; }
+.mini-map-cell.current.edge-east-wall { border-right-color: #241d04; }
+.mini-map-cell.current.edge-south-wall { border-bottom-color: #241d04; }
+.mini-map-cell.current.edge-west-wall { border-left-color: #241d04; }
 
 /* Open passages: no border, so connected cells read as one corridor. */
 .mini-map-cell.edge-north-open { border-top-color: transparent; }
