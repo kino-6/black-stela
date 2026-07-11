@@ -39,7 +39,7 @@ import { readVault, depositToVault, removeFromVault, type VaultEntry } from "./d
 import { getGridEdge, getLocalizedRoomText, getRoom, isBossFloor } from "./domain/scenario";
 import { createIdentitySuggestion } from "./domain/identitySuggestion";
 import { executeCommand, listUnlockedCheckpoints, remapRepeatOrders, roomStairsEdge, stairGateAhead } from "./domain/rulesEngine";
-import { getTempoModeForPhase, runTempoStep, type TempoMode } from "./domain/tempo";
+import { autoCombatStopStatus, chooseAutoRoundActions, getTempoModeForPhase, runTempoStep, type TempoMode } from "./domain/tempo";
 import { SPELLS, isCasterClass, knownSpells, type SpellId } from "./domain/spells";
 import {
   activateControllerCancel,
@@ -534,21 +534,25 @@ export function App() {
   // Resolve a manually declared round. When paced playback is on (default), hold
   // the resolved state and play the round's beats forward first so the battlefield
   // updates blow-by-blow; instant mode (or a beatless round) commits immediately.
-  function resolveRound(actions: CombatActionDeclaration[]) {
+  function resolveRound(actions: CombatActionDeclaration[], opts: { fromAuto?: boolean } = {}) {
     if (playback) {
       return;
     }
     const resolved = executeCommand(state, defaultWorld, { type: "declare_round", actions });
     setLastCombatOrders(actions);
     setCombatOrders([]);
-    setTempoStatus("");
+    if (!opts.fromAuto) {
+      setTempoStatus("");
+    }
     const roundEntry = [...resolved.log].reverse().find((entry) => entry.event?.type === "combat_round_resolved");
     const beats = roundEntry?.event?.type === "combat_round_resolved" ? roundEntry.event.beats ?? [] : [];
     if (instantCombatLog || beats.length === 0) {
       setState(resolved);
       return;
     }
-    if (isTempoRunning) {
+    // A manual round stops any running tempo; an auto round keeps it going so the
+    // next round fires once this one finishes animating.
+    if (isTempoRunning && !opts.fromAuto) {
       setTempoMode("idle");
     }
     setPlayback({ beats, index: 0, pending: resolved });
@@ -903,6 +907,12 @@ export function App() {
     }
 
     const timer = window.setInterval(() => {
+      // Paced (playback) combat rounds are driven by the dedicated effect below so
+      // Auto plays out blow-by-blow; the interval only handles dungeon auto-move and
+      // instant-mode combat.
+      if (!instantCombatLog && stateRef.current.phase === "combat") {
+        return;
+      }
       const result = runTempoStep(stateRef.current, tempoMode, defaultWorld, t, { safetyStops: autoBattleSafety });
       stateRef.current = result.state;
       setState(result.state);
@@ -915,7 +925,32 @@ export function App() {
     }, tempoSpeed === "fast" ? 130 : 320);
 
     return () => window.clearInterval(timer);
-  }, [tempoMode, tempoSpeed, autoBattleSafety, t]);
+  }, [tempoMode, tempoSpeed, autoBattleSafety, instantCombatLog, t]);
+
+  // Auto-battle, paced: while Auto runs in combat (and playback is on), resolve one
+  // round through the playback path, then let the committed state re-trigger the
+  // next — so オート plays out blow-by-blow instead of finishing in an instant.
+  useEffect(() => {
+    if (tempoMode === "idle" || instantCombatLog || state.phase !== "combat" || playback) {
+      return;
+    }
+    const stop = autoCombatStopStatus(state, { safetyStops: autoBattleSafety }, t);
+    if (stop) {
+      setTempoMode("idle");
+      setTempoStatus(stop);
+      return;
+    }
+    const actions = chooseAutoRoundActions(state, defaultWorld);
+    if (actions.length === 0) {
+      setTempoMode("idle");
+      return;
+    }
+    const timer = window.setTimeout(() => {
+      setTempoStep((step) => step + 1);
+      resolveRound(actions, { fromAuto: true });
+    }, tempoSpeed === "fast" ? 120 : 300);
+    return () => window.clearTimeout(timer);
+  }, [tempoMode, instantCombatLog, state, playback, autoBattleSafety, tempoSpeed, t]);
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {

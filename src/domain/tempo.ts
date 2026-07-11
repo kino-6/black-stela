@@ -24,6 +24,54 @@ export interface TempoOptions {
   safetyStops?: boolean;
 }
 
+// The auto-battle move for a round: every able member attacks the first living
+// group; a back-row member with no reach and a standing front line defends. Shared
+// by the instant tempo step and the paced (playback) auto path in the view.
+export function chooseAutoRoundActions(state: GameState, world: ScenarioWorld): CombatActionDeclaration[] {
+  if (state.phase !== "combat" || !state.combat) {
+    return [];
+  }
+  const target = state.combat.enemyGroups.find((group) => group.count > 0);
+  const activeParty = state.party.filter((member) => member.hp > 0 && !member.injury);
+  if (!target || activeParty.length === 0) {
+    return [];
+  }
+  const hasStandingFront = activeParty.some((member) => member.row === "front");
+  return activeParty.map((member) =>
+    member.row === "front" || !hasStandingFront || weaponReaches(member, world)
+      ? { actorId: member.id, action: "attack", targetGroupId: target.id }
+      : { actorId: member.id, action: "defend" }
+  );
+}
+
+// Whether auto-battle should hand control back BEFORE resolving another round, and
+// the status line to show. Returns null to keep going. Used by the paced auto path.
+export function autoCombatStopStatus(state: GameState, options: TempoOptions, t: Translator): string | null {
+  if (state.phase !== "combat" || !state.combat) {
+    return t("tempo.autoStoppedClear");
+  }
+  if (options.safetyStops) {
+    if (state.combat.enemy.isBoss || state.combat.enemy.role === "boss" || state.combat.enemy.role === "miniboss") {
+      return t("tempo.autoStoppedBoss");
+    }
+    const tacticalSquad = state.combat.enemyGroups.some(
+      (group) =>
+        group.count > 0 &&
+        (group.role === "blocker" || group.role === "caster" || group.elevation === "air" || group.elevation === "mid")
+    );
+    if (tacticalSquad) {
+      return t("tempo.autoStoppedTactical");
+    }
+    if (state.party.some((member) => member.injury || member.hp <= Math.ceil(member.maxHp * 0.35))) {
+      return t("tempo.autoStoppedDanger");
+    }
+  }
+  if (state.party.filter((member) => member.hp > 0 && !member.injury).length === 0) {
+    return t("tempo.autoStoppedDanger");
+  }
+  return null;
+}
+
 export function getTempoModeForPhase(phase: GameState["phase"]): TempoMode {
   if (phase === "combat") {
     return "combat";
@@ -80,18 +128,10 @@ function runTempoCombatStep(
     }
   }
 
-  const target = state.combat.enemyGroups.find((group) => group.count > 0);
-  const activeParty = state.party.filter((member) => member.hp > 0 && !member.injury);
-  if (activeParty.length === 0 || !target) {
+  const actions = chooseAutoRoundActions(state, world);
+  if (actions.length === 0) {
     return { state, keepRunning: false, status: t("tempo.autoStoppedDanger") };
   }
-
-  const hasStandingFront = activeParty.some((member) => member.row === "front");
-  const actions: CombatActionDeclaration[] = activeParty.map((member) =>
-    member.row === "front" || !hasStandingFront || weaponReaches(member, world)
-      ? { actorId: member.id, action: "attack", targetGroupId: target.id }
-      : { actorId: member.id, action: "defend" }
-  );
   const next = executeCommand(state, world, {
     type: "declare_round",
     actions

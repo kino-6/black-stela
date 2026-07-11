@@ -145,6 +145,20 @@ test("after all orders are set, a confirm step gates the round (default ON) (#72
   await expect(page.getByTestId("config-confirm-round")).toBeChecked();
 });
 
+test("オート also plays out blow-by-blow (not instant) (#73)", async ({ page }) => {
+  await enterCombat(page);
+  await page.getByTestId("combat-auto").click();
+  // While Auto runs, rounds animate: a floating damage number appears on the stage
+  // during playback — Auto no longer resolves the whole fight in an instant.
+  let sawHit = false;
+  for (let step = 0; step < 80 && !sawHit; step += 1) {
+    if ((await page.getByTestId("hit-number").count()) > 0) sawHit = true;
+    if ((await page.getByTestId("dungeon-command-window").count()) > 0) break;
+    await page.waitForTimeout(70);
+  }
+  expect(sawHit).toBeTruthy();
+});
+
 test("auto-battle safety stops are a Config toggle (off by default)", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("button", { name: "Config" }).click();
