@@ -11,7 +11,28 @@ export const ja = {
   },
   config: {
     autoBattleSafety: "オートを危険時に停止する（ボス／低HP）",
-    instantCombatLog: "戦闘ログを一気に表示（1手ずつの演出を省く）"
+    instantCombatLog: "戦闘ログを一気に表示（1手ずつの演出を省く）",
+    confirmRound: "指示入力の完了後に実行を確認する"
+  },
+  beat: {
+    hit: "{actor}の攻撃！ {target}に{damage}のダメージ",
+    crit: "{actor}の会心の一撃！ {target}に{damage}のダメージ",
+    skill: "{actor}の{ability}！ {target}に{damage}のダメージ",
+    weak: "（弱点！）",
+    cast: "{actor}は{ability}を唱えた",
+    castStatus: "{actor}の{ability}！ {target}は{status}",
+    heal: "{actor}は{target}を手当てした",
+    defend: "{actor}は身構えた",
+    miss: "{actor}の攻撃は外れた",
+    enemyHit: "{actor}の攻撃！ {target}に{damage}のダメージ",
+    enemyAbility: "{actor}の{ability}！ {target}に{damage}のダメージ",
+    afflict: "{target}は{status}",
+    poison: "毒が{target}を{damage}蝕む",
+    asleep: "{actor}は眠っている",
+    statusSleep: "眠り",
+    statusPoison: "毒",
+    statusSilence: "沈黙",
+    statusFear: "恐怖"
   },
   title: {
     menu: "タイトルメニュー",

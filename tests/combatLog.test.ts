@@ -20,13 +20,13 @@ describe("collectCombatBeats", () => {
       entry(round(1, ["Rook hits the slime for 7. 1 remain.", "Mira scorches the slime for 5. 1 remain."])),
       entry(round(2, ["Rook hits the slime for 6. 0 remain."]))
     ]);
-    expect(beats).toEqual([
+    expect(beats.map((beat) => beat.text)).toEqual([
       "Rook hits the slime for 7. 1 remain.",
       "Mira scorches the slime for 5. 1 remain.",
       "Rook hits the slime for 6. 0 remain."
     ]);
     // Numbers survive so the player gets 数字感.
-    expect(beats.every((line) => /\d/.test(line))).toBe(true);
+    expect(beats.every((beat) => /\d/.test(beat.text))).toBe(true);
   });
 
   it("keeps only the most recent encounter's beats", () => {
@@ -36,7 +36,7 @@ describe("collectCombatBeats", () => {
       entry(encounter()),
       entry(round(1, ["new fight beat"]))
     ]);
-    expect(beats).toEqual(["new fight beat"]);
+    expect(beats.map((beat) => beat.text)).toEqual(["new fight beat"]);
   });
 
   it("returns nothing before any blow has landed", () => {

@@ -17,6 +17,7 @@ interface CombatCommandMenuProps {
   // "skill" for front-row 特技 users, "spell" for arcane casters — drives the
   // command label (特技 / 呪文) and its submenu heading.
   abilityKind: "spell" | "skill";
+  localizeGroup: (group: CombatEnemyGroup) => string;
   canAttack: boolean;
   itemLabel: string | null;
   partyTargets: { id: string; name: string }[];
@@ -41,6 +42,7 @@ export function CombatCommandMenu({
   livingGroups,
   spells,
   abilityKind,
+  localizeGroup,
   canAttack,
   itemLabel,
   partyTargets,
@@ -96,7 +98,7 @@ export function CombatCommandMenu({
     if (view === "attackTarget") {
       return livingGroups.map((group) => ({
         key: group.id,
-        label: `${group.name} ×${group.count}`,
+        label: `${localizeGroup(group)} ×${group.count}`,
         enabled: true,
         onSelect: () => onQueueAttack(group.id)
       }));
@@ -116,7 +118,7 @@ export function CombatCommandMenu({
     if (view === "spellTarget") {
       return livingGroups.map((group) => ({
         key: group.id,
-        label: `${group.name} ×${group.count}`,
+        label: `${localizeGroup(group)} ×${group.count}`,
         enabled: true,
         onSelect: () => pendingSpell && onQueueSpell(pendingSpell, group.id)
       }));

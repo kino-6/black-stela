@@ -70,6 +70,7 @@ import {
 } from "./ui/catalog";
 import { equipmentInstanceKey } from "./domain/affixes";
 import { collectCombatBeats } from "./domain/combatLog";
+import { formatCombatBeat } from "./domain/combatBeatText";
 import { projectEventToLog } from "./domain/replayLog";
 import { calculateRecoveryCost, getEffectiveCharacterStats, isEquipmentUsableBy, weaponReaches } from "./domain/economy";
 import type {
@@ -248,6 +249,14 @@ export function App() {
   // Not gated on phase: a one-round kill flips straight to the dungeon, so the
   // killing blows must still reveal there (see the post-combat tail below).
   const combatBeats = useMemo(() => collectCombatBeats(state.log), [state.log]);
+  const localizeEnemyName = useCallback(
+    (enemyId: string) => localizedEnemyGroupName({ enemyId, name: enemyId }, locale),
+    [locale]
+  );
+  const formatBeatLine = useCallback(
+    (beat: CombatBeat) => formatCombatBeat(beat, t, localizeEnemyName),
+    [t, localizeEnemyName]
+  );
 
   const livingEnemyGroups = useMemo(
     () => state.combat?.enemyGroups.filter((group) => group.count > 0) ?? [],
@@ -2231,7 +2240,7 @@ export function App() {
                   <p className="event-window" aria-live="polite">{tempoStatus || latestLogText || "\u00a0"}</p>
                   <CombatLog
                     t={t}
-                    beats={playback ? playback.beats.map((entry) => entry.text) : combatBeats}
+                    beats={(playback ? playback.beats : combatBeats).map(formatBeatLine)}
                     revealed={playback ? playback.index + 1 : revealedBeats}
                     onAdvance={playback ? commitPlayback : () => setRevealedBeats(combatBeats.length)}
                   />
@@ -2270,6 +2279,7 @@ export function App() {
                       livingGroups={livingEnemyGroups}
                       spells={knownSpells(selectedActor.classId, selectedActor.level)}
                       abilityKind={isCasterClass(selectedActor.classId) ? "spell" : "skill"}
+                      localizeGroup={(group) => localizedEnemyGroupName(group, locale)}
                       canAttack={
                         livingEnemyGroups.length > 0 &&
                         !(selectedActor.row === "back" && frontRowStanding && !weaponReaches(selectedActor, defaultWorld))

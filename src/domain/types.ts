@@ -217,13 +217,22 @@ export interface InventoryItem {
 // final state. `kind`/`targetGroupId`/`targetCharacterId`/`damage` drive the hit
 // animation and floating number.
 export interface CombatBeat {
-  text: string;
+  text: string; // English fallback (tests, log history); UI localizes from the fields below
   kind: "hit" | "miss" | "cast" | "heal" | "defend" | "enemyHit" | "status" | "poison" | "asleep";
   actorId?: string;
+  actorName?: string; // party actor display name
+  actorEnemyId?: string; // enemy-group actor → localize via world enemy locale
   targetGroupId?: string;
+  targetEnemyId?: string; // enemy-group target → localize
   targetCharacterId?: string;
+  targetName?: string; // party target display name (heal/enemy-hit)
   damage?: number;
+  remaining?: number; // enemies left in the target group after this blow
   crit?: boolean;
+  weak?: boolean;
+  spellId?: "heal" | "firebolt" | "sleep" | "power-strike"; // localize ability name
+  abilityName?: string; // enemy ability raw name (fallback)
+  statusName?: string; // status/ailment name
   groups: { id: string; count: number; hpEach: number }[];
   party: { id: string; hp: number }[];
 }

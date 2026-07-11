@@ -9,7 +9,28 @@ export const en = {
   },
   config: {
     autoBattleSafety: "Auto-battle stops at danger (boss / low HP)",
-    instantCombatLog: "Show the combat log all at once (skip the blow-by-blow reveal)"
+    instantCombatLog: "Show the combat log all at once (skip the blow-by-blow reveal)",
+    confirmRound: "Confirm before resolving a round (after all orders are set)"
+  },
+  beat: {
+    hit: "{actor} strikes {target} for {damage}.",
+    crit: "{actor} lands a critical hit on {target} for {damage}!",
+    skill: "{actor}'s {ability} hits {target} for {damage}.",
+    weak: " Weak point!",
+    cast: "{actor} casts {ability} on {target}.",
+    castStatus: "{actor}'s {ability} — {target} is {status}.",
+    heal: "{actor} tends {target}.",
+    defend: "{actor} braces.",
+    miss: "{actor}'s attack misses.",
+    enemyHit: "{actor} strikes {target} for {damage}.",
+    enemyAbility: "{actor}'s {ability} hits {target} for {damage}.",
+    afflict: "{target} is {status}.",
+    poison: "Poison gnaws {target} for {damage}.",
+    asleep: "{actor} is asleep.",
+    statusSleep: "asleep",
+    statusPoison: "poisoned",
+    statusSilence: "silenced",
+    statusFear: "afraid"
   },
   title: {
     menu: "Title menu",
