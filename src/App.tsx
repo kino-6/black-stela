@@ -79,6 +79,7 @@ import type {
   CharacterClassId,
   CharacterTraitId,
   CombatActionDeclaration,
+  CombatBeat,
   CombatActionKind,
   CombatEnemyGroup,
   Command,
@@ -343,16 +344,62 @@ export function App() {
     setCombatOrders([]);
   }, [state.phase, state.combat?.round, state.combat?.roomId]);
 
-  // Show the post-combat log tail in the dungeon only right after a fight ends
-  // (combat→dungeon), not on load or during ordinary exploration.
-  const prevPhaseRef = useRef(state.phase);
-  const [combatTailDismissed, setCombatTailDismissed] = useState(true);
-  useEffect(() => {
-    if (prevPhaseRef.current === "combat" && state.phase === "dungeon") {
-      setCombatTailDismissed(false);
+  // #69 (real fix): a manually declared round PLAYS OUT blow-by-blow before the
+  // result is committed. `playback` holds the round's structured beats plus the
+  // already-resolved `pending` state; the battlefield renders from the current
+  // beat's snapshot (enemies fall as the hit lands) until the last beat commits.
+  const [playback, setPlayback] = useState<{ beats: CombatBeat[]; index: number; pending: GameState } | null>(null);
+  const activeBeat = playback ? playback.beats[playback.index] ?? null : null;
+
+  function commitPlayback() {
+    if (playback) {
+      setState(playback.pending);
+      setPlayback(null);
     }
-    prevPhaseRef.current = state.phase;
-  }, [state.phase]);
+  }
+
+  useEffect(() => {
+    if (!playback) {
+      return;
+    }
+    if (playback.index >= playback.beats.length - 1) {
+      // Hold on the finishing blow a beat longer, then commit the real result.
+      const timer = setTimeout(() => {
+        setState(playback.pending);
+        setPlayback(null);
+      }, tempoSpeed === "fast" ? 300 : 700);
+      return () => clearTimeout(timer);
+    }
+    const timer = setTimeout(() => {
+      setPlayback((current) => (current ? { ...current, index: current.index + 1 } : null));
+    }, tempoSpeed === "fast" ? 170 : 430);
+    return () => clearTimeout(timer);
+  }, [playback, tempoSpeed]);
+
+  // While a round is playing out, the battlefield renders from the current beat's
+  // snapshot (pre-round metadata + the beat's live counts/HP) so enemies fall and
+  // HP drains in step with each blow. Off-playback it renders the real state.
+  const displayedEnemyGroups = useMemo(() => {
+    if (!activeBeat || !state.combat) {
+      return livingEnemyGroups;
+    }
+    // Keep count-0 groups visible during playback so the FINISHING blow's number
+    // lands on the group before it vanishes (they render as "defeated").
+    return state.combat.enemyGroups.map((group) => {
+      const snap = activeBeat.groups.find((entry) => entry.id === group.id);
+      return snap ? { ...group, count: snap.count, hpEach: snap.hpEach } : group;
+    });
+  }, [activeBeat, state.combat, livingEnemyGroups]);
+
+  const displayedParty = useMemo(() => {
+    if (!activeBeat) {
+      return state.party;
+    }
+    return state.party.map((member) => {
+      const snap = activeBeat.party.find((entry) => entry.id === member.id);
+      return snap ? { ...member, hp: snap.hp } : member;
+    });
+  }, [activeBeat, state.party]);
 
   // On first mount (e.g. Continue into the dungeon) snap any beats already in the
   // loaded log to fully-revealed, so a resumed game does not replay an old fight.
@@ -393,11 +440,6 @@ export function App() {
   function run(command: Command, options: { remember?: boolean; confirm?: boolean } = {}) {
     if (isTempoRunning) {
       setTempoMode("idle");
-    }
-    // The post-combat log tail lingers after a fight so the player can read the
-    // finishing blows; their next dungeon action clears it.
-    if (state.phase === "dungeon") {
-      setCombatTailDismissed(true);
     }
     setState((current) => executeCommand(current, defaultWorld, command));
     void options;
@@ -475,14 +517,34 @@ export function App() {
     setCombatOrders([...combatOrders.filter((queued) => queued.actorId !== selectedActor.id), order]);
   }
 
+  // Resolve a manually declared round. When paced playback is on (default), hold
+  // the resolved state and play the round's beats forward first so the battlefield
+  // updates blow-by-blow; instant mode (or a beatless round) commits immediately.
+  function resolveRound(actions: CombatActionDeclaration[]) {
+    if (playback) {
+      return;
+    }
+    const resolved = executeCommand(state, defaultWorld, { type: "declare_round", actions });
+    setLastCombatOrders(actions);
+    setCombatOrders([]);
+    setTempoStatus("");
+    const roundEntry = [...resolved.log].reverse().find((entry) => entry.event?.type === "combat_round_resolved");
+    const beats = roundEntry?.event?.type === "combat_round_resolved" ? roundEntry.event.beats ?? [] : [];
+    if (instantCombatLog || beats.length === 0) {
+      setState(resolved);
+      return;
+    }
+    if (isTempoRunning) {
+      setTempoMode("idle");
+    }
+    setPlayback({ beats, index: 0, pending: resolved });
+  }
+
   function executeCombatOrders() {
     if (!combatOrdersReady) {
       return;
     }
-
-    run({ type: "declare_round", actions: combatOrders }, { remember: false });
-    setLastCombatOrders(combatOrders);
-    setCombatOrders([]);
+    resolveRound(combatOrders);
   }
 
   // Queue one actor's order via the command menu; when the last active member is
@@ -492,9 +554,7 @@ export function App() {
     const nextOrders = [...combatOrders.filter((queued) => queued.actorId !== order.actorId), order];
     const allQueued = activeParty.length > 0 && activeParty.every((member) => nextOrders.some((queued) => queued.actorId === member.id));
     if (allQueued) {
-      run({ type: "declare_round", actions: nextOrders }, { remember: false });
-      setLastCombatOrders(nextOrders);
-      setCombatOrders([]);
+      resolveRound(nextOrders);
     } else {
       setCombatOrders(nextOrders);
     }
@@ -518,8 +578,7 @@ export function App() {
       setTempoStatus(t("tempo.repeatRoundUnavailable"));
       return;
     }
-    run({ type: "declare_round", actions: replay }, { remember: false });
-    setLastCombatOrders(replay);
+    resolveRound(replay);
   }
 
   function menuQueueAttack(groupId: string) {
@@ -2077,18 +2136,24 @@ export function App() {
                   <aside className="cockpit-rail combat-rail" aria-label={t("play.partyFormation")}>
                     <div className="battle-side enemy-side" aria-label={t("play.enemyGroups")}>
                       <h3>{t("play.enemyGroups")}</h3>
-                      {livingEnemyGroups.map((group) => (
-                        <div
-                          key={group.id}
-                          className={group.id === selectedTarget?.id ? "battle-choice enemy-choice selected" : "battle-choice enemy-choice"}
-                          data-testid="combat-enemy-group"
-                          role="listitem"
-                          aria-current={group.id === selectedTarget?.id ? "true" : undefined}
-                        >
-                          <strong>{localizedEnemyGroupName(group, locale)}</strong>
-                          <span>{formatEnemyGroupStatus(group, t)}</span>
-                        </div>
-                      ))}
+                      {displayedEnemyGroups.map((group) => {
+                        const beatHit = activeBeat?.targetGroupId === group.id;
+                        return (
+                          <div
+                            key={group.id}
+                            className={`battle-choice enemy-choice${group.id === selectedTarget?.id && !playback ? " selected" : ""}${beatHit ? " beat-hit" : ""}${group.count === 0 ? " defeated" : ""}`}
+                            data-testid="combat-enemy-group"
+                            role="listitem"
+                            aria-current={group.id === selectedTarget?.id && !playback ? "true" : undefined}
+                          >
+                            <strong>{localizedEnemyGroupName(group, locale)}</strong>
+                            <span>{formatEnemyGroupStatus(group, t)}</span>
+                            {beatHit && activeBeat?.damage != null && (
+                              <span className="hit-number" key={playback?.index} data-testid="hit-number">-{activeBeat.damage}</span>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
                     <div className="battle-side formation-side" aria-label={t("play.partyFormation")}>
                       <h3>{t("play.partyFormation")}</h3>
@@ -2096,17 +2161,20 @@ export function App() {
                         <div className="battle-row" data-testid={`combat-${row}-row`} key={row}>
                           <span>{row === "front" ? t("play.frontRow") : t("play.backRow")}</span>
                           <div className="formation-slots">
-                            {state.party.filter((member) => member.row === row).map((member) => (
+                            {displayedParty.filter((member) => member.row === row).map((member) => (
                               <div
                                 role="listitem"
                                 key={member.id}
-                                className={`battle-choice ${member.id === selectedActor?.id ? "selected" : ""} ${
+                                className={`battle-choice ${member.id === selectedActor?.id && !playback ? "selected" : ""} ${
                                   orderedActorIds.has(member.id) ? "ordered" : ""
-                                }`}
+                                } ${activeBeat?.targetCharacterId === member.id ? "beat-hit" : ""}`}
                                 data-testid="combat-actor"
-                                aria-current={member.id === selectedActor?.id ? "step" : undefined}
+                                aria-current={member.id === selectedActor?.id && !playback ? "step" : undefined}
                               >
                                 <strong>{member.name}</strong>
+                                {activeBeat?.targetCharacterId === member.id && activeBeat?.damage != null && (
+                                  <span className="hit-number" key={playback?.index}>-{activeBeat.damage}</span>
+                                )}
                                 <span>
                                   {t("play.actorStatus", { hp: member.hp, maxHp: member.maxHp })}
                                   {member.maxMp > 0 && <> · {t("play.mpShort")} {member.mp}/{member.maxMp}</>}
@@ -2147,14 +2215,6 @@ export function App() {
                 <div className="cockpit-message">
                   <p className="room-copy">{roomText?.description}</p>
                   <p className="event-window" aria-live="polite">{tempoStatus || latestLogText || "\u00a0"}</p>
-                  {!combatTailDismissed && combatBeats.length > 0 && (
-                    <CombatLog
-                      t={t}
-                      beats={combatBeats}
-                      revealed={revealedBeats}
-                      onAdvance={() => setRevealedBeats(combatBeats.length)}
-                    />
-                  )}
                 </div>
               ) : (
                 <div className="cockpit-message combat-message">
@@ -2171,9 +2231,9 @@ export function App() {
                   <p className="event-window" aria-live="polite">{tempoStatus || latestLogText || "\u00a0"}</p>
                   <CombatLog
                     t={t}
-                    beats={combatBeats}
-                    revealed={revealedBeats}
-                    onAdvance={() => setRevealedBeats(combatBeats.length)}
+                    beats={playback ? playback.beats.map((entry) => entry.text) : combatBeats}
+                    revealed={playback ? playback.index + 1 : revealedBeats}
+                    onAdvance={playback ? commitPlayback : () => setRevealedBeats(combatBeats.length)}
                   />
                   <div className="battle-order" aria-label={t("play.battleOrder")}>
                     <div className="battle-order-header">
@@ -2204,7 +2264,7 @@ export function App() {
               )}
               {state.phase === "combat" ? (
                 <>
-                  {selectedActor && (
+                  {selectedActor && !playback && (
                     <CombatCommandMenu
                       actor={selectedActor}
                       livingGroups={livingEnemyGroups}

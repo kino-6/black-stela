@@ -2891,6 +2891,51 @@ textarea {
 }
 
 /* HP / MP gauges — visualize resource status at a glance (Pillar 9). */
+/* #69 playback: the struck combatant flashes and a floating damage number rises,
+   so each blow reads as a discrete event rather than an instant state snap. */
+.battle-choice {
+  position: relative;
+}
+
+.battle-choice.beat-hit {
+  animation: beat-shake 0.28s ease-out;
+}
+
+.battle-choice.enemy-choice.beat-hit {
+  box-shadow: 0 0 0 1px #d86b4a, 0 0 12px rgba(216, 107, 74, 0.5);
+}
+
+.battle-choice.enemy-choice.defeated {
+  opacity: 0.45;
+  text-decoration: line-through;
+}
+
+.hit-number {
+  position: absolute;
+  top: -0.4rem;
+  right: 0.4rem;
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: #ffd27a;
+  text-shadow: 0 1px 2px #000, 0 0 6px rgba(0, 0, 0, 0.8);
+  pointer-events: none;
+  animation: hit-number-rise 0.7s ease-out forwards;
+}
+
+@keyframes beat-shake {
+  0% { transform: translateX(0); }
+  25% { transform: translateX(-3px); }
+  50% { transform: translateX(3px); }
+  75% { transform: translateX(-2px); }
+  100% { transform: translateX(0); }
+}
+
+@keyframes hit-number-rise {
+  0% { opacity: 0; transform: translateY(0.3rem) scale(0.8); }
+  25% { opacity: 1; transform: translateY(-0.1rem) scale(1.1); }
+  100% { opacity: 0; transform: translateY(-1.2rem) scale(1); }
+}
+
 .combat-log {
   display: flex;
   flex-direction: column;

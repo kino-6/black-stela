@@ -75,27 +75,32 @@ test("オート and リピート are distinct controls (Repeat disarmed until a 
   // The replay remap itself is unit-locked in tests/repeatOrders.test.ts.
 });
 
-test("combat plays out on-screen with damage numbers (数字感), and an instant-log toggle (#69)", async ({ page }) => {
+test("a declared round PLAYS OUT on the battlefield with a floating damage number (#69)", async ({ page }) => {
   await enterCombat(page);
-  // The blow-by-blow log panel is present in combat (collection unit-locked in
-  // tests/combatLog.test.ts). Before the first clash it shows the waiting line.
   await expect(page.getByTestId("combat-log")).toBeVisible();
 
-  // Fight the intro to victory through the menu.
+  // Declare a round through the menu, then watch the round animate: the actual
+  // fix is that the battlefield updates blow-by-blow (a floating damage number
+  // rises on the struck target) BEFORE the result commits — not an instant snap
+  // with a log trickling in afterward.
   const menu = page.getByTestId("combat-command-menu");
-  for (let step = 0; step < 40 && (await menu.count()) > 0; step += 1) {
-    await menu.focus().catch(() => {});
-    await page.keyboard.press("Enter");
-    await page.waitForTimeout(80);
+  let sawHitNumber = false;
+  for (let step = 0; step < 60 && !sawHitNumber; step += 1) {
+    if ((await menu.count()) > 0) {
+      await menu.focus().catch(() => {});
+      await page.keyboard.press("Enter");
+    }
+    if ((await page.getByTestId("hit-number").count()) > 0) {
+      sawHitNumber = true;
+      await expect(page.getByTestId("hit-number").first()).toContainText(/\d/);
+      break;
+    }
+    if ((await page.getByTestId("dungeon-command-window").count()) > 0) break;
+    await page.waitForTimeout(60);
   }
+  expect(sawHitNumber).toBeTruthy();
 
-  // The finishing blows linger as a readable beat log carrying a damage number,
-  // instead of the whole round flashing past in one line.
-  const beat = page.getByTestId("combat-log-beat").first();
-  await expect(beat).toBeVisible();
-  await expect(beat).toContainText(/\d/);
-
-  // Players who dislike the paced reveal can turn it off; it defaults to paced (off).
+  // Players who dislike the paced playback can turn it off; it defaults to on.
   await page.goto("/");
   await page.getByRole("button", { name: "Config" }).click();
   const toggle = page.getByTestId("config-instant-combat-log");

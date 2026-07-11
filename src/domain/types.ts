@@ -211,6 +211,23 @@ export interface InventoryItem {
   affix?: string;
 }
 
+// One resolved action within a combat round, carrying both the text line and a
+// snapshot of the battlefield AFTER it resolved, so the UI can play the fight
+// forward blow-by-blow (enemies fall as the hit lands) instead of snapping to the
+// final state. `kind`/`targetGroupId`/`targetCharacterId`/`damage` drive the hit
+// animation and floating number.
+export interface CombatBeat {
+  text: string;
+  kind: "hit" | "miss" | "cast" | "heal" | "defend" | "enemyHit" | "status" | "poison" | "asleep";
+  actorId?: string;
+  targetGroupId?: string;
+  targetCharacterId?: string;
+  damage?: number;
+  crit?: boolean;
+  groups: { id: string; count: number; hpEach: number }[];
+  party: { id: string; hp: number }[];
+}
+
 export interface AdventureLogEntry {
   id: string;
   turn: number;
@@ -256,7 +273,7 @@ export type GameEvent =
   | { type: "enemy_damaged"; enemyId: string; enemyName: string; remainingHp: number }
   | { type: "enemy_defeated"; enemyId: string; enemyName: string }
   | { type: "combat_action_blocked"; reason: "back_row_blocked" | "invalid_actor" | "invalid_target" | "enemy_guarded"; actorName?: string }
-  | { type: "combat_round_resolved"; round: number; summaries: string[] }
+  | { type: "combat_round_resolved"; round: number; summaries: string[]; beats?: CombatBeat[] }
   | { type: "combat_rewards"; xp: number; gold: number; enemyNames: string[] }
   | { type: "party_wounded"; enemyId: string; enemyName: string; damage: number }
   | { type: "character_injured"; characterId: string; characterName: string; injury: "wounded" }

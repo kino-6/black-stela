@@ -368,6 +368,36 @@ these are backdrops, not interactive props.
 
 ---
 
+## 7. Combat playback FX (P9 — requested from 2026-07 playtest)
+
+Combat now **plays out blow-by-blow** before the result commits (see #69 in
+`docs/gates/past-trouble-regression-gate.md` and `black-stela-combat-ui` memory):
+the battlefield renders each beat's snapshot, the struck target shakes, and a
+floating damage number (`.hit-number`) rises. **This is currently CSS-only**
+(`styles.css`: `@keyframes beat-shake` / `hit-number-rise`; enemy `.defeated`
+fade). The player asked "攻撃アニメとかないんでしょうか？" — real art would lift
+this from a placeholder to a satisfying hit.
+
+Requested (not yet generated). Each must be a self-contained static asset (the
+CSP blocks remote assets) wired the same way as existing sprites/icons:
+
+- **Impact FX sprite sheet** — a small slash/impact burst (physical) and a
+  spark/scorch burst (fire/arcane), 3-5 frames each, transparent PNG, ~96px.
+  Play on the struck target for the beat it takes a hit (`kind: "hit"` physical,
+  `kind: "cast"` arcane). Keyed by `beat.kind` so 特技 strikes vs 呪文 bolts read
+  differently.
+- **Enemy hurt/defeat frame** — an optional 2nd enemy-sprite frame (hurt flash +
+  a defeat/dissolve pose) so `.defeated` groups show a death beat, not just a
+  greyed line-through. One extra frame per enemy sprite in the existing
+  enemy-id → texture map.
+- **Party-hit reaction** — a subtle red vignette / shield-flash overlay when an
+  enemy `kind: "enemyHit"` beat lands on a member (currently just the row shake).
+
+Wiring target: `activeBeat` in `App.tsx` already exposes `kind`,
+`targetGroupId`/`targetCharacterId`, and `damage` per beat — an FX layer can key
+off it with no domain change. Keep frames short (≤ the ~430ms/beat cadence, ~300ms
+at ×2) so playback never drags.
+
 ## 8. Retake queue (post-integration review)
 
 Everything is generated, wired, and browser-verified (title, enemy sprites,

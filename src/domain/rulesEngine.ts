@@ -30,6 +30,7 @@ import type {
   Character,
   CharacterClassId,
   CombatActionDeclaration,
+  CombatBeat,
   CombatEnemyGroup,
   CombatStatus,
   CombatRow,
@@ -807,10 +808,24 @@ function declareRound(state: GameState, world: ScenarioWorld, actions: CombatAct
   }
 
   const summaries: string[] = [];
+  const beats: CombatBeat[] = [];
   const injuredEvents: GameEvent[] = [];
   let party = state.party;
   let inventory = state.inventory;
   let enemyGroups = combat.enemyGroups;
+
+  // Record a beat: the text line plus a snapshot of the battlefield right AFTER it
+  // resolved, so the UI can play the round forward one blow at a time. Reads the
+  // live `party`/`enemyGroups` bindings at call time.
+  const beat = (text: string, meta: Omit<Partial<CombatBeat>, "text" | "groups" | "party"> & { kind: CombatBeat["kind"] }): void => {
+    summaries.push(text);
+    beats.push({
+      text,
+      groups: enemyGroups.map((group) => ({ id: group.id, count: group.count, hpEach: group.hpEach })),
+      party: party.map((member) => ({ id: member.id, hp: member.hp })),
+      ...meta
+    });
+  };
 
   const orderedActions = [...validation.actions].sort((left, right) => {
     const leftActor = party.find((member) => member.id === left.actorId);
@@ -825,13 +840,13 @@ function declareRound(state: GameState, world: ScenarioWorld, actions: CombatAct
     }
 
     if (actor.status?.includes("sleep")) {
-      summaries.push(`${actor.name} is fast asleep.`);
+      beat(`${actor.name} is fast asleep.`, { kind: "asleep", actorId: actor.id });
       continue;
     }
 
     if (action.action === "defend") {
       party = party.map((member) => (member.id === actor.id ? { ...member, status: uniqueStatuses([...(member.status ?? []), "ward"]) } : member));
-      summaries.push(`${actor.name} holds the line.`);
+      beat(`${actor.name} holds the line.`, { kind: "defend", actorId: actor.id });
       continue;
     }
 
@@ -839,7 +854,7 @@ function declareRound(state: GameState, world: ScenarioWorld, actions: CombatAct
       const used = applyHealingItemToParty(party, inventory, action.itemId, action.targetCharacterId);
       party = used.party;
       inventory = used.inventory;
-      summaries.push(used.summary);
+      beat(used.summary, { kind: "heal", actorId: actor.id, targetCharacterId: action.targetCharacterId });
       continue;
     }
 
@@ -849,11 +864,11 @@ function declareRound(state: GameState, world: ScenarioWorld, actions: CombatAct
         continue;
       }
       if (actor.status?.includes("silence")) {
-        summaries.push(`${actor.name} is silenced and cannot cast.`);
+        beat(`${actor.name} is silenced and cannot cast.`, { kind: "cast", actorId: actor.id });
         continue;
       }
       if (actor.mp < spell.mpCost) {
-        summaries.push(`${actor.name} lacks the focus to cast ${spell.id}.`);
+        beat(`${actor.name} lacks the focus to cast ${spell.id}.`, { kind: "cast", actorId: actor.id });
         continue;
       }
       party = party.map((member) => (member.id === actor.id ? { ...member, mp: member.mp - spell.mpCost } : member));
@@ -868,7 +883,7 @@ function declareRound(state: GameState, world: ScenarioWorld, actions: CombatAct
           healedName = member.name;
           return { ...member, hp: Math.min(member.maxHp, member.hp + amount) };
         });
-        summaries.push(`${actor.name} heals ${healedName}.`);
+        beat(`${actor.name} heals ${healedName}.`, { kind: "heal", actorId: actor.id, targetCharacterId: action.targetCharacterId });
       } else if (spell.effect.kind === "damage" && action.targetGroupId) {
         const group = enemyGroups.find((candidate) => candidate.id === action.targetGroupId && candidate.count > 0);
         if (group) {
@@ -879,8 +894,9 @@ function declareRound(state: GameState, world: ScenarioWorld, actions: CombatAct
           const updated = enemyGroups.find((candidate) => candidate.id === group.id);
           // Martial 特技 land as strikes; arcane bolts scorch.
           const verb = spell.kind === "skill" ? "strikes" : "scorches";
-          summaries.push(
-            `${actor.name} ${verb} ${group.name} for ${damage}${weakness > 1 ? " (weak!)" : ""}. ${updated?.count ?? 0} remain.`
+          beat(
+            `${actor.name} ${verb} ${group.name} for ${damage}${weakness > 1 ? " (weak!)" : ""}. ${updated?.count ?? 0} remain.`,
+            { kind: spell.kind === "skill" ? "hit" : "cast", actorId: actor.id, targetGroupId: group.id, damage }
           );
         }
       } else if (spell.effect.kind === "status" && action.targetGroupId) {
@@ -889,12 +905,12 @@ function declareRound(state: GameState, world: ScenarioWorld, actions: CombatAct
         const resist = statusResistPct(targetGroup?.resistances, ailment);
         const roll = rollPercent(`${state.turn}:${combat.round}:${actor.id}:${targetGroup?.id}:ailment`);
         if (roll < resist) {
-          summaries.push(`${findGroupName(enemyGroups, action.targetGroupId)} resists ${spell.id}.`);
+          beat(`${findGroupName(enemyGroups, action.targetGroupId)} resists ${spell.id}.`, { kind: "cast", actorId: actor.id, targetGroupId: action.targetGroupId });
         } else {
           enemyGroups = enemyGroups.map((group) =>
             group.id === action.targetGroupId ? { ...group, status: uniqueStatuses([...(group.status ?? []), ailment]) } : group
           );
-          summaries.push(`${actor.name} casts ${spell.id} on ${findGroupName(enemyGroups, action.targetGroupId)}.`);
+          beat(`${actor.name} casts ${spell.id} on ${findGroupName(enemyGroups, action.targetGroupId)}.`, { kind: "cast", actorId: actor.id, targetGroupId: action.targetGroupId });
         }
       }
       continue;
@@ -914,7 +930,7 @@ function declareRound(state: GameState, world: ScenarioWorld, actions: CombatAct
     const effectiveAccuracy = actorStats.accuracy - (feared ? FEAR_ACCURACY_PENALTY : 0);
     const hitRoll = rollPercent(`${state.turn}:${combat.round}:${actor.id}:${group.id}:hit`);
     if (hitRoll > effectiveAccuracy) {
-      summaries.push(`${actor.name} ${feared ? "flinches and misses" : "misses"} ${group.name}.`);
+      beat(`${actor.name} ${feared ? "flinches and misses" : "misses"} ${group.name}.`, { kind: "miss", actorId: actor.id, targetGroupId: group.id });
       continue;
     }
 
@@ -925,8 +941,9 @@ function declareRound(state: GameState, world: ScenarioWorld, actions: CombatAct
     const damage = crit ? Math.round(weakened * CRIT_MULTIPLIER) : weakened;
     enemyGroups = damageGroup(enemyGroups, group.id, damage);
     const updated = enemyGroups.find((candidate) => candidate.id === group.id);
-    summaries.push(
-      `${actor.name} ${crit ? "crits" : "hits"} ${group.name} for ${damage}. ${updated?.count ?? 0} remain.`
+    beat(
+      `${actor.name} ${crit ? "crits" : "hits"} ${group.name} for ${damage}. ${updated?.count ?? 0} remain.`,
+      { kind: "hit", actorId: actor.id, targetGroupId: group.id, damage, crit }
     );
   }
 
@@ -963,7 +980,7 @@ function declareRound(state: GameState, world: ScenarioWorld, actions: CombatAct
     };
 
     return withEvents(next, [
-      { type: "combat_round_resolved", round: combat.round, summaries },
+      { type: "combat_round_resolved", round: combat.round, summaries, beats },
       ...defeatedNames.map((enemyName, index) => ({
         type: "enemy_defeated" as const,
         enemyId: defeatedEnemyIds[index],
@@ -976,7 +993,7 @@ function declareRound(state: GameState, world: ScenarioWorld, actions: CombatAct
 
   for (const group of livingGroups.sort((left, right) => right.speed - left.speed)) {
     if (group.status?.includes("sleep")) {
-      summaries.push(`${group.name} is asleep.`);
+      beat(`${group.name} is asleep.`, { kind: "asleep", targetGroupId: group.id });
       continue;
     }
 
@@ -998,7 +1015,7 @@ function declareRound(state: GameState, world: ScenarioWorld, actions: CombatAct
           armor
         );
         party = damagePartyMember(party, target.id, damage, injuredEvents);
-        summaries.push(`${group.name} looses ${ability.name} at ${target.name} for ${damage}.`);
+        beat(`${group.name} looses ${ability.name} at ${target.name} for ${damage}.`, { kind: "enemyHit", targetCharacterId: target.id, damage });
       } else {
         const resist = statusResistPct(target.resistance, ability.effect.status);
         const roll = rollPercent(`${state.turn}:${combat.round}:${group.id}:${target.id}:ability-resist`);
@@ -1009,9 +1026,9 @@ function declareRound(state: GameState, world: ScenarioWorld, actions: CombatAct
               ? { ...member, status: uniqueStatuses([...(member.status ?? []), ailment]) }
               : member
           );
-          summaries.push(`${group.name} works ${ability.name}, afflicting ${target.name} with ${ailment}.`);
+          beat(`${group.name} works ${ability.name}, afflicting ${target.name} with ${ailment}.`, { kind: "status", targetCharacterId: target.id });
         } else {
-          summaries.push(`${target.name} shrugs off ${group.name}'s ${ability.name}.`);
+          beat(`${target.name} shrugs off ${group.name}'s ${ability.name}.`, { kind: "status", targetCharacterId: target.id });
         }
       }
       continue;
@@ -1019,7 +1036,7 @@ function declareRound(state: GameState, world: ScenarioWorld, actions: CombatAct
 
     const hitRoll = rollPercent(`${state.turn}:${combat.round}:${group.id}:${target.id}:hit`);
     if (hitRoll > group.accuracy) {
-      summaries.push(`${group.name} misses ${target.name}.`);
+      beat(`${group.name} misses ${target.name}.`, { kind: "miss", targetCharacterId: target.id });
       continue;
     }
 
@@ -1028,7 +1045,7 @@ function declareRound(state: GameState, world: ScenarioWorld, actions: CombatAct
     const armor = targetStats.armor + (guarded ? 2 : 0);
     const damage = rollDamage(`${state.turn}:${combat.round}:${group.id}:${target.id}:damage`, group.damageMin, group.damageMax, armor);
     party = damagePartyMember(party, target.id, damage, injuredEvents);
-    summaries.push(`${group.name} wounds ${target.name} for ${damage}.`);
+    beat(`${group.name} wounds ${target.name} for ${damage}.`, { kind: "enemyHit", targetCharacterId: target.id, damage });
 
     if (group.inflicts) {
       const ailment = group.inflicts;
@@ -1041,7 +1058,7 @@ function declareRound(state: GameState, world: ScenarioWorld, actions: CombatAct
             ? { ...member, status: uniqueStatuses([...(member.status ?? []), ailment.status]) }
             : member
         );
-        summaries.push(`${target.name} is afflicted with ${ailment.status}.`);
+        beat(`${target.name} is afflicted with ${ailment.status}.`, { kind: "status", targetCharacterId: target.id });
       }
     }
   }
@@ -1078,7 +1095,7 @@ function declareRound(state: GameState, world: ScenarioWorld, actions: CombatAct
   };
 
   return withEvents(next, [
-    { type: "combat_round_resolved", round: combat.round, summaries },
+    { type: "combat_round_resolved", round: combat.round, summaries, beats },
     ...injuredEvents
   ]);
 }

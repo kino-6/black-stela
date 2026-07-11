@@ -77,7 +77,7 @@ automated regression check (see `tests/e2e/combat-regression.spec.ts` + others).
 | Resource visibility | HP/MP were bare numbers; MP status was hard to read at a glance. | HP and MP render as gauge bars in the combat roster and dungeon formation. | `combat-regression.spec.ts` |
 | Auto-battle stops | Auto/Repeat kept stopping itself and popping a menu ("謎UIが出て止まる"). | Discretionary auto-stops are OFF by default and Config-gated; auto just runs. | `squadCombat.test.ts` |
 | UI reflow | Context buttons/clues reflowed the command dock (stretch/shrink). | The command area is fixed-footprint; contextual clues ride tooltips/log, not variable-width tiles. | `combat.spec.ts` (#68) |
-| Instant combat | A round resolved instantly with no felt weight or "数字感". | Results play beat-by-beat with damage numbers + HP change; a paced reveal (with an instant-log Config escape) lingers so the blows are readable. | `combatLog.test.ts`, `combat-regression.spec.ts` |
+| Instant combat | A round resolved instantly, then a log trickled in AFTER — desynced from the battlefield, with no felt weight or "数字感". | A declared round PLAYS OUT before it commits: the battlefield renders each beat's snapshot (enemies fall / HP drains as the blow lands), the struck target shakes, and a floating damage number rises. Instant-log Config escapes it. | `combatRoundBeats.test.ts`, `combatLog.test.ts`, `combat-regression.spec.ts` (hit-number) |
 | Front-row depth | Only casters had a non-attack action; front row had no skills/特技. | Front-row members can use class 特技 (spending a 気力 pool), not just attack/defend. | `martialSkills.test.ts`, `combat-regression.spec.ts` |
 
 ## Browser Self-Play

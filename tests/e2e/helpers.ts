@@ -2,6 +2,13 @@ import type { Page } from "@playwright/test";
 import { expect } from "@playwright/test";
 
 export async function startNewExpedition(page: Page) {
+  // These player-route tests exercise navigation and the command menu, not the
+  // #69 combat playback (which hides the menu while a round animates). Run fights
+  // in instant-log mode so a round resolves in one step. The playback itself is
+  // covered by combat-regression.spec.ts, which drives combat directly.
+  await page.addInitScript(() => {
+    window.localStorage.setItem("black-stela:settings:instant-combat-log", "on");
+  });
   await page.goto("/");
   await page.getByRole("button", { name: "New expedition" }).click();
 }
