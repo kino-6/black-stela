@@ -1,11 +1,8 @@
 import * as THREE from "three";
 import { asset, blockTextures, getEnemySpriteTextureUrl } from "../ui/artAssets";
-
-const returnMarkerTextureUrl = asset("return-marker");
-const stoneFloorTextureUrl = asset("stone-floor");
-const stoneWallTextureUrl = asset("stone-wall");
-const woodDoorTextureUrl = asset("wood-door");
 import type { EnemyElevation } from "../domain/types";
+
+const DEFAULT_ART_PACK = "default";
 
 // Geometry distinguishes stairs from a plain opening; the view model keeps the
 // coarser three-value language. Both the projection (DungeonView) and this
@@ -22,6 +19,10 @@ export interface CorridorSegment {
 
 export interface DungeonSceneInput {
   corridor: CorridorSegment[];
+  /** Active art pack (world.assetPack). Passed explicitly so the renderer never
+   *  depends on the resolver's module-level active-pack state, which resolves too
+   *  early (at import) and can drift from the world actually being played. */
+  assetPack?: string;
   /** Current dungeon floor id for block-specific wall/floor textures. */
   floorId: string | null;
   /** Enemy groups to draw ahead while in combat (one sprite per living group, so a
@@ -85,11 +86,12 @@ export function buildDungeonScene(mount: HTMLDivElement, input: DungeonSceneInpu
     return texture;
   };
 
-  const dungeonTextures = getDungeonBlockTextureUrls(input.floorId);
+  const pack = input.assetPack ?? DEFAULT_ART_PACK;
+  const dungeonTextures = getDungeonBlockTextureUrls(input.floorId, pack);
   const wallTexture = loadTexture(dungeonTextures.wall, [1.35, 1]);
   const floorTexture = loadTexture(dungeonTextures.floor, [2.1, 3.2]);
-  const doorTexture = loadTexture(woodDoorTextureUrl);
-  const returnMarkerTexture = loadTexture(returnMarkerTextureUrl);
+  const doorTexture = loadTexture(asset("wood-door", pack));
+  const returnMarkerTexture = loadTexture(asset("return-marker", pack));
 
   const ambient = new THREE.AmbientLight("#9a9383", 1.7);
   const torch = new THREE.PointLight("#f0b76c", 55, 26);
@@ -174,7 +176,7 @@ export function buildDungeonScene(mount: HTMLDivElement, input: DungeonSceneInpu
     const centerY = 0.38;
 
     input.enemies.forEach((group, index) => {
-      const texture = loadTexture(getEnemySpriteTextureUrl(group.id));
+      const texture = loadTexture(getEnemySpriteTextureUrl(group.id, pack));
       const material = new THREE.SpriteMaterial({ map: texture, transparent: true, depthWrite: false });
       const elevation = group.elevation ?? "ground";
       const lift = elevation === "air" ? 1.7 : elevation === "mid" ? 0.9 : 0;
@@ -226,8 +228,8 @@ export function buildDungeonScene(mount: HTMLDivElement, input: DungeonSceneInpu
   };
 }
 
-export function getDungeonBlockTextureUrls(floorId: string | null) {
-  const blocks = blockTextures();
+export function getDungeonBlockTextureUrls(floorId: string | null, pack: string = DEFAULT_ART_PACK) {
+  const blocks = blockTextures(pack);
   if (floorId && /b[7-8]f/i.test(floorId)) {
     return blocks.block3;
   }
@@ -240,7 +242,7 @@ export function getDungeonBlockTextureUrls(floorId: string | null) {
     return blocks.block1;
   }
 
-  return { wall: stoneWallTextureUrl, floor: stoneFloorTextureUrl };
+  return { wall: asset("stone-wall", pack), floor: asset("stone-floor", pack) };
 }
 
 function addSideFeature(

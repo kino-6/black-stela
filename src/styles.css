@@ -2085,39 +2085,39 @@ textarea {
 }
 
 .mini-map-marker.marker-return {
-  background-image: var(--art-marker-return);
+  background-image: var(--art-marker-return, none);
 }
 
 .mini-map-marker.marker-stairs {
-  background-image: var(--art-marker-stairs);
+  background-image: var(--art-marker-stairs, none);
 }
 
 .mini-map-marker.marker-spinner {
-  background-image: var(--art-marker-spinner);
+  background-image: var(--art-marker-spinner, none);
 }
 
 .mini-map-marker.marker-teleporter {
-  background-image: var(--art-marker-teleporter);
+  background-image: var(--art-marker-teleporter, none);
 }
 
 .mini-map-marker.marker-hazard {
-  background-image: var(--art-marker-hazard);
+  background-image: var(--art-marker-hazard, none);
 }
 
 .mini-map-marker.marker-gather {
-  background-image: var(--art-marker-gather);
+  background-image: var(--art-marker-gather, none);
 }
 
 .mini-map-marker.marker-event {
-  background-image: var(--art-marker-event);
+  background-image: var(--art-marker-event, none);
 }
 
 .mini-map-marker.marker-treasure {
-  background-image: var(--art-marker-treasure);
+  background-image: var(--art-marker-treasure, none);
 }
 
 .mini-map-marker.marker-trap {
-  background-image: var(--art-marker-trap);
+  background-image: var(--art-marker-trap, none);
 }
 
 /* Facing arrow: a large red arrow, dark-outlined for contrast on the gold cell. */
@@ -2229,7 +2229,7 @@ textarea {
   background:
     linear-gradient(90deg, rgba(3, 4, 3, 0.94) 0%, rgba(5, 6, 5, 0.78) 28%, rgba(5, 6, 5, 0.2) 62%),
     linear-gradient(0deg, rgba(3, 4, 3, 0.82) 0%, rgba(3, 4, 3, 0.08) 55%),
-    var(--art-title) center / cover no-repeat,
+    var(--art-title, none) center / cover no-repeat,
     #030403;
 }
 
@@ -3849,7 +3849,7 @@ textarea {
 .combat-command-window {
   background:
     linear-gradient(180deg, rgba(7, 8, 6, 0.88), rgba(7, 8, 6, 0.82)),
-    var(--art-combat-vignette) center / cover no-repeat,
+    var(--art-combat-vignette, none) center / cover no-repeat,
     #080906;
 }
 

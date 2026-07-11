@@ -426,14 +426,27 @@ at ×2) so playback never drags.
 
 ## 9. Assets to generate (Codex request list)
 
-These ship today as **placeholders that reuse existing art** (so the catalog-icon
-Gate stays green), and want real art. Generate each into
-`content/worlds/default/assets/<subfolder>/<basename>.<ext>` using the conventions
-in §2 (icons: 256×256 PNG RGBA, centered single object; sprites: PNG RGBA on a
-chroma-key bg then extracted). Filenames MUST match these basenames — they are what
-`src/ui/artAssets.ts` maps to. No code change needed once the file is dropped in.
+Generate each into `content/worlds/<pack>/assets/<subfolder>/<basename>.<ext>`
+(pack = `default` unless a scenario ships its own) using the conventions in §2
+(icons: 256×256 PNG RGBA, centered single object; sprites: PNG RGBA on a chroma-key
+bg then extracted). Filenames MUST match these basenames.
 
-### P9 — combat hit FX (currently CSS-only; see §7)
+**Two different "drop-in" statuses — do not conflate them:**
+
+- **P10 / P11 (icons) are true drop-in.** They ship today as **placeholders that
+  reuse existing art** (so the catalog-icon Gate stays green). `catalogIconUrl()`
+  is own-basename-first, so the moment the correctly-named file exists it wins over
+  the placeholder — **no code change, just a rebuild** (Vite's glob is build-time;
+  there is no runtime folder scan, so a rebuild is always required after adding a
+  file).
+- **P9 (combat FX) is NOT drop-in.** `fx-slash` / `fx-spark` have **no render layer
+  yet** — there is nothing that loads or draws them (see §7: hit FX is still
+  CSS-only). Generating the sprite sheet alone does nothing; it stays **unused until
+  the FX wiring is built** (an FX layer keyed off `activeBeat.kind`). Treat P9 as
+  "art + code," not "art only." The per-enemy `-hurt` frame is the same: it needs a
+  beat-frame wiring pass before a dropped file is shown.
+
+### P9 — combat hit FX (currently CSS-only; NOT yet drop-in — needs FX wiring; see §7)
 Sprite sheets, transparent PNG, ~96px/frame, into `assets/ui/`:
 - `fx-slash` (3–5 frames): a physical slash/impact burst for `kind:"hit"`.
 - `fx-spark` (3–5 frames): a fire/arcane burst for `kind:"cast"`.

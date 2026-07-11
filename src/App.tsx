@@ -133,6 +133,10 @@ type TownMode = "guild" | "shop" | "recovery" | "records" | "entry";
 type AppScreen = "title" | "config" | "game";
 
 const AUTO_SAVE_SLOT = "autosave";
+// The active art pack for this world, resolved once. Passed explicitly to every
+// resolver call (portraits, icons, CSS vars, dungeon scene) so rendering never
+// depends on the resolver's module-level active-pack timing.
+const ART_PACK = defaultWorld.assetPack ?? "default";
 const guildStepOrder: GuildCreationStep[] = ["briefing", "class", "appearance", "bonus", "name"];
 
 export function App() {
@@ -167,9 +171,9 @@ export function App() {
   // properties, so those resolve through the same pack-scoped resolver as sprites/
   // icons instead of being pinned to one world's hard-coded file paths.
   useEffect(() => {
-    setActiveArtPack(defaultWorld.assetPack ?? "default");
+    setActiveArtPack(ART_PACK);
     const root = document.documentElement;
-    for (const [name, value] of Object.entries(cssArtVariables())) {
+    for (const [name, value] of Object.entries(cssArtVariables(ART_PACK))) {
       root.style.setProperty(name, value);
     }
   }, []);
@@ -2439,7 +2443,7 @@ function renderPortraitContent({
   }
 
   const background = findBackground(backgroundId);
-  const portraitAssetUrl = portraitUrl(background.portraitKey);
+  const portraitAssetUrl = portraitUrl(background.portraitKey, ART_PACK);
   if (portraitAssetUrl) {
     return <img data-testid={testId} src={portraitAssetUrl} alt={alt || background.label.en} />;
   }

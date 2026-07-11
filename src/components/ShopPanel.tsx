@@ -24,8 +24,8 @@ import type { Locale, Translator } from "../i18n";
 
 const equipmentSlotOrder: EquipmentSlot[] = ["weapon", "offhand", "body", "head", "hands", "accessory"];
 
-function renderCatalogIcon(itemId: string) {
-  const iconUrl = catalogIconUrl(itemId);
+function renderCatalogIcon(itemId: string, assetPack: string) {
+  const iconUrl = catalogIconUrl(itemId, assetPack);
   if (!iconUrl) {
     return null;
   }
@@ -70,6 +70,7 @@ export function ShopPanel({
   onCommand
 }: ShopPanelProps) {
   const selectedProfileStats = getEffectiveCharacterStats(selectedProfile, world);
+  const artPack = world.assetPack ?? "default";
   return (
     <section
       className="town-service shop-service"
@@ -132,7 +133,7 @@ export function ShopPanel({
               const previewStats = equipment ? previewEquipmentStats(selectedProfile, equipment) : null;
               return (
                 <article className="shop-row shop-row-with-icon" key={stock.itemId}>
-                  {renderCatalogIcon(stock.itemId)}
+                  {renderCatalogIcon(stock.itemId, artPack)}
                   <div>
                     <strong>{localizedCatalogName(stock.itemId, locale)}</strong>
                     <span>
@@ -178,7 +179,7 @@ export function ShopPanel({
                   className="shop-row shop-row-with-icon"
                   key={equipmentInstanceKey(item.id, item.plus, item.affix)}
                 >
-                  {renderCatalogIcon(item.id)}
+                  {renderCatalogIcon(item.id, artPack)}
                   <div>
                     <strong>{describeEquipmentInstance(item.id, locale, t, item.plus, item.affix)}</strong>
                     <span>
@@ -254,7 +255,7 @@ export function ShopPanel({
                     })
                   }
                 >
-                  {renderCatalogIcon(item.id)}
+                  {renderCatalogIcon(item.id, artPack)}
                   {describeEquipmentInstance(item.id, locale, t, item.plus, item.affix)}
                   <small>{usable ? t("town.allowed") : t("town.ineligible")}</small>
                 </button>
