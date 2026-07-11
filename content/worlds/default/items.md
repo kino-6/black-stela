@@ -234,6 +234,223 @@ equipment:
       ja:
         name: 黒糸の指輪
         description: 黒い糸を巻いた鈍い指輪。恐慌を遠ざける小さな約束。
+  # ---- Tier 2 weapons (deep-store upgrades of each row/class line) ----
+  - id: equip.steel-sabre
+    name: Steel Sabre
+    description: A tempered blade with a proper guard; the front line's next step up.
+    slot: weapon
+    tier: 2
+    attackBonus: 3
+    price: 120
+    sellValue: 40
+    allowedClasses: [vanguard, sellsword, bulwark, duelist, seeker, scout, cutpurse]
+    tags: [front_line, blade]
+    locales:
+      ja:
+        name: 鋼の湾刀
+        description: きちんと鍔の付いた鍛えの刃。前列の一段上。
+  - id: equip.war-spear
+    name: War Spear
+    description: A heavier haft that still strikes from the second rank.
+    slot: weapon
+    tier: 2
+    attackBonus: 3
+    price: 130
+    sellValue: 43
+    allowedClasses: [vanguard, sellsword, bulwark, seeker, wayfinder]
+    tags: [reach, polearm]
+    locales:
+      ja:
+        name: 戦槍
+        description: 重い柄。二列目からでもなお届く。
+  - id: equip.hunting-bow
+    name: Hunting Bow
+    description: A full-draw bow that reaches the back of a pack.
+    slot: weapon
+    tier: 2
+    attackBonus: 3
+    accuracyBonus: 2
+    price: 140
+    sellValue: 46
+    allowedClasses: [seeker, scout, cutpurse, wayfinder, chanter]
+    tags: [reach, ranged]
+    locales:
+      ja:
+        name: 狩弓
+        description: 満を引く弓。群れの後ろまで届く。
+  - id: equip.rune-staff
+    name: Rune Staff
+    description: A staff cut with focusing marks; steadier ward-signs from the back.
+    slot: weapon
+    tier: 2
+    attackBonus: 2
+    accuracyBonus: 3
+    mpBonus: 2
+    price: 135
+    sellValue: 45
+    allowedClasses: [mender, chanter, occultist, arcanist, wayfinder]
+    tags: [back_row, focus, reach]
+    locales:
+      ja:
+        name: 呪印の杖
+        description: 集印を刻んだ杖。後列からの札がぶれない。
+  # ---- Tier 2 armour ----
+  - id: equip.scale-mail
+    name: Scale Mail
+    description: Overlapping scale for the front rank; heavier, harder to cut.
+    slot: body
+    tier: 2
+    defenseBonus: 3
+    price: 150
+    sellValue: 50
+    allowedClasses: [vanguard, sellsword, bulwark, duelist, seeker]
+    tags: [front_line, heavy]
+    locales:
+      ja:
+        name: 鱗鎧
+        description: 前列のための重ね鱗。重いが斬られにくい。
+  - id: equip.war-helm
+    name: War Helm
+    description: A closed helm that turns a glancing blow.
+    slot: head
+    tier: 2
+    defenseBonus: 2
+    price: 90
+    sellValue: 30
+    tags: [heavy]
+    locales:
+      ja:
+        name: 戦兜
+        description: 掠め手を逸らす閉じ兜。
+  - id: equip.steel-gauntlets
+    name: Steel Gauntlets
+    description: Plated gloves that guard the grip and add to a blow.
+    slot: hands
+    tier: 2
+    defenseBonus: 1
+    attackBonus: 1
+    price: 95
+    sellValue: 31
+    tags: [heavy]
+    locales:
+      ja:
+        name: 鋼の手甲
+        description: 握りを守り、一打を足す板金の手袋。
+  - id: equip.tower-shield
+    name: Tower Shield
+    description: A broad shield for the front line; heavy cover at a cost of speed.
+    slot: offhand
+    tier: 2
+    defenseBonus: 3
+    speedBonus: -1
+    price: 130
+    sellValue: 43
+    allowedClasses: [vanguard, sellsword, bulwark, duelist]
+    tags: [front_line, heavy]
+    locales:
+      ja:
+        name: 大盾
+        description: 前列のための広い盾。速さと引き換えの重い守り。
+  # ---- Effect accessories (HP / MP / resistance builds) ----
+  - id: equip.vitality-charm
+    name: Vitality Charm
+    description: A knot of dried root that steadies the breath; more life to spend.
+    slot: accessory
+    tier: 2
+    hpBonus: 6
+    price: 130
+    sellValue: 43
+    tags: [charm]
+    locales:
+      ja:
+        name: 活力の護符
+        description: 干した根を結んだ護符。息を落ち着かせ、費やせる命を増やす。
+  - id: equip.focus-band
+    name: Focus Band
+    description: A woven band that quiets the mind; a little deeper well of will.
+    slot: accessory
+    tier: 2
+    mpBonus: 4
+    price: 125
+    sellValue: 41
+    allowedClasses: [mender, chanter, occultist, arcanist, wayfinder]
+    tags: [charm, focus]
+    locales:
+      ja:
+        name: 集中の鉢巻
+        description: 心を静める織り鉢巻。気力の井戸が少し深くなる。
+  - id: equip.antivenom-ring
+    name: Antivenom Ring
+    description: A ring set with a bitter stone that dulls poison in the blood.
+    slot: accessory
+    tier: 2
+    resistBonus:
+      poison: 45
+    price: 110
+    sellValue: 36
+    tags: [charm]
+    locales:
+      ja:
+        name: 解毒の指輪
+        description: 苦い石を嵌めた指輪。血の毒を鈍らせる。
+  - id: equip.dreamward-amulet
+    name: Dreamward Amulet
+    description: A pale amulet that keeps sleep and dread at arm's length.
+    slot: accessory
+    tier: 2
+    resistBonus:
+      sleep: 45
+      fear: 25
+    price: 120
+    sellValue: 40
+    tags: [charm, ward]
+    locales:
+      ja:
+        name: 夢除けの護符
+        description: 眠りと怯えを遠ざける青白い護符。
+  - id: equip.swift-anklet
+    name: Swift Anklet
+    description: A light anklet that quickens the step in a fight.
+    slot: accessory
+    tier: 2
+    speedBonus: 2
+    price: 100
+    sellValue: 33
+    tags: [charm]
+    locales:
+      ja:
+        name: 疾風の足環
+        description: 戦いの足を速める軽い足環。
+  # ---- Tier 3 capstones (found/bought deep) ----
+  - id: equip.knight-plate
+    name: Knight's Plate
+    description: Full plate for the front rank — the deep floors' anvil.
+    slot: body
+    tier: 3
+    defenseBonus: 5
+    speedBonus: -1
+    price: 320
+    sellValue: 106
+    allowedClasses: [vanguard, sellsword, bulwark]
+    tags: [front_line, heavy]
+    locales:
+      ja:
+        name: 騎士の全身鎧
+        description: 前列のための全身板金。深層の鉄床。
+  - id: equip.warlord-blade
+    name: Warlord's Blade
+    description: A long, balanced blade that bites deep for a strong front line.
+    slot: weapon
+    tier: 3
+    attackBonus: 5
+    price: 340
+    sellValue: 113
+    allowedClasses: [vanguard, sellsword, bulwark, duelist]
+    tags: [front_line, blade]
+    locales:
+      ja:
+        name: 覇者の剣
+        description: 長く均衡の取れた刃。強い前列に深く食い込む。
 shops:
   - id: shop.stela-general
     name: Stela Gate General Store
@@ -287,6 +504,68 @@ shops:
       - itemId: equip.black-thread-ring
         price: 30
         availability: always
+      # Tier 2 line: the store widens once the party has proven it can descend.
+      - itemId: equip.steel-sabre
+        price: 120
+        availability: unlocked
+        unlockFlag: flag.b2f.descent
+      - itemId: equip.war-spear
+        price: 130
+        availability: unlocked
+        unlockFlag: flag.b2f.descent
+      - itemId: equip.hunting-bow
+        price: 140
+        availability: unlocked
+        unlockFlag: flag.b2f.descent
+      - itemId: equip.rune-staff
+        price: 135
+        availability: unlocked
+        unlockFlag: flag.b2f.descent
+      - itemId: equip.scale-mail
+        price: 150
+        availability: unlocked
+        unlockFlag: flag.b2f.descent
+      - itemId: equip.war-helm
+        price: 90
+        availability: unlocked
+        unlockFlag: flag.b2f.descent
+      - itemId: equip.steel-gauntlets
+        price: 95
+        availability: unlocked
+        unlockFlag: flag.b2f.descent
+      - itemId: equip.tower-shield
+        price: 130
+        availability: unlocked
+        unlockFlag: flag.b2f.descent
+      - itemId: equip.vitality-charm
+        price: 130
+        availability: unlocked
+        unlockFlag: flag.b2f.descent
+      - itemId: equip.focus-band
+        price: 125
+        availability: unlocked
+        unlockFlag: flag.b2f.descent
+      - itemId: equip.antivenom-ring
+        price: 110
+        availability: unlocked
+        unlockFlag: flag.b2f.descent
+      - itemId: equip.dreamward-amulet
+        price: 120
+        availability: unlocked
+        unlockFlag: flag.b2f.descent
+      - itemId: equip.swift-anklet
+        price: 100
+        availability: unlocked
+        unlockFlag: flag.b2f.descent
+      # Tier 3 capstones: only once the finale run is open.
+      - itemId: equip.knight-plate
+        price: 320
+        availability: unlocked
+        unlockFlag: flag.b7f.descent
+      - itemId: equip.warlord-blade
+        price: 340
+        availability: unlocked
+        unlockFlag: flag.b7f.descent
     locales:
       ja:
         name: 黒碑門の雑貨店

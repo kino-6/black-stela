@@ -17,6 +17,8 @@ import {
 import {
   addInventoryItem,
   calculateRecoveryCost,
+  effectiveMaxHp,
+  effectiveMaxMp,
   createInventoryItemFromCatalog,
   findEquipment,
   getEffectiveCharacterStats,
@@ -194,7 +196,7 @@ export function resolveCommand(state: GameState, world: ScenarioWorld, command: 
     case "retreat":
       return retreat(state);
     case "recover_party":
-      return recoverParty(state);
+      return recoverParty(state, world);
     case "return_to_town":
       return returnToTown(state, world);
     case "debug_force_victory":
@@ -851,7 +853,7 @@ function declareRound(state: GameState, world: ScenarioWorld, actions: CombatAct
     }
 
     if (action.action === "use_item" && action.itemId && action.targetCharacterId) {
-      const used = applyHealingItemToParty(party, inventory, action.itemId, action.targetCharacterId);
+      const used = applyHealingItemToParty(party, inventory, action.itemId, action.targetCharacterId, world);
       party = used.party;
       inventory = used.inventory;
       const healed = party.find((member) => member.id === action.targetCharacterId);
@@ -882,7 +884,7 @@ function declareRound(state: GameState, world: ScenarioWorld, actions: CombatAct
             return member;
           }
           healedName = member.name;
-          return { ...member, hp: Math.min(member.maxHp, member.hp + amount) };
+          return { ...member, hp: Math.min(effectiveMaxHp(member, world), member.hp + amount) };
         });
         beat(`${actor.name} heals ${healedName}.`, { kind: "heal", actorId: actor.id, actorName: actor.name, targetCharacterId: action.targetCharacterId, targetName: healedName, spellId: spell.id });
       } else if (spell.effect.kind === "damage" && action.targetGroupId) {
@@ -1018,7 +1020,7 @@ function declareRound(state: GameState, world: ScenarioWorld, actions: CombatAct
         party = damagePartyMember(party, target.id, damage, injuredEvents);
         beat(`${group.name} looses ${ability.name} at ${target.name} for ${damage}.`, { kind: "enemyHit", actorEnemyId: group.enemyId, targetCharacterId: target.id, targetName: target.name, damage, abilityName: ability.name });
       } else {
-        const resist = statusResistPct(target.resistance, ability.effect.status);
+        const resist = statusResistPct(getEffectiveCharacterStats(target, world).resistance, ability.effect.status);
         const roll = rollPercent(`${state.turn}:${combat.round}:${group.id}:${target.id}:ability-resist`);
         if (roll >= resist) {
           const ailment = ability.effect.status;
@@ -1050,7 +1052,7 @@ function declareRound(state: GameState, world: ScenarioWorld, actions: CombatAct
 
     if (group.inflicts) {
       const ailment = group.inflicts;
-      const resist = statusResistPct(target.resistance, ailment.status);
+      const resist = statusResistPct(getEffectiveCharacterStats(target, world).resistance, ailment.status);
       const inflictRoll = rollPercent(`${state.turn}:${combat.round}:${group.id}:${target.id}:inflict`);
       const resistRoll = rollPercent(`${state.turn}:${combat.round}:${group.id}:${target.id}:resist`);
       if (inflictRoll < ailment.chance && resistRoll >= resist) {
@@ -1235,7 +1237,7 @@ function useItem(state: GameState, world: ScenarioWorld, itemId: string, targetC
   const next: GameState = {
     ...state,
     party: state.party.map((member) =>
-      member.id === target.id ? { ...member, hp: Math.min(member.maxHp, member.hp + healAmount) } : member
+      member.id === target.id ? { ...member, hp: Math.min(effectiveMaxHp(member, world), member.hp + healAmount) } : member
     ),
     inventory: state.inventory.map((candidate) =>
       candidate.id === item.id ? { ...candidate, quantity: Math.max(0, candidate.quantity - 1) } : candidate
@@ -1829,7 +1831,8 @@ function applyHealingItemToParty(
   party: Character[],
   inventory: GameState["inventory"],
   itemId: string,
-  targetCharacterId: string
+  targetCharacterId: string,
+  world: ScenarioWorld
 ): { party: Character[]; inventory: GameState["inventory"]; summary: string } {
   const item = inventory.find((candidate) => candidate.id === itemId && candidate.quantity > 0);
   const target = party.find((member) => member.id === targetCharacterId);
@@ -1838,7 +1841,7 @@ function applyHealingItemToParty(
   }
 
   return {
-    party: party.map((member) => (member.id === target.id ? { ...member, hp: Math.min(member.maxHp, member.hp + item.healAmount!) } : member)),
+    party: party.map((member) => (member.id === target.id ? { ...member, hp: Math.min(effectiveMaxHp(member, world), member.hp + item.healAmount!) } : member)),
     inventory: inventory.map((candidate) =>
       candidate.id === item.id ? { ...candidate, quantity: Math.max(0, candidate.quantity - 1) } : candidate
     ),
@@ -1959,7 +1962,7 @@ function returnToTown(state: GameState, world: ScenarioWorld): CommandResult {
   return withEvents(next, [{ type: "returned_to_town" }]);
 }
 
-function recoverParty(state: GameState): CommandResult {
+function recoverParty(state: GameState, world: ScenarioWorld): CommandResult {
   if (state.phase !== "town") {
     return noChange(state);
   }
@@ -1977,7 +1980,7 @@ function recoverParty(state: GameState): CommandResult {
 
   const next: GameState = {
     ...state,
-    party: state.party.map((member) => ({ ...member, hp: member.maxHp, mp: member.maxMp, injury: undefined })),
+    party: state.party.map((member) => ({ ...member, hp: effectiveMaxHp(member, world), mp: effectiveMaxMp(member, world), injury: undefined })),
     partyGold: state.partyGold - cost,
     turn: state.turn + 1
   };

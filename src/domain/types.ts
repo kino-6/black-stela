@@ -550,6 +550,9 @@ export interface ScenarioEquipment {
   defenseBonus?: number;
   accuracyBonus?: number;
   speedBonus?: number;
+  hpBonus?: number;
+  mpBonus?: number;
+  resistBonus?: Partial<Record<CombatStatus, number>>;
   allowedClasses?: CharacterClassId[];
   tags?: string[];
   price?: number;

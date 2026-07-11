@@ -112,6 +112,9 @@ const scenarioEquipmentSchema = z.object({
   defenseBonus: z.number().int().optional(),
   accuracyBonus: z.number().int().optional(),
   speedBonus: z.number().int().optional(),
+  hpBonus: z.number().int().optional(),
+  mpBonus: z.number().int().optional(),
+  resistBonus: z.record(z.enum(["poison", "fear", "silence", "sleep", "ward"]), z.number()).optional(),
   allowedClasses: z
     .array(
       z.enum([

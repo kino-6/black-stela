@@ -2145,8 +2145,8 @@ export function App() {
                                 </div>
                                 <div className="party-token-stats" aria-label={t("play.memberStatus")}>
                                   <span>Lv {member.level}</span>
-                                  <span>HP {member.hp}/{member.maxHp}</span>
-                                  {member.maxMp > 0 && <span>{t("play.mpShort")} {member.mp}/{member.maxMp}</span>}
+                                  <span>HP {member.hp}/{stats.maxHp}</span>
+                                  {stats.maxMp > 0 && <span>{t("play.mpShort")} {member.mp}/{stats.maxMp}</span>}
                                   <span className="party-token-detail">{t("party.damage")} {stats.damageMin}-{stats.damageMax}</span>
                                   <span className="party-token-detail">{t("party.armor")} {stats.armor}</span>
                                   <span className="party-token-detail">{t("party.speed")} {stats.speed}</span>
@@ -2204,7 +2204,11 @@ export function App() {
                     }`}
                   />
                   <CombatPartyStrip
-                    members={displayedParty}
+                    members={displayedParty.map((member) => ({
+                      ...member,
+                      maxHp: getEffectiveCharacterStats(member, defaultWorld).maxHp,
+                      maxMp: getEffectiveCharacterStats(member, defaultWorld).maxMp
+                    }))}
                     selectedActorId={playback ? undefined : selectedActor?.id}
                     orderedActorIds={orderedActorIds}
                     activeBeat={activeBeat}

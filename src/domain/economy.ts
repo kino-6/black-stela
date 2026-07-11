@@ -1,4 +1,4 @@
-import type { Character, EquipmentSlot, InventoryItem, ScenarioEquipment, ScenarioItem, ScenarioWorld } from "./types";
+import type { Character, CombatStatus, EquipmentSlot, InventoryItem, ScenarioEquipment, ScenarioItem, ScenarioWorld } from "./types";
 import { equipmentInstanceKey, findAffix, plusPrimaryStat } from "./affixes";
 
 export const STARTING_PARTY_GOLD = 75;
@@ -12,6 +12,9 @@ export interface EffectiveCharacterStats {
   accuracy: number;
   armor: number;
   speed: number;
+  maxHp: number;
+  maxMp: number;
+  resistance: Partial<Record<CombatStatus, number>>;
 }
 
 export function createInventoryItemFromCatalog(world: ScenarioWorld, itemId: string, quantity = 1): InventoryItem | null {
@@ -98,6 +101,9 @@ export function getEffectiveCharacterStats(character: Character, world: Scenario
   let defenseBonus = 0;
   let accuracyBonus = 0;
   let speedBonus = 0;
+  let hpBonus = 0;
+  let mpBonus = 0;
+  const resistance: Partial<Record<CombatStatus, number>> = { ...(character.resistance ?? {}) };
 
   for (const equipped of Object.values(character.equipment)) {
     const catalog = equipped ? findEquipment(world, equipped.id) : undefined;
@@ -109,6 +115,11 @@ export function getEffectiveCharacterStats(character: Character, world: Scenario
     defenseBonus += catalog.defenseBonus ?? 0;
     accuracyBonus += catalog.accuracyBonus ?? 0;
     speedBonus += catalog.speedBonus ?? 0;
+    hpBonus += catalog.hpBonus ?? 0;
+    mpBonus += catalog.mpBonus ?? 0;
+    for (const [status, value] of Object.entries(catalog.resistBonus ?? {})) {
+      resistance[status as CombatStatus] = (resistance[status as CombatStatus] ?? 0) + (value ?? 0);
+    }
 
     // A numeric "+N" upgrade reinforces the slot's primary stat.
     if (equipped.plus) {
@@ -138,8 +149,21 @@ export function getEffectiveCharacterStats(character: Character, world: Scenario
     damageMax: character.damageMax + attackBonus,
     accuracy: Math.max(0, Math.min(100, character.accuracy + accuracyBonus)),
     armor: character.armor + defenseBonus,
-    speed: Math.max(0, character.speed + speedBonus)
+    speed: Math.max(0, character.speed + speedBonus),
+    maxHp: Math.max(1, character.maxHp + hpBonus),
+    maxMp: Math.max(0, character.maxMp + mpBonus),
+    resistance
   };
+}
+
+// Effective HP/MP caps including gear bonuses — equipping raises the ceiling;
+// resting/recovery fills into it. Cheap enough to call from the view.
+export function effectiveMaxHp(character: Character, world: ScenarioWorld): number {
+  return getEffectiveCharacterStats(character, world).maxHp;
+}
+
+export function effectiveMaxMp(character: Character, world: ScenarioWorld): number {
+  return getEffectiveCharacterStats(character, world).maxMp;
 }
 
 export function getEquipmentSlot(world: ScenarioWorld, equipmentId: string): EquipmentSlot | null {
