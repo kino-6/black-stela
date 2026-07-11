@@ -1,7 +1,7 @@
-import { defaultWorld } from "../data/defaultWorld";
+import { getActiveWorld } from "../data/activeWorld";
 import { findBackground, findClass } from "../domain/characterCreation";
 import { getEffectiveCharacterStats } from "../domain/economy";
-import type { Character, CombatActionDeclaration, EquippedItem, GameState, ScenarioEquipment } from "../domain/types";
+import type { Character, CombatActionDeclaration, EquippedItem, GameState, ScenarioEquipment, ScenarioShop } from "../domain/types";
 import type { Locale, TranslationKey, Translator } from "../i18n";
 import { formatCombatAction, formatCombatRow } from "./format";
 
@@ -16,12 +16,12 @@ export function localizedCatalogName(itemId: string | undefined, locale: Locale)
     return "-";
   }
 
-  const item = defaultWorld.items.find((candidate) => candidate.id === itemId);
+  const item = getActiveWorld().items.find((candidate) => candidate.id === itemId);
   if (item) {
     return item.locales?.[locale]?.name ?? item.name;
   }
 
-  const equipment = defaultWorld.equipment.find((candidate) => candidate.id === itemId);
+  const equipment = getActiveWorld().equipment.find((candidate) => candidate.id === itemId);
   return equipment?.locales?.[locale]?.name ?? equipment?.name ?? itemId;
 }
 
@@ -30,7 +30,7 @@ export function localizedCatalogDescription(itemId: string | undefined, locale: 
     return "";
   }
 
-  const item = defaultWorld.items.find((candidate) => candidate.id === itemId);
+  const item = getActiveWorld().items.find((candidate) => candidate.id === itemId);
   if (item) {
     return item.locales?.[locale]?.description ?? "";
   }
@@ -61,7 +61,7 @@ export function equippedName(equipped: EquippedItem | undefined, locale: Locale,
 }
 
 export function localizedEnemyGroupName(group: { enemyId: string; name: string }, locale: Locale) {
-  const enemy = defaultWorld.enemies.find((candidate) => candidate.id === group.enemyId);
+  const enemy = getActiveWorld().enemies.find((candidate) => candidate.id === group.enemyId);
   return enemy?.locales?.[locale]?.name ?? enemy?.name ?? group.name;
 }
 
@@ -74,12 +74,12 @@ export function previewEquipmentStats(member: Character, equipment: ScenarioEqui
         [equipment.slot]: { id: equipment.id }
       }
     },
-    defaultWorld
+    getActiveWorld()
   );
 }
 
 export function findEquipmentById(itemId: string | undefined) {
-  return defaultWorld.equipment.find((candidate) => candidate.id === itemId);
+  return getActiveWorld().equipment.find((candidate) => candidate.id === itemId);
 }
 
 export type ShopCategory = "weapon" | "armor" | "offhand" | "trinket" | "tool" | "consumable";
@@ -93,7 +93,7 @@ export function shopCategoryFor(itemId: string): ShopCategory {
     if (equipment.slot === "offhand") return "offhand";
     return "trinket";
   }
-  const item = defaultWorld.items.find((candidate) => candidate.id === itemId);
+  const item = getActiveWorld().items.find((candidate) => candidate.id === itemId);
   return item?.kind === "healing" || item?.kind === "escape" ? "consumable" : "tool";
 }
 
@@ -145,6 +145,6 @@ export function formatCharacterNotes(notes: string, backgroundId: GameState["par
   return notes === background.notes.en ? background.notes[locale] : notes;
 }
 
-export function localizedShopName(shop: (typeof defaultWorld.shops)[number], locale: Locale) {
+export function localizedShopName(shop: ScenarioShop, locale: Locale) {
   return shop.locales?.[locale]?.name ?? shop.name;
 }
