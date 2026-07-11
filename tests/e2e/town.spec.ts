@@ -89,6 +89,7 @@ test("Japanese shop equipment stays readable on mobile", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await setTitleLanguage(page, "ja");
   await page.getByRole("button", { name: "新たな探索" }).click();
+  await page.getByTestId("scenario-card-default").click({ timeout: 5000 }).catch(() => {});
   await createStarterParty(page, "ja");
   await openTownService(page, "商店", "ja");
 

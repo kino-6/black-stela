@@ -103,6 +103,7 @@ test("guild master proposals can fill a legal party", async ({ page }) => {
 test("Japanese starter roster shows front and back rows without duplicate class titles", async ({ page }) => {
   await setTitleLanguage(page, "ja");
   await page.getByRole("button", { name: "新たな探索" }).click();
+  await page.getByTestId("scenario-card-default").click({ timeout: 5000 }).catch(() => {});
   await createStarterParty(page, "ja");
 
   await expect(page.getByTestId("guild-front-row")).toContainText("前衛");
@@ -117,6 +118,7 @@ test("Japanese guild registration remains usable on mobile", async ({ page }) =>
   await page.setViewportSize({ width: 390, height: 844 });
   await setTitleLanguage(page, "ja");
   await page.getByRole("button", { name: "新たな探索" }).click();
+  await page.getByTestId("scenario-card-default").click({ timeout: 5000 }).catch(() => {});
 
   await expect(page.getByRole("heading", { name: "冒険者登録" })).toBeVisible();
   await expect(page.getByRole("button", { name: "炉端の連中を誘う" })).toHaveCount(0);

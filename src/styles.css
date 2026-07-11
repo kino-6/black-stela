@@ -2242,6 +2242,55 @@ textarea {
   padding: 2rem;
 }
 
+/* The scenario picker reuses the title frame but stacks: heading, cards, back. */
+.title-screen.scenario-picker {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 1.5rem;
+  width: min(42rem, 100%);
+}
+
+.scenario-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.scenario-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  width: 100%;
+  padding: 1rem 1.25rem;
+  text-align: left;
+  border: 1px solid rgba(200, 190, 170, 0.25);
+  border-radius: 0.5rem;
+  background: rgba(30, 28, 24, 0.6);
+  color: inherit;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.scenario-card:hover,
+.scenario-card:focus-visible {
+  border-color: rgba(214, 178, 106, 0.7);
+  background: rgba(48, 42, 32, 0.8);
+}
+
+.scenario-card strong {
+  font-size: 1.1rem;
+}
+
+.scenario-card small {
+  opacity: 0.55;
+  font-variant: small-caps;
+  letter-spacing: 0.03em;
+}
+
 .title-mark {
   min-height: 24rem;
   display: flex;

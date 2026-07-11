@@ -484,6 +484,11 @@ export const en = {
     west: "west"
   },
   scenario: {
+    pick: {
+      title: "Choose a Scenario",
+      subtitle: "Each scenario is its own world — dungeons, foes, and atmosphere.",
+      back: "Back"
+    },
     validation: "Scenario Validation",
     blocked: "Scenario cannot start.",
     warnings: "Scenario warnings",

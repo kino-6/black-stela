@@ -15,6 +15,12 @@ export async function startNewExpedition(page: Page) {
   });
   await page.goto("/");
   await page.getByRole("button", { name: "New expedition" }).click();
+  // With more than one scenario registered, New Game opens the scenario picker.
+  // These player-route tests run the default world — pick it when the picker shows.
+  await page
+    .getByTestId("scenario-card-default")
+    .click({ timeout: 5000 })
+    .catch(() => {});
 }
 
 export async function createStarterParty(page: Page, locale: "en" | "ja" = "en") {

@@ -102,6 +102,8 @@ import {
 import { debugAutoExplore, runHeadlessClear } from "./headless/headlessRunner";
 import { defaultWorld } from "./data/defaultWorld";
 import { setActiveWorld } from "./data/activeWorld";
+import { listScenarios, getWorldById } from "./data/worldRegistry";
+import { ScenarioPicker } from "./components/ScenarioPicker";
 import { fromSaveDataV1, toSaveDataV1 } from "./domain/saveData";
 import { LocalStorageSaveRepository, type SaveSlotSummary } from "./services/saveRepository";
 import { createTranslator, type Locale, type Translator } from "./i18n";
@@ -132,7 +134,7 @@ import { cssArtVariables, portraitUrl, setActiveArtPack } from "./ui/artAssets";
 type GuildCreationStep = "briefing" | "class" | "appearance" | "bonus" | "name";
 type GuildOfferState = "ask" | "suggestion" | "dismissed";
 type TownMode = "guild" | "shop" | "recovery" | "records" | "entry";
-type AppScreen = "title" | "config" | "game";
+type AppScreen = "title" | "config" | "scenario" | "game";
 
 const AUTO_SAVE_SLOT = "autosave";
 // The active art pack for this world, resolved once. Passed explicitly to every
@@ -883,6 +885,38 @@ export function App() {
     setDraft((current) => ({ ...current, portraitRef: dataUrl }));
   }
 
+  // Synchronously point every world consumer at `world` BEFORE the next render, so
+  // catalog lookups and art resolve against it on the very first frame (the effect
+  // that watches activeWorld would otherwise lag one paint behind on a switch).
+  function applyActiveWorld(world: ScenarioWorld) {
+    setActiveWorld(world);
+    const pack = world.assetPack ?? "default";
+    setActiveArtPack(pack);
+    const root = document.documentElement;
+    for (const [name, value] of Object.entries(cssArtVariables(pack))) {
+      root.style.setProperty(name, value);
+    }
+    setActiveWorldState(world);
+  }
+
+  // New Game: pick a scenario first when more than one exists; otherwise go straight
+  // into the (already-active) default world.
+  function beginNewGame() {
+    if (listScenarios().length > 1) {
+      setScreen("scenario");
+      return;
+    }
+    startNewGame();
+  }
+
+  function selectScenario(worldId: string) {
+    const world = getWorldById(worldId);
+    if (world) {
+      applyActiveWorld(world);
+    }
+    startNewGame();
+  }
+
   function startNewGame() {
     setState(createInitialGameState());
     setDraft(createFreshDraft());
@@ -1182,7 +1216,15 @@ export function App() {
       className={screen === "game" ? "app-shell" : "app-shell title-shell"}
       data-phase={screen === "game" ? state.phase : undefined}
     >
-      {screen !== "game" && (
+      {screen === "scenario" && (
+        <ScenarioPicker
+          t={t}
+          scenarios={listScenarios()}
+          onSelect={selectScenario}
+          onBack={() => setScreen("title")}
+        />
+      )}
+      {screen !== "game" && screen !== "scenario" && (
         <TitleScreen
           screen={screen}
           t={t}
@@ -1191,7 +1233,7 @@ export function App() {
           saveStatus={saveStatus}
           hasCorruptAutosave={hasCorruptAutosave}
           autoBattleSafety={autoBattleSafety}
-          onNewGame={startNewGame}
+          onNewGame={beginNewGame}
           onContinue={() => loadGame(AUTO_SAVE_SLOT)}
           onToggleConfig={() => setScreen(screen === "config" ? "title" : "config")}
           onChangeLocale={changeLocale}

@@ -186,6 +186,7 @@ test("browser self-play completes the visible dungeon loop without headless shor
         await japanesePage.getByRole("button", { name: "Config" }).click();
         await japanesePage.getByLabel("Language").selectOption("ja");
         await japanesePage.getByRole("button", { name: "新たな探索" }).click();
+        await japanesePage.getByTestId("scenario-card-default").click({ timeout: 5000 }).catch(() => {});
         await createStarterParty(japanesePage, "ja");
         await japanesePage.getByRole("button", { name: "町へ戻る" }).click();
         await expect(japanesePage.getByRole("button", { name: "商店" })).toBeVisible();

@@ -486,6 +486,11 @@ export const ja = {
     west: "西"
   },
   scenario: {
+    pick: {
+      title: "シナリオを選ぶ",
+      subtitle: "各シナリオは独立した世界 — ダンジョン・敵・雰囲気が異なります。",
+      back: "戻る"
+    },
     validation: "シナリオ検証",
     blocked: "シナリオを開始できません。",
     warnings: "シナリオ警告",

@@ -59,6 +59,7 @@ test("Japanese mobile combat menu stays readable without horizontal overflow", a
   await page.setViewportSize({ width: 390, height: 844 });
   await setTitleLanguage(page, "ja");
   await page.getByRole("button", { name: "新たな探索" }).click();
+  await page.getByTestId("scenario-card-default").click({ timeout: 5000 }).catch(() => {});
   await createStarterParty(page, "ja");
   await page.getByRole("button", { name: "迷宮に入る" }).click();
   await page.getByRole("button", { name: "進む" }).click();

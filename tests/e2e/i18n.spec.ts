@@ -4,6 +4,7 @@ import { registerAdventurer, resolveVisibleCombat, setTitleLanguage } from "./he
 test("switches to Japanese from title config and persists the selected language", async ({ page }) => {
   await setTitleLanguage(page, "ja");
   await page.getByRole("button", { name: "新たな探索" }).click();
+  await page.getByTestId("scenario-card-default").click({ timeout: 5000 }).catch(() => {});
 
   await expect(page.getByRole("heading", { name: "冒険者登録" })).toBeVisible();
   await expect(page.getByRole("button", { name: "説明を聞かない" })).toBeVisible();
@@ -15,6 +16,7 @@ test("switches to Japanese from title config and persists the selected language"
 test("plays the MVP flow with Japanese room text and log projection", async ({ page }) => {
   await setTitleLanguage(page, "ja");
   await page.getByRole("button", { name: "新たな探索" }).click();
+  await page.getByTestId("scenario-card-default").click({ timeout: 5000 }).catch(() => {});
 
   await registerAdventurer(page, { locale: "ja", name: "ミラ" });
   await page.getByRole("button", { name: "迷宮に入る" }).click();
@@ -37,6 +39,7 @@ test("keeps Japanese layout usable on mobile", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await setTitleLanguage(page, "ja");
   await page.getByRole("button", { name: "新たな探索" }).click();
+  await page.getByTestId("scenario-card-default").click({ timeout: 5000 }).catch(() => {});
 
   await expect(page.getByRole("button", { name: "説明を聞かない" })).toBeVisible();
   await registerAdventurer(page, { locale: "ja", name: "ミラ" });

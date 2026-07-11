@@ -55,6 +55,7 @@ test("captures mobile Japanese guild screenshot review state", async ({ page }) 
   await page.setViewportSize({ width: 390, height: 844 });
   await setTitleLanguage(page, "ja");
   await page.getByRole("button", { name: "新たな探索" }).click();
+  await page.getByTestId("scenario-card-default").click({ timeout: 5000 }).catch(() => {});
   await createStarterParty(page, "ja");
 
   await expect(page.getByRole("heading", { name: "冒険者登録" })).toBeVisible();
