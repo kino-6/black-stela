@@ -101,6 +101,7 @@ import {
 } from "./debug/debugStart";
 import { debugAutoExplore, runHeadlessClear } from "./headless/headlessRunner";
 import { defaultWorld } from "./data/defaultWorld";
+import { setActiveWorld } from "./data/activeWorld";
 import { fromSaveDataV1, toSaveDataV1 } from "./domain/saveData";
 import { LocalStorageSaveRepository, type SaveSlotSummary } from "./services/saveRepository";
 import { createTranslator, type Locale, type Translator } from "./i18n";
@@ -137,7 +138,6 @@ const AUTO_SAVE_SLOT = "autosave";
 // The active art pack for this world, resolved once. Passed explicitly to every
 // resolver call (portraits, icons, CSS vars, dungeon scene) so rendering never
 // depends on the resolver's module-level active-pack timing.
-const ART_PACK = defaultWorld.assetPack ?? "default";
 const guildStepOrder: GuildCreationStep[] = ["briefing", "class", "appearance", "bonus", "name"];
 
 export function App() {
@@ -171,17 +171,19 @@ export function App() {
   const [revealedBeats, setRevealedBeats] = useState(0);
   const t = useMemo(() => createTranslator(locale), [locale]);
 
-  // Point the art resolver at the active world's asset pack and publish the CSS-
-  // referenced art (minimap markers, title, combat vignette) as :root custom
-  // properties, so those resolve through the same pack-scoped resolver as sprites/
-  // icons instead of being pinned to one world's hard-coded file paths.
+  const artPack = activeWorld.assetPack ?? "default";
+  // Follow the active world: point the framework-free accessors (catalog world,
+  // art pack) at it, and publish the CSS-referenced art (minimap markers, title,
+  // combat vignette) as :root custom properties so they resolve through the same
+  // pack-scoped resolver as sprites/icons. Re-runs when the scenario changes.
   useEffect(() => {
-    setActiveArtPack(ART_PACK);
+    setActiveWorld(activeWorld);
+    setActiveArtPack(artPack);
     const root = document.documentElement;
-    for (const [name, value] of Object.entries(cssArtVariables(ART_PACK))) {
+    for (const [name, value] of Object.entries(cssArtVariables(artPack))) {
       root.style.setProperty(name, value);
     }
-  }, []);
+  }, [activeWorld, artPack]);
   const [saveSlotId, setSaveSlotId] = useState(AUTO_SAVE_SLOT);
   const [saveSlots, setSaveSlots] = useState<SaveSlotSummary[]>(() => createBrowserSaveRepository()?.list() ?? []);
   const [saveStatus, setSaveStatus] = useState("");
@@ -2448,7 +2450,9 @@ function renderPortraitContent({
   }
 
   const background = findBackground(backgroundId);
-  const portraitAssetUrl = portraitUrl(background.portraitKey, ART_PACK);
+  // Portraits are global character-creation art; they follow the active art pack
+  // (set on the resolver whenever the scenario changes) rather than a fixed world.
+  const portraitAssetUrl = portraitUrl(background.portraitKey);
   if (portraitAssetUrl) {
     return <img data-testid={testId} src={portraitAssetUrl} alt={alt || background.label.en} />;
   }
