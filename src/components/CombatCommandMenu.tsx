@@ -19,17 +19,17 @@ interface CombatCommandMenuProps {
   abilityKind: "spell" | "skill";
   localizeGroup: (group: CombatEnemyGroup) => string;
   canAttack: boolean;
-  itemLabel: string | null;
+  consumables: { id: string; label: string }[];
   partyTargets: { id: string; name: string }[];
   t: Translator;
   onQueueAttack: (groupId: string) => void;
   onQueueSpell: (spellId: SpellId, groupId: string | null) => void;
   onQueueDefend: () => void;
-  onQueueItem: (targetCharacterId: string) => void;
+  onQueueItem: (itemId: string, targetCharacterId: string) => void;
   onUndo: () => void;
 }
 
-type MenuView = "command" | "attackTarget" | "spell" | "spellTarget" | "itemTarget";
+type MenuView = "command" | "attackTarget" | "spell" | "spellTarget" | "itemSelect" | "itemTarget";
 type CommandKind = "attack" | "spell" | "item" | "defend";
 
 // A nested, cursor-first combat command menu (コマンドRPG). The front-to-back actor
@@ -44,7 +44,7 @@ export function CombatCommandMenu({
   abilityKind,
   localizeGroup,
   canAttack,
-  itemLabel,
+  consumables,
   partyTargets,
   t,
   onQueueAttack,
@@ -56,6 +56,7 @@ export function CombatCommandMenu({
   const [view, setView] = useState<MenuView>("command");
   const [cursor, setCursor] = useState(0);
   const [pendingSpell, setPendingSpell] = useState<SpellId | null>(null);
+  const [pendingItem, setPendingItem] = useState<string | null>(null);
   const selectedButtonRef = useRef<HTMLButtonElement | null>(null);
 
   const commands = useMemo(() => {
@@ -64,12 +65,12 @@ export function CombatCommandMenu({
     if (spells.length > 0) {
       list.push({ kind: "spell", label: abilityKind === "skill" ? t("play.skill") : t("play.spell"), enabled: true });
     }
-    if (itemLabel && partyTargets.length > 0) {
-      list.push({ kind: "item", label: itemLabel, enabled: true });
+    if (consumables.length > 0 && partyTargets.length > 0) {
+      list.push({ kind: "item", label: t("play.useItem"), enabled: true });
     }
     list.push({ kind: "defend", label: t("play.defend"), enabled: true });
     return list;
-  }, [abilityKind, canAttack, spells.length, itemLabel, partyTargets.length, t]);
+  }, [abilityKind, canAttack, spells.length, consumables.length, partyTargets.length, t]);
 
   // Reset to the command list whenever the actor being commanded changes, landing
   // the cursor on the first ENABLED command so Enter always does something valid.
@@ -78,6 +79,7 @@ export function CombatCommandMenu({
     setView("command");
     setCursor(firstEnabled < 0 ? 0 : firstEnabled);
     setPendingSpell(null);
+    setPendingItem(null);
   }, [actor.id, commands]);
 
   // Roving tabindex: the selected row keeps keyboard focus, so Enter/Space activate
@@ -123,12 +125,24 @@ export function CombatCommandMenu({
         onSelect: () => pendingSpell && onQueueSpell(pendingSpell, group.id)
       }));
     }
-    // itemTarget — choose which ally to use the item on
+    if (view === "itemSelect") {
+      return consumables.map((consumable) => ({
+        key: consumable.id,
+        label: consumable.label,
+        enabled: true,
+        onSelect: () => {
+          setPendingItem(consumable.id);
+          setView("itemTarget");
+          setCursor(0);
+        }
+      }));
+    }
+    // itemTarget — choose which ally to use the selected item on
     return partyTargets.map((ally) => ({
       key: ally.id,
       label: ally.name,
       enabled: true,
-      onSelect: () => onQueueItem(ally.id)
+      onSelect: () => pendingItem && onQueueItem(pendingItem, ally.id)
     }));
   })();
 
@@ -140,7 +154,7 @@ export function CombatCommandMenu({
       setView("spell");
       setCursor(0);
     } else if (kind === "item") {
-      setView("itemTarget");
+      setView("itemSelect");
       setCursor(0);
     } else {
       onQueueDefend();
@@ -168,11 +182,14 @@ export function CombatCommandMenu({
     }
     if (view === "spellTarget") {
       setView("spell");
+    } else if (view === "itemTarget") {
+      setView("itemSelect");
     } else {
       setView("command");
     }
     setCursor(0);
     setPendingSpell(null);
+    setPendingItem(null);
   }
 
   // Arrows OR WASD move the cursor (S/W = down/up), A/Esc back out, D confirms;
@@ -205,7 +222,9 @@ export function CombatCommandMenu({
         ? abilityKind === "skill"
           ? t("play.chooseSkill")
           : t("play.chooseSpell")
-        : t("play.chooseTarget");
+        : view === "itemSelect"
+          ? t("play.chooseItem")
+          : t("play.chooseTarget");
 
   return (
     <div

@@ -260,6 +260,7 @@ export const ja = {
     skill: "特技",
     commandFor: "{name} のコマンド",
     chooseSpell: "呪文を選ぶ",
+    chooseItem: "道具を選ぶ",
     chooseSkill: "特技を選ぶ",
     chooseTarget: "標的を選ぶ",
     menuHint: "↑↓ 選択 · Enter 決定 · Esc 戻る",

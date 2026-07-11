@@ -49,6 +49,61 @@ items:
       ja:
         name: 帰還の割符
         description: 砕けば道を焼き、隊列を街へ引き戻す高価な割符。深部の逃げ道。
+  - id: item.greater-draught
+    name: Greater Draught
+    kind: healing
+    tier: 2
+    price: 70
+    sellValue: 23
+    healAmount: 14
+    locales:
+      ja:
+        name: 上等な水薬
+        description: より深い傷まで戻す濃い水薬。
+  - id: item.antidote
+    name: Antidote
+    kind: cure
+    tier: 1
+    price: 20
+    sellValue: 6
+    curesStatuses: [poison]
+    locales:
+      ja:
+        name: 解毒薬
+        description: 血に回った毒を抜く苦い薬。
+  - id: item.clarity-draught
+    name: Clarity Draught
+    kind: cure
+    tier: 2
+    price: 30
+    sellValue: 10
+    curesStatuses: [silence]
+    locales:
+      ja:
+        name: 明澄の水薬
+        description: 舌と喉を解き、封じられた声を取り戻す。
+  - id: item.calm-draught
+    name: Calm Draught
+    kind: cure
+    tier: 2
+    price: 35
+    sellValue: 11
+    curesStatuses: [fear, sleep]
+    locales:
+      ja:
+        name: 鎮めの水薬
+        description: 怯えと眠気を払い、隊列を正気に戻す。
+  - id: item.spirit-tonic
+    name: Spirit Tonic
+    kind: focus
+    tier: 2
+    price: 45
+    sellValue: 15
+    restoreMp: 8
+    locales:
+      ja:
+        name: 気付けの霊薬
+        description: 涸れた気力を汲み戻す澄んだ霊薬。
 equipment:
   - id: equip.rusted-dirk
     name: Rusted Dirk
@@ -465,6 +520,25 @@ shops:
       - itemId: item.return-charm
         price: 90
         availability: always
+      - itemId: item.antidote
+        price: 20
+        availability: always
+      - itemId: item.greater-draught
+        price: 70
+        availability: unlocked
+        unlockFlag: flag.b2f.descent
+      - itemId: item.clarity-draught
+        price: 30
+        availability: unlocked
+        unlockFlag: flag.b2f.descent
+      - itemId: item.calm-draught
+        price: 35
+        availability: unlocked
+        unlockFlag: flag.b2f.descent
+      - itemId: item.spirit-tonic
+        price: 45
+        availability: unlocked
+        unlockFlag: flag.b2f.descent
       - itemId: equip.rusted-dirk
         price: 22
         availability: always

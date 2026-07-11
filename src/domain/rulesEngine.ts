@@ -1229,19 +1229,16 @@ function useItem(state: GameState, world: ScenarioWorld, itemId: string, targetC
   }
 
   const target = state.party.find((member) => member.id === targetCharacterId);
-  if (!item || !target || item.kind !== "healing" || !item.healAmount) {
+  const isConsumable = item && (item.kind === "healing" || item.kind === "cure" || item.kind === "focus");
+  if (!item || !target || !isConsumable) {
     return noChange(state);
   }
 
-  const healAmount = item.healAmount;
+  const applied = applyHealingItemToParty(state.party, state.inventory, itemId, targetCharacterId, world);
   const next: GameState = {
     ...state,
-    party: state.party.map((member) =>
-      member.id === target.id ? { ...member, hp: Math.min(effectiveMaxHp(member, world), member.hp + healAmount) } : member
-    ),
-    inventory: state.inventory.map((candidate) =>
-      candidate.id === item.id ? { ...candidate, quantity: Math.max(0, candidate.quantity - 1) } : candidate
-    ),
+    party: applied.party,
+    inventory: applied.inventory,
     turn: state.turn + 1
   };
 
@@ -1252,7 +1249,7 @@ function useItem(state: GameState, world: ScenarioWorld, itemId: string, targetC
       itemName: item.name,
       targetCharacterId: target.id,
       targetName: target.name,
-      healAmount
+      healAmount: item.healAmount ?? 0
     }
   ]);
 }
@@ -1836,16 +1833,33 @@ function applyHealingItemToParty(
 ): { party: Character[]; inventory: GameState["inventory"]; summary: string } {
   const item = inventory.find((candidate) => candidate.id === itemId && candidate.quantity > 0);
   const target = party.find((member) => member.id === targetCharacterId);
-  if (!item || !target || item.kind !== "healing" || !item.healAmount) {
+  const isConsumable = item && (item.kind === "healing" || item.kind === "cure" || item.kind === "focus");
+  if (!item || !target || !isConsumable) {
     return { party, inventory, summary: "The item fails to help." };
   }
 
   return {
-    party: party.map((member) => (member.id === target.id ? { ...member, hp: Math.min(effectiveMaxHp(member, world), member.hp + item.healAmount!) } : member)),
+    party: party.map((member) => {
+      if (member.id !== target.id) {
+        return member;
+      }
+      let next = member;
+      if (item.healAmount) {
+        next = { ...next, hp: Math.min(effectiveMaxHp(next, world), next.hp + item.healAmount) };
+      }
+      if (item.restoreMp) {
+        next = { ...next, mp: Math.min(effectiveMaxMp(next, world), next.mp + item.restoreMp) };
+      }
+      if (item.curesStatuses?.length) {
+        const cured = new Set<string>(item.curesStatuses);
+        next = { ...next, status: (next.status ?? []).filter((status) => !cured.has(status)) };
+      }
+      return next;
+    }),
     inventory: inventory.map((candidate) =>
       candidate.id === item.id ? { ...candidate, quantity: Math.max(0, candidate.quantity - 1) } : candidate
     ),
-    summary: `${target.name} drinks ${item.name}.`
+    summary: `${target.name} uses ${item.name}.`
   };
 }
 

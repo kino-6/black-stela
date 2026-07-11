@@ -258,6 +258,7 @@ export const en = {
     skill: "Skill",
     commandFor: "{name}'s command",
     chooseSpell: "Choose a spell",
+    chooseItem: "Choose an item",
     chooseSkill: "Choose a skill",
     chooseTarget: "Choose a target",
     menuHint: "↑↓ select · Enter confirm · Esc back",

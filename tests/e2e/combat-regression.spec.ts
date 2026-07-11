@@ -30,10 +30,15 @@ test("the command menu is fully navigable by WASD (and confirms / backs)", async
 test("using an item opens a target submenu (never completes with no selection)", async ({ page }) => {
   await enterCombat(page);
 
+  const menu = page.getByTestId("combat-command-menu");
   await page.getByTestId("combat-menu-item").click();
-  // An item command must ask WHO to use it on — a party member appears as a target.
-  await expect(page.getByTestId("combat-command-menu")).toContainText(/target|標的/i);
-  await expect(page.getByTestId("combat-command-menu")).toContainText("Rook");
+  // どうぐ first asks WHICH item (the consumable list), then WHO to use it on.
+  await expect(menu).toContainText(/item|道具/i);
+  await expect(menu).toContainText(/Healing Draught|治癒/i);
+  // Pick the first consumable → a party-member target list appears (never auto-completes).
+  await page.keyboard.press("Enter");
+  await expect(menu).toContainText(/target|標的/i);
+  await expect(menu).toContainText("Rook");
 });
 
 test("HP and MP render as gauge bars, not bare numbers", async ({ page }) => {

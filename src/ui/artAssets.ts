@@ -94,6 +94,12 @@ export const catalogIconUrls: Record<string, string> = {
   "equip.warlord-blade": equipMilitiaSabreUrl,
   "item.ashen-key": itemAshenKeyUrl,
   "item.healing-draught": itemHealingDraughtUrl,
+  // Consumable expansion — placeholder icons reuse the draught/oil art (Art.md).
+  "item.greater-draught": itemHealingDraughtUrl,
+  "item.antidote": itemHealingDraughtUrl,
+  "item.clarity-draught": itemHealingDraughtUrl,
+  "item.calm-draught": itemHealingDraughtUrl,
+  "item.spirit-tonic": itemLanternOilUrl,
   "item.lantern-oil": itemLanternOilUrl,
   "item.return-charm": itemReturnCharmUrl,
   "item.stela-shard": itemStelaShardUrl

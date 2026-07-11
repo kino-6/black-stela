@@ -196,9 +196,11 @@ export interface EquippedItem {
 export interface InventoryItem {
   id: string;
   name: string;
-  kind: "healing" | "utility" | "key" | "treasure" | "equipment" | "escape";
+  kind: "healing" | "utility" | "key" | "treasure" | "equipment" | "escape" | "cure" | "focus";
   quantity: number;
   healAmount?: number;
+  restoreMp?: number;
+  curesStatuses?: CombatStatus[];
   slot?: EquipmentSlot;
   attackBonus?: number;
   defenseBonus?: number;
@@ -532,11 +534,13 @@ export type EnemyRole = "attrition" | "blocker" | "status" | "ambusher" | "caste
 export interface ScenarioItem {
   id: string;
   name: string;
-  kind: "healing" | "utility" | "key" | "treasure" | "escape";
+  kind: "healing" | "utility" | "key" | "treasure" | "escape" | "cure" | "focus";
   tier: number;
   price?: number;
   sellValue?: number;
   healAmount?: number;
+  restoreMp?: number;
+  curesStatuses?: CombatStatus[];
   locales?: LocalizedNameDescription;
 }
 

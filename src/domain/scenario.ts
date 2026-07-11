@@ -94,11 +94,13 @@ const trapSchema = z.object({
 const scenarioItemSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
-  kind: z.enum(["healing", "utility", "key", "treasure", "escape"]),
+  kind: z.enum(["healing", "utility", "key", "treasure", "escape", "cure", "focus"]),
   tier: z.number().int().nonnegative(),
   price: z.number().int().nonnegative().optional(),
   sellValue: z.number().int().nonnegative().optional(),
   healAmount: z.number().int().positive().optional(),
+  restoreMp: z.number().int().positive().optional(),
+  curesStatuses: z.array(z.enum(["poison", "fear", "silence", "sleep"])).optional(),
   locales: localizedNameDescriptionSchema.optional()
 });
 

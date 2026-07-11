@@ -290,6 +290,14 @@ export function App() {
   const canCycleCombatTarget = livingEnemyGroups.length > 1;
   const combatOrdersReady = state.phase === "combat" && activeParty.length > 0 && activeParty.every((member) => orderedActorIds.has(member.id));
   const combatHealingItem = state.inventory.find((item) => item.kind === "healing" && item.quantity > 0);
+  // Every usable combat consumable (heal / cure / 気力 restore), for the item submenu.
+  const combatConsumables = useMemo(
+    () =>
+      state.inventory
+        .filter((item) => (item.kind === "healing" || item.kind === "cure" || item.kind === "focus") && item.quantity > 0)
+        .map((item) => ({ id: item.id, label: `${item.name} ×${item.quantity}` })),
+    [state.inventory]
+  );
   const showGuildPanel = false;
   const isTempoRunning = tempoMode !== "idle";
   const showGuildFallbackRecruit = state.party.length > 0 || guildCreationStep !== "briefing";
@@ -627,9 +635,9 @@ export function App() {
     }
   }
 
-  function menuQueueItem(targetCharacterId: string) {
-    if (selectedActor && combatHealingItem) {
-      queueCombatOrder({ actorId: selectedActor.id, action: "use_item", itemId: combatHealingItem.id, targetCharacterId });
+  function menuQueueItem(itemId: string, targetCharacterId: string) {
+    if (selectedActor) {
+      queueCombatOrder({ actorId: selectedActor.id, action: "use_item", itemId, targetCharacterId });
     }
   }
 
@@ -2260,7 +2268,7 @@ export function App() {
                         livingEnemyGroups.length > 0 &&
                         !(selectedActor.row === "back" && frontRowStanding && !weaponReaches(selectedActor, defaultWorld))
                       }
-                      itemLabel={combatHealingItem ? `${t("play.useItem")} · ${combatHealingItem.name}` : null}
+                      consumables={combatConsumables}
                       partyTargets={activeParty.map((member) => ({ id: member.id, name: member.name }))}
                       t={t}
                       onQueueAttack={menuQueueAttack}
