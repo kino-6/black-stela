@@ -33,16 +33,31 @@ describe("descent survivability (no grind)", () => {
 
   // Difficulty Gate (turns the balance Sim into an enforced band, not just a
   // survivability check). Two-sided: the descent must NOT wipe a no-grind party,
-  // and must NOT be a no-damage cakewalk. After the 2026-07 tuning pass a full-party
-  // no-grind push ramps 93→79→77→67→43→30% (deep floors bite, finale threatens) and
-  // survives with zero downs. This Gate FAILS if a change flattens the descent back
-  // toward zero threat (trough climbs above ~0.55) OR pushes it into a near-certain
-  // wipe (trough collapses below ~0.12), so the band stays honest as content changes.
+  // and must NOT be a no-damage cakewalk. After the 2026-07 area-tuning pass a
+  // full-party no-grind push troughs by floor ≈ 93/93/79/86/64/57/33/20% — Act I
+  // gentle, Act II bites, Act III (finale) threatens — and survives with zero downs.
+  // This Gate FAILS if a change flattens the descent toward zero threat (deepest
+  // trough climbs above ~0.55) OR pushes it into a near-certain wipe (below ~0.12).
   it("threatens the party somewhere on a no-grind descent (difficulty Gate)", () => {
     const result = simulateDescent(defaultWorld, { heal: "none" });
     const deepestTrough = Math.min(...result.floors.map((floor) => floor.lowestHpPct));
     expect(result.survived).toBe(true); // still survivable
     expect(deepestTrough).toBeLessThan(0.55); // deep floors must genuinely bite
     expect(deepestTrough).toBeGreaterThan(0.12); // ...but not be a near-certain wipe
+  });
+
+  // Area pacing Gate (see docs/design/dungeon-areas.md + skill drpg-balance): the
+  // descent is three escalating acts. The worst trough of each act must deepen act by
+  // act — Act II harder than Act I, Act III (finale) harder than Act II — so a future
+  // change can't flatten the ramp back into "trivial then sudden spike".
+  it("escalates in pressure act by act (I → II → III)", () => {
+    const result = simulateDescent(defaultWorld, { heal: "none" });
+    const troughByFloor = new Map(result.floors.map((floor) => [floor.floorId, floor.lowestHpPct]));
+    const actMin = (ids: string[]) => Math.min(...ids.map((id) => troughByFloor.get(id) ?? 1));
+    const act1 = actMin(["dungeon.b1f", "dungeon.b2f", "dungeon.b3f"]);
+    const act2 = actMin(["dungeon.b4f", "dungeon.b5f", "dungeon.b6f"]);
+    const act3 = actMin(["dungeon.b7f", "dungeon.b8f"]);
+    expect(act2).toBeLessThan(act1);
+    expect(act3).toBeLessThan(act2);
   });
 });

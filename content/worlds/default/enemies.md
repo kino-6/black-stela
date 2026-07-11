@@ -28,7 +28,7 @@ enemies:
     armor: 0
     accuracy: 68
     damageMin: 2
-    damageMax: 4
+    damageMax: 5
     speed: 5
     morale: 6
     xp: 2
@@ -47,8 +47,8 @@ enemies:
     attack: 3
     armor: 0
     accuracy: 75
-    damageMin: 2
-    damageMax: 4
+    damageMin: 3
+    damageMax: 5
     speed: 8
     morale: 6
     xp: 2
@@ -118,8 +118,8 @@ enemies:
     attack: 3
     armor: 0
     accuracy: 70
-    damageMin: 2
-    damageMax: 4
+    damageMin: 3
+    damageMax: 5
     speed: 6
     morale: 8
     xp: 3
@@ -138,12 +138,12 @@ enemies:
     locales:
       ja:
         name: 灯守
-    hp: 10
-    attack: 4
+    hp: 13
+    attack: 5
     armor: 2
     accuracy: 70
-    damageMin: 3
-    damageMax: 6
+    damageMin: 4
+    damageMax: 7
     speed: 3
     morale: 10
     xp: 4
@@ -175,7 +175,7 @@ enemies:
     armor: 2
     accuracy: 82
     damageMin: 4
-    damageMax: 7
+    damageMax: 8
     speed: 5
     morale: 11
     xp: 7
@@ -214,8 +214,8 @@ enemies:
     attack: 6
     armor: 2
     accuracy: 84
-    damageMin: 4
-    damageMax: 7
+    damageMin: 5
+    damageMax: 8
     speed: 6
     morale: 11
     xp: 9
