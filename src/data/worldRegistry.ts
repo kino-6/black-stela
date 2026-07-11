@@ -10,6 +10,7 @@ import {
   parseScenarioTreasure,
   parseScenarioWorld
 } from "../domain/scenario";
+import { classCatalog } from "../domain/characterCreation";
 import type { ScenarioWorld } from "../domain/types";
 
 const markdownFiles = import.meta.glob("../../content/worlds/*/**/*.md", {
@@ -68,8 +69,43 @@ function buildWorld(worldId: string, files: Record<string, string>): ScenarioWor
   return { ...world, assetPack: world.assetPack ?? worldId };
 }
 
-export const worldRegistry: Record<string, ScenarioWorld> = Object.fromEntries(
+export const DEFAULT_WORLD_ID = "default";
+
+const rawWorlds: Record<string, ScenarioWorld> = Object.fromEntries(
   Object.entries(byWorld).map(([worldId, files]) => [worldId, buildWorld(worldId, files)])
+);
+
+// Shared base catalog: the gear every class starts in (referenced by classCatalog)
+// plus the starting consumable. It is sourced from the canonical default world so
+// there is ONE definition (no duplication/drift), then merged into every OTHER world
+// — so a minimal scenario that ships only its own dungeons still gives the standard
+// party resolvable, statted starter gear. A world may override a base id by defining
+// its own (world entries win). See docs/design/scenario-switching.md.
+const STARTER_EQUIP_IDS = new Set(classCatalog.flatMap((classDef) => Object.values(classDef.equipment ?? {})));
+const STARTER_ITEM_IDS = new Set(["item.healing-draught"]);
+const defaultWorldData = rawWorlds[DEFAULT_WORLD_ID];
+const baseCatalog = {
+  equipment: (defaultWorldData?.equipment ?? []).filter((item) => STARTER_EQUIP_IDS.has(item.id)),
+  items: (defaultWorldData?.items ?? []).filter((item) => STARTER_ITEM_IDS.has(item.id))
+};
+
+function withBaseCatalog(world: ScenarioWorld): ScenarioWorld {
+  const equipIds = new Set(world.equipment.map((item) => item.id));
+  const itemIds = new Set(world.items.map((item) => item.id));
+  return {
+    ...world,
+    equipment: [...world.equipment, ...baseCatalog.equipment.filter((item) => !equipIds.has(item.id))],
+    items: [...world.items, ...baseCatalog.items.filter((item) => !itemIds.has(item.id))]
+  };
+}
+
+export const worldRegistry: Record<string, ScenarioWorld> = Object.fromEntries(
+  Object.entries(rawWorlds).map(([worldId, world]) => [
+    worldId,
+    // Default is left byte-identical (it already defines the whole base); only other
+    // worlds inherit the shared starter gear.
+    worldId === DEFAULT_WORLD_ID ? world : withBaseCatalog(world)
+  ])
 );
 
 export interface ScenarioListing {
@@ -84,8 +120,6 @@ export function listScenarios(): ScenarioListing[] {
     .map(([worldId, world]) => ({ worldId, title: world.title, assetPack: world.assetPack ?? worldId }))
     .sort((a, b) => Number(b.worldId === "default") - Number(a.worldId === "default") || a.title.localeCompare(b.title));
 }
-
-export const DEFAULT_WORLD_ID = "default";
 
 export function getWorldById(worldId: string): ScenarioWorld | undefined {
   return worldRegistry[worldId];

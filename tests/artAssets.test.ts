@@ -1,17 +1,26 @@
 import { describe, expect, it } from "vitest";
-import { asset, catalogIconUrl, cssArtVariables, portraitUrl } from "../src/ui/artAssets";
+import { asset, catalogIconUrl, cssArtVariables, ICON_PLACEHOLDER, portraitUrl } from "../src/ui/artAssets";
 import { scenarioWorldSchema } from "../src/domain/scenario";
 
 // Locks the pack-scoped, own-basename-first resolver contract (Art.md §2). These
 // are build-time-glob facts, so they assert against the bundled default pack.
 describe("art resolver", () => {
-  it("falls back to the placeholder icon when an id has no own-basename file", () => {
-    // equip.warlord-blade has no icons/equip-warlord-blade.png yet, so it resolves
-    // via ICON_PLACEHOLDER -> the existing equip-militia-sabre icon. (If real art is
-    // later dropped in as equip-warlord-blade.png, own-basename-first will correctly
-    // win and this test should be pointed at another still-placeholdered id — that
-    // flip IS the drop-in contract working.)
-    expect(catalogIconUrl("equip.warlord-blade")).toBe(asset("equip-militia-sabre"));
+  it("resolves every placeholder id to real art — own-basename if delivered, else the placeholder", () => {
+    // Durable against ongoing drop-ins: for each ICON_PLACEHOLDER entry, if the real
+    // own-basename art has been dropped in it must win (the drop-in contract); until
+    // then the mapped placeholder icon is used. Never undefined either way. (As of
+    // now all P10/P11 art has landed, so every id takes the own-basename branch.)
+    for (const [id, target] of Object.entries(ICON_PLACEHOLDER)) {
+      const ownBasename = id.replace(/\./g, "-");
+      let ownExists = true;
+      try {
+        asset(ownBasename);
+      } catch {
+        ownExists = false;
+      }
+      const expected = ownExists ? asset(ownBasename) : asset(target);
+      expect(catalogIconUrl(id), `${id} -> ${ownExists ? "own art" : target}`).toBe(expected);
+    }
   });
 
   it("uses the own-basename file (id dots->dashes) in preference to any placeholder", () => {

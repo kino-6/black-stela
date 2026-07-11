@@ -54,7 +54,7 @@ const idToBasename = (id: string) => id.replace(/\./g, "-");
 // Convention: basename === id with dots→dashes (equip.steel-sabre → equip-steel-sabre).
 // Placeholders point new ids at an existing icon until real art is dropped in; the
 // own-basename file always wins over the placeholder.
-const ICON_PLACEHOLDER: Record<string, string> = {
+export const ICON_PLACEHOLDER: Record<string, string> = {
   "equip.short-bow": "equip-rusted-dirk",
   "equip.long-spear": "equip-militia-sabre",
   "equip.steel-sabre": "equip-militia-sabre",
