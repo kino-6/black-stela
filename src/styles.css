@@ -2936,6 +2936,32 @@ textarea {
   100% { opacity: 0; transform: translateY(-1.2rem) scale(1); }
 }
 
+.combat-confirm {
+  align-items: stretch;
+  justify-content: center;
+  gap: 0.4rem;
+}
+
+.combat-confirm-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1rem;
+  font-size: 1rem;
+  font-weight: 700;
+  border: 1px solid #6a5a2a;
+  border-radius: 4px;
+  background: linear-gradient(180deg, #3a3418, #241f0e);
+  color: #ffe6a6;
+  cursor: pointer;
+}
+
+.combat-confirm-button:focus-visible {
+  outline: 2px solid #ffd27a;
+  outline-offset: 2px;
+}
+
 .combat-log {
   display: flex;
   flex-direction: column;

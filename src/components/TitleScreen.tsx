@@ -9,12 +9,14 @@ interface TitleScreenProps {
   hasCorruptAutosave: boolean;
   autoBattleSafety: boolean;
   instantCombatLog: boolean;
+  confirmRound: boolean;
   onNewGame: () => void;
   onContinue: () => void;
   onToggleConfig: () => void;
   onChangeLocale: (locale: Locale) => void;
   onToggleAutoBattleSafety: (enabled: boolean) => void;
   onToggleInstantCombatLog: (enabled: boolean) => void;
+  onToggleConfirmRound: (enabled: boolean) => void;
 }
 
 // The pre-game title + config screen (extracted verbatim from App's render).
@@ -27,12 +29,14 @@ export function TitleScreen({
   hasCorruptAutosave,
   autoBattleSafety,
   instantCombatLog,
+  confirmRound,
   onNewGame,
   onContinue,
   onToggleConfig,
   onChangeLocale,
   onToggleAutoBattleSafety,
-  onToggleInstantCombatLog
+  onToggleInstantCombatLog,
+  onToggleConfirmRound
 }: TitleScreenProps) {
   return (
     <section className="title-screen" aria-labelledby="title-heading">
@@ -83,6 +87,15 @@ export function TitleScreen({
               onChange={(event) => onToggleInstantCombatLog(event.target.checked)}
             />
             {t("config.instantCombatLog")}
+          </label>
+          <label className="config-toggle">
+            <input
+              type="checkbox"
+              data-testid="config-confirm-round"
+              checked={confirmRound}
+              onChange={(event) => onToggleConfirmRound(event.target.checked)}
+            />
+            {t("config.confirmRound")}
           </label>
         </section>
       )}

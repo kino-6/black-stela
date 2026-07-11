@@ -8,6 +8,10 @@ export async function startNewExpedition(page: Page) {
   // covered by combat-regression.spec.ts, which drives combat directly.
   await page.addInitScript(() => {
     window.localStorage.setItem("black-stela:settings:instant-combat-log", "on");
+    // Navigation tests drive the menu to victory; keep the classic auto-resolve
+    // (no confirm step) so the fight loop matches the helper. The confirm step is
+    // covered separately in combat-regression.spec.ts.
+    window.localStorage.setItem("black-stela:settings:confirm-round", "off");
   });
   await page.goto("/");
   await page.getByRole("button", { name: "New expedition" }).click();
@@ -141,19 +145,30 @@ export async function registerAdventurer(
 // descends command→target/spell or queues an actor; the round auto-resolves after
 // the last actor.
 export async function resolveVisibleCombat(page: Page) {
-  // Language-agnostic: wait for the command menu (testid), then Enter the focused row.
+  // Language-agnostic and robust to the confirm step (default ON) and the beat
+  // playback (default ON): drive the menu, press the confirm "Fight" button when it
+  // appears, and wait through playback. Combat has truly ended only when the dungeon
+  // dock is back — the menu also unmounts transiently during confirm/playback.
   await expect(page.getByTestId("combat-command-menu")).toBeVisible();
 
-  for (let step = 0; step < 80; step += 1) {
-    if ((await page.getByTestId("combat-command-menu").count()) === 0) {
-      return; // combat ended — the menu unmounted
+  for (let step = 0; step < 300; step += 1) {
+    if ((await page.getByTestId("dungeon-command-window").count()) > 0) {
+      return; // combat ended — back in the dungeon
     }
-    // The selected row keeps focus (roving tabindex); Enter activates it.
-    await page.keyboard.press("Enter").catch(() => {});
-    await page.waitForTimeout(50).catch(() => {});
+    const menu = page.getByTestId("combat-command-menu");
+    const confirm = page.getByTestId("combat-confirm-round");
+    if ((await menu.count()) > 0) {
+      await menu.focus().catch(() => {});
+      await page.keyboard.press("Enter").catch(() => {});
+    } else if ((await confirm.count()) > 0) {
+      await page.getByTestId("combat-confirm-execute").focus().catch(() => {});
+      await page.keyboard.press("Enter").catch(() => {});
+    }
+    // else: a round is playing out — just wait for it to finish.
+    await page.waitForTimeout(60).catch(() => {});
   }
 
-  await expect(page.getByTestId("combat-command-menu")).toHaveCount(0);
+  await expect(page.getByTestId("dungeon-command-window")).toBeVisible();
 }
 
 // B1F is a maze (see scripts/genFloorMaze.mjs, seed 20250709). Navigation replays

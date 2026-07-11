@@ -89,6 +89,10 @@ test("a declared round PLAYS OUT on the battlefield with a floating damage numbe
     if ((await menu.count()) > 0) {
       await menu.focus().catch(() => {});
       await page.keyboard.press("Enter");
+    } else if ((await page.getByTestId("combat-confirm-round").count()) > 0) {
+      // Confirm step (default ON): the "Fight" button is auto-focused — press it.
+      await page.getByTestId("combat-confirm-execute").focus().catch(() => {});
+      await page.keyboard.press("Enter");
     }
     if ((await page.getByTestId("hit-number").count()) > 0) {
       sawHitNumber = true;
@@ -106,6 +110,27 @@ test("a declared round PLAYS OUT on the battlefield with a floating damage numbe
   const toggle = page.getByTestId("config-instant-combat-log");
   await expect(toggle).toBeVisible();
   await expect(toggle).not.toBeChecked();
+});
+
+test("after all orders are set, a confirm step gates the round (default ON) (#72)", async ({ page }) => {
+  await enterCombat(page);
+  const menu = page.getByTestId("combat-command-menu");
+  // Command every actor; the round must NOT auto-start — a confirm step appears.
+  for (let step = 0; step < 40 && (await page.getByTestId("combat-confirm-round").count()) === 0; step += 1) {
+    if ((await menu.count()) > 0) {
+      await menu.focus().catch(() => {});
+      await page.keyboard.press("Enter");
+    }
+    if ((await page.getByTestId("dungeon-command-window").count()) > 0) break;
+    await page.waitForTimeout(50);
+  }
+  await expect(page.getByTestId("combat-confirm-round")).toBeVisible();
+  await expect(page.getByTestId("combat-confirm-execute")).toBeVisible();
+
+  // It defaults to ON (you entered commands deliberately).
+  await page.goto("/");
+  await page.getByRole("button", { name: "Config" }).click();
+  await expect(page.getByTestId("config-confirm-round")).toBeChecked();
 });
 
 test("auto-battle safety stops are a Config toggle (off by default)", async ({ page }) => {

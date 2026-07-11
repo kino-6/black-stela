@@ -102,9 +102,11 @@ import { LocalStorageSaveRepository, type SaveSlotSummary } from "./services/sav
 import { createTranslator, type Locale, type Translator } from "./i18n";
 import {
   loadAutoBattleSafety,
+  loadConfirmRound,
   loadInstantCombatLog,
   loadLocale,
   saveAutoBattleSafety,
+  saveConfirmRound,
   saveInstantCombatLog,
   saveLocale as persistLocale
 } from "./services/settingsRepository";
@@ -152,6 +154,7 @@ export function App() {
   const [locale, setLocale] = useState<Locale>(() => loadLocale());
   const [autoBattleSafety, setAutoBattleSafety] = useState<boolean>(() => loadAutoBattleSafety());
   const [instantCombatLog, setInstantCombatLog] = useState<boolean>(() => loadInstantCombatLog());
+  const [confirmRound, setConfirmRound] = useState<boolean>(() => loadConfirmRound());
   const [revealedBeats, setRevealedBeats] = useState(0);
   const t = useMemo(() => createTranslator(locale), [locale]);
   const [saveSlotId, setSaveSlotId] = useState(AUTO_SAVE_SLOT);
@@ -562,9 +565,11 @@ export function App() {
   function queueCombatOrder(order: CombatActionDeclaration) {
     const nextOrders = [...combatOrders.filter((queued) => queued.actorId !== order.actorId), order];
     const allQueued = activeParty.length > 0 && activeParty.every((member) => nextOrders.some((queued) => queued.actorId === member.id));
-    if (allQueued) {
+    if (allQueued && !confirmRound) {
       resolveRound(nextOrders);
     } else {
+      // With confirm ON (default) the full set of orders waits for an explicit
+      // "戦う" — you entered them deliberately, so a confirm beat is the default.
       setCombatOrders(nextOrders);
     }
   }
@@ -1090,6 +1095,11 @@ export function App() {
           onToggleInstantCombatLog={(enabled) => {
             setInstantCombatLog(enabled);
             saveInstantCombatLog(enabled);
+          }}
+          confirmRound={confirmRound}
+          onToggleConfirmRound={(enabled) => {
+            setConfirmRound(enabled);
+            saveConfirmRound(enabled);
           }}
         />
       )}
@@ -2293,6 +2303,34 @@ export function App() {
                       onQueueItem={menuQueueItem}
                       onUndo={takeBackCombatOrder}
                     />
+                  )}
+                  {combatOrdersReady && confirmRound && !playback && (
+                    <div
+                      className="combat-command-menu combat-confirm"
+                      data-testid="combat-confirm-round"
+                      data-controller-active="true"
+                      data-controller-surface="combat-menu"
+                      onKeyDown={(event) => {
+                        const key = event.key.toLowerCase();
+                        if (key === "escape" || key === "backspace" || key === "a") {
+                          event.preventDefault();
+                          takeBackCombatOrder();
+                        }
+                      }}
+                    >
+                      <p className="combat-command-menu-head">{t("play.confirmRoundPrompt")}</p>
+                      <button
+                        type="button"
+                        className="combat-confirm-button"
+                        data-testid="combat-confirm-execute"
+                        ref={(node) => node?.focus()}
+                        onClick={executeCombatOrders}
+                      >
+                        {t("play.executeRound")}
+                        <kbd className="key-hint">Enter</kbd>
+                      </button>
+                      <p className="combat-command-menu-hint">{t("play.confirmRoundHint")}</p>
+                    </div>
                   )}
                   <CombatCommandDock
                     t={t}
