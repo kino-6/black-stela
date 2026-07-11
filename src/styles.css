@@ -2015,9 +2015,13 @@ textarea {
   z-index: 1;
 }
 
+/* "You are here" paints the FLOOR gold, clipped to the padding box so it never
+   bleeds under the wall borders — the walls stay their own bright stone colour and
+   remain legible instead of being overwritten by the highlight. */
 .mini-map-cell.current {
   background: #d9b968;
-  box-shadow: 0 0 0 2px rgba(240, 213, 142, 0.35), 0 0 16px rgba(213, 181, 109, 0.5);
+  background-clip: padding-box;
+  box-shadow: 0 0 16px rgba(213, 181, 109, 0.5);
   z-index: 2;
 }
 
@@ -2035,12 +2039,8 @@ textarea {
 .mini-map-cell.edge-south-wall { border-bottom-color: #b3bfa0; }
 .mini-map-cell.edge-west-wall { border-left-color: #b3bfa0; }
 
-/* On the bright "you are here" cell, walls are drawn dark so they stay legible
-   against the highlight instead of washing out. */
-.mini-map-cell.current.edge-north-wall { border-top-color: #241d04; }
-.mini-map-cell.current.edge-east-wall { border-right-color: #241d04; }
-.mini-map-cell.current.edge-south-wall { border-bottom-color: #241d04; }
-.mini-map-cell.current.edge-west-wall { border-left-color: #241d04; }
+/* The "you are here" cell keeps the SAME bright stone walls as every other cell
+   (the gold now fills only the floor, so walls no longer wash out). */
 
 /* Open passages: no border, so connected cells read as one corridor. */
 .mini-map-cell.edge-north-open { border-top-color: transparent; }
@@ -2128,23 +2128,25 @@ textarea {
   filter: drop-shadow(0 0 2px rgba(12, 8, 4, 1)) drop-shadow(0 0 1px rgba(255, 240, 200, 0.9));
 }
 
+/* A thin, elongated arrowhead (narrow base, long point) so the facing direction is
+   unmistakable — the old near-equilateral triangle read as "just a triangle". */
 .mini-map-facing.facing-north {
-  border-width: 0 0.46rem 0.74rem;
+  border-width: 0 0.24rem 0.82rem;
   border-color: transparent transparent #e8241a;
 }
 
 .mini-map-facing.facing-east {
-  border-width: 0.46rem 0 0.46rem 0.74rem;
+  border-width: 0.24rem 0 0.24rem 0.82rem;
   border-color: transparent transparent transparent #e8241a;
 }
 
 .mini-map-facing.facing-south {
-  border-width: 0.74rem 0.46rem 0;
+  border-width: 0.82rem 0.24rem 0;
   border-color: #e8241a transparent transparent;
 }
 
 .mini-map-facing.facing-west {
-  border-width: 0.46rem 0.74rem 0.46rem 0;
+  border-width: 0.24rem 0.82rem 0.24rem 0;
   border-color: transparent #e8241a transparent transparent;
 }
 
