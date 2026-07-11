@@ -1,9 +1,10 @@
 import * as THREE from "three";
-import returnMarkerTextureUrl from "../assets/dungeon/return-marker.png";
-import stoneFloorTextureUrl from "../assets/dungeon/stone-floor.jpg";
-import stoneWallTextureUrl from "../assets/dungeon/stone-wall.jpg";
-import woodDoorTextureUrl from "../assets/dungeon/wood-door.jpg";
-import { dungeonBlockTextureUrls, getEnemySpriteTextureUrl } from "../ui/artAssets";
+import { asset, dungeonBlockTextureUrls, getEnemySpriteTextureUrl } from "../ui/artAssets";
+
+const returnMarkerTextureUrl = asset("return-marker");
+const stoneFloorTextureUrl = asset("stone-floor");
+const stoneWallTextureUrl = asset("stone-wall");
+const woodDoorTextureUrl = asset("wood-door");
 import type { EnemyElevation } from "../domain/types";
 
 // Geometry distinguishes stairs from a plain opening; the view model keeps the

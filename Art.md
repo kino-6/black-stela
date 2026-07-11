@@ -147,9 +147,18 @@ Notes from rejected attempts:
 
 ## 2. Technical conventions
 
-**Formats & placement.** Dungeon art lives in `src/assets/dungeon/` and is
-imported directly (`import url from "../assets/dungeon/foo.png"`). Add new files
-there and wire them in `src/components/dungeonScene.ts`.
+**Formats & placement (as of 2026-07 all art is externalized to content).** Every
+asset lives under **`content/worlds/default/assets/`** — subfolders `dungeon/`,
+`icons/`, `portraits/`, `minimap/`, `title/`, `ui/` — alongside the rest of the
+scenario data, NOT in `src/`. A single glob in `src/ui/artAssets.ts` pulls every
+file through Vite (hashed/bundled), keyed by **file basename** (no extension). To
+add or replace art: drop the file in the right `content/.../assets/` subfolder and,
+if it's a new id, point a map entry in `artAssets.ts` at its basename. The map's key
+is the catalog/enemy id; by convention the **basename = the id with dots→dashes**
+(e.g. `equip.steel-sabre` → `icons/equip-steel-sabre.png`). Enemy sprites, block
+textures, portraits, and CSS-referenced art (minimap markers, title, combat
+vignette) all resolve the same way. Codex should generate files into these
+`content/` folders using these basenames.
 
 | Kind | Format | Size | Transparency | Notes |
 |------|--------|------|--------------|-------|
@@ -189,7 +198,7 @@ feature will read as an obvious grid. Keep them even and non-directional.
 
 ## 3. Current inventory (what already exists)
 
-`src/assets/` — **59 assets total**:
+`content/worlds/default/assets/` — **59 assets total**:
 
 | File | Size | Use | Gap it leaves |
 |------|------|-----|---------------|
@@ -218,7 +227,7 @@ All 11 authored enemies now have their own camera-facing sprite. Keep future
 retakes in the same format: **PNG RGBA, 768×512 (3:2), flat-lit, single creature
 centered & bottom-weighted, clean alpha, neutral studio lighting, readable local
 material color, no baked torchlight.**
-File → `src/assets/dungeon/<id-without-prefix>.png`, wired per-enemy in
+File → `content/worlds/default/assets/dungeon/<id-without-prefix>.png`, wired per-enemy in
 `dungeonScene.ts` through the enemy-id → texture map.
 
 | # | id | Name (EN / 日本語) | Tier | Role | Prompt seed |
@@ -257,7 +266,7 @@ The dungeon now uses a wall/floor pair per block (door stays shared).
 
 12 origin **backgrounds**, each with a `portraitKey`. **Format: 512×512
 (1:1), painterly bust, neutral dark background, weathered adventurer.** These are
-generic "origin" portraits, not per-character. File → `src/assets/portraits/<key>.png`
+generic "origin" portraits, not per-character. File → `content/worlds/default/assets/portraits/<key>.png`
 (fallback stays for player-imported portraits).
 
 | portraitKey | Background (id) | Flavor |
@@ -279,7 +288,7 @@ generic "origin" portraits, not per-character. File → `src/assets/portraits/<k
 
 Inventory, shop, and equipment actions now show icons. **Format: PNG RGBA
 256×256, single centered object, painterly, warm rim light.** File →
-`src/assets/icons/<id>.png`.
+`content/worlds/default/assets/icons/<id>.png`.
 
 **TODO (added 2026-07-11):** two reach weapons need real icons — `equip.short-bow`
 (短弓, a stub recurve bow) and `equip.long-spear` (長柄槍, a long pike/spear). They
@@ -397,6 +406,36 @@ Wiring target: `activeBeat` in `App.tsx` already exposes `kind`,
 `targetGroupId`/`targetCharacterId`, and `damage` per beat — an FX layer can key
 off it with no domain change. Keep frames short (≤ the ~430ms/beat cadence, ~300ms
 at ×2) so playback never drags.
+
+## 9. Assets to generate (Codex request list)
+
+These ship today as **placeholders that reuse existing art** (so the catalog-icon
+Gate stays green), and want real art. Generate each into
+`content/worlds/default/assets/<subfolder>/<basename>.<ext>` using the conventions
+in §2 (icons: 256×256 PNG RGBA, centered single object; sprites: PNG RGBA on a
+chroma-key bg then extracted). Filenames MUST match these basenames — they are what
+`src/ui/artAssets.ts` maps to. No code change needed once the file is dropped in.
+
+### P9 — combat hit FX (currently CSS-only; see §7)
+Sprite sheets, transparent PNG, ~96px/frame, into `assets/ui/`:
+- `fx-slash` (3–5 frames): a physical slash/impact burst for `kind:"hit"`.
+- `fx-spark` (3–5 frames): a fire/arcane burst for `kind:"cast"`.
+- Optional per-enemy 2nd frame: a hurt-flash + defeat/dissolve pose (drop as
+  `dungeon/<enemy>-hurt.png` and we'll wire a beat frame).
+
+### P10 — equipment icons (`assets/icons/`, 256×256 PNG RGBA)
+Reach weapons: `equip-short-bow`, `equip-long-spear`. Tier-2 line:
+`equip-steel-sabre`, `equip-war-spear`, `equip-hunting-bow`, `equip-rune-staff`,
+`equip-scale-mail`, `equip-war-helm`, `equip-steel-gauntlets`, `equip-tower-shield`.
+Effect accessories: `equip-vitality-charm` (life/HP), `equip-focus-band` (MP/mind),
+`equip-antivenom-ring` (poison-cure stone), `equip-dreamward-amulet` (sleep/fear
+ward), `equip-swift-anklet` (speed). Tier-3 capstones: `equip-knight-plate`,
+`equip-warlord-blade`. Match the muted ash/iron palette of the existing icons.
+
+### P11 — consumable icons (`assets/icons/`, 256×256 PNG RGBA)
+`item-greater-draught` (richer heal potion), `item-antidote` (green vial),
+`item-clarity-draught` (clear/blue vial), `item-calm-draught` (pale vial),
+`item-spirit-tonic` (luminous MP tonic). Same bottle family as `item-healing-draught`.
 
 ## 8. Retake queue (post-integration review)
 

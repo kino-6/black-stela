@@ -2080,39 +2080,39 @@ textarea {
 }
 
 .mini-map-marker.marker-return {
-  background-image: url("./assets/minimap/marker-return.png");
+  background-image: url("../content/worlds/default/assets/minimap/marker-return.png");
 }
 
 .mini-map-marker.marker-stairs {
-  background-image: url("./assets/minimap/marker-stairs.png");
+  background-image: url("../content/worlds/default/assets/minimap/marker-stairs.png");
 }
 
 .mini-map-marker.marker-spinner {
-  background-image: url("./assets/minimap/marker-spinner.png");
+  background-image: url("../content/worlds/default/assets/minimap/marker-spinner.png");
 }
 
 .mini-map-marker.marker-teleporter {
-  background-image: url("./assets/minimap/marker-teleporter.png");
+  background-image: url("../content/worlds/default/assets/minimap/marker-teleporter.png");
 }
 
 .mini-map-marker.marker-hazard {
-  background-image: url("./assets/minimap/marker-hazard.png");
+  background-image: url("../content/worlds/default/assets/minimap/marker-hazard.png");
 }
 
 .mini-map-marker.marker-gather {
-  background-image: url("./assets/minimap/marker-gather.png");
+  background-image: url("../content/worlds/default/assets/minimap/marker-gather.png");
 }
 
 .mini-map-marker.marker-event {
-  background-image: url("./assets/minimap/marker-event.png");
+  background-image: url("../content/worlds/default/assets/minimap/marker-event.png");
 }
 
 .mini-map-marker.marker-treasure {
-  background-image: url("./assets/minimap/marker-treasure.png");
+  background-image: url("../content/worlds/default/assets/minimap/marker-treasure.png");
 }
 
 .mini-map-marker.marker-trap {
-  background-image: url("./assets/minimap/marker-trap.png");
+  background-image: url("../content/worlds/default/assets/minimap/marker-trap.png");
 }
 
 /* Facing arrow: a large red arrow, dark-outlined for contrast on the gold cell. */
@@ -2224,7 +2224,7 @@ textarea {
   background:
     linear-gradient(90deg, rgba(3, 4, 3, 0.94) 0%, rgba(5, 6, 5, 0.78) 28%, rgba(5, 6, 5, 0.2) 62%),
     linear-gradient(0deg, rgba(3, 4, 3, 0.82) 0%, rgba(3, 4, 3, 0.08) 55%),
-    url("./assets/title/black-stela-title.jpg") center / cover no-repeat,
+    url("../content/worlds/default/assets/title/black-stela-title.jpg") center / cover no-repeat,
     #030403;
 }
 
@@ -3704,7 +3704,7 @@ textarea {
 .combat-command-window {
   background:
     linear-gradient(180deg, rgba(7, 8, 6, 0.88), rgba(7, 8, 6, 0.82)),
-    url("./assets/ui/combat-vignette.jpg") center / cover no-repeat,
+    url("../content/worlds/default/assets/ui/combat-vignette.jpg") center / cover no-repeat,
     #080906;
 }
 
