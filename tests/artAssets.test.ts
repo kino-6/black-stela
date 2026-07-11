@@ -6,9 +6,12 @@ import { scenarioWorldSchema } from "../src/domain/scenario";
 // are build-time-glob facts, so they assert against the bundled default pack.
 describe("art resolver", () => {
   it("falls back to the placeholder icon when an id has no own-basename file", () => {
-    // equip.steel-sabre has no icons/equip-steel-sabre.png yet, so it resolves via
-    // ICON_PLACEHOLDER -> the existing equip-militia-sabre icon.
-    expect(catalogIconUrl("equip.steel-sabre")).toBe(asset("equip-militia-sabre"));
+    // equip.warlord-blade has no icons/equip-warlord-blade.png yet, so it resolves
+    // via ICON_PLACEHOLDER -> the existing equip-militia-sabre icon. (If real art is
+    // later dropped in as equip-warlord-blade.png, own-basename-first will correctly
+    // win and this test should be pointed at another still-placeholdered id — that
+    // flip IS the drop-in contract working.)
+    expect(catalogIconUrl("equip.warlord-blade")).toBe(asset("equip-militia-sabre"));
   });
 
   it("uses the own-basename file (id dots->dashes) in preference to any placeholder", () => {
