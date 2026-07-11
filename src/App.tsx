@@ -331,6 +331,8 @@ export function App() {
     () => state.party.filter((member) => getMemberRecoveryCost(member) > 0),
     [state.party]
   );
+  // A scenario may ship no shop at all — town service degrades gracefully rather
+  // than crashing (townShop can be undefined).
   const townShop = activeWorld.shops.find((shop) => shop.id === "shop.stela-general") ?? activeWorld.shops[0];
   const draftPreview = useMemo(() => createGuildCharacter({
     ...draft,
@@ -344,8 +346,8 @@ export function App() {
   const selectedProfile = state.party.find((member) => member.id === selectedProfileId) ?? state.party[0] ?? draftPreview;
   const selectedProfileStats = getEffectiveCharacterStats(selectedProfile, activeWorld);
   const availableShopCategories = useMemo(
-    () => SHOP_CATEGORY_ORDER.filter((category) => (townShop.stock ?? []).some((stock) => shopCategoryFor(stock.itemId) === category)),
-    [townShop.stock]
+    () => SHOP_CATEGORY_ORDER.filter((category) => (townShop?.stock ?? []).some((stock) => shopCategoryFor(stock.itemId) === category)),
+    [townShop?.stock]
   );
   const activeShopCategory: ShopCategory = availableShopCategories.includes(shopCategory)
     ? shopCategory
