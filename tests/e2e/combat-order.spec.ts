@@ -12,6 +12,8 @@ test("full-party combat starts command entry on the front row", async ({ page })
   await page.keyboard.press("ArrowUp");
   await expect(page.getByTestId("combat-command-window")).toBeVisible();
 
-  const firstActor = await page.getByTestId("combat-actor").locator("strong").first().textContent();
+  // The party strip renders the front group first, so the first token — the active
+  // actor — must be a front-row member (never a back-row caster).
+  const firstActor = await page.getByTestId("combat-actor").locator(".pt-name").first().textContent();
   expect(["Rook", "Vale", "Bran"]).toContain((firstActor ?? "").trim());
 });

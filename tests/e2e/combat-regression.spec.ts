@@ -112,6 +112,18 @@ test("a declared round PLAYS OUT on the battlefield with a floating damage numbe
   await expect(toggle).not.toBeChecked();
 });
 
+test("combat is a three-zone layout: enemy stage, one party strip, no side windows", async ({ page }) => {
+  await enterCombat(page);
+  // The enemy lives ON the stage (a large figure over the 3D view), not a side list.
+  await expect(page.locator(".enemy-stage").getByTestId("combat-enemy-group").first()).toBeVisible();
+  // The six members are ONE compact strip, not six big cards / a formation panel.
+  await expect(page.getByTestId("party-strip")).toBeVisible();
+  await expect(page.getByTestId("combat-actor")).toHaveCount(6);
+  // The old separate enemy-list / formation windows are gone.
+  await expect(page.getByRole("heading", { name: /Enemy groups|敵群/ })).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: /Party formation|隊列/ })).toHaveCount(0);
+});
+
 test("after all orders are set, a confirm step gates the round (default ON) (#72)", async ({ page }) => {
   await enterCombat(page);
   const menu = page.getByTestId("combat-command-menu");

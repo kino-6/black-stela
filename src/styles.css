@@ -2430,9 +2430,200 @@ textarea {
   min-height: 0;
 }
 
+/* Three-zone combat layout (see .claude/skills/combat-ui-drpg): a single responsive
+   column — Enemy stage (dominant) / Party strip / Command zone. Overrides the old
+   grid so the enemy owns the screen and the rail clutter is gone. */
 .combat-cockpit {
-  grid-template-rows: auto auto minmax(0, 1fr);
-  gap: 0.45rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-height: 0;
+  height: 100%;
+}
+
+/* Zone 1: enemy stage — the 3D view as backdrop with large enemy figures over it. */
+.enemy-stage {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 12rem;
+  border: 1px solid #2a2c27;
+  border-radius: 4px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.enemy-stage-backdrop {
+  position: absolute;
+  inset: 0;
+}
+
+.enemy-stage-backdrop .dungeon-view,
+.enemy-stage-backdrop .dungeon-canvas {
+  height: 100%;
+  min-height: 0;
+}
+
+.enemy-stage-figures {
+  position: relative;
+  z-index: 2;
+  margin-top: auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: center;
+  gap: clamp(0.5rem, 2vw, 1.5rem);
+  padding: 0.6rem;
+}
+
+.enemy-figure {
+  position: relative;
+  min-width: clamp(7rem, 18vw, 11rem);
+  max-width: 14rem;
+  padding: 0.35rem 0.6rem;
+  border: 1px solid #3b4138;
+  border-radius: 4px;
+  background: rgba(8, 9, 7, 0.72);
+  backdrop-filter: blur(2px);
+  text-align: center;
+}
+
+.enemy-figure.selected {
+  border-color: #ffd27a;
+  box-shadow: 0 0 0 1px #ffd27a, 0 0 14px rgba(255, 210, 122, 0.35);
+}
+
+.enemy-figure.defeated {
+  opacity: 0.4;
+  text-decoration: line-through;
+}
+
+.enemy-figure-name {
+  display: block;
+  font-size: clamp(0.95rem, 2.4vw, 1.25rem);
+  font-weight: 700;
+  color: #f0e6cf;
+}
+
+.enemy-figure-count {
+  color: #b8a06a;
+  font-size: 0.85em;
+}
+
+.enemy-hp {
+  height: 0.4rem;
+  margin: 0.3rem 0 0.2rem;
+  border-radius: 0.2rem;
+  background: rgba(255, 255, 255, 0.12);
+  overflow: hidden;
+}
+
+.enemy-hp-fill {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, #a83232, #d86b4a);
+  transition: width 0.25s ease;
+}
+
+.enemy-figure-status {
+  font-size: 0.72rem;
+  color: #9aa08e;
+}
+
+.stage-caption {
+  position: relative;
+  z-index: 2;
+  margin: 0;
+  padding: 0.3rem 0.6rem;
+  font-size: 0.82rem;
+  color: #e7dcc2;
+  background: linear-gradient(0deg, rgba(8, 9, 7, 0.85), rgba(8, 9, 7, 0));
+}
+
+/* Zone 2: party strip — one thin responsive row, front group | back group. */
+.party-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 0.8rem;
+  padding: 0.4rem 0.5rem;
+  border: 1px solid #2a2c27;
+  border-radius: 4px;
+  background: #0c0d0b;
+}
+
+.party-strip-group {
+  display: flex;
+  flex: 1 1 auto;
+  gap: 0.35rem;
+  align-items: stretch;
+}
+
+.party-strip-group[data-row="back"] {
+  border-left: 1px dashed #2f332b;
+  padding-left: 0.6rem;
+}
+
+.party-token-combat {
+  position: relative;
+  flex: 1 1 0;
+  min-width: 5.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.3rem 0.4rem;
+  border: 1px solid #2f332b;
+  border-radius: 3px;
+  background: #131612;
+}
+
+.party-token-combat.active {
+  border-color: #ffd27a;
+  box-shadow: 0 0 0 1px #ffd27a;
+}
+
+.party-token-combat.ordered {
+  border-color: #4f7d4a;
+}
+
+.party-token-combat.down {
+  opacity: 0.45;
+}
+
+.party-token-combat .pt-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.3rem;
+}
+
+.party-token-combat .pt-name {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #efe6d0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.party-token-combat .pt-pip {
+  color: #b8a06a;
+  font-size: 0.8rem;
+}
+
+.party-token-combat .pt-hp-text {
+  font-size: 0.66rem;
+  color: #9aa08e;
+}
+
+.combat-order-progress {
+  font-size: 0.72rem;
+  color: #8a8f82;
+}
+
+@media (max-width: 720px) {
+  .party-strip-group {
+    flex-basis: 100%;
+  }
 }
 
 .combat-cockpit .scene-deck {
@@ -2822,8 +3013,10 @@ textarea {
   margin-top: 0.1rem;
   outline: none;
   /* Fixed height so command → target / spell submenu swaps never resize the panel
-     (#68). Longer lists (multi-group targets) scroll inside the list area below. */
+     (#68). Longer lists (multi-group targets) scroll inside the list area below.
+     flex:none keeps 12rem in the flex-column combat layout (no shrink). */
   height: 12rem;
+  flex: 0 0 auto;
   display: flex;
   flex-direction: column;
 }
@@ -3420,15 +3613,12 @@ textarea {
   overflow: hidden;
 }
 
+/* Three-zone combat layout: single responsive column (Enemy stage / Party strip /
+   Command zone). Replaces the old scene|rail two-column grid. */
 .combat-cockpit {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) clamp(17rem, 24vw, 22rem);
-  grid-template-rows: minmax(0, 1fr) auto auto;
-  grid-template-areas:
-    "scene   rail"
-    "message rail"
-    "command command";
-  gap: 0.6rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
   height: 100%;
   min-height: 0;
 }

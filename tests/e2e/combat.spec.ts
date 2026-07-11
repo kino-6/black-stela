@@ -8,8 +8,7 @@ test("resolves combat through the nested command menu", async ({ page }) => {
   await page.getByRole("button", { name: "Move" }).click();
 
   await expect(page.getByLabel("Battle screen")).toBeVisible();
-  await expect(page.getByText("Round 1")).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Enemy groups" })).toBeVisible();
+  // The enemy is the stage: a large figure with its name + HP, not a text list.
   await expect(page.getByTestId("combat-enemy-group")).toContainText("Ash Slime");
 
   // The per-actor input is a command MENU (not a flat button toolbar): a heading for
@@ -41,8 +40,9 @@ test("six-member party keeps front and back rows visible; the menu does not refl
   await page.getByRole("button", { name: "Move" }).click();
 
   await expect(page.getByLabel("Battle screen")).toBeVisible();
-  await expect(page.getByTestId("combat-front-row")).toContainText("Front row");
-  await expect(page.getByTestId("combat-back-row")).toContainText("Back row");
+  // The six members are one compact strip: three front, three back, no reflow.
+  await expect(page.getByTestId("combat-front-row").getByTestId("combat-actor")).toHaveCount(3);
+  await expect(page.getByTestId("combat-back-row").getByTestId("combat-actor")).toHaveCount(3);
   await expect(page.getByTestId("combat-actor")).toHaveCount(6);
 
   // #68: descending command → target submenu must not resize the menu panel (its

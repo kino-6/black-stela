@@ -16,6 +16,8 @@ import { DungeonCommandDock } from "./components/DungeonCommandDock";
 import { CombatCommandDock } from "./components/CombatCommandDock";
 import { CombatCommandMenu } from "./components/CombatCommandMenu";
 import { CombatLog } from "./components/CombatLog";
+import { CombatEnemyStage } from "./components/CombatEnemyStage";
+import { CombatPartyStrip } from "./components/CombatPartyStrip";
 import { RecoveryPanel } from "./components/RecoveryPanel";
 import { RecordsPanel } from "./components/RecordsPanel";
 import { TownEntryPanel } from "./components/TownEntryPanel";
@@ -2149,84 +2151,31 @@ export function App() {
                 </>
               ) : (
                 <>
-                  <div className="cockpit-scene">
-                    <DungeonView state={state} world={defaultWorld} label={t("play.dungeonView")} />
-                  </div>
-                  <aside className="cockpit-rail combat-rail" aria-label={t("play.partyFormation")}>
-                    <div className="battle-side enemy-side" aria-label={t("play.enemyGroups")}>
-                      <h3>{t("play.enemyGroups")}</h3>
-                      {displayedEnemyGroups.map((group) => {
-                        const beatHit = activeBeat?.targetGroupId === group.id;
-                        return (
-                          <div
-                            key={group.id}
-                            className={`battle-choice enemy-choice${group.id === selectedTarget?.id && !playback ? " selected" : ""}${beatHit ? " beat-hit" : ""}${group.count === 0 ? " defeated" : ""}`}
-                            data-testid="combat-enemy-group"
-                            role="listitem"
-                            aria-current={group.id === selectedTarget?.id && !playback ? "true" : undefined}
-                          >
-                            <strong>{localizedEnemyGroupName(group, locale)}</strong>
-                            <span>{formatEnemyGroupStatus(group, t)}</span>
-                            {beatHit && activeBeat?.damage != null && (
-                              <span className="hit-number" key={playback?.index} data-testid="hit-number">-{activeBeat.damage}</span>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                    <div className="battle-side formation-side" aria-label={t("play.partyFormation")}>
-                      <h3>{t("play.partyFormation")}</h3>
-                      {(["front", "back"] as const).map((row) => (
-                        <div className="battle-row" data-testid={`combat-${row}-row`} key={row}>
-                          <span>{row === "front" ? t("play.frontRow") : t("play.backRow")}</span>
-                          <div className="formation-slots">
-                            {displayedParty.filter((member) => member.row === row).map((member) => (
-                              <div
-                                role="listitem"
-                                key={member.id}
-                                className={`battle-choice ${member.id === selectedActor?.id && !playback ? "selected" : ""} ${
-                                  orderedActorIds.has(member.id) ? "ordered" : ""
-                                } ${activeBeat?.targetCharacterId === member.id ? "beat-hit" : ""}`}
-                                data-testid="combat-actor"
-                                aria-current={member.id === selectedActor?.id && !playback ? "step" : undefined}
-                              >
-                                <strong>{member.name}</strong>
-                                {activeBeat?.targetCharacterId === member.id && activeBeat?.damage != null && (
-                                  <span className="hit-number" key={playback?.index}>-{activeBeat.damage}</span>
-                                )}
-                                <span>
-                                  {t("play.actorStatus", { hp: member.hp, maxHp: member.maxHp })}
-                                  {member.maxMp > 0 && <> · {t("play.mpShort")} {member.mp}/{member.maxMp}</>}
-                                </span>
-                                <div
-                                  className={`stat-gauge hp-gauge${member.hp <= Math.ceil(member.maxHp * 0.35) ? " danger" : ""}`}
-                                  data-testid="combat-hp-gauge"
-                                  role="meter"
-                                  aria-valuenow={member.hp}
-                                  aria-valuemax={member.maxHp}
-                                  aria-label={`${member.name} HP`}
-                                >
-                                  <span className="stat-gauge-fill" style={{ width: `${Math.max(0, (member.hp / member.maxHp) * 100)}%` }} />
-                                </div>
-                                {member.maxMp > 0 && (
-                                  <div
-                                    className="stat-gauge mp-gauge"
-                                    data-testid="combat-mp-gauge"
-                                    role="meter"
-                                    aria-valuenow={member.mp}
-                                    aria-valuemax={member.maxMp}
-                                    aria-label={`${member.name} MP`}
-                                  >
-                                    <span className="stat-gauge-fill" style={{ width: `${Math.max(0, (member.mp / member.maxMp) * 100)}%` }} />
-                                  </div>
-                                )}
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </aside>
+                  <CombatEnemyStage
+                    backdrop={<DungeonView state={state} world={defaultWorld} label={t("play.dungeonView")} />}
+                    groups={displayedEnemyGroups}
+                    selectedTargetId={selectedTarget?.id}
+                    targetingActive={!playback}
+                    activeBeat={activeBeat}
+                    beatKey={playback?.index}
+                    locale={locale}
+                    t={t}
+                    caption={`${t("play.round", { round: state.combat?.round ?? 1 })} · ${
+                      selectedActor && selectedTarget
+                        ? t("play.selectedOrder", { actor: selectedActor.name, target: localizedEnemyGroupName(selectedTarget, locale) })
+                        : combatOrdersReady
+                          ? t("play.orderReady")
+                          : t("play.selectOrder")
+                    }`}
+                  />
+                  <CombatPartyStrip
+                    members={displayedParty}
+                    selectedActorId={playback ? undefined : selectedActor?.id}
+                    orderedActorIds={orderedActorIds}
+                    activeBeat={activeBeat}
+                    beatKey={playback?.index}
+                    t={t}
+                  />
                 </>
               )}
 
@@ -2237,38 +2186,16 @@ export function App() {
                 </div>
               ) : (
                 <div className="cockpit-message combat-message">
-                  <div className="battle-header">
-                    <strong>{t("play.round", { round: state.combat?.round ?? 1 })}</strong>
-                    <span>
-                      {selectedActor && selectedTarget
-                        ? t("play.selectedOrder", { actor: selectedActor.name, target: localizedEnemyGroupName(selectedTarget, locale) })
-                        : combatOrdersReady
-                          ? t("play.orderReady")
-                          : t("play.selectOrder")}
-                    </span>
-                  </div>
-                  <p className="event-window" aria-live="polite">{tempoStatus || latestLogText || "\u00a0"}</p>
+                  {tempoStatus && <p className="event-window" aria-live="polite">{tempoStatus}</p>}
                   <CombatLog
                     t={t}
                     beats={(playback ? playback.beats : combatBeats).map(formatBeatLine)}
                     revealed={playback ? playback.index + 1 : revealedBeats}
                     onAdvance={playback ? commitPlayback : () => setRevealedBeats(combatBeats.length)}
                   />
-                  <div className="battle-order" aria-label={t("play.battleOrder")}>
-                    <div className="battle-order-header">
-                      <h3>{t("play.battleOrder")}</h3>
-                      <span>{t("play.orderProgress", { ready: combatOrders.length, total: activeParty.length })}</span>
-                    </div>
-                    {combatOrders.length > 0 ? (
-                      <ol data-testid="combat-order-list">
-                        {combatOrders.map((order, index) => (
-                          <li key={`${order.actorId}:${index}`}>{formatCombatOrder(order, state, locale, t)}</li>
-                        ))}
-                      </ol>
-                    ) : (
-                      <span data-testid="combat-order-list">{t("play.orderEmpty")}</span>
-                    )}
-                  </div>
+                  <span className="combat-order-progress" data-testid="combat-order-list">
+                    {t("play.orderProgress", { ready: combatOrders.length, total: activeParty.length })}
+                  </span>
                 </div>
               )}
               {tempoMode !== "idle" && (
