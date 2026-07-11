@@ -9,6 +9,7 @@ interface MapPanelProps {
   world: ScenarioWorld;
   locale: Locale;
   t: Translator;
+  debugMode?: boolean;
 }
 
 const MINI_MAP_SIZE = 5;
@@ -36,7 +37,7 @@ interface MiniMapCell {
 
 const CLOSED_EDGES: Record<Direction, EdgeKind> = { north: "wall", east: "wall", south: "wall", west: "wall" };
 
-export function MapPanel({ state, world, locale, t }: MapPanelProps) {
+export function MapPanel({ state, world, locale, t, debugMode = false }: MapPanelProps) {
   const currentRoomId = state.map.currentRoomId ?? state.position?.roomId ?? null;
   const miniMap = useMemo(() => buildMiniMap(state, world, locale, currentRoomId), [state, world, locale, currentRoomId]);
   const facing = state.position?.facing ?? state.map.currentFacing ?? null;
@@ -55,7 +56,7 @@ export function MapPanel({ state, world, locale, t }: MapPanelProps) {
         <small>{t("map.current")}</small>
         <strong>{currentRoomId ? getLocalizedRoomText(world, currentRoomId, locale).name : t("map.town")}</strong>
       </div>
-      {state.map.floorId && (
+      {state.map.floorId && debugMode && (
         <div className="floor-coverage" data-testid="floor-coverage">
           {t("map.coverage", { percent: Math.round(floorExploredRatio(world, state) * 100) })}
         </div>

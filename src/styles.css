@@ -3614,26 +3614,66 @@ textarea {
 .cockpit-rail .party-hud {
   gap: 0.25rem;
   padding: 0.3rem;
+  /* All six tokens must stay reachable below the minimap; the area scrolls if the
+     viewport is short, and the tokens are trimmed hard so all six normally fit. */
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/* The class/title line lives in the roster/profile view — drop it in the rail so the
+   six combatants fit; keep name + level + HP/MP bars (what matters mid-crawl). */
+.cockpit-rail .party-token-heading small {
+  display: none;
 }
 
 .cockpit-rail .party-row-strip {
   gap: 0.15rem;
 }
 
+/* Lay the three tokens of each row side by side (front row / back row = two short
+   rows) so all six fit under the minimap without scrolling. Portraits drop out in
+   this tight grid — name + HP/気力 bars are what matters mid-crawl (portraits live
+   in the roster/profile view). */
 .cockpit-rail .party-row-slots {
-  gap: 0.25rem;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.3rem;
+}
+
+.cockpit-rail .party-token {
+  grid-template-columns: minmax(0, 1fr);
+  padding: 0.25rem 0.35rem;
+}
+
+.cockpit-rail .party-token-portrait {
+  display: none;
+}
+
+.cockpit-rail .party-token-stats {
+  grid-template-columns: minmax(0, 1fr);
+  font-size: 0.62rem;
+  gap: 0.02rem;
+}
+
+/* Short names (Rook, Vale…) — let them show/wrap rather than clip to "R…". */
+.cockpit-rail .party-token strong {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  font-size: 0.74rem;
+  line-height: 1.1;
 }
 
 .cockpit-rail .party-token {
   min-height: 0;
-  padding: 0.28rem 0.4rem;
-  grid-template-columns: 2.1rem minmax(0, 1fr);
-  gap: 0.45rem;
+  padding: 0.22rem 0.35rem;
+  grid-template-columns: 1.7rem minmax(0, 1fr);
+  gap: 0.4rem;
 }
 
 .cockpit-rail .party-token-portrait {
-  width: 2.1rem;
-  height: 2.1rem;
+  width: 1.7rem;
+  height: 1.7rem;
   min-height: 0;
 }
 

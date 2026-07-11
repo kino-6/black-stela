@@ -60,8 +60,12 @@ export function DungeonView({ state, world, label }: DungeonViewProps) {
     return buildDungeonScene(mountRef.current, {
       corridor,
       floorId: getFloorIdForRoom(world, state.position.roomId),
-      enemyId: state.phase === "combat" ? state.combat?.enemy.id ?? null : null,
-      enemyElevation: state.phase === "combat" ? state.combat?.enemy.elevation ?? "ground" : "ground",
+      enemies:
+        state.phase === "combat"
+          ? (state.combat?.enemyGroups ?? [])
+              .filter((group) => group.count > 0)
+              .map((group) => ({ id: group.enemyId, elevation: group.elevation }))
+          : [],
       showTrap: Boolean(room.trap) && !state.resolvedTraps.includes(room.trap!.id),
       returnMarker: room.stairsToTown ? (room.returnStyle === "stairs" ? "stairs" : "marker") : null,
       stairDescends,
@@ -70,8 +74,8 @@ export function DungeonView({ state, world, label }: DungeonViewProps) {
   }, [
     state.position,
     state.phase,
-    state.combat?.enemy.id,
-    state.combat?.enemy.elevation,
+    // Re-render when the living enemy line-up changes (types + which are still up).
+    state.combat?.enemyGroups.map((group) => `${group.enemyId}:${group.count > 0 ? 1 : 0}`).join(","),
     state.resolvedTraps,
     corridor,
     viewModel,

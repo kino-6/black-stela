@@ -24,10 +24,9 @@ export interface DungeonSceneInput {
   corridor: CorridorSegment[];
   /** Current dungeon floor id for block-specific wall/floor textures. */
   floorId: string | null;
-  /** Enemy id to draw ahead while in combat. */
-  enemyId: string | null;
-  /** Where the enemy sprite sits vertically: planted, mid-air, or high. */
-  enemyElevation?: EnemyElevation;
+  /** Enemy groups to draw ahead while in combat (one sprite per living group, so a
+   *  multi-type fight shows every kind). Empty when not in combat. */
+  enemies: { id: string; elevation?: EnemyElevation }[];
   /** Draw the hazard marker on the floor (armed trap in this room). */
   showTrap: boolean;
   /** Draw the town-return feature: the entrance stairway or the waystone. */
@@ -90,7 +89,6 @@ export function buildDungeonScene(mount: HTMLDivElement, input: DungeonSceneInpu
   const wallTexture = loadTexture(dungeonTextures.wall, [1.35, 1]);
   const floorTexture = loadTexture(dungeonTextures.floor, [2.1, 3.2]);
   const doorTexture = loadTexture(woodDoorTextureUrl);
-  const enemyTexture = input.enemyId ? loadTexture(getEnemySpriteTextureUrl(input.enemyId)) : null;
   const returnMarkerTexture = loadTexture(returnMarkerTextureUrl);
 
   const ambient = new THREE.AmbientLight("#9a9383", 1.7);
@@ -124,9 +122,6 @@ export function buildDungeonScene(mount: HTMLDivElement, input: DungeonSceneInpu
     emissive: "#3a0905",
     roughness: 0.5
   });
-  const enemyMaterial = enemyTexture
-    ? new THREE.SpriteMaterial({ map: enemyTexture, transparent: true, depthWrite: false })
-    : null;
   const enemyShadowMaterial = new THREE.MeshBasicMaterial({
     color: "#070504",
     transparent: true,
@@ -162,41 +157,47 @@ export function buildDungeonScene(mount: HTMLDivElement, input: DungeonSceneInpu
     }
   }
 
-  if (enemyMaterial) {
-    // Stand the enemy in the visible space ahead, ALWAYS in front of the nearest
-    // wall — a fixed depth would sink it behind a close dead-end wall (which sits
-    // near z=0), making it vanish. The closer it stands, the smaller it draws, and
-    // its feet always meet the floor plane so it never looks planted in the ground.
-    const elevation = input.enemyElevation ?? "ground";
-    const lift = elevation === "air" ? 1.7 : elevation === "mid" ? 0.9 : 0;
+  if (input.enemies.length > 0) {
+    // Stand the enemies in the visible space ahead, ALWAYS in front of the nearest
+    // wall — a fixed depth would sink them behind a close dead-end wall (near z=0),
+    // making them vanish. The closer they stand, the smaller they draw, and their
+    // feet always meet the floor plane. Multiple groups spread across the corridor
+    // (and shrink a touch) so every distinct enemy type is visible, not just one.
     const frontWallIndex = input.frontWallIndex ?? -1;
     const wallZ = frontWallIndex >= 0 ? -frontWallIndex * CELL : -Infinity;
-    // Default depth when the corridor runs on; otherwise sit ~1.4 in front of the wall.
     const enemyZ = frontWallIndex >= 0 ? Math.min(-1.4, Math.max(-2.82, wallZ + 1.4)) : -2.82;
     const distanceScale = Math.min(1, Math.max(0.55, Math.abs(enemyZ) / 2.82 + 0.12));
-    const scaleY = 2.82 * distanceScale;
-    const scaleX = 4.35 * distanceScale;
-    const feetY = 0.05; // just above the floor plane
+    const count = input.enemies.length;
+    const crowd = count > 1 ? 0.72 : 1; // shrink when several share the corridor
+    const spread = count > 1 ? 2.4 : 0; // horizontal gap between adjacent groups
+    const feetY = 0.05;
     const centerY = 0.38;
 
-    // A grounded or hovering enemy casts a contact shadow (fainter and smaller
-    // the higher it hovers); a true flyer leaves the floor beneath it clear.
-    if (elevation !== "air") {
-      const shadowScale = (elevation === "mid" ? 0.72 : 1) * distanceScale;
-      enemyShadowMaterial.opacity = elevation === "mid" ? 0.3 : 0.52;
-      const enemyShadow = new THREE.Mesh(new THREE.CircleGeometry(1.22, 32), enemyShadowMaterial);
-      enemyShadow.position.set(0, 0.035, enemyZ - 0.04);
-      enemyShadow.rotation.x = -Math.PI / 2;
-      enemyShadow.scale.set(1.85 * shadowScale, 0.55 * shadowScale, 1);
-      scene.add(enemyShadow);
-    }
+    input.enemies.forEach((group, index) => {
+      const texture = loadTexture(getEnemySpriteTextureUrl(group.id));
+      const material = new THREE.SpriteMaterial({ map: texture, transparent: true, depthWrite: false });
+      const elevation = group.elevation ?? "ground";
+      const lift = elevation === "air" ? 1.7 : elevation === "mid" ? 0.9 : 0;
+      const scaleY = 2.82 * distanceScale * crowd;
+      const scaleX = 4.35 * distanceScale * crowd;
+      const offsetX = (index - (count - 1) / 2) * spread;
 
-    const enemy = new THREE.Sprite(enemyMaterial);
-    enemy.center.set(0.5, centerY);
-    // Feet on the floor: position.y − centerY·scaleY = feetY, regardless of scale.
-    enemy.position.set(0, feetY + centerY * scaleY + lift, enemyZ);
-    enemy.scale.set(scaleX, scaleY, 1);
-    scene.add(enemy);
+      if (elevation !== "air") {
+        const shadowScale = (elevation === "mid" ? 0.72 : 1) * distanceScale * crowd;
+        enemyShadowMaterial.opacity = elevation === "mid" ? 0.3 : 0.52;
+        const enemyShadow = new THREE.Mesh(new THREE.CircleGeometry(1.22, 32), enemyShadowMaterial.clone());
+        enemyShadow.position.set(offsetX, 0.035, enemyZ - 0.04);
+        enemyShadow.rotation.x = -Math.PI / 2;
+        enemyShadow.scale.set(1.85 * shadowScale, 0.55 * shadowScale, 1);
+        scene.add(enemyShadow);
+      }
+
+      const enemy = new THREE.Sprite(material);
+      enemy.center.set(0.5, centerY);
+      enemy.position.set(offsetX, feetY + centerY * scaleY + lift, enemyZ);
+      enemy.scale.set(scaleX, scaleY, 1);
+      scene.add(enemy);
+    });
   }
 
   if (input.showTrap) {

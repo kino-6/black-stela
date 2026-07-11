@@ -2110,7 +2110,7 @@ export function App() {
                   </div>
                   <aside className="cockpit-rail" aria-label={t("play.partyStatus")}>
                     <div className="navigation-board" aria-label={t("map.heading")}>
-                      <MapPanel state={state} world={defaultWorld} locale={locale} t={t} />
+                      <MapPanel state={state} world={defaultWorld} locale={locale} t={t} debugMode={debugMode} />
                     </div>
                 <div className="party-hud" data-testid="party-hud" aria-label={t("play.partyStatus")}>
                   {(["front", "back"] as const).map((row) => (
