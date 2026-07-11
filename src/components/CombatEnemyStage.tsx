@@ -63,8 +63,16 @@ export function CombatEnemyStage({
                 <span className="enemy-hp-fill" style={{ width: `${hpPct}%` }} />
               </div>
               <span className="enemy-figure-status">{formatEnemyGroupStatus(group, t)}</span>
+              {hit && (
+                <>
+                  <span className="fx-flash" key={`f${beatKey}`} aria-hidden="true" />
+                  <span className={`fx-slash${activeBeat?.crit ? " crit" : ""}`} key={`s${beatKey}`} aria-hidden="true" />
+                </>
+              )}
               {hit && activeBeat?.damage != null && (
-                <span className="hit-number" key={beatKey} data-testid="hit-number">-{activeBeat.damage}</span>
+                <span className={`hit-number${activeBeat?.crit ? " crit" : ""}`} key={beatKey} data-testid="hit-number">
+                  -{activeBeat.damage}
+                </span>
               )}
             </div>
           );
