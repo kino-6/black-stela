@@ -90,7 +90,8 @@ import type {
   Direction,
   GameState,
   InventoryItem,
-  ScenarioEquipment
+  ScenarioEquipment,
+  ScenarioWorld
 } from "./domain/types";
 import {
   createDebugStateFromProgress,
@@ -141,6 +142,10 @@ const guildStepOrder: GuildCreationStep[] = ["briefing", "class", "appearance", 
 
 export function App() {
   const [debugMode] = useState(() => isDebugModeEnabled());
+  // The scenario currently being played. Initialized to the built-in default; the
+  // scenario picker (T6) swaps it. All world-logic below reads this instead of the
+  // hard-coded singleton so a different content/worlds/<id> can drive the game.
+  const [activeWorld, setActiveWorldState] = useState<ScenarioWorld>(defaultWorld);
   // Debug tools collapse to a thin bar by default so debug mode stays playable —
   // the full panel otherwise shrinks the game view. Auto-explore lives in the
   // dungeon command dock, so it's reachable while the panel is collapsed.
@@ -209,7 +214,7 @@ export function App() {
       if (!vaultStorage) {
         return;
       }
-      const portable = toPortableAdventurer(character, defaultWorld);
+      const portable = toPortableAdventurer(character, activeWorld);
       setVault(depositToVault(vaultStorage, portable, crypto.randomUUID()));
     },
     [vaultStorage]
@@ -235,19 +240,19 @@ export function App() {
       return null;
     }
 
-    return getLocalizedRoomText(defaultWorld, state.position.roomId, locale);
+    return getLocalizedRoomText(activeWorld, state.position.roomId, locale);
   }, [locale, state.position]);
-  const currentRoom = useMemo(() => (state.position ? getRoom(defaultWorld, state.position.roomId) : null), [state.position]);
+  const currentRoom = useMemo(() => (state.position ? getRoom(activeWorld, state.position.roomId) : null), [state.position]);
   const canReturnToTown = Boolean(currentRoom?.stairsToTown || currentRoom?.restPoint);
   const escapeItem = state.inventory.find((item) => item.kind === "escape" && item.quantity > 0);
   const canUseEscapeItem =
-    Boolean(escapeItem) && state.phase === "dungeon" && !isBossFloor(defaultWorld, state.map.floorId);
+    Boolean(escapeItem) && state.phase === "dungeon" && !isBossFloor(activeWorld, state.map.floorId);
   // A stair is used from the current cell, regardless of which way the party faces.
   const canUseStairs = Boolean(
-    state.position && roomStairsEdge(defaultWorld, state.position.roomId, state.position.facing)
+    state.position && roomStairsEdge(activeWorld, state.position.roomId, state.position.facing)
   );
   // A stair the party faces but can't yet use (crank not turned, floor not mapped).
-  const blockingStairGate = stairGateAhead(defaultWorld, state);
+  const blockingStairGate = stairGateAhead(activeWorld, state);
   const stairGateClue = blockingStairGate
     ? blockingStairGate.locales?.[locale]?.clue ?? blockingStairGate.clue ?? null
     : null;
@@ -262,7 +267,7 @@ export function App() {
       return "";
     }
 
-    return entry.event ? projectEventToLog(entry.event, locale, defaultWorld)?.text ?? entry.text : entry.text;
+    return entry.event ? projectEventToLog(entry.event, locale, activeWorld)?.text ?? entry.text : entry.text;
   }, [locale, state.log, state.phase]);
   const latestEventType = state.log.at(-1)?.event?.type;
 
@@ -303,7 +308,7 @@ export function App() {
   const canSelectedActorAttack = Boolean(
     selectedActor &&
       selectedTarget &&
-      !(selectedActor.row === "back" && frontRowStanding && !weaponReaches(selectedActor, defaultWorld))
+      !(selectedActor.row === "back" && frontRowStanding && !weaponReaches(selectedActor, activeWorld))
   );
   const canCycleCombatTarget = livingEnemyGroups.length > 1;
   const combatOrdersReady = state.phase === "combat" && activeParty.length > 0 && activeParty.every((member) => orderedActorIds.has(member.id));
@@ -324,7 +329,7 @@ export function App() {
     () => state.party.filter((member) => getMemberRecoveryCost(member) > 0),
     [state.party]
   );
-  const townShop = defaultWorld.shops.find((shop) => shop.id === "shop.stela-general") ?? defaultWorld.shops[0];
+  const townShop = activeWorld.shops.find((shop) => shop.id === "shop.stela-general") ?? activeWorld.shops[0];
   const draftPreview = useMemo(() => createGuildCharacter({
     ...draft,
     name: draft.name || t("party.namePlaceholder"),
@@ -335,7 +340,7 @@ export function App() {
     registeredAtTurn: state.turn
   }), [draft, state.turn, t]);
   const selectedProfile = state.party.find((member) => member.id === selectedProfileId) ?? state.party[0] ?? draftPreview;
-  const selectedProfileStats = getEffectiveCharacterStats(selectedProfile, defaultWorld);
+  const selectedProfileStats = getEffectiveCharacterStats(selectedProfile, activeWorld);
   const availableShopCategories = useMemo(
     () => SHOP_CATEGORY_ORDER.filter((category) => (townShop.stock ?? []).some((stock) => shopCategoryFor(stock.itemId) === category)),
     [townShop.stock]
@@ -343,7 +348,7 @@ export function App() {
   const activeShopCategory: ShopCategory = availableShopCategories.includes(shopCategory)
     ? shopCategory
     : availableShopCategories[0] ?? "weapon";
-  const unlockedCheckpoints = useMemo(() => listUnlockedCheckpoints(state, defaultWorld), [state]);
+  const unlockedCheckpoints = useMemo(() => listUnlockedCheckpoints(state, activeWorld), [state]);
   const carriedLootCount = state.inventory.reduce((total, item) => total + item.quantity, 0);
   const carriedLootSummary = state.inventory.length > 0
     ? state.inventory.map((item) => `${localizedCatalogName(item.id, locale)} x${item.quantity}`).join(" / ")
@@ -508,7 +513,7 @@ export function App() {
     if (isTempoRunning) {
       setTempoMode("idle");
     }
-    setState((current) => executeCommand(current, defaultWorld, command));
+    setState((current) => executeCommand(current, activeWorld, command));
     void options;
     setTempoStatus("");
   }
@@ -591,7 +596,7 @@ export function App() {
     if (playback) {
       return;
     }
-    const resolved = executeCommand(state, defaultWorld, { type: "declare_round", actions });
+    const resolved = executeCommand(state, activeWorld, { type: "declare_round", actions });
     setLastCombatOrders(actions);
     setCombatOrders([]);
     if (!opts.fromAuto) {
@@ -713,14 +718,14 @@ export function App() {
   }
 
   function loadDebugProgress() {
-    setState(createDebugStateFromProgress(defaultWorld, debugProgress));
+    setState(createDebugStateFromProgress(activeWorld, debugProgress));
     setHeadlessStatus("");
   }
 
   function runHeadless() {
     // Dense floors need a larger walk budget than the old linear layout, and a
     // deep-floor probe may cross several to reach a town-return anchor.
-    const result = runHeadlessClear(state, defaultWorld, 1800);
+    const result = runHeadlessClear(state, activeWorld, 1800);
     setState(result.state);
     setHeadlessStatus(
       t("debug.headlessReachabilityStatus", {
@@ -892,7 +897,7 @@ export function App() {
       return;
     }
 
-    const save = toSaveDataV1(state, defaultWorld, { locale });
+    const save = toSaveDataV1(state, activeWorld, { locale });
     saveRepository.write(slotId, save);
     setSaveSlots(saveRepository.list());
     if (announce) {
@@ -966,7 +971,7 @@ export function App() {
       if (!instantCombatLog && stateRef.current.phase === "combat") {
         return;
       }
-      const result = runTempoStep(stateRef.current, tempoMode, defaultWorld, t, { safetyStops: autoBattleSafety });
+      const result = runTempoStep(stateRef.current, tempoMode, activeWorld, t, { safetyStops: autoBattleSafety });
       stateRef.current = result.state;
       setState(result.state);
       setTempoStep((step) => step + 1);
@@ -993,7 +998,7 @@ export function App() {
       setTempoStatus(stop);
       return;
     }
-    const actions = chooseAutoRoundActions(state, defaultWorld);
+    const actions = chooseAutoRoundActions(state, activeWorld);
     if (actions.length === 0) {
       setTempoMode("idle");
       return;
@@ -1164,7 +1169,7 @@ export function App() {
       return;
     }
 
-    saveRepository.write(AUTO_SAVE_SLOT, toSaveDataV1(state, defaultWorld, { locale }));
+    saveRepository.write(AUTO_SAVE_SLOT, toSaveDataV1(state, activeWorld, { locale }));
     setSaveSlots(saveRepository.list());
   }, [debugMode, locale, saveRepository, scenarioValidationErrors.length, screen, state]);
 
@@ -1262,7 +1267,7 @@ export function App() {
                     </p>
                     <small>{member.traitIds.map((traitId) => findTrait(traitId).label[locale]).join(" · ")}</small>
                     <small>
-                      {t("party.hpAtk", { hp: member.hp, maxHp: member.maxHp, attack: getEffectiveCharacterStats(member, defaultWorld).attack })}
+                      {t("party.hpAtk", { hp: member.hp, maxHp: member.maxHp, attack: getEffectiveCharacterStats(member, activeWorld).attack })}
                     </small>
                     <small>{member.startingEquipment.map((id) => localizedCatalogName(id, locale)).join(" / ")}</small>
                   </div>
@@ -2082,7 +2087,7 @@ export function App() {
               {townMode === "entry" && (
                 <TownEntryPanel
                   t={t}
-                  world={defaultWorld}
+                  world={activeWorld}
                   locale={locale}
                   partyGold={state.partyGold}
                   partyEmpty={state.party.length === 0}
@@ -2113,7 +2118,7 @@ export function App() {
                 <ShopPanel
                   t={t}
                   locale={locale}
-                  world={defaultWorld}
+                  world={activeWorld}
                   shop={townShop}
                   partyGold={state.partyGold}
                   party={state.party}
@@ -2129,7 +2134,7 @@ export function App() {
                 />
               )}
               {townMode === "records" && (
-                <RecordsPanel t={t} log={state.log} locale={locale} world={defaultWorld} />
+                <RecordsPanel t={t} log={state.log} locale={locale} world={activeWorld} />
               )}
               {townMode === "records" && (
                 <>
@@ -2163,11 +2168,11 @@ export function App() {
               {state.phase === "dungeon" ? (
                 <>
                   <div className="cockpit-scene">
-                    <DungeonView state={state} world={defaultWorld} label={t("play.dungeonView")} />
+                    <DungeonView state={state} world={activeWorld} label={t("play.dungeonView")} />
                   </div>
                   <aside className="cockpit-rail" aria-label={t("play.partyStatus")}>
                     <div className="navigation-board" aria-label={t("map.heading")}>
-                      <MapPanel state={state} world={defaultWorld} locale={locale} t={t} debugMode={debugMode} />
+                      <MapPanel state={state} world={activeWorld} locale={locale} t={t} debugMode={debugMode} />
                     </div>
                 <div className="party-hud" data-testid="party-hud" aria-label={t("play.partyStatus")}>
                   {(["front", "back"] as const).map((row) => (
@@ -2175,7 +2180,7 @@ export function App() {
                       <span>{row === "front" ? t("play.frontRow") : t("play.backRow")}</span>
                       <div className="party-row-slots">
                         {state.party.filter((member) => member.row === row).map((member) => {
-                          const stats = getEffectiveCharacterStats(member, defaultWorld);
+                          const stats = getEffectiveCharacterStats(member, activeWorld);
                           return (
                             <div
                               className={`party-token ${member.row} ${
@@ -2252,7 +2257,7 @@ export function App() {
               ) : (
                 <>
                   <CombatEnemyStage
-                    backdrop={<DungeonView state={state} world={defaultWorld} label={t("play.dungeonView")} />}
+                    backdrop={<DungeonView state={state} world={activeWorld} label={t("play.dungeonView")} />}
                     groups={displayedEnemyGroups}
                     selectedTargetId={selectedTarget?.id}
                     targetingActive={!playback}
@@ -2271,8 +2276,8 @@ export function App() {
                   <CombatPartyStrip
                     members={displayedParty.map((member) => ({
                       ...member,
-                      maxHp: getEffectiveCharacterStats(member, defaultWorld).maxHp,
-                      maxMp: getEffectiveCharacterStats(member, defaultWorld).maxMp
+                      maxHp: getEffectiveCharacterStats(member, activeWorld).maxHp,
+                      maxMp: getEffectiveCharacterStats(member, activeWorld).maxMp
                     }))}
                     selectedActorId={playback ? undefined : selectedActor?.id}
                     orderedActorIds={orderedActorIds}
@@ -2323,7 +2328,7 @@ export function App() {
                       localizeGroup={(group) => localizedEnemyGroupName(group, locale)}
                       canAttack={
                         livingEnemyGroups.length > 0 &&
-                        !(selectedActor.row === "back" && frontRowStanding && !weaponReaches(selectedActor, defaultWorld))
+                        !(selectedActor.row === "back" && frontRowStanding && !weaponReaches(selectedActor, activeWorld))
                       }
                       consumables={combatConsumables}
                       partyTargets={activeParty.map((member) => ({ id: member.id, name: member.name }))}
@@ -2384,7 +2389,7 @@ export function App() {
                   onOpenCamp={() => setCampOpen(true)}
                   onOpenFullMap={() => setFullMapOpen(true)}
                   debugMode={debugMode}
-                  onAutoExplore={() => setState((current) => debugAutoExplore(current, defaultWorld))}
+                  onAutoExplore={() => setState((current) => debugAutoExplore(current, activeWorld))}
                   canUseStairs={canUseStairs}
                   blockingStairGate={Boolean(blockingStairGate)}
                   stairGateClue={stairGateClue ?? null}
@@ -2413,7 +2418,7 @@ export function App() {
           />
         )}
         {fullMapOpen && state.phase === "dungeon" && (
-          <FloorMapOverlay state={state} world={defaultWorld} locale={locale} t={t} onClose={() => setFullMapOpen(false)} />
+          <FloorMapOverlay state={state} world={activeWorld} locale={locale} t={t} onClose={() => setFullMapOpen(false)} />
         )}
         </>
       ) : null}
