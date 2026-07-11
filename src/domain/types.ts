@@ -285,7 +285,7 @@ export type GameEvent =
   | { type: "enemy_defeated"; enemyId: string; enemyName: string }
   | { type: "combat_action_blocked"; reason: "back_row_blocked" | "invalid_actor" | "invalid_target" | "enemy_guarded"; actorName?: string }
   | { type: "combat_round_resolved"; round: number; summaries: string[]; beats?: CombatBeat[] }
-  | { type: "combat_rewards"; xp: number; gold: number; enemyNames: string[] }
+  | { type: "combat_rewards"; xp: number; gold: number; enemyNames: string[]; enemyIds: string[] }
   | { type: "party_wounded"; enemyId: string; enemyName: string; damage: number }
   | { type: "character_injured"; characterId: string; characterName: string; injury: "wounded" }
   | { type: "character_leveled_up"; characterId: string; characterName: string; level: number }

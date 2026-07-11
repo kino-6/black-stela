@@ -117,6 +117,32 @@ test("a declared round PLAYS OUT on the battlefield with a floating damage numbe
   await expect(toggle).not.toBeChecked();
 });
 
+test("a win shows a result screen with XP/gold, dismissed to continue (#81)", async ({ page }) => {
+  await enterCombat(page);
+  const menu = page.getByTestId("combat-command-menu");
+  // Fight the intro to victory.
+  for (let step = 0; step < 60; step += 1) {
+    if ((await page.getByTestId("combat-result").count()) > 0) break;
+    if ((await menu.count()) > 0) {
+      await menu.focus().catch(() => {});
+      await page.keyboard.press("Enter");
+    } else if ((await page.getByTestId("combat-confirm-round").count()) > 0) {
+      await page.getByTestId("combat-confirm-execute").focus().catch(() => {});
+      await page.keyboard.press("Enter");
+    }
+    await page.waitForTimeout(60);
+  }
+  // The victory result holds on screen (not a one-line flash) with the rewards.
+  const result = page.getByTestId("combat-result");
+  await expect(result).toBeVisible();
+  await expect(page.getByTestId("result-xp")).toContainText(/\d/);
+  await expect(page.getByTestId("result-gold")).toContainText(/\d/);
+  // Dismissing it returns to exploring.
+  await page.getByTestId("combat-result-continue").click();
+  await expect(result).toHaveCount(0);
+  await expect(page.getByTestId("dungeon-command-window")).toBeVisible();
+});
+
 test("combat is a three-zone layout: enemy stage, one party strip, no side windows", async ({ page }) => {
   await enterCombat(page);
   // The enemy lives ON the stage (a large figure over the 3D view), not a side list.

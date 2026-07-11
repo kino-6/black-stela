@@ -32,6 +32,14 @@ export const en = {
     statusSilence: "silenced",
     statusFear: "afraid"
   },
+  result: {
+    title: "Victory",
+    defeated: "{names} defeated.",
+    xp: "Experience",
+    gold: "Gold",
+    levelUp: "{name} reached Lv {level}!",
+    continue: "Continue"
+  },
   title: {
     menu: "Title menu",
     newGame: "New expedition",

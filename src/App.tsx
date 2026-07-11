@@ -16,6 +16,7 @@ import { DungeonCommandDock } from "./components/DungeonCommandDock";
 import { CombatCommandDock } from "./components/CombatCommandDock";
 import { CombatCommandMenu } from "./components/CombatCommandMenu";
 import { CombatLog } from "./components/CombatLog";
+import { CombatResultPanel, type CombatResult } from "./components/CombatResultPanel";
 import { CombatEnemyStage } from "./components/CombatEnemyStage";
 import { CombatPartyStrip } from "./components/CombatPartyStrip";
 import { RecoveryPanel } from "./components/RecoveryPanel";
@@ -156,6 +157,7 @@ export function App() {
   const [locale, setLocale] = useState<Locale>(() => loadLocale());
   const [autoBattleSafety, setAutoBattleSafety] = useState<boolean>(() => loadAutoBattleSafety());
   const [instantCombatLog, setInstantCombatLog] = useState<boolean>(() => loadInstantCombatLog());
+  const [combatResult, setCombatResult] = useState<CombatResult | null>(null);
   const [confirmRound, setConfirmRound] = useState<boolean>(() => loadConfirmRound());
   const [revealedBeats, setRevealedBeats] = useState(0);
   const t = useMemo(() => createTranslator(locale), [locale]);
@@ -422,6 +424,33 @@ export function App() {
       return snap ? { ...member, hp: snap.hp } : member;
     });
   }, [activeBeat, state.party]);
+
+  // Post-victory result screen: when a new combat_rewards event lands (after the
+  // playback commits), gather the XP/gold/defeated + any same-turn level-ups and
+  // hold them on screen until dismissed. The hydration guard skips rewards already
+  // in a loaded log so a resumed game does not pop a stale result.
+  const combatResultSeenRef = useRef<string | null>(null);
+  const combatResultHydratedRef = useRef(false);
+  useEffect(() => {
+    const rewardEntry = [...state.log].reverse().find((entry) => entry.event?.type === "combat_rewards");
+    const latestId = rewardEntry?.id ?? null;
+    if (!combatResultHydratedRef.current) {
+      combatResultHydratedRef.current = true;
+      combatResultSeenRef.current = latestId;
+      return;
+    }
+    if (!rewardEntry || rewardEntry.event?.type !== "combat_rewards" || latestId === combatResultSeenRef.current) {
+      return;
+    }
+    combatResultSeenRef.current = latestId;
+    const reward = rewardEntry.event;
+    const levelUps = state.log
+      .filter((entry) => entry.event?.type === "character_leveled_up" && entry.turn === rewardEntry.turn)
+      .map((entry) => (entry.event?.type === "character_leveled_up" ? { name: entry.event.characterName, level: entry.event.level } : null))
+      .filter((entry): entry is { name: string; level: number } => entry !== null);
+    const enemyNames = (reward.enemyIds ?? []).map((id) => localizeEnemyName(id));
+    setCombatResult({ enemyNames: enemyNames.length > 0 ? enemyNames : reward.enemyNames, xp: reward.xp, gold: reward.gold, levelUps });
+  }, [state.log]);
 
   // On first mount (e.g. Continue into the dungeon) snap any beats already in the
   // loaded log to fully-revealed, so a resumed game does not replay an old fight.
@@ -963,6 +992,15 @@ export function App() {
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
       const key = event.key.toLowerCase();
+      // The victory result modal owns the keyboard while up: Enter/Space/Esc dismiss
+      // it, everything else is swallowed so the party doesn't move behind it.
+      if (combatResult) {
+        if (key === "enter" || key === " " || key === "escape") {
+          event.preventDefault();
+          setCombatResult(null);
+        }
+        return;
+      }
       if (isTypingTarget(event.target)) {
         if (key === "escape" && event.target instanceof HTMLElement) {
           event.preventDefault();
@@ -1072,7 +1110,7 @@ export function App() {
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [campOpen, combatOrdersReady, fullMapOpen, isTempoRunning, selectedActor, selectedTarget, state, t, tempoMode]);
+  }, [campOpen, combatOrdersReady, combatResult, fullMapOpen, isTempoRunning, selectedActor, selectedTarget, state, t, tempoMode]);
 
   // Camp and the full-floor map are exploration-only; a fight or a return to
   // town closes them.
@@ -1336,6 +1374,9 @@ export function App() {
         )}
 
         <section className="panel play-panel" aria-labelledby="location-heading">
+          {combatResult && (
+            <CombatResultPanel result={combatResult} t={t} onDismiss={() => setCombatResult(null)} />
+          )}
           <div className="section-title">
             <h2 id="location-heading">{state.phase === "town" ? t("play.town") : state.phase === "combat" ? t("play.combat") : roomText?.name}</h2>
             <div className="scene-meta">

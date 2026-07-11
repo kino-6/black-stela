@@ -989,7 +989,7 @@ function declareRound(state: GameState, world: ScenarioWorld, actions: CombatAct
         enemyId: defeatedEnemyIds[index],
         enemyName
       })),
-      { type: "combat_rewards", xp, gold, enemyNames: defeatedNames },
+      { type: "combat_rewards", xp, gold, enemyNames: defeatedNames, enemyIds: defeatedEnemyIds },
       ...levelEvents
     ]);
   }
@@ -1170,7 +1170,7 @@ function debugForceVictory(state: GameState): CommandResult {
       enemyId: defeatedEnemyIds[index],
       enemyName
     })),
-    { type: "combat_rewards", xp, gold, enemyNames: defeatedNames },
+    { type: "combat_rewards", xp, gold, enemyNames: defeatedNames, enemyIds: defeatedEnemyIds },
     ...levelEvents
   ]);
 }

@@ -151,9 +151,25 @@ export async function resolveVisibleCombat(page: Page) {
   // dock is back — the menu also unmounts transiently during confirm/playback.
   await expect(page.getByTestId("combat-command-menu")).toBeVisible();
 
+  const dismissResult = async () => {
+    // A win pops a result screen over the dungeon — dismiss it to keep exploring. It
+    // can appear a frame after the dungeon dock, so give it a beat before returning.
+    await page.waitForTimeout(150).catch(() => {});
+    if ((await page.getByTestId("combat-result").count()) > 0) {
+      await page.getByTestId("combat-result-continue").click().catch(() => {});
+      await page.waitForTimeout(40).catch(() => {});
+    }
+  };
+
   for (let step = 0; step < 300; step += 1) {
+    if ((await page.getByTestId("combat-result").count()) > 0) {
+      await page.getByTestId("combat-result-continue").click().catch(() => {});
+      await page.waitForTimeout(40).catch(() => {});
+      return;
+    }
     if ((await page.getByTestId("dungeon-command-window").count()) > 0) {
-      return; // combat ended — back in the dungeon
+      await dismissResult(); // combat ended — back in the dungeon
+      return;
     }
     const menu = page.getByTestId("combat-command-menu");
     const confirm = page.getByTestId("combat-confirm-round");

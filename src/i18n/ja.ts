@@ -34,6 +34,14 @@ export const ja = {
     statusSilence: "沈黙",
     statusFear: "恐怖"
   },
+  result: {
+    title: "勝利",
+    defeated: "{names} を倒した。",
+    xp: "経験値",
+    gold: "ゴールド",
+    levelUp: "{name} はLv{level}になった！",
+    continue: "つづける"
+  },
   title: {
     menu: "タイトルメニュー",
     newGame: "新たな探索",
