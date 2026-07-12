@@ -59,7 +59,8 @@ export const ja = {
     saved: "{slot} に保存しました。",
     loaded: "{slot} を読み込みました。",
     slots: "{count} 件",
-    corrupt: "破損した保存"
+    corrupt: "破損した保存",
+    unknownWorld: "この保存には未導入のシナリオが必要です：{world}"
   },
   debug: {
     heading: "デバッグ開始",

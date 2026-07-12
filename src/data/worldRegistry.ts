@@ -124,3 +124,14 @@ export function listScenarios(): ScenarioListing[] {
 export function getWorldById(worldId: string): ScenarioWorld | undefined {
   return worldRegistry[worldId];
 }
+
+// Saves record the world.md `id` (e.g. "world.verdant"), which differs from the
+// registry's folder key ("verdant"). Resolve a saved world by that scenario id so
+// a load restores the exact world it was saved in.
+const byScenarioId: Record<string, ScenarioWorld> = Object.fromEntries(
+  Object.values(worldRegistry).map((world) => [world.id, world])
+);
+
+export function getWorldByScenarioId(scenarioId: string): ScenarioWorld | undefined {
+  return byScenarioId[scenarioId];
+}

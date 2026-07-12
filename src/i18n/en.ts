@@ -57,7 +57,8 @@ export const en = {
     saved: "Saved {slot}.",
     loaded: "Loaded {slot}.",
     slots: "{count} slots",
-    corrupt: "Corrupt save"
+    corrupt: "Corrupt save",
+    unknownWorld: "This save needs a scenario that is not installed: {world}."
   },
   debug: {
     heading: "Debug Start",

@@ -102,7 +102,7 @@ import {
 import { debugAutoExplore, runHeadlessClear } from "./headless/headlessRunner";
 import { defaultWorld } from "./data/defaultWorld";
 import { setActiveWorld } from "./data/activeWorld";
-import { listScenarios, getWorldById } from "./data/worldRegistry";
+import { listScenarios, getWorldById, getWorldByScenarioId } from "./data/worldRegistry";
 import { ScenarioPicker } from "./components/ScenarioPicker";
 import { fromSaveDataV1, toSaveDataV1 } from "./domain/saveData";
 import { LocalStorageSaveRepository, type SaveSlotSummary } from "./services/saveRepository";
@@ -955,6 +955,14 @@ export function App() {
       return;
     }
 
+    // Restore the exact scenario the save was made in. Refuse rather than silently
+    // load a verdant save into the default world (which would mis-resolve rooms/gear).
+    const savedWorld = getWorldByScenarioId(result.save.scenario.worldId);
+    if (!savedWorld) {
+      setSaveStatus(t("save.unknownWorld", { world: result.save.scenario.title }));
+      return;
+    }
+    applyActiveWorld(savedWorld);
     setState(fromSaveDataV1(result.save));
     changeLocale(result.save.settings.locale);
     setSaveStatus(createTranslator(result.save.settings.locale)("save.loaded", { slot: slotId }));
