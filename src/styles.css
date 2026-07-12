@@ -1774,6 +1774,15 @@ textarea {
   background: radial-gradient(circle at 50% 36%, rgba(213, 181, 109, 0.16), rgba(7, 8, 6, 0.72) 62%);
 }
 
+/* An item whose art hasn't been drawn yet: hold the grid cell so the row keeps its
+   icon | text | action shape, and read as a quiet empty frame, not a broken row. */
+.catalog-icon-empty {
+  display: block;
+  border-style: dashed;
+  border-color: rgba(213, 181, 109, 0.18);
+  background: rgba(7, 8, 6, 0.55);
+}
+
 .shop-row div,
 .equipment-row div:first-child {
   display: grid;
@@ -2015,14 +2024,24 @@ textarea {
   z-index: 1;
 }
 
-/* "You are here" paints the FLOOR gold, clipped to the padding box so it never
-   bleeds under the wall borders — the walls stay their own bright stone colour and
-   remain legible instead of being overwritten by the highlight. */
+/* "You are here" must NEVER cost wall information. The cell keeps the same dark
+   floor as any explored cell, so its walls stay the SAME bright stone colour and
+   read exactly like every other cell's. The gold highlight is an INSET block drawn
+   inside the borders — it marks the position without ever touching or recolouring a
+   wall. (Filling the whole cell gold forced dark-on-gold walls, which sank into the
+   fill and read as "this cell has no walls".) */
 .mini-map-cell.current {
-  background: #d9b968;
-  background-clip: padding-box;
-  box-shadow: 0 0 16px rgba(213, 181, 109, 0.5);
+  background: #3d4638;
   z-index: 2;
+}
+
+.mini-map-cell.current::before {
+  content: "";
+  position: absolute;
+  inset: 2px; /* strictly inside the 2px wall borders — never overlaps them */
+  z-index: 0;
+  background: #d9b968;
+  box-shadow: 0 0 10px rgba(213, 181, 109, 0.45);
 }
 
 .mini-map-cell.visited {
@@ -2039,13 +2058,9 @@ textarea {
 .mini-map-cell.edge-south-wall { border-bottom-color: #b3bfa0; }
 .mini-map-cell.edge-west-wall { border-left-color: #b3bfa0; }
 
-/* On the bright gold "you are here" floor, bright stone walls wash out — draw them
-   DARK there for high contrast (the gold now fills only the floor via padding-box,
-   so a dark wall reads as a crisp line on top of the gold rather than being covered). */
-.mini-map-cell.current.edge-north-wall { border-top-color: #241d04; }
-.mini-map-cell.current.edge-east-wall { border-right-color: #241d04; }
-.mini-map-cell.current.edge-south-wall { border-bottom-color: #241d04; }
-.mini-map-cell.current.edge-west-wall { border-left-color: #241d04; }
+/* NOTE: the current cell deliberately has NO wall-colour override. Walls are one
+   visual language on every cell — bright stone on a dark floor — so the "you are
+   here" highlight can never be mistaken for a cell without walls. */
 
 /* Open passages: no border, so connected cells read as one corridor. */
 .mini-map-cell.edge-north-open { border-top-color: transparent; }

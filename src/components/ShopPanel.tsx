@@ -24,10 +24,13 @@ import type { Locale, Translator } from "../i18n";
 
 const equipmentSlotOrder: EquipmentSlot[] = ["weapon", "offhand", "body", "head", "hands", "accessory"];
 
+// The shop/inventory row is a 3-column grid (icon | text | action). ALWAYS emit the
+// icon cell — an item whose art hasn't been drawn yet (e.g. a new scenario's pack)
+// must not collapse the row by shifting the text into the icon column.
 function renderCatalogIcon(itemId: string, assetPack: string) {
   const iconUrl = catalogIconUrl(itemId, assetPack);
   if (!iconUrl) {
-    return null;
+    return <span className="catalog-icon catalog-icon-empty" aria-hidden="true" />;
   }
   return <img className="catalog-icon" src={iconUrl} alt="" aria-hidden="true" />;
 }
