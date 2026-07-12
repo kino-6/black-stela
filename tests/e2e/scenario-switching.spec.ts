@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { registerAdventurer } from "./helpers";
+import { createStarterParty, openTownService, registerAdventurer } from "./helpers";
 
 // End-to-end proof that a scenario switch drives a different world. The picker
 // appears because content/worlds/ ships more than one scenario (default + verdant).
@@ -25,6 +25,22 @@ test("picking the verdant scenario loads its own world, not the default", async 
   // The standard party still has resolvable, statted starter gear (shared base
   // catalog merged into verdant, which ships no items of its own).
   await expect(page.getByTestId("party-hud")).toContainText(/Damage \d+-\d+/);
+});
+
+test("the verdant grove shop is stocked (its own economy, not an empty panel)", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "New expedition" }).click();
+  await page.getByTestId("scenario-card-verdant").click();
+  await createStarterParty(page);
+
+  await openTownService(page, "Shop");
+  // Verdant's own shop + stock render — the empty-shop bug is gone.
+  await expect(page.getByRole("heading", { name: "Grovekeeper's Stall" })).toBeVisible();
+  // A verdant-exclusive weapon on the default tab, then a verdant consumable on its tab.
+  await expect(page.getByText("Thorn Lash")).toBeVisible();
+  await page.getByTestId("shop-category-consumable").click();
+  await expect(page.getByText("Sap Draught", { exact: true })).toBeVisible();
+  await expect(page.getByText("Homing Spore")).toBeVisible();
 });
 
 test("picking the default scenario still loads the default world (round-trip)", async ({ page }) => {

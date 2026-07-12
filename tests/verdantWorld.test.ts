@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { worldRegistry, listScenarios } from "../src/data/worldRegistry";
 import { classCatalog } from "../src/domain/characterCreation";
+import { analyzeFloorGraph } from "../src/domain/floorGraph";
 
 describe("verdant scenario", () => {
   const verdant = worldRegistry.verdant;
@@ -90,6 +91,15 @@ describe("verdant scenario", () => {
     const flagIds = new Set(verdant.progressionFlags.map((f) => f.id));
     for (const stock of shop?.stock ?? []) {
       if (stock.unlockFlag) expect(flagIds.has(stock.unlockFlag), `unlock ${stock.unlockFlag}`).toBe(true);
+    }
+  });
+
+  it("every floor is a dense, looping, reward-bearing maze (not a thin corridor)", () => {
+    for (const floor of verdant.dungeons) {
+      const g = analyzeFloorGraph(verdant, floor.id);
+      expect(g.cellCount, `${floor.id} cells`).toBeGreaterThanOrEqual(80);
+      expect(g.loopCount, `${floor.id} loops`).toBeGreaterThanOrEqual(4);
+      expect(g.rewardDeadEndRoomIds.length, `${floor.id} reward dead-ends`).toBeGreaterThanOrEqual(1);
     }
   });
 
