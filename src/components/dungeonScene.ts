@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { asset, blockTextures, getEnemySpriteTextureUrl } from "../ui/artAssets";
-import type { EnemyElevation } from "../domain/types";
+import type { EnemyElevation, ScenePalette } from "../domain/types";
 
 const DEFAULT_ART_PACK = "default";
 
@@ -23,6 +23,8 @@ export interface DungeonSceneInput {
    *  depends on the resolver's module-level active-pack state, which resolves too
    *  early (at import) and can drift from the world actually being played. */
   assetPack?: string;
+  /** Per-scenario scene colour (world.palette). Omitted → the default ash palette. */
+  palette?: ScenePalette;
   /** Current dungeon floor id for block-specific wall/floor textures. */
   floorId: string | null;
   /** Enemy groups to draw ahead while in combat (one sprite per living group, so a
@@ -53,9 +55,23 @@ const CEILING_Y = 3.1;
 export function buildDungeonScene(mount: HTMLDivElement, input: DungeonSceneInput): () => void {
   const width = mount.clientWidth;
   const height = mount.clientHeight;
+
+  // Scene colour is per-scenario. The wall/floor values TINT the block texture, so a
+  // world reads as its own place (ash ruin vs. drowned green canopy) even while it
+  // still falls back to another pack's textures. Defaults are the ash palette.
+  const ASH: Required<ScenePalette> = {
+    fog: "#0d0e0b",
+    ambient: "#9a9383",
+    torch: "#f0b76c",
+    front: "#ffe0a0",
+    wall: "#59615a",
+    floor: "#2a2418"
+  };
+  const p: Required<ScenePalette> = { ...ASH, ...(input.palette ?? {}) };
+
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color("#0d0e0b");
-  scene.fog = new THREE.Fog("#0d0e0b", 6, 20);
+  scene.background = new THREE.Color(p.fog);
+  scene.fog = new THREE.Fog(p.fog, 6, 20);
 
   const camera = new THREE.PerspectiveCamera(66, width / height, 0.1, 100);
   camera.position.set(0, 1.5, 2.4);
@@ -93,22 +109,22 @@ export function buildDungeonScene(mount: HTMLDivElement, input: DungeonSceneInpu
   const doorTexture = loadTexture(asset("wood-door", pack));
   const returnMarkerTexture = loadTexture(asset("return-marker", pack));
 
-  const ambient = new THREE.AmbientLight("#9a9383", 1.7);
-  const torch = new THREE.PointLight("#f0b76c", 55, 26);
+  const ambient = new THREE.AmbientLight(p.ambient, 1.7);
+  const torch = new THREE.PointLight(p.torch, 55, 26);
   torch.position.set(-1.5, 2.4, 1.6);
-  const frontLight = new THREE.SpotLight("#ffe0a0", 30, 20, Math.PI / 6, 0.4, 1);
+  const frontLight = new THREE.SpotLight(p.front, 30, 20, Math.PI / 6, 0.4, 1);
   frontLight.position.set(0, 2.8, 2.0);
   frontLight.target.position.set(0, 1.1, -6.4);
   scene.add(ambient, torch, frontLight, frontLight.target);
 
   const wallMaterial = new THREE.MeshStandardMaterial({
-    color: "#59615a",
+    color: p.wall,
     map: wallTexture,
     roughness: 0.78,
     metalness: 0.02
   });
   const floorMaterial = new THREE.MeshStandardMaterial({
-    color: "#2a2418",
+    color: p.floor,
     map: floorTexture,
     roughness: 0.86
   });

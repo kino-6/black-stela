@@ -2,6 +2,16 @@
 id: world.verdant
 title: Verdant - Sunken Arboretum
 assetPack: verdant
+# Scene colour — the drowned canopy. Wall/floor TINT the block texture, so even while
+# verdant still falls back to the default pack's stone it reads as moss-slick root
+# walls under filtered green light, not an ash ruin.
+palette:
+  fog: "#0a170e"
+  ambient: "#9cba8c"
+  torch: "#c2e89f"
+  front: "#e4f7c9"
+  wall: "#5b8055"
+  floor: "#31432a"
 startDungeon: dungeon.verdant.g1f
 startRoom: room.verdant.g1f.001
 aiPolicy:

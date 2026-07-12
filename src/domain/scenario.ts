@@ -273,6 +273,17 @@ export const scenarioWorldSchema = z.object({
   id: z.string().min(1),
   title: z.string().min(1),
   assetPack: z.string().min(1).optional(),
+  // Per-scenario scene colour (fog/lights/wall+floor tint). Omitted → default ash.
+  palette: z
+    .object({
+      fog: z.string().min(1).optional(),
+      ambient: z.string().min(1).optional(),
+      torch: z.string().min(1).optional(),
+      front: z.string().min(1).optional(),
+      wall: z.string().min(1).optional(),
+      floor: z.string().min(1).optional()
+    })
+    .optional(),
   startDungeon: z.string().min(1),
   startRoom: z.string().min(1),
   aiPolicy: z.object({

@@ -434,12 +434,26 @@ export interface GameState {
   aiEnabled: boolean;
 }
 
+/** Per-scenario colour of the first-person scene. Wall/floor tint multiplies the
+ *  block texture, so a scenario reads as its own world (ash vs. drowned green) even
+ *  before it ships its own textures. Omitted → the default ash palette. */
+export interface ScenePalette {
+  fog?: string;
+  ambient?: string;
+  torch?: string;
+  front?: string;
+  wall?: string;
+  floor?: string;
+}
+
 export interface ScenarioWorld {
   id: string;
   title: string;
   /** Art pack folder under content/worlds/<assetPack>/assets (defaults to "default").
    *  Lets a scenario ship its own atmosphere pack. */
   assetPack?: string;
+  /** Scene colour for this world's dungeon (see ScenePalette). */
+  palette?: ScenePalette;
   startDungeon: string;
   startRoom: string;
   aiPolicy: AiPolicy;

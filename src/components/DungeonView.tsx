@@ -60,6 +60,7 @@ export function DungeonView({ state, world, label }: DungeonViewProps) {
     return buildDungeonScene(mountRef.current, {
       corridor,
       assetPack: world.assetPack ?? "default",
+      palette: world.palette,
       floorId: getFloorIdForRoom(world, state.position.roomId),
       enemies:
         state.phase === "combat"
