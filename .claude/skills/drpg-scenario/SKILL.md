@@ -17,18 +17,30 @@ and the player said *"何も変わってない"*, because the scene still render
 default pack's ash textures and amber torchlight. The data differed; **the experience
 did not.** Different IDs are not a different world.
 
-Rank the channels by how loudly they speak, and change them **top-down**:
+**A world is expressed in its ASSETS — not in a tint.**
 
-1. **Scene colour & light** (fog, ambient, torch, wall/floor tint) — the loudest, and
-   the cheapest. `world.palette` re-tints the block textures, so a world reads as its
-   own place *even while borrowing another pack's textures*. **Never ship a scenario
-   without its own palette.**
-2. **Textures & sprites** (its own `assetPack`) — the real fix; order it early
-   (`content/worlds/<id>/ART.md`), because art has the longest lead time.
-3. **Room prose & names** — every room/corridor line is the scenario's voice.
-4. **Enemy identity** — silhouette + role + flavour, not renamed defaults.
-5. **Economy flavour** — consumables/gear that only make sense in *this* world.
-6. **Numbers** — the quietest channel. Tuning alone never makes a new world.
+The follow-up mistake was mine too: I recoloured the shared stone textures green and
+called Verdant a forest. The player's verdict: *"色を緑にしろという指示ではない。Art、
+Asset で表現すべき"* — and they were right. A green-tinted brick wall with a stone
+staircase is still the ash dungeon, wearing a filter. **Structures must be replaced,
+not re-hued**: the stair becomes a vine ladder, the wall becomes braided roots, the door
+becomes a curtain of vines, the torch becomes filtered canopy light.
+
+So, in order of what actually makes the world:
+
+1. **Its own asset pack** — textures, props (stair/door/return-marker), enemy sprites,
+   icons, stills. This *is* the world. Order it FIRST (`content/worlds/<id>/ART.md`),
+   because art has the longest lead time, and write the order as **"replace this
+   structure with that structure"**, never "make it green".
+2. **Room prose & names** — every room/corridor line is the scenario's voice.
+3. **Enemy identity** — silhouette + role + flavour, not renamed defaults.
+4. **Economy flavour** — consumables/gear that only make sense in *this* world.
+5. **Numbers** — the quietest channel. Tuning alone never makes a new world.
+
+`world.palette` (fog/ambient/torch/wall/floor tint) exists only as **scaffolding** so a
+scenario isn't a literal clone while its art is in flight. It is **not** worldbuilding,
+it does not count as "different", and it should be dialled back once the pack lands.
+Never design *to* the tint.
 
 **Anti-pattern:** declaring a scenario "done" when it parses, descends and passes
 gates — but looks and feels like the world you copied. Take a browser screenshot of
@@ -116,7 +128,7 @@ Order matters; each step unblocks the next.
 ## 5. Review checklist (run before calling a scenario done)
 
 - [ ] Screenshot beside an existing world — **visibly a different place?**
-- [ ] `world.palette` set? Own `assetPack` declared and its ART.md written?
+- [ ] Own `assetPack` + ART.md written as STRUCTURE REPLACEMENTS (stair→vine ladder, wall→roots), not recolours? (`world.palette` is scaffolding only — it does not count.)
 - [ ] Every room name/description in this world's voice; no other world's chrome leaking.
 - [ ] Floors: loops, shortcut (on-floor, never backward), secrets, reward dead-ends,
       sole-approach choke, dense.

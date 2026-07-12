@@ -1,60 +1,94 @@
-# Verdant scenario art order
+# Verdant scenario art order — 樹海 (the drowned wood)
 
 Art for the second scenario (`翠碑 — 沈む樹心 / Verdant Stela — the Sunken Heartwood`).
-Its own asset pack lives under **`content/worlds/verdant/assets/`** and resolves
-own-basename-first, exactly like the default pack (see the repo `Art.md` §2). Until a
-file is delivered, verdant **falls back to the default (ash) pack** — so the scenario
-is fully playable now; this order is what makes it *look* like its own world.
+Pack lives at **`content/worlds/verdant/assets/`**, resolves own-basename-first, and a
+dropped file is used after a rebuild with no code change.
 
-**Theme:** life · encroachment · drowning-in-green — the opposite of Black Stela's
-ash. Deep greens, sap-amber, pollen-gold, mould-black, drowned/filtered canopy light.
-Wet, living, overgrown; roots and bark instead of dry stone.
+## ⚠ The brief, in one line
 
-**Drop-in:** put each file at `content/worlds/verdant/assets/<subfolder>/<basename>.<ext>`
-and rebuild — no code change. Basenames below are the resolver keys.
+**Do not recolour the ash dungeon green.** A green-tinted stone brick wall with a stone
+staircase is still Black Stela. **Every structure must be replaced by a forest structure.**
+The world is expressed in the *assets*, not in a tint.
 
-## Block textures (`assets/dungeon/`, 1024², JPG, seamless-tiling)
-Per-block wall+floor, greener/wetter with depth (Act I mossy → Act II bark/sap →
-Act III heartwood):
-- `stone-wall-block1` / `stone-floor-block1` — Act I: moss-slick root walls, leaf-litter floor.
-- `stone-wall-block2` / `stone-floor-block2` — Act II: bark-scute walls, sap-wet floor.
-- `stone-wall-block3` / `stone-floor-block3` — Act III: heartwood grain, pale-root floor.
-- `wood-door` — a living vine/bark door.
+| Black Stela (do NOT reuse) | Verdant (make THIS) |
+|---|---|
+| Fitted stone masonry wall | Living wall of **braided roots, bark and moss**, wet, breathing |
+| Cut-stone floor | **Leaf-litter, mud, standing water, surface roots** underfoot |
+| Stone staircase down | A **vine ladder / hanging root-stair** dropping into the green dark |
+| Wooden plank door | A **curtain of vines / a split trunk** you push through |
+| Standing black stela (return marker) | A **shaft of daylight through the canopy / a young sapling** |
+| Torchlight | **Filtered canopy light** — green, dappled, from above, not a flame |
 
-## Enemy sprites (`assets/dungeon/`, PNG RGBA, ~768×512, chroma-key extracted)
-Basename = enemy id with dots→dashes. Use **MagentaBack** for green subjects.
-- `enemy-verdant-g1-moss-mite` — small mossy mite (teaching foe)
-- `enemy-verdant-g1-spore-gnat` — spore-winged gnat (swarm)
-- `enemy-verdant-g2-thorn-crawler` — thorn-shelled crawler
-- `enemy-verdant-g2-bramble-shield` — bramble-armored front blocker
-- `enemy-verdant-g2-spore-caster` — spore-puffing caster (back line)
-- `enemy-verdant-g4-pollen-drifter` — drifting pollen-cloud form
-- `enemy-verdant-g6-thorn-cutter` — bladed-thorn ambusher
-- `enemy-verdant-g7-husk-spawn` — small heartwood-husk spawn
-- `enemy-verdant-g3-bloom-warden` — flowering warden (miniboss)
-- `enemy-verdant-g4-bark-ward` — bark-plated ward (armored miniboss)
-- `enemy-verdant-g5-sap-keeper` — sap-dripping keeper (toll miniboss)
-- `enemy-verdant-g6-strangler-warden` — strangling-vine warden (miniboss)
-- `enemy-verdant-g7-heartwood-husk` — heavy heartwood husk (miniboss)
-- `enemy-verdant-g8-rootheart` — the living heartwood core (**boss**, largest/most detailed)
+There is currently a `world.palette` tint standing in for this art. It is a **stopgap**
+and will be dialled back once these assets land — do not design *to* the tint.
 
-## Icons (`assets/icons/`, 256×256 PNG RGBA)
-- `item-verdant-sap-draught` — amber sap vial
-- `item-verdant-pollen-salve` — pale salve jar
-- `item-verdant-homing-spore` — glowing spore pod (escape)
-- `item-verdant-greater-sap` — richer sap vial
-- `item-verdant-heartseed` — pulsing green seed (treasure)
-- `equip-verdant-thorn-lash` — living bramble whip (weapon)
-- `equip-verdant-bark-plate` — bark-scute armor (body)
-- `equip-verdant-living-charm` — green-wood charm (accessory)
+**Tone.** Life · encroachment · drowning-in-green. Wet, overgrown, softly suffocating.
+Deep greens, sap-amber, pollen-gold, mould-black, bark-brown, drowned light. It is a
+*place that is alive*, the opposite of Black Stela's dry death. Same production rules as
+the root `Art.md` §2 (neutral-ish materials, no baked scene lighting, clean alpha).
 
-## UI / key art
-- `assets/title/black-stela-title` (JPG, 1920×1080) — verdant title key art (a green
-  drowned canopy / the jade stela). NOTE: the CSS title var uses this basename; a
-  verdant-pack file overrides it for this world.
-- `assets/ui/combat-vignette` (JPG, 1600×900) — green drowned-light combat backdrop.
-- `assets/dungeon/return-marker` (PNG, ~576×768) — the verdant town-return waystone.
-- `assets/minimap/marker-*` (32×32 PNG) — optional green re-tint of the 9 markers;
-  reuse default if not retinted.
+## Structures (the ones that carry the world)
 
-Portraits are global character-creation art and do not need a verdant variant.
+### Block textures — `assets/dungeon/`, 1024², JPG, seamless-tiling
+Not stone. **Root/bark/moss surfaces**, wetter and more overgrown with depth:
+- `stone-wall-block1` / `stone-floor-block1` — **Act I**: moss-furred roots knitted into a
+  wall; floor of leaf-litter and shallow water.
+- `stone-wall-block2` / `stone-floor-block2` — **Act II**: heavy bark scutes, weeping sap,
+  fungal shelves; floor of sap-slick mud and drowned leaves.
+- `stone-wall-block3` / `stone-floor-block3` — **Act III**: pale heartwood grain, dense
+  vein-like roots; floor of bone-pale rootmat.
+(The basenames are fixed by the renderer — the *content* is what changes.)
+
+### `dungeon/stair-down.png` — the descent (PNG RGBA, ~768², billboard)
+**A vine ladder / hanging root-stair**, not steps: knotted vines and aerial roots dropping
+through a hole in the rootmat into green dark below. Must read instantly as "go down."
+Bottom-weighted, clean alpha. *(This is the piece the player sees most; do not ship a
+recoloured stone stair.)*
+
+### `dungeon/stair-up.png` — the ascent
+The same ladder seen from below, climbing toward a **pale shaft of daylight**.
+
+### `dungeon/wood-door.jpg` — 1024²
+Not planks. A **curtain of hanging vines / a split trunk** — a soft, living barrier.
+
+### `dungeon/return-marker.png` — ~576×768, PNG RGBA
+Not a stela. A **young sapling in a shaft of daylight** (or a break in the canopy) — the
+way back to the surface, and the only clean light in the world.
+
+## Enemy sprites — `assets/dungeon/`, PNG RGBA ~768×512
+Basename = enemy id, dots→dashes. Chroma-key on **MagentaBack** (subjects are green).
+Each must read as a *forest* creature with a tactical silhouette (see root Art.md rules):
+
+| basename | creature |
+|---|---|
+| `enemy-verdant-g1-moss-mite` | small mossy mite, tutorial foe |
+| `enemy-verdant-g1-spore-gnat` | spore-winged gnat, swarm |
+| `enemy-verdant-g2-thorn-crawler` | thorn-shelled crawler |
+| `enemy-verdant-g2-bramble-shield` | bramble-armoured **front blocker** — bulky, walling |
+| `enemy-verdant-g2-spore-caster` | spore-puffing **back caster** — frail, bulbous sacs |
+| `enemy-verdant-g4-pollen-drifter` | drifting pollen-cloud form |
+| `enemy-verdant-g6-thorn-cutter` | bladed-thorn **ambusher** — lean, fast |
+| `enemy-verdant-g7-husk-spawn` | small heartwood-husk spawn |
+| `enemy-verdant-g3-bloom-warden` | flowering warden (miniboss) |
+| `enemy-verdant-g4-bark-ward` | bark-plated ward (armoured miniboss) |
+| `enemy-verdant-g5-sap-keeper` | sap-dripping keeper (toll miniboss) |
+| `enemy-verdant-g6-strangler-warden` | strangling-vine warden (miniboss) |
+| `enemy-verdant-g7-heartwood-husk` | heavy heartwood husk (miniboss) |
+| `enemy-verdant-g8-rootheart` | **the Rootheart** — the living heartwood core. The boss; the most detailed piece in the pack. |
+
+## Icons — `assets/icons/`, 256×256 PNG RGBA
+`item-verdant-sap-draught` (amber sap vial) · `item-verdant-pollen-salve` (pale salve jar) ·
+`item-verdant-homing-spore` (glowing spore pod) · `item-verdant-greater-sap` (rich sap vial) ·
+`item-verdant-heartseed` (pulsing green seed) · `equip-verdant-thorn-lash` (living bramble
+whip) · `equip-verdant-bark-plate` (bark-scute armour) · `equip-verdant-living-charm`
+(green-wood charm).
+
+## UI / stills
+- `title/black-stela-title.jpg` (1920×1080) — verdant title key art: the drowned canopy /
+  the jade stela swallowed by roots.
+- `ui/combat-vignette.jpg` (1600×900) — green drowned-light combat backdrop.
+- `ui/guild-hall.jpg` / `ui/town-hub.jpg` (1600×900) — the grove-town: a settlement *in* the
+  wood (stilts, rope, lantern-moss), not the ash town.
+- `minimap/marker-*.png` (32×32) — optional green retint; falls back to default if omitted.
+
+Portraits are global character-creation art and need no verdant variant.
