@@ -131,7 +131,7 @@ export function runHeadlessProbes(world: ScenarioWorld, maxSteps = 1800): Headle
     }));
 }
 
-const floorDepthOf = (id: string | undefined | null) => Number(id?.match(/b(\d+)f/)?.[1] ?? 0);
+const floorDepthOf = (id: string | undefined | null) => Number(id?.match(/[a-z](\d+)f/i)?.[1] ?? 0);
 
 function downStairRoomOnFloor(world: ScenarioWorld, floorId: string): string | null {
   const floor = world.dungeons.find((dungeon) => dungeon.id === floorId);
@@ -321,7 +321,7 @@ function chooseNextCommand(
   // wander a deeper floor. Drop only *descending* exits (to a deeper floor); the
   // probe still explores here and may ascend to head home to town.
   const floorDepth = (roomId: string | undefined) =>
-    Number((roomId ? getFloorIdForRoom(world, roomId) : "")?.match(/b(\d+)f/)?.[1] ?? 0);
+    Number((roomId ? getFloorIdForRoom(world, roomId) : "")?.match(/[a-z](\d+)f/i)?.[1] ?? 0);
   const currentDepth = floorDepth(state.position.roomId);
   const exploreExits = Object.fromEntries(
     Object.entries(room.exits).filter(([, targetRoomId]) => {

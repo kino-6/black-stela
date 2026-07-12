@@ -52,7 +52,7 @@ export function DungeonView({ state, world, label }: DungeonViewProps) {
     const room = getRoom(world, state.position.roomId);
     // A faced stair reads as up or down by comparing the target floor's depth.
     const facedEdge = getGridEdge(world, state.position.roomId, state.position.facing);
-    const floorDepth = (id: string | null) => Number(id?.match(/b(\d+)f/)?.[1] ?? 0);
+    const floorDepth = (id: string | null) => Number(id?.match(/[a-z](\d+)f/i)?.[1] ?? 0);
     const stairDescends =
       facedEdge?.kind === "stairs" && facedEdge.targetFloorId
         ? floorDepth(facedEdge.targetFloorId) > floorDepth(getFloorIdForRoom(world, state.position.roomId))

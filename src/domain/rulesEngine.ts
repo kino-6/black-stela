@@ -1674,7 +1674,7 @@ function collectRoomTreasure(
 }
 
 function floorNumberForRoom(world: ScenarioWorld, roomId: string): number {
-  const match = (getFloorIdForRoom(world, roomId) ?? "").match(/b(\d+)f/);
+  const match = (getFloorIdForRoom(world, roomId) ?? "").match(/[a-z](\d+)f/i);
   return match ? Number(match[1]) : 1;
 }
 
@@ -2038,7 +2038,7 @@ function chooseDeeperFloor(current: string | undefined, next: string) {
 }
 
 function floorRank(floorId: string) {
-  const match = floorId.match(/b(\d+)f/i);
+  const match = floorId.match(/[a-z](\d+)f/i);
   return match ? Number(match[1]) : 0;
 }
 
