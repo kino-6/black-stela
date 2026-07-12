@@ -61,6 +61,38 @@ describe("verdant scenario", () => {
     }
   });
 
+  it("has a resolvable shop, treasure tables, and act-boundary checkpoints", () => {
+    // A real grove shop (fixes the empty-shop bug for verdant).
+    const shop = verdant.shops[0];
+    expect(shop?.id).toBe("shop.verdant.grove");
+    const itemIds = new Set([...verdant.items.map((i) => i.id), ...verdant.equipment.map((e) => e.id)]);
+    for (const stock of shop?.stock ?? []) {
+      expect(itemIds.has(stock.itemId), `shop -> missing ${stock.itemId}`).toBe(true);
+    }
+    // Every treasureTable a room references is defined.
+    const tableIds = new Set(verdant.treasureTables.map((t) => t.id));
+    for (const floor of verdant.dungeons) {
+      for (const room of floor.rooms) {
+        if (room.treasureTable) expect(tableIds.has(room.treasureTable), `${room.id} -> ${room.treasureTable}`).toBe(true);
+      }
+    }
+    // Every treasure entry item is defined.
+    for (const table of verdant.treasureTables) {
+      for (const entry of table.entries) {
+        expect(itemIds.has(entry.itemId), `${table.id} -> missing ${entry.itemId}`).toBe(true);
+      }
+    }
+    // Act-boundary checkpoints (resume-from-town), mirroring default's b3/b6.
+    const restFloors = verdant.dungeons.filter((d) => d.rooms.some((r) => r.restPoint)).map((d) => d.id);
+    expect(restFloors).toContain("dungeon.verdant.g4f");
+    expect(restFloors).toContain("dungeon.verdant.g7f");
+    // Shop unlock flags are registered.
+    const flagIds = new Set(verdant.progressionFlags.map((f) => f.id));
+    for (const stock of shop?.stock ?? []) {
+      if (stock.unlockFlag) expect(flagIds.has(stock.unlockFlag), `unlock ${stock.unlockFlag}`).toBe(true);
+    }
+  });
+
   it("inherits the shared base catalog (starter gear resolvable) despite no items.md", () => {
     const starterIds = new Set(classCatalog.flatMap((c) => Object.values(c.equipment ?? {})));
     const verdantEquipIds = new Set(verdant.equipment.map((e) => e.id));

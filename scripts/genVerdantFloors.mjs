@@ -170,7 +170,11 @@ function buildFloor(spec) {
     n === 1 ? "沈んだ入口" : "根の踊り場",
     n === 1 ? "The way in from the surface — a mossy stair climbs back toward daylight." : "A landing of knotted roots; a stair climbs back toward the floor above.",
     n === 1 ? "地上への入口。苔むした階段が陽の光へと登っていく。" : "根の絡む踊り場。階段が上の階へと登っていく。",
-    n === 1 ? "    stairsToTown: true\n    returnStyle: stairs\n" : ""
+    n === 1
+      ? "    stairsToTown: true\n    returnStyle: stairs\n"
+      : n === 4 || n === 7
+        ? "    restPoint: true\n" // act-boundary checkpoint (resume from town), mirrors default b3/b6
+        : ""
   ));
   plainChambers.forEach((c, i) => rooms.push(room(
     rid(n, `0${i + 2}`),

@@ -64,6 +64,7 @@ rooms:
   - id: room.verdant.g7f.001
     name: Root Landing
     description: A landing of knotted roots; a stair climbs back toward the floor above.
+    restPoint: true
     locales:
       ja:
         name: 根の踊り場
