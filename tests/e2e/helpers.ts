@@ -225,14 +225,52 @@ const B1F_NEEDLE_TO_WARDEN: Dir[] = [
   "south", "south", "west", "west", "south", "south", "west", "south", "south", "west", "south", "south"
 ];
 
+// A wandering pack can now ambush the party on ANY step, so a scripted walk must be
+// able to fight its way through: clear any live combat before touching a dungeon
+// control (turning/moving in combat would look for buttons that aren't mounted).
+export async function clearAnyCombat(page: Page) {
+  await page.waitForTimeout(80);
+  for (let guard = 0; guard < 6; guard += 1) {
+    // A win leaves the result screen OVERLAYING the dungeon — it must be dismissed or
+    // it silently swallows clicks on the movement controls underneath.
+    if ((await page.getByTestId("combat-result").count()) > 0) {
+      await page.getByTestId("combat-result-continue").click().catch(() => {});
+      await page.waitForTimeout(80);
+      continue;
+    }
+    const inCombat =
+      (await page.getByTestId("combat-command-menu").count()) > 0 ||
+      (await page.getByLabel("Battle screen").isVisible().catch(() => false));
+    if (!inCombat) {
+      return;
+    }
+    await resolveVisibleCombat(page);
+    await page.waitForTimeout(80);
+  }
+}
+
+// The victory overlay can appear a frame AFTER we think combat is over and it swallows
+// clicks, so every dungeon control press retries behind a dismiss.
+async function pressDungeon(page: Page, press: () => Promise<void>) {
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    await clearAnyCombat(page);
+    try {
+      await press();
+      return;
+    } catch {
+      // an overlay slid in between the check and the click — dismiss and retry
+    }
+  }
+  throw new Error("dungeon control stayed blocked (combat/result overlay never cleared)");
+}
+
 async function walkB1fPath(page: Page, dirs: Dir[]) {
   for (const dir of dirs) {
-    await faceDirection(page, dir);
-    await page.getByRole("button", { name: "Move", exact: true }).click();
-    await page.waitForTimeout(55);
-    if (await page.getByLabel("Battle screen").isVisible().catch(() => false)) {
-      await resolveVisibleCombat(page);
-    }
+    await pressDungeon(page, () => faceDirection(page, dir));
+    await pressDungeon(page, async () => {
+      await page.getByRole("button", { name: "Move", exact: true }).click({ timeout: 4000 });
+    });
+    await clearAnyCombat(page);
   }
 }
 

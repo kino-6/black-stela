@@ -2,7 +2,9 @@ import { defineConfig, devices } from "@playwright/test";
 
 export default defineConfig({
   testDir: "./tests/e2e",
-  timeout: 30_000,
+  // Wandering encounters mean a scripted walk now fights its way through, so a path that
+  // used to be pure movement can include several rounds of combat playback.
+  timeout: 90_000,
   expect: {
     timeout: 5_000
   },
