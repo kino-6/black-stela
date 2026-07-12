@@ -426,11 +426,18 @@ export interface GameState {
   position: DungeonPosition | null;
   combat: CombatState | null;
   defeatedEnemies: string[];
+  /** Enemy types cleared on the CURRENT floor visit. Encounter suppression is scoped
+   *  here, NOT to defeatedEnemies — so leaving and re-entering a floor repopulates its
+   *  chambers (玄室). defeatedEnemies stays the run-long record (mvp/records/squad). */
+  floorClearedEnemies: string[];
   resolvedTraps: string[];
   discoveredSecrets: string[];
   inventory: InventoryItem[];
   partyGold: number;
   claimedTreasures: string[];
+  /** Treasure rooms looted on the CURRENT floor visit — resets with the floor, so a
+   *  re-entered floor's chambers hold loot again. */
+  floorClaimedTreasures: string[];
   map: DungeonMapState;
   log: AdventureLogEntry[];
   turn: number;

@@ -260,7 +260,9 @@ describe("rules engine", () => {
     const left = executeCommand(at, defaultWorld, { type: "strafe_left" });
     expect(left.position?.roomId).toBe("room.b1f.c9_8");
     expect(left.position?.facing).toBe("east");
-    expect(left.log.at(-1)?.text).toBe("The party sidesteps into Dust-Choked Gallery.");
+    // A wandering pack may ambush on the step, so the sidestep line is not necessarily
+    // the LAST entry — only that the sidestep itself was narrated.
+    expect(left.log.map((entry) => entry.text)).toContain("The party sidesteps into Dust-Choked Gallery.");
 
     const right = executeCommand(at, defaultWorld, { type: "strafe_right" });
     expect(right.position?.roomId).toBe("room.b1f.c9_10");

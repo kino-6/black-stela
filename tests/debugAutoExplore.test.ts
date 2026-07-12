@@ -41,11 +41,16 @@ describe("debug auto-explore", () => {
     const startVisited = state.map.visitedRooms.length;
     const depth = (id: string | null | undefined) => Number(id?.match(/b(\d+)f/)?.[1] ?? 0);
     // Alternate auto-explore with clearing whatever fight it stops on. Auto-explore
-    // now descends on its own, so this should reach a deeper floor.
-    for (let pass = 0; pass < 20; pass += 1) {
+    // now descends on its own, so this should reach a deeper floor. Wandering
+    // encounters interrupt far more often now, so the pass budget is generous.
+    for (let pass = 0; pass < 400; pass += 1) {
       state = debugAutoExplore(state, defaultWorld);
       if (state.phase === "combat") {
         state = resolveCombat(state);
+        // This test is about NAVIGATION, not attrition: wandering encounters would
+        // otherwise grind a 3-person party down until it wipes back to town. Patch
+        // them up between fights so the explorer can keep walking.
+        state = executeCommand(state, defaultWorld, { type: "debug_revive_party" });
         continue;
       }
       break; // no fight left: stopped at a barred descent or the finale

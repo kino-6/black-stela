@@ -47,10 +47,12 @@ export function createDebugStateFromProgress(world: ScenarioWorld, progress: Deb
     position: null,
     combat: null,
     defeatedEnemies: [],
+    floorClearedEnemies: [],
     resolvedTraps: [],
     discoveredSecrets: [],
     partyGold: STARTING_PARTY_GOLD,
     claimedTreasures: [],
+    floorClaimedTreasures: [],
     inventory: [
       {
         id: "item.healing-draught",

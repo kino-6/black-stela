@@ -32,7 +32,7 @@ the root `Art.md` §2 (neutral-ish materials, no baked scene lighting, clean alp
 ### Block textures — `assets/dungeon/`, 1024², JPG, seamless-tiling
 Not stone. **Root/bark/moss surfaces**, wetter and more overgrown with depth:
 - `stone-wall-block1` / `stone-floor-block1` — **Act I**: moss-furred roots knitted into a
-  wall; floor of leaf-litter and shallow water.
+  wall; floor of leaf-litter and shallow water. ✅ generated
 - `stone-wall-block2` / `stone-floor-block2` — **Act II**: heavy bark scutes, weeping sap,
   fungal shelves; floor of sap-slick mud and drowned leaves.
 - `stone-wall-block3` / `stone-floor-block3` — **Act III**: pale heartwood grain, dense
@@ -48,7 +48,7 @@ recoloured stone stair.)*
 ### `dungeon/stair-up.png` — the ascent
 The same ladder seen from below, climbing toward a **pale shaft of daylight**.
 
-### `dungeon/wood-door.jpg` — 1024²
+### `dungeon/wood-door.jpg` — 1024² ✅ generated
 Not planks. A **curtain of hanging vines / a split trunk** — a soft, living barrier.
 
 ### `dungeon/return-marker.png` — ~576×768, PNG RGBA
@@ -85,10 +85,10 @@ whip) · `equip-verdant-bark-plate` (bark-scute armour) · `equip-verdant-living
 
 ## UI / stills
 - `title/black-stela-title.jpg` (1920×1080) — verdant title key art: the drowned canopy /
-  the jade stela swallowed by roots.
-- `ui/combat-vignette.jpg` (1600×900) — green drowned-light combat backdrop.
+  the jade stela swallowed by roots. ✅ generated
+- `ui/combat-vignette.jpg` (1600×900) — green drowned-light combat backdrop. ✅ generated
 - `ui/guild-hall.jpg` / `ui/town-hub.jpg` (1600×900) — the grove-town: a settlement *in* the
-  wood (stilts, rope, lantern-moss), not the ash town.
+  wood (stilts, rope, lantern-moss), not the ash town. ✅ generated
 - `minimap/marker-*.png` (32×32) — optional green retint; falls back to default if omitted.
 
 Portraits are global character-creation art and need no verdant variant.
