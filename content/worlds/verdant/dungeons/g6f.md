@@ -98,12 +98,7 @@ rooms:
   - id: room.verdant.g6f.keep
     name: Strangler Warden
     description: A close, root-walled keep; the only way deeper passes through it.
-    encounter:
-      id: enemy.verdant.g6.strangler-warden
-      name: Strangler Warden
-      hp: 14
-      attack: 4
-      role: miniboss
+    encounterTable: encounters.verdant.g6.keep
     treasureTable: treasure.verdant.g6.keep
     locales:
       ja:

@@ -98,12 +98,7 @@ rooms:
   - id: room.verdant.g7f.keep
     name: Heartwood Husk
     description: A close, root-walled keep; the only way deeper passes through it.
-    encounter:
-      id: enemy.verdant.g7.heartwood-husk
-      name: Heartwood Husk
-      hp: 14
-      attack: 4
-      role: miniboss
+    encounterTable: encounters.verdant.g7.keep
     treasureTable: treasure.verdant.g7.keep
     locales:
       ja:

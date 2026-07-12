@@ -98,12 +98,7 @@ rooms:
   - id: room.verdant.g5f.keep
     name: Sap Keeper
     description: A close, root-walled keep; the only way deeper passes through it.
-    encounter:
-      id: enemy.verdant.g5.sap-keeper
-      name: Sap Keeper
-      hp: 14
-      attack: 4
-      role: miniboss
+    encounterTable: encounters.verdant.g5.keep
     treasureTable: treasure.verdant.g5.keep
     locales:
       ja:

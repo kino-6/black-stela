@@ -98,12 +98,7 @@ rooms:
   - id: room.verdant.g3f.keep
     name: Bloom Warden
     description: A close, root-walled keep; the only way deeper passes through it.
-    encounter:
-      id: enemy.verdant.g3.bloom-warden
-      name: Bloom Warden
-      hp: 14
-      attack: 4
-      role: miniboss
+    encounterTable: encounters.verdant.g3.keep
     treasureTable: treasure.verdant.g3.keep
     locales:
       ja:

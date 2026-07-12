@@ -179,13 +179,16 @@ function buildFloor(spec) {
     `    encounterTable: ${spec.bossEnc ? `encounters.verdant.g${n}.pack` : `encounters.verdant.g${n}.pack`}\n    treasureTable: treasure.verdant.g${n}.side\n`
   )));
   // The keep = miniboss/boss sole-approach choke (or a plain deep chamber on G1).
+  // Enemy stats live in enemies.md; the keep references them by table (g3-g8) or as
+  // a squad (g2). Boss-floor status comes from the floor's `boss` tag, not inline.
   if (spec.boss) {
-    const squad = spec.bossSquad ? `    encounterSquad:\n${spec.bossSquad.map((e) => `      - ${e}`).join("\n")}\n` : "";
-    const enc = spec.bossEnemy ? `    encounter:\n      id: ${spec.bossEnemy}\n      name: ${spec.boss[0]}\n      hp: 14\n      attack: 4\n      role: ${spec.finale ? "boss" : "miniboss"}\n${spec.finale ? "      isBoss: true\n" : ""}` : "";
+    const field = spec.bossSquad
+      ? `    encounterSquad:\n${spec.bossSquad.map((e) => `      - ${e}`).join("\n")}\n`
+      : `    encounterTable: encounters.verdant.g${n}.keep\n`;
     rooms.push(room(
       rid(n, "keep"), spec.boss[0], spec.boss[1],
       "A close, root-walled keep; the only way deeper passes through it.", "根の壁に囲まれた狭い番所。奥へはここを抜けるほかない。",
-      `${enc}${squad}    treasureTable: treasure.verdant.g${n}.keep\n`
+      `${field}    treasureTable: treasure.verdant.g${n}.keep\n`
     ));
   } else {
     rooms.push(room(rid(n, "keep"), "Deep Grove", "奥の木立", "A quiet grove deep in the gallery.", "回廊の奥の静かな木立。",

@@ -32,13 +32,33 @@ describe("verdant scenario", () => {
 
   it("ends at the G8F rootheart boss (finale, no deeper stair)", () => {
     const g8 = verdant.dungeons.find((d) => d.id === "dungeon.verdant.g8f")!;
+    expect(g8.tags).toContain("boss");
     const keep = g8.rooms.find((r) => r.id === "room.verdant.g8f.keep");
-    expect(keep?.encounter?.id).toBe("enemy.verdant.g8.rootheart");
-    expect(keep?.encounter?.isBoss).toBe(true);
+    expect(keep?.encounterTable).toBe("encounters.verdant.g8.keep");
+    const rootheart = verdant.enemies.find((e) => e.id === "enemy.verdant.g8.rootheart");
+    expect(rootheart?.isBoss).toBe(true);
+    const bossTable = verdant.encounterTables.find((tbl) => tbl.id === "encounters.verdant.g8.keep");
+    expect(bossTable?.entries[0].enemyId).toBe("enemy.verdant.g8.rootheart");
     const hasDeeper = g8.grid?.cells.some((c) =>
       Object.values(c.edges).some((e) => e?.kind === "stairs" && e.targetFloorId && e.targetFloorId !== "dungeon.verdant.g7f")
     );
     expect(hasDeeper).toBeFalsy();
+  });
+
+  it("has a defined enemy for every encounter-table and squad reference", () => {
+    const enemyIds = new Set(verdant.enemies.map((e) => e.id));
+    for (const table of verdant.encounterTables) {
+      for (const entry of table.entries) {
+        expect(enemyIds.has(entry.enemyId), `${table.id} -> missing ${entry.enemyId}`).toBe(true);
+      }
+    }
+    for (const floor of verdant.dungeons) {
+      for (const room of floor.rooms) {
+        for (const id of room.encounterSquad ?? []) {
+          expect(enemyIds.has(id), `${room.id} squad -> missing ${id}`).toBe(true);
+        }
+      }
+    }
   });
 
   it("inherits the shared base catalog (starter gear resolvable) despite no items.md", () => {

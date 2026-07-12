@@ -93,13 +93,7 @@ rooms:
   - id: room.verdant.g8f.keep
     name: Rootheart
     description: A close, root-walled keep; the only way deeper passes through it.
-    encounter:
-      id: enemy.verdant.g8.rootheart
-      name: Rootheart
-      hp: 14
-      attack: 4
-      role: boss
-      isBoss: true
+    encounterTable: encounters.verdant.g8.keep
     treasureTable: treasure.verdant.g8.keep
     locales:
       ja:

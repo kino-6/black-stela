@@ -98,12 +98,7 @@ rooms:
   - id: room.verdant.g4f.keep
     name: Bark Ward
     description: A close, root-walled keep; the only way deeper passes through it.
-    encounter:
-      id: enemy.verdant.g4.bark-ward
-      name: Bark Ward
-      hp: 14
-      attack: 4
-      role: miniboss
+    encounterTable: encounters.verdant.g4.keep
     treasureTable: treasure.verdant.g4.keep
     locales:
       ja:
