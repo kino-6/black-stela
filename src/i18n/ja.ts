@@ -431,7 +431,7 @@ export const ja = {
     partyErased: "{name} の名は台帳から永久に消された。",
     partyEdited: "{name} のギルド記録を書き改めた。",
     partyImported: "{name} が別世界の記録庫からギルドに加わった。",
-    dungeonEntered: "隊列は黒い石碑の下へ降りた。",
+    dungeonEntered: "隊列は暗い深みへと降りていった。",
     partyTurned: "隊列は{side}を向き、{facing}を正面にした。",
     sideLeft: "左",
     sideRight: "右",

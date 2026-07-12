@@ -429,7 +429,7 @@ export const en = {
     partyErased: "{name}'s name is struck from the ledger for good.",
     partyEdited: "{name}'s guild record is revised.",
     partyImported: "{name} joins the guild from another realm's vault.",
-    dungeonEntered: "The party descends beneath the black stela.",
+    dungeonEntered: "The party descends into the dark below.",
     partyTurned: "The party turns {side}, now facing {facing}.",
     sideLeft: "left",
     sideRight: "right",

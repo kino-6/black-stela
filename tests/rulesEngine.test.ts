@@ -97,7 +97,7 @@ describe("rules engine", () => {
     });
     expect(result.state.log).toContainEqual(
       expect.objectContaining({
-        text: "The party descends beneath the black stela.",
+        text: "The party descends into the dark below.",
         tags: ["dungeon"]
       })
     );
