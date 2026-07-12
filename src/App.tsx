@@ -102,7 +102,7 @@ import {
 import { debugAutoExplore, runHeadlessClear } from "./headless/headlessRunner";
 import { defaultWorld } from "./data/defaultWorld";
 import { setActiveWorld } from "./data/activeWorld";
-import { listScenarios, getWorldById, getWorldByScenarioId } from "./data/worldRegistry";
+import { listScenarios, getWorldById, getWorldByScenarioId, mergeBaseCatalog } from "./data/worldRegistry";
 import { ScenarioPicker } from "./components/ScenarioPicker";
 import { fromSaveDataV1, toSaveDataV1 } from "./domain/saveData";
 import { LocalStorageSaveRepository, type SaveSlotSummary } from "./services/saveRepository";
@@ -1003,6 +1003,12 @@ export function App() {
       })
     );
     setHeadlessStatus(formatScenarioSummary(summarizeScenario(result.world)));
+
+    // Go live: the imported pack is parsed outside the build-time registry, so merge
+    // in the shared starter catalog (for the standard party's gear) and start a fresh
+    // run in it — no longer validate-only.
+    applyActiveWorld(mergeBaseCatalog(result.world));
+    startNewGame();
   }
 
   useEffect(() => {

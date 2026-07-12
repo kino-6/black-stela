@@ -89,7 +89,10 @@ const baseCatalog = {
   items: (defaultWorldData?.items ?? []).filter((item) => STARTER_ITEM_IDS.has(item.id))
 };
 
-function withBaseCatalog(world: ScenarioWorld): ScenarioWorld {
+// Merge the shared starter catalog into a world (world entries win). Exported so an
+// imported scenario pack (which is parsed outside this registry) also gets resolvable
+// starter gear for the standard party.
+export function mergeBaseCatalog(world: ScenarioWorld): ScenarioWorld {
   const equipIds = new Set(world.equipment.map((item) => item.id));
   const itemIds = new Set(world.items.map((item) => item.id));
   return {
@@ -104,7 +107,7 @@ export const worldRegistry: Record<string, ScenarioWorld> = Object.fromEntries(
     worldId,
     // Default is left byte-identical (it already defines the whole base); only other
     // worlds inherit the shared starter gear.
-    worldId === DEFAULT_WORLD_ID ? world : withBaseCatalog(world)
+    worldId === DEFAULT_WORLD_ID ? world : mergeBaseCatalog(world)
   ])
 );
 
