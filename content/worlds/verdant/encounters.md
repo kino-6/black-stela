@@ -6,7 +6,7 @@ encounterTables:
     floorId: dungeon.verdant.g1f
     groupsMax: 2
     entries:
-      - { enemyId: enemy.verdant.g1.moss-mite, weight: 10, minCount: 3, maxCount: 4 }
+      - { enemyId: enemy.verdant.g1.moss-mite, weight: 10, minCount: 4, maxCount: 5 }
       - { enemyId: enemy.verdant.g1.spore-gnat, weight: 7, minCount: 1, maxCount: 2 }
   - id: encounters.verdant.g2.pack
     floorId: dungeon.verdant.g2f
@@ -31,15 +31,15 @@ encounterTables:
   - id: encounters.verdant.g6.pack
     floorId: dungeon.verdant.g6f
     entries:
-      - { enemyId: enemy.verdant.g6.thorn-cutter, weight: 10, minCount: 1, maxCount: 2 }
+      - { enemyId: enemy.verdant.g6.thorn-cutter, weight: 10, minCount: 1, maxCount: 1 }
   - id: encounters.verdant.g7.pack
     floorId: dungeon.verdant.g7f
     entries:
-      - { enemyId: enemy.verdant.g7.husk-spawn, weight: 10, minCount: 2, maxCount: 3 }
+      - { enemyId: enemy.verdant.g7.husk-spawn, weight: 10, minCount: 1, maxCount: 2 }
   - id: encounters.verdant.g8.pack
     floorId: dungeon.verdant.g8f
     entries:
-      - { enemyId: enemy.verdant.g7.husk-spawn, weight: 10, minCount: 2, maxCount: 3 }
+      - { enemyId: enemy.verdant.g7.husk-spawn, weight: 10, minCount: 1, maxCount: 2 }
   # ---- keep chokes (single miniboss/boss) ----
   - id: encounters.verdant.g3.keep
     floorId: dungeon.verdant.g3f

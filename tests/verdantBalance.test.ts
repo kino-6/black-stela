@@ -2,30 +2,39 @@ import { describe, expect, it } from "vitest";
 import { worldRegistry } from "../src/data/worldRegistry";
 import { simulateDescent } from "../src/headless/descentSim";
 
-// Verdant balance Gate. The world ships full recovery (heals, escape item, act-boundary
-// checkpoints, grove shop), so the realistic difficulty is the "town" model (heal
-// between floors). We lock: the descent is completable when the player uses recovery,
-// difficulty escalates by act, and the Rootheart is a real climax — without pinning
-// exact first-pass numbers (V7 real-play refines). The pessimistic "none" model (never
-// heal across 8 floors) is intentionally lethal and NOT gated.
-describe("verdant balance (descentSim, town model)", () => {
-  const result = simulateDescent(worldRegistry.verdant, { heal: "town" });
-  const byId = new Map(result.floors.map((f) => [f.floorId, f]));
-  const trough = (id: string) => byId.get(id)!.lowestHpPct;
+// Verdant balance Gate — read the NONE model, per .claude/skills/drpg-balance
+// ("Tune against `none`; it's what the Gate reads. Never let the sim wipe."). Targets
+// (none-model trough, escalating by act): Act I ~0.85→0.65, Act II ~0.60→0.42, Act III
+// ~0.38→0.28. The whole descent is a first-contact run with no healing except on
+// level-up — the pessimistic one-push lower bound.
+describe("verdant balance (descentSim, none model)", () => {
+  const result = simulateDescent(worldRegistry.verdant, { heal: "none" });
+  const t = new Map(result.floors.map((f) => [f.floorId, f.lowestHpPct]));
+  const trough = (id: string) => t.get(`dungeon.verdant.${id}`)!;
+  const actMin = (...ids: string[]) => Math.min(...ids.map(trough));
 
-  it("is completable when the player heals between floors (no forced wipe)", () => {
+  it("never wipes across the full first-contact descent", () => {
     expect(result.floors.every((f) => !f.wiped)).toBe(true);
   });
 
-  it("escalates by act (Act III bites harder than Act I)", () => {
-    const actI = Math.min(trough("dungeon.verdant.g1f"), trough("dungeon.verdant.g2f"), trough("dungeon.verdant.g3f"));
-    const actIII = Math.min(trough("dungeon.verdant.g7f"), trough("dungeon.verdant.g8f"));
-    expect(actIII).toBeLessThan(actI);
+  it("escalates by act (Act I gentler than Act II gentler than Act III)", () => {
+    const actI = actMin("g1f", "g2f", "g3f");
+    const actII = actMin("g4f", "g5f", "g6f");
+    const actIII = actMin("g7f", "g8f");
+    expect(actII).toBeLessThan(actI);
+    expect(actIII).toBeLessThan(actII);
   });
 
-  it("makes the Rootheart a real climax — threatening but survivable with a full party", () => {
-    const g8 = trough("dungeon.verdant.g8f");
-    expect(g8).toBeLessThan(0.4); // a real threat
-    expect(g8).toBeGreaterThan(0.03); // not an instant wipe with full HP on arrival
+  it("keeps the deepest trough inside the danger band (finale tense, not lethal)", () => {
+    const deepest = Math.min(...result.floors.map((f) => f.lowestHpPct));
+    expect(deepest).toBeGreaterThan(0.12); // never a near-wipe
+    expect(deepest).toBeLessThan(0.4); // the finale genuinely bites
+    // The deepest trough is the boss floor — the run's climax.
+    expect(trough("g8f")).toBe(deepest);
+  });
+
+  it("Act I teaches gently (no early floor is a wall)", () => {
+    expect(trough("g1f")).toBeGreaterThan(0.7);
+    expect(trough("g3f")).toBeLessThan(trough("g1f")); // still ramps within the act
   });
 });
