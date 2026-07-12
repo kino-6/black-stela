@@ -231,6 +231,11 @@ const B1F_NEEDLE_TO_WARDEN: Dir[] = [
 export async function clearAnyCombat(page: Page) {
   await page.waitForTimeout(80);
   for (let guard = 0; guard < 6; guard += 1) {
+    // A wipe ends the fight by dragging the party to TOWN — there is no dungeon dock to
+    // wait for, so bail out instead of hanging.
+    if ((await page.getByTestId("town-cockpit").count()) > 0) {
+      return;
+    }
     // A win leaves the result screen OVERLAYING the dungeon — it must be dismissed or
     // it silently swallows clicks on the movement controls underneath.
     if ((await page.getByTestId("combat-result").count()) > 0) {

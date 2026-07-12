@@ -211,11 +211,11 @@ enemies:
       ja:
         name: 誓いの番人
     hp: 26
-    attack: 6
+    attack: 8
     armor: 2
     accuracy: 84
     damageMin: 5
-    damageMax: 8
+    damageMax: 10
     speed: 6
     morale: 11
     xp: 9
@@ -230,11 +230,11 @@ enemies:
       ja:
         name: 誓い断ち
     hp: 11
-    attack: 4
+    attack: 5
     armor: 1
     accuracy: 80
     damageMin: 3
-    damageMax: 6
+    damageMax: 8
     speed: 9
     morale: 8
     xp: 5
@@ -248,11 +248,11 @@ enemies:
       ja:
         name: 納骨殻
     hp: 13
-    attack: 5
+    attack: 3
     armor: 3
     accuracy: 74
     damageMin: 4
-    damageMax: 7
+    damageMax: 4
     speed: 3
     morale: 10
     xp: 6
@@ -266,11 +266,11 @@ enemies:
       ja:
         name: 灰の奉者
     hp: 28
-    attack: 8
+    attack: 6
     armor: 3
     accuracy: 84
     damageMin: 5
-    damageMax: 11
+    damageMax: 8
     speed: 6
     morale: 12
     xp: 13
