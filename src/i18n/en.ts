@@ -295,6 +295,7 @@ export const en = {
   town: {
     guild: "Guild",
     shop: "Shop",
+    noShop: "This scenario has no shop.",
     recovery: "Recovery",
     records: "Records",
     entry: "Dungeon Entry",

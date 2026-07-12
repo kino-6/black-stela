@@ -297,6 +297,7 @@ export const ja = {
   town: {
     guild: "ギルド",
     shop: "商店",
+    noShop: "このシナリオに商店はありません。",
     recovery: "施療院",
     records: "記録",
     entry: "迷宮入口",

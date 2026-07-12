@@ -114,7 +114,12 @@ export function TownEntryPanel({
           <Users size={18} />
           {t("town.guild")}
         </button>
-        <button type="button" onClick={() => onEnterMode("shop")}>
+        <button
+          type="button"
+          onClick={() => onEnterMode("shop")}
+          disabled={(world.shops?.length ?? 0) === 0}
+          title={(world.shops?.length ?? 0) === 0 ? t("town.noShop") : undefined}
+        >
           <ShoppingBag size={18} />
           {t("town.shop")}
         </button>
