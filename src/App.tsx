@@ -147,7 +147,14 @@ export function App() {
   // The scenario currently being played. Initialized to the built-in default; the
   // scenario picker (T6) swaps it. All world-logic below reads this instead of the
   // hard-coded singleton so a different content/worlds/<id> can drive the game.
-  const [activeWorld, setActiveWorldState] = useState<ScenarioWorld>(defaultWorld);
+  const [activeWorld, setActiveWorldState] = useState<ScenarioWorld>(() => {
+    const world = debugMode ? getDebugWorldFromLocation() : defaultWorld;
+    // Point the framework-free consumers (catalog lookups, art pack) at it SYNCHRONOUSLY:
+    // they are read during the very first render, before the activeWorld effect runs.
+    setActiveWorld(world);
+    setActiveArtPack(world.assetPack ?? "default");
+    return world;
+  });
   // Debug tools collapse to a thin bar by default so debug mode stays playable —
   // the full panel otherwise shrinks the game view. Auto-explore lives in the
   // dungeon command dock, so it's reachable while the panel is collapsed.
@@ -155,7 +162,7 @@ export function App() {
   const [debugProgress, setDebugProgress] = useState<DebugProgress>(() => getDebugProgressFromLocation());
   const scenarioValidationErrors = useMemo(() => getScenarioValidationErrorsFromLocation(), []);
   const [state, setState] = useState<GameState>(() =>
-    debugMode ? createDebugStateFromLocation() : createInitialGameState()
+    debugMode ? createDebugStateFromLocation(getDebugWorldFromLocation()) : createInitialGameState()
   );
   const stateRef = useRef(state);
   const [screen, setScreen] = useState<AppScreen>(() =>
@@ -1276,6 +1283,18 @@ export function App() {
         <DebugPanel
           open={debugPanelOpen}
           onToggle={() => setDebugPanelOpen((open) => !open)}
+          scenarios={listScenarios()}
+          worldId={listScenarios().find((s) => getWorldById(s.worldId) === activeWorld)?.worldId ?? "default"}
+          onChangeWorld={(worldId) => {
+            const world = getWorldById(worldId);
+            if (!world) {
+              return;
+            }
+            // Switch the whole scenario and rebuild the debug state inside it.
+            applyActiveWorld(world);
+            setState(createDebugStateFromProgress(world, debugProgress));
+            setHeadlessStatus("");
+          }}
           visitedCount={state.map.visitedRooms.length}
           roomTotal={getTotalRoomCount()}
           phase={state.phase}
@@ -2532,8 +2551,19 @@ function getDebugProgressFromLocation() {
 
 // Seed a debug state, then honor an optional `&at=<roomId>&facing=<dir>` override
 // so mechanic e2es can start on the exact cell under test (see withDebugStartCell).
-function createDebugStateFromLocation(): GameState {
-  const state = createDebugStateFromProgress(defaultWorld, getDebugProgressFromLocation());
+// Debug mode used to be hard-wired to the default world, so a second scenario could not
+// be debugged at all. `?debug=1&world=<id>` now picks the scenario (default when absent
+// or unknown).
+export function getDebugWorldFromLocation(): ScenarioWorld {
+  if (typeof window === "undefined") {
+    return defaultWorld;
+  }
+  const requested = new URLSearchParams(window.location.search).get("world");
+  return (requested ? getWorldById(requested) : undefined) ?? defaultWorld;
+}
+
+function createDebugStateFromLocation(world: ScenarioWorld): GameState {
+  const state = createDebugStateFromProgress(world, getDebugProgressFromLocation());
   if (typeof window === "undefined") {
     return state;
   }
@@ -2543,7 +2573,7 @@ function createDebugStateFromLocation(): GameState {
     return state;
   }
   const facing = params.get("facing") as Direction | null;
-  return withDebugStartCell(state, defaultWorld, at, facing ?? undefined);
+  return withDebugStartCell(state, world, at, facing ?? undefined);
 }
 
 function getTotalRoomCount() {

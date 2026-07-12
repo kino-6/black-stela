@@ -64,6 +64,7 @@ export const ja = {
   },
   debug: {
     heading: "デバッグ開始",
+    scenario: "シナリオ",
     visited: "探索 {visited}/{total} · 状態 {phase}",
     progress: "進捗",
     ready: "街で準備済み",

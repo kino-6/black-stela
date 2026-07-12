@@ -62,6 +62,7 @@ export const en = {
   },
   debug: {
     heading: "Debug Start",
+    scenario: "Scenario",
     visited: "Mapped {visited}/{total} · Phase {phase}",
     progress: "Progress",
     ready: "Ready in town",

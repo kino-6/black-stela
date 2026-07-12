@@ -39,19 +39,19 @@ Not stone. **Root/bark/moss surfaces**, wetter and more overgrown with depth:
   vein-like roots; floor of bone-pale rootmat.
 (The basenames are fixed by the renderer — the *content* is what changes.)
 
-### `dungeon/stair-down.png` — the descent (PNG RGBA, ~768², billboard)
+### `dungeon/stair-down.png` — the descent (PNG RGBA, ~768², billboard) ✅ generated
 **A vine ladder / hanging root-stair**, not steps: knotted vines and aerial roots dropping
 through a hole in the rootmat into green dark below. Must read instantly as "go down."
 Bottom-weighted, clean alpha. *(This is the piece the player sees most; do not ship a
 recoloured stone stair.)*
 
-### `dungeon/stair-up.png` — the ascent
+### `dungeon/stair-up.png` — the ascent ✅ generated
 The same ladder seen from below, climbing toward a **pale shaft of daylight**.
 
 ### `dungeon/wood-door.jpg` — 1024² ✅ generated
 Not planks. A **curtain of hanging vines / a split trunk** — a soft, living barrier.
 
-### `dungeon/return-marker.png` — ~576×768, PNG RGBA
+### `dungeon/return-marker.png` — ~576×768, PNG RGBA ✅ generated
 Not a stela. A **young sapling in a shaft of daylight** (or a break in the canopy) — the
 way back to the surface, and the only clean light in the world.
 
@@ -91,4 +91,12 @@ whip) · `equip-verdant-bark-plate` (bark-scute armour) · `equip-verdant-living
   wood (stilts, rope, lantern-moss), not the ash town. ✅ generated
 - `minimap/marker-*.png` (32×32) — optional green retint; falls back to default if omitted.
 
-Portraits are global character-creation art and need no verdant variant.
+## Character portraits — `assets/portraits/`, 512×512 PNG
+
+Verdant should override the global portraits. Character creation is part of the
+scenario mood; do not leave the ash/default adventurer portraits in a living
+forest pack.
+
+Use the same 12 portrait basenames as the default pack:
+`gate`, `ruin`, `vial`, `coin`, `map`, `ward`, `road`, `pit`, `ink`, `grave`,
+`dock`, `cloak`.

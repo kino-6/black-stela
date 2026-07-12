@@ -7,6 +7,10 @@ import type { SaveSlotSummary } from "../services/saveRepository";
 
 interface DebugPanelProps {
   open: boolean;
+  /** Debug mode is scenario-aware: pick which content/worlds/<id> to debug. */
+  scenarios: { worldId: string; title: string }[];
+  worldId: string;
+  onChangeWorld: (worldId: string) => void;
   onToggle: () => void;
   visitedCount: number;
   roomTotal: number;
@@ -31,6 +35,9 @@ interface DebugPanelProps {
 // render; pure helpers/icons are imported here rather than threaded as props.
 export function DebugPanel({
   open,
+  scenarios,
+  worldId,
+  onChangeWorld,
   onToggle,
   visitedCount,
   roomTotal,
@@ -72,6 +79,20 @@ export function DebugPanel({
       </button>
       {open && (
         <>
+          <label>
+            {t("debug.scenario")}
+            <select
+              value={worldId}
+              data-testid="debug-scenario"
+              onChange={(event) => onChangeWorld(event.target.value)}
+            >
+              {scenarios.map((scenario) => (
+                <option key={scenario.worldId} value={scenario.worldId}>
+                  {scenario.title}
+                </option>
+              ))}
+            </select>
+          </label>
           <label>
             {t("debug.progress")}
             <select value={progress} onChange={(event) => onChangeProgress(event.target.value)}>
