@@ -119,7 +119,7 @@ enemies:
     armor: 0
     accuracy: 70
     damageMin: 3
-    damageMax: 5
+    damageMax: 7
     speed: 6
     morale: 8
     xp: 3
@@ -139,11 +139,11 @@ enemies:
       ja:
         name: 灯守
     hp: 13
-    attack: 5
+    attack: 8
     armor: 2
     accuracy: 70
     damageMin: 4
-    damageMax: 7
+    damageMax: 13
     speed: 3
     morale: 10
     xp: 4
@@ -192,11 +192,11 @@ enemies:
       ja:
         name: 貯水の番人
     hp: 17
-    attack: 5
+    attack: 6
     armor: 1
     accuracy: 82
     damageMin: 4
-    damageMax: 7
+    damageMax: 9
     speed: 6
     morale: 10
     xp: 5
@@ -252,7 +252,7 @@ enemies:
     armor: 3
     accuracy: 74
     damageMin: 4
-    damageMax: 6
+    damageMax: 7
     speed: 3
     morale: 10
     xp: 6
@@ -266,11 +266,11 @@ enemies:
       ja:
         name: 灰の奉者
     hp: 28
-    attack: 6
+    attack: 8
     armor: 3
     accuracy: 84
     damageMin: 5
-    damageMax: 8
+    damageMax: 11
     speed: 6
     morale: 12
     xp: 13

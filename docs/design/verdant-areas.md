@@ -78,7 +78,7 @@ Status flavour: pollen = sleep/poison; sap = slow/bind. Blockers are bark/brambl
    unlock-by-descent) + `treasure.md` + `progression.md`. Shared base catalog auto-
    merges the starter gear; verdant layers its own on top (fixes the empty shop).
 4. **V4 balance** — `descentSim` over G1–G8 to the trough band; data-only tuning.
-5. **V5 art** — Art.md verdant order list; own pack `content/worlds/verdant/assets/`
+5. **V5 art** — `content/worlds/verdant/ART.md`; own pack `content/worlds/verdant/assets/`
    (green block textures, the roster's sprites, icons, markers, title, vignette).
    Until delivered, verdant falls back to the default pack (own-basename drop-in).
 6. **V6 tests** — design gate + registry + e2e extended to verdant; structure locked.

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { asset, catalogIconUrl, cssArtVariables, ICON_PLACEHOLDER, portraitUrl } from "../src/ui/artAssets";
 import { scenarioWorldSchema } from "../src/domain/scenario";
 
-// Locks the pack-scoped, own-basename-first resolver contract (Art.md §2). These
+// Locks the pack-scoped, own-basename-first resolver contract (docs/art/common.md). These
 // are build-time-glob facts, so they assert against the bundled default pack.
 describe("art resolver", () => {
   it("resolves every placeholder id to real art — own-basename if delivered, else the placeholder", () => {

@@ -599,6 +599,7 @@ function moveForward(
     },
     party: markDeepestFloor(state.party, roomVisit.map.floorId ?? state.map.floorId),
     map: roomVisit.map,
+    stepsSinceEncounter: state.stepsSinceEncounter + 1,
     turn: state.turn + 1
   };
 
@@ -643,20 +644,28 @@ function moveForward(
   // A room with an authored encounter fires it; otherwise the corridor itself can
   // ambush you — a WANDERING encounter rolled from this floor's table. Without this
   // the dungeon was a fixed set of set-piece rooms and walking was never dangerous.
+  // A party with nobody left standing must NOT be dragged into a fight it cannot act in:
+  // that combat can never reach a round-end, so the wipe check never fires and the run
+  // soft-locks. A fully wounded party is allowed to limp home instead.
+  const canFight = next.party.some((member) => member.hp > 0 && !member.injury);
   const started =
-    effects.teleported
+    effects.teleported || !canFight
       ? null
       : beginRoomEncounter(world, room, next) ?? beginWanderingEncounter(world, room, next);
   if (started) {
-    next = { ...next, phase: "combat", combat: started.combat };
+    next = { ...next, phase: "combat", combat: started.combat, stepsSinceEncounter: 0 };
     events.push(started.event);
   }
 
   return withEvents(next, events);
 }
 
-/** Chance, per step, that the corridor throws a wandering pack at the party. */
-const WANDERING_ENCOUNTER_PCT = 6;
+/** Chance, per step, that the corridor throws a wandering pack at the party — and the
+ *  SAFETY WINDOW that must pass since the last fight before it can. Without the window a
+ *  bad streak chain-ambushes the party step after step; with it, the expected spacing is
+ *  COOLDOWN + 1/rate steps (~33 here), which is the classic DRPG cadence. */
+export const WANDERING_ENCOUNTER_PCT = 4;
+export const WANDERING_COOLDOWN_STEPS = 8;
 
 // A wandering encounter: rolled from the CURRENT FLOOR's encounter table when the room
 // the party stepped into has no authored fight of its own. Floor-scoped suppression
@@ -676,6 +685,9 @@ function beginWanderingEncounter(
   const floor = floorForRoom(world, room.id);
   if (!floor) {
     return null;
+  }
+  if (state.stepsSinceEncounter < WANDERING_COOLDOWN_STEPS) {
+    return null; // safety window since the last fight
   }
   if (rollPercent(`${state.turn}:${room.id}:wander`) >= WANDERING_ENCOUNTER_PCT) {
     return null;

@@ -430,6 +430,9 @@ export interface GameState {
    *  here, NOT to defeatedEnemies — so leaving and re-entering a floor repopulates its
    *  chambers (玄室). defeatedEnemies stays the run-long record (mvp/records/squad). */
   floorClearedEnemies: string[];
+  /** Steps walked since the last fight. A wandering encounter needs a safety window, so
+   *  the party is never chain-ambushed step after step. */
+  stepsSinceEncounter: number;
   resolvedTraps: string[];
   discoveredSecrets: string[];
   inventory: InventoryItem[];

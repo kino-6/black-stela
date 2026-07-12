@@ -1,6 +1,7 @@
 # Verdant scenario art order — 樹海 (the drowned wood)
 
 Art for the second scenario (`翠碑 — 沈む樹心 / Verdant Stela — the Sunken Heartwood`).
+Read shared production and drop-in rules first: `../../../docs/art/common.md`.
 Pack lives at **`content/worlds/verdant/assets/`**, resolves own-basename-first, and a
 dropped file is used after a rebuild with no code change.
 
@@ -24,8 +25,9 @@ and will be dialled back once these assets land — do not design *to* the tint.
 
 **Tone.** Life · encroachment · drowning-in-green. Wet, overgrown, softly suffocating.
 Deep greens, sap-amber, pollen-gold, mould-black, bark-brown, drowned light. It is a
-*place that is alive*, the opposite of Black Stela's dry death. Same production rules as
-the root `Art.md` §2 (neutral-ish materials, no baked scene lighting, clean alpha).
+*place that is alive*, the opposite of Black Stela's dry death. It follows
+`../../../docs/art/common.md`: material color and silhouette belong in the asset;
+scene lighting, fog, bloom, and torch effects belong in the renderer.
 
 ## Structures (the ones that carry the world)
 
@@ -57,7 +59,8 @@ way back to the surface, and the only clean light in the world.
 
 ## Enemy sprites — `assets/dungeon/`, PNG RGBA ~768×512
 Basename = enemy id, dots→dashes. Chroma-key on **MagentaBack** (subjects are green).
-Each must read as a *forest* creature with a tactical silhouette (see root Art.md rules):
+Each must read as a *forest* creature with a tactical silhouette; use the shared
+readability and alpha rules in `../../../docs/art/common.md`.
 
 | basename | creature |
 |---|---|
@@ -99,4 +102,8 @@ forest pack.
 
 Use the same 12 portrait basenames as the default pack:
 `gate`, `ruin`, `vial`, `coin`, `map`, `ward`, `road`, `pit`, `ink`, `grave`,
-`dock`, `cloak`.
+`dock`, `cloak`. ✅ generated
+
+Post-generation review note: `grave` and `cloak` are intentionally darker than
+the others. If they lose readability in the in-game party rail, retake those two
+with brighter face midtones while keeping the same subdued mood.

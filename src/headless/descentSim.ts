@@ -22,6 +22,8 @@
 //            one-push lower bound with no consumables).
 import { createCombatState, executeCommand } from "../domain/rulesEngine";
 import { createDebugStateFromProgress } from "../debug/debugStart";
+import { analyzeFloorGraph } from "../domain/floorGraph";
+import { WANDERING_COOLDOWN_STEPS, WANDERING_ENCOUNTER_PCT } from "../domain/rulesEngine";
 import { floorName } from "../domain/scenario";
 import type { Character, Enemy, GameState, ScenarioWorld } from "../domain/types";
 
@@ -72,6 +74,46 @@ interface PlannedEncounter {
 // declares: fixed room encounters (count 1) plus each new random-table type at its
 // maxCount (the fuller, harder group). `seen` gates by type across the whole run,
 // exactly like the engine's defeatedEnemies check.
+// How many wandering packs a floor throws at a party that is actually descending it.
+// Expected spacing between ambushes is COOLDOWN + 100/RATE steps; the walk is the
+// entrance→down-stair shortest path times an exploration factor (players detour for
+// chambers and treasure, they do not beeline). Each ambush is a roll on that floor's
+// table, so we take its heaviest entry at maxCount.
+const EXPLORE_FACTOR = 2.5;
+
+function planWanderingFights(world: ScenarioWorld, floorId: string): PlannedEncounter[] {
+  const floor = world.dungeons.find((dungeon) => dungeon.id === floorId);
+  const table = world.encounterTables.find((candidate) => candidate.floorId === floorId);
+  if (!floor || !table) {
+    return [];
+  }
+
+  const graph = analyzeFloorGraph(world, floorId);
+  const downStairRoom = (floor.grid?.cells ?? []).find((cell) =>
+    Object.values(cell.edges).some((edge) => edge?.kind === "stairs" && edge.targetFloorId)
+  )?.roomId;
+  const shortest = downStairRoom
+    ? Math.max(1, graph.shortestPathCells(floor.startRoom, downStairRoom).length - 1)
+    : 30;
+  const walkSteps = Math.round(shortest * EXPLORE_FACTOR);
+  const spacing = WANDERING_COOLDOWN_STEPS + 100 / WANDERING_ENCOUNTER_PCT;
+  // Every floor is walked, so it always draws SOME ambushes — a floor whose down-stair
+  // happens to sit near its landing must not read as encounter-free.
+  const count = Math.round(walkSteps / spacing);
+
+  const entry = table.entries.reduce((heaviest, candidate) =>
+    (candidate.weight ?? 1) > (heaviest.weight ?? 1) ? candidate : heaviest
+  );
+  const enemy = world.enemies.find((candidate) => candidate.id === entry.enemyId);
+  if (!enemy || count <= 0) {
+    return [];
+  }
+  return Array.from({ length: count }, () => ({
+    enemy,
+    count: entry.maxCount ?? entry.minCount ?? 1
+  }));
+}
+
 function planFloor(world: ScenarioWorld, floorId: string, seen: Set<string>): PlannedEncounter[] {
   const floor = world.dungeons.find((dungeon) => dungeon.id === floorId);
   if (!floor) {
@@ -166,7 +208,6 @@ export function simulateDescent(world: ScenarioWorld, options: { heal?: "town" |
 
   const base = createDebugStateFromProgress(world, "ready");
   let party = base.party.map((member) => ({ ...member }));
-  const seen = new Set<string>();
   const floors: FloorSimResult[] = [];
 
   // The world's own dungeon order (registry orders by floor level): b1..b8 for the
@@ -177,7 +218,14 @@ export function simulateDescent(world: ScenarioWorld, options: { heal?: "town" |
       party = party.map((member) => ({ ...member, hp: member.maxHp, mp: member.maxMp, injury: undefined, status: [] }));
     }
 
-    const encounters = planFloor(world, floorId, seen);
+    // The encounter economy changed: suppression is now scoped to the FLOOR VISIT, so a
+    // floor fights ALL of its own authored types (no run-long first-contact dedup), and
+    // walking it also draws WANDERING packs. Both must be simulated or the sim measures
+    // a game that no longer exists.
+    const encounters = [
+      ...planFloor(world, floorId, new Set<string>()),
+      ...planWanderingFights(world, floorId)
+    ];
     const arrivalLevel = avgLevel(party);
     const arrivalHpPct = avgHpPct(party);
     let lowest = arrivalHpPct;
@@ -190,7 +238,6 @@ export function simulateDescent(world: ScenarioWorld, options: { heal?: "town" |
       const outcome = resolveFight(workState, world, encounter);
       workState = outcome.state;
       party = workState.party;
-      seen.add(encounter.enemy.id);
       lowest = Math.min(lowest, outcome.midFightLow);
       if (party.filter(alive).length === 0) {
         wiped = true;

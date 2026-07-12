@@ -259,6 +259,7 @@ export const GameStateSchema = z.object({
   combat: CombatStateSchema.nullable(),
   defeatedEnemies: z.array(z.string()),
   floorClearedEnemies: z.array(z.string()).default([]),
+  stepsSinceEncounter: z.number().default(0),
   resolvedTraps: z.array(z.string()),
   discoveredSecrets: z.array(z.string()),
   inventory: z.array(InventoryItemSchema).default([]),
