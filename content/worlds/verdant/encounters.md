@@ -6,7 +6,7 @@ encounterTables:
     floorId: dungeon.verdant.g1f
     groupsMax: 2
     entries:
-      - { enemyId: enemy.verdant.g1.moss-mite, weight: 10, minCount: 2, maxCount: 3 }
+      - { enemyId: enemy.verdant.g1.moss-mite, weight: 10, minCount: 3, maxCount: 4 }
       - { enemyId: enemy.verdant.g1.spore-gnat, weight: 7, minCount: 1, maxCount: 2 }
   - id: encounters.verdant.g2.pack
     floorId: dungeon.verdant.g2f
@@ -22,20 +22,20 @@ encounterTables:
     floorId: dungeon.verdant.g4f
     groupsMax: 2
     entries:
-      - { enemyId: enemy.verdant.g4.pollen-drifter, weight: 10, minCount: 2, maxCount: 3 }
+      - { enemyId: enemy.verdant.g4.pollen-drifter, weight: 10, minCount: 1, maxCount: 2 }
       - { enemyId: enemy.verdant.g2.thorn-crawler, weight: 5, minCount: 1, maxCount: 1 }
   - id: encounters.verdant.g5.pack
     floorId: dungeon.verdant.g5f
     entries:
-      - { enemyId: enemy.verdant.g4.pollen-drifter, weight: 10, minCount: 2, maxCount: 3 }
+      - { enemyId: enemy.verdant.g4.pollen-drifter, weight: 10, minCount: 1, maxCount: 2 }
   - id: encounters.verdant.g6.pack
     floorId: dungeon.verdant.g6f
     entries:
-      - { enemyId: enemy.verdant.g6.thorn-cutter, weight: 10, minCount: 2, maxCount: 3 }
+      - { enemyId: enemy.verdant.g6.thorn-cutter, weight: 10, minCount: 1, maxCount: 2 }
   - id: encounters.verdant.g7.pack
     floorId: dungeon.verdant.g7f
     entries:
-      - { enemyId: enemy.verdant.g7.husk-spawn, weight: 10, minCount: 3, maxCount: 4 }
+      - { enemyId: enemy.verdant.g7.husk-spawn, weight: 10, minCount: 2, maxCount: 3 }
   - id: encounters.verdant.g8.pack
     floorId: dungeon.verdant.g8f
     entries:

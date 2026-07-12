@@ -93,6 +93,14 @@ function planFloor(world: ScenarioWorld, floorId: string, seen: Set<string>): Pl
       const enemy = world.enemies.find((candidate) => candidate.id === room.encounter?.id) ?? room.encounter;
       take(enemy, 1);
     }
+    // A tactical squad (front-blocker + back-caster) is a single planned fight of all
+    // its members — otherwise the sim under-counts squad floors (e.g. verdant G2).
+    for (const enemyId of room.encounterSquad ?? []) {
+      const enemy = world.enemies.find((candidate) => candidate.id === enemyId);
+      if (enemy) {
+        take(enemy, 1);
+      }
+    }
   }
 
   const tableIds = new Set<string>();
@@ -161,7 +169,10 @@ export function simulateDescent(world: ScenarioWorld, options: { heal?: "town" |
   const seen = new Set<string>();
   const floors: FloorSimResult[] = [];
 
-  for (const floorId of DESCENT_ORDER) {
+  // The world's own dungeon order (registry orders by floor level): b1..b8 for the
+  // default world, g1..g8 for verdant, etc. Falls back to the default constant.
+  const descentOrder = world.dungeons.length > 0 ? world.dungeons.map((dungeon) => dungeon.id) : DESCENT_ORDER;
+  for (const floorId of descentOrder) {
     if (heal === "town") {
       party = party.map((member) => ({ ...member, hp: member.maxHp, mp: member.maxMp, injury: undefined, status: [] }));
     }

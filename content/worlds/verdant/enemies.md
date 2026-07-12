@@ -7,11 +7,11 @@ enemies:
     name: Moss Mite
     locales: { ja: { name: 苔だに } }
     hp: 5
-    attack: 1
+    attack: 3
     armor: 0
     accuracy: 70
     damageMin: 1
-    damageMax: 2
+    damageMax: 3
     speed: 4
     morale: 7
     xp: 1
@@ -23,11 +23,11 @@ enemies:
     name: Spore Gnat
     locales: { ja: { name: 胞子蚋 } }
     hp: 4
-    attack: 2
+    attack: 3
     armor: 0
     accuracy: 72
     damageMin: 1
-    damageMax: 3
+    damageMax: 4
     speed: 6
     morale: 6
     xp: 1
@@ -39,11 +39,11 @@ enemies:
     name: Thorn Crawler
     locales: { ja: { name: 棘這い } }
     hp: 8
-    attack: 3
+    attack: 4
     armor: 1
     accuracy: 68
     damageMin: 2
-    damageMax: 4
+    damageMax: 5
     speed: 5
     morale: 6
     xp: 2
@@ -71,11 +71,11 @@ enemies:
     name: Spore Caster
     locales: { ja: { name: 胞子詠み } }
     hp: 10
-    attack: 4
+    attack: 5
     armor: 0
     accuracy: 74
     damageMin: 3
-    damageMax: 6
+    damageMax: 7
     speed: 5
     morale: 6
     xp: 3
@@ -89,7 +89,7 @@ enemies:
     name: Pollen Drifter
     locales: { ja: { name: 花粉漂い } }
     hp: 14
-    attack: 5
+    attack: 4
     armor: 1
     accuracy: 72
     damageMin: 3
@@ -104,11 +104,11 @@ enemies:
     name: Thorn Cutter
     locales: { ja: { name: 棘断ち } }
     hp: 16
-    attack: 7
+    attack: 6
     armor: 1
     accuracy: 74
     damageMin: 4
-    damageMax: 8
+    damageMax: 7
     speed: 7
     morale: 7
     xp: 4
@@ -121,11 +121,11 @@ enemies:
     name: Husk Spawn
     locales: { ja: { name: 殻の仔 } }
     hp: 20
-    attack: 8
+    attack: 6
     armor: 2
     accuracy: 70
     damageMin: 5
-    damageMax: 9
+    damageMax: 7
     speed: 5
     morale: 7
     xp: 5
@@ -137,12 +137,12 @@ enemies:
   - id: enemy.verdant.g3.bloom-warden
     name: Bloom Warden
     locales: { ja: { name: 花守り } }
-    hp: 22
-    attack: 5
+    hp: 24
+    attack: 6
     armor: 1
     accuracy: 72
     damageMin: 3
-    damageMax: 7
+    damageMax: 9
     speed: 5
     morale: 9
     xp: 6
@@ -170,12 +170,12 @@ enemies:
   - id: enemy.verdant.g5.sap-keeper
     name: Sap Keeper
     locales: { ja: { name: 樹液守り } }
-    hp: 32
-    attack: 7
+    hp: 34
+    attack: 9
     armor: 2
     accuracy: 72
     damageMin: 4
-    damageMax: 8
+    damageMax: 11
     speed: 5
     morale: 10
     xp: 9
@@ -187,11 +187,11 @@ enemies:
     name: Strangler Warden
     locales: { ja: { name: 絞め殺しの番人 } }
     hp: 36
-    attack: 8
+    attack: 7
     armor: 3
     accuracy: 72
     damageMin: 5
-    damageMax: 9
+    damageMax: 8
     speed: 5
     morale: 10
     xp: 10
@@ -203,11 +203,11 @@ enemies:
     name: Heartwood Husk
     locales: { ja: { name: 樹心の殻守 } }
     hp: 42
-    attack: 9
+    attack: 8
     armor: 6
     accuracy: 70
     damageMin: 5
-    damageMax: 10
+    damageMax: 9
     speed: 4
     morale: 11
     xp: 12
@@ -218,12 +218,12 @@ enemies:
   - id: enemy.verdant.g8.rootheart
     name: Rootheart
     locales: { ja: { name: 樹心の主 } }
-    hp: 70
-    attack: 11
+    hp: 80
+    attack: 13
     armor: 4
     accuracy: 74
-    damageMin: 6
-    damageMax: 12
+    damageMin: 8
+    damageMax: 15
     speed: 6
     morale: 12
     xp: 30
