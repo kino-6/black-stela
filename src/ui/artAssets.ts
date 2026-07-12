@@ -146,7 +146,9 @@ const CSS_ART: Record<string, string> = {
   "--art-marker-treasure": "marker-treasure",
   "--art-marker-trap": "marker-trap",
   "--art-title": "black-stela-title",
-  "--art-combat-vignette": "combat-vignette"
+  "--art-combat-vignette": "combat-vignette",
+  "--art-guild-hall": "guild-hall",
+  "--art-town-hub": "town-hub"
 };
 
 export function cssArtVariables(pack: string = activePack): Record<string, string> {

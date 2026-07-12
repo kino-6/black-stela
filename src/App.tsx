@@ -1740,15 +1740,10 @@ export function App() {
                     >
                       {state.party.length < PARTY_SIZE_LIMIT && (
                         <section className="guild-tavern-panel" aria-label={t("party.tavern")}>
-                          <div className="guild-tavern-scene" aria-hidden="true">
-                            <div className="guild-master-figure">
-                              <span className="guild-master-head" />
-                              <span className="guild-master-body" />
-                            </div>
-                            <span className="tavern-lantern" />
-                            <span className="tavern-counter" />
-                            <span className="tavern-table" />
-                          </div>
+                          {/* The recruiting-hall still (P7) IS the scene now — the old
+                              CSS stand-in props (figure/lantern/counter/table) would sit
+                              on top of a real room, so the element is a bare backdrop. */}
+                          <div className="guild-tavern-scene" aria-hidden="true" />
                           {showGuildFallbackRecruit && (
                             <div className="guild-master-dialogue">
                               <strong>{t("party.guildMaster")}</strong>

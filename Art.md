@@ -213,9 +213,10 @@ feature will read as an obvious grid. Keep them even and non-directional.
 
 ## 3. Current inventory (what already exists)
 
-`content/worlds/default/assets/` — **60 assets total** (21 `dungeon/` incl. 11
-enemy sprites + return marker + block/fallback textures + door, 16 `icons/`, 12
-`portraits/`, 9 `minimap/`, 1 `title/`, 1 `ui/`):
+`content/worlds/default/assets/` — **102 assets total** (36 `dungeon/` incl. 11
+enemy sprites + 11 hurt frames + return/stair props + block/fallback textures +
+door + trap/stela props, 38 `icons/`, 12 `portraits/`, 9 `minimap/`, 1 `title/`,
+6 `ui/`):
 
 | File | Size | Use | Gap it leaves |
 |------|------|-----|---------------|
@@ -224,15 +225,24 @@ enemy sprites + return marker + block/fallback textures + door, 16 `icons/`, 12
 | `stone-wall.jpg` / `stone-floor.jpg` | 1024² | fallback wall/floor | legacy fallback only |
 | `wood-door.jpg` | 1024² | every door | fine as a single door |
 | enemy sprites ×11 | 768×512 | combat sprites | wired per enemy id |
+| enemy hurt frames ×11 | 768×512 | combat hit/defeat frames | generated; FX wiring pending |
 | `return-marker.png` | 576×768 | town-return waystone | ok |
+| `stair-down.png` / `stair-up.png` | 768² | descent/ascent stair props | generated; stair sprite wiring pending |
+| `trap-hazard.png` | 512×512 | floor trap decal | generated; trap decal wiring pending |
+| `stela-root.png` | 1024×1536 | finale black-stela root prop | generated; finale prop wiring pending |
 | `portraits/*.png` ×12 | 512×512 | origin portraits | wired in character UI |
-| `icons/*.png` ×16 | 256×256 | item/equipment icons | wired in shop/inventory/equip UI |
+| `icons/*.png` ×38 | 256×256 | item/equipment icons | wired in shop/inventory/equip UI |
 | `minimap/marker-*.png` ×9 | 32×32 | minimap markers | wired through marker CSS classes |
 | `ui/combat-vignette.jpg` | 1600×900 | combat UI backdrop | wired in combat frame CSS |
+| `ui/guild-hall.jpg` / `ui/town-hub.jpg` | 1600×900 | town/guild backdrops | wired as the town/guild scenes |
+| `ui/fx-slash.png` / `ui/fx-spark.png` | 480×96 | combat FX sheets | generated; FX wiring pending |
+| `ui/party-hit-reaction.png` | 1600×900 | party damage overlay | generated; FX wiring pending |
 | `title/black-stela-title.jpg` | 1920×1080 | title background | wired in title screen CSS |
 
-Remaining geometry/CSS-only pieces: descent stairs (see P6), traps, and stela
-root. Player-imported portraits still override generated origin portraits.
+Remaining geometry/CSS-only gap: no requested default-pack art is missing, but
+P6/P7/P9/P12/P13 still need wiring passes before every generated asset appears
+in normal play. Player-imported portraits still override generated origin
+portraits.
 
 ---
 
@@ -329,7 +339,7 @@ with painted icons in the P4 style.
 - **Combat backdrop**: subtle dark encounter vignette generated and wired behind
   combat information/command regions.
 
-### P6 — Descent stair prop  ⬜ requested
+### P6 — Descent stair prop  ✅ generated / ⬜ wiring pending
 
 The return device (black marker + capped shaft / winch cage) and the descent
 stair now live in **separate cells** — `room.b1f.006` (Black Marker, return to
@@ -349,12 +359,21 @@ as "descend" from the corridor view, distinct from the return marker.
 - **Optional**: a matching **up-stair** variant (`dungeon/stair-up.png`) for the
   arrival-from-below cell.
 
-### P7 — Guild & town still art  ⬜ requested
+### P7 — Guild & town still art  ✅ generated and wired
 
-The town hub and the guild character-creation screen currently render their
-scenes as **CSS gradient placeholders** (a dim vignette with a stylized figure).
-They want real establishing stills to give the town/guild a sense of place —
-these are backdrops, not interactive props.
+**Wired 2026-07:** both stills now render as the actual backdrops. They resolve
+through the pack-scoped resolver as `--art-guild-hall` / `--art-town-hub` (added to
+`CSS_ART` in `artAssets.ts`) and are painted by `.guild-tavern-scene` / `.town-scene`
+under a light scrim; the old gradient stacks remain as the fallback when a pack ships
+no still. The CSS stand-in props (guild-master figure, tavern lantern/counter/table,
+town skyline/gate/lanterns/stela/steps) were REMOVED — they sat on top of a real room.
+A scenario pack can override either still by dropping its own `ui/guild-hall.jpg` /
+`ui/town-hub.jpg`.
+
+Original brief: the town hub and guild character-creation screen rendered their scenes
+as **CSS gradient placeholders** (a dim vignette with a stylized figure). They wanted
+real establishing stills to give the town/guild a sense of place — backdrops, not
+interactive props.
 
 - **Guild interior still** (`ui/guild-hall.jpg`, ~1600×900): the recruiting hall
   where the guild master sits — a lamplit stone room, a ledger desk, the black
@@ -379,8 +398,8 @@ these are backdrops, not interactive props.
 3. **P2 block textures (3 wall/floor sets)** — complete.
 4. **P3 portraits (12)** and **P4 icons (16)** — complete.
 5. **P5 title + minimap markers + combat vignette** — complete.
-6. **P6 descent stair prop** — requested (not yet generated).
-7. **P7 guild & town still art** — requested (not yet generated).
+6. **P6 descent stair prop** — generated; wiring pending.
+7. **P7 guild & town still art** — generated and wired (town/guild backdrops).
 
 ## 6. Wiring notes (so art actually shows up)
 
@@ -404,8 +423,9 @@ floating damage number (`.hit-number`) rises. **This is currently CSS-only**
 fade). The player asked "攻撃アニメとかないんでしょうか？" — real art would lift
 this from a placeholder to a satisfying hit.
 
-Requested (not yet generated). Each must be a self-contained static asset (the
-CSP blocks remote assets) wired the same way as existing sprites/icons:
+Assets are generated; render wiring is still pending. Each must be a
+self-contained static asset (the CSP blocks remote assets) wired the same way as
+existing sprites/icons:
 
 - **Impact FX sprite sheet** — a small slash/impact burst (physical) and a
   spark/scorch burst (fire/arcane), 3-5 frames each, transparent PNG, ~96px.
@@ -418,6 +438,7 @@ CSP blocks remote assets) wired the same way as existing sprites/icons:
   enemy-id → texture map.
 - **Party-hit reaction** — a subtle red vignette / shield-flash overlay when an
   enemy `kind: "enemyHit"` beat lands on a member (currently just the row shake).
+  Generated as `ui/party-hit-reaction.png`.
 
 Wiring target: `activeBeat` in `App.tsx` already exposes `kind`,
 `targetGroupId`/`targetCharacterId`, and `damage` per beat — an FX layer can key
@@ -452,8 +473,12 @@ Sprite sheets, transparent PNG, ~96px/frame, into `assets/ui/`:
 - `fx-spark` (3–5 frames): a fire/arcane burst for `kind:"cast"`.
 - Optional per-enemy 2nd frame: a hurt-flash + defeat/dissolve pose (drop as
   `dungeon/<enemy>-hurt.png` and we'll wire a beat frame).
+- `party-hit-reaction`: 1600×900 transparent red vignette / shield-flash overlay.
 
-### P10 — equipment icons (`assets/icons/`, 256×256 PNG RGBA)
+Status: generated (`fx-slash.png`, `fx-spark.png`, `party-hit-reaction.png`, and
+11 `dungeon/<enemy>-hurt.png` files); wiring pending.
+
+### P10 — equipment icons (`assets/icons/`, 256×256 PNG RGBA) ✅ generated
 Reach weapons: `equip-short-bow`, `equip-long-spear`. Tier-2 line:
 `equip-steel-sabre`, `equip-war-spear`, `equip-hunting-bow`, `equip-rune-staff`,
 `equip-scale-mail`, `equip-war-helm`, `equip-steel-gauntlets`, `equip-tower-shield`.
@@ -462,10 +487,47 @@ Effect accessories: `equip-vitality-charm` (life/HP), `equip-focus-band` (MP/min
 ward), `equip-swift-anklet` (speed). Tier-3 capstones: `equip-knight-plate`,
 `equip-warlord-blade`. Match the muted ash/iron palette of the existing icons.
 
-### P11 — consumable icons (`assets/icons/`, 256×256 PNG RGBA)
+### P11 — consumable icons (`assets/icons/`, 256×256 PNG RGBA) ✅ generated
 `item-greater-draught` (richer heal potion), `item-antidote` (green vial),
 `item-clarity-draught` (clear/blue vial), `item-calm-draught` (pale vial),
 `item-spirit-tonic` (luminous MP tonic). Same bottle family as `item-healing-draught`.
+
+### P12 — Trap floor decal  ✅ generated / ⬜ wiring pending (NOT drop-in)
+The armed-trap marker (`input.showTrap` in `dungeonScene.ts`) currently draws as a
+flat triangular mesh on the floor ahead. Replace it with a floor decal.
+- **Asset**: `dungeon/trap-hazard.png` — a **top-down** view of an armed hazard on a
+  single floor tile (spike-plate / blade-slit / snare-rune), read from above since it
+  lies flat on the floor. **512×512 PNG RGBA**, transparent outside the trap shape,
+  the mark filling ~70% centered.
+- **Read**: unmistakably "this tile is dangerous" at corridor depth; distinct from the
+  return marker and the stairs. Hazard palette `#b64b35` / `#3a0905`; no baked torchlight.
+- **Tone**: sits on the per-block floor texture — grimy, etched into stone, menacing but legible at a glance.
+- **Placement**: `content/worlds/default/assets/dungeon/trap-hazard.png`.
+- **Wiring target**: swap the `hazardMaterial` cylinder in `dungeonScene.ts` for a
+  floor-laid textured quad (a ~0.9-unit `PlaneGeometry` rotated flat, lifted ~0.02 to
+  avoid z-fighting) using this texture; keep a geometry fallback if the texture is absent.
+
+Status: generated as `content/worlds/default/assets/dungeon/trap-hazard.png`;
+wiring pending.
+
+### P13 — Stela root (finale centerpiece)  ✅ generated / ⬜ wiring pending (NOT drop-in)
+The run's climax. Per `docs/scenario/first-scenario-bible.md`, the black stela is not
+a monument above the dungeon — the dungeon is its **root**, revealed at the Gate of Ash
+(B8). There is no render for it yet; this is the finale's signature prop.
+- **Asset**: `dungeon/stela-root.png` — a **tall, camera-facing billboard** of the black
+  stela's root/core breaking up through the floor: black-glass / obsidian monolith, ash-
+  caked base, pale mask-shards embedded, cold and ominous. **1024×1536 PNG RGBA (2:3
+  vertical)**, clean alpha, bottom-weighted (rises from the floor), the most detailed
+  single piece in the pack.
+- **Read**: bigger and more imposing than any enemy sprite; instantly "THE black stela,
+  from below." Block-3 (B7-B8) palette: black-glass, ash, scorch near the gate.
+- **Placement**: `content/worlds/default/assets/dungeon/stela-root.png`.
+- **Wiring target**: a finale-only prop in `dungeonScene.ts` — a new input flag (e.g.
+  `showStelaRoot`, set on the B8 boss room / `isBossFloor` finale) draws it as a large
+  camera-facing billboard behind the enemy stage; absent flag / missing texture draws nothing.
+
+Status: generated as `content/worlds/default/assets/dungeon/stela-root.png`;
+wiring pending.
 
 ## 8. Retake queue (post-integration review)
 

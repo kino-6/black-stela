@@ -309,17 +309,24 @@ small {
   background: #0d100d;
 }
 
+/* The recruiting hall still (P7). A dark scrim rides over it so the dialogue and
+   buttons stay legible; the gradient stack remains the fallback if no still exists
+   in the active pack. */
 .guild-tavern-scene {
   position: relative;
-  min-height: 10.5rem;
+  min-height: 14rem;
   overflow: hidden;
   border: 1px solid #3a3728;
   border-radius: 4px;
   background:
+    linear-gradient(180deg, rgba(9, 11, 9, 0.1) 0%, rgba(9, 11, 9, 0) 45%, rgba(9, 11, 9, 0.42) 100%),
+    var(--art-guild-hall, none) center / cover no-repeat,
     radial-gradient(circle at 36% 28%, rgba(220, 177, 89, 0.28), transparent 8rem),
     linear-gradient(180deg, #181914 0%, #090b09 58%, #16100a 100%);
 }
 
+/* No copy sits on this backdrop, so keep the scrim light — it is here to seat the
+   still in the frame, not to hide it. */
 .guild-tavern-scene::before {
   position: absolute;
   right: 0;
@@ -327,77 +334,7 @@ small {
   left: 0;
   height: 36%;
   content: "";
-  background: linear-gradient(180deg, rgba(44, 30, 17, 0), rgba(55, 32, 14, 0.86));
-}
-
-.guild-master-figure {
-  position: absolute;
-  right: 18%;
-  bottom: 15%;
-  width: 5.5rem;
-  height: 7rem;
-}
-
-.guild-master-head,
-.guild-master-body {
-  position: absolute;
-  display: block;
-  left: 50%;
-  transform: translateX(-50%);
-}
-
-.guild-master-head {
-  top: 0.2rem;
-  width: 2.2rem;
-  height: 2.2rem;
-  border: 1px solid #d5b56d;
-  border-radius: 50%;
-  background: #8c7041;
-}
-
-.guild-master-body {
-  bottom: 0;
-  width: 4.4rem;
-  height: 5.2rem;
-  border: 1px solid #8c7041;
-  border-radius: 2rem 2rem 0.35rem 0.35rem;
-  background: linear-gradient(180deg, #2a2c22, #12150f);
-}
-
-.tavern-lantern,
-.tavern-counter,
-.tavern-table {
-  position: absolute;
-  display: block;
-}
-
-.tavern-lantern {
-  top: 1.1rem;
-  left: 1.4rem;
-  width: 1.2rem;
-  height: 1.8rem;
-  border: 1px solid #d5b56d;
-  background: #a06a24;
-  box-shadow: 0 0 2.8rem rgba(213, 181, 109, 0.38);
-}
-
-.tavern-counter {
-  right: 3%;
-  bottom: 10%;
-  width: 54%;
-  height: 1.45rem;
-  border: 1px solid #69411f;
-  background: #2b1a0f;
-}
-
-.tavern-table {
-  left: 7%;
-  bottom: 13%;
-  width: 33%;
-  height: 1.9rem;
-  border: 1px solid #5c3b1f;
-  border-radius: 50%;
-  background: #20140c;
+  background: linear-gradient(180deg, rgba(44, 30, 17, 0), rgba(55, 32, 14, 0.3));
 }
 
 .guild-master-dialogue {
@@ -1100,6 +1037,7 @@ textarea {
   padding-left: 1.2rem;
 }
 
+/* NOTE: this .town-scene is OVERRIDDEN by a later one — the still is wired there. */
 .town-scene {
   min-height: 24rem;
   border: 1px solid #30372f;
@@ -1840,6 +1778,9 @@ textarea {
   overflow-wrap: anywhere;
 }
 
+/* The town-hub still (P7). This is the rule that actually wins (an earlier .town-scene
+   above is overridden), so the still is wired HERE. Light scrim only — no copy sits on
+   the backdrop; the gradients below remain the fallback when a pack ships no still. */
 .town-scene {
   position: relative;
   min-height: 22rem;
@@ -1847,83 +1788,10 @@ textarea {
   border: 1px solid #36322b;
   border-radius: 4px;
   background:
+    linear-gradient(180deg, rgba(9, 11, 9, 0.1) 0%, rgba(9, 11, 9, 0) 45%, rgba(9, 11, 9, 0.45) 100%),
+    var(--art-town-hub, none) center / cover no-repeat,
     linear-gradient(180deg, #171817 0%, #0c0d0c 44%, #050505 100%),
     repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.035) 0 1px, transparent 1px 32px);
-}
-
-.town-skyline {
-  position: absolute;
-  inset: 18% 4% auto;
-  height: 24%;
-  background:
-    linear-gradient(90deg, transparent 0 7%, #111411 7% 14%, transparent 14% 22%, #151815 22% 30%, transparent 30% 42%, #111411 42% 49%, transparent 49% 58%, #151815 58% 66%, transparent 66% 78%, #111411 78% 86%, transparent 86%);
-  opacity: 0.9;
-}
-
-.town-gate {
-  position: absolute;
-  left: 50%;
-  bottom: 18%;
-  width: min(25rem, 72%);
-  height: 62%;
-  transform: translateX(-50%);
-  border: 1px solid #2e332e;
-  border-bottom: 0;
-  background:
-    linear-gradient(90deg, #111310 0 12%, transparent 12% 88%, #111310 88%),
-    linear-gradient(180deg, #1e221e 0 9%, transparent 9%);
-}
-
-.town-stela {
-  position: absolute;
-  left: 50%;
-  bottom: 0;
-  width: 3.1rem;
-  height: 82%;
-  transform: translateX(-50%);
-  border: 1px solid #3c3d35;
-  background: linear-gradient(90deg, #050505, #10100e 45%, #020202);
-}
-
-.town-stela::after {
-  content: "";
-  position: absolute;
-  left: 50%;
-  top: 12%;
-  width: 0.35rem;
-  height: 64%;
-  transform: translateX(-50%);
-  background: #7a3d31;
-  opacity: 0.62;
-}
-
-.town-lantern {
-  position: absolute;
-  bottom: 28%;
-  width: 0.55rem;
-  height: 1.8rem;
-  border: 1px solid #a1855d;
-  background: #3c2b16;
-  box-shadow: 0 0 18px rgba(161, 133, 93, 0.42);
-}
-
-.town-lantern.left {
-  left: 20%;
-}
-
-.town-lantern.right {
-  right: 20%;
-}
-
-.town-steps {
-  position: absolute;
-  left: 24%;
-  right: 24%;
-  bottom: 0;
-  height: 20%;
-  background:
-    repeating-linear-gradient(180deg, #171915 0 0.65rem, #0f110f 0.65rem 1.15rem);
-  border-top: 1px solid #34352e;
 }
 
 .primary-action {
