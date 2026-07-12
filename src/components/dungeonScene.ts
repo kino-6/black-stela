@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { asset, blockTextures, getEnemySpriteTextureUrl } from "../ui/artAssets";
+import { asset, assetOrNull, blockTextures, getEnemySpriteTextureUrl } from "../ui/artAssets";
 import type { EnemyElevation, ScenePalette } from "../domain/types";
 
 const DEFAULT_ART_PACK = "default";
@@ -109,6 +109,18 @@ export function buildDungeonScene(mount: HTMLDivElement, input: DungeonSceneInpu
   const doorTexture = loadTexture(asset("wood-door", pack));
   const returnMarkerTexture = loadTexture(asset("return-marker", pack));
 
+  // P6 stair props are OPTIONAL art: a pack that ships none falls back to the geometry
+  // stair. Loaded lazily so a corridor with no stair cap pays nothing.
+  const stairCache = new Map<string, THREE.Texture | undefined>();
+  const stairTextureFor = (descends: boolean): THREE.Texture | undefined => {
+    const name = descends ? "stair-down" : "stair-up";
+    if (!stairCache.has(name)) {
+      const url = assetOrNull(name, pack);
+      stairCache.set(name, url ? loadTexture(url) : undefined);
+    }
+    return stairCache.get(name);
+  };
+
   const ambient = new THREE.AmbientLight(p.ambient, 1.7);
   const torch = new THREE.PointLight(p.torch, 55, 26);
   torch.position.set(-1.5, 2.4, 1.6);
@@ -171,7 +183,17 @@ export function buildDungeonScene(mount: HTMLDivElement, input: DungeonSceneInpu
     addSideFeature(scene, wallMaterial, doorMaterial, edgeMaterial, "right", segment.right, zCenter);
 
     if (segment.frontCap) {
-      addFrontCap(scene, wallMaterial, doorMaterial, floorMaterial, edgeMaterial, segment.frontCap, zCenter, input.stairDescends ?? false);
+      addFrontCap(
+        scene,
+        wallMaterial,
+        doorMaterial,
+        floorMaterial,
+        edgeMaterial,
+        segment.frontCap,
+        zCenter,
+        input.stairDescends ?? false,
+        stairTextureFor
+      );
     }
   }
 
@@ -297,7 +319,8 @@ function addFrontCap(
   edgeMaterial: THREE.Material,
   kind: EdgeKindVisual,
   zCenter: number,
-  descends = false
+  descends = false,
+  stairTexture?: (descends: boolean) => THREE.Texture | undefined
 ) {
   // The view fades into fog when the corridor runs past the depth limit.
   if (kind === "open") {
@@ -308,14 +331,34 @@ function addFrontCap(
   const wall = new THREE.Mesh(new THREE.BoxGeometry(HALF_WIDTH * 2, WALL_HEIGHT, 0.25), wallMaterial);
   wall.position.set(0, WALL_MID_Y, z);
   scene.add(wall);
-  addStoneCourses(scene, wallMaterial, z);
+
+  // P6: the painted stair prop's archway is TRANSPARENT in the middle, so the wall's
+  // stone-course lines would show straight through the opening. Skip them when the
+  // prop is drawn — the art carries its own masonry.
+  const stairUrl = kind === "stairs" ? stairTexture?.(descends) : undefined;
+  if (!stairUrl) {
+    addStoneCourses(scene, wallMaterial, z);
+  }
 
   if (kind === "door") {
     const door = createDoor(doorMaterial, edgeMaterial);
     door.position.set(0, 1.15, z + 0.14);
     scene.add(door);
   } else if (kind === "stairs") {
-    scene.add(createStairs(floorMaterial, edgeMaterial, z, descends));
+    if (stairUrl) {
+      const sprite = new THREE.Sprite(
+        new THREE.SpriteMaterial({ map: stairUrl, transparent: true, depthWrite: false })
+      );
+      sprite.center.set(0.5, 0); // stands on the floor
+      sprite.scale.set(3.4, 3.4, 1);
+      sprite.position.set(0, 0.02, z + 0.2);
+      // The wall's stone-course lines are transparent too and would otherwise draw
+      // over the prop (the sprite writes no depth). Draw the stair last.
+      sprite.renderOrder = 2;
+      scene.add(sprite);
+    } else {
+      scene.add(createStairs(floorMaterial, edgeMaterial, z, descends));
+    }
   }
 }
 

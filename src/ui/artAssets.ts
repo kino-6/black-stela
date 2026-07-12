@@ -39,6 +39,13 @@ function resolveOrNull(name: string, pack: string = activePack): string | null {
   return byPack[pack]?.[name] ?? byPack[DEFAULT_PACK]?.[name] ?? null;
 }
 
+// Resolve an asset by basename, or undefined if it isn't in this pack or the default.
+// Use for OPTIONAL art (a prop/FX that has a geometry or CSS fallback) so a missing
+// file degrades instead of throwing.
+export function assetOrNull(name: string, pack: string = activePack): string | undefined {
+  return resolveOrNull(name, pack) ?? undefined;
+}
+
 // Resolve an asset by file basename (throws loudly if missing anywhere).
 export function asset(name: string, pack: string = activePack): string {
   const url = resolveOrNull(name, pack);
