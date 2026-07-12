@@ -299,6 +299,9 @@ export type GameEvent =
   | { type: "recovery_blocked"; goldRequired: number; goldAvailable: number }
   | { type: "party_retreated" }
   | { type: "returned_to_town" }
+  /** The whole party is down — the expedition fails and they are dragged back to town
+   *  for a rescue fee. Without this, a fight with no able actors had no exit at all. */
+  | { type: "party_wiped"; rescueFee: number }
   | { type: "debug_started"; text: string };
 
 // Vertical placement of the combat sprite: planted on the floor, hovering at

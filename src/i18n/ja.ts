@@ -474,6 +474,7 @@ export const ja = {
     recoveryBlocked: "回復には {gold}G 必要だ。",
     partyRetreated: "隊列は退却し、誰も失わずに立て直した。",
     returnedToTown: "隊列は街へ戻った。記録は残された。",
+    partyWiped: "隊列は全滅した。捜索隊が街へ運び戻す — 救助に {gold} ゴールドを要した。",
     blockedPartyRequired: "迷宮に入るには隊列が必要だ。",
     blockedStairsUnavailable: "正面に使える階段はない。",
     blockedNoReturn: "ここには街へ戻る階段も帰還印もない。",

@@ -1089,6 +1089,38 @@ function declareRound(state: GameState, world: ScenarioWorld, actions: CombatAct
     pendingActions: []
   });
 
+  // PARTY WIPE. Nobody dies in this game — hp<=0 becomes hp:1 + `wounded`, and a
+  // wounded member cannot act. So once EVERY member is wounded there are zero able
+  // actors and the fight can never be advanced, fled, or won: the run soft-locked in
+  // combat forever. The expedition now FAILS instead: the party is dragged back to
+  // town, still wounded (they must pay the infirmary), minus a rescue fee.
+  const noOneCanAct = party.every((member) => member.injury || member.hp <= 0);
+  if (noOneCanAct) {
+    const rescueFee = Math.floor(state.partyGold / 2);
+    const wiped: GameState = {
+      ...state,
+      phase: "town",
+      position: null,
+      combat: null,
+      party,
+      inventory,
+      partyGold: state.partyGold - rescueFee,
+      map: {
+        ...state.map,
+        currentRoomId: null,
+        currentCellId: null,
+        currentFacing: null
+      },
+      turn: state.turn + 1
+    };
+
+    return withEvents(wiped, [
+      { type: "combat_round_resolved", round: combat.round, summaries, beats },
+      ...injuredEvents,
+      { type: "party_wiped", rescueFee }
+    ]);
+  }
+
   const next: GameState = {
     ...state,
     combat: nextCombat,

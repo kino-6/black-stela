@@ -193,6 +193,8 @@ export function projectEventToLog(event: GameEvent, locale: Locale = "en", world
       return { text: t("events.partyRetreated"), tags: ["combat", "retreat"] };
     case "returned_to_town":
       return { text: t("events.returnedToTown"), tags: ["town"] };
+    case "party_wiped":
+      return { text: t("events.partyWiped", { gold: event.rescueFee }), tags: ["combat", "town"] };
     case "debug_started":
       return { text: event.text, tags: ["debug"] };
   }

@@ -472,6 +472,7 @@ export const en = {
     recoveryBlocked: "The party cannot afford recovery. {gold} gold required.",
     partyRetreated: "The party retreats and regroups without losing anyone.",
     returnedToTown: "The party returns to town. The record is preserved.",
+    partyWiped: "The party falls. Searchers drag them back to town — the rescue costs {gold} gold.",
     blockedPartyRequired: "A party is required before entering the labyrinth.",
     blockedStairsUnavailable: "There is no stair in front of the party.",
     blockedNoReturn: "There is no stair or return seal here.",
