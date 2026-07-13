@@ -1,3 +1,4 @@
+import { useState } from "react";
 import type { ReactNode } from "react";
 import type { Character, CombatBeat, CombatEnemyGroup, GameState, ScenarioWorld } from "../domain/types";
 import type { Locale, Translator } from "../i18n";
@@ -6,6 +7,7 @@ import { isCasterClass, knownSpells } from "../domain/spells";
 import { getEffectiveCharacterStats, weaponReaches } from "../domain/economy";
 import { localizedEnemyGroupName } from "../ui/catalog";
 import { DungeonView } from "./DungeonView";
+import type { EnemyAnchor } from "./dungeonScene";
 import { CombatEnemyStage } from "./CombatEnemyStage";
 import { CombatPartyStrip } from "./CombatPartyStrip";
 import { CombatLog } from "./CombatLog";
@@ -110,6 +112,10 @@ export function CombatCockpit({
   onForceVictory,
   onReviveParty
 }: CombatCockpitProps) {
+  // Where the renderer actually planted each group's figures. The stage overlays the
+  // name/HP on the creatures themselves, so it needs their screen position, not a card.
+  const [enemyAnchors, setEnemyAnchors] = useState<EnemyAnchor[]>([]);
+
   const caption = `${t("play.round", { round: state.combat?.round ?? 1 })} · ${
     selectedActor && selectedTarget
       ? t("play.selectedOrder", {
@@ -124,8 +130,11 @@ export function CombatCockpit({
   return (
     <>
       <CombatEnemyStage
-        backdrop={<DungeonView state={state} world={world} label={t("play.dungeonView")} />}
+        backdrop={
+          <DungeonView state={state} world={world} label={t("play.dungeonView")} onEnemyAnchors={setEnemyAnchors} />
+        }
         groups={enemyGroups}
+        anchors={enemyAnchors}
         selectedTargetId={selectedTarget?.id}
         targetingActive={!playingBack}
         activeBeat={activeBeat}
@@ -160,6 +169,10 @@ export function CombatCockpit({
       </div>
       {tempo}
 
+      {/* The command zone keeps its height whether it holds the menu, the confirm step, or
+          nothing at all (during beat playback). It used to simply unmount, and the enemy
+          stage — being flex:1 — swelled to fill the gap and shrank back a moment later. */}
+      <div className="combat-command-zone">
       {selectedActor && !playingBack && (
         <CombatCommandMenu
           actor={selectedActor}
@@ -209,6 +222,7 @@ export function CombatCockpit({
           <p className="combat-command-menu-hint">{t("play.confirmRoundHint")}</p>
         </div>
       )}
+      </div>
       <CombatCommandDock
         t={t}
         isTempoRunning={isTempoRunning}

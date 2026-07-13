@@ -330,7 +330,7 @@ export async function walkB1fMaxEnemyTypes(page: Page): Promise<number> {
     await page.getByRole("button", { name: "Move", exact: true }).click();
     await page.waitForTimeout(55);
     if (await page.getByLabel("Battle screen").isVisible().catch(() => false)) {
-      const names = await page.getByTestId("combat-enemy-group").locator(".enemy-figure-name").allTextContents().catch(() => []);
+      const names = await page.getByTestId("combat-enemy-group").locator(".enemy-mark-name").allTextContents().catch(() => []);
       const distinct = new Set(names.map((name) => name.replace(/\s*×\d+/, "").trim()).filter(Boolean));
       maxTypes = Math.max(maxTypes, distinct.size);
       await resolveVisibleCombat(page);
@@ -356,4 +356,30 @@ export async function advanceToB1fMarker(page: Page) {
 export async function advanceToB1fMarkerViaNeedle(page: Page) {
   await walkB1fPath(page, B1F_ENTRANCE_TO_NEEDLE);
   await walkB1fPath(page, B1F_NEEDLE_TO_WARDEN);
+}
+
+/** Boot straight into a debug run (skips guild/town), optionally on a given floor/world. */
+export async function startDebugRun(page: Page, options: { progress?: string; world?: string } = {}) {
+  const params = new URLSearchParams({ debug: "1" });
+  if (options.progress) {
+    params.set("progress", options.progress);
+  }
+  if (options.world) {
+    params.set("world", options.world);
+  }
+  await page.goto(`/?${params.toString()}`);
+  await expect(page.getByTestId("dungeon-canvas").first()).toBeVisible();
+}
+
+/** Walk the floor until something jumps us. Wandering encounters make this reliable. */
+export async function walkUntilCombat(page: Page, maxSteps = 220) {
+  for (let step = 0; step < maxSteps; step += 1) {
+    if ((await page.getByTestId("combat-enemy-group").count()) > 0) {
+      await page.waitForTimeout(400); // let the scene report its anchors
+      return true;
+    }
+    await page.keyboard.press(step % 5 === 4 ? "ArrowLeft" : "ArrowUp");
+    await page.waitForTimeout(90);
+  }
+  throw new Error("walked the floor without meeting anything");
 }

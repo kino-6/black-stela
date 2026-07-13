@@ -17,6 +17,7 @@ enemies:
     xp: 1
     gold: 2
     role: attrition
+    size: small
     dangerTier: 1
     tags: [tutorial, spore]
   - id: enemy.verdant.g1.spore-gnat
@@ -33,6 +34,7 @@ enemies:
     xp: 1
     gold: 2
     role: attrition
+    size: small
     weaknesses: { fire: 1.5 }
     tags: [swarm, insect]
   - id: enemy.verdant.g2.thorn-crawler
@@ -49,6 +51,7 @@ enemies:
     xp: 2
     gold: 3
     role: attrition
+    size: small
     tags: [beast, thorn]
   # ---- Act I squad (G2 front-blocker + back-caster) ----
   - id: enemy.verdant.g2.bramble-shield
@@ -65,6 +68,7 @@ enemies:
     xp: 3
     gold: 4
     role: blocker
+    size: large
     dangerTier: 2
     tags: [blocker, thorn, front]
   - id: enemy.verdant.g2.spore-caster
@@ -81,6 +85,7 @@ enemies:
     xp: 3
     gold: 4
     role: caster
+    size: medium
     dangerTier: 2
     weaknesses: { fire: 1.5 }
     tags: [caster, spore, status]
@@ -99,6 +104,7 @@ enemies:
     xp: 3
     gold: 5
     role: attrition
+    size: medium
     tags: [spore, status]
   - id: enemy.verdant.g6.thorn-cutter
     name: Thorn Cutter
@@ -114,6 +120,7 @@ enemies:
     xp: 4
     gold: 6
     role: ambusher
+    size: medium
     dangerTier: 3
     tags: [ambusher, thorn]
   # ---- Act III trash (G7-G8) ----
@@ -131,6 +138,7 @@ enemies:
     xp: 5
     gold: 8
     role: attrition
+    size: small
     dangerTier: 3
     tags: [husk, heartwood]
   # ---- Mini-bosses / boss (keep chokes) ----
@@ -148,6 +156,7 @@ enemies:
     xp: 6
     gold: 10
     role: miniboss
+    size: large
     dangerTier: 3
     weaknesses: { fire: 1.5 }
     tags: [miniboss, spore, status]
@@ -165,6 +174,7 @@ enemies:
     xp: 7
     gold: 12
     role: miniboss
+    size: large
     dangerTier: 3
     tags: [miniboss, blocker, bark]
   - id: enemy.verdant.g5.sap-keeper
@@ -181,6 +191,7 @@ enemies:
     xp: 9
     gold: 16
     role: miniboss
+    size: large
     dangerTier: 4
     tags: [miniboss, sap, toll]
   - id: enemy.verdant.g6.strangler-warden
@@ -197,6 +208,7 @@ enemies:
     xp: 10
     gold: 18
     role: miniboss
+    size: large
     dangerTier: 4
     tags: [miniboss, thorn]
   - id: enemy.verdant.g7.heartwood-husk
@@ -213,6 +225,7 @@ enemies:
     xp: 12
     gold: 20
     role: miniboss
+    size: large
     dangerTier: 4
     tags: [miniboss, blocker, heartwood]
   - id: enemy.verdant.g8.rootheart
@@ -229,6 +242,7 @@ enemies:
     xp: 30
     gold: 50
     role: boss
+    size: huge
     isBoss: true
     dangerTier: 5
     weaknesses: { fire: 1.5 }

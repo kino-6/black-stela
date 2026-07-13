@@ -72,7 +72,7 @@ Skillは「どう調べ、どう遊び、どう報告するか」を持つ。Gat
 しない。
 
 ```text
-run.json                 実行条件、commit、world、言語、viewport、seed
+run.json                 commit、dirty状態、world、言語、viewport、seed、憲章
 actions.jsonl            観察した画面、意図、通常入力、結果
 findings.md              重要度、再現手順、期待、実際、改善候補
 screenshots/             指摘の前後と主要チェックポイント
@@ -104,6 +104,19 @@ Human decision needed:
 長いプレイ日記や、根拠のない総合点は成果物にしない。
 
 ## 実行アーキテクチャ
+
+### 実行モード
+
+| モード | 分離方法 | 主張できること |
+| --- | --- | --- |
+| Strict Play | browser入力だけを許可した別Agent/別process | 内部情報を使わない探索的実プレイ |
+| Audited Play | 同一Agentだが全tool callを保存し、プレイ中のfile/source accessを禁止 | 有用なプレイ観察。完全な非チート証明ではない |
+| Scripted Regression | 既存Playwright helperと既知ルート | 既知routeの回帰。探索的プレイではない |
+
+CodexとClaude Codeのどちらでも、利用できるbrowser tool自体ではなく
+tool allowlistでPlay担当を隔離する。filesystem、shell、source検索を外した
+子Agentを作れない環境ではAudited Playへ降格し、報告に明記する。単一の
+Agentへ「ソースを見ないで」と依頼しただけの実行はStrict Playと呼ばない。
 
 ### Playフェーズ
 
@@ -337,4 +350,3 @@ npm run devloop:compare -- --before <run-id> --after <run-id>
   - 通常機能をdigital inputでも等価に操作できることを基準に用いる。
 - [Xbox Accessibility Guideline 112: UI navigation](https://learn.microsoft.com/en-us/xbox/accessibility/xbox-accessibility-guidelines/112)
   - 一貫したUI navigationとfocusをcontroller-first Gateへ反映する。
-

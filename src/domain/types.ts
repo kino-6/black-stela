@@ -308,6 +308,11 @@ export type GameEvent =
 // mid height, or drifting well above it. Omitted defaults to "ground".
 export type EnemyElevation = "ground" | "mid" | "air";
 
+// How big the creature stands in the corridor. The renderer measures the sprite's real
+// silhouette and scales it to this world height, so a mite and a boss read as different
+// creatures no matter how each was framed in its image file. Omitted defaults to "medium".
+export type EnemySize = "small" | "medium" | "large" | "huge";
+
 export interface Enemy {
   id: string;
   name: string;
@@ -332,6 +337,7 @@ export interface Enemy {
   tags?: string[];
   isBoss?: boolean;
   elevation?: EnemyElevation;
+  size?: EnemySize;
 }
 
 export interface Trap {

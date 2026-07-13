@@ -16,6 +16,7 @@ enemies:
     xp: 1
     gold: 2
     role: attrition
+    size: small
     dangerTier: 1
     tags: [tutorial, slime]
   - id: enemy.b1f.dust-crawler
@@ -34,6 +35,7 @@ enemies:
     xp: 2
     gold: 3
     role: attrition
+    size: small
     dangerTier: 1
     weaknesses:
       fire: 1.5
@@ -54,6 +56,7 @@ enemies:
     xp: 2
     gold: 3
     role: ambusher
+    size: small
     dangerTier: 2
     tags: [beast]
   # Squad pair: the warden shields the caller from melee. Mashing Attack barely
@@ -74,6 +77,7 @@ enemies:
     xp: 4
     gold: 5
     role: blocker
+    size: large
     weaknesses:
       physical: 0.5
       fire: 1.5
@@ -96,6 +100,7 @@ enemies:
     xp: 5
     gold: 6
     role: caster
+    size: medium
     weaknesses:
       physical: 1.5
     dangerTier: 2
@@ -125,6 +130,7 @@ enemies:
     xp: 3
     gold: 4
     role: status
+    size: small
     inflicts:
       status: poison
       chance: 45
@@ -149,6 +155,7 @@ enemies:
     xp: 4
     gold: 6
     role: blocker
+    size: large
     dangerTier: 3
     tags: [construct]
     elevation: mid
@@ -181,6 +188,7 @@ enemies:
     xp: 7
     gold: 12
     role: miniboss
+    size: large
     dangerTier: 4
     isBoss: true
     tags: [midpoint, boss]
@@ -202,6 +210,7 @@ enemies:
     xp: 5
     gold: 9
     role: miniboss
+    size: large
     dangerTier: 2
     isBoss: true
     tags: [block-cap, boss]
@@ -221,6 +230,7 @@ enemies:
     xp: 9
     gold: 15
     role: miniboss
+    size: large
     dangerTier: 4
     isBoss: true
     tags: [block-cap, boss]
@@ -240,6 +250,7 @@ enemies:
     xp: 5
     gold: 8
     role: ambusher
+    size: medium
     dangerTier: 4
     tags: [blade]
   - id: enemy.b7f.vault-husk
@@ -258,6 +269,7 @@ enemies:
     xp: 6
     gold: 10
     role: blocker
+    size: large
     dangerTier: 5
     tags: [optional]
   - id: enemy.b8f.ash-votary
@@ -276,6 +288,7 @@ enemies:
     xp: 13
     gold: 20
     role: boss
+    size: huge
     dangerTier: 5
     isBoss: true
     tags: [finale, boss]

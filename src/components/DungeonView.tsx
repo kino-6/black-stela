@@ -1,12 +1,15 @@
 import { useEffect, useMemo, useRef } from "react";
 import { getFloorIdForRoom, getGridCellForRoom, getGridEdge, getRoom, isTraversableEdge, secretKey } from "../domain/scenario";
 import type { Direction, GameState, ScenarioWorld } from "../domain/types";
-import { buildDungeonScene, type CorridorSegment, type EdgeKindVisual } from "./dungeonScene";
+import { buildDungeonScene, type CorridorSegment, type EdgeKindVisual, type EnemyAnchor } from "./dungeonScene";
 
 interface DungeonViewProps {
   state: GameState;
   world: ScenarioWorld;
   label: string;
+  /** In combat: where each enemy group's figures stand, so the UI can plant their
+   *  name/HP overlay on the creatures themselves rather than in a separate card. */
+  onEnemyAnchors?: (anchors: EnemyAnchor[]) => void;
 }
 
 type EdgeVisual = "wall" | "open" | "door";
@@ -36,7 +39,7 @@ export interface DungeonRenderLayout {
 // dungeonScene.ts.
 const MAX_DEPTH = 4;
 
-export function DungeonView({ state, world, label }: DungeonViewProps) {
+export function DungeonView({ state, world, label, onEnemyAnchors }: DungeonViewProps) {
   const mountRef = useRef<HTMLDivElement | null>(null);
   const viewModel = useMemo(() => getDungeonViewModel(state, world), [state.position, state.discoveredSecrets, world]);
   const corridor = useMemo(
@@ -66,8 +69,15 @@ export function DungeonView({ state, world, label }: DungeonViewProps) {
         state.phase === "combat"
           ? (state.combat?.enemyGroups ?? [])
               .filter((group) => group.count > 0)
-              .map((group) => ({ id: group.enemyId, elevation: group.elevation }))
+              .map((group) => ({
+                id: group.enemyId,
+                groupId: group.id,
+                count: group.count,
+                elevation: group.elevation,
+                size: world.enemies.find((enemy) => enemy.id === group.enemyId)?.size
+              }))
           : [],
+      onEnemyAnchors,
       showTrap: Boolean(room.trap) && !state.resolvedTraps.includes(room.trap!.id),
       returnMarker: room.stairsToTown ? (room.returnStyle === "stairs" ? "stairs" : "marker") : null,
       stairDescends,
@@ -76,8 +86,9 @@ export function DungeonView({ state, world, label }: DungeonViewProps) {
   }, [
     state.position,
     state.phase,
-    // Re-render when the living enemy line-up changes (types + which are still up).
-    state.combat?.enemyGroups.map((group) => `${group.enemyId}:${group.count > 0 ? 1 : 0}`).join(","),
+    // Re-render when the line-up changes — including HOW MANY are still standing, since
+    // a group of N draws N figures and must lose one as each falls.
+    state.combat?.enemyGroups.map((group) => `${group.enemyId}:${group.count}`).join(","),
     state.resolvedTraps,
     corridor,
     viewModel,

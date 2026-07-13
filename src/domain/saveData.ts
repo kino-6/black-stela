@@ -181,7 +181,11 @@ const EnemySchema = z.object({
   role: z.enum(["attrition", "blocker", "status", "ambusher", "caster", "miniboss", "boss"]).optional(),
   dangerTier: z.number().int().positive().optional(),
   tags: z.array(z.string()).optional(),
-  isBoss: z.boolean().optional()
+  isBoss: z.boolean().optional(),
+  // How the creature is staged. Both were being dropped on save, so a reloaded fight
+  // re-staged every enemy on the floor at one size.
+  elevation: z.enum(["ground", "mid", "air"]).optional(),
+  size: z.enum(["small", "medium", "large", "huge"]).optional()
 });
 
 const CombatActionDeclarationSchema = z.object({

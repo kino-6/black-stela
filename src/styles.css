@@ -2277,7 +2277,7 @@ textarea {
 .enemy-stage {
   position: relative;
   flex: 1 1 auto;
-  min-height: 12rem;
+  min-height: clamp(15rem, 42vh, 30rem);
   border: 1px solid #2a2c27;
   border-radius: 4px;
   overflow: hidden;
@@ -2296,36 +2296,44 @@ textarea {
   min-height: 0;
 }
 
+/* The enemies are drawn in the 3D scene; this layer only labels them. It is absolutely
+   positioned OVER the backdrop and every mark is placed at the creatures' feet from the
+   renderer's anchors — so nothing here is in the layout flow and no fight, however many
+   enemies turn up, can resize the screen. */
 .enemy-stage-figures {
-  position: relative;
+  position: absolute;
+  inset: 0;
   z-index: 2;
-  margin-top: auto;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  justify-content: center;
-  gap: clamp(0.5rem, 2vw, 1.5rem);
-  padding: 0.6rem;
+  pointer-events: none;
 }
 
-.enemy-figure {
-  position: relative;
-  min-width: clamp(7rem, 18vw, 11rem);
-  max-width: 14rem;
-  padding: 0.35rem 0.6rem;
-  border: 1px solid #3b4138;
-  border-radius: 4px;
-  background: rgba(8, 9, 7, 0.72);
-  backdrop-filter: blur(2px);
+.enemy-mark {
+  position: absolute;
+  /* left/top come from the renderer (the group's feet). Centre the mark on them and hang
+     it just below the floor line. */
+  transform: translate(-50%, 0.35rem);
+  width: clamp(5rem, 12vw, 8rem);
   text-align: center;
 }
 
-.enemy-figure.selected {
-  border-color: #ffd27a;
-  box-shadow: 0 0 0 1px #ffd27a, 0 0 14px rgba(255, 210, 122, 0.35);
+.enemy-mark.selected .enemy-mark-name {
+  color: #ffd27a;
+  text-shadow: 0 0 8px rgba(255, 210, 122, 0.55), 0 1px 2px #000;
 }
 
-.enemy-figure.beat-hit {
+/* Target marker: the same ▶ cursor the command menu uses, so "this is the one you are
+   pointing at" reads instantly. An earlier rotated-chevron reticle looked like a stray
+   sword slash sitting on the enemy. */
+.enemy-mark.selected .enemy-mark-name::before {
+  content: "\25b8 ";
+  color: #ffd27a;
+}
+
+.enemy-mark.selected .enemy-hp {
+  box-shadow: 0 0 0 1px #ffd27a, 0 0 10px rgba(255, 210, 122, 0.5);
+}
+
+.enemy-mark.beat-hit {
   animation: beat-shake 0.28s ease-out;
 }
 
@@ -2360,9 +2368,8 @@ textarea {
   background: linear-gradient(90deg, transparent, #fff 40%, #ff8c4a 55%, transparent);
 }
 
-.enemy-figure.defeated {
-  opacity: 0.4;
-  text-decoration: line-through;
+.enemy-mark.defeated {
+  opacity: 0;
   animation: fx-dissolve 0.5s ease-out;
 }
 
@@ -2404,23 +2411,28 @@ textarea {
   animation: fx-flash 0.3s ease-out forwards;
 }
 
-.enemy-figure-name {
+.enemy-mark-name {
   display: block;
-  font-size: clamp(0.95rem, 2.4vw, 1.25rem);
-  font-weight: 700;
-  color: #f0e6cf;
+  margin-top: 0.28rem;
+  font-size: clamp(0.72rem, 1.5vw, 0.88rem);
+  font-weight: 600;
+  color: #efe6d0;
+  /* Sits on the dungeon floor, not on a panel — it needs its own contrast. */
+  text-shadow: 0 1px 3px #000, 0 0 6px rgba(0, 0, 0, 0.9);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.enemy-figure-count {
-  color: #b8a06a;
-  font-size: 0.85em;
-}
-
+/* A slim bar at the creature's feet. No numbers, no "2 left · unhurt" — the count is the
+   number of bodies standing in the corridor. */
 .enemy-hp {
-  height: 0.4rem;
-  margin: 0.3rem 0 0.2rem;
+  height: 0.28rem;
+  margin: 0 auto;
+  width: 78%;
   border-radius: 0.2rem;
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(0, 0, 0, 0.6);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.8);
   overflow: hidden;
 }
 
@@ -2431,15 +2443,20 @@ textarea {
   transition: width 0.25s ease;
 }
 
-.enemy-figure-status {
-  font-size: 0.72rem;
-  color: #9aa08e;
-}
-
 .stage-caption {
-  position: relative;
-  z-index: 2;
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 3;
   margin: 0;
+  /* Fixed height: the caption text changes every round and must never move the stage. */
+  height: 1.7rem;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
   padding: 0.3rem 0.6rem;
   font-size: 0.82rem;
   color: #e7dcc2;
@@ -2911,6 +2928,15 @@ textarea {
 
 /* Nested combat command menu (コマンドRPG). Fixed height so the command → target /
    spell submenu swaps never reflow the surface (#68). */
+/* Reserved height for the command surface. Whatever it holds — the command menu, the
+   confirm step, or nothing while the round plays back — the surrounding layout does not
+   move. This is the box that used to vanish mid-round and bounce the whole screen. */
+.combat-command-zone {
+  height: 12rem;
+  flex: 0 0 auto;
+  min-height: 0;
+}
+
 .combat-command-menu {
   border: 1px solid #4a4230;
   border-radius: 4px;
@@ -2920,9 +2946,8 @@ textarea {
   outline: none;
   /* Fixed height so command → target / spell submenu swaps never resize the panel
      (#68). Longer lists (multi-group targets) scroll inside the list area below.
-     flex:none keeps 12rem in the flex-column combat layout (no shrink). */
-  height: 12rem;
-  flex: 0 0 auto;
+     The zone above reserves the space; the menu simply fills it. */
+  height: 100%;
   display: flex;
   flex-direction: column;
 }
@@ -2934,7 +2959,7 @@ textarea {
 .combat-command-menu-head {
   font-weight: 600;
   color: #e8dcc0;
-  margin: 0 0 0.35rem;
+  margin: 0 0 0.25rem;
 }
 
 .combat-command-menu-list {
@@ -2954,7 +2979,10 @@ textarea {
   gap: 0.4rem;
   width: 100%;
   text-align: left;
-  padding: 0.3rem 0.5rem;
+  /* Tight enough that the four commands fit the reserved zone without scrolling — the
+     menu used to clip 防御 off the bottom of its own box. */
+  padding: 0.18rem 0.5rem;
+  min-height: 1.9rem;
   background: transparent;
   border: 1px solid transparent;
   border-radius: 3px;
@@ -2980,8 +3008,8 @@ textarea {
 }
 
 .combat-command-menu-hint {
-  margin: 0.4rem 0 0;
-  font-size: 0.8rem;
+  margin: 0.25rem 0 0;
+  font-size: 0.75rem;
   opacity: 0.7;
 }
 
@@ -3187,7 +3215,12 @@ textarea {
   display: flex;
   flex-direction: column;
   gap: 0.15rem;
-  min-height: 4.5rem;
+  /* FIXED height, scrolled — not min-height. The log used to grow a line at a time as the
+     round played out, and since the enemy stage is flex:1 it shrank by exactly as much:
+     the whole screen breathed in and out every blow. */
+  height: 3.6rem;
+  overflow-y: auto;
+  scrollbar-width: thin;
 }
 
 .combat-log-beat {

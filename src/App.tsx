@@ -57,7 +57,6 @@ import {
   formatAptitudes,
   formatBonusParts,
   formatCombatRow,
-  formatEnemyGroupStatus,
   formatEquipmentSlot,
   formatSignedBonus,
   formatSignedDelta,
