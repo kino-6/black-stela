@@ -37,7 +37,8 @@ variables. Treat these as drop-in assets too.
 |------|--------|------|--------------|-------|
 | Tiling texture | JPG | 1024x1024 | none | seamless on all four edges |
 | Door texture | JPG | 1024x1024 | none | readable as a barrier from first-person view |
-| Enemy / prop sprite | PNG RGBA | usually 768x512 or per brief | yes | centered, bottom-weighted, clean alpha |
+| Enemy sprite | PNG RGBA | **768x768 square** | yes | the shared scale box — see below. Not negotiable per-pack |
+| Prop sprite (stairs, markers) | PNG RGBA | per brief | yes | centered, bottom-weighted, clean alpha |
 | Portrait | PNG or JPG | 512x512 | optional | bust framing; must read in party UI |
 | Icon | PNG RGBA | 256x256 | yes | single object, centered, generous padding |
 | Title still | JPG | 1920x1080 | none | no baked UI text unless the brief asks |
@@ -45,6 +46,34 @@ variables. Treat these as drop-in assets too.
 
 Keep replacement sprites at the same aspect ratio as the asset they replace
 unless the renderer scale is changed deliberately.
+
+## Enemy Sprite Framing — The Shared Scale Box
+
+Enemies are planted **in** the corridor, not pasted over it. The engine draws every
+enemy sprite at the same world size and never rescales per creature, so the framing
+below is what makes a mite small, a boss huge, and both stand on the floor. Get it
+wrong and the creature floats in mid-air at the wrong size. Applies to every pack.
+
+- **768x768 square. The canvas is a fixed 2.4 m x 2.4 m box of the corridor**, the same
+  box for every enemy in every world. Do not crop to the subject; do not letterbox.
+- **The bottom edge of the canvas is the floor line.** A creature that stands must
+  **touch the bottom edge** — no transparent gap under its feet. A creature that hovers
+  leaves exactly its hover height of transparency below it; the floor is still the
+  bottom edge.
+- **Horizontally centered**, mass on the center line. A pack of two is drawn by the
+  engine as **two copies of the sprite side by side**, so the subject must sit in its
+  own box cleanly.
+- **Eye level about 1.5 m.** The party is standing: we look slightly *down* at a small
+  creature and slightly *up* at a boss. Front or three-quarter view, no dramatic angles.
+- **Size class is expressed as how much of the box height the creature fills.** The pack
+  brief gives a percentage per creature; hold it. Roughly: small vermin 30%, standard
+  40-55%, armored blocker 70-75%, mini-boss 75-85%, floor boss 100%.
+- **No baked shadow, no ground plane, no scenery, no glow plate.** Transparent everywhere
+  except the creature — the engine casts the contact shadow and lights it with the scene.
+
+A `-hurt` variant must use the **same box, same subject scale, same position** as its
+base sprite; only the pose/expression/damage differs. Any drift makes the hit reaction
+jump.
 
 ## Color, Lighting, And Readability
 

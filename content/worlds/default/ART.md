@@ -191,12 +191,17 @@ portraits.
 
 ## 4. Needed art (prioritized)
 
-### P1 — Enemy combat sprites  ✅ generated and wired
+### P1 — Enemy combat sprites  ✅ generated and wired · ⚠️ **superseded by P14 (reframe)**
 
-All 11 authored enemies now have their own camera-facing sprite. Keep future
-retakes in the same format: **PNG RGBA, 768×512 (3:2), flat-lit, single creature
+All 11 authored enemies have their own camera-facing sprite. They were delivered as
+**768×512 (3:2), every creature in an identically sized canvas**, which is why the boss
+and the slime read the same size on screen and none of them stand on the floor.
+**P14 below reframes all of them into the shared 768×768 scale box** — use that spec,
+not this one, for any new or retaken enemy sprite.
+
+Original (superseded) format: PNG RGBA, 768×512 (3:2), flat-lit, single creature
 centered & bottom-weighted, clean alpha, neutral studio lighting, readable local
-material color, no baked torchlight.**
+material color, no baked torchlight.
 File → `content/worlds/default/assets/dungeon/<id-without-prefix>.png`, wired per-enemy in
 `dungeonScene.ts` through the enemy-id → texture map.
 
@@ -471,6 +476,45 @@ a monument above the dungeon — the dungeon is its **root**, revealed at the Ga
 
 Status: generated as `content/worlds/default/assets/dungeon/stela-root.png`;
 wiring pending.
+
+### P14 — Enemy sprite REFRAME to the shared scale box  ⬜ requested (2026-07-13 playtest)
+
+**Why.** Real-play verdict: *"敵の画像が妙に小さいし、迷宮から浮いているので素材が泣いてます."*
+The art is good; the framing throws it away. Every enemy was delivered in the same
+768×512 canvas, so the engine — which plants all sprites at one world size — cannot tell a
+slime from a boss, and no creature touches the floor. This is a **reframe, not a redraw**:
+keep each creature's design, materials and identity exactly as approved.
+
+**Spec.** The shared scale box in `docs/art/common.md` → *Enemy Sprite Framing*. Summary:
+**768×768 square = a fixed 2.4 m × 2.4 m box of the corridor**; the **bottom edge is the
+floor line** (standing creatures touch it, hovering ones leave their hover gap); eye level
+≈1.5 m; horizontally centred; **no baked shadow / ground / scenery**; size is expressed by
+**how much of the box height the creature fills**.
+
+| basename | fills | note |
+|---|---|---|
+| `ash-slime` | ~30% | low mound; spreads on the floor |
+| `dust-crawler` | ~35% | low, long, many-legged |
+| `bitter-mote` | ~40% | **hovers** ~0.7 m up; no legs |
+| `hook-rat` | ~40% | four-legged, lean |
+| `oath-cutter` | ~60% | gaunt humanoid, upright |
+| `cistern-warden` | ~75% | mini-boss |
+| `lantern-ward` | ~75% | armored blocker; wide, walling |
+| `cinder-keeper` | ~80% | mini-boss |
+| `oath-warden` | ~85% | mini-boss |
+| `vault-husk` | ~85% | heavy blocker; wide |
+| `ash-votary` | **~100%** | **the finale boss** — fills the box, crown to floor. Must tower over everything above. |
+
+**Also reframe the 11 `-hurt` variants** to the **same box, same subject scale, same
+position** as their base sprite — only the pose/damage differs. Any drift makes the hit
+reaction jump.
+
+**Files** (22): `content/worlds/default/assets/dungeon/<name>.png` and `<name>-hurt.png`
+for each row above. Same basenames — this is a drop-in replacement, no wiring change.
+
+**Verdant** (`content/worlds/verdant/ART.md`) is ordered against the same box and is still
+**undelivered** — generate it to the new spec from the start; do not repeat the 768×512
+framing.
 
 ## 8. Retake queue (post-integration review)
 

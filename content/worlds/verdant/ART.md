@@ -57,27 +57,55 @@ Not planks. A **curtain of hanging vines / a split trunk** — a soft, living ba
 Not a stela. A **young sapling in a shaft of daylight** (or a break in the canopy) — the
 way back to the surface, and the only clean light in the world.
 
-## Enemy sprites — `assets/dungeon/`, PNG RGBA ~768×512
+## Enemy sprites — `assets/dungeon/`, **768×768 square**, PNG RGBA
 Basename = enemy id, dots→dashes. Chroma-key on **MagentaBack** (subjects are green).
 Each must read as a *forest* creature with a tactical silhouette; use the shared
 readability and alpha rules in `../../../docs/art/common.md`.
 
-| basename | creature |
-|---|---|
-| `enemy-verdant-g1-moss-mite` | small mossy mite, tutorial foe |
-| `enemy-verdant-g1-spore-gnat` | spore-winged gnat, swarm |
-| `enemy-verdant-g2-thorn-crawler` | thorn-shelled crawler |
-| `enemy-verdant-g2-bramble-shield` | bramble-armoured **front blocker** — bulky, walling |
-| `enemy-verdant-g2-spore-caster` | spore-puffing **back caster** — frail, bulbous sacs |
-| `enemy-verdant-g4-pollen-drifter` | drifting pollen-cloud form |
-| `enemy-verdant-g6-thorn-cutter` | bladed-thorn **ambusher** — lean, fast |
-| `enemy-verdant-g7-husk-spawn` | small heartwood-husk spawn |
-| `enemy-verdant-g3-bloom-warden` | flowering warden (miniboss) |
-| `enemy-verdant-g4-bark-ward` | bark-plated ward (armoured miniboss) |
-| `enemy-verdant-g5-sap-keeper` | sap-dripping keeper (toll miniboss) |
-| `enemy-verdant-g6-strangler-warden` | strangling-vine warden (miniboss) |
-| `enemy-verdant-g7-heartwood-husk` | heavy heartwood husk (miniboss) |
-| `enemy-verdant-g8-rootheart` | **the Rootheart** — the living heartwood core. The boss; the most detailed piece in the pack. |
+**These sprites are drawn INTO the corridor, not pasted over it.** The engine plants
+every sprite at the same world size and lets the art carry the size difference, so the
+framing rules below are not cosmetic — get them wrong and the creature floats above the
+floor or reads the wrong size. This supersedes the earlier ~768×512 spec.
+
+### Framing — the shared scale box (mandatory, all 14)
+- **Square canvas, 768×768.** It represents a fixed **2.4 m × 2.4 m box of the corridor**,
+  identical for every enemy. Do not crop to the subject; do not letterbox.
+- **The bottom edge of the canvas IS the floor line.** A creature that stands on the
+  ground must **touch the bottom edge** — no transparent gap under its feet. A creature
+  that *hovers* (`spore-gnat`, `pollen-drifter`) leaves exactly its hover height of
+  transparency below it; the floor is still the bottom edge.
+- **Horizontally centred**, feet/mass on the centre line.
+- **Eye level ≈ 1.5 m**, i.e. the party is standing and looking slightly *down* at a small
+  creature and slightly *up* at the boss. Front or 3/4 view. No dramatic camera angles.
+- **No baked shadow, no ground, no scenery, no glow-plate.** Transparent everywhere except
+  the creature — the engine casts the contact shadow and lights it with the scene.
+
+### Size class = how much of the box the creature fills
+Same box, different occupancy. This is the ONLY thing that makes a mite small and the
+Rootheart huge, so hold these ratios.
+
+| basename | fills (height) | creature |
+|---|---|---|
+| `enemy-verdant-g1-moss-mite` | **~30%** | small mossy mite, tutorial foe; squats on the floor |
+| `enemy-verdant-g1-spore-gnat` | **~30%** | spore-winged gnat, swarm; **hovers** ~0.6 m up |
+| `enemy-verdant-g7-husk-spawn` | **~35%** | small heartwood-husk spawn |
+| `enemy-verdant-g2-thorn-crawler` | **~45%** | thorn-shelled crawler; low, long |
+| `enemy-verdant-g2-spore-caster` | **~50%** | spore-puffing **back caster** — frail, bulbous sacs |
+| `enemy-verdant-g6-thorn-cutter` | **~55%** | bladed-thorn **ambusher** — lean, fast |
+| `enemy-verdant-g4-pollen-drifter` | **~55%** | drifting pollen-cloud form; **hovers**, no legs |
+| `enemy-verdant-g2-bramble-shield` | **~70%** | bramble-armoured **front blocker** — bulky, walling, wide |
+| `enemy-verdant-g4-bark-ward` | **~75%** | bark-plated ward (armoured miniboss) |
+| `enemy-verdant-g3-bloom-warden` | **~75%** | flowering warden (miniboss) |
+| `enemy-verdant-g5-sap-keeper` | **~80%** | sap-dripping keeper (toll miniboss) |
+| `enemy-verdant-g6-strangler-warden` | **~85%** | strangling-vine warden (miniboss) |
+| `enemy-verdant-g7-heartwood-husk` | **~85%** | heavy heartwood husk (miniboss); wide, walling |
+| `enemy-verdant-g8-rootheart` | **~100%** | **the Rootheart** — the living heartwood core. Fills the box, crown to floor. The boss; the most detailed piece in the pack. |
+
+### Why square, why the box
+A pack of 2 is drawn as **two copies of the same sprite side by side**, planted on the
+floor at their own depth. A landscape crop with the creature floating mid-canvas cannot
+be grounded and cannot be doubled without looking pasted-on. See
+`../../../docs/design/combat-stage-plan.md`.
 
 ## Icons — `assets/icons/`, 256×256 PNG RGBA
 `item-verdant-sap-draught` (amber sap vial) · `item-verdant-pollen-salve` (pale salve jar) ·
