@@ -40,14 +40,12 @@ export async function createStarterParty(page: Page, locale: "en" | "ja" = "en")
         proposal: "How about this one?"
       };
 
-  if (await page.getByRole("button", { name: labels.skip }).isVisible()) {
-    await page.getByRole("button", { name: labels.skip }).click();
-  }
-
+  // The Guild Master stands in the HALL (the briefing step) — the registration steps are a
+  // form and nothing else now (IMP-003). So we no longer skip past him to find him.
   for (let index = 0; index < 6; index += 1) {
     await page.getByRole("button", { name: labels.yes, exact: true }).click();
     await expect(page.getByTestId("guild-suggestion")).toContainText(labels.proposal);
-    await page.getByRole("button", { name: labels.yes, exact: true }).click();
+    await page.getByTestId("guild-suggestion").getByRole("button", { name: labels.yes, exact: true }).click();
     await expect(page.getByText(`${index + 1}/6`)).toBeVisible();
   }
 }
@@ -424,10 +422,6 @@ export async function createStarterPartyByController(page: Page, locale: "en" | 
     locale === "ja"
       ? { skip: "説明を聞かない", yes: "はい", proposal: "こいつはどうだ？" }
       : { skip: "Skip explanation", yes: "Yes", proposal: "How about this one?" };
-
-  if (await page.getByRole("button", { name: labels.skip }).isVisible().catch(() => false)) {
-    await activateByController(page, labels.skip);
-  }
 
   for (let index = 0; index < 6; index += 1) {
     await activateByController(page, labels.yes);

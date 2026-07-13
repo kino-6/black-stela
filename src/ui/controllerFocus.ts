@@ -35,7 +35,11 @@ function getActiveControllerSurface() {
     }
   }
 
-  return surfaces[0] ?? null;
+  // Fall back to the screen the player is ON, never to the chrome bar. Escape inside a text
+  // field blurs first, so by the time Cancel is resolved the cursor is on BODY — and taking the
+  // first surface in DOM order then meant Escape in a NAME FIELD walked the player out of the
+  // guild entirely, instead of stepping back one panel.
+  return getPrimaryControllerSurfaces()[0] ?? surfaces[0] ?? null;
 }
 
 function getActiveControllerSurfaces() {
@@ -44,6 +48,16 @@ function getActiveControllerSurfaces() {
   }
 
   return Array.from(document.querySelectorAll<HTMLElement>(controllerSurfaceSelector));
+}
+
+// Chrome — an always-present "back" bar — belongs in the focus RING (you must be able to reach
+// it), but never in the CURSOR'S STARTING PLACE. It sits first in the DOM, so without this every
+// screen transition parked the cursor on "Back to town" instead of on the thing the screen is
+// actually asking for.
+function getPrimaryControllerSurfaces() {
+  const surfaces = getActiveControllerSurfaces();
+  const primary = surfaces.filter((surface) => surface.dataset.controllerChrome !== "true");
+  return primary.length > 0 ? primary : surfaces;
 }
 
 function getControllerFocusableElements(surface: HTMLElement) {
@@ -74,9 +88,13 @@ export function focusFirstControllerChoice() {
     return true;
   }
 
-  const [first] = focusable;
-  first?.focus();
-  return Boolean(first);
+  // Start the cursor on what the screen is ASKING for, not on the way out of it. Chrome (the
+  // "back to town" bar) is first in the DOM, so taking the first focusable of the whole ring
+  // parked the cursor on Back after every transition.
+  const [first] = getPrimaryControllerSurfaces().flatMap((surface) => getControllerFocusableElements(surface));
+  const fallback = first ?? focusable[0];
+  fallback?.focus();
+  return Boolean(fallback);
 }
 
 export function moveControllerFocus(step: 1 | -1) {
@@ -166,11 +184,23 @@ export function moveControllerFocusDirection(direction: "up" | "down" | "left" |
 export function activateControllerCancel() {
   const surface = getActiveControllerSurface();
   const cancel = surface?.querySelector<HTMLButtonElement>("[data-controller-cancel]:not([disabled])");
-  if (!cancel) {
+  if (cancel) {
+    cancel.click();
+    return true;
+  }
+
+  // Nothing to cancel inside the surface the cursor is in — so Cancel means "leave this screen".
+  // The way out lives in the chrome bar, and a player must never have to hunt for it by walking
+  // a focus ring that a full roster has made 30 stops long.
+  const chromeCancel = document.querySelector<HTMLButtonElement>(
+    '[data-controller-surface][data-controller-active="true"][data-controller-chrome="true"] ' +
+      "[data-controller-cancel]:not([disabled])"
+  );
+  if (!chromeCancel) {
     return false;
   }
 
-  cancel.click();
+  chromeCancel.click();
   return true;
 }
 

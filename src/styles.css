@@ -4250,3 +4250,64 @@ textarea {
   text-align: center;
   padding: 2rem;
 }
+
+
+/* ── Guild (IMP-003) ─────────────────────────────────────────────────────────────
+   The registration steps and the hall no longer share a screen, so the grid is a single
+   column while a character is being made. */
+.guild-studio {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.guild-studio-grid:not(:has(.guild-side-panel)) {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+/* The hall carries the roster, which grows without limit (reserve, retired, the vault). It
+   scrolls INSIDE its panel; the screen itself must still fit 1280x720. */
+.guild-side-panel {
+  min-height: 0;
+  max-height: calc(100vh - 12rem);
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+.guild-studio-grid {
+  min-height: 0;
+}
+
+.guild-step-panel {
+  min-height: 0;
+  max-height: calc(100vh - 13rem);
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+/* The Guild Master's proposal is a QUESTION. It owns the screen until it is answered — it
+   used to be one card among a wall of other things, and the cursor could wander off it. */
+.guild-proposal-modal {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  z-index: 60;
+  transform: translate(-50%, -50%);
+  width: min(30rem, calc(100vw - 3rem));
+  max-height: calc(100vh - 4rem);
+  overflow-y: auto;
+  padding: 1rem 1.2rem;
+  border: 1px solid #6a5a2a;
+  border-radius: 6px;
+  background: linear-gradient(180deg, #17140c, #0c0b07);
+  box-shadow: 0 0 0 100vmax rgba(6, 7, 5, 0.72), 0 0 32px rgba(213, 181, 109, 0.25);
+}
+
+.guild-proposal-modal .binary-actions {
+  position: sticky;
+  bottom: 0;
+  padding-top: 0.6rem;
+  background: linear-gradient(0deg, #0c0b07 70%, transparent);
+}

@@ -11,15 +11,21 @@ test("guild registration supports quick and detailed recruits without roster sco
   await expect(page.getByTestId("guild-step-briefing")).toContainText("Guild master");
   await expect(page.getByTestId("character-profile")).toHaveCount(0);
 
-  await page.getByRole("button", { name: "Skip explanation" }).click();
+  // The Guild Master's offer stands in the HALL, beside the party you already have — it is no
+  // longer a card sitting next to a half-filled registration form (IMP-003).
   await expect(page.getByText("Want me to pick one?")).toBeVisible();
   await page.getByRole("button", { name: "Yes", exact: true }).click();
   await expect(page.getByTestId("guild-suggestion")).toContainText("How about this one?");
   await expect(page.getByTestId("guild-suggestion")).toContainText("What are they good at?");
   await expect(page.getByTestId("guild-suggestion")).toContainText("Equipment");
-  await page.getByRole("button", { name: "Yes", exact: true }).click();
+  // The proposal is a modal question: it owns the screen until it is answered.
+  await page.getByTestId("guild-suggestion").getByRole("button", { name: "Yes", exact: true }).click();
   await expect(page.getByText("1/6")).toBeVisible();
 
+  // Registering by hand is a separate path, and the roster is NOT beside it.
+  await page.getByRole("button", { name: "Skip explanation" }).click();
+  await expect(page.getByTestId("guild-suggestion")).toHaveCount(0);
+  await expect(page.getByText("Want me to pick one?")).toHaveCount(0);
   await expect(page.getByTestId("guild-step-class").locator(".class-card")).toHaveCount(12);
   await expect(page.getByTestId("guild-step-class").locator(".class-gear")).toHaveCount(12);
   await expect(page.getByTestId("guild-step-class").locator(".class-gear").first()).toContainText("Equipment:");
@@ -129,10 +135,12 @@ test("Japanese guild registration remains usable on mobile", async ({ page }) =>
   await expect(page.getByText("顔と来歴")).toHaveCount(0);
   await expect(page.getByText("ボーナスポイント")).toHaveCount(0);
 
-  await page.getByRole("button", { name: "説明を聞かない" }).click();
   await expect(page.getByText("迷うなら、見繕うが？")).toBeVisible();
   await expect(page.getByRole("button", { name: "はい" })).toBeVisible();
   await expect(page.getByRole("button", { name: "いいえ" })).toBeVisible();
+
+  await page.getByRole("button", { name: "説明を聞かない" }).click();
+  await expect(page.getByText("迷うなら、見繕うが？")).toHaveCount(0);
   await expect(page.getByTestId("guild-step-class").locator(".class-card")).toHaveCount(12);
   await expect(page.getByText("蝶番、埃、床の傷を読み")).toBeVisible();
   await page.getByTestId("guild-step-class").getByRole("button", { name: /探索者/ }).click();

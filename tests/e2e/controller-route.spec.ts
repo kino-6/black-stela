@@ -38,15 +38,9 @@ import {
 //
 // Failure category: `controller_input` (docs/gates/browser-selfplay-gate.md).
 
-// A test marked test.fail() is reported as PASSING, so once the combat overflow is fixed the
-// whole command goes green while the guild is still unplayable on a controller. That is a false
-// all-clear, and per-slice convenience must not become the project's definition of done.
-//
-// So the marker is conditional. `npm run test:e2e` stays green with a known, recorded gap;
-// `npm run gate:final` (FINAL_GATE=1) strips the marker, and the guild fails for real until
-// IMP-003 lands. Run the final gate before calling the backlog done or merging.
-const FINAL_GATE = process.env.FINAL_GATE === "1";
-
+// `npm run gate:final` (FINAL_GATE=1) strips any test.fail() marker, so a known gap cannot hide
+// behind Playwright's "expected failure = pass". There is no marker left in this file — keep it
+// that way, and run the final gate before calling the backlog done.
 /** Front row first, then back row — the order AGENTS.md requires commands to be given in. */
 async function formationOrder(page: Page) {
   const front = await page.locator('.party-strip-group[data-row="front"] .pt-name').allTextContents();
@@ -142,16 +136,10 @@ test.describe("controller route (no mouse)", () => {
     expect(leaks, `scenario cards leak raw pack ids — ${leaks.join("; ")}`).toEqual([]);
   });
 
+  // IMP-003 landed: the guild hall and the registration form no longer share a screen, so the
+  // cursor cannot wander out of the step being asked for, and the roster scrolls inside its own
+  // panel instead of running to 1370px. The test.fail marker is gone — this must stay green.
   test("six adventurers can be recruited without a mouse, and focus is never dropped", async ({ page }) => {
-    // KNOWN FAILING until IMP-003 (the guild rebuild): the roster column runs to 1370px at a
-    // 720px viewport, and it stays a SECOND active controller surface throughout registration,
-    // so the cursor wanders out of the step the player is being asked for. Marked test.fail so
-    // the suite stays honest — it RUNS, its failure is the record, and if it ever starts
-    // passing Playwright reports an unexpected pass and this marker must be removed.
-    // Under FINAL_GATE=1 the marker is dropped and this becomes a real failure — see above.
-    if (!FINAL_GATE) {
-      test.fail();
-    }
     await startExpeditionByController(page);
     await expectControllerFocus(page, "guild (on entry)", { exclusive: true });
     await expectFitsViewport(page, "guild (on entry)");
@@ -163,15 +151,10 @@ test.describe("controller route (no mouse)", () => {
     await expectNoMouseUsed(page, "guild");
   });
 
-  // SETUP CAVEAT (remove with IMP-003): the guild cannot yet be completed on a controller — the
-  // test above is the one that proves it. Until the guild rebuild lands, these reach the party
-  // with the MOUSE helper and then assert controller truth on the surface they are actually
-  // about. The mouse count is therefore not asserted here, only the keyboard behaviour that
-  // follows the setup.
   test("the town's selected command is the focused command", async ({ page }) => {
-    await startNewExpedition(page);
-    await createStarterParty(page);
-    await page.getByRole("button", { name: "Back to town" }).click();
+    await startExpeditionByController(page);
+    await createStarterPartyByController(page);
+    await pressCancel(page); // Cancel leaves the guild — a controller must not have to hunt for the exit
 
     await expectControllerFocus(page, "town");
     await expectFitsViewport(page, "town");
@@ -180,9 +163,9 @@ test.describe("controller route (no mouse)", () => {
   });
 
   test("the dungeon and a full combat round are playable with keys alone", async ({ page }) => {
-    await startNewExpedition(page);
-    await createStarterParty(page);
-    await page.getByRole("button", { name: "Back to town" }).click();
+    await startExpeditionByController(page);
+    await createStarterPartyByController(page);
+    await pressCancel(page);
     await activateByController(page, "Enter dungeon");
 
     await expect(page.getByTestId("dungeon-canvas").first()).toBeVisible();
@@ -239,9 +222,8 @@ test.describe("controller route (no mouse)", () => {
     await activateByController(page, "New expedition");
     await activateByController(page, /Black Stela|黒碑/);
 
-    // Guild is IMP-003; reach the party with the mouse, then hand it back to the keyboard.
-    await createStarterParty(page);
-    await page.getByRole("button", { name: "Back to town" }).click();
+    await createStarterPartyByController(page);
+    await pressCancel(page);
     await activateByController(page, "Enter dungeon");
     await walkIntoCombat(page);
 

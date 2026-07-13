@@ -93,8 +93,11 @@ interface FocusInfo {
 
 export async function readFocus(page: Page): Promise<FocusInfo> {
   return page.evaluate(() => {
+    // Chrome (an always-present "back" bar) belongs in the ring — it is a command on this
+    // screen. What must NOT share the ring is ANOTHER SCREEN's worth of controls, which is what
+    // the guild roster was doing while the player was being asked to pick a class.
     const activeSurfaceCount = document.querySelectorAll(
-      '[data-controller-surface][data-controller-active="true"]'
+      '[data-controller-surface][data-controller-active="true"]:not([data-controller-chrome])'
     ).length;
     const el = document.activeElement as HTMLElement | null;
     const empty = {
@@ -186,12 +189,13 @@ export async function expectControllerFocus(
     expect(focus.surface, `${where}: focus escaped to the "${focus.surface}" surface`).toBe(options.surface);
   }
   if (options.exclusive) {
-    // Sibling surfaces flatten into ONE focus ring (src/ui/controllerFocus.ts), so a screen
-    // that leaves a second surface active lets the cursor wander out of the step the player is
-    // actually on. Nested surfaces are fine — the ring de-dupes them.
+    // Sibling surfaces flatten into ONE focus ring (src/ui/controllerFocus.ts), so a screen that
+    // leaves a second surface active lets the cursor wander out of the step the player is
+    // actually on. Nested surfaces are fine — the ring de-dupes them — and so is chrome
+    // ([data-controller-chrome]), which is a command on this screen rather than another screen.
     expect(
       focus.activeSurfaceCount,
-      `${where}: ${focus.activeSurfaceCount} controller surfaces are active at once — ` +
+      `${where}: ${focus.activeSurfaceCount} non-chrome controller surfaces are active at once — ` +
         `the cursor can wander out of the command the player is being asked for`
     ).toBe(1);
   }
@@ -216,10 +220,25 @@ export async function expectFitsViewport(page: Page, where: string) {
     const outside = (box: DOMRect) =>
       box.bottom > height + 1 || box.top < -1 || box.right > width + 1 || box.left < -1;
 
+    // A command that sits below the fold of a SCROLLABLE panel is still reachable: focusing it
+    // scrolls it into view, which is what a controller does. A command that sits below the fold
+    // of nothing — like the combat dock on a page that cannot scroll — is simply gone. Only the
+    // second is a defect, and conflating them would ban every long list in the game.
+    const reachableByScrolling = (el: HTMLElement) => {
+      for (let node = el.parentElement; node; node = node.parentElement) {
+        const style = window.getComputedStyle(node);
+        const scrolls = /(auto|scroll)/.test(style.overflowY) || /(auto|scroll)/.test(style.overflow);
+        if (scrolls && node.scrollHeight > node.clientHeight + 1) {
+          return true;
+        }
+      }
+      return false;
+    };
+
     const clipped: string[] = [];
     for (const surface of surfaces) {
       const box = surface.getBoundingClientRect();
-      if (outside(box)) {
+      if (outside(box) && !reachableByScrolling(surface)) {
         clipped.push(
           `${surface.className || surface.tagName} spans ` +
             `${Math.round(box.left)},${Math.round(box.top)} → ${Math.round(box.right)},${Math.round(box.bottom)}`
@@ -234,10 +253,10 @@ export async function expectFitsViewport(page: Page, where: string) {
         if (nodeBox.height === 0) {
           continue;
         }
-        if (outside(nodeBox)) {
+        if (outside(nodeBox) && !reachableByScrolling(node)) {
           clipped.push(
             `command "${(node.textContent || "").trim().slice(0, 24)}" ends at ` +
-              `${Math.round(nodeBox.bottom)} (viewport ${height})`
+              `${Math.round(nodeBox.bottom)} (viewport ${height}) with nothing to scroll it into view`
           );
         }
       }

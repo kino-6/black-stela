@@ -4,7 +4,8 @@ import { createStarterParty, focusControllerButton, registerAdventurer, startNew
 test("normal play surfaces support directional focus, confirm, and cancel", async ({ page }) => {
   await startNewExpedition(page);
 
-  await focusControllerButton(page, "Skip explanation");
+  // The hall now carries the Guild Master, the party and the ways on, so the ring is longer.
+  await focusControllerButton(page, "Skip explanation", { limit: 60 });
   await page.keyboard.press("Enter");
   await expect(page.getByTestId("guild-step-class")).toBeVisible();
 
@@ -14,6 +15,10 @@ test("normal play surfaces support directional focus, confirm, and cancel", asyn
 
   await page.keyboard.press("Escape");
   await expect(page.getByTestId("guild-step-class")).toBeVisible();
+
+  // Cancel again leaves the form and returns to the hall, where the Guild Master stands (IMP-003).
+  await page.keyboard.press("Escape");
+  await expect(page.getByTestId("guild-step-briefing")).toBeVisible();
 
   await createStarterParty(page);
   await page.getByRole("button", { name: "Back to town" }).click();

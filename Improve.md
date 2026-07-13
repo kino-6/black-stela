@@ -53,6 +53,7 @@ controller Gate passed.
 | `IMP-006B` stair/renderer wiring | Claude Code | Codex verifies the vine/root stairs in normal G1F play. |
 | `IMP-007` | Claude Code | Codex verifies scale, silhouette separation, and grounded/hovering baselines. |
 | `IMP-008` | Claude Code | Codex verifies first departure and a real post-return state in both languages. |
+| `IMP-009` | Codex | Claude checks pack resolution/build; Codex supplies a three-portrait pilot and does final browser acceptance. |
 
 ### Handoff Contract
 
@@ -291,6 +292,78 @@ return record containing only the last recruit, and says the party can descend
 - [ ] Return records appear only after an actual dungeon return.
 - [ ] Expedition results summarize the expedition, not the last UI event.
 - [ ] Japanese and English variants describe the same game state naturally.
+
+## IMP-009: Verdant Portraits Read as Homogeneous AI Fantasy Art
+
+**Priority:** P1
+**Category:** `visual_mismatch`
+
+The twelve Verdant portraits are technically complete but do not feel like an
+authored cast. Most use the same attractive young face, three-quarter bust,
+direct gaze, glossy skin, fine hair strands, dense green filigree, and fully
+painted forest background. At party-rail size the detail collapses into noise;
+at full size the repeated facial proportions and decorative pseudo-detail make
+the generation process more visible than the character.
+
+Several portraits also illustrate their basename too literally: `vial` holds a
+vial, `map` holds a map, `grave` stands among graves, and `gate` wears a cage-like
+emblem. These are prompt answers, not convincing lives or silhouettes.
+
+**Art direction**
+
+- Replace the current diffusion-painting finish with original hand-drawn line
+  art and opaque gouache/cel-like color. Use classic DRPG character-design
+  lessons without copying a particular game's characters or linework.
+- Build forms from readable shape and two or three local colors. Reserve fine
+  detail for one identity anchor; leave visual rest around the face.
+- Use a simple pack-owned botanical vignette or flat value field instead of a
+  complete environment. The portrait must remain legible at 48-96px.
+- Keep material color in the image, but do not bake canopy light, green grading,
+  fog, bloom, or a dramatic rim light into it.
+- Design a cast, not twelve variants of one model: vary age, face shape, build,
+  skin tone, grooming, posture, expression, social background, and degree of
+  wear. Include ordinary, weathered, awkward, severe, and older faces.
+- Express origin through wear, posture, repair, and one useful object. Do not
+  turn the basename into a prop checklist or bind a portrait to one class.
+
+**Production plan**
+
+1. Create a one-page portrait style sheet: crop, eye line, line weight, face
+   construction, edge hierarchy, palette limits, background treatment, and
+   forbidden AI artifacts.
+2. Retake `gate`, `vial`, and `cloak` as a pilot trio. They must prove three
+   distinct ages/builds and three different silhouettes while still reading as
+   one scenario pack.
+3. Review the trio as a contact sheet at 512px, 96px, and 48px, then in the real
+   guild selector and six-person party rail. Do not proceed on isolated-image
+   approval alone.
+4. Lock twelve short character briefs before generation. Each brief specifies
+   silhouette, age range, demeanor, practical wear, palette accent, and one
+   asymmetry; it does not prescribe a literal basename prop.
+5. Retake all twelve portraits. Do not mix the current glossy set with the new
+   drawn set, even when an individual old image appears acceptable.
+6. Curate and edit each output for repeated faces, malformed hands/ears,
+   meaningless straps and jewelry, pseudo-text, merged foliage, excessive hair
+   noise, and inconsistent eye rendering.
+7. Replace files under the existing `assets/portraits/<basename>.png` contract,
+   rebuild, and capture Japanese/English guild and dungeon-party evidence.
+
+**Acceptance**
+
+- [ ] A blind contact-sheet review identifies twelve distinct people, not one
+  face model with different costumes.
+- [ ] The set contains meaningful age, build, face, skin-tone, and demeanor
+  variation without reducing anyone to a stereotype.
+- [ ] Each portrait reads at 48px by silhouette, face value, and one color
+  accent; background detail does not compete with the head.
+- [ ] No portrait depends on literal basename props, decorative pseudo-text,
+  implausible jewelry, or unmotivated straps to communicate identity.
+- [ ] All twelve share the approved hand-drawn line/color grammar and neutral
+  material lighting; none look like a leftover from the current glossy set.
+- [ ] Basenames, 512x512 dimensions, pack ownership, and fallback behavior stay
+  unchanged.
+- [ ] Browser evidence shows the pilot trio and final set in character creation,
+  the 3+3 party rail, and the dungeon HUD before visual acceptance.
 
 ## Preserve These Working Behaviors
 

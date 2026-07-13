@@ -336,7 +336,11 @@ export function App() {
   );
   const showGuildPanel = false;
   const isTempoRunning = tempoMode !== "idle";
-  const showGuildFallbackRecruit = state.party.length > 0 || guildCreationStep !== "briefing";
+  // The guild hall IS the briefing step: the Guild Master, the party you have, and the ways on
+  // (let him pick / register yourself / go). The registration steps that follow are a form and
+  // nothing else — see the render below for why that matters.
+  const guildHallOpen = guildCreationStep === "briefing" || state.party.length >= PARTY_SIZE_LIMIT;
+  const guildProposalOpen = guildOfferState === "suggestion";
   const recoveryCost = useMemo(() => calculateRecoveryCost(state.party), [state.party]);
   const injuredMembers = useMemo(
     () => state.party.filter((member) => getMemberRecoveryCost(member) > 0),
@@ -766,7 +770,11 @@ export function App() {
     );
     setSelectedProfileId(character.id);
     setDraft(createFreshDraft({ classId: draft.classId, backgroundId: draft.backgroundId, traitId: draft.traitId }));
-    setGuildCreationStep("class");
+    // Back to the hall. Registration is a form you leave once it is done — it used to dump you
+    // straight back onto the class step with the roster still beside you, which is precisely
+    // the "everything at once" the guild is being pulled apart to fix. From the hall the player
+    // sees who they just registered and chooses the next thing deliberately.
+    setGuildCreationStep("briefing");
   }
 
   function requestGuildSuggestion() {
@@ -1520,9 +1528,22 @@ export function App() {
 
           {state.phase === "town" ? (
             <div className="town-view">
+              {/* "Back to town" sat outside every controller surface, so a player on a gamepad
+                  could enter the guild (or the shop, or recovery) and NOT LEAVE. It is a
+                  command like any other: it belongs in the ring, and it answers Cancel. */}
               {townMode !== "entry" && (
-                <div className="town-service-bar">
-                  <button type="button" className="town-back" onClick={() => enterTownMode("entry")}>
+                <div
+                  className="town-service-bar"
+                  data-controller-surface="town-back"
+                  data-controller-chrome="true"
+                  data-controller-active={guildProposalOpen ? undefined : "true"}
+                >
+                  <button
+                    type="button"
+                    className="town-back"
+                    data-controller-cancel="true"
+                    onClick={() => enterTownMode("entry")}
+                  >
                     <ArrowLeft size={18} />
                     {t("town.backToTown")}
                   </button>
@@ -1538,7 +1559,11 @@ export function App() {
                     <span>{state.party.length}/{PARTY_SIZE_LIMIT}</span>
                   </div>
 
-                  <div className={`guild-studio-grid${state.party.length >= PARTY_SIZE_LIMIT ? " full-party" : ""}`}>
+                  <div
+                    className={`guild-studio-grid${state.party.length >= PARTY_SIZE_LIMIT ? " full-party" : ""}`}
+                    data-controller-surface="guild-hall"
+                    data-controller-active={guildHallOpen && !guildProposalOpen ? "true" : undefined}
+                  >
                     {state.party.length >= PARTY_SIZE_LIMIT ? (
                       <section
                         className="guild-ready-panel"
@@ -1566,7 +1591,7 @@ export function App() {
                       </ol>
 
                       {guildCreationStep === "briefing" && (
-                        <section className="guild-step-panel" data-controller-active="true" data-controller-surface="guild-briefing" data-testid="guild-step-briefing">
+                        <section className="guild-step-panel" data-testid="guild-step-briefing">
                           <h4>{t("party.guildMaster")}</h4>
                           <p>{t("party.guildBriefing")}</p>
                           <div className="flow-actions">
@@ -1779,23 +1804,25 @@ export function App() {
                       </form>
                     )}
 
-                    <section
-                      className="studio-roster guild-side-panel"
-                      aria-label={t("party.heading")}
-                      data-controller-active={
-                        state.party.length >= PARTY_SIZE_LIMIT || showGuildFallbackRecruit ? "true" : undefined
-                      }
-                      data-controller-surface="guild-roster"
-                    >
+                    {/* The hall: the Guild Master, the party you have, and the ways on. It renders
+                        ONLY here. During the registration steps it used to sit alongside the form
+                        as a SECOND active controller surface — the two flatten into one focus ring
+                        (src/ui/controllerFocus.ts), so arrows wandered out of the step the player
+                        was being asked for, and at 1280x720 it ran to 1370px. Inactive while the
+                        proposal modal owns the screen, so the cursor cannot leave a yes/no
+                        question for the roster behind it. */}
+                    {guildHallOpen && (
+                    <section className="studio-roster guild-side-panel" aria-label={t("party.heading")}>
                       {state.party.length < PARTY_SIZE_LIMIT && (
                         <section className="guild-tavern-panel" aria-label={t("party.tavern")}>
                           {/* The recruiting-hall still (P7) IS the scene now — the old
                               CSS stand-in props (figure/lantern/counter/table) would sit
                               on top of a real room, so the element is a bare backdrop. */}
                           <div className="guild-tavern-scene" aria-hidden="true" />
-                          {showGuildFallbackRecruit && (
+                          {state.party.length < PARTY_SIZE_LIMIT && (
                             <div className="guild-master-dialogue">
-                              <strong>{t("party.guildMaster")}</strong>
+                              {/* No second "Guild master" heading — he is already speaking on the
+                                  left. One man, one voice; this is his offer, not another NPC. */}
                               {guildOfferState === "ask" && (
                                 <>
                                 <p>{t("party.quickRecruitPrompt")}</p>
@@ -1810,7 +1837,12 @@ export function App() {
                                 </>
                               )}
                               {guildOfferState === "suggestion" && (
-                                <article className="guild-candidate-card" data-testid="guild-suggestion">
+                                <article
+                                  className="guild-candidate-card guild-proposal-modal"
+                                  data-testid="guild-suggestion"
+                                  data-controller-active="true"
+                                  data-controller-surface="guild-proposal"
+                                >
                                 <p>{t("party.quickRecruitProposal")}</p>
                                 <div className="candidate-heading">
                                   <div className="portrait" style={{ borderColor: suggestedRecruit.accentColor }}>
@@ -2185,6 +2217,7 @@ export function App() {
                       </article>
                       )}
                     </section>
+                    )}
                   </div>
                 </section>
               )}

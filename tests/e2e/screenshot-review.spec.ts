@@ -17,6 +17,9 @@ test("captures desktop screenshot review states", async ({ page }) => {
   await page.getByTestId("guild-step-appearance").getByRole("button", { name: "Next" }).click();
   await page.screenshot({ path: "test-results/screenshot-review/desktop-guild-bonus.png", fullPage: true });
 
+  // The Guild Master lives in the HALL, and the registration steps no longer sit beside him
+  // (IMP-003) — so come back out of the form before asking him to pick someone.
+  await page.locator(".guild-stepper button").first().click();
   await createStarterParty(page);
   await page.screenshot({ path: "test-results/screenshot-review/desktop-guild.png", fullPage: true });
 
