@@ -19,6 +19,9 @@ import { CombatLog } from "./components/CombatLog";
 import { CombatResultPanel, type CombatResult } from "./components/CombatResultPanel";
 import { CombatEnemyStage } from "./components/CombatEnemyStage";
 import { CombatPartyStrip } from "./components/CombatPartyStrip";
+import { CombatCockpit } from "./components/CombatCockpit";
+import { DungeonCockpit } from "./components/DungeonCockpit";
+import { renderPortraitContent } from "./ui/portrait";
 import { RecoveryPanel } from "./components/RecoveryPanel";
 import { RecordsPanel } from "./components/RecordsPanel";
 import { TownEntryPanel } from "./components/TownEntryPanel";
@@ -54,7 +57,6 @@ import {
   formatAptitudes,
   formatBonusParts,
   formatCombatRow,
-  formatEnemyGroupStatus,
   formatEquipmentSlot,
   formatSignedBonus,
   formatSignedDelta,
@@ -147,7 +149,14 @@ export function App() {
   // The scenario currently being played. Initialized to the built-in default; the
   // scenario picker (T6) swaps it. All world-logic below reads this instead of the
   // hard-coded singleton so a different content/worlds/<id> can drive the game.
-  const [activeWorld, setActiveWorldState] = useState<ScenarioWorld>(defaultWorld);
+  const [activeWorld, setActiveWorldState] = useState<ScenarioWorld>(() => {
+    const world = debugMode ? getDebugWorldFromLocation() : defaultWorld;
+    // Point the framework-free consumers (catalog lookups, art pack) at it SYNCHRONOUSLY:
+    // they are read during the very first render, before the activeWorld effect runs.
+    setActiveWorld(world);
+    setActiveArtPack(world.assetPack ?? "default");
+    return world;
+  });
   // Debug tools collapse to a thin bar by default so debug mode stays playable —
   // the full panel otherwise shrinks the game view. Auto-explore lives in the
   // dungeon command dock, so it's reachable while the panel is collapsed.
@@ -155,7 +164,7 @@ export function App() {
   const [debugProgress, setDebugProgress] = useState<DebugProgress>(() => getDebugProgressFromLocation());
   const scenarioValidationErrors = useMemo(() => getScenarioValidationErrorsFromLocation(), []);
   const [state, setState] = useState<GameState>(() =>
-    debugMode ? createDebugStateFromLocation() : createInitialGameState()
+    debugMode ? createDebugStateFromLocation(getDebugWorldFromLocation()) : createInitialGameState()
   );
   const stateRef = useRef(state);
   const [screen, setScreen] = useState<AppScreen>(() =>
@@ -1225,6 +1234,20 @@ export function App() {
     setSaveSlots(saveRepository.list());
   }, [debugMode, locale, saveRepository, scenarioValidationErrors.length, screen, state]);
 
+  // Shared by both cockpits — it sits between the message pane and the command dock in
+  // each, so the halves take it as a slot rather than each rebuilding it.
+  const tempoNode =
+    tempoMode !== "idle" ? (
+      <TempoIndicator
+        mode={tempoMode}
+        step={tempoStep}
+        speed={tempoSpeed}
+        t={t}
+        onToggleSpeed={() => setTempoSpeed((current) => (current === "fast" ? "normal" : "fast"))}
+        onStop={() => toggleTempoMode()}
+      />
+    ) : null;
+
   return (
     <main
       className={screen === "game" ? "app-shell" : "app-shell title-shell"}
@@ -1276,6 +1299,18 @@ export function App() {
         <DebugPanel
           open={debugPanelOpen}
           onToggle={() => setDebugPanelOpen((open) => !open)}
+          scenarios={listScenarios()}
+          worldId={listScenarios().find((s) => getWorldById(s.worldId) === activeWorld)?.worldId ?? "default"}
+          onChangeWorld={(worldId) => {
+            const world = getWorldById(worldId);
+            if (!world) {
+              return;
+            }
+            // Switch the whole scenario and rebuild the debug state inside it.
+            applyActiveWorld(world);
+            setState(createDebugStateFromProgress(world, debugProgress));
+            setHeadlessStatus("");
+          }}
           visitedCount={state.map.visitedRooms.length}
           roomTotal={getTotalRoomCount()}
           phase={state.phase}
@@ -1740,15 +1775,10 @@ export function App() {
                     >
                       {state.party.length < PARTY_SIZE_LIMIT && (
                         <section className="guild-tavern-panel" aria-label={t("party.tavern")}>
-                          <div className="guild-tavern-scene" aria-hidden="true">
-                            <div className="guild-master-figure">
-                              <span className="guild-master-head" />
-                              <span className="guild-master-body" />
-                            </div>
-                            <span className="tavern-lantern" />
-                            <span className="tavern-counter" />
-                            <span className="tavern-table" />
-                          </div>
+                          {/* The recruiting-hall still (P7) IS the scene now — the old
+                              CSS stand-in props (figure/lantern/counter/table) would sit
+                              on top of a real room, so the element is a bare backdrop. */}
+                          <div className="guild-tavern-scene" aria-hidden="true" />
                           {showGuildFallbackRecruit && (
                             <div className="guild-master-dialogue">
                               <strong>{t("party.guildMaster")}</strong>
@@ -2226,229 +2256,20 @@ export function App() {
               aria-label={state.phase === "combat" ? t("play.battleScreen") : undefined}
             >
               {state.phase === "dungeon" ? (
-                <>
-                  <div className="cockpit-scene">
-                    <DungeonView state={state} world={activeWorld} label={t("play.dungeonView")} />
-                  </div>
-                  <aside className="cockpit-rail" aria-label={t("play.partyStatus")}>
-                    <div className="navigation-board" aria-label={t("map.heading")}>
-                      <MapPanel state={state} world={activeWorld} locale={locale} t={t} debugMode={debugMode} />
-                    </div>
-                <div className="party-hud" data-testid="party-hud" aria-label={t("play.partyStatus")}>
-                  {(["front", "back"] as const).map((row) => (
-                    <div className="party-row-strip" data-testid={`party-${row}-row`} key={row}>
-                      <span>{row === "front" ? t("play.frontRow") : t("play.backRow")}</span>
-                      <div className="party-row-slots">
-                        {state.party.filter((member) => member.row === row).map((member) => {
-                          const stats = getEffectiveCharacterStats(member, activeWorld);
-                          return (
-                            <div
-                              className={`party-token ${member.row} ${
-                                member.injury || member.hp <= 0
-                                  ? "down"
-                                  : member.hp <= Math.ceil(member.maxHp * 0.35)
-                                    ? "danger"
-                                    : ""
-                              }`}
-                              data-testid="party-token"
-                              key={member.id}
-                              style={{ borderColor: member.accentColor }}
-                            >
-                              <div className="party-token-portrait" style={{ borderColor: member.accentColor }}>
-                                {renderPortraitContent({
-                                  portraitRef: member.portraitRef,
-                                  backgroundId: member.backgroundId,
-                                  fallback: member.name,
-                                  alt: member.name,
-                                  testId: "party-hud-portrait"
-                                })}
-                              </div>
-                              <div className="party-token-body">
-                                <div className="party-token-heading">
-                                  <strong>{member.name}</strong>
-                                  <small>{formatCharacterSummary(member, locale, t, { includeRow: false })}</small>
-                                  {member.status && member.status.filter((status) => status !== "ward").length > 0 && (
-                                    <small className="party-token-status">
-                                      {member.status.filter((status) => status !== "ward").join(" · ")}
-                                    </small>
-                                  )}
-                                </div>
-                                <div className="party-token-stats" aria-label={t("play.memberStatus")}>
-                                  <span>Lv {member.level}</span>
-                                  <span>HP {member.hp}/{stats.maxHp}</span>
-                                  {stats.maxMp > 0 && <span>{t("play.mpShort")} {member.mp}/{stats.maxMp}</span>}
-                                  <span className="party-token-detail">{t("party.damage")} {stats.damageMin}-{stats.damageMax}</span>
-                                  <span className="party-token-detail">{t("party.armor")} {stats.armor}</span>
-                                  <span className="party-token-detail">{t("party.speed")} {stats.speed}</span>
-                                </div>
-                                <div className="party-token-gauges">
-                                  <div
-                                    className={`stat-gauge hp-gauge${member.hp <= Math.ceil(member.maxHp * 0.35) ? " danger" : ""}`}
-                                    role="meter"
-                                    aria-valuenow={member.hp}
-                                    aria-valuemax={member.maxHp}
-                                    aria-label={`${member.name} HP`}
-                                  >
-                                    <span className="stat-gauge-fill" style={{ width: `${Math.max(0, (member.hp / member.maxHp) * 100)}%` }} />
-                                  </div>
-                                  {member.maxMp > 0 && (
-                                    <div
-                                      className="stat-gauge mp-gauge"
-                                      data-testid="party-mp-gauge"
-                                      role="meter"
-                                      aria-valuenow={member.mp}
-                                      aria-valuemax={member.maxMp}
-                                      aria-label={`${member.name} MP`}
-                                    >
-                                      <span className="stat-gauge-fill" style={{ width: `${Math.max(0, (member.mp / member.maxMp) * 100)}%` }} />
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                  </aside>
-                </>
-              ) : (
-                <>
-                  <CombatEnemyStage
-                    backdrop={<DungeonView state={state} world={activeWorld} label={t("play.dungeonView")} />}
-                    groups={displayedEnemyGroups}
-                    selectedTargetId={selectedTarget?.id}
-                    targetingActive={!playback}
-                    activeBeat={activeBeat}
-                    beatKey={playback?.index}
-                    locale={locale}
-                    t={t}
-                    caption={`${t("play.round", { round: state.combat?.round ?? 1 })} · ${
-                      selectedActor && selectedTarget
-                        ? t("play.selectedOrder", { actor: selectedActor.name, target: localizedEnemyGroupName(selectedTarget, locale) })
-                        : combatOrdersReady
-                          ? t("play.orderReady")
-                          : t("play.selectOrder")
-                    }`}
-                  />
-                  <CombatPartyStrip
-                    members={displayedParty.map((member) => ({
-                      ...member,
-                      maxHp: getEffectiveCharacterStats(member, activeWorld).maxHp,
-                      maxMp: getEffectiveCharacterStats(member, activeWorld).maxMp
-                    }))}
-                    selectedActorId={playback ? undefined : selectedActor?.id}
-                    orderedActorIds={orderedActorIds}
-                    activeBeat={activeBeat}
-                    beatKey={playback?.index}
-                    t={t}
-                  />
-                </>
-              )}
-
-              {state.phase === "dungeon" ? (
-                <div className="cockpit-message">
-                  <p className="room-copy">{roomText?.description}</p>
-                  <p className="event-window" aria-live="polite">{tempoStatus || latestLogText || "\u00a0"}</p>
-                </div>
-              ) : (
-                <div className="cockpit-message combat-message">
-                  {tempoStatus && <p className="event-window" aria-live="polite">{tempoStatus}</p>}
-                  <CombatLog
-                    t={t}
-                    beats={(playback ? playback.beats : combatBeats).map(formatBeatLine)}
-                    revealed={playback ? playback.index + 1 : revealedBeats}
-                    onAdvance={playback ? commitPlayback : () => setRevealedBeats(combatBeats.length)}
-                  />
-                  <span className="combat-order-progress" data-testid="combat-order-list">
-                    {t("play.orderProgress", { ready: combatOrders.length, total: activeParty.length })}
-                  </span>
-                </div>
-              )}
-              {tempoMode !== "idle" && (
-                <TempoIndicator
-                  mode={tempoMode}
-                  step={tempoStep}
-                  speed={tempoSpeed}
+                <DungeonCockpit
+                  state={state}
+                  world={activeWorld}
+                  locale={locale}
                   t={t}
-                  onToggleSpeed={() => setTempoSpeed((current) => (current === "fast" ? "normal" : "fast"))}
-                  onStop={() => toggleTempoMode()}
-                />
-              )}
-              {state.phase === "combat" ? (
-                <>
-                  {selectedActor && !playback && (
-                    <CombatCommandMenu
-                      actor={selectedActor}
-                      livingGroups={livingEnemyGroups}
-                      spells={knownSpells(selectedActor.classId, selectedActor.level)}
-                      abilityKind={isCasterClass(selectedActor.classId) ? "spell" : "skill"}
-                      localizeGroup={(group) => localizedEnemyGroupName(group, locale)}
-                      canAttack={
-                        livingEnemyGroups.length > 0 &&
-                        !(selectedActor.row === "back" && frontRowStanding && !weaponReaches(selectedActor, activeWorld))
-                      }
-                      consumables={combatConsumables}
-                      partyTargets={activeParty.map((member) => ({ id: member.id, name: member.name }))}
-                      t={t}
-                      onQueueAttack={menuQueueAttack}
-                      onQueueSpell={menuQueueSpell}
-                      onQueueDefend={menuQueueDefend}
-                      onQueueItem={menuQueueItem}
-                      onUndo={takeBackCombatOrder}
-                    />
-                  )}
-                  {combatOrdersReady && confirmRound && !playback && (
-                    <div
-                      className="combat-command-menu combat-confirm"
-                      data-testid="combat-confirm-round"
-                      data-controller-active="true"
-                      data-controller-surface="combat-menu"
-                      onKeyDown={(event) => {
-                        const key = event.key.toLowerCase();
-                        if (key === "escape" || key === "backspace" || key === "a") {
-                          event.preventDefault();
-                          takeBackCombatOrder();
-                        }
-                      }}
-                    >
-                      <p className="combat-command-menu-head">{t("play.confirmRoundPrompt")}</p>
-                      <button
-                        type="button"
-                        className="combat-confirm-button"
-                        data-testid="combat-confirm-execute"
-                        ref={(node) => node?.focus()}
-                        onClick={executeCombatOrders}
-                      >
-                        {t("play.executeRound")}
-                        <kbd className="key-hint">Enter</kbd>
-                      </button>
-                      <p className="combat-command-menu-hint">{t("play.confirmRoundHint")}</p>
-                    </div>
-                  )}
-                  <CombatCommandDock
-                    t={t}
-                    isTempoRunning={isTempoRunning}
-                    onToggleTempo={() => toggleTempoMode("combat")}
-                    onRepeatRound={repeatLastRound}
-                    canRepeat={lastCombatOrders.length > 0 && !isTempoRunning && combatOrders.length === 0}
-                    onRetreat={() => run({ type: "retreat" })}
-                    debugMode={debugMode}
-                    onForceVictory={() => run({ type: "debug_force_victory" })}
-                    onReviveParty={() => run({ type: "debug_revive_party" })}
-                  />
-                </>
-              ) : (
-                <DungeonCommandDock
-                  t={t}
-                  onCommand={run}
+                  debugMode={debugMode}
+                  roomDescription={roomText?.description}
+                  message={tempoStatus || latestLogText || " "}
+                  tempo={tempoNode}
+                  run={run}
                   isTempoRunning={isTempoRunning}
                   onToggleTempo={() => toggleTempoMode("dungeon")}
                   onOpenCamp={() => setCampOpen(true)}
                   onOpenFullMap={() => setFullMapOpen(true)}
-                  debugMode={debugMode}
                   onAutoExplore={() => setState((current) => debugAutoExplore(current, activeWorld))}
                   canUseStairs={canUseStairs}
                   blockingStairGate={Boolean(blockingStairGate)}
@@ -2462,6 +2283,47 @@ export function App() {
                     escapeItem &&
                     run({ type: "use_item", itemId: escapeItem.id, targetCharacterId: state.party[0]?.id ?? "" })
                   }
+                />
+              ) : (
+                <CombatCockpit
+                  state={state}
+                  world={activeWorld}
+                  locale={locale}
+                  t={t}
+                  debugMode={debugMode}
+                  enemyGroups={displayedEnemyGroups}
+                  livingEnemyGroups={livingEnemyGroups}
+                  selectedTarget={selectedTarget}
+                  activeBeat={activeBeat}
+                  beatKey={playback?.index}
+                  playingBack={Boolean(playback)}
+                  displayedParty={displayedParty}
+                  activeParty={activeParty}
+                  selectedActor={selectedActor}
+                  orderedActorIds={orderedActorIds}
+                  frontRowStanding={frontRowStanding}
+                  tempoStatus={tempoStatus}
+                  logLines={(playback ? playback.beats : combatBeats).map(formatBeatLine)}
+                  revealedBeats={playback ? playback.index + 1 : revealedBeats}
+                  onAdvanceLog={playback ? commitPlayback : () => setRevealedBeats(combatBeats.length)}
+                  orderedCount={combatOrders.length}
+                  tempo={tempoNode}
+                  consumables={combatConsumables}
+                  onQueueAttack={menuQueueAttack}
+                  onQueueSpell={menuQueueSpell}
+                  onQueueDefend={menuQueueDefend}
+                  onQueueItem={menuQueueItem}
+                  onUndo={takeBackCombatOrder}
+                  ordersReady={combatOrdersReady}
+                  confirmRound={confirmRound}
+                  onExecuteRound={executeCombatOrders}
+                  isTempoRunning={isTempoRunning}
+                  onToggleTempo={() => toggleTempoMode("combat")}
+                  onRepeatRound={repeatLastRound}
+                  canRepeat={lastCombatOrders.length > 0 && !isTempoRunning && combatOrders.length === 0}
+                  onRetreat={() => run({ type: "retreat" })}
+                  onForceVictory={() => run({ type: "debug_force_victory" })}
+                  onReviveParty={() => run({ type: "debug_revive_party" })}
                 />
               )}
             </div>
@@ -2490,43 +2352,6 @@ function isDebugModeEnabled() {
   return typeof window !== "undefined" && new URLSearchParams(window.location.search).get("debug") === "1";
 }
 
-function renderPortraitContent({
-  portraitRef,
-  backgroundId,
-  fallback,
-  alt = "",
-  testId
-}: {
-  portraitRef?: string;
-  backgroundId: CharacterBackgroundId;
-  fallback: string;
-  alt?: string;
-  testId?: string;
-}) {
-  if (portraitRef && !portraitRef.startsWith("debug://")) {
-    return <img data-testid={testId} src={portraitRef} alt={alt} />;
-  }
-
-  const background = findBackground(backgroundId);
-  // Portraits are global character-creation art; they follow the active art pack
-  // (set on the resolver whenever the scenario changes) rather than a fixed world.
-  const portraitAssetUrl = portraitUrl(background.portraitKey);
-  if (portraitAssetUrl) {
-    return <img data-testid={testId} src={portraitAssetUrl} alt={alt || background.label.en} />;
-  }
-
-  const mark = fallback.trim().slice(0, 1) || background.label.en.slice(0, 1);
-  return (
-    <span
-      className={`portrait-asset portrait-asset-${background.portraitKey}`}
-      data-testid={testId}
-      aria-label={alt || background.label.en}
-    >
-      {mark}
-    </span>
-  );
-}
-
 function getDebugProgressFromLocation() {
   if (typeof window === "undefined") {
     return "ready";
@@ -2537,8 +2362,19 @@ function getDebugProgressFromLocation() {
 
 // Seed a debug state, then honor an optional `&at=<roomId>&facing=<dir>` override
 // so mechanic e2es can start on the exact cell under test (see withDebugStartCell).
-function createDebugStateFromLocation(): GameState {
-  const state = createDebugStateFromProgress(defaultWorld, getDebugProgressFromLocation());
+// Debug mode used to be hard-wired to the default world, so a second scenario could not
+// be debugged at all. `?debug=1&world=<id>` now picks the scenario (default when absent
+// or unknown).
+export function getDebugWorldFromLocation(): ScenarioWorld {
+  if (typeof window === "undefined") {
+    return defaultWorld;
+  }
+  const requested = new URLSearchParams(window.location.search).get("world");
+  return (requested ? getWorldById(requested) : undefined) ?? defaultWorld;
+}
+
+function createDebugStateFromLocation(world: ScenarioWorld): GameState {
+  const state = createDebugStateFromProgress(world, getDebugProgressFromLocation());
   if (typeof window === "undefined") {
     return state;
   }
@@ -2548,7 +2384,7 @@ function createDebugStateFromLocation(): GameState {
     return state;
   }
   const facing = params.get("facing") as Direction | null;
-  return withDebugStartCell(state, defaultWorld, at, facing ?? undefined);
+  return withDebugStartCell(state, world, at, facing ?? undefined);
 }
 
 function getTotalRoomCount() {

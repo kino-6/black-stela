@@ -16,6 +16,7 @@ enemies:
     xp: 1
     gold: 2
     role: attrition
+    size: small
     dangerTier: 1
     tags: [tutorial, slime]
   - id: enemy.b1f.dust-crawler
@@ -34,6 +35,7 @@ enemies:
     xp: 2
     gold: 3
     role: attrition
+    size: small
     dangerTier: 1
     weaknesses:
       fire: 1.5
@@ -54,6 +56,7 @@ enemies:
     xp: 2
     gold: 3
     role: ambusher
+    size: small
     dangerTier: 2
     tags: [beast]
   # Squad pair: the warden shields the caller from melee. Mashing Attack barely
@@ -74,6 +77,7 @@ enemies:
     xp: 4
     gold: 5
     role: blocker
+    size: large
     weaknesses:
       physical: 0.5
       fire: 1.5
@@ -96,6 +100,7 @@ enemies:
     xp: 5
     gold: 6
     role: caster
+    size: medium
     weaknesses:
       physical: 1.5
     dangerTier: 2
@@ -119,12 +124,13 @@ enemies:
     armor: 0
     accuracy: 70
     damageMin: 3
-    damageMax: 5
+    damageMax: 7
     speed: 6
     morale: 8
     xp: 3
     gold: 4
     role: status
+    size: small
     inflicts:
       status: poison
       chance: 45
@@ -139,16 +145,17 @@ enemies:
       ja:
         name: 灯守
     hp: 13
-    attack: 5
+    attack: 8
     armor: 2
     accuracy: 70
     damageMin: 4
-    damageMax: 7
+    damageMax: 13
     speed: 3
     morale: 10
     xp: 4
     gold: 6
     role: blocker
+    size: large
     dangerTier: 3
     tags: [construct]
     elevation: mid
@@ -181,6 +188,7 @@ enemies:
     xp: 7
     gold: 12
     role: miniboss
+    size: large
     dangerTier: 4
     isBoss: true
     tags: [midpoint, boss]
@@ -192,16 +200,17 @@ enemies:
       ja:
         name: 貯水の番人
     hp: 17
-    attack: 5
+    attack: 6
     armor: 1
     accuracy: 82
     damageMin: 4
-    damageMax: 7
+    damageMax: 9
     speed: 6
     morale: 10
     xp: 5
     gold: 9
     role: miniboss
+    size: large
     dangerTier: 2
     isBoss: true
     tags: [block-cap, boss]
@@ -211,16 +220,17 @@ enemies:
       ja:
         name: 誓いの番人
     hp: 26
-    attack: 6
+    attack: 8
     armor: 2
     accuracy: 84
     damageMin: 5
-    damageMax: 8
+    damageMax: 10
     speed: 6
     morale: 11
     xp: 9
     gold: 15
     role: miniboss
+    size: large
     dangerTier: 4
     isBoss: true
     tags: [block-cap, boss]
@@ -230,16 +240,17 @@ enemies:
       ja:
         name: 誓い断ち
     hp: 11
-    attack: 4
+    attack: 5
     armor: 1
     accuracy: 80
     damageMin: 3
-    damageMax: 6
+    damageMax: 8
     speed: 9
     morale: 8
     xp: 5
     gold: 8
     role: ambusher
+    size: medium
     dangerTier: 4
     tags: [blade]
   - id: enemy.b7f.vault-husk
@@ -248,16 +259,17 @@ enemies:
       ja:
         name: 納骨殻
     hp: 13
-    attack: 5
+    attack: 3
     armor: 3
     accuracy: 74
     damageMin: 4
-    damageMax: 6
+    damageMax: 4
     speed: 3
     morale: 10
     xp: 6
     gold: 10
     role: blocker
+    size: large
     dangerTier: 5
     tags: [optional]
   - id: enemy.b8f.ash-votary
@@ -276,6 +288,7 @@ enemies:
     xp: 13
     gold: 20
     role: boss
+    size: huge
     dangerTier: 5
     isBoss: true
     tags: [finale, boss]

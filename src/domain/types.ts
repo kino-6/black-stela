@@ -299,11 +299,19 @@ export type GameEvent =
   | { type: "recovery_blocked"; goldRequired: number; goldAvailable: number }
   | { type: "party_retreated" }
   | { type: "returned_to_town" }
+  /** The whole party is down — the expedition fails and they are dragged back to town
+   *  for a rescue fee. Without this, a fight with no able actors had no exit at all. */
+  | { type: "party_wiped"; rescueFee: number }
   | { type: "debug_started"; text: string };
 
 // Vertical placement of the combat sprite: planted on the floor, hovering at
 // mid height, or drifting well above it. Omitted defaults to "ground".
 export type EnemyElevation = "ground" | "mid" | "air";
+
+// How big the creature stands in the corridor. The renderer measures the sprite's real
+// silhouette and scales it to this world height, so a mite and a boss read as different
+// creatures no matter how each was framed in its image file. Omitted defaults to "medium".
+export type EnemySize = "small" | "medium" | "large" | "huge";
 
 export interface Enemy {
   id: string;
@@ -329,6 +337,7 @@ export interface Enemy {
   tags?: string[];
   isBoss?: boolean;
   elevation?: EnemyElevation;
+  size?: EnemySize;
 }
 
 export interface Trap {
@@ -423,15 +432,37 @@ export interface GameState {
   position: DungeonPosition | null;
   combat: CombatState | null;
   defeatedEnemies: string[];
+  /** Enemy types cleared on the CURRENT floor visit. Encounter suppression is scoped
+   *  here, NOT to defeatedEnemies — so leaving and re-entering a floor repopulates its
+   *  chambers (玄室). defeatedEnemies stays the run-long record (mvp/records/squad). */
+  floorClearedEnemies: string[];
+  /** Steps walked since the last fight. A wandering encounter needs a safety window, so
+   *  the party is never chain-ambushed step after step. */
+  stepsSinceEncounter: number;
   resolvedTraps: string[];
   discoveredSecrets: string[];
   inventory: InventoryItem[];
   partyGold: number;
   claimedTreasures: string[];
+  /** Treasure rooms looted on the CURRENT floor visit — resets with the floor, so a
+   *  re-entered floor's chambers hold loot again. */
+  floorClaimedTreasures: string[];
   map: DungeonMapState;
   log: AdventureLogEntry[];
   turn: number;
   aiEnabled: boolean;
+}
+
+/** Per-scenario colour of the first-person scene. Wall/floor tint multiplies the
+ *  block texture, so a scenario reads as its own world (ash vs. drowned green) even
+ *  before it ships its own textures. Omitted → the default ash palette. */
+export interface ScenePalette {
+  fog?: string;
+  ambient?: string;
+  torch?: string;
+  front?: string;
+  wall?: string;
+  floor?: string;
 }
 
 export interface ScenarioWorld {
@@ -440,6 +471,8 @@ export interface ScenarioWorld {
   /** Art pack folder under content/worlds/<assetPack>/assets (defaults to "default").
    *  Lets a scenario ship its own atmosphere pack. */
   assetPack?: string;
+  /** Scene colour for this world's dungeon (see ScenePalette). */
+  palette?: ScenePalette;
   startDungeon: string;
   startRoom: string;
   aiPolicy: AiPolicy;

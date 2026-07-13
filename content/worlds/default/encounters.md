@@ -52,12 +52,19 @@ encounterTables:
         weight: 5
         minCount: 1
         maxCount: 2
+  # B4F fielded only ONE type, so the floor drew almost no attrition and read as a
+  # sudden lull between B3F and B5F. A second, lighter type gives it a real floor drain.
   - id: encounters.b4f.dark
     floorId: dungeon.b4f
+    groupsMax: 2
     entries:
       - enemyId: enemy.b4f.lantern-ward
         weight: 8
-        minCount: 3
+        minCount: 2
+        maxCount: 3
+      - enemyId: enemy.b3f.bitter-mote
+        weight: 6
+        minCount: 2
         maxCount: 3
   - id: encounters.b5f.gate
     floorId: dungeon.b5f

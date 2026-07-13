@@ -95,15 +95,7 @@ rooms:
       ja:
         name: 内灯の広間
         description: 北の広間。守り火が、みな内を向く鉤の間を漂い、わずかな光を抱え込んでいる。
-    encounter:
-      id: enemy.b4f.lantern-ward
-      name: Lantern Ward
-      hp: 8
-      attack: 3
-      role: blocker
-      dangerTier: 3
-      tags:
-        - dark-zone
+    encounterTable: encounters.b4f.dark
     treasureTable: treasure.b4f.side
   - id: room.b4f.005
     name: Hooked Cache

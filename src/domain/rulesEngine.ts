@@ -413,6 +413,8 @@ function enterDungeon(state: GameState, world: ScenarioWorld): CommandResult {
     combat: null,
     party: markExpeditionStarted(state.party, roomVisit.map.floorId ?? world.startDungeon, state.turn + 1),
     map: roomVisit.map,
+    floorClearedEnemies: [],
+    floorClaimedTreasures: [],
     turn: state.turn + 1
   };
   const startRoom = getRoom(world, world.startRoom);
@@ -467,6 +469,8 @@ function resumeAtCheckpoint(state: GameState, world: ScenarioWorld, roomId: stri
     combat: null,
     party: markExpeditionStarted(state.party, roomVisit.map.floorId ?? world.startDungeon, state.turn + 1),
     map: roomVisit.map,
+    floorClearedEnemies: [],
+    floorClaimedTreasures: [],
     turn: state.turn + 1
   };
 
@@ -595,6 +599,7 @@ function moveForward(
     },
     party: markDeepestFloor(state.party, roomVisit.map.floorId ?? state.map.floorId),
     map: roomVisit.map,
+    stepsSinceEncounter: state.stepsSinceEncounter + 1,
     turn: state.turn + 1
   };
 
@@ -636,13 +641,83 @@ function moveForward(
   const effects = applyCellEffects(next, world, room, events);
   next = effects.state;
 
-  const started = effects.teleported ? null : beginRoomEncounter(world, room, state);
+  // A room with an authored encounter fires it; otherwise the corridor itself can
+  // ambush you — a WANDERING encounter rolled from this floor's table. Without this
+  // the dungeon was a fixed set of set-piece rooms and walking was never dangerous.
+  // A party with nobody left standing must NOT be dragged into a fight it cannot act in:
+  // that combat can never reach a round-end, so the wipe check never fires and the run
+  // soft-locks. A fully wounded party is allowed to limp home instead.
+  const canFight = next.party.some((member) => member.hp > 0 && !member.injury);
+  const started =
+    effects.teleported || !canFight
+      ? null
+      : beginRoomEncounter(world, room, next) ?? beginWanderingEncounter(world, room, next);
   if (started) {
-    next = { ...next, phase: "combat", combat: started.combat };
+    next = { ...next, phase: "combat", combat: started.combat, stepsSinceEncounter: 0 };
     events.push(started.event);
   }
 
   return withEvents(next, events);
+}
+
+/** Chance, per step, that the corridor throws a wandering pack at the party — and the
+ *  SAFETY WINDOW that must pass since the last fight before it can. Without the window a
+ *  bad streak chain-ambushes the party step after step; with it, the expected spacing is
+ *  COOLDOWN + 1/rate steps (~33 here), which is the classic DRPG cadence. */
+export const WANDERING_ENCOUNTER_PCT = 4;
+export const WANDERING_COOLDOWN_STEPS = 8;
+
+// A wandering encounter: rolled from the CURRENT FLOOR's encounter table when the room
+// the party stepped into has no authored fight of its own. Floor-scoped suppression
+// still applies, so a type already cleared on this floor visit stays quiet until the
+// floor is re-entered.
+function beginWanderingEncounter(
+  world: ScenarioWorld,
+  room: DungeonRoom,
+  state: GameState
+): { combat: CombatState; event: GameEvent } | null {
+  if (room.encounter || room.encounterTable || room.encounterSquad) {
+    return null; // authored rooms own their fight
+  }
+  if (room.stairsToTown || room.restPoint) {
+    return null; // safe ground: landings and rest points never ambush
+  }
+  const floor = floorForRoom(world, room.id);
+  if (!floor) {
+    return null;
+  }
+  if (state.stepsSinceEncounter < WANDERING_COOLDOWN_STEPS) {
+    return null; // safety window since the last fight
+  }
+  if (rollPercent(`${state.turn}:${room.id}:wander`) >= WANDERING_ENCOUNTER_PCT) {
+    return null;
+  }
+
+  const table = world.encounterTables.find((candidate) => candidate.floorId === floor.id);
+  if (!table) {
+    return null;
+  }
+  const rolled = resolveEncounterTable(world, table.id, state.turn);
+  const fresh = selectEncounterGroups(rolled, state.floorClearedEnemies, table.groupsMax ?? 1);
+  if (fresh.length === 0) {
+    return null;
+  }
+
+  const scaled = fresh.map((group) => ({
+    enemy: group.enemy,
+    count: scaledEncounterCount(group.count, state.party, floor)
+  }));
+  const combat =
+    scaled.length === 1
+      ? createCombatState(room.id, scaled[0].enemy, scaled[0].count)
+      : createMultiGroupCombatState(room.id, scaled);
+  const label = scaled
+    .map((group) => (group.count > 1 ? `${group.enemy.name} x${group.count}` : group.enemy.name))
+    .join(" & ");
+  return {
+    combat,
+    event: { type: "enemy_encountered", enemyId: scaled[0].enemy.id, enemyName: label, roomId: room.id }
+  };
 }
 
 function useStairs(state: GameState, world: ScenarioWorld): CommandResult {
@@ -688,6 +763,10 @@ function useStairs(state: GameState, world: ScenarioWorld): CommandResult {
     },
     party: markDeepestFloor(state.party, roomVisit.map.floorId ?? state.map.floorId),
     map: roomVisit.map,
+    // Changing floors repopulates the one you arrive on: the floor-scoped clear state
+    // resets, so its chambers (玄室) hold enemies and treasure again.
+    floorClearedEnemies: [],
+    floorClaimedTreasures: [],
     turn: state.turn + 1
   };
 
@@ -979,6 +1058,7 @@ function declareRound(state: GameState, world: ScenarioWorld, actions: CombatAct
       partyGold: state.partyGold + gold,
       inventory,
       defeatedEnemies: Array.from(new Set([...state.defeatedEnemies, ...defeatedEnemyIds])),
+      floorClearedEnemies: Array.from(new Set([...state.floorClearedEnemies, ...defeatedEnemyIds])),
       turn: state.turn + 1
     };
 
@@ -1089,6 +1169,38 @@ function declareRound(state: GameState, world: ScenarioWorld, actions: CombatAct
     pendingActions: []
   });
 
+  // PARTY WIPE. Nobody dies in this game — hp<=0 becomes hp:1 + `wounded`, and a
+  // wounded member cannot act. So once EVERY member is wounded there are zero able
+  // actors and the fight can never be advanced, fled, or won: the run soft-locked in
+  // combat forever. The expedition now FAILS instead: the party is dragged back to
+  // town, still wounded (they must pay the infirmary), minus a rescue fee.
+  const noOneCanAct = party.every((member) => member.injury || member.hp <= 0);
+  if (noOneCanAct) {
+    const rescueFee = Math.floor(state.partyGold / 2);
+    const wiped: GameState = {
+      ...state,
+      phase: "town",
+      position: null,
+      combat: null,
+      party,
+      inventory,
+      partyGold: state.partyGold - rescueFee,
+      map: {
+        ...state.map,
+        currentRoomId: null,
+        currentCellId: null,
+        currentFacing: null
+      },
+      turn: state.turn + 1
+    };
+
+    return withEvents(wiped, [
+      { type: "combat_round_resolved", round: combat.round, summaries, beats },
+      ...injuredEvents,
+      { type: "party_wiped", rescueFee }
+    ]);
+  }
+
   const next: GameState = {
     ...state,
     combat: nextCombat,
@@ -1161,6 +1273,7 @@ function debugForceVictory(state: GameState): CommandResult {
     party: grownParty,
     partyGold: state.partyGold + gold,
     defeatedEnemies: Array.from(new Set([...state.defeatedEnemies, ...defeatedEnemyIds])),
+    floorClearedEnemies: Array.from(new Set([...state.floorClearedEnemies, ...defeatedEnemyIds])),
     turn: state.turn + 1
   };
 
@@ -1427,7 +1540,7 @@ function beginRoomEncounter(
   const squad = room.encounterSquad
     ?.map((enemyId) => world.enemies.find((enemy) => enemy.id === enemyId))
     .filter((enemy): enemy is Enemy => Boolean(enemy));
-  if (squad && squad.length >= 2 && !state.defeatedEnemies.includes(squad[0].id)) {
+  if (squad && squad.length >= 2 && !state.floorClearedEnemies.includes(squad[0].id)) {
     return {
       combat: createSquadCombatState(room.id, squad),
       event: { type: "enemy_encountered", enemyId: squad[0].id, enemyName: squad.map((enemy) => enemy.name).join(" & "), roomId: room.id }
@@ -1449,7 +1562,9 @@ function beginRoomEncounter(
   const table = room.encounterTable
     ? world.encounterTables.find((candidate) => candidate.id === room.encounterTable)
     : undefined;
-  const fresh = selectEncounterGroups(rolled, state.defeatedEnemies, table?.groupsMax ?? 1);
+  // Suppression is scoped to THIS FLOOR VISIT: leave and come back and the chambers
+  // (玄室) are repopulated. Run-long `defeatedEnemies` is only the record.
+  const fresh = selectEncounterGroups(rolled, state.floorClearedEnemies, table?.groupsMax ?? 1);
   if (fresh.length === 0) {
     return null;
   }
@@ -1628,7 +1743,7 @@ function collectRoomTreasure(
   roomId: string,
   treasureTableId: string | undefined
 ): { state: GameState; events: GameEvent[] } {
-  if (!treasureTableId || state.claimedTreasures.includes(roomId)) {
+  if (!treasureTableId || state.floorClaimedTreasures.includes(roomId)) {
     return { state, events: [] };
   }
 
@@ -1657,7 +1772,8 @@ function collectRoomTreasure(
     state: {
       ...state,
       inventory: addInventoryItem(state.inventory, item),
-      claimedTreasures: [...state.claimedTreasures, roomId]
+      claimedTreasures: Array.from(new Set([...state.claimedTreasures, roomId])),
+      floorClaimedTreasures: [...state.floorClaimedTreasures, roomId]
     },
     events: [
       {
@@ -1674,7 +1790,7 @@ function collectRoomTreasure(
 }
 
 function floorNumberForRoom(world: ScenarioWorld, roomId: string): number {
-  const match = (getFloorIdForRoom(world, roomId) ?? "").match(/b(\d+)f/);
+  const match = (getFloorIdForRoom(world, roomId) ?? "").match(/[a-z](\d+)f/i);
   return match ? Number(match[1]) : 1;
 }
 
@@ -2038,7 +2154,7 @@ function chooseDeeperFloor(current: string | undefined, next: string) {
 }
 
 function floorRank(floorId: string) {
-  const match = floorId.match(/b(\d+)f/i);
+  const match = floorId.match(/[a-z](\d+)f/i);
   return match ? Number(match[1]) : 0;
 }
 

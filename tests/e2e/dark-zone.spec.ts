@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { faceDirection, resolveVisibleCombat } from "./helpers";
+import { clearAnyCombat, faceDirection } from "./helpers";
 
 /**
  * Lane Z slice D-3 (darkness gimmick): a dark-zone room snuffs out the automap.
@@ -7,11 +7,12 @@ import { faceDirection, resolveVisibleCombat } from "./helpers";
  * generated path (scripts/genFloorMaze.mjs) down to the Unlit Square down-stair.
  * The spinner entry re-orients facing, so each step re-faces explicitly.
  */
+// A wandering pack can ambush any step now, and the victory overlay swallows clicks —
+// clear both around every move.
 async function move(page: import("@playwright/test").Page) {
-  await page.getByRole("button", { name: "Move", exact: true }).click();
-  if (await page.getByLabel("Battle screen").isVisible().catch(() => false)) {
-    await resolveVisibleCombat(page);
-  }
+  await clearAnyCombat(page);
+  await page.getByRole("button", { name: "Move", exact: true }).click({ timeout: 5000 });
+  await clearAnyCombat(page);
 }
 
 test("dark zone obscures the minimap", async ({ page }) => {
@@ -25,6 +26,7 @@ test("dark zone obscures the minimap", async ({ page }) => {
     "south", "south", "east", "east", "south", "south", "west", "west"
   ];
   for (const dir of toUnlitSquare) {
+    await clearAnyCombat(page);
     await faceDirection(page, dir);
     await move(page);
   }

@@ -58,15 +58,9 @@ export function TownEntryPanel({
         <strong>{t("town.gold", { gold: partyGold })}</strong>
       </div>
       <div className="town-cockpit-grid">
-        <div className="town-scene" aria-hidden="true">
-          <div className="town-skyline" />
-          <div className="town-gate">
-            <span className="town-lantern left" />
-            <span className="town-stela" />
-            <span className="town-lantern right" />
-          </div>
-          <div className="town-steps" />
-        </div>
+        {/* The town-hub still (P7) IS the scene now — the old CSS stand-in props
+            (skyline/gate/lanterns/stela/steps) would sit on top of a real town. */}
+        <div className="town-scene" aria-hidden="true" />
         <dl className="town-status-ledger">
           <div>
             <dt>{t("town.expeditionResult")}</dt>

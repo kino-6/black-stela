@@ -2,27 +2,58 @@
 id: dungeon.verdant.g1f
 name: G1F - Root Gallery
 level: 1
-startRoom: room.verdant.g1f.001
+recommendedPartyLevel: 1
 tags:
-  - proof-fixture
+  - shortcut
+startRoom: room.verdant.g1f.001
 map: |
-  #######
-  #E...A#
-  #.###.#
-  #G...R#
-  #######
+  ###################
+  #E.s..........#...#
+  #.#.#####.###.###.#
+  #.#.....#.#.......#
+  #.#.#.###.###.#.#.#
+  #.#..B....#..C..#.#
+  #.###.#.#.###.#.###
+  #.....#.#.#...#...#
+  #.#.#.##....#.#.#.#
+  #.#.#....A..#.#.#.#
+  #.#.#.##....#.#.###
+  #.#.#.....#.#.#...#
+  #.#.###.#.#.#.#.###
+  #.#...#..M..#.#S..#
+  #.#.###.#.#####.###
+  #.#...#.....#.....#
+  #.###########.###.#
+  #.........#X...1#2#
+  ###################
 symbols:
+  1: room.verdant.g1f.nook1
+  2: room.verdant.g1f.nook2
   E: room.verdant.g1f.001
-  A: room.verdant.g1f.002
-  G: room.verdant.g1f.003
-  R: room.verdant.g1f.004
+  X: room.verdant.g1f.exit
+  M: room.verdant.g1f.keep
+  A: room.verdant.g1f.02
+  B: room.verdant.g1f.03
+  C: room.verdant.g1f.04
+  s: room.verdant.g1f.gate
+  S: room.verdant.g1f.lift
 corridor:
   name: Overgrown Path
-  description: A root-laced passage; pale green light filters down through the canopy far above.
+  description: A root-laced passage; pale green canopy-light filters down through the leaves far above.
   locales:
     ja:
       name: 蔦の回廊
-      description: 根が絡む通路。はるか頭上の樹冠から、淡い緑の光が差し込む。
+      description: 根が絡む通路。はるか頭上の葉むらから、淡い翠の光が差し込む。
+edges:
+  - from: room.verdant.g1f.exit
+    direction: west
+    kind: stairs
+    to: room.verdant.g2f.001
+    targetFloorId: dungeon.verdant.g2f
+  - from: room.verdant.g1f.gate
+    direction: north
+    kind: shortcut
+    to: room.verdant.g1f.lift
 rooms:
   - id: room.verdant.g1f.001
     name: Sunken Threshold
@@ -33,42 +64,90 @@ rooms:
       ja:
         name: 沈んだ入口
         description: 地上への入口。苔むした階段が陽の光へと登っていく。
-  - id: room.verdant.g1f.002
-    name: Bramble Chamber
-    description: A round chamber choked with thorn-vine; something green stirs among the roots.
-    encounter:
-      id: enemy.verdant.moss-shambler
-      name: Moss Shambler
-      hp: 8
-      attack: 3
-      xp: 4
-      locales:
-        ja:
-          name: 苔の蠢き
-      tags:
-        - proof
+  - id: room.verdant.g1f.02
+    name: Green Chamber 1
+    description: A chamber where the canopy-light pools green on standing water.
+    encounterTable: encounters.verdant.g1.pack
+    treasureTable: treasure.verdant.g1.side
     locales:
       ja:
-        name: 茨の間
-        description: 棘蔓が絡む円い間。根の間で、緑の何かが蠢いている。
-  - id: room.verdant.g1f.003
-    name: Fern Grove
-    description: A quiet grove of ferns, the air thick with spores and green light.
+        name: 翠の間 1
+        description: 樹冠の光が水面に翠色を落とす間。
+  - id: room.verdant.g1f.03
+    name: Green Chamber 2
+    description: A chamber where the canopy-light pools green on standing water.
+    encounterTable: encounters.verdant.g1.pack
+    treasureTable: treasure.verdant.g1.side
     locales:
       ja:
-        name: 羊歯の木立
-        description: 静かな羊歯の木立。胞子と緑の光で空気が濃い。
-  - id: room.verdant.g1f.004
-    name: Root Hollow
-    description: A hollow between great roots, dry enough to rest a moment.
-    restPoint: true
+        name: 翠の間 2
+        description: 樹冠の光が水面に翠色を落とす間。
+  - id: room.verdant.g1f.04
+    name: Green Chamber 3
+    description: A chamber where the canopy-light pools green on standing water.
+    encounterTable: encounters.verdant.g1.pack
+    treasureTable: treasure.verdant.g1.side
     locales:
       ja:
-        name: 根の洞
-        description: 大樹の根の間の洞。しばし休めるほどには乾いている。
+        name: 翠の間 3
+        description: 樹冠の光が水面に翠色を落とす間。
+  - id: room.verdant.g1f.keep
+    name: Deep Grove
+    description: A quiet grove deep in the gallery.
+    encounterTable: encounters.verdant.g1.pack
+    treasureTable: treasure.verdant.g1.keep
+    locales:
+      ja:
+        name: 奥の木立
+        description: 回廊の奥の静かな木立。
+  - id: room.verdant.g1f.exit
+    name: Root Descent
+    description: Roots twist down toward the next depth; a chain of vine falls away below.
+    locales:
+      ja:
+        name: 根の下り
+        description: 根が次の深みへとねじれ落ちる。蔦の鎖が下へ垂れている。
+  - id: room.verdant.g1f.gate
+    name: Sealed Bar
+    description: A heavy vine-bar can be lifted to open a shorter way down.
+    gates:
+      - id: gate.verdant.g1f.shortcut
+        direction: north
+        kind: shortcut
+        grantsFlag: flag.verdant.g1f.shortcut
+        clue: The bar lifts toward the deeper dark.
+        locales:
+          ja:
+            clue: 横木は奥の闇へ向かって上がる。
+    locales:
+      ja:
+        name: 封じの横木
+        description: 重い蔦の横木。上げれば下りの近道が開く。
+  - id: room.verdant.g1f.lift
+    name: Lifted Vine
+    description: Where the lifted vine-bar lets you out, close to the descent.
+    locales:
+      ja:
+        name: 上がる蔦
+        description: 上げた蔦の横木が抜ける先。下りのすぐ近く。
+  - id: room.verdant.g1f.nook1
+    name: Spore Niche 1
+    description: A dead-end niche where something was left in the drift.
+    treasureTable: treasure.verdant.g1.side
+    locales:
+      ja:
+        name: 胞子の窪み 1
+        description: 吹き溜まりに何かが残された行き止まりの窪み。
+  - id: room.verdant.g1f.nook2
+    name: Spore Niche 2
+    description: A dead-end niche where something was left in the drift.
+    treasureTable: treasure.verdant.g1.side
+    locales:
+      ja:
+        name: 胞子の窪み 2
+        description: 吹き溜まりに何かが残された行き止まりの窪み。
 ---
 
 # G1F - Root Gallery
 
-A single small floor for the verdant proof scenario: a navigable root-loop with
-one fresh-party fight and a return stair. Not full content — a switching fixture.
+A verdant descent floor. Generated skeleton (V1); encounters/treasure tables in V2/V3.

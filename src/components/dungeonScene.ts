@@ -1,6 +1,7 @@
 import * as THREE from "three";
-import { asset, blockTextures, getEnemySpriteTextureUrl } from "../ui/artAssets";
-import type { EnemyElevation } from "../domain/types";
+import { asset, assetOrNull, blockTextures, getEnemySpriteTextureUrl } from "../ui/artAssets";
+import type { EnemyElevation, EnemySize, ScenePalette } from "../domain/types";
+import { getSpriteMetrics, measureSpriteMetrics } from "../ui/spriteMetrics";
 
 const DEFAULT_ART_PACK = "default";
 
@@ -23,11 +24,24 @@ export interface DungeonSceneInput {
    *  depends on the resolver's module-level active-pack state, which resolves too
    *  early (at import) and can drift from the world actually being played. */
   assetPack?: string;
+  /** Per-scenario scene colour (world.palette). Omitted → the default ash palette. */
+  palette?: ScenePalette;
   /** Current dungeon floor id for block-specific wall/floor textures. */
   floorId: string | null;
-  /** Enemy groups to draw ahead while in combat (one sprite per living group, so a
-   *  multi-type fight shows every kind). Empty when not in combat. */
-  enemies: { id: string; elevation?: EnemyElevation }[];
+  /** Living enemy groups to draw ahead while in combat. `count` figures are drawn per
+   *  group — a pack of three is three creatures, not one sprite and a "×3". Empty when
+   *  not in combat. */
+  enemies: {
+    id: string;
+    /** Combat group id, so the UI overlay can be anchored back to the right group. */
+    groupId?: string;
+    count?: number;
+    elevation?: EnemyElevation;
+    size?: EnemySize;
+  }[];
+  /** Called with each group's foot position in screen % of the canvas, so the combat UI
+   *  can plant the name/HP overlay on the creatures themselves. */
+  onEnemyAnchors?: (anchors: EnemyAnchor[]) => void;
   /** Draw the hazard marker on the floor (armed trap in this room). */
   showTrap: boolean;
   /** Draw the town-return feature: the entrance stairway or the waystone. */
@@ -48,14 +62,59 @@ const WALL_HEIGHT = 3.2;
 const WALL_MID_Y = 1.5;
 const CEILING_Y = 3.1;
 
+// How tall each creature actually stands, in the same world units as the corridor
+// (WALL_HEIGHT = 3.2). A "huge" boss nearly fills the passage; a "small" mite comes up to
+// your knee. This — not the image file — is what makes size read.
+const ENEMY_WORLD_HEIGHT: Record<EnemySize, number> = {
+  small: 1,
+  medium: 1.7,
+  large: 2.4,
+  huge: 3.1
+};
+// How many of a pack actually line up in the corridor. Five vermin read as a swarm; five
+// armoured blockers read as one indistinct wall of sprites, because each is nearly as wide
+// as the passage. Bigger creature, fewer abreast. The pack still fights at full strength —
+// this is staging, not combat.
+const MAX_FIGURES_BY_SIZE: Record<EnemySize, number> = {
+  small: 5,
+  medium: 4,
+  large: 3,
+  huge: 1
+};
+// Half the horizontal band the line-up may occupy; keeps figures off the corridor walls.
+const FIGURE_HALF_SPAN = 2.9;
+
+/** Where a group's figures stand on screen, as a % of the canvas box (0–100). */
+export interface EnemyAnchor {
+  groupId: string;
+  /** Horizontal centre of the group's figures. */
+  xPct: number;
+  /** The floor line under them — where a name/HP overlay should sit. */
+  yPct: number;
+}
+
 // Build the first-person Three.js scene into `mount` and render one frame.
 // Returns a disposer that tears down textures, the renderer, and the canvas.
 export function buildDungeonScene(mount: HTMLDivElement, input: DungeonSceneInput): () => void {
   const width = mount.clientWidth;
   const height = mount.clientHeight;
+
+  // Scene colour is per-scenario. The wall/floor values TINT the block texture, so a
+  // world reads as its own place (ash ruin vs. drowned green canopy) even while it
+  // still falls back to another pack's textures. Defaults are the ash palette.
+  const ASH: Required<ScenePalette> = {
+    fog: "#0d0e0b",
+    ambient: "#9a9383",
+    torch: "#f0b76c",
+    front: "#ffe0a0",
+    wall: "#59615a",
+    floor: "#2a2418"
+  };
+  const p: Required<ScenePalette> = { ...ASH, ...(input.palette ?? {}) };
+
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color("#0d0e0b");
-  scene.fog = new THREE.Fog("#0d0e0b", 6, 20);
+  scene.background = new THREE.Color(p.fog);
+  scene.fog = new THREE.Fog(p.fog, 6, 20);
 
   const camera = new THREE.PerspectiveCamera(66, width / height, 0.1, 100);
   camera.position.set(0, 1.5, 2.4);
@@ -73,8 +132,11 @@ export function buildDungeonScene(mount: HTMLDivElement, input: DungeonSceneInpu
   const textureLoader = new THREE.TextureLoader();
   const loadedTextures: THREE.Texture[] = [];
   const renderScene = () => renderer.render(scene, camera);
-  const loadTexture = (url: string, repeat?: [number, number]) => {
-    const texture = textureLoader.load(url, renderScene);
+  const loadTexture = (url: string, repeat?: [number, number], onLoad?: (texture: THREE.Texture) => void) => {
+    const texture = textureLoader.load(url, (loaded) => {
+      onLoad?.(loaded);
+      renderScene();
+    });
     texture.colorSpace = THREE.SRGBColorSpace;
     texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
     if (repeat) {
@@ -93,22 +155,34 @@ export function buildDungeonScene(mount: HTMLDivElement, input: DungeonSceneInpu
   const doorTexture = loadTexture(asset("wood-door", pack));
   const returnMarkerTexture = loadTexture(asset("return-marker", pack));
 
-  const ambient = new THREE.AmbientLight("#9a9383", 1.7);
-  const torch = new THREE.PointLight("#f0b76c", 55, 26);
+  // P6 stair props are OPTIONAL art: a pack that ships none falls back to the geometry
+  // stair. Loaded lazily so a corridor with no stair cap pays nothing.
+  const stairCache = new Map<string, THREE.Texture | undefined>();
+  const stairTextureFor = (descends: boolean): THREE.Texture | undefined => {
+    const name = descends ? "stair-down" : "stair-up";
+    if (!stairCache.has(name)) {
+      const url = assetOrNull(name, pack);
+      stairCache.set(name, url ? loadTexture(url) : undefined);
+    }
+    return stairCache.get(name);
+  };
+
+  const ambient = new THREE.AmbientLight(p.ambient, 1.7);
+  const torch = new THREE.PointLight(p.torch, 55, 26);
   torch.position.set(-1.5, 2.4, 1.6);
-  const frontLight = new THREE.SpotLight("#ffe0a0", 30, 20, Math.PI / 6, 0.4, 1);
+  const frontLight = new THREE.SpotLight(p.front, 30, 20, Math.PI / 6, 0.4, 1);
   frontLight.position.set(0, 2.8, 2.0);
   frontLight.target.position.set(0, 1.1, -6.4);
   scene.add(ambient, torch, frontLight, frontLight.target);
 
   const wallMaterial = new THREE.MeshStandardMaterial({
-    color: "#59615a",
+    color: p.wall,
     map: wallTexture,
     roughness: 0.78,
     metalness: 0.02
   });
   const floorMaterial = new THREE.MeshStandardMaterial({
-    color: "#2a2418",
+    color: p.floor,
     map: floorTexture,
     roughness: 0.86
   });
@@ -155,51 +229,140 @@ export function buildDungeonScene(mount: HTMLDivElement, input: DungeonSceneInpu
     addSideFeature(scene, wallMaterial, doorMaterial, edgeMaterial, "right", segment.right, zCenter);
 
     if (segment.frontCap) {
-      addFrontCap(scene, wallMaterial, doorMaterial, floorMaterial, edgeMaterial, segment.frontCap, zCenter, input.stairDescends ?? false);
+      addFrontCap(
+        scene,
+        wallMaterial,
+        doorMaterial,
+        floorMaterial,
+        edgeMaterial,
+        segment.frontCap,
+        zCenter,
+        input.stairDescends ?? false,
+        stairTextureFor
+      );
     }
   }
 
   if (input.enemies.length > 0) {
-    // Stand the enemies in the visible space ahead, ALWAYS in front of the nearest
-    // wall — a fixed depth would sink them behind a close dead-end wall (near z=0),
-    // making them vanish. The closer they stand, the smaller they draw, and their
-    // feet always meet the floor plane. Multiple groups spread across the corridor
-    // (and shrink a touch) so every distinct enemy type is visible, not just one.
+    // Stand the enemies in the visible space ahead, ALWAYS in front of the nearest wall —
+    // a fixed depth would sink them behind a close dead-end wall (near z=0), making them
+    // vanish.
+    //
+    // Every enemy is drawn at its TRUE size, standing on the floor:
+    //  · the silhouette is measured from the art's alpha (ui/spriteMetrics), so the
+    //    subject's real feet meet the floor no matter how the file was padded, and
+    //  · its real height is scaled to the creature's world size (Enemy.size), so a mite
+    //    and a boss are not the same creature wearing different pixels.
+    // A group of N draws N figures — the count is a fact about the fight, not a number
+    // on a card.
+    // They stand CLOSE. The old depth (5.2m from the eye) is conversational distance, not
+    // fighting distance — it left even a boss occupying a third of the frame, which is why
+    // the art read as small. Closing to ~4m lets perspective do the work: a huge creature
+    // now fills most of the passage and a mite still comes up to your knee.
     const frontWallIndex = input.frontWallIndex ?? -1;
     const wallZ = frontWallIndex >= 0 ? -frontWallIndex * CELL : -Infinity;
-    const enemyZ = frontWallIndex >= 0 ? Math.min(-1.4, Math.max(-2.82, wallZ + 1.4)) : -2.82;
-    const distanceScale = Math.min(1, Math.max(0.55, Math.abs(enemyZ) / 2.82 + 0.12));
-    const count = input.enemies.length;
-    const crowd = count > 1 ? 0.72 : 1; // shrink when several share the corridor
-    const spread = count > 1 ? 2.4 : 0; // horizontal gap between adjacent groups
-    const feetY = 0.05;
-    const centerY = 0.38;
+    const enemyZ = frontWallIndex >= 0 ? Math.min(-0.8, Math.max(-1.2, wallZ + 1.3)) : -1.2;
 
-    input.enemies.forEach((group, index) => {
-      const texture = loadTexture(getEnemySpriteTextureUrl(group.id, pack));
-      const material = new THREE.SpriteMaterial({ map: texture, transparent: true, depthWrite: false });
+    // One entry per individual creature, keeping same-type figures adjacent.
+    const figures = input.enemies.flatMap((group, groupIndex) =>
+      Array.from({ length: Math.max(1, Math.min(group.count ?? 1, MAX_FIGURES_BY_SIZE[group.size ?? "medium"])) }, () => ({
+        group,
+        groupIndex
+      }))
+    );
+    const total = figures.length;
+    // Space them by how WIDE they actually are, not by a flat gap — otherwise a rank of
+    // broad blockers overlaps into a single mass while thin vermin stand oddly far apart.
+    // The measured silhouette gives the real width; fall back to the height while the art
+    // is still loading. Clamped so the line-up never spills past the corridor walls.
+    const widestBody = Math.max(
+      ...figures.map(({ group }) => {
+        const worldHeight = ENEMY_WORLD_HEIGHT[group.size ?? "medium"];
+        const m = getSpriteMetrics(getEnemySpriteTextureUrl(group.id, pack));
+        if (!m) {
+          return worldHeight;
+        }
+        return (worldHeight / Math.max(0.08, m.heightFrac)) * m.imageAspect * m.widthFrac;
+      })
+    );
+    const spacing =
+      total > 1 ? Math.min(widestBody * 0.82, (2 * FIGURE_HALF_SPAN) / (total - 1)) : 0;
+
+    const anchors = new Map<string, { xSum: number; n: number; z: number }>();
+
+    figures.forEach(({ group, groupIndex }, index) => {
+      const url = getEnemySpriteTextureUrl(group.id, pack);
+      const offsetX = (index - (total - 1) / 2) * spacing;
+      // Stagger depth slightly so overlapping sprites never fight for the same plane.
+      const z = enemyZ - (index % 2) * 0.14;
       const elevation = group.elevation ?? "ground";
       const lift = elevation === "air" ? 1.7 : elevation === "mid" ? 0.9 : 0;
-      const scaleY = 2.82 * distanceScale * crowd;
-      const scaleX = 4.35 * distanceScale * crowd;
-      const offsetX = (index - (count - 1) / 2) * spread;
+      const worldHeight = ENEMY_WORLD_HEIGHT[group.size ?? "medium"];
+
+      // A THREE texture has no `.image` until it loads, so the silhouette can only be
+      // measured from the loader's callback — and the FIRST fight in a session always
+      // takes that path. Placement is re-applied there; until then the sprite is drawn
+      // whole-frame, which is right for art with no padding and close enough for a frame.
+      const sprite = new THREE.Sprite(
+        new THREE.SpriteMaterial({
+          map: loadTexture(url, undefined, (loaded) => {
+            if (loaded.image?.width) {
+              measureSpriteMetrics(url, loaded.image as HTMLImageElement);
+              place();
+            }
+          }),
+          transparent: true,
+          depthWrite: false
+        })
+      );
+      scene.add(sprite);
+
+      function place() {
+        const m = getSpriteMetrics(url);
+        const heightFrac = m ? Math.max(0.08, m.heightFrac) : 1;
+        // Scale the CREATURE (not the canvas) to its world height, so padding in the file
+        // cannot shrink it.
+        const planeHeight = worldHeight / heightFrac;
+        const planeWidth = planeHeight * (m?.imageAspect ?? 1);
+        sprite.scale.set(planeWidth, planeHeight, 1);
+        // Anchor at the subject's real feet and horizontal centre, so placing the sprite at
+        // floor level puts the CREATURE on the floor — whatever the padding.
+        sprite.center.set(m?.centerXFrac ?? 0.5, m?.bottomFrac ?? 0);
+        sprite.position.set(offsetX, lift, z);
+      }
+      place();
 
       if (elevation !== "air") {
-        const shadowScale = (elevation === "mid" ? 0.72 : 1) * distanceScale * crowd;
-        enemyShadowMaterial.opacity = elevation === "mid" ? 0.3 : 0.52;
-        const enemyShadow = new THREE.Mesh(new THREE.CircleGeometry(1.22, 32), enemyShadowMaterial.clone());
-        enemyShadow.position.set(offsetX, 0.035, enemyZ - 0.04);
-        enemyShadow.rotation.x = -Math.PI / 2;
-        enemyShadow.scale.set(1.85 * shadowScale, 0.55 * shadowScale, 1);
-        scene.add(enemyShadow);
+        const shadowScale = (elevation === "mid" ? 0.62 : 1) * (worldHeight / ENEMY_WORLD_HEIGHT.medium);
+        enemyShadowMaterial.opacity = elevation === "mid" ? 0.28 : 0.5;
+        const shadow = new THREE.Mesh(new THREE.CircleGeometry(1.22, 32), enemyShadowMaterial.clone());
+        shadow.position.set(offsetX, 0.035, z - 0.04);
+        shadow.rotation.x = -Math.PI / 2;
+        shadow.scale.set(0.72 * shadowScale, 0.26 * shadowScale, 1);
+        scene.add(shadow);
       }
 
-      const enemy = new THREE.Sprite(material);
-      enemy.center.set(0.5, centerY);
-      enemy.position.set(offsetX, feetY + centerY * scaleY + lift, enemyZ);
-      enemy.scale.set(scaleX, scaleY, 1);
-      scene.add(enemy);
+      const key = group.groupId ?? `${groupIndex}`;
+      const anchor = anchors.get(key) ?? { xSum: 0, n: 0, z };
+      anchor.xSum += offsetX;
+      anchor.n += 1;
+      anchors.set(key, anchor);
     });
+
+    // Hand the UI where each group's figures stand, in SCREEN pixels, so the name/HP
+    // overlay can sit at their feet instead of in a card somewhere else on the page.
+    if (input.onEnemyAnchors) {
+      const projected: EnemyAnchor[] = [];
+      anchors.forEach((anchor, groupId) => {
+        const point = new THREE.Vector3(anchor.xSum / anchor.n, 0, anchor.z).project(camera);
+        projected.push({
+          groupId,
+          xPct: ((point.x + 1) / 2) * 100,
+          yPct: ((1 - point.y) / 2) * 100
+        });
+      });
+      input.onEnemyAnchors(projected);
+    }
   }
 
   if (input.showTrap) {
@@ -281,7 +444,8 @@ function addFrontCap(
   edgeMaterial: THREE.Material,
   kind: EdgeKindVisual,
   zCenter: number,
-  descends = false
+  descends = false,
+  stairTexture?: (descends: boolean) => THREE.Texture | undefined
 ) {
   // The view fades into fog when the corridor runs past the depth limit.
   if (kind === "open") {
@@ -292,14 +456,34 @@ function addFrontCap(
   const wall = new THREE.Mesh(new THREE.BoxGeometry(HALF_WIDTH * 2, WALL_HEIGHT, 0.25), wallMaterial);
   wall.position.set(0, WALL_MID_Y, z);
   scene.add(wall);
-  addStoneCourses(scene, wallMaterial, z);
+
+  // P6: the painted stair prop's archway is TRANSPARENT in the middle, so the wall's
+  // stone-course lines would show straight through the opening. Skip them when the
+  // prop is drawn — the art carries its own masonry.
+  const stairUrl = kind === "stairs" ? stairTexture?.(descends) : undefined;
+  if (!stairUrl) {
+    addStoneCourses(scene, wallMaterial, z);
+  }
 
   if (kind === "door") {
     const door = createDoor(doorMaterial, edgeMaterial);
     door.position.set(0, 1.15, z + 0.14);
     scene.add(door);
   } else if (kind === "stairs") {
-    scene.add(createStairs(floorMaterial, edgeMaterial, z, descends));
+    if (stairUrl) {
+      const sprite = new THREE.Sprite(
+        new THREE.SpriteMaterial({ map: stairUrl, transparent: true, depthWrite: false })
+      );
+      sprite.center.set(0.5, 0); // stands on the floor
+      sprite.scale.set(3.4, 3.4, 1);
+      sprite.position.set(0, 0.02, z + 0.2);
+      // The wall's stone-course lines are transparent too and would otherwise draw
+      // over the prop (the sprite writes no depth). Draw the stair last.
+      sprite.renderOrder = 2;
+      scene.add(sprite);
+    } else {
+      scene.add(createStairs(floorMaterial, edgeMaterial, z, descends));
+    }
   }
 }
 

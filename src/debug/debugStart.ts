@@ -47,10 +47,13 @@ export function createDebugStateFromProgress(world: ScenarioWorld, progress: Deb
     position: null,
     combat: null,
     defeatedEnemies: [],
+    floorClearedEnemies: [],
+    stepsSinceEncounter: 0,
     resolvedTraps: [],
     discoveredSecrets: [],
     partyGold: STARTING_PARTY_GOLD,
     claimedTreasures: [],
+    floorClaimedTreasures: [],
     inventory: [
       {
         id: "item.healing-draught",
@@ -84,6 +87,9 @@ export function createDebugStateFromProgress(world: ScenarioWorld, progress: Deb
   }
 
   if (progress === "after_encounter") {
+    if (!hasRoom(world, "room.b1f.002")) {
+      return createFloorDebugState(base, world, 1); // scenario without the default's opening
+    }
     const state: GameState = {
       ...base,
       phase: "dungeon",
@@ -104,7 +110,13 @@ export function createDebugStateFromProgress(world: ScenarioWorld, progress: Deb
   }
 
   if (progress.startsWith("floor_")) {
-    return createFloorDebugState(base, world, progress);
+    return createFloorDebugState(base, world, Number(progress.replace("floor_", "")));
+  }
+
+  // return_ready — a default-world narrative state (standing at the B1F warden). Any
+  // scenario lacking those rooms falls back to a plain floor-1 start.
+  if (!hasRoom(world, "room.b1f.warden")) {
+    return createFloorDebugState(base, world, 1);
   }
 
   const state: GameState = {
@@ -156,17 +168,18 @@ export function withDebugStartCell(
   };
 }
 
-function createFloorDebugState(base: GameState, world: ScenarioWorld, progress: DebugProgress): GameState {
-  const floorNumber = Number(progress.replace("floor_", ""));
-  const roomId = `room.b${floorNumber}f.001`;
-  const visitedRooms = createVisitedPathToFloor(floorNumber);
+// Debug starts must work in ANY scenario, so a floor start is derived from the world's
+// own dungeon list (its Nth floor and that floor's startRoom) instead of default-world
+// room ids like `room.b3f.001`. Verdant's floors are g1f..g8f — hard-coding B-floors is
+// exactly why the debug mode could not open a non-default scenario.
+function createFloorDebugState(base: GameState, world: ScenarioWorld, floorNumber: number): GameState {
+  const floor = world.dungeons[Math.min(Math.max(floorNumber, 1), world.dungeons.length) - 1];
+  const roomId = floor?.startRoom ?? world.startRoom;
+  const visitedRooms = createVisitedPathToFloor(world, floorNumber);
   const state: GameState = {
     ...base,
     phase: "dungeon",
     position: createPosition(world, roomId, "east"),
-    defeatedEnemies: ["enemy.b1f.ash-slime"],
-    resolvedTraps: ["trap.b1f.needle"],
-    discoveredSecrets: ["trap.b1f.needle"],
     inventory: [
       ...base.inventory,
       {
@@ -189,26 +202,35 @@ function createFloorDebugState(base: GameState, world: ScenarioWorld, progress: 
   return {
     ...state,
     log: appendEventLogs(state, [
-      { type: "debug_started", text: `Debug start: party begins checks on B${floorNumber}F.` }
+      { type: "debug_started", text: `Debug start: party begins checks on ${floor?.name ?? `floor ${floorNumber}`}.` }
     ])
   };
 }
 
-function createVisitedPathToFloor(floorNumber: number) {
-  const visited = [
-    "room.b1f.001",
-    "room.b1f.002",
-    "room.b1f.hub",
-    "room.b1f.gate",
-    "room.b1f.east",
-    "room.b1f.reliquary",
-    "room.b1f.warden"
-  ];
-  for (let floor = 2; floor <= floorNumber; floor += 1) {
-    visited.push(`room.b${floor}f.001`);
-  }
+// The landing of every floor down to this one — derived from the world, so it holds for
+// b1f..b8f, g1f..g8f, or any future scenario's floor ids. The default world additionally
+// seeds its authored B1F route (its return marker lives there); rooms a scenario doesn't
+// have are simply dropped, so this stays world-generic.
+const DEFAULT_B1F_ROUTE = [
+  "room.b1f.001",
+  "room.b1f.002",
+  "room.b1f.hub",
+  "room.b1f.gate",
+  "room.b1f.east",
+  "room.b1f.reliquary",
+  "room.b1f.warden"
+];
 
-  return visited;
+function createVisitedPathToFloor(world: ScenarioWorld, floorNumber: number) {
+  const landings = world.dungeons.slice(0, Math.max(1, floorNumber)).map((floor) => floor.startRoom);
+  const seeded = DEFAULT_B1F_ROUTE.filter((roomId) => hasRoom(world, roomId));
+  return Array.from(new Set([...seeded, ...landings]));
+}
+
+/** Does this world actually contain that room? Default-world narrative debug states
+ *  (after_encounter / return_ready) name B1F rooms that a different scenario lacks. */
+function hasRoom(world: ScenarioWorld, roomId: string) {
+  return world.dungeons.some((floor) => floor.rooms.some((room) => room.id === roomId));
 }
 
 export function createMapState(world: ScenarioWorld, visitedRooms: string[], facing: Direction = "east") {

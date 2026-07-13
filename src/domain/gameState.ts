@@ -12,6 +12,8 @@ export function createInitialGameState(): GameState {
     position: null,
     combat: null,
     defeatedEnemies: [],
+    floorClearedEnemies: [],
+    stepsSinceEncounter: 0,
     resolvedTraps: [],
     discoveredSecrets: [],
     inventory: [
@@ -25,6 +27,7 @@ export function createInitialGameState(): GameState {
     ],
     partyGold: STARTING_PARTY_GOLD,
     claimedTreasures: [],
+    floorClaimedTreasures: [],
     map: {
       floorId: null,
       currentRoomId: null,

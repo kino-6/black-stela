@@ -61,7 +61,7 @@ the freed space is where hit FX / animation (next task) will read with impact.
 ## Where combat animation then lives (next task, not this one)
 
 Once the enemy is large and central, the CSS/SVG hit FX (slash/impact burst, hurt
-flash, defeat dissolve, floating number) have room to actually land — see Art.md P9.
+flash, defeat dissolve, floating number) have room to actually land — see `content/worlds/default/ART.md` P9.
 The three-zone layout is the prerequisite; animation is the follow-up.
 
 ## Rollout (incremental, each browser-verified)
