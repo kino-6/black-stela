@@ -47,33 +47,33 @@ variables. Treat these as drop-in assets too.
 Keep replacement sprites at the same aspect ratio as the asset they replace
 unless the renderer scale is changed deliberately.
 
-## Enemy Sprite Framing — The Shared Scale Box
+## Enemy Sprite Framing
 
-Enemies are planted **in** the corridor, not pasted over it. The engine draws every
-enemy sprite at the same world size and never rescales per creature, so the framing
-below is what makes a mite small, a boss huge, and both stand on the floor. Get it
-wrong and the creature floats in mid-air at the wrong size. Applies to every pack.
+Enemies are planted **in** the corridor, not pasted over it. **The engine measures the
+creature's silhouette from the alpha channel**, stands its real feet on the floor, and
+scales its real height to the creature's world size (`Enemy.size` in the scenario data:
+small / medium / large / huge). So framing inside the file does **not** decide where the
+creature stands or how big it draws — the engine does. What the art must get right is the
+alpha.
 
-- **768x768 square. The canvas is a fixed 2.4 m x 2.4 m box of the corridor**, the same
-  box for every enemy in every world. Do not crop to the subject; do not letterbox.
-- **The bottom edge of the canvas is the floor line.** A creature that stands must
-  **touch the bottom edge** — no transparent gap under its feet. A creature that hovers
-  leaves exactly its hover height of transparency below it; the floor is still the
-  bottom edge.
-- **Horizontally centered**, mass on the center line. A pack of two is drawn by the
-  engine as **two copies of the sprite side by side**, so the subject must sit in its
-  own box cleanly.
+- **Square canvas, 768x768**, PNG RGBA. Square only so a rank of enemies shares one aspect
+  and the line-up spaces evenly; the subject may sit anywhere in it.
+- **Clean, honest alpha.** Everything that is not the creature must be fully transparent.
+  A stray halo, a faint background wash, or a chroma-key fringe enlarges the measured
+  silhouette and pushes the creature off the floor. This is the one rule that matters.
+- **One creature per file.** The engine draws a pack as N copies of the sprite side by
+  side, so two creatures in one image become four on screen.
+- **No baked shadow, no ground plane, no scenery, no glow plate.** The engine casts the
+  contact shadow and lights the sprite with the scene. A painted shadow reads as part of
+  the body and lifts the creature into the air.
 - **Eye level about 1.5 m.** The party is standing: we look slightly *down* at a small
   creature and slightly *up* at a boss. Front or three-quarter view, no dramatic angles.
-- **Size class is expressed as how much of the box height the creature fills.** The pack
-  brief gives a percentage per creature; hold it. Roughly: small vermin 30%, standard
-  40-55%, armored blocker 70-75%, mini-boss 75-85%, floor boss 100%.
-- **No baked shadow, no ground plane, no scenery, no glow plate.** Transparent everywhere
-  except the creature — the engine casts the contact shadow and lights it with the scene.
+- Fill the frame generously — resolution spent on empty canvas is resolution the creature
+  does not get. There is no fill percentage to hit; the engine normalises it.
 
-A `-hurt` variant must use the **same box, same subject scale, same position** as its
-base sprite; only the pose/expression/damage differs. Any drift makes the hit reaction
-jump.
+A `-hurt` variant must keep the **same silhouette footprint** as its base sprite (same
+stance, same extents); only the pose/expression/damage differs. If the silhouette shifts,
+the creature jumps when it is struck.
 
 ## Color, Lighting, And Readability
 

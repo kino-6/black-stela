@@ -67,45 +67,41 @@ every sprite at the same world size and lets the art carry the size difference, 
 framing rules below are not cosmetic — get them wrong and the creature floats above the
 floor or reads the wrong size. This supersedes the earlier ~768×512 spec.
 
-### Framing — the shared scale box (mandatory, all 14)
-- **Square canvas, 768×768.** It represents a fixed **2.4 m × 2.4 m box of the corridor**,
-  identical for every enemy. Do not crop to the subject; do not letterbox.
-- **The bottom edge of the canvas IS the floor line.** A creature that stands on the
-  ground must **touch the bottom edge** — no transparent gap under its feet. A creature
-  that *hovers* (`spore-gnat`, `pollen-drifter`) leaves exactly its hover height of
-  transparency below it; the floor is still the bottom edge.
-- **Horizontally centred**, feet/mass on the centre line.
-- **Eye level ≈ 1.5 m**, i.e. the party is standing and looking slightly *down* at a small
-  creature and slightly *up* at the boss. Front or 3/4 view. No dramatic camera angles.
-- **No baked shadow, no ground, no scenery, no glow-plate.** Transparent everywhere except
-  the creature — the engine casts the contact shadow and lights it with the scene.
+### Framing — what actually matters
+The engine measures each creature's silhouette from the **alpha channel**, stands its real
+feet on the floor, and scales its real height to the `size:` class in `enemies.md`. So there
+is **no fill percentage to hit and no floor line to align** — the renderer normalises both.
+See `../../../docs/art/common.md` → *Enemy Sprite Framing*.
 
-### Size class = how much of the box the creature fills
-Same box, different occupancy. This is the ONLY thing that makes a mite small and the
-Rootheart huge, so hold these ratios.
+- **Square 768×768**, PNG RGBA, chroma-key on **MagentaBack** (subjects are green).
+- **Clean alpha is the whole job.** Anything that is not the creature must be fully
+  transparent. A key fringe or a background wash enlarges the measured silhouette and lifts
+  the creature off the floor.
+- **One creature per file** — a pack of three is drawn as three copies of the sprite.
+- **No baked shadow, no ground, no scenery, no glow plate.** The engine casts the contact
+  shadow and lights the sprite with the scene.
+- **Eye level ≈1.5 m**, front or 3/4 view. Fill the frame generously.
 
-| basename | fills (height) | creature |
+### The roster
+Size lives in `enemies.md` (`size:`), not in the image. Listed here only so the drawing
+reads at the right weight.
+
+| basename | size | creature |
 |---|---|---|
-| `enemy-verdant-g1-moss-mite` | **~30%** | small mossy mite, tutorial foe; squats on the floor |
-| `enemy-verdant-g1-spore-gnat` | **~30%** | spore-winged gnat, swarm; **hovers** ~0.6 m up |
-| `enemy-verdant-g7-husk-spawn` | **~35%** | small heartwood-husk spawn |
-| `enemy-verdant-g2-thorn-crawler` | **~45%** | thorn-shelled crawler; low, long |
-| `enemy-verdant-g2-spore-caster` | **~50%** | spore-puffing **back caster** — frail, bulbous sacs |
-| `enemy-verdant-g6-thorn-cutter` | **~55%** | bladed-thorn **ambusher** — lean, fast |
-| `enemy-verdant-g4-pollen-drifter` | **~55%** | drifting pollen-cloud form; **hovers**, no legs |
-| `enemy-verdant-g2-bramble-shield` | **~70%** | bramble-armoured **front blocker** — bulky, walling, wide |
-| `enemy-verdant-g4-bark-ward` | **~75%** | bark-plated ward (armoured miniboss) |
-| `enemy-verdant-g3-bloom-warden` | **~75%** | flowering warden (miniboss) |
-| `enemy-verdant-g5-sap-keeper` | **~80%** | sap-dripping keeper (toll miniboss) |
-| `enemy-verdant-g6-strangler-warden` | **~85%** | strangling-vine warden (miniboss) |
-| `enemy-verdant-g7-heartwood-husk` | **~85%** | heavy heartwood husk (miniboss); wide, walling |
-| `enemy-verdant-g8-rootheart` | **~100%** | **the Rootheart** — the living heartwood core. Fills the box, crown to floor. The boss; the most detailed piece in the pack. |
-
-### Why square, why the box
-A pack of 2 is drawn as **two copies of the same sprite side by side**, planted on the
-floor at their own depth. A landscape crop with the creature floating mid-canvas cannot
-be grounded and cannot be doubled without looking pasted-on. See
-`../../../docs/design/combat-stage-plan.md`.
+| `enemy-verdant-g1-moss-mite` | small | mossy mite, tutorial foe; squats on the floor |
+| `enemy-verdant-g1-spore-gnat` | small | spore-winged gnat, swarm; hovers |
+| `enemy-verdant-g2-thorn-crawler` | small | thorn-shelled crawler; low, long |
+| `enemy-verdant-g7-husk-spawn` | small | heartwood-husk spawn |
+| `enemy-verdant-g2-spore-caster` | medium | spore-puffing **back caster** — frail, bulbous sacs |
+| `enemy-verdant-g4-pollen-drifter` | medium | drifting pollen-cloud form; hovers, no legs |
+| `enemy-verdant-g6-thorn-cutter` | medium | bladed-thorn **ambusher** — lean, fast |
+| `enemy-verdant-g2-bramble-shield` | large | bramble-armoured **front blocker** — bulky, walling, wide |
+| `enemy-verdant-g3-bloom-warden` | large | flowering warden (mini-boss) |
+| `enemy-verdant-g4-bark-ward` | large | bark-plated ward (armoured mini-boss) |
+| `enemy-verdant-g5-sap-keeper` | large | sap-dripping keeper (toll mini-boss) |
+| `enemy-verdant-g6-strangler-warden` | large | strangling-vine warden (mini-boss) |
+| `enemy-verdant-g7-heartwood-husk` | large | heavy heartwood husk; wide, walling |
+| `enemy-verdant-g8-rootheart` | **huge** | **the Rootheart** — the living heartwood core. The boss; the most detailed piece in the pack. It towers: draw it to fill its frame. |
 
 ## Icons — `assets/icons/`, 256×256 PNG RGBA
 `item-verdant-sap-draught` (amber sap vial) · `item-verdant-pollen-salve` (pale salve jar) ·

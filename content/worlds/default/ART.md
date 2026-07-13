@@ -477,44 +477,41 @@ a monument above the dungeon — the dungeon is its **root**, revealed at the Ga
 Status: generated as `content/worlds/default/assets/dungeon/stela-root.png`;
 wiring pending.
 
-### P14 — Enemy sprite REFRAME to the shared scale box  ⬜ requested (2026-07-13 playtest)
+### P14 — Enemy sprite retake: square canvas + clean alpha  ⬜ requested (2026-07-13 playtest)
 
-**Why.** Real-play verdict: *"敵の画像が妙に小さいし、迷宮から浮いているので素材が泣いてます."*
-The art is good; the framing throws it away. Every enemy was delivered in the same
-768×512 canvas, so the engine — which plants all sprites at one world size — cannot tell a
-slime from a boss, and no creature touches the floor. This is a **reframe, not a redraw**:
-keep each creature's design, materials and identity exactly as approved.
+**Why.** Real play: *"敵の画像が妙に小さいし、迷宮から浮いているので素材が泣いてます."*
+The art is good; it was being thrown away by the renderer. That is now **fixed in code**:
+the engine measures each creature's silhouette from the alpha channel, stands its real feet
+on the floor, and scales its real height to the creature's size class in the scenario data.
+**Size and grounding are no longer the artist's problem** — no fill percentages to hit, no
+floor line to align.
 
-**Spec.** The shared scale box in `docs/art/common.md` → *Enemy Sprite Framing*. Summary:
-**768×768 square = a fixed 2.4 m × 2.4 m box of the corridor**; the **bottom edge is the
-floor line** (standing creatures touch it, hovering ones leave their hover gap); eye level
-≈1.5 m; horizontally centred; **no baked shadow / ground / scenery**; size is expressed by
-**how much of the box height the creature fills**.
+What remains is a small, cheap retake, and it is entirely about the **alpha**:
 
-| basename | fills | note |
-|---|---|---|
-| `ash-slime` | ~30% | low mound; spreads on the floor |
-| `dust-crawler` | ~35% | low, long, many-legged |
-| `bitter-mote` | ~40% | **hovers** ~0.7 m up; no legs |
-| `hook-rat` | ~40% | four-legged, lean |
-| `oath-cutter` | ~60% | gaunt humanoid, upright |
-| `cistern-warden` | ~75% | mini-boss |
-| `lantern-ward` | ~75% | armored blocker; wide, walling |
-| `cinder-keeper` | ~80% | mini-boss |
-| `oath-warden` | ~85% | mini-boss |
-| `vault-husk` | ~85% | heavy blocker; wide |
-| `ash-votary` | **~100%** | **the finale boss** — fills the box, crown to floor. Must tower over everything above. |
+- **Square 768×768** (today's files are 768×512). Square only so a rank of enemies shares
+  one aspect and spaces evenly.
+- **Clean alpha** — everything that is not the creature fully transparent. A chroma-key
+  fringe or a faint background wash enlarges the measured silhouette and lifts the creature
+  off the floor. This is the rule that matters.
+- **No baked shadow / ground plane / scenery.** The engine casts the contact shadow. A
+  painted one reads as body and makes the creature hover.
+- Fill the frame generously — there is no target percentage; the engine normalises size.
 
-**Also reframe the 11 `-hurt` variants** to the **same box, same subject scale, same
-position** as their base sprite — only the pose/damage differs. Any drift makes the hit
-reaction jump.
+Keep every creature's design, materials and identity exactly as approved. **This is a
+reframe/re-key, not a redraw.**
 
-**Files** (22): `content/worlds/default/assets/dungeon/<name>.png` and `<name>-hurt.png`
-for each row above. Same basenames — this is a drop-in replacement, no wiring change.
+**Files** (22): `content/worlds/default/assets/dungeon/<name>.png` and `<name>-hurt.png` for
+each of ash-slime, dust-crawler, hook-rat, bitter-mote, lantern-ward, oath-cutter,
+vault-husk, cistern-warden, cinder-keeper, oath-warden, ash-votary. Same basenames — a
+drop-in replacement, no wiring change. A `-hurt` frame must keep its base sprite's
+silhouette footprint, or the creature jumps when struck.
 
-**Verdant** (`content/worlds/verdant/ART.md`) is ordered against the same box and is still
-**undelivered** — generate it to the new spec from the start; do not repeat the 768×512
-framing.
+**Size is data, not art.** Each enemy carries `size:` in `content/worlds/*/enemies.md`
+(small / medium / large / huge). Retune there if a creature reads wrong on screen — do not
+re-order art for it.
+
+**Verdant** (`content/worlds/verdant/ART.md`) is undelivered and ordered against the same
+rules; generate it that way from the start.
 
 ## 8. Retake queue (post-integration review)
 
