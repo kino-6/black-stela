@@ -83,6 +83,7 @@ const MAX_FIGURES_BY_SIZE: Record<EnemySize, number> = {
 };
 // Half the horizontal band the line-up may occupy; keeps figures off the corridor walls.
 const FIGURE_HALF_SPAN = 2.9;
+const SHADOW_GEOMETRY_RADIUS = 1.22;
 
 /** Where a group's figures stand on screen, as a % of the canvas box (0–100). */
 export interface EnemyAnchor {
@@ -291,10 +292,14 @@ export function buildDungeonScene(mount: HTMLDivElement, input: DungeonSceneInpu
         return (worldHeight / Math.max(0.08, m.heightFrac)) * m.imageAspect * m.widthFrac;
       })
     );
-    const spacing =
-      total > 1 ? Math.min(widestBody * 0.82, (2 * FIGURE_HALF_SPAN) / (total - 1)) : 0;
+    // SPREAD them, then clamp — never the other way round. The old formula was
+    // `min(bodyWidth * 0.82, cap)`, which can only ever place figures CLOSER TOGETHER THAN
+    // THEY ARE WIDE: it had no term that opens a gap, so small creatures always overlapped and
+    // a pack of four landed in one huddle in the middle of the corridor. Now the line-up uses
+    // the corridor it has, and only genuinely broad blockers are allowed to touch.
+    const spacing = total > 1 ? Math.min((2 * FIGURE_HALF_SPAN) / (total - 1), widestBody * 1.6) : 0;
 
-    const anchors = new Map<string, { xSum: number; n: number; z: number }>();
+    const anchors = new Map<string, { xSum: number; n: number; z: number; baseY: number }>();
 
     figures.forEach(({ group, groupIndex }, index) => {
       const url = getEnemySpriteTextureUrl(group.id, pack);
@@ -338,20 +343,34 @@ export function buildDungeonScene(mount: HTMLDivElement, input: DungeonSceneInpu
       }
       place();
 
+      // Contact shadow, sized to the creature's MEASURED footprint rather than a constant, so
+      // a mite gets a mite's shadow and a blocker gets a blocker's. Without it a small
+      // creature reads as hovering an inch off the floor however well it is grounded.
       if (elevation !== "air") {
-        const shadowScale = (elevation === "mid" ? 0.62 : 1) * (worldHeight / ENEMY_WORLD_HEIGHT.medium);
-        enemyShadowMaterial.opacity = elevation === "mid" ? 0.28 : 0.5;
-        const shadow = new THREE.Mesh(new THREE.CircleGeometry(1.22, 32), enemyShadowMaterial.clone());
+        const m = getSpriteMetrics(url);
+        const bodyWidth = m
+          ? (worldHeight / Math.max(0.08, m.heightFrac)) * m.imageAspect * m.widthFrac
+          : worldHeight;
+        const radius = (bodyWidth * 0.42) / SHADOW_GEOMETRY_RADIUS;
+        enemyShadowMaterial.opacity = elevation === "mid" ? 0.3 : 0.55;
+        const shadow = new THREE.Mesh(
+          new THREE.CircleGeometry(SHADOW_GEOMETRY_RADIUS, 32),
+          enemyShadowMaterial.clone()
+        );
         shadow.position.set(offsetX, 0.035, z - 0.04);
         shadow.rotation.x = -Math.PI / 2;
-        shadow.scale.set(0.72 * shadowScale, 0.26 * shadowScale, 1);
+        // Flattened by the viewing angle: a circle on the floor reads as a shallow ellipse.
+        shadow.scale.set(radius * (elevation === "mid" ? 0.75 : 1), radius * 0.34, 1);
         scene.add(shadow);
       }
 
       const key = group.groupId ?? `${groupIndex}`;
-      const anchor = anchors.get(key) ?? { xSum: 0, n: 0, z };
+      const anchor = anchors.get(key) ?? { xSum: 0, n: 0, z, baseY: lift };
       anchor.xSum += offsetX;
       anchor.n += 1;
+      // Hang the name/HP mark under the CREATURE, not under the patch of floor it happens to
+      // be above. A hovering swarm otherwise gets a label stranded on bare ground below it.
+      anchor.baseY = Math.min(anchor.baseY, lift);
       anchors.set(key, anchor);
     });
 
@@ -360,7 +379,7 @@ export function buildDungeonScene(mount: HTMLDivElement, input: DungeonSceneInpu
     if (input.onEnemyAnchors) {
       const projected: EnemyAnchor[] = [];
       anchors.forEach((anchor, groupId) => {
-        const point = new THREE.Vector3(anchor.xSum / anchor.n, 0, anchor.z).project(camera);
+        const point = new THREE.Vector3(anchor.xSum / anchor.n, anchor.baseY, anchor.z).project(camera);
         projected.push({
           groupId,
           xPct: ((point.x + 1) / 2) * 100,

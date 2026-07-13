@@ -273,7 +273,17 @@ export async function expectSelectionMatchesFocus(page: Page, where: string) {
     const active = document.activeElement as HTMLElement | null;
     const selected = Array.from(
       document.querySelectorAll('[aria-current="true"], .combat-menu-row.selected, .primary-action')
-    ).filter((node) => (node as HTMLElement).offsetParent !== null);
+    ).filter((node) => {
+      const el = node as HTMLElement;
+      if (el.offsetParent === null) {
+        return false;
+      }
+      // Only COMMANDS. A target reticle on an enemy is also "current", but it is not something
+      // the cursor sits on — combat legitimately shows both a chosen target and a chosen
+      // command at once, and conflating them would make this assertion a nag rather than a
+      // check. What must never happen is two COMMANDS both looking chosen.
+      return el.matches("button, [tabindex]:not([tabindex='-1'])");
+    });
     if (selected.length === 0) {
       return null;
     }

@@ -2080,8 +2080,15 @@ textarea {
 
 .scenario-card:focus strong::before,
 .scenario-card:focus-visible strong::before {
-  content: "\25b8 ";
-  color: #ffd27a;
+  content: "";
+  display: inline-block;
+  vertical-align: middle;
+  width: 0;
+  height: 0;
+  margin-right: 0.35rem;
+  border-style: solid;
+  border-width: 0.28rem 0 0.28rem 0.4rem;
+  border-color: transparent transparent transparent #ffd27a;
 }
 
 .scenario-list {
@@ -2327,7 +2334,8 @@ textarea {
 .enemy-stage {
   position: relative;
   flex: 1 1 auto;
-  min-height: clamp(15rem, 42vh, 30rem);
+  flex: 1 1 auto;
+  min-height: clamp(9rem, 22vh, 28rem);
   border: 1px solid #2a2c27;
   border-radius: 4px;
   overflow: hidden;
@@ -2375,8 +2383,17 @@ textarea {
    pointing at" reads instantly. An earlier rotated-chevron reticle looked like a stray
    sword slash sitting on the enemy. */
 .enemy-mark.selected .enemy-mark-name::before {
-  content: "\25b8 ";
-  color: #ffd27a;
+  /* A shape, not a glyph — ::before text is folded into the element's text content and its
+     accessible name, so a caret here would rename the enemy to "▸Ash Slime". */
+  content: "";
+  display: inline-block;
+  vertical-align: middle;
+  width: 0;
+  height: 0;
+  margin-right: 0.25rem;
+  border-style: solid;
+  border-width: 0.24rem 0 0.24rem 0.34rem;
+  border-color: transparent transparent transparent #ffd27a;
 }
 
 .enemy-mark.selected .enemy-hp {
@@ -2515,10 +2532,11 @@ textarea {
 
 /* Zone 2: party strip — one thin responsive row, front group | back group. */
 .party-strip {
+  flex: 0 0 auto;
   display: flex;
   flex-wrap: wrap;
-  gap: 0.4rem 0.8rem;
-  padding: 0.4rem 0.5rem;
+  gap: 0.3rem 0.7rem;
+  padding: 0.3rem 0.45rem;
   border: 1px solid #2a2c27;
   border-radius: 4px;
   background: #0c0d0b;
@@ -2542,8 +2560,8 @@ textarea {
   min-width: 5.5rem;
   display: flex;
   flex-direction: column;
-  gap: 0.15rem;
-  padding: 0.3rem 0.4rem;
+  gap: 0.1rem;
+  padding: 0.22rem 0.4rem;
   border: 1px solid #2f332b;
   border-radius: 3px;
   background: #131612;
@@ -2589,7 +2607,8 @@ textarea {
 }
 
 .combat-order-progress {
-  font-size: 0.72rem;
+  font-size: 0.68rem;
+  line-height: 1.1;
   color: #8a8f82;
 }
 
@@ -2920,8 +2939,9 @@ textarea {
   position: sticky;
   bottom: 0;
   z-index: 2;
-  margin-top: 0.1rem;
-  padding: 0.5rem;
+  flex: 0 0 auto;
+  margin-top: 0;
+  padding: 0.35rem;
   border: 1px solid #36322b;
   border-radius: 4px;
   background: rgba(8, 9, 8, 0.96);
@@ -2982,7 +3002,7 @@ textarea {
    confirm step, or nothing while the round plays back — the surrounding layout does not
    move. This is the box that used to vanish mid-round and bounce the whole screen. */
 .combat-command-zone {
-  height: 12rem;
+  height: clamp(10.6rem, 23vh, 12rem);
   flex: 0 0 auto;
   min-height: 0;
 }
@@ -3017,7 +3037,7 @@ textarea {
   margin: 0;
   padding: 0;
   display: grid;
-  gap: 0.15rem;
+  gap: 0.08rem;
   flex: 1;
   overflow-y: auto;
   align-content: start;
@@ -3031,8 +3051,8 @@ textarea {
   text-align: left;
   /* Tight enough that the four commands fit the reserved zone without scrolling — the
      menu used to clip 防御 off the bottom of its own box. */
-  padding: 0.18rem 0.5rem;
-  min-height: 1.9rem;
+  padding: 0.1rem 0.5rem;
+  min-height: 1.55rem;
   background: transparent;
   border: 1px solid transparent;
   border-radius: 3px;
@@ -3058,8 +3078,8 @@ textarea {
 }
 
 .combat-command-menu-hint {
-  margin: 0.25rem 0 0;
-  font-size: 0.75rem;
+  margin: 0.2rem 0 0;
+  font-size: 0.7rem;
   opacity: 0.7;
 }
 
@@ -3239,10 +3259,10 @@ textarea {
 .combat-log {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 0.15rem;
   width: 100%;
   text-align: left;
-  padding: 0.4rem 0.55rem;
+  padding: 0.3rem 0.5rem;
   border: 1px solid #2a2c27;
   border-radius: 4px;
   background: #0c0d0b;
@@ -3268,7 +3288,7 @@ textarea {
   /* FIXED height, scrolled — not min-height. The log used to grow a line at a time as the
      round played out, and since the enemy stage is flex:1 it shrank by exactly as much:
      the whole screen breathed in and out every blow. */
-  height: 3.6rem;
+  height: clamp(2.4rem, 6vh, 3.6rem);
   overflow-y: auto;
   scrollbar-width: thin;
 }
@@ -3335,6 +3355,11 @@ textarea {
 
 .command-dock button {
   min-width: 4.8rem;
+}
+
+.combat-cockpit .command-dock button {
+  min-height: 2.1rem;
+  padding: 0.25rem 0.6rem;
 }
 
 @media (max-width: 1100px) {
@@ -3738,9 +3763,23 @@ textarea {
 .combat-cockpit {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.4rem;
   height: 100%;
   min-height: 0;
+  /* Nothing may leave this box. The dock used to be pushed past the fold and the page does
+     not scroll, so オート / リピート / 退却 were unreachable at 1280x720 while every test
+     stayed green. */
+  overflow: hidden;
+}
+
+.combat-cockpit .cockpit-message {
+  flex: 0 0 auto;
+  min-height: 0;
+  /* FIXED, not auto. The log's "tap for the rest" row appears once the beats overflow, and an
+     auto-height band grew by that row — shrinking the enemy stage mid-round, which is exactly
+     the reflow this layout exists to forbid. Anything that does not fit scrolls inside. */
+  height: clamp(5.6rem, 12.5vh, 7.5rem);
+  overflow: hidden;
 }
 
 .combat-cockpit .cockpit-message,
@@ -4025,12 +4064,20 @@ textarea {
   box-shadow: 0 0 0 1px #ffd27a, 0 0 12px rgba(255, 210, 122, 0.3);
 }
 
-/* The same ▸ cursor the combat menu uses, so "this is where Enter goes" is unmistakable. */
+/* The same cursor the combat menu shows, so "this is where Enter goes" is unmistakable.
+   Drawn as a SHAPE, not as ::before text: Chrome folds ::before `content` into the element's
+   accessible name, so a text caret silently renamed the button to "▸Enter dungeon" and every
+   exact-name query for it broke — intermittently, because it only happens while focused. A
+   decoration must never be able to rename the thing it decorates. */
 .town-service-menu button:focus::before,
 .town-service-menu button:focus-visible::before {
-  content: "\25b8";
-  margin-right: 0.15rem;
-  color: #ffd27a;
+  content: "";
+  width: 0;
+  height: 0;
+  margin-right: 0.3rem;
+  border-style: solid;
+  border-width: 0.28rem 0 0.28rem 0.4rem;
+  border-color: transparent transparent transparent #ffd27a;
 }
 
 @media (max-width: 1100px) {

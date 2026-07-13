@@ -10,6 +10,7 @@
     "test": "vitest run",
     "test:e2e": "playwright test",
     "selfplay:browser": "playwright test tests/e2e/selfplay.spec.ts --workers=1",
+    "gate:final": "FINAL_GATE=1 playwright test",
     "headless:reachability": "esbuild scripts/headless-clear.ts --bundle --platform=node --format=esm --loader:.md=text --outfile=.tmp/headless-clear.mjs --log-level=error && node .tmp/headless-clear.mjs",
     "headless:clear": "esbuild scripts/headless-clear.ts --bundle --platform=node --format=esm --loader:.md=text --outfile=.tmp/headless-clear.mjs --log-level=error && node .tmp/headless-clear.mjs",
     "headless:probes": "esbuild scripts/headless-probes.ts --bundle --platform=node --format=esm --loader:.md=text --outfile=.tmp/headless-probes.mjs --log-level=error && node .tmp/headless-probes.mjs",

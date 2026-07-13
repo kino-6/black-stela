@@ -38,6 +38,15 @@ import {
 //
 // Failure category: `controller_input` (docs/gates/browser-selfplay-gate.md).
 
+// A test marked test.fail() is reported as PASSING, so once the combat overflow is fixed the
+// whole command goes green while the guild is still unplayable on a controller. That is a false
+// all-clear, and per-slice convenience must not become the project's definition of done.
+//
+// So the marker is conditional. `npm run test:e2e` stays green with a known, recorded gap;
+// `npm run gate:final` (FINAL_GATE=1) strips the marker, and the guild fails for real until
+// IMP-003 lands. Run the final gate before calling the backlog done or merging.
+const FINAL_GATE = process.env.FINAL_GATE === "1";
+
 /** Front row first, then back row — the order AGENTS.md requires commands to be given in. */
 async function formationOrder(page: Page) {
   const front = await page.locator('.party-strip-group[data-row="front"] .pt-name').allTextContents();
@@ -139,7 +148,10 @@ test.describe("controller route (no mouse)", () => {
     // so the cursor wanders out of the step the player is being asked for. Marked test.fail so
     // the suite stays honest — it RUNS, its failure is the record, and if it ever starts
     // passing Playwright reports an unexpected pass and this marker must be removed.
-    test.fail();
+    // Under FINAL_GATE=1 the marker is dropped and this becomes a real failure — see above.
+    if (!FINAL_GATE) {
+      test.fail();
+    }
     await startExpeditionByController(page);
     await expectControllerFocus(page, "guild (on entry)", { exclusive: true });
     await expectFitsViewport(page, "guild (on entry)");
@@ -206,12 +218,17 @@ test.describe("controller route (no mouse)", () => {
     // not in whatever order a mouse happened to click actor cards in.
     expect(commanded, "combat did not ask the six members in formation order").toEqual(expected);
 
-    // …and the round must actually RESOLVE, not merely stop asking.
+    // …and the round must actually RESOLVE, not merely stop asking. Resolution shows up as
+    // blows in the log — or, if the six of them finished the fight outright, as the victory
+    // screen (which unmounts the log along with the rest of the combat cockpit).
     const confirm = page.getByTestId("combat-confirm-execute");
     if (await confirm.isVisible().catch(() => false)) {
       await pressConfirm(page);
     }
-    await expect(page.locator(".combat-log-beat").first()).toBeVisible({ timeout: 10_000 });
+    await expect(
+      page.locator(".combat-log-beat").first().or(page.getByTestId("combat-result")),
+      "the six orders were given but the round never resolved"
+    ).toBeVisible({ timeout: 10_000 });
   });
 
   // Every test above seeds localStorage to skip the round-confirm step and the beat playback.
@@ -246,6 +263,9 @@ test.describe("controller route (no mouse)", () => {
     await expect(confirm, "the shipped confirm step never appeared").toBeVisible({ timeout: 5000 });
     await expectFitsViewport(page, "combat confirm (shipped defaults)");
     await pressConfirm(page);
-    await expect(page.locator(".combat-log-beat").first()).toBeVisible({ timeout: 15_000 });
+    await expect(
+      page.locator(".combat-log-beat").first().or(page.getByTestId("combat-result")),
+      "the round never resolved under the shipped defaults"
+    ).toBeVisible({ timeout: 15_000 });
   });
 });
