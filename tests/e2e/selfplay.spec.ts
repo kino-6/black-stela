@@ -3,6 +3,7 @@ import type { Page } from "@playwright/test";
 import { mkdir, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { createStarterParty, descendB1fViaWarden, faceDirection, resolveVisibleCombat, startNewExpedition, walkB1fStairToMarker } from "./helpers";
+import { expectFitsViewport } from "./controllerGate";
 
 type FailureCategory =
   | "blocked_control"
@@ -213,6 +214,13 @@ test("browser self-play completes the visible dungeon loop without headless shor
       await assertNormalPlayHasNoDebugControls(page);
       const horizontalOverflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth);
       expect(horizontalOverflow).toBe(false);
+    });
+
+    // This route only ever checked the HORIZONTAL axis, so a command dock hanging below the
+    // fold passed it silently — which is exactly what happened to combat at 1280x720. Check
+    // the axis the player actually loses commands on. (IMP-001)
+    await recordStep("commands stay inside the viewport", "layout_overflow", async () => {
+      await expectFitsViewport(page, "self-play final state");
     });
 
     report.finalState = await collectFinalState(page);

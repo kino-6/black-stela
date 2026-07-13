@@ -38,6 +38,11 @@ or direct rules-engine calls.
 - `impossible_route`: visible normal controls cannot reach the expected route.
 - `hidden_affordance`: a required enemy, stair, return, reward, or command is not
   visible before use.
+- `controller_input`: a screen cannot be played with directional keys, Confirm and
+  Cancel — no initial focus cursor, focus dropped to `BODY` after a transition, or the
+  command painted as selected is not the one that is focused. Mouse still works, so a
+  click-driven route stays green: this category exists because the 2026-07-13 playtest
+  found the game unplayable on a controller while every automated check passed.
 
 ## Command
 

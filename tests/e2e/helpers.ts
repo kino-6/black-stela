@@ -383,3 +383,56 @@ export async function walkUntilCombat(page: Page, maxSteps = 220) {
   }
   throw new Error("walked the floor without meeting anything");
 }
+
+// ---------------------------------------------------------------------------
+// Controller-only route (IMP-001).
+//
+// The click-based helpers above stay as SECONDARY mouse coverage. These drive the same
+// route with directional keys, Confirm and Cancel only — the path AGENTS.md:137 calls a
+// blocking completion rule and the suite has never actually walked.
+// ---------------------------------------------------------------------------
+
+/** Cycle the controller cursor onto a command and press Confirm. Never clicks. */
+export async function activateByController(
+  page: Page,
+  name: string | RegExp,
+  options: { direction?: "next" | "previous"; limit?: number } = {}
+) {
+  await focusControllerButton(page, name, options);
+  await page.keyboard.press("Enter");
+}
+
+/** Title -> scenario -> guild, with zero mouse input. */
+export async function startExpeditionByController(page: Page, options: { scenario?: string | RegExp } = {}) {
+  await page.addInitScript(() => {
+    window.localStorage.setItem("black-stela:settings:instant-combat-log", "on");
+    window.localStorage.setItem("black-stela:settings:confirm-round", "off");
+  });
+  await page.goto("/");
+  await activateByController(page, "New expedition");
+  // With more than one scenario registered this opens the scenario picker, which a
+  // controller must also be able to answer.
+  const picker = page.getByTestId("scenario-card-default");
+  if (await picker.isVisible().catch(() => false)) {
+    await activateByController(page, options.scenario ?? /Black Stela|黒碑/);
+  }
+}
+
+/** Recruit six adventurers through the Guild Master, with zero mouse input. */
+export async function createStarterPartyByController(page: Page, locale: "en" | "ja" = "en") {
+  const labels =
+    locale === "ja"
+      ? { skip: "説明を聞かない", yes: "はい", proposal: "こいつはどうだ？" }
+      : { skip: "Skip explanation", yes: "Yes", proposal: "How about this one?" };
+
+  if (await page.getByRole("button", { name: labels.skip }).isVisible().catch(() => false)) {
+    await activateByController(page, labels.skip);
+  }
+
+  for (let index = 0; index < 6; index += 1) {
+    await activateByController(page, labels.yes);
+    await expect(page.getByTestId("guild-suggestion")).toContainText(labels.proposal);
+    await activateByController(page, labels.yes);
+    await expect(page.getByText(`${index + 1}/6`)).toBeVisible();
+  }
+}

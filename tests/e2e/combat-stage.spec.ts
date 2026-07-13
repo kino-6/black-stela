@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { startDebugRun, walkUntilCombat } from "./helpers";
+import { CONTROLLER_VIEWPORT, expectFitsViewport } from "./controllerGate";
 
 // The enemy-stage rebuild, locked numerically.
 //
@@ -9,6 +10,17 @@ import { startDebugRun, walkUntilCombat } from "./helpers";
 // as DOM cards below it — and the cards, the log and the command menu all resized with
 // their contents, so every blow re-flowed the screen.
 test.describe("combat stage", () => {
+  // The no-reflow lock below asserts the layout does not MOVE. It said nothing about whether
+  // the layout FITS, so it stayed green at 1280x720 while the command dock (オート / リピート /
+  // 退却) hung below the fold at y=719..786 on a page that does not scroll — the commands were
+  // simply unreachable. Half a lock is not a lock. (IMP-005)
+  test("every combat command is on screen at 1280x720", async ({ page }) => {
+    await page.setViewportSize(CONTROLLER_VIEWPORT);
+    await startDebugRun(page, { progress: "floor_2" });
+    await walkUntilCombat(page);
+    await expectFitsViewport(page, "combat");
+  });
+
   test("enemy cards are gone — the creatures are the only representation", async ({ page }) => {
     await startDebugRun(page, { progress: "floor_2" });
     await walkUntilCombat(page);
