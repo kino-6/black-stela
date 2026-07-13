@@ -161,11 +161,14 @@ export function buildDungeonScene(mount: HTMLDivElement, input: DungeonSceneInpu
   const stairTextureFor = (descends: boolean): THREE.Texture | undefined => {
     const name = descends ? "stair-down" : "stair-up";
     if (!stairCache.has(name)) {
-      const url = assetOrNull(name, pack);
+      const url = getStairTextureUrl(pack, descends);
       stairCache.set(name, url ? loadTexture(url) : undefined);
     }
     return stairCache.get(name);
   };
+
+  mount.dataset.returnVisual = "none";
+  mount.dataset.frontStairVisual = "none";
 
   const ambient = new THREE.AmbientLight(p.ambient, 1.7);
   const torch = new THREE.PointLight(p.torch, 55, 26);
@@ -229,6 +232,9 @@ export function buildDungeonScene(mount: HTMLDivElement, input: DungeonSceneInpu
     addSideFeature(scene, wallMaterial, doorMaterial, edgeMaterial, "right", segment.right, zCenter);
 
     if (segment.frontCap) {
+      if (segment.frontCap === "stairs") {
+        mount.dataset.frontStairVisual = stairTextureFor(input.stairDescends ?? false) ? "asset" : "geometry";
+      }
       addFrontCap(
         scene,
         wallMaterial,
@@ -376,8 +382,11 @@ export function buildDungeonScene(mount: HTMLDivElement, input: DungeonSceneInpu
     // The floor-1 entrance is a literal stairway up to town; other return points
     // are the mystical waystone sprite.
     if (input.returnMarker === "stairs") {
-      scene.add(createReturnStairs(floorMaterial, edgeMaterial));
+      const stairTexture = stairTextureFor(false);
+      mount.dataset.returnVisual = stairTexture ? "asset" : "geometry";
+      scene.add(stairTexture ? createReturnStairSprite(stairTexture) : createReturnStairs(floorMaterial, edgeMaterial));
     } else {
+      mount.dataset.returnVisual = "marker";
       scene.add(createReturnMarker(returnMarkerMaterial));
     }
   }
@@ -387,25 +396,32 @@ export function buildDungeonScene(mount: HTMLDivElement, input: DungeonSceneInpu
   return () => {
     loadedTextures.forEach((texture) => texture.dispose());
     renderer.dispose();
+    delete mount.dataset.returnVisual;
+    delete mount.dataset.frontStairVisual;
     mount.removeChild(renderer.domElement);
   };
 }
 
 export function getDungeonBlockTextureUrls(floorId: string | null, pack: string = DEFAULT_ART_PACK) {
   const blocks = blockTextures(pack);
-  if (floorId && /b[7-8]f/i.test(floorId)) {
+  const depth = Number(floorId?.match(/[a-z](\d+)f/i)?.[1] ?? 0);
+  if (depth >= 7) {
     return blocks.block3;
   }
 
-  if (floorId && /b[4-6]f/i.test(floorId)) {
+  if (depth >= 4) {
     return blocks.block2;
   }
 
-  if (floorId && /b[1-3]f/i.test(floorId)) {
+  if (depth >= 1) {
     return blocks.block1;
   }
 
   return { wall: asset("stone-wall", pack), floor: asset("stone-floor", pack) };
+}
+
+export function getStairTextureUrl(pack: string, descends: boolean): string | undefined {
+  return assetOrNull(descends ? "stair-down" : "stair-up", pack);
 }
 
 function addSideFeature(
@@ -471,12 +487,7 @@ function addFrontCap(
     scene.add(door);
   } else if (kind === "stairs") {
     if (stairUrl) {
-      const sprite = new THREE.Sprite(
-        new THREE.SpriteMaterial({ map: stairUrl, transparent: true, depthWrite: false })
-      );
-      sprite.center.set(0.5, 0); // stands on the floor
-      sprite.scale.set(3.4, 3.4, 1);
-      sprite.position.set(0, 0.02, z + 0.2);
+      const sprite = createStairSprite(stairUrl, 0, z + 0.2, 3.4);
       // The wall's stone-course lines are transparent too and would otherwise draw
       // over the prop (the sprite writes no depth). Draw the stair last.
       sprite.renderOrder = 2;
@@ -537,6 +548,21 @@ function createReturnMarker(material: THREE.SpriteMaterial) {
   marker.position.set(0, 0.92, 0.4);
   marker.scale.set(1.6, 2.15, 1);
   return marker;
+}
+
+function createStairSprite(texture: THREE.Texture, x: number, z: number, scale: number) {
+  const sprite = new THREE.Sprite(
+    new THREE.SpriteMaterial({ map: texture, transparent: true, depthWrite: false })
+  );
+  sprite.center.set(0.5, 0);
+  sprite.scale.set(scale, scale, 1);
+  sprite.position.set(x, 0.02, z);
+  sprite.renderOrder = 2;
+  return sprite;
+}
+
+function createReturnStairSprite(texture: THREE.Texture) {
+  return createStairSprite(texture, -2.15, -0.25, 2.85);
 }
 
 // A stairway up to town, set against the near-left of the cell so it reads as

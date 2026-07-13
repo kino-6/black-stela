@@ -15,6 +15,7 @@ test("play verdant: enter the sunken maze, fight a verdant foe, return to explor
 
   const canvas = page.getByTestId("dungeon-canvas");
   await expect(canvas.locator("canvas")).toBeVisible();
+  await expect(canvas).toHaveAttribute("data-return-visual", "asset");
   await expect(page.locator("#location-heading")).toHaveText("Sunken Threshold");
   await canvas.click(); // focus the play area for WASD
   await page.screenshot({ path: testInfo.outputPath("verdant-dungeon.png") });

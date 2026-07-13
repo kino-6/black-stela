@@ -167,8 +167,8 @@ door + trap/stela props, 38 `icons/`, 12 `portraits/`, 9 `minimap/`, 1 `title/`,
 | `stone-floor-block1..3.jpg` | 1024² | per-block dungeon floors | wired by floor id |
 | `stone-wall.jpg` / `stone-floor.jpg` | 1024² | fallback wall/floor | legacy fallback only |
 | `wood-door.jpg` | 1024² | every door | fine as a single door |
-| enemy sprites ×11 | 768×512 | combat sprites | wired per enemy id |
-| enemy hurt frames ×11 | 768×512 | combat hit/defeat frames | generated; FX wiring pending |
+| enemy sprites ×11 | 768×768 | combat sprites | P14 delivered; wired per enemy id |
+| enemy hurt frames ×11 | 768×768 | combat hit/defeat frames | P14 delivered; FX wiring pending |
 | `return-marker.png` | 576×768 | town-return waystone | ok |
 | `stair-down.png` / `stair-up.png` | 768² | descent/ascent stair props | generated; stair sprite wiring pending |
 | `trap-hazard.png` | 512×512 | floor trap decal | generated; trap decal wiring pending |
@@ -182,10 +182,11 @@ door + trap/stela props, 38 `icons/`, 12 `portraits/`, 9 `minimap/`, 1 `title/`,
 | `ui/party-hit-reaction.png` | 1600×900 | party damage overlay | generated; FX wiring pending |
 | `title/black-stela-title.jpg` | 1920×1080 | title background | wired in title screen CSS |
 
-Remaining geometry/CSS-only gap: no requested default-pack art is missing, but
-P6/P7/P9/P12/P13 still need wiring passes before every generated asset appears
-in normal play. Player-imported portraits still override generated origin
-portraits.
+Delivery audit (2026-07-13): P14 is delivered. The 22 enemy base / hurt sprites
+use a 768×768 clean-alpha canvas while preserving the approved designs and
+matching base/hurt footprints. P6/P9/P12/P13 still need wiring passes before
+every delivered asset appears in normal play. Player-imported portraits still
+override generated origin portraits.
 
 ---
 
@@ -265,10 +266,10 @@ Inventory, shop, and equipment actions now show icons. **Format: PNG RGBA
 256×256, single centered object, painterly, warm rim light.** File →
 `content/worlds/default/assets/icons/<id>.png`.
 
-**TODO (added 2026-07-11):** two reach weapons need real icons — `equip.short-bow`
-(短弓, a stub recurve bow) and `equip.long-spear` (長柄槍, a long pike/spear). They
-currently borrow placeholder icons (dirk / sabre) in `src/ui/artAssets.ts`; replace
-with painted icons in the P4 style.
+The two reach-weapon icons requested on 2026-07-11 are delivered as
+`equip-short-bow.png` and `equip-long-spear.png`. The fallback entries remain in
+`src/ui/artAssets.ts` for compatibility, but own-basename resolution selects the
+delivered files first.
 
 - **Items (5):** `item.healing-draught` (治癒の水薬), `item.lantern-oil` (灯油),
   `item.ashen-key` (灰の鍵 — pale ash-formed key), `item.stela-shard` (黒碑片 —
@@ -477,7 +478,7 @@ a monument above the dungeon — the dungeon is its **root**, revealed at the Ga
 Status: generated as `content/worlds/default/assets/dungeon/stela-root.png`;
 wiring pending.
 
-### P14 — Enemy sprite retake: square canvas + clean alpha  ⬜ requested (2026-07-13 playtest)
+### P14 — Enemy sprite retake: square canvas + clean alpha  ✅ delivered (2026-07-13)
 
 **Why.** Real play: *"敵の画像が妙に小さいし、迷宮から浮いているので素材が泣いてます."*
 The art is good; it was being thrown away by the renderer. That is now **fixed in code**:
@@ -510,14 +511,14 @@ silhouette footprint, or the creature jumps when struck.
 (small / medium / large / huge). Retune there if a creature reads wrong on screen — do not
 re-order art for it.
 
-**Verdant** (`content/worlds/verdant/ART.md`) is undelivered and ordered against the same
-rules; generate it that way from the start.
+**Verdant** (`content/worlds/verdant/ART.md`) is delivered against the same
+square-canvas and clean-alpha rules.
 
 ## 8. Retake queue (post-integration review)
 
-Everything is generated, wired, and browser-verified (title, enemy sprites,
-block textures, portraits, icons, minimap markers, combat vignette). Keep this
-section for post-integration art-tone corrections that should not be forgotten.
+The pack art order, including P14, is delivered. P6/P9/P12/P13 remain unwired.
+Keep this section for post-integration art-tone corrections that should not be
+forgotten.
 
 - [x] **Item / equipment icons (P4) read too dark.** Retaken as brighter,
   higher-contrast 256px icons with stronger local material separation. Future
@@ -528,5 +529,6 @@ section for post-integration art-tone corrections that should not be forgotten.
   brighter face/gear midtones. Party rail portrait display was also enlarged
   from 2.75rem to 3.25rem with a slight brightness/contrast lift.
 
-Strong as-is, no retake needed: title key art, enemy sprites (bosses + regulars),
-per-block wall/floor textures, combat vignette.
+Strong as-is, no redesign needed: title key art, enemy designs (bosses +
+regulars), per-block wall/floor textures, combat vignette. Enemy files now use
+the P14 square-canvas/clean-alpha delivery format without changing designs.

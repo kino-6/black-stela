@@ -7,6 +7,19 @@ scenario pack brief for the asset you are generating or reviewing.
 - Default / Ash pack: `content/worlds/default/ART.md`
 - Verdant pack: `content/worlds/verdant/ART.md`
 
+## Delivery Status
+
+- Default / Ash: P14 delivered. Its 11 enemy sprites and 11 hurt frames now use
+  the ordered 768×768 clean-alpha canvas without redesigning the approved art.
+  P6/P9/P12/P13 remain integration work.
+- Verdant: **48/48 required files delivered**. Act II/III wall/floor textures,
+  fourteen scenario-specific enemy sprites, and eight scenario-specific
+  item/equipment icons now ship in the pack. Browser review rejected the Act I
+  wall as fitted green masonry; file delivery is complete, but that asset still
+  requires a structural retake.
+- Optional Verdant minimap marker overrides are not included in the required
+  count.
+
 ## Routing
 
 1. For any asset work, start with `docs/art/common.md`.

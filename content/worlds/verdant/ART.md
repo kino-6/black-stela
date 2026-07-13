@@ -34,11 +34,12 @@ scene lighting, fog, bloom, and torch effects belong in the renderer.
 ### Block textures — `assets/dungeon/`, 1024², JPG, seamless-tiling
 Not stone. **Root/bark/moss surfaces**, wetter and more overgrown with depth:
 - `stone-wall-block1` / `stone-floor-block1` — **Act I**: moss-furred roots knitted into a
-  wall; floor of leaf-litter and shallow water. ✅ generated
+  wall; floor of leaf-litter and shallow water. ⚠ files delivered; wall rejected in
+  browser review because fitted stone courses remain the dominant structure
 - `stone-wall-block2` / `stone-floor-block2` — **Act II**: heavy bark scutes, weeping sap,
-  fungal shelves; floor of sap-slick mud and drowned leaves.
+  fungal shelves; floor of sap-slick mud and drowned leaves. ✅ generated
 - `stone-wall-block3` / `stone-floor-block3` — **Act III**: pale heartwood grain, dense
-  vein-like roots; floor of bone-pale rootmat.
+  vein-like roots; floor of bone-pale rootmat. ✅ generated
 (The basenames are fixed by the renderer — the *content* is what changes.)
 
 ### `dungeon/stair-down.png` — the descent (PNG RGBA, ~768², billboard) ✅ generated
@@ -61,6 +62,10 @@ way back to the surface, and the only clean light in the world.
 Basename = enemy id, dots→dashes. Chroma-key on **MagentaBack** (subjects are green).
 Each must read as a *forest* creature with a tactical silhouette; use the shared
 readability and alpha rules in `../../../docs/art/common.md`.
+
+**Delivery status: 14/14.** All enemy sprites below use scenario-specific
+768×768 clean-alpha art; Default/Ash enemy fallback is no longer used for the
+authored Verdant roster.
 
 ### Framing — what actually matters
 The engine measures each creature's silhouette from the **alpha channel**, stands its real
@@ -105,6 +110,9 @@ reads at the right weight.
 whip) · `equip-verdant-bark-plate` (bark-scute armour) · `equip-verdant-living-charm`
 (green-wood charm).
 
+**Delivery status: 8/8.** All Verdant-specific item and equipment icons are
+delivered under their own basenames.
+
 ## UI / stills
 - `title/black-stela-title.jpg` (1920×1080) — verdant title key art: the drowned canopy /
   the jade stela swallowed by roots. ✅ generated
@@ -126,3 +134,24 @@ Use the same 12 portrait basenames as the default pack:
 Post-generation review note: `grave` and `cloak` are intentionally darker than
 the others. If they lose readability in the in-game party rail, retake those two
 with brighter face midtones while keeping the same subdued mood.
+
+## Delivery audit (2026-07-13)
+
+Required asset files in this order: **48**. Delivered: **48**. Undelivered: **0**.
+Optional Verdant minimap-marker overrides are excluded from this count.
+
+| Area | Ordered | Delivered | Missing |
+| --- | ---: | ---: | ---: |
+| Block wall/floor textures | 6 | 6 | 0 |
+| Door, stairs, return marker | 4 | 4 | 0 |
+| Enemy sprites | 14 | 14 | 0 |
+| Verdant item/equipment icons | 8 | 8 | 0 |
+| Title and UI stills | 4 | 4 | 0 |
+| Character portraits | 12 | 12 | 0 |
+
+The required Verdant file order is delivered. Delivery count is not visual
+acceptance: the 2026-07-13 browser playtest rejected `stone-wall-block1.jpg`
+because it reads as the Ash dungeon's fitted masonry recoloured green. Retake it
+as braided roots/bark with no visible brick courses, then verify G1F in the game.
+Optional minimap overrides and future hurt-frame animation remain separate
+enhancements, not missing required assets.

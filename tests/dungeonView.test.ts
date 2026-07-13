@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { getDungeonRenderLayout } from "../src/components/DungeonView";
-import { getDungeonBlockTextureUrls } from "../src/components/dungeonScene";
-import { catalogIconUrl, hasEnemySpriteTexture, portraitUrl } from "../src/ui/artAssets";
+import { getDungeonBlockTextureUrls, getStairTextureUrl } from "../src/components/dungeonScene";
+import { asset, catalogIconUrl, hasEnemySpriteTexture, portraitUrl } from "../src/ui/artAssets";
 import { defaultWorld } from "../src/data/defaultWorld";
 import { backgroundCatalog } from "../src/domain/characterCreation";
 
@@ -26,6 +26,24 @@ describe("DungeonView render layout", () => {
     expect(block2.wall).not.toBe(block3.wall);
     expect(block1.floor).not.toBe(block2.floor);
     expect(block2.floor).not.toBe(block3.floor);
+  });
+
+  it("selects Verdant block textures for g-prefixed floor ids", () => {
+    for (const [floorId, block] of [
+      ["dungeon.verdant.g1f", 1],
+      ["dungeon.verdant.g4f", 2],
+      ["dungeon.verdant.g7f", 3]
+    ] as const) {
+      expect(getDungeonBlockTextureUrls(floorId, "verdant")).toEqual({
+        wall: asset(`stone-wall-block${block}`, "verdant"),
+        floor: asset(`stone-floor-block${block}`, "verdant")
+      });
+    }
+  });
+
+  it("resolves the Verdant ascent and descent art from its own pack", () => {
+    expect(getStairTextureUrl("verdant", false)).toBe(asset("stair-up", "verdant"));
+    expect(getStairTextureUrl("verdant", true)).toBe(asset("stair-down", "verdant"));
   });
 
   it("draws a front door at the current cell edge instead of the corridor end", () => {

@@ -1,6 +1,76 @@
 import { describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
 import { asset, catalogIconUrl, cssArtVariables, ICON_PLACEHOLDER, portraitUrl } from "../src/ui/artAssets";
 import { scenarioWorldSchema } from "../src/domain/scenario";
+
+const verdantEnemies = [
+  "enemy-verdant-g1-moss-mite",
+  "enemy-verdant-g1-spore-gnat",
+  "enemy-verdant-g2-thorn-crawler",
+  "enemy-verdant-g7-husk-spawn",
+  "enemy-verdant-g2-spore-caster",
+  "enemy-verdant-g4-pollen-drifter",
+  "enemy-verdant-g6-thorn-cutter",
+  "enemy-verdant-g2-bramble-shield",
+  "enemy-verdant-g3-bloom-warden",
+  "enemy-verdant-g4-bark-ward",
+  "enemy-verdant-g5-sap-keeper",
+  "enemy-verdant-g6-strangler-warden",
+  "enemy-verdant-g7-heartwood-husk",
+  "enemy-verdant-g8-rootheart"
+] as const;
+
+const verdantIcons = [
+  "item-verdant-sap-draught",
+  "item-verdant-pollen-salve",
+  "item-verdant-homing-spore",
+  "item-verdant-greater-sap",
+  "item-verdant-heartseed",
+  "equip-verdant-thorn-lash",
+  "equip-verdant-bark-plate",
+  "equip-verdant-living-charm"
+] as const;
+
+const defaultEnemies = [
+  "ash-slime",
+  "dust-crawler",
+  "hook-rat",
+  "bitter-mote",
+  "lantern-ward",
+  "oath-cutter",
+  "vault-husk",
+  "cistern-warden",
+  "cinder-keeper",
+  "oath-warden",
+  "ash-votary"
+] as const;
+
+function pngSize(path: URL): { width: number; height: number } {
+  const png = readFileSync(path);
+  expect(png.subarray(1, 4).toString("ascii"), `${path.pathname} is not PNG`).toBe("PNG");
+  return { width: png.readUInt32BE(16), height: png.readUInt32BE(20) };
+}
+
+function jpegSize(path: URL): { width: number; height: number } {
+  const jpeg = readFileSync(path);
+  expect(jpeg.readUInt16BE(0), `${path.pathname} is not JPEG`).toBe(0xffd8);
+
+  for (let offset = 2; offset < jpeg.length - 9;) {
+    if (jpeg[offset] !== 0xff) {
+      offset += 1;
+      continue;
+    }
+
+    const marker = jpeg[offset + 1];
+    const length = jpeg.readUInt16BE(offset + 2);
+    if (marker >= 0xc0 && marker <= 0xc3) {
+      return { width: jpeg.readUInt16BE(offset + 7), height: jpeg.readUInt16BE(offset + 5) };
+    }
+    offset += 2 + length;
+  }
+
+  throw new Error(`${path.pathname} has no supported JPEG size marker`);
+}
 
 // Locks the pack-scoped, own-basename-first resolver contract (docs/art/common.md). These
 // are build-time-glob facts, so they assert against the bundled default pack.
@@ -53,6 +123,44 @@ describe("art resolver", () => {
     expect(portraitUrl("cloak", unknown)).toBe(portraitUrl("cloak", "default"));
     expect(asset("stone-wall", unknown)).toBe(asset("stone-wall", "default"));
     expect(cssArtVariables(unknown)).toEqual(cssArtVariables("default"));
+  });
+
+  it("ships every required Verdant enemy and icon under its own basename", () => {
+    for (const name of verdantEnemies) {
+      expect(asset(name, "verdant"), name).not.toBe(asset("ash-slime", "default"));
+      expect(pngSize(new URL(`../content/worlds/verdant/assets/dungeon/${name}.png`, import.meta.url))).toEqual({
+        width: 768,
+        height: 768
+      });
+    }
+
+    for (const name of verdantIcons) {
+      expect(pngSize(new URL(`../content/worlds/verdant/assets/icons/${name}.png`, import.meta.url))).toEqual({
+        width: 256,
+        height: 256
+      });
+    }
+  });
+
+  it("keeps every Verdant block texture at the authored resolution", () => {
+    for (const surface of ["wall", "floor"] as const) {
+      for (const block of [1, 2, 3] as const) {
+        expect(
+          jpegSize(new URL(`../content/worlds/verdant/assets/dungeon/stone-${surface}-block${block}.jpg`, import.meta.url))
+        ).toEqual({ width: 1024, height: 1024 });
+      }
+    }
+  });
+
+  it("keeps Default enemy and hurt sprites on the P14 square canvas", () => {
+    for (const name of defaultEnemies) {
+      for (const suffix of ["", "-hurt"]) {
+        expect(pngSize(new URL(`../content/worlds/default/assets/dungeon/${name}${suffix}.png`, import.meta.url))).toEqual({
+          width: 768,
+          height: 768
+        });
+      }
+    }
   });
 });
 
