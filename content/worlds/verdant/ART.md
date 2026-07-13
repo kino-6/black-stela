@@ -62,11 +62,6 @@ Basename = enemy id, dots→dashes. Chroma-key on **MagentaBack** (subjects are 
 Each must read as a *forest* creature with a tactical silhouette; use the shared
 readability and alpha rules in `../../../docs/art/common.md`.
 
-**These sprites are drawn INTO the corridor, not pasted over it.** The engine plants
-every sprite at the same world size and lets the art carry the size difference, so the
-framing rules below are not cosmetic — get them wrong and the creature floats above the
-floor or reads the wrong size. This supersedes the earlier ~768×512 spec.
-
 ### Framing — what actually matters
 The engine measures each creature's silhouette from the **alpha channel**, stands its real
 feet on the floor, and scales its real height to the `size:` class in `enemies.md`. So there
