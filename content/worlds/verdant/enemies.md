@@ -35,6 +35,7 @@ enemies:
     gold: 2
     role: attrition
     size: small
+    hover: true
     weaknesses: { fire: 1.5 }
     tags: [swarm, insect]
   - id: enemy.verdant.g2.thorn-crawler
@@ -86,6 +87,7 @@ enemies:
     gold: 4
     role: caster
     size: medium
+    hover: true
     dangerTier: 2
     weaknesses: { fire: 1.5 }
     tags: [caster, spore, status]
@@ -105,6 +107,7 @@ enemies:
     gold: 5
     role: attrition
     size: medium
+    hover: true
     tags: [spore, status]
   - id: enemy.verdant.g6.thorn-cutter
     name: Thorn Cutter

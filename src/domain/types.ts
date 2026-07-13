@@ -338,6 +338,12 @@ export interface Enemy {
   isBoss?: boolean;
   elevation?: EnemyElevation;
   size?: EnemySize;
+  /** Draw the creature off the floor. PRESENTATION ONLY — it does not change what melee can
+   *  reach. `elevation` looks like it would do this job, but it is a COMBAT field: air/mid
+   *  groups are shielded from melee while a ground group still stands (enemyGroupIsBack), which
+   *  is how the front-blocker / back-caster squads work. A swarm of gnats that melee cannot
+   *  touch is just tedious, so hovering and being out of reach are two different things. */
+  hover?: boolean;
 }
 
 export interface Trap {

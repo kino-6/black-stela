@@ -74,6 +74,7 @@ export function DungeonView({ state, world, label, onEnemyAnchors }: DungeonView
                 groupId: group.id,
                 count: group.count,
                 elevation: group.elevation,
+                hover: world.enemies.find((enemy) => enemy.id === group.enemyId)?.hover,
                 size: world.enemies.find((enemy) => enemy.id === group.enemyId)?.size
               }))
           : [],

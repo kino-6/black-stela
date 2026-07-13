@@ -36,7 +36,10 @@ export interface DungeonSceneInput {
     /** Combat group id, so the UI overlay can be anchored back to the right group. */
     groupId?: string;
     count?: number;
+    /** COMBAT line: air/mid groups are shielded from melee behind a standing ground group. */
     elevation?: EnemyElevation;
+    /** PRESENTATION only: draw it off the floor. Does not change what melee can reach. */
+    hover?: boolean;
     size?: EnemySize;
   }[];
   /** Called with each group's foot position in screen % of the canvas, so the combat UI
@@ -307,7 +310,10 @@ export function buildDungeonScene(mount: HTMLDivElement, input: DungeonSceneInpu
       // Stagger depth slightly so overlapping sprites never fight for the same plane.
       const z = enemyZ - (index % 2) * 0.14;
       const elevation = group.elevation ?? "ground";
-      const lift = elevation === "air" ? 1.7 : elevation === "mid" ? 0.9 : 0;
+      // A creature leaves the floor either because it is tactically out of reach (elevation) or
+      // simply because it flies (hover). The second is a picture; the first is a rule.
+      const lift = elevation === "air" ? 1.7 : elevation === "mid" ? 0.9 : group.hover ? 0.75 : 0;
+      const airborne = elevation === "air" || (group.hover && elevation === "ground");
       const worldHeight = ENEMY_WORLD_HEIGHT[group.size ?? "medium"];
 
       // A THREE texture has no `.image` until it loads, so the silhouette can only be
@@ -346,13 +352,15 @@ export function buildDungeonScene(mount: HTMLDivElement, input: DungeonSceneInpu
       // Contact shadow, sized to the creature's MEASURED footprint rather than a constant, so
       // a mite gets a mite's shadow and a blocker gets a blocker's. Without it a small
       // creature reads as hovering an inch off the floor however well it is grounded.
-      if (elevation !== "air") {
+      // A hovering creature still throws a shadow — a faint one, right under it. That contact
+      // is what tells the eye it is above the floor rather than drawn at the wrong size.
+      if (!airborne || group.hover) {
         const m = getSpriteMetrics(url);
         const bodyWidth = m
           ? (worldHeight / Math.max(0.08, m.heightFrac)) * m.imageAspect * m.widthFrac
           : worldHeight;
         const radius = (bodyWidth * 0.42) / SHADOW_GEOMETRY_RADIUS;
-        enemyShadowMaterial.opacity = elevation === "mid" ? 0.3 : 0.55;
+        enemyShadowMaterial.opacity = elevation === "mid" || group.hover ? 0.3 : 0.55;
         const shadow = new THREE.Mesh(
           new THREE.CircleGeometry(SHADOW_GEOMETRY_RADIUS, 32),
           enemyShadowMaterial.clone()
@@ -360,7 +368,7 @@ export function buildDungeonScene(mount: HTMLDivElement, input: DungeonSceneInpu
         shadow.position.set(offsetX, 0.035, z - 0.04);
         shadow.rotation.x = -Math.PI / 2;
         // Flattened by the viewing angle: a circle on the floor reads as a shallow ellipse.
-        shadow.scale.set(radius * (elevation === "mid" ? 0.75 : 1), radius * 0.34, 1);
+        shadow.scale.set(radius * (elevation === "mid" || group.hover ? 0.75 : 1), radius * 0.34, 1);
         scene.add(shadow);
       }
 

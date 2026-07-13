@@ -81,7 +81,9 @@ const enemySchema = z.object({
   tags: z.array(z.string().min(1)).default([]),
   isBoss: z.boolean().optional(),
   elevation: z.enum(["ground", "mid", "air"]).optional(),
-  size: z.enum(["small", "medium", "large", "huge"]).optional()
+  size: z.enum(["small", "medium", "large", "huge"]).optional(),
+  // Presentation only — see Enemy.hover. Does NOT gate melee reach; `elevation` does.
+  hover: z.boolean().optional()
 });
 
 const trapSchema = z.object({
