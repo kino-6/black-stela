@@ -9,10 +9,6 @@ import { expect } from "@playwright/test";
 // combat command dock could sit below the fold unnoticed. (My own combat-stage.spec.ts had
 // the same hole — it asserted the layout does not MOVE, never that it FITS.)
 //
-// These helpers assert the two things the report says the gate cannot see:
-//   · controller truth — where DOM focus actually is, screen by screen
-//   · viewport truth   — that commands are on screen at all
-//
 // Playwright's Desktop Chrome default viewport is 1280x720 — the same size as the hand
 // playtest — so every spec that imports these is already checking the reported size.
 
@@ -36,80 +32,221 @@ export async function moveFocus(page: Page, direction: "up" | "down" | "left" | 
   }
 }
 
+// ---------------------------------------------------------------------------
+// "No mouse" must be MEASURED, not merely declared.
+//
+// A comment saying a route is controller-only rots the moment a helper quietly reverts to
+// locator.click(). Count real pointer events instead: keyboard Enter on a focused button
+// fires a `click`, but never a `pointerdown`/`mousedown` — so those two are an exact detector
+// of an actual mouse, with no false positives from keyboard activation.
+// ---------------------------------------------------------------------------
+
+declare global {
+  interface Window {
+    __mouseEvents?: number;
+  }
+}
+
+export async function installMouseSpy(page: Page) {
+  await page.addInitScript(() => {
+    window.__mouseEvents = 0;
+    for (const type of ["pointerdown", "mousedown"]) {
+      window.addEventListener(
+        type,
+        (event) => {
+          if (event.isTrusted) {
+            window.__mouseEvents = (window.__mouseEvents ?? 0) + 1;
+          }
+        },
+        true
+      );
+    }
+  });
+}
+
+export async function expectNoMouseUsed(page: Page, where: string) {
+  const count = await page.evaluate(() => window.__mouseEvents ?? 0);
+  expect(
+    count,
+    `${where}: ${count} real pointer events fired — this route claims to be controller-only, ` +
+      `so a click here means the Gate has quietly gone back to proving nothing`
+  ).toBe(0);
+}
+
+// ---------------------------------------------------------------------------
+// Focus truth
+// ---------------------------------------------------------------------------
+
 interface FocusInfo {
   tag: string;
   label: string;
   surface: string | null;
+  /** The surface is registered AND currently active. */
+  surfaceActive: boolean;
   disabled: boolean;
+  /** Rendered, on screen, and not clipped away by an ancestor's overflow. */
+  reachable: boolean;
+  /** Hidden from the accessibility tree / inert — a cursor here is a cursor nowhere. */
+  inert: boolean;
+  activeSurfaceCount: number;
 }
 
 export async function readFocus(page: Page): Promise<FocusInfo> {
   return page.evaluate(() => {
+    const activeSurfaceCount = document.querySelectorAll(
+      '[data-controller-surface][data-controller-active="true"]'
+    ).length;
     const el = document.activeElement as HTMLElement | null;
+    const empty = {
+      tag: el?.tagName ?? "NONE",
+      label: "",
+      surface: null,
+      surfaceActive: false,
+      disabled: false,
+      reachable: false,
+      inert: false,
+      activeSurfaceCount
+    };
     if (!el || el === document.body || el === document.documentElement) {
-      return { tag: el?.tagName ?? "NONE", label: "", surface: null, disabled: false };
+      return empty;
     }
+
     const surface = el.closest("[data-controller-surface]");
+    const box = el.getBoundingClientRect();
+    const onScreen =
+      box.width > 0 &&
+      box.height > 0 &&
+      box.bottom > 0 &&
+      box.right > 0 &&
+      box.top < window.innerHeight &&
+      box.left < window.innerWidth;
+    // Clipped away by a scrolling/overflowing ancestor? Then it is on screen only in theory.
+    let clipped = false;
+    for (let node = el.parentElement; node; node = node.parentElement) {
+      const style = window.getComputedStyle(node);
+      if (style.overflow === "visible" && style.overflowY === "visible" && style.overflowX === "visible") {
+        continue;
+      }
+      const clip = node.getBoundingClientRect();
+      if (box.bottom <= clip.top || box.top >= clip.bottom || box.right <= clip.left || box.left >= clip.right) {
+        clipped = true;
+        break;
+      }
+    }
+
     return {
       tag: el.tagName,
       label: (el.getAttribute("aria-label") || el.textContent || "").replace(/\s+/g, " ").trim().slice(0, 60),
       surface: surface?.getAttribute("data-controller-surface") ?? null,
-      disabled: el.hasAttribute("disabled")
+      surfaceActive: surface?.getAttribute("data-controller-active") === "true",
+      disabled: el.hasAttribute("disabled") || el.getAttribute("aria-disabled") === "true",
+      reachable: onScreen && !clipped,
+      inert: Boolean(el.closest("[inert]") || el.closest('[aria-hidden="true"]')),
+      activeSurfaceCount
     };
   });
 }
 
 /**
- * A player holding a controller must always have a cursor somewhere. Focus resting on BODY
- * means the screen is dead to directional input — the exact failure the playtest hit on the
- * scenario picker and again after accepting a guild recruit.
+ * A player holding a controller must always have a cursor, and the cursor must be on something
+ * they can actually use. Focus resting on BODY means the screen is dead to directional input —
+ * the exact failure the playtest hit on the scenario picker and again after a guild recruit.
+ * Focus resting on a disabled, off-screen, clipped or aria-hidden element is the same failure
+ * wearing a disguise.
  */
-export async function expectControllerFocus(page: Page, where: string, options: { surface?: string } = {}) {
+export async function expectControllerFocus(
+  page: Page,
+  where: string,
+  options: { surface?: string; exclusive?: boolean } = {}
+) {
+  // Poll: focus is claimed on the next animation frame after a screen mounts, so reading it in
+  // the same tick would measure a frame no player ever sees. What must hold is that a cursor
+  // ARRIVES — not that it is there within 5ms.
+  await expect
+    .poll(async () => (await readFocus(page)).tag, {
+      message: `${where}: nothing is focused — the screen is dead to a controller`,
+      timeout: 2000
+    })
+    .not.toMatch(/^(BODY|NONE)$/);
+
   const focus = await readFocus(page);
-  expect(focus.tag, `${where}: nothing is focused — the screen is dead to a controller`).not.toBe("BODY");
-  expect(focus.tag, `${where}: nothing is focused — the screen is dead to a controller`).not.toBe("NONE");
   expect(focus.surface, `${where}: focus is on "${focus.label}", outside any controller surface`).not.toBeNull();
+  expect(
+    focus.surfaceActive,
+    `${where}: focus is on "${focus.label}", inside the INACTIVE surface "${focus.surface}"`
+  ).toBe(true);
+  expect(focus.disabled, `${where}: the cursor sits on the disabled command "${focus.label}"`).toBe(false);
+  expect(focus.inert, `${where}: the cursor sits inside an aria-hidden/inert region ("${focus.label}")`).toBe(false);
+  expect(
+    focus.reachable,
+    `${where}: the focused command "${focus.label}" is off screen or clipped by an ancestor — ` +
+      `the cursor exists but the player cannot see it`
+  ).toBe(true);
   if (options.surface) {
     expect(focus.surface, `${where}: focus escaped to the "${focus.surface}" surface`).toBe(options.surface);
+  }
+  if (options.exclusive) {
+    // Sibling surfaces flatten into ONE focus ring (src/ui/controllerFocus.ts), so a screen
+    // that leaves a second surface active lets the cursor wander out of the step the player is
+    // actually on. Nested surfaces are fine — the ring de-dupes them.
+    expect(
+      focus.activeSurfaceCount,
+      `${where}: ${focus.activeSurfaceCount} controller surfaces are active at once — ` +
+        `the cursor can wander out of the command the player is being asked for`
+    ).toBe(1);
   }
 }
 
 /**
- * Everything the player must be able to reach has to BE on screen. The command dock was
- * measured at y=719 with its bottom at 786 in a 720px viewport, and the page does not
- * scroll — so オート / リピート / 退却 were simply unreachable while every test stayed green.
+ * Everything the player must be able to reach has to BE on screen — on ALL four edges, and not
+ * only the container: each command inside it must be reachable too, since an ancestor's
+ * overflow can swallow a button while the panel itself measures as fitting.
  */
 export async function expectFitsViewport(page: Page, where: string) {
   const report = await page.evaluate(() => {
     const doc = document.documentElement;
+    const width = window.innerWidth;
     const height = window.innerHeight;
-    // Every surface a player is expected to command from.
-    const selectors = [
-      "[data-controller-surface]",
-      ".command-dock",
-      ".combat-command-zone",
-      ".town-service-menu",
-      ".guild-stepper"
-    ];
-    const clipped: { selector: string; bottom: number }[] = [];
-    for (const selector of selectors) {
-      for (const node of Array.from(document.querySelectorAll(selector))) {
-        const el = node as HTMLElement;
-        if (el.offsetParent === null) {
-          continue; // not rendered
-        }
-        const box = el.getBoundingClientRect();
-        if (box.height === 0) {
+    const surfaces = Array.from(
+      document.querySelectorAll<HTMLElement>(
+        '[data-controller-surface], .command-dock, .combat-command-zone, .town-service-menu, .guild-stepper'
+      )
+    ).filter((el) => el.offsetParent !== null && el.getBoundingClientRect().height > 0);
+
+    const outside = (box: DOMRect) =>
+      box.bottom > height + 1 || box.top < -1 || box.right > width + 1 || box.left < -1;
+
+    const clipped: string[] = [];
+    for (const surface of surfaces) {
+      const box = surface.getBoundingClientRect();
+      if (outside(box)) {
+        clipped.push(
+          `${surface.className || surface.tagName} spans ` +
+            `${Math.round(box.left)},${Math.round(box.top)} → ${Math.round(box.right)},${Math.round(box.bottom)}`
+        );
+      }
+      // …and every command the player is expected to reach INSIDE it.
+      for (const node of Array.from(surface.querySelectorAll<HTMLElement>("button:not([disabled])"))) {
+        if (node.offsetParent === null) {
           continue;
         }
-        if (box.bottom > height + 1) {
-          clipped.push({ selector: el.className || selector, bottom: Math.round(box.bottom) });
+        const nodeBox = node.getBoundingClientRect();
+        if (nodeBox.height === 0) {
+          continue;
+        }
+        if (outside(nodeBox)) {
+          clipped.push(
+            `command "${(node.textContent || "").trim().slice(0, 24)}" ends at ` +
+              `${Math.round(nodeBox.bottom)} (viewport ${height})`
+          );
         }
       }
     }
+
     return {
+      width,
       height,
-      clipped,
+      clipped: Array.from(new Set(clipped)),
       pageScrolls: doc.scrollHeight > doc.clientHeight + 1,
       scrollHeight: doc.scrollHeight,
       clientHeight: doc.clientHeight
@@ -118,8 +255,7 @@ export async function expectFitsViewport(page: Page, where: string) {
 
   expect(
     report.clipped,
-    `${where}: command surfaces hang below the ${report.height}px viewport — ` +
-      report.clipped.map((c) => `${c.selector} ends at ${c.bottom}`).join("; ")
+    `${where}: commands fall outside the ${report.width}x${report.height} viewport — ${report.clipped.join("; ")}`
   ).toEqual([]);
   expect(
     report.pageScrolls,
@@ -135,7 +271,6 @@ export async function expectFitsViewport(page: Page, where: string) {
 export async function expectSelectionMatchesFocus(page: Page, where: string) {
   const mismatch = await page.evaluate(() => {
     const active = document.activeElement as HTMLElement | null;
-    // Elements the UI paints as "the chosen command".
     const selected = Array.from(
       document.querySelectorAll('[aria-current="true"], .combat-menu-row.selected, .primary-action')
     ).filter((node) => (node as HTMLElement).offsetParent !== null);

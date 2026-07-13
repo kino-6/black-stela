@@ -2026,13 +2026,62 @@ textarea {
   padding: 2rem;
 }
 
-/* The scenario picker reuses the title frame but stacks: heading, cards, back. */
+/* The scenario picker reuses the title frame but stacks: heading, cards, back. Kept inside
+   the viewport — the cards carry a tagline now, and at 1280x720 the panel ran 18px past the
+   fold (the controller Gate caught it). If more worlds are registered the list scrolls, the
+   screen does not. */
 .title-screen.scenario-picker {
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  gap: 1.5rem;
+  gap: 1rem;
   width: min(42rem, 100%);
+  max-height: 100vh;
+  padding: 1.25rem 2rem;
+  overflow: hidden;
+}
+
+.scenario-picker .scenario-list {
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/* The title screen's heading is display-sized. Reused here it swallowed the picker: the
+   Japanese "シナリオを選ぶ" broke to two lines and sat on top of its own subtitle. This is a
+   list of choices, not a title card. */
+.scenario-picker .title-mark {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.scenario-picker .title-mark h1 {
+  margin: 0;
+  /* Must out-specify `.title-mark h1` further down the sheet — same specificity would lose on
+     source order, which is exactly the "who wins?" trap this file keeps setting. */
+  font-size: clamp(1.5rem, 3vw, 2.1rem);
+  line-height: 1.35;
+  letter-spacing: 0.02em;
+}
+
+.scenario-picker .title-mark .title-tagline {
+  margin: 0;
+  font-size: 0.92rem;
+}
+
+/* The cursor must be VISIBLE, not merely present in the DOM — including when the player
+   arrived by mouse (:focus-visible alone stays dark in that case). */
+.scenario-card:focus,
+.scenario-card:focus-visible {
+  outline: none;
+  border-color: #ffd27a;
+  background: rgba(48, 42, 32, 0.9);
+  box-shadow: 0 0 0 1px #ffd27a, 0 0 16px rgba(255, 210, 122, 0.28);
+}
+
+.scenario-card:focus strong::before,
+.scenario-card:focus-visible strong::before {
+  content: "\25b8 ";
+  color: #ffd27a;
 }
 
 .scenario-list {
@@ -2049,7 +2098,7 @@ textarea {
   flex-direction: column;
   gap: 0.25rem;
   width: 100%;
-  padding: 1rem 1.25rem;
+  padding: 0.8rem 1.1rem;
   text-align: left;
   border: 1px solid rgba(200, 190, 170, 0.25);
   border-radius: 0.5rem;
@@ -2070,9 +2119,10 @@ textarea {
 }
 
 .scenario-card small {
-  opacity: 0.55;
-  font-variant: small-caps;
-  letter-spacing: 0.03em;
+  /* This used to be the raw pack id in small-caps. It is now the world's own line, so it
+     reads as prose, not as an identifier. */
+  opacity: 0.75;
+  line-height: 1.5;
 }
 
 .title-mark {
@@ -3504,6 +3554,16 @@ textarea {
 }
 
 /* Small dim build stamp (git sha + start time) so a stale bundle is obvious. */
+.scene-world {
+  color: #b8a06a;
+  font-size: 0.8rem;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 16rem;
+}
+
 .build-stamp {
   font-size: 0.7rem;
   font-variant-numeric: tabular-nums;
@@ -3939,16 +3999,38 @@ textarea {
   color: #e7dcc2;
 }
 
-.town-service-menu button:hover:not(:disabled),
-.town-service-menu button:focus-visible {
-  border-color: #c9a765;
-  background: #1c1d15;
+/* GOLD MEANS FOCUS. Nothing else.
+
+   The town used to paint "Enter dungeon" permanently gold (.primary-action) while the focus
+   ring — also gold — sat on "Guild". The player pressed Enter on what looked like the chosen
+   command and opened the guild instead. Two gold treatments, one of them a lie.
+
+   The recommended command now reads as recommended (a warm fill and an accent edge), and the
+   FOCUSED command is the only thing that gets the gold cursor. */
+.town-service-menu .primary-action {
+  border-color: #3f4a3a;
+  border-left: 3px solid #6f8a5e;
+  background: #171d15;
+  color: #dbe6cf;
+  font-weight: 600;
 }
 
-.town-service-menu .primary-action {
-  border-color: #9f7a3d;
-  background: #2b2416;
-  color: #f2d58c;
+.town-service-menu button:hover:not(:disabled),
+.town-service-menu button:focus,
+.town-service-menu button:focus-visible {
+  border-color: #ffd27a;
+  background: #262417;
+  color: #ffe6a6;
+  outline: none;
+  box-shadow: 0 0 0 1px #ffd27a, 0 0 12px rgba(255, 210, 122, 0.3);
+}
+
+/* The same ▸ cursor the combat menu uses, so "this is where Enter goes" is unmistakable. */
+.town-service-menu button:focus::before,
+.town-service-menu button:focus-visible::before {
+  content: "\25b8";
+  margin-right: 0.15rem;
+  color: #ffd27a;
 }
 
 @media (max-width: 1100px) {

@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { DoorOpen, HeartPulse, ScrollText, ShoppingBag, Users } from "lucide-react";
 import type { Character, Command, ScenarioWorld } from "../domain/types";
 import { getLocalizedRoomText } from "../domain/scenario";
@@ -24,8 +25,12 @@ interface TownEntryPanelProps {
   onEnterMode: (mode: "guild" | "shop" | "recovery" | "records") => void;
 }
 
-// The town entry cockpit — status ledger, checkpoint resume, and the service
-// menu (extracted verbatim from App's render).
+// The town entry cockpit — status ledger, checkpoint resume, and the service menu.
+//
+// The controller cursor used to land on the FIRST focusable command (Guild), while
+// "Enter dungeon" was painted permanently gold. Pressing Enter on the command that looked
+// chosen opened the guild. The cursor now starts on the command the player actually came
+// here to give, and gold means focus and nothing else (see styles.css, "GOLD MEANS FOCUS").
 export function TownEntryPanel({
   t,
   world,
@@ -42,6 +47,18 @@ export function TownEntryPanel({
   onCommand,
   onEnterMode
 }: TownEntryPanelProps) {
+  // Start the cursor on the command a party standing in town is here to give. App's
+  // focusFirstControllerChoice() is a no-op once focus already sits on an interactive element
+  // inside an active surface, so claiming it here wins without fighting that effect.
+  const enterDungeonRef = useRef<HTMLButtonElement | null>(null);
+  useEffect(() => {
+    if (partyEmpty) {
+      return;
+    }
+    const frame = window.requestAnimationFrame(() => enterDungeonRef.current?.focus());
+    return () => window.cancelAnimationFrame(frame);
+  }, [partyEmpty]);
+
   return (
     <section
       className="town-service town-cockpit"
@@ -129,6 +146,7 @@ export function TownEntryPanel({
           type="button"
           className="primary-action"
           data-testid="town-enter-dungeon"
+          ref={enterDungeonRef}
           disabled={partyEmpty}
           onClick={() => onCommand({ type: "enter_dungeon" })}
         >

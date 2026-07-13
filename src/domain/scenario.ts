@@ -273,6 +273,12 @@ export const dungeonFloorSchema = z.object({
 export const scenarioWorldSchema = z.object({
   id: z.string().min(1),
   title: z.string().min(1),
+  // One line the player reads on the scenario card. Without it the card had nothing to
+  // say and showed the raw pack id instead.
+  tagline: z.string().min(1).optional(),
+  locales: z
+    .record(z.string(), z.object({ title: z.string().min(1).optional(), tagline: z.string().min(1).optional() }))
+    .optional(),
   assetPack: z.string().min(1).optional(),
   // Per-scenario scene colour (fog/lights/wall+floor tint). Omitted → default ash.
   palette: z

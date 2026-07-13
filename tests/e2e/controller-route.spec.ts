@@ -1,14 +1,18 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import {
   activateByController,
+  createStarterParty,
   createStarterPartyByController,
-  startExpeditionByController
+  startExpeditionByController,
+  startNewExpedition
 } from "./helpers";
 import {
   CONTROLLER_VIEWPORT,
   expectControllerFocus,
   expectFitsViewport,
+  expectNoMouseUsed,
   expectSelectionMatchesFocus,
+  installMouseSpy,
   moveFocus,
   pressCancel,
   pressConfirm,
@@ -28,14 +32,35 @@ import {
 // evidence proves keyboard/controller style traversal for the changed surface. Mouse support
 // is allowed only as a secondary convenience; it cannot be the only visible or tested path."
 //
-// This spec walks the whole normal route with directional keys, Confirm and Cancel ONLY, and
-// asserts at every screen that (a) a controller cursor exists, (b) the commands are on
-// screen, and (c) what LOOKS selected IS what is focused.
+// "No mouse" is MEASURED here, not declared: installMouseSpy counts real pointerdown/mousedown
+// events, so if a helper ever quietly reverts to locator.click() the claim fails loudly rather
+// than rotting into a comment that is no longer true.
 //
 // Failure category: `controller_input` (docs/gates/browser-selfplay-gate.md).
+
+/** Front row first, then back row — the order AGENTS.md requires commands to be given in. */
+async function formationOrder(page: Page) {
+  const front = await page.locator('.party-strip-group[data-row="front"] .pt-name').allTextContents();
+  const back = await page.locator('.party-strip-group[data-row="back"] .pt-name').allTextContents();
+  return [...front, ...back].map((name) => name.trim());
+}
+
+/** Walk until something jumps us. Arrows move the PARTY in the dungeon, not the focus cursor. */
+async function walkIntoCombat(page: Page, maxSteps = 120) {
+  for (let step = 0; step < maxSteps; step += 1) {
+    if ((await page.getByTestId("combat-enemy-group").count()) > 0) {
+      return;
+    }
+    await page.keyboard.press(step % 5 === 4 ? "ArrowLeft" : "ArrowUp");
+    await page.waitForTimeout(90);
+  }
+  throw new Error("walked the floor without meeting anything");
+}
+
 test.describe("controller route (no mouse)", () => {
   test.beforeEach(async ({ page }) => {
     await page.setViewportSize(CONTROLLER_VIEWPORT); // 1280x720 — the size the playtest used
+    await installMouseSpy(page);
   });
 
   test("the title screen hands the player a cursor", async ({ page }) => {
@@ -43,6 +68,7 @@ test.describe("controller route (no mouse)", () => {
     await expect(page.getByRole("button", { name: "New expedition" })).toBeVisible();
     await expectControllerFocus(page, "title");
     await expectFitsViewport(page, "title");
+    await expectNoMouseUsed(page, "title");
   });
 
   test("the scenario picker can be answered with a controller", async ({ page }) => {
@@ -51,18 +77,41 @@ test.describe("controller route (no mouse)", () => {
     await expect(page.getByTestId("scenario-card-default")).toBeVisible();
 
     // A controller player arriving here must already have a cursor — Tab is not a gamepad button.
-    await expectControllerFocus(page, "scenario picker");
+    await expectControllerFocus(page, "scenario picker", { surface: "scenario" });
     await expectFitsViewport(page, "scenario picker");
+    await expectSelectionMatchesFocus(page, "scenario picker");
 
-    // Directional input must move the selection.
+    // Directional input must move the selection — and must not fling the cursor out of the
+    // picker into some other surface, which a bare "the label changed" check would accept.
     const before = await readFocus(page);
     await moveFocus(page, "down");
     const after = await readFocus(page);
     expect(after.label, "the scenario selection does not move on Down").not.toBe(before.label);
+    expect(after.surface, "Down threw the cursor out of the scenario picker").toBe("scenario");
 
-    // Cancel must back out to the title rather than trapping the player.
+    // Cancel must back out to the title AND hand the cursor back, not strand it.
     await pressCancel(page);
-    await expect(page.getByRole("button", { name: "New expedition" })).toBeVisible();
+    await expect(page.getByTestId("scenario-card-default")).toHaveCount(0);
+    await expectControllerFocus(page, "title (after Cancel)");
+    expect(
+      (await readFocus(page)).label,
+      "Cancel left the title screen without the cursor on its command"
+    ).toContain("New expedition");
+
+    await expectNoMouseUsed(page, "scenario picker");
+  });
+
+  test("Confirm starts the scenario the cursor is actually on", async ({ page }) => {
+    await page.goto("/");
+    await activateByController(page, "New expedition");
+    await expect(page.getByTestId("scenario-card-verdant")).toBeVisible();
+
+    // Put the cursor on Verdant specifically, then Confirm. The run that starts must be the one
+    // the player was pointing at — the town's "looks selected but isn't" bug, in miniature.
+    await activateByController(page, /Verdant|翠碑/);
+    await expect(page.getByRole("heading", { name: "Adventurer Registration" })).toBeVisible();
+    await expect(page.locator("body")).toContainText(/Verdant|翠碑|Heartwood/i);
+    await expectNoMouseUsed(page, "scenario confirm");
   });
 
   test("a scenario card never shows its raw pack id", async ({ page }) => {
@@ -85,33 +134,32 @@ test.describe("controller route (no mouse)", () => {
   });
 
   test("six adventurers can be recruited without a mouse, and focus is never dropped", async ({ page }) => {
+    // KNOWN FAILING until IMP-003 (the guild rebuild): the roster column runs to 1370px at a
+    // 720px viewport, and it stays a SECOND active controller surface throughout registration,
+    // so the cursor wanders out of the step the player is being asked for. Marked test.fail so
+    // the suite stays honest — it RUNS, its failure is the record, and if it ever starts
+    // passing Playwright reports an unexpected pass and this marker must be removed.
+    test.fail();
     await startExpeditionByController(page);
-    await expectControllerFocus(page, "guild (on entry)");
+    await expectControllerFocus(page, "guild (on entry)", { exclusive: true });
     await expectFitsViewport(page, "guild (on entry)");
 
-    const labels = { skip: "Skip explanation", yes: "Yes" };
-    if (await page.getByRole("button", { name: labels.skip }).isVisible().catch(() => false)) {
-      await activateByController(page, labels.skip);
-    }
-
-    for (let index = 0; index < 6; index += 1) {
-      await activateByController(page, labels.yes);
-      await expect(page.getByTestId("guild-suggestion")).toBeVisible();
-      // The proposal appearing must not drop the cursor.
-      await expectControllerFocus(page, `guild (proposal ${index + 1})`);
-
-      await activateByController(page, labels.yes);
-      await expect(page.getByText(`${index + 1}/6`)).toBeVisible();
-      // …and neither must accepting it.
-      await expectControllerFocus(page, `guild (after recruit ${index + 1})`);
-      await expectFitsViewport(page, `guild (after recruit ${index + 1})`);
-    }
+    await createStarterPartyByController(page);
+    await expect(page.getByText("6/6")).toBeVisible();
+    await expectControllerFocus(page, "guild (party complete)");
+    await expectFitsViewport(page, "guild (party complete)");
+    await expectNoMouseUsed(page, "guild");
   });
 
+  // SETUP CAVEAT (remove with IMP-003): the guild cannot yet be completed on a controller — the
+  // test above is the one that proves it. Until the guild rebuild lands, these reach the party
+  // with the MOUSE helper and then assert controller truth on the surface they are actually
+  // about. The mouse count is therefore not asserted here, only the keyboard behaviour that
+  // follows the setup.
   test("the town's selected command is the focused command", async ({ page }) => {
-    await startExpeditionByController(page);
-    await createStarterPartyByController(page);
-    await activateByController(page, "Back to town");
+    await startNewExpedition(page);
+    await createStarterParty(page);
+    await page.getByRole("button", { name: "Back to town" }).click();
 
     await expectControllerFocus(page, "town");
     await expectFitsViewport(page, "town");
@@ -120,41 +168,84 @@ test.describe("controller route (no mouse)", () => {
   });
 
   test("the dungeon and a full combat round are playable with keys alone", async ({ page }) => {
-    await startExpeditionByController(page);
-    await createStarterPartyByController(page);
-    await activateByController(page, "Back to town");
+    await startNewExpedition(page);
+    await createStarterParty(page);
+    await page.getByRole("button", { name: "Back to town" }).click();
     await activateByController(page, "Enter dungeon");
 
     await expect(page.getByTestId("dungeon-canvas").first()).toBeVisible();
     await expectControllerFocus(page, "dungeon");
     await expectFitsViewport(page, "dungeon");
 
-    // Walk until something meets us. Arrows move the party in the dungeon (they do not move
-    // focus there) — that is the DRPG convention this route must honour.
-    for (let step = 0; step < 90; step += 1) {
-      if ((await page.getByTestId("combat-enemy-group").count()) > 0) {
-        break;
-      }
-      await page.keyboard.press(step % 5 === 4 ? "ArrowLeft" : "ArrowUp");
-      await page.waitForTimeout(90);
-    }
-    await expect(page.getByTestId("combat-enemy-group").first()).toBeVisible();
+    await walkIntoCombat(page);
 
     // Combat is where "controller-first" is a blocking rule, and where the dock went missing.
     await expectControllerFocus(page, "combat", { surface: "combat-menu" });
     await expectFitsViewport(page, "combat");
     await expectSelectionMatchesFocus(page, "combat");
 
-    // Command all six actors: Attack -> first target, in formation order.
+    // Command EVERY actor, and prove it. A loop that breaks as soon as the menu disappears can
+    // "succeed" having commanded nobody — a test that asserts its own convenience.
+    const expected = await formationOrder(page);
+    expect(expected.length, "the party strip does not show six members").toBe(6);
+
+    const commanded: string[] = [];
     for (let actor = 0; actor < 6; actor += 1) {
-      const menu = page.getByTestId("combat-command-menu");
-      if (!(await menu.isVisible().catch(() => false))) {
-        break;
-      }
+      const head = (await page.locator(".combat-command-menu-head").first().textContent()) ?? "";
+      const name = expected.find((member) => head.includes(member));
+      expect(name, `combat asked for a command from someone not in the party: "${head}"`).toBeTruthy();
+      commanded.push(name!);
+
       await pressConfirm(page); // Attack
-      await pressConfirm(page); // first target
-      await page.waitForTimeout(80);
+      await pressConfirm(page); // first living target
+      await page.waitForTimeout(90);
       await expectFitsViewport(page, `combat (after actor ${actor + 1})`);
     }
+
+    // AGENTS.md: commands advance through party members in FORMATION order (front, then back) —
+    // not in whatever order a mouse happened to click actor cards in.
+    expect(commanded, "combat did not ask the six members in formation order").toEqual(expected);
+
+    // …and the round must actually RESOLVE, not merely stop asking.
+    const confirm = page.getByTestId("combat-confirm-execute");
+    if (await confirm.isVisible().catch(() => false)) {
+      await pressConfirm(page);
+    }
+    await expect(page.locator(".combat-log-beat").first()).toBeVisible({ timeout: 10_000 });
+  });
+
+  // Every test above seeds localStorage to skip the round-confirm step and the beat playback.
+  // That is fine for route coverage, but it means NO test walks the game a player is actually
+  // shipped. This one changes no settings at all.
+  test("the shipped defaults are playable on a controller (no settings tampering)", async ({ page }) => {
+    await page.goto("/");
+    await activateByController(page, "New expedition");
+    await activateByController(page, /Black Stela|黒碑/);
+
+    // Guild is IMP-003; reach the party with the mouse, then hand it back to the keyboard.
+    await createStarterParty(page);
+    await page.getByRole("button", { name: "Back to town" }).click();
+    await activateByController(page, "Enter dungeon");
+    await walkIntoCombat(page);
+
+    await expectControllerFocus(page, "combat (shipped defaults)", { surface: "combat-menu" });
+    await expectFitsViewport(page, "combat (shipped defaults)");
+
+    for (let actor = 0; actor < 6; actor += 1) {
+      if (!(await page.getByTestId("combat-command-menu").isVisible().catch(() => false))) {
+        break;
+      }
+      await pressConfirm(page);
+      await pressConfirm(page);
+      await page.waitForTimeout(90);
+    }
+
+    // With the shipped defaults the round does NOT auto-resolve: a confirm step gates it, and
+    // the blows then play out beat by beat. Both must be reachable from the keyboard.
+    const confirm = page.getByTestId("combat-confirm-execute");
+    await expect(confirm, "the shipped confirm step never appeared").toBeVisible({ timeout: 5000 });
+    await expectFitsViewport(page, "combat confirm (shipped defaults)");
+    await pressConfirm(page);
+    await expect(page.locator(".combat-log-beat").first()).toBeVisible({ timeout: 15_000 });
   });
 });

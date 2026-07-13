@@ -25,6 +25,15 @@ controller failure had been reproduced and recorded.
   browser, but a group is staged as a small distant cluster.
 - `07-combat-log-and-command-overflow.jpg`: round-two log lines disappear behind
   the command window. Auto, Repeat, and Retreat start below y=720.
+- `08-verdant-g1f-organic-wall-and-stair.png`: IMP-006 follow-up. Verdant G1F
+  now uses root, bark, and moss surfaces; the entrance ascent uses the dedicated
+  root structure. The east opening agrees with the local minimap.
+
+## IMP-006 Follow-up
+
+Verified in Chromium at 1280x720 through the normal title, scenario, guild, and
+dungeon route. `tests/e2e/verdant-playthrough.spec.ts` passed, as did desktop and
+mobile nonblank-canvas checks in `tests/e2e/rendering.spec.ts`.
 
 ## Automated Gate Difference
 

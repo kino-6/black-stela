@@ -34,21 +34,21 @@ scene lighting, fog, bloom, and torch effects belong in the renderer.
 ### Block textures — `assets/dungeon/`, 1024², JPG, seamless-tiling
 Not stone. **Root/bark/moss surfaces**, wetter and more overgrown with depth:
 - `stone-wall-block1` / `stone-floor-block1` — **Act I**: moss-furred roots knitted into a
-  wall; floor of leaf-litter and shallow water. ⚠ files delivered; wall rejected in
-  browser review because fitted stone courses remain the dominant structure
+  wall; floor of leaf-litter and shallow water. ✅ wall retaken and browser-verified;
+  fitted stone courses no longer define the structure
 - `stone-wall-block2` / `stone-floor-block2` — **Act II**: heavy bark scutes, weeping sap,
   fungal shelves; floor of sap-slick mud and drowned leaves. ✅ generated
 - `stone-wall-block3` / `stone-floor-block3` — **Act III**: pale heartwood grain, dense
   vein-like roots; floor of bone-pale rootmat. ✅ generated
 (The basenames are fixed by the renderer — the *content* is what changes.)
 
-### `dungeon/stair-down.png` — the descent (PNG RGBA, ~768², billboard) ✅ generated
+### `dungeon/stair-down.png` — the descent (PNG RGBA, ~768², billboard) ✅ generated and wired
 **A vine ladder / hanging root-stair**, not steps: knotted vines and aerial roots dropping
 through a hole in the rootmat into green dark below. Must read instantly as "go down."
 Bottom-weighted, clean alpha. *(This is the piece the player sees most; do not ship a
 recoloured stone stair.)*
 
-### `dungeon/stair-up.png` — the ascent ✅ generated
+### `dungeon/stair-up.png` — the ascent ✅ generated and browser-verified
 The same ladder seen from below, climbing toward a **pale shaft of daylight**.
 
 ### `dungeon/wood-door.jpg` — 1024² ✅ generated
@@ -149,9 +149,8 @@ Optional Verdant minimap-marker overrides are excluded from this count.
 | Title and UI stills | 4 | 4 | 0 |
 | Character portraits | 12 | 12 | 0 |
 
-The required Verdant file order is delivered. Delivery count is not visual
-acceptance: the 2026-07-13 browser playtest rejected `stone-wall-block1.jpg`
-because it reads as the Ash dungeon's fitted masonry recoloured green. Retake it
-as braided roots/bark with no visible brick courses, then verify G1F in the game.
+The required Verdant file order is delivered. The 2026-07-13 follow-up browser
+playtest accepted the Act I wall retake as braided roots, bark, and moss with no
+dominant fitted masonry. It also verified the root ascent in normal G1F play.
 Optional minimap overrides and future hurt-frame animation remain separate
 enhancements, not missing required assets.

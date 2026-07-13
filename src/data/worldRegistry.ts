@@ -112,15 +112,24 @@ export const worldRegistry: Record<string, ScenarioWorld> = Object.fromEntries(
 );
 
 export interface ScenarioListing {
+  /** Pack folder id. Technical identity — for debug/report data, NEVER shown to a player. */
   worldId: string;
   title: string;
+  tagline?: string;
+  locales?: Partial<Record<string, { title?: string; tagline?: string }>>;
   assetPack: string;
 }
 
 // Scenarios for the picker. Default sorts first, then alphabetical by title.
 export function listScenarios(): ScenarioListing[] {
   return Object.entries(worldRegistry)
-    .map(([worldId, world]) => ({ worldId, title: world.title, assetPack: world.assetPack ?? worldId }))
+    .map(([worldId, world]) => ({
+      worldId,
+      title: world.title,
+      tagline: world.tagline,
+      locales: world.locales,
+      assetPack: world.assetPack ?? worldId
+    }))
     .sort((a, b) => Number(b.worldId === "default") - Number(a.worldId === "default") || a.title.localeCompare(b.title));
 }
 

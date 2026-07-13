@@ -1,6 +1,11 @@
 ---
 id: world.verdant
-title: Verdant - Sunken Arboretum
+title: Verdant - the Sunken Heartwood
+tagline: A drowned wood that closed over the world. Everything here is alive, wet, and quietly suffocating.
+locales:
+  ja:
+    title: 翠碑 — 沈む樹心
+    tagline: 世界を覆って閉じた樹海。ここにあるものは皆、生きて、濡れて、静かに息を塞ぐ。
 assetPack: verdant
 # Scene colour — the drowned canopy. Wall/floor TINT the block texture, so even while
 # Material colors now live in Verdant's own wall/floor textures. Keep the surface

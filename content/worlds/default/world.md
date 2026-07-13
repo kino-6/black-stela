@@ -1,6 +1,11 @@
 ---
 id: world.default
 title: Black Stela - Gate of Ash
+tagline: A dead, ash-choked dungeon beneath the town. Eight floors down, the black stela has a root.
+locales:
+  ja:
+    title: 黒碑 — 灰の門
+    tagline: 町の下に、灰に埋もれた坑がある。八層の底で、黒い碑が根を張っている。
 startDungeon: dungeon.b1f
 startRoom: room.b1f.001
 aiPolicy:

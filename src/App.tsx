@@ -1203,6 +1203,13 @@ export function App() {
     }
   }, [state.phase]);
 
+  // Hand the controller a cursor whenever the screen changes under it. `focusFirstControllerChoice`
+  // is a no-op when focus is already somewhere sensible, so this only rescues a dropped cursor.
+  //
+  // It used to watch only the screen/phase/step, which misses the transitions that actually
+  // unmount the focused button: the Guild Master's ask block is REPLACED by his proposal, and
+  // the proposal by the roster. Focus fell to BODY on every recruit, and a player on a gamepad
+  // was stranded mid-registration. Watch the state that swaps those surfaces too.
   useEffect(() => {
     if (isTypingTarget(document.activeElement)) {
       return;
@@ -1213,7 +1220,7 @@ export function App() {
     });
 
     return () => window.cancelAnimationFrame(frame);
-  }, [guildCreationStep, screen, state.combat?.round, state.phase, townMode]);
+  }, [guildCreationStep, guildOfferState, screen, state.combat?.round, state.party.length, state.phase, townMode]);
 
   function cycleSelectedTarget(step: number) {
     if (livingEnemyGroups.length === 0) {
@@ -1256,6 +1263,7 @@ export function App() {
       {screen === "scenario" && (
         <ScenarioPicker
           t={t}
+          locale={locale}
           scenarios={listScenarios()}
           onSelect={selectScenario}
           onBack={() => setScreen("title")}
@@ -1496,6 +1504,12 @@ export function App() {
           <div className="section-title">
             <h2 id="location-heading">{state.phase === "town" ? t("play.town") : state.phase === "combat" ? t("play.combat") : roomText?.name}</h2>
             <div className="scene-meta">
+              {/* Which world am I in? Nothing on any screen answered that. A player who chose
+                  Verdant on the picker got a town, a guild and a dungeon that never once said
+                  so — and if the picker ever started the wrong run, nothing would reveal it. */}
+              <span className="scene-world" data-testid="world-badge">
+                {activeWorld.locales?.[locale]?.title ?? activeWorld.title}
+              </span>
               <span className="scene-facing">
                 {state.position && <Compass size={13} aria-hidden="true" />}
                 {state.position ? t("play.facing", { direction: t(`direction.${state.position.facing}`) }) : t("play.safe")}

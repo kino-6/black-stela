@@ -468,6 +468,9 @@ export interface ScenePalette {
 export interface ScenarioWorld {
   id: string;
   title: string;
+  /** One line the player reads on the scenario card (localized via `locales`). */
+  tagline?: string;
+  locales?: Partial<Record<string, { title?: string; tagline?: string }>>;
   /** Art pack folder under content/worlds/<assetPack>/assets (defaults to "default").
    *  Lets a scenario ship its own atmosphere pack. */
   assetPack?: string;

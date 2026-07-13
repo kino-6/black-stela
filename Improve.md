@@ -229,11 +229,16 @@ non-command stop to controller traversal.
 **Priority:** P1  
 **Category:** `visual_mismatch`
 
+**Status:** Completed 2026-07-13
+
 The first playable Verdant wall is fitted stone masonry under a green tint,
 which directly violates `content/worlds/verdant/ART.md`. The entrance stair is
 still simple stacked geometry even though Verdant stair assets exist.
 
-**Evidence:** `docs/evidence/browser-playtest-2026-07-13/05-verdant-g1f-stone-and-stair.jpg`.
+**Evidence:** before:
+`docs/evidence/browser-playtest-2026-07-13/05-verdant-g1f-stone-and-stair.jpg`;
+after:
+`docs/evidence/browser-playtest-2026-07-13/08-verdant-g1f-organic-wall-and-stair.png`.
 
 **Required change**
 
@@ -245,10 +250,10 @@ still simple stacked geometry even though Verdant stair assets exist.
 
 **Acceptance**
 
-- [ ] G1F reads as a living drowned wood before any text is read.
-- [ ] Stairs visibly use the Verdant vine/root structure before activation.
-- [ ] Minimap, movement truth, and first-person openings still agree.
-- [ ] Browser screenshots pass the scenario ART brief, not only asset existence.
+- [x] G1F reads as a living drowned wood before any text is read.
+- [x] Stairs visibly use the Verdant vine/root structure before activation.
+- [x] Minimap, movement truth, and first-person openings still agree.
+- [x] Browser screenshots pass the scenario ART brief, not only asset existence.
 
 ## IMP-007: New Enemy Art Is Readable but Poorly Staged
 
