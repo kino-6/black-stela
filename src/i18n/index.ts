@@ -19,6 +19,32 @@ export function createTranslator(locale: Locale): Translator {
   return (key, values = {}) => interpolate(readKey(dictionaries[locale], key), values);
 }
 
+/**
+ * A translator that lets the SCENARIO overrule the dictionary.
+ *
+ * AGENTS.md: "Prefer moving dialogue, service copy, room text, item text, and tutorial-like
+ * messages into scenario/localization data instead of hardcoding them inside React components."
+ * The town's voice is world-flavour — the ash town and the drowned grove should not greet you
+ * with the same sentence — so a world can supply any translation key in `world.copy[locale]`,
+ * with the same `{variable}` interpolation. Anything it omits falls through to the dictionary,
+ * so a world need only say what it wants to say differently.
+ */
+export function createWorldTranslator(
+  locale: Locale,
+  copy: Partial<Record<string, Record<string, string>>> | undefined
+): Translator {
+  const base = createTranslator(locale);
+  const overrides = copy?.[locale];
+  if (!overrides) {
+    return base;
+  }
+
+  return (key, values = {}) => {
+    const override = overrides[key as string];
+    return override === undefined ? base(key, values) : interpolate(override, values);
+  };
+}
+
 function readKey(dictionary: Dictionary, key: TranslationKey): string {
   return key.split(".").reduce<unknown>((current, part) => {
     if (current && typeof current === "object" && part in current) {

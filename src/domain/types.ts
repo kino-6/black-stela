@@ -445,6 +445,9 @@ export interface GameState {
   /** Steps walked since the last fight. A wandering encounter needs a safety window, so
    *  the party is never chain-ambushed step after step. */
   stepsSinceEncounter: number;
+  /** How many times the party has gone below. 0 = it has never left town, so the town must not
+   *  greet it as if it had come back. */
+  expeditions: number;
   resolvedTraps: string[];
   discoveredSecrets: string[];
   inventory: InventoryItem[];
@@ -477,6 +480,9 @@ export interface ScenarioWorld {
   /** One line the player reads on the scenario card (localized via `locales`). */
   tagline?: string;
   locales?: Partial<Record<string, { title?: string; tagline?: string }>>;
+  /** Player-facing copy this world says in its own voice, by locale then translation key.
+   *  Overrides the i18n dictionary for this world; anything omitted falls through to it. */
+  copy?: Partial<Record<string, Record<string, string>>>;
   /** Art pack folder under content/worlds/<assetPack>/assets (defaults to "default").
    *  Lets a scenario ship its own atmosphere pack. */
   assetPack?: string;

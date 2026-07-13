@@ -7,6 +7,23 @@ locales:
     title: 翠碑 — 沈む樹心
     tagline: 世界を覆って閉じた樹海。ここにあるものは皆、生きて、濡れて、静かに息を塞ぐ。
 assetPack: verdant
+# The grove settlement does not talk like the ash town. Any key omitted here falls through to
+# the shared dictionary, so this file only says what Verdant says differently.
+copy:
+  en:
+    town.departureHeading: "Before the canopy closes"
+    town.departureCopy: "No one has gone under yet. Fill the roster, pack what will keep, and go while the light holds."
+    town.firstDescend: "The rootmat is open. Nothing is between the company and the green dark."
+    town.firstNeedParty: "Find hands at the stall first. Nobody goes under alone."
+    town.statusHeading: "Back under the light"
+    town.statusCopy: "Count what came back up, and what it cost."
+  ja:
+    town.departureHeading: "梢が閉じる前に"
+    town.departureCopy: "まだ誰も潜っていない。名簿を埋め、保つものだけを負い、光のあるうちに行け。"
+    town.firstDescend: "根の床は開いている。一党と緑の闇の間には、もう何もない。"
+    town.firstNeedParty: "まず露店で人手を探せ。ひとりで潜る者はいない。"
+    town.statusHeading: "光の下へ戻って"
+    town.statusCopy: "上がってきたものと、その代償を数える。"
 # Scene colour — the drowned canopy. Wall/floor TINT the block texture, so even while
 # Material colors now live in Verdant's own wall/floor textures. Keep the surface
 # multipliers near-neutral; filtered green light comes from the scene lights.

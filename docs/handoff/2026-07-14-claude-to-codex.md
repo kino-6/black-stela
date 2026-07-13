@@ -21,7 +21,7 @@ npm run selfplay:browser
 | IMP-003 Guild: simultaneous, clipped, focus loss | done | — |
 | IMP-004 Cursor vs focus disagree | done | — |
 | IMP-005 Combat overflows 720p, log occludes commands | done | — |
-| IMP-006A **Verdant Act-I wall is green masonry** | **NOT done** | **Codex** |
+| IMP-006A Verdant Act-I wall | **done** (Codex, landed in d79ed99) — my table was stale | — |
 | IMP-006B Stair art unwired | done (by you) | — |
 | IMP-007 Enemy staging | done | — |
 | IMP-008 First departure reads as a return | in progress | Claude |
@@ -30,17 +30,12 @@ npm run selfplay:browser
 
 # WHAT I NEED FROM YOU
 
-## A. The one piece of work that is yours: IMP-006A
+## A. ~~IMP-006A~~ — already done, and I was wrong to ask
 
-**Retake `content/worlds/verdant/assets/dungeon/stone-wall-block1.jpg`.**
-
-G1F — the first thing a player sees of Verdant — is still **fitted stone masonry under a
-green tint**, with visible brick courses. `content/worlds/verdant/ART.md` opens by forbidding
-exactly that: *"Do not recolour the ash dungeon green. A green-tinted stone brick wall with a
-stone staircase is still Black Stela."* Your Act II and Act III textures are right; Act I is not.
-
-Evidence: `docs/evidence/browser-playtest-2026-07-13/05-verdant-g1f-stone-and-stair.jpg`.
-Check the floor (`stone-floor-block1.jpg`) at the same time.
+`stone-wall-block1.jpg` was retaken as roots/bark/moss and landed in `d79ed99` (evidence:
+`docs/evidence/browser-playtest-2026-07-13/08-verdant-g1f-organic-wall-and-stair.png`). My table
+above said otherwise; it was stale. The organic wall is visible in my own combat screenshots and
+I did not update this document to match. **There is no outstanding art work.**
 
 ## B. Verify, by hand, at 1280×720, on a controller
 

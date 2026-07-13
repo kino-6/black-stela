@@ -42,6 +42,8 @@ export function createDebugStateFromProgress(world: ScenarioWorld, progress: Deb
   const base: GameState = {
     phase: "town",
     party,
+    // A debug start is a party that has already been below — it is dropped onto a floor.
+    expeditions: 1,
     reserve: [],
     retired: [],
     position: null,

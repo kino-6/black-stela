@@ -108,7 +108,7 @@ import { listScenarios, getWorldById, getWorldByScenarioId, mergeBaseCatalog } f
 import { ScenarioPicker } from "./components/ScenarioPicker";
 import { fromSaveDataV1, toSaveDataV1 } from "./domain/saveData";
 import { LocalStorageSaveRepository, type SaveSlotSummary } from "./services/saveRepository";
-import { createTranslator, type Locale, type Translator } from "./i18n";
+import { createTranslator, createWorldTranslator, type Locale, type Translator } from "./i18n";
 import {
   loadAutoBattleSafety,
   loadConfirmRound,
@@ -181,6 +181,10 @@ export function App() {
   const [confirmRound, setConfirmRound] = useState<boolean>(() => loadConfirmRound());
   const [revealedBeats, setRevealedBeats] = useState(0);
   const t = useMemo(() => createTranslator(locale), [locale]);
+  // Player-facing copy the SCENARIO owns (AGENTS.md: service copy belongs in scenario data, not
+  // hardcoded in components). Falls through to `t` for anything the world does not say itself,
+  // so the ash town simply keeps the dictionary's voice.
+  const tw = useMemo(() => createWorldTranslator(locale, activeWorld.copy), [locale, activeWorld]);
 
   const artPack = activeWorld.assetPack ?? "default";
   // Follow the active world: point the framework-free accessors (catalog world,
@@ -2223,7 +2227,9 @@ export function App() {
               )}
               {townMode === "entry" && (
                 <TownEntryPanel
-                  t={t}
+                  t={tw}
+                  expeditions={state.expeditions}
+                  partySize={state.party.length}
                   world={activeWorld}
                   locale={locale}
                   partyGold={state.partyGold}

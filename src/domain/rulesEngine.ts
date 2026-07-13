@@ -415,6 +415,8 @@ function enterDungeon(state: GameState, world: ScenarioWorld): CommandResult {
     map: roomVisit.map,
     floorClearedEnemies: [],
     floorClaimedTreasures: [],
+    // The town greets a party differently once it has been below. Count the descents.
+    expeditions: state.expeditions + 1,
     turn: state.turn + 1
   };
   const startRoom = getRoom(world, world.startRoom);

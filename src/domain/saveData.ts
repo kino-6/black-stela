@@ -264,6 +264,9 @@ export const GameStateSchema = z.object({
   defeatedEnemies: z.array(z.string()),
   floorClearedEnemies: z.array(z.string()).default([]),
   stepsSinceEncounter: z.number().default(0),
+  // Optional so existing saves load; an old save simply reads as "has descended" once it is
+  // in the dungeon, and as a first departure otherwise — which is what it was.
+  expeditions: z.number().default(0),
   resolvedTraps: z.array(z.string()),
   discoveredSecrets: z.array(z.string()),
   inventory: z.array(InventoryItemSchema).default([]),

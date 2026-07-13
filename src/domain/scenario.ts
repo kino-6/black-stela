@@ -281,6 +281,9 @@ export const scenarioWorldSchema = z.object({
   locales: z
     .record(z.string(), z.object({ title: z.string().min(1).optional(), tagline: z.string().min(1).optional() }))
     .optional(),
+  // Scenario-owned player-facing copy, keyed by locale then by translation key. Overrides the
+  // i18n dictionary for this world only; anything omitted falls through. See createWorldTranslator.
+  copy: z.record(z.string(), z.record(z.string(), z.string())).optional(),
   assetPack: z.string().min(1).optional(),
   // Per-scenario scene colour (fog/lights/wall+floor tint). Omitted → default ash.
   palette: z

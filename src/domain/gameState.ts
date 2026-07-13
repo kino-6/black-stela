@@ -14,6 +14,7 @@ export function createInitialGameState(): GameState {
     defeatedEnemies: [],
     floorClearedEnemies: [],
     stepsSinceEncounter: 0,
+    expeditions: 0,
     resolvedTraps: [],
     discoveredSecrets: [],
     inventory: [
