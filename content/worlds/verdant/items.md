@@ -53,7 +53,7 @@ items:
     sellValue: 240
     locales:
       ja:
-        name: 樹心の種
+        name: 大樹の種
         description: 樹心の芯から採れた、脈打つ種。
 equipment:
   - id: equip.verdant.thorn-lash

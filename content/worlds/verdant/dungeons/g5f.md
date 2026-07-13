@@ -102,7 +102,7 @@ rooms:
     treasureTable: treasure.verdant.g5.keep
     locales:
       ja:
-        name: 樹液守り
+        name: 樹液の番所
         description: 根の壁に囲まれた狭い番所。奥へはここを抜けるほかない。
   - id: room.verdant.g5f.exit
     name: Root Descent

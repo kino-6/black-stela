@@ -103,7 +103,7 @@ rooms:
     treasureTable: treasure.verdant.g7.keep
     locales:
       ja:
-        name: 樹心の殻守
+        name: 朽木の番所
         description: 根の壁に囲まれた狭い番所。奥へはここを抜けるほかない。
   - id: room.verdant.g7f.exit
     name: Root Descent

@@ -102,7 +102,7 @@ rooms:
     treasureTable: treasure.verdant.g6.keep
     locales:
       ja:
-        name: 絞め殺しの番人
+        name: 蔦の番所
         description: 根の壁に囲まれた狭い番所。奥へはここを抜けるほかない。
   - id: room.verdant.g6f.exit
     name: Root Descent

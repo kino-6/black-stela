@@ -104,7 +104,7 @@ rooms:
     treasureTable: treasure.verdant.g2.keep
     locales:
       ja:
-        name: 茨の番人
+        name: 茨の番所
         description: 根の壁に囲まれた狭い番所。奥へはここを抜けるほかない。
   - id: room.verdant.g2f.exit
     name: Root Descent

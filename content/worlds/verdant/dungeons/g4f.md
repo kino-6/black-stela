@@ -103,7 +103,7 @@ rooms:
     treasureTable: treasure.verdant.g4.keep
     locales:
       ja:
-        name: 樹皮衛
+        name: 樹皮の番所
         description: 根の壁に囲まれた狭い番所。奥へはここを抜けるほかない。
   - id: room.verdant.g4f.exit
     name: Root Descent

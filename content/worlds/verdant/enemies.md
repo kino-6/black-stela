@@ -5,7 +5,7 @@ enemies:
   # ---- Act I trash (G1-G3) ----
   - id: enemy.verdant.g1.moss-mite
     name: Moss Mite
-    locales: { ja: { name: 苔だに } }
+    locales: { ja: { name: 苔虫 } }
     hp: 5
     attack: 2
     armor: 0
@@ -21,7 +21,7 @@ enemies:
     tags: [tutorial, spore]
   - id: enemy.verdant.g1.spore-gnat
     name: Spore Gnat
-    locales: { ja: { name: 胞子蚋 } }
+    locales: { ja: { name: 胞子蝿 } }
     hp: 4
     attack: 3
     armor: 0
@@ -37,7 +37,7 @@ enemies:
     tags: [swarm, insect]
   - id: enemy.verdant.g2.thorn-crawler
     name: Thorn Crawler
-    locales: { ja: { name: 棘這い } }
+    locales: { ja: { name: 棘虫 } }
     hp: 8
     attack: 3
     armor: 1
@@ -69,7 +69,7 @@ enemies:
     tags: [blocker, thorn, front]
   - id: enemy.verdant.g2.spore-caster
     name: Spore Caster
-    locales: { ja: { name: 胞子詠み } }
+    locales: { ja: { name: 胞子撒き } }
     hp: 10
     attack: 4
     armor: 0
@@ -87,7 +87,7 @@ enemies:
   # ---- Act II trash (G4-G6) ----
   - id: enemy.verdant.g4.pollen-drifter
     name: Pollen Drifter
-    locales: { ja: { name: 花粉漂い } }
+    locales: { ja: { name: 花粉の靄 } }
     hp: 14
     attack: 3
     armor: 1
@@ -102,7 +102,7 @@ enemies:
     tags: [spore, status]
   - id: enemy.verdant.g6.thorn-cutter
     name: Thorn Cutter
-    locales: { ja: { name: 棘断ち } }
+    locales: { ja: { name: 茨斬り } }
     hp: 16
     attack: 4
     armor: 1
@@ -119,7 +119,7 @@ enemies:
   # ---- Act III trash (G7-G8) ----
   - id: enemy.verdant.g7.husk-spawn
     name: Husk Spawn
-    locales: { ja: { name: 殻の仔 } }
+    locales: { ja: { name: 殻の子 } }
     hp: 20
     attack: 4
     armor: 2
@@ -136,7 +136,7 @@ enemies:
   # ---- Mini-bosses / boss (keep chokes) ----
   - id: enemy.verdant.g3.bloom-warden
     name: Bloom Warden
-    locales: { ja: { name: 花守り } }
+    locales: { ja: { name: 花の番人 } }
     hp: 18
     attack: 4
     armor: 1
@@ -153,7 +153,7 @@ enemies:
     tags: [miniboss, spore, status]
   - id: enemy.verdant.g4.bark-ward
     name: Bark Ward
-    locales: { ja: { name: 樹皮衛 } }
+    locales: { ja: { name: 樹皮の守り手 } }
     hp: 24
     attack: 4
     armor: 4
@@ -169,7 +169,7 @@ enemies:
     tags: [miniboss, blocker, bark]
   - id: enemy.verdant.g5.sap-keeper
     name: Sap Keeper
-    locales: { ja: { name: 樹液守り } }
+    locales: { ja: { name: 樹液の番人 } }
     hp: 28
     attack: 5
     armor: 2
@@ -201,7 +201,7 @@ enemies:
     tags: [miniboss, thorn]
   - id: enemy.verdant.g7.heartwood-husk
     name: Heartwood Husk
-    locales: { ja: { name: 樹心の殻守 } }
+    locales: { ja: { name: 朽木の殻 } }
     hp: 30
     attack: 5
     armor: 4
@@ -217,7 +217,7 @@ enemies:
     tags: [miniboss, blocker, heartwood]
   - id: enemy.verdant.g8.rootheart
     name: Rootheart
-    locales: { ja: { name: 樹心の主 } }
+    locales: { ja: { name: 大樹の心臓 } }
     hp: 50
     attack: 7
     armor: 3

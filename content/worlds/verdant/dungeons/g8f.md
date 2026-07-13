@@ -97,7 +97,7 @@ rooms:
     treasureTable: treasure.verdant.g8.keep
     locales:
       ja:
-        name: 樹心の主
+        name: 心臓の間
         description: 根の壁に囲まれた狭い番所。奥へはここを抜けるほかない。
   - id: room.verdant.g8f.exit
     name: Beneath the Heart

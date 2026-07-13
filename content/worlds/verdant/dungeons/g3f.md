@@ -102,7 +102,7 @@ rooms:
     treasureTable: treasure.verdant.g3.keep
     locales:
       ja:
-        name: 花守り
+        name: 花の番所
         description: 根の壁に囲まれた狭い番所。奥へはここを抜けるほかない。
   - id: room.verdant.g3f.exit
     name: Root Descent
