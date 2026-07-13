@@ -30,6 +30,18 @@ back into one of the three zones instead.
 
 - Enemies are **big and central**, not a thumbnail in a viewport corner. Detailed
   enemy art is the whole point of the first-person frame — lean into it.
+- **The creatures are the ONLY representation.** Never draw an enemy twice — once as a
+  sprite and again as a DOM card carrying its name, HP and "2 left · unhurt". That is
+  two things to keep in sync, the cards resize with their contents, and if the stage is
+  `flex: 1` it shrinks by exactly as much: the screen breathes on every blow.
+- **A pack of N is N bodies.** Not one sprite with a "×3" on a card. Cap how many line
+  up abreast by creature size (a rank of broad blockers overlaps into one mass) and
+  space them by their **measured** width.
+- **The engine owns grounding and size, not the art.** Measure the silhouette from the
+  sprite's alpha, stand its real feet on the floor, and scale its real height to a size
+  class in the DATA. A single hand-tuned anchor constant applied to every sprite cannot
+  work — each image pads its subject differently, so most creatures hover and a slime
+  and a boss draw the same size. **Retune apparent size in data; never re-order art for it.**
 - Multiple enemies read as a **formation/row of sprites**, each with its own HP
   cue, not as a text list off to the side.
 - The struck enemy is where feedback happens: **flash, shake, knockback, and a
@@ -62,6 +74,35 @@ back into one of the three zones instead.
 - Queued orders show as **inline pips/marks on the party strip** (member → chosen
   action), not a separate orders window.
 
+## The screen budget: the enemies must not get the leftovers
+
+Reserving a permanent band for the command menu, the log and the party strip starves the
+stage. Black Stela reserved ~250px of a 720px viewport that way and the enemy stage came
+out at **227px** — the art read as small no matter how good it was.
+
+How the genre actually solves this:
+
+- **Etrian Odyssey gives the enemies a WHOLE SCREEN** (the DS top screen); commands and
+  party live on the other one.
+- **Modern single-screen JRPGs overlay** the command box and log **on the scene** rather
+  than reserving rows for them. The party HUD is a thin strip.
+
+So: **overlay, do not reserve.** An absolutely-positioned overlay also cannot reflow, so
+you keep the no-reflow guarantee for free.
+
+## Every command must be ON SCREEN, and reachable without a mouse
+
+- A layout lock that asserts the screen does not **move** is half a lock. Assert it
+  **fits**: every command's bottom edge inside the viewport, and the page must not scroll.
+  Black Stela's dock sat at y=719–786 in a 720px viewport, on a page that does not scroll,
+  while every test stayed green.
+- Combat is where "controller-first" is a blocking rule. Prove it by **counting real
+  pointer events** (`pointerdown`/`mousedown`) and asserting zero — a keyboard Enter fires
+  `click` but never a pointer event, so there are no false positives. A comment saying "no
+  mouse" rots the moment a helper reverts to `locator.click()`.
+- **What LOOKS selected must BE what is focused.** Do not paint a "recommended" command in
+  the same colour as the focus ring; the player will press Enter on it and get something else.
+
 ## Anti-patterns (what Black Stela had)
 
 - Eight persistent panels: 3D viewport, round header, log window, orders window,
@@ -76,3 +117,13 @@ back into one of the three zones instead.
 Screenshot the combat screen at a real resolution and count the windows. If it's
 more than three zones, it's not there yet. Drive a fight in the browser (not just
 unit tests) and confirm numbers land on enemies and the party strip stays compact.
+
+**Measure, do not eyeball.** Dump the bounding boxes of every zone at the target viewport
+and check the arithmetic: if the children sum to more than the container, the last one is
+being shoved off the screen. That is how the missing command dock was found — and how the
+message band was caught containing a log taller than itself, which is why log lines were
+sliding under the command window.
+
+**A rendering change can be a rules change.** Before setting a data field to move a sprite,
+grep what reads it. `elevation` looked like "how high to draw this"; it is what shields an
+enemy from melee. Setting it to make a gnat hover deadlocked a fight.

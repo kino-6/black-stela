@@ -82,9 +82,17 @@ Status flavour: pollen = sleep/poison; sap = slow/bind. Blockers are bark/brambl
    (green block textures, the roster's sprites, icons, markers, title, vignette).
    Until delivered, verdant falls back to the default pack (own-basename drop-in).
 6. **V6 tests** — design gate + registry + e2e extended to verdant; structure locked.
-7. **V7** — user real-play.
 
-## Open decisions for sign-off
-- **Name**: `翠碑 / Verdant Stela — 沈む樹心 / the Sunken Heartwood` OK, or prefer another?
-- **Floor prefix**: `g1f…g8f` (grove) OK, or a different letter?
-- **Roster/analog mapping** above OK, or reshuffle roles?
+**All of the above shipped and merged (2026-07-13, `c03c58f`).** The art landed in `d79ed99`
+(14 enemy sprites, Act I–III wall/floor textures, icons) and the world is playable end to end.
+
+There is no "V7 — user real-play" step, and there never should have been one on a list I own.
+Verifying a player-facing change in a real browser is MY job; the user reviews continuously and
+raises what is wrong. Parking his name at the bottom of a checklist reserves his time on my
+behalf and makes work look blocked on him when it is blocked on me. See
+`black-stela-acceptance-discipline` (2026-07-14).
+
+## Decisions taken
+- **Name**: `翠碑 — 沈む樹心 / Verdant — the Sunken Heartwood`.
+- **Floor prefix**: `g1f…g8f`.
+- **Roster**: 14 enemies, roles as mapped above.

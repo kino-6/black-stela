@@ -94,3 +94,17 @@ new area is a noticeable step up (EO: "new areas are dangerous").
 - [Wizardry: Proving Grounds review — resource-limited power (NWR)](http://www.nintendoworldreport.com/review/67239/wizardry-proving-grounds-of-the-mad-overlord-switch-review)
 - [Power curves and game design](https://matthewdbrown.authorbuzz.co.uk/lordmatt/reflections-and-thoughts/full-metal-nerd/power-curves-and-game-design/)
 - [The Dungeon Crawler Recipe (Game Developer)](https://www.gamedeveloper.com/design/the-dungeon-crawler-recipe)
+
+## A rendering change can be a rules change (2026-07-14)
+
+`elevation` on an enemy reads like "how high to draw this sprite". It is not: `enemyGroupIsBack()`
+shields `air`/`mid` groups from melee while any ground group still stands — that IS the
+front-blocker / back-caster squad, and it is what stops Repeat-spam. Setting it on a Verdant gnat
+so the gnat would hover **changed the fight** and deadlocked an encounter.
+
+Two rules follow:
+
+- **Before setting a data field to change a picture, grep what reads it.** Presentation-only
+  hovering is a separate field (`hover: true`).
+- **Any change to what melee can reach is a BALANCE change.** Re-run `descentSim` against the
+  `none` model and re-check the act curve. It does not matter that the diff looked like content.

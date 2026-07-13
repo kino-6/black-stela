@@ -145,3 +145,30 @@ Order matters; each step unblocks the next.
 - [Environmental Storytelling — Game Developer](https://www.gamedeveloper.com/design/environmental-storytelling) and [Creating Immersive 3D Worlds (theme-park lessons, Don Carson)](https://www.gamedeveloper.com/design/environmental-storytelling-creating-immersive-3d-worlds-using-lessons-learned-from-the-theme-park-industry)
 - [Master the Art of Dungeon Design — RPG GG](https://rpggg.com/posts/master-the-art-of-dungeon-design-essential-tips-for-creating-memorable-rpg-adven/) — cohesive theme over biome label; every element reinforces it.
 - [Etrian Odyssey — Wikipedia](https://en.wikipedia.org/wiki/Etrian_Odyssey_(video_game)) / [Dungeon Crawling is Fun Again — Black Gate](https://www.blackgate.com/2015/06/14/dungeon-crawling-is-fun-again-etrian-odyssey/) — bare-bones, flavour-text storytelling; mapping as the core verb.
+
+## The world speaks in its own voice (2026-07-14)
+
+A scenario is not just its map and its monsters. If the town's greeting, the service copy and the
+tutorial lines live in a shared i18n dictionary, then the ash town and a settlement drowned under a
+canopy greet the player with **the same sentence** — and the second world is a reskin no matter how
+good its art is.
+
+Let a world override any player-facing key from its own content file:
+
+```yaml
+# content/worlds/<id>/world.md
+copy:
+  ja:
+    town.departureHeading: "梢が閉じる前に"
+    town.firstDescend: "根の床は開いている。一党と緑の闇の間には、もう何もない。"
+```
+
+Layer it over the shared dictionary with the same `{variable}` interpolation, and **fall through**
+for anything the world does not say itself — so a world only authors what it wants to say
+*differently*, and the default world can author nothing at all and keep the dictionary's voice.
+
+Corollary: **the same trick makes a "first time" state possible.** Black Stela greeted a party that
+had never gone below with "Town return", a "Return record" reading *"Rook joined the roster"* (the
+last log line — for a new party, the last recruit), and the news that they could descend *again*.
+Nothing had happened. If a screen's copy can only describe one state, it will describe the wrong
+one; give the state a name (`expeditions: 0`) and let the world say what that state sounds like.

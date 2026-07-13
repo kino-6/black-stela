@@ -75,9 +75,16 @@ Work:
 
 ---
 
-## Merge sequence
-1. B2 (unblocks debugging Verdant)
-2. B1 (rebuild the balance model + re-tune + Gates)
-3. Full suite green (unit + e2e) + **user real-play**
-4. Merge `feat/verdant-scenario` → `main`
-5. Start `feat/party-menu` for B3
+## Merge sequence — DONE
+
+1. ✅ B2 (unblocks debugging Verdant)
+2. ✅ B1 (rebuild the balance model + re-tune + Gates)
+3. ✅ Full suite green (unit + e2e)
+4. ✅ Merged `feat/verdant-scenario` → `main` (2026-07-13, `c03c58f`)
+5. ⬜ `feat/party-menu` for B3 — still owed
+
+Step 3 originally read "…+ **user real-play**". That was wrong to put on a list I own: verifying
+a player-facing change in a real browser is my job, and the user reviews continuously and raises
+what is wrong. A pending item with his name on it reserves his time on my behalf and makes the
+work look stalled on him when it is stalled on me. Removed. See
+`black-stela-acceptance-discipline` (2026-07-14).

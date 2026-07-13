@@ -4,6 +4,9 @@ Before any player-facing UI, gameplay, dungeon, prose, asset, character,
 combat, automation, or save/debug change, read:
 
 - `docs/skills/black-stela-gate-review-skill.md`
+- `.claude/skills/controller-first-ui/SKILL.md` — for ANY player-facing screen. Controller
+  traversal is a blocking completion rule (see below), and the suite that is supposed to prove it
+  has already been green while the game was unplayable on a keyboard.
 - `docs/gates/past-trouble-regression-gate.md`
 - The relevant domain gate under `docs/gates/`
 
