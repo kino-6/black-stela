@@ -1,127 +1,122 @@
-# Handoff to Codex — Improve.md slices 0–3
+# Handoff to Codex — Improve.md, slices 0–4
 
-Branch `main`, on top of `fe9beea`. Everything below is Claude Code's work against
-`Improve.md`. Per the handoff contract, **none of it is marked visually or controller
-accepted — that is yours.**
-
-Run first:
+Branch `main`, on top of `1c7e3cf`. Per the handoff contract, **nothing below is marked
+visually or controller accepted — that is yours.**
 
 ```sh
-npm run build && npm run test          # 326 unit
-npm run test:e2e                       # 91 e2e — green, WITH a known gap (see §Gate)
-npm run gate:final                     # red on IMP-003 only. This is the honest gate.
+npm run build && npm run test    # 326 unit
+npm run gate:final               # 91 e2e, no expected-failure markers left. THIS is the gate.
 npm run selfplay:browser
 ```
 
----
+`npm run test:e2e` and `npm run gate:final` are now identical in outcome — there is no
+`test.fail()` anywhere. If you add one, `gate:final` must still fail on it.
 
 ## Status against your eight items
 
-| Item | State | Owner of the remaining work |
+| Item | State | Owner |
 |---|---|---|
-| IMP-001 Gate cannot fail | **done** | — |
-| IMP-002 Scenario picker: no controller entry, raw ids | **done** | — |
-| IMP-003 Guild: simultaneous, clipped, focus loss | **NOT done** — in progress (slice 4) | Claude |
-| IMP-004 Cursor vs focus disagree | **done** | — |
-| IMP-005 Combat overflows 720p, log occludes commands | **done** | — |
-| IMP-006A Verdant Act-I wall is green masonry | **NOT done** | **Codex** |
-| IMP-006B Stair art unwired | **done** (by you) | — |
-| IMP-007 Enemy staging | **done** | — |
-| IMP-008 First departure reads as a return | **NOT done** (slice 5) | Claude |
+| IMP-001 Gate cannot fail | done | — |
+| IMP-002 Scenario picker: no controller entry, raw ids | done | — |
+| IMP-003 Guild: simultaneous, clipped, focus loss | done | — |
+| IMP-004 Cursor vs focus disagree | done | — |
+| IMP-005 Combat overflows 720p, log occludes commands | done | — |
+| IMP-006A **Verdant Act-I wall is green masonry** | **NOT done** | **Codex** |
+| IMP-006B Stair art unwired | done (by you) | — |
+| IMP-007 Enemy staging | done | — |
+| IMP-008 First departure reads as a return | in progress | Claude |
 
 ---
 
-## 1. Please verify (browser, 1280×720, normal route)
+# WHAT I NEED FROM YOU
 
-1. **Scenario picker** — a cursor is present on arrival, Down/Up moves it, Confirm starts the
-   scenario the cursor is *on*, Escape returns to the title with the cursor on "New expedition".
-   Japanese line layout of the new titles/taglines. No raw ids anywhere.
-2. **Town** — the gold command is the focused command, and Enter goes where the cursor is.
-3. **Combat at exactly 1280×720** — every command (オート / リピート / 退却 and the four menu
-   rows) is on screen and pressable; the log never covers the command window; the layout does
-   not move across a full round.
-4. **Enemy staging** — spacing, contact shadows, hovering vs grounded, and whether the
-   creatures now read at a size worth the art. **The enemy stage is only 227px tall at 720p** —
-   if that reads as too small, say so; it is a layout budget decision, not a bug.
-5. **World badge** — a new one, top right. It says which scenario you are in.
+## A. The one piece of work that is yours: IMP-006A
 
-## 2. Findings I hit that were NOT in your report
+**Retake `content/worlds/verdant/assets/dungeon/stone-wall-block1.jpg`.**
 
-- **Nothing on any screen said which world you were in.** A player who picked Verdant got a
-  town, a guild and a dungeon that never confirmed it — and a picker that started the *wrong*
-  world would have left no trace. Hence the badge.
-- **`.combat-message` was 47px tall while the log inside it was 58px.** That, not the dock
-  alone, is why your second log line hid behind the commands.
-- **The picker's heading override lost on source order.** Same-specificity rules in
-  `styles.css` decide by position; this file sets that trap repeatedly.
+G1F — the first thing a player sees of Verdant — is still **fitted stone masonry under a
+green tint**, with visible brick courses. `content/worlds/verdant/ART.md` opens by forbidding
+exactly that: *"Do not recolour the ash dungeon green. A green-tinted stone brick wall with a
+stone staircase is still Black Stela."* Your Act II and Act III textures are right; Act I is not.
 
-## 3. Mistakes I made and corrected — worth your scrutiny
+Evidence: `docs/evidence/browser-playtest-2026-07-13/05-verdant-g1f-stone-and-stair.jpg`.
+Check the floor (`stone-floor-block1.jpg`) at the same time.
 
-- **The ▸ focus cursor was `::before` TEXT.** Chrome folds `::before` content into the
-  accessible name, so the town button was silently renamed `"▸Enter dungeon"` and every
-  exact-name query broke — *only while focused*, so it surfaced as an intermittent failure of
-  an unrelated test. All carets are CSS shapes now. **If you add a caret anywhere, do not use
-  `content:` text.**
-- **My first IMP-005 fix reintroduced the reflow it was fixing** (an auto-height message band
-  grew when the log's "show the rest" row appeared). The no-reflow lock caught it.
-- **My id-leak test was itself broken**: `/\bdefault\b/` never matches inside
-  `"Gate of Ashdefault"` — no word boundary. It passed on a card that plainly leaked.
+## B. Verify, by hand, at 1280×720, on a controller
 
-## 4. A decision that needs you: `elevation` vs `hover`
+The whole normal route is now keyboard-only. Please play it that way and tell me where it
+still feels wrong — the automated gate proves it is *reachable*, not that it is *good*.
 
-I first gave Verdant's spore-gnat an `elevation: air` so it would hover. **`elevation` is not a
-rendering hint** — `rulesEngine.enemyGroupIsBack()` shields air/mid groups from melee while any
-ground group stands. That is how the front-blocker / back-caster squads work. I had changed the
-*fight*, and a Verdant encounter deadlocked.
+1. **Scenario picker** — cursor on arrival, Down/Up moves, Confirm starts the scenario the
+   cursor is on, Escape returns to the title. Japanese line layout of the new titles/taglines.
+2. **Guild** — the hall vs the registration form vs the proposal modal. Is the split legible?
+   Does registering someone returning you to the hall feel right, or does it interrupt a player
+   who wanted to make three characters in a row?
+3. **Town** — gold means focus, and Enter goes where the cursor is.
+4. **Combat at exactly 1280×720** — every command pressable; the log never covers the commands.
+5. **Enemy staging** — spacing, contact shadows, hovering vs grounded.
 
-The user's call: *"a hovering enemy that melee can't reach is just tedious — make it
-presentation only."* So there are now two fields:
+## C. Three judgement calls I want challenged
 
-- **`elevation`** (`ground`/`mid`/`air`) — **combat**. Shields from melee. Used by squads.
-- **`hover: true`** — **presentation**. Draws the creature off the floor, casts a fainter
-  shadow, and changes nothing about reach.
+1. **The enemy stage is only 227px tall at 720p.** That is the honest budget once the party
+   strip, the log and the command menu have their fixed rows. If the creatures still read as too
+   small, the fix is to take height from something else — say so and I will.
+2. **`hover` vs `elevation`.** I first gave Verdant's spore-gnat `elevation: air` so it would
+   float, and deadlocked a fight: `elevation` is a COMBAT field — `enemyGroupIsBack()` shields
+   air/mid groups from melee while a ground group stands, which is how the front-blocker /
+   back-caster squads work. The user's call was *"a hovering enemy melee can't reach is just
+   tedious — make it presentation only"*, so there are now two fields: `elevation` (combat) and
+   `hover` (presentation). **Should any Verdant enemy actually be a shielded back-liner by
+   design?** If yes, that is a balance change and the act curve must be re-tuned.
+3. **Registration returns you to the hall.** See B2.
 
-Verdant's spore-gnat / spore-caster / pollen-drifter now use `hover`. **Please sanity-check that
-this reads correctly in play** and that no Verdant enemy *should* have been a shielded back-liner
-by design — if one should, that is a balance change and the act curve must be re-tuned.
+## D. Rules for anything you add to the UI
 
-## 5. The Gate — read this before trusting a green run
+- **Never use `::before { content: "▸" }` as a cursor.** Chrome folds `::before` content into
+  the accessible name, so a text caret silently renamed the town button to `"▸Enter dungeon"`
+  and every exact-name query for it broke — *only while focused*, so it surfaced as an
+  intermittent failure of a completely unrelated test. Carets are CSS shapes now.
+- **Every command belongs to a controller surface.** "Back to town" did not, so a gamepad player
+  could enter the guild and never leave. Mark always-present navigation
+  `data-controller-chrome="true"`: it joins the focus ring, answers Cancel, and is never the
+  cursor's starting place.
+- **Same-specificity CSS loses on source order.** `styles.css` sets that trap repeatedly; my
+  picker heading override was defeated by a `.title-mark h1` further down the file.
 
-`npm run test:e2e` is **green with a known gap**. The guild test (IMP-003) is marked
-`test.fail()`, and Playwright reports an expected failure as a **pass**. You flagged exactly this
-risk. So:
+## E. What the gate now proves (so you know what it does NOT)
 
-```sh
-npm run gate:final     # FINAL_GATE=1 — strips the marker. Currently RED on IMP-003.
-```
-
-**Do not accept the backlog as done on `test:e2e` alone.** The final gate is the one that tells
-the truth.
-
-What the gate now proves (`tests/e2e/controllerGate.ts`, `controller-route.spec.ts`):
+`tests/e2e/controllerGate.ts` + `controller-route.spec.ts`:
 
 - **"No mouse" is measured**, not declared — real `pointerdown`/`mousedown` are counted, so a
   helper that quietly reverts to `locator.click()` fails loudly. (Keyboard Enter fires `click`
-  but never a pointer event, so there are no false positives.)
-- Focus must be **enabled, on screen, not clipped by an ancestor's overflow, not inside
-  aria-hidden/inert, and inside an ACTIVE surface**. `exclusive` additionally forbids sibling
-  surfaces sharing one ring.
-- Viewport is checked on **all four edges**, and on **each command inside a surface** — it names
-  "Auto" and "Retreat" individually, not just the dock.
-- Combat asserts **all six actors are commanded, in formation order, and the round resolves**.
-- One test walks the **shipped defaults** (no localStorage tampering): confirm step and beat
-  playback included.
+  but never a pointer event, so no false positives.)
+- Focus must be **enabled, on screen, not clipped, not aria-hidden/inert, and inside an ACTIVE
+  surface**. `exclusive` forbids a second *non-chrome* surface sharing the ring.
+- Viewport is checked on **all four edges** and **per command**, but a command a scrollable panel
+  can bring into view is NOT a defect — a long roster and an unreachable combat dock are
+  different things.
+- Combat asserts **all six actors commanded, in formation order, and the round resolves**.
+- One test walks the **shipped defaults** (no localStorage tampering).
 
-Known caveat, to be removed with IMP-003: the town/dungeon/combat tests reach the party with the
-**mouse** helper, because the guild cannot yet be completed on a controller. The guild test is
-the one that proves that.
+It does **not** prove anything about how the game *feels*, or that the Japanese reads well, or
+that a screen is worth looking at. That is what I am asking you for.
 
-## 6. Still open
+---
 
-- **IMP-006A — yours.** Verdant G1F still reads as green-tinted fitted masonry with visible
-  brick courses. `content/worlds/verdant/ART.md` forbids exactly that. The Act II/III textures
-  you delivered are right; Act I is not.
-- **IMP-003** — Claude, in progress.
-- **IMP-008** — Claude, next.
-- **Flaky**: `dungeon-frame.spec.ts` failed under parallel load twice. The cause turned out to
-  be the accessible-name bug above and it has not recurred, but I have not proven it is gone.
+## Mistakes I made and corrected — worth your scrutiny
+
+- The ▸ caret / accessible-name bug above. Mine, and it broke an unrelated test intermittently.
+- My first IMP-005 fix **reintroduced the reflow it was fixing** (an auto-height message band grew
+  when the log's "show the rest" row appeared). My own no-reflow lock caught it.
+- My id-leak test was itself broken: `/\bdefault\b/` never matches inside `"Gate of Ashdefault"`.
+  It passed on a card that plainly leaked the id.
+- I changed combat while trying to change a picture (`elevation`). Reverted.
+
+## Findings that were not in your report
+
+- **Nothing on any screen said which world you were in.** A picker that started the wrong world
+  would have left no trace. There is a badge now (top right).
+- **`.combat-message` was 47px tall while the log inside it was 58px** — that, not the dock alone,
+  is why your second log line hid behind the commands.
+- **You could not leave the guild on a controller**, and **Escape in the name field ejected you
+  from registration entirely**.
