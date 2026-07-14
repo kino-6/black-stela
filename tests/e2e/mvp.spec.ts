@@ -17,7 +17,7 @@ test("create party, import portrait, enter dungeon, fight, use stairs, and view 
     }
   });
 
-  await expect(page.getByRole("heading", { name: "Mira" })).toBeVisible();
+  await expect(page.locator(".party-member").filter({ hasText: "Mira" }).first()).toBeVisible();
   await page.getByRole("button", { name: "Enter dungeon" }).click();
   await expect(page.getByTestId("dungeon-canvas").locator("canvas")).toBeVisible();
   await expect(page.getByTestId("character-profile")).toHaveCount(0);

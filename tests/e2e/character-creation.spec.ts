@@ -73,6 +73,9 @@ test("guild registration supports quick and detailed recruits without roster sco
   await page.getByLabel("Record").fill("Keeps a second map in mirror script.");
   await page.getByRole("button", { name: "Register adventurer" }).click();
 
+  // IMP-013: the character sheet is roster ADMINISTRATION and lives behind "Manage roster" now —
+  // registering someone returns you to the hall, not to a wall of forms.
+  await page.getByTestId("guild-roster-open").click();
   await expect(page.getByTestId("character-profile")).toContainText("Lena");
   await expect(page.getByTestId("character-profile")).toContainText("Candle Mapper / Seeker / Cartographer");
   await expect(page.getByTestId("character-profile")).toContainText("Keeps a second map in mirror script.");
@@ -86,6 +89,7 @@ test("guild registration supports quick and detailed recruits without roster sco
     .toContain("Lena");
   await page.reload();
   await page.getByRole("button", { name: "Continue" }).click();
+  await page.getByTestId("guild-roster-open").click();
   await page.getByRole("button", { name: /Lena/ }).click();
   await expect(page.getByTestId("character-profile")).toContainText("Keeps a second map in mirror script.");
   await expect(page.getByTestId("profile-portrait")).toBeVisible();
@@ -163,6 +167,7 @@ test("Japanese guild registration remains usable on mobile", async ({ page }) =>
   await page.getByLabel("名前").fill("ミラ");
   await page.getByLabel("二つ名").fill("灯の地図師");
   await page.getByRole("button", { name: "冒険者を登録" }).click();
+  await page.getByTestId("guild-roster-open").click();
   await expect(page.getByTestId("character-profile")).toContainText("灯の地図師 / 探索者");
 
   const horizontalOverflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth);

@@ -17,13 +17,16 @@ test("town modes expose guild, recovery, records, and dungeon entry", async ({ p
   // Stage into the guild to register, then back out to the hub for services.
   await page.getByRole("button", { name: "Guild" }).click();
   await registerAdventurer(page, { name: "Mira" });
-  await expect(page.getByRole("heading", { name: "Mira" })).toBeVisible();
+  await expect(page.locator(".party-member").filter({ hasText: "Mira" }).first()).toBeVisible();
 
   await openTownService(page, "Recovery");
   await expect(page.getByRole("heading", { name: "Recovery" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Guild Registry" })).toHaveCount(0);
   await expect(page.getByTestId("recovery-plan")).toBeVisible();
-  await expect(page.getByTestId("recovery-plan").getByText(/Mira/)).toBeVisible();
+  // IMP-014: an unhurt party is one line, not a card per member saying "No treatment." Mira is
+  // fine, so she is not on the bill — the counter lists who needs treating, and nobody does.
+  await expect(page.getByTestId("recovery-plan")).toContainText("No treatment needed");
+  await expect(page.locator(".recovery-row")).toHaveCount(0);
 
   await openTownService(page, "Records");
   await expect(page.getByRole("heading", { name: "Records" })).toBeVisible();

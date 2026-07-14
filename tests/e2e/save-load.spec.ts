@@ -5,13 +5,13 @@ test("autosaves current state and continues from the title screen", async ({ pag
   await startNewExpedition(page);
 
   await registerAdventurer(page, { name: "Mira", notes: "Maps every room by hand." });
-  await expect(page.getByRole("heading", { name: "Mira" })).toBeVisible();
+  await expect(page.locator(".party-member").filter({ hasText: "Mira" }).first()).toBeVisible();
 
   await page.reload();
   await expect(page.getByRole("button", { name: "Continue" })).toBeEnabled();
 
   await page.getByRole("button", { name: "Continue" }).click();
-  await expect(page.getByRole("heading", { name: "Mira" })).toBeVisible();
+  await expect(page.locator(".party-member").filter({ hasText: "Mira" }).first()).toBeVisible();
 });
 
 test("shows a visible message for corrupt autosave data", async ({ page }) => {

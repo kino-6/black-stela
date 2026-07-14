@@ -4,13 +4,22 @@ Last browser acceptance: 2026-07-14, Chromium, 1280x720 and 1920x1080.
 
 ## Active Status
 
-`IMP-001` through `IMP-012` are archived. The 2026-07-14 browser replay left
-two independently reproducible presentation items:
+`IMP-001` through `IMP-014` are archived. **The backlog is empty.**
 
 | Item | Priority | State | Player-visible problem |
 | --- | --- | --- | --- |
-| `IMP-013` | P1 | Planned | The 6/6 guild-ready screen lets reserve/bench management peek below the 720p frame, mixing completion with roster administration. |
-| `IMP-014` | P1 | Planned | Recovery scatters six plain cards across a large empty panel and ends in an oversized full-width button, reading like a web form instead of a town service. |
+| `IMP-013` | P1 | Done | The 6/6 guild-ready screen let reserve/bench management peek below the 720p frame, mixing completion with roster administration. |
+| `IMP-014` | P1 | Done | Recovery scattered six plain cards across a large empty panel and ended in an oversized full-width button, reading like a web form instead of a town service. |
+
+`IMP-013` — the completion screen now says one thing: the finished 3+3, and the two ways on
+(Manage roster / Enter dungeon). Bench, reserve, retired, the portable vault and the character
+sheet moved behind the roster command; nothing peeks below the 720p frame. Locked by
+`tests/e2e/town-services.spec.ts`.
+
+`IMP-014` — recovery is a counter you stand at: the wounded only, each with HP before → after
+and what they cost, then the total, affordability, and two normal-sized commands. A healthy
+party gets ONE line, not six cards saying "No treatment." Locked by the same spec, which fights
+until somebody is actually hurt rather than hoping.
 
 Archived work:
 

@@ -3,6 +3,7 @@ import {
   ArrowLeft,
   Compass,
   DoorOpen,
+  Users,
   Wand2
 } from "lucide-react";
 import { DungeonView } from "./components/DungeonView";
@@ -343,6 +344,12 @@ export function App() {
   // (let him pick / register yourself / go). The registration steps that follow are a form and
   // nothing else — see the render below for why that matters.
   const guildHallOpen = guildCreationStep === "briefing" || state.party.length >= PARTY_SIZE_LIMIT;
+  // IMP-013. Completing a party and administering a roster are two different jobs, and the
+  // 6/6 screen was doing both: under "Party ready" and the 3+3 it also carried six Bench
+  // buttons, the reserve, the retired, the portable vault and a full character sheet with
+  // Retire / Reclass / Deposit / Edit — which ran to y=986 in a 720px frame. The completion
+  // screen now says one thing (these six, and the stair). Roster work is behind a command.
+  const [guildRosterOpen, setGuildRosterOpen] = useState(false);
   const guildProposalOpen = guildOfferState === "suggestion";
   const recoveryCost = useMemo(() => calculateRecoveryCost(state.party), [state.party]);
   const injuredMembers = useMemo(
@@ -1887,15 +1894,39 @@ export function App() {
 
                       {state.party.length > 0 && (
                         <div className="guild-entry-strip">
-                          {latestLogText && <p className="event-window" aria-live="polite">{latestLogText}</p>}
-                          <button
-                            type="button"
-                            className="primary-action"
-                            onClick={() => run({ type: "enter_dungeon" })}
-                          >
-                            <DoorOpen size={18} />
-                            {t("play.enterDungeon")}
-                          </button>
+                          {latestLogText && !guildRosterOpen && (
+                            <p className="event-window" aria-live="polite">{latestLogText}</p>
+                          )}
+                          {guildRosterOpen ? (
+                            <button
+                              type="button"
+                              data-testid="guild-roster-close"
+                              data-controller-cancel="true"
+                              onClick={() => setGuildRosterOpen(false)}
+                            >
+                              <ArrowLeft size={18} />
+                              {t("party.rosterDone")}
+                            </button>
+                          ) : (
+                            <>
+                              <button
+                                type="button"
+                                data-testid="guild-roster-open"
+                                onClick={() => setGuildRosterOpen(true)}
+                              >
+                                <Users size={18} />
+                                {t("party.manageRoster")}
+                              </button>
+                              <button
+                                type="button"
+                                className="primary-action"
+                                onClick={() => run({ type: "enter_dungeon" })}
+                              >
+                                <DoorOpen size={18} />
+                                {t("play.enterDungeon")}
+                              </button>
+                            </>
+                          )}
                         </div>
                       )}
 
@@ -1935,13 +1966,15 @@ export function App() {
                                           <small>{t("party.hpAtk", { hp: member.hp, maxHp: member.maxHp, attack: member.attack })}</small>
                                         </div>
                                       </button>
-                                      <button
-                                        type="button"
-                                        className="roster-action"
-                                        onClick={() => run({ type: "bench_member", characterId: member.id })}
-                                      >
-                                        {t("party.bench")}
-                                      </button>
+                                      {guildRosterOpen && (
+                                        <button
+                                          type="button"
+                                          className="roster-action"
+                                          onClick={() => run({ type: "bench_member", characterId: member.id })}
+                                        >
+                                          {t("party.bench")}
+                                        </button>
+                                      )}
                                     </div>
                                   ))}
                                   {Array.from({ length: Math.max(0, 3 - rowMembers.length) }).map((_, index) => (
@@ -1954,7 +1987,7 @@ export function App() {
                         )}
                       </div>
 
-                      {state.reserve.length > 0 && (
+                      {guildRosterOpen && state.reserve.length > 0 && (
                         <section className="formation-row reserve-row" aria-label={t("party.reserveHeading")} data-testid="guild-reserve">
                           <h4>{t("party.reserveHeading")} ({state.reserve.length})</h4>
                           <div className="formation-slots">
@@ -1987,7 +2020,7 @@ export function App() {
                         </section>
                       )}
 
-                      {state.retired.length > 0 && (
+                      {guildRosterOpen && state.retired.length > 0 && (
                         <section className="formation-row retired-row" aria-label={t("party.retiredHeading")} data-testid="guild-retired">
                           <h4>{t("party.retiredHeading")} ({state.retired.length})</h4>
                           <div className="formation-slots">
@@ -2040,7 +2073,7 @@ export function App() {
                         </section>
                       )}
 
-                      {vault.length > 0 && (
+                      {guildRosterOpen && vault.length > 0 && (
                         <section className="formation-row vault-row" aria-label={t("party.vaultHeading")} data-testid="adventurer-vault">
                           <h4>{t("party.vaultHeading")} ({vault.length})</h4>
                           <p className="vault-hint">{t("party.vaultHint")}</p>
@@ -2080,7 +2113,7 @@ export function App() {
                         </section>
                       )}
 
-                      {state.party.length > 0 && (
+                      {guildRosterOpen && state.party.length > 0 && (
                       <article className="character-profile" data-testid="character-profile" aria-label={t("party.profile")}>
                         <div className="profile-heading">
                           <div className="portrait portrait-large" style={{ borderColor: selectedProfile.accentColor }}>
@@ -2248,6 +2281,7 @@ export function App() {
                   latestEventType={latestEventType ?? null}
                   injuredCount={injuredMembers.length}
                   onRecover={() => run({ type: "recover_party" })}
+                  onClose={() => enterTownMode("entry")}
                 />
               )}
               {townMode === "shop" && townShop && (

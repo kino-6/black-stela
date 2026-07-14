@@ -4688,3 +4688,158 @@ textarea {
   padding-top: 0.6rem;
   background: linear-gradient(0deg, #0c0b07 70%, transparent);
 }
+
+
+/* ── Town services are COUNTERS, not forms (IMP-014) ─────────────────────────────
+   Recovery was a large empty field, then six plain cards spread edge to edge (five of them
+   saying "No treatment."), then a full-width submit the height of a paragraph. The healthy
+   members were using most of the screen to say nothing, and the number that decides the
+   answer — the cost — was a footnote. A service is a small window you stand at. */
+.recovery-service {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* You stand at a counter IN the town, not in a void. The empty field IMP-014 objected to was
+   an empty DIV; a centred window over nothing is still nothing. */
+.recovery-service::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: linear-gradient(180deg, rgba(8, 9, 8, 0.72), rgba(8, 9, 8, 0.9)), var(--art-town-hub, none);
+  background-size: cover;
+  background-position: center;
+  pointer-events: none;
+}
+
+.recovery-service .service-counter {
+  position: relative;
+  z-index: 1;
+  backdrop-filter: blur(2px);
+}
+
+.service-counter {
+  display: grid;
+  gap: 0.6rem;
+  width: min(34rem, 100%);
+  padding: 1rem 1.2rem;
+  border: 1px solid #3c3a2e;
+  border-radius: 6px;
+  background: rgba(12, 13, 11, 0.92);
+}
+
+.service-counter-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #2a2c25;
+}
+
+.service-counter-head h3 {
+  margin: 0;
+}
+
+.service-counter-head strong {
+  color: #e0c274;
+  font-variant-numeric: tabular-nums;
+}
+
+.service-empty {
+  margin: 0;
+  padding: 0.6rem 0;
+  color: #8a8f82;
+  font-style: italic;
+}
+
+.service-counter .recovery-plan {
+  display: grid;
+  /* The old card layout left an auto-fit template behind; without naming the template the
+     rows collapsed into one narrow column and "Mira" rendered as "M". */
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.service-counter .recovery-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: baseline;
+  gap: 0.9rem;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid #4a3a2a;
+  border-radius: 4px;
+  background: #17130e;
+}
+
+.service-counter .recovery-row strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.recovery-hp {
+  color: #c3c0b2;
+  font-size: 0.88rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.recovery-arrow {
+  margin: 0 0.35rem;
+  color: #7ec46f;
+}
+
+.recovery-cost {
+  color: #e0c274;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.service-total {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: 0;
+  padding-top: 0.5rem;
+  border-top: 1px solid #2a2c25;
+  color: #c3c0b2;
+}
+
+.service-total strong {
+  color: #e0c274;
+  font-size: 1.05rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.service-total.unaffordable strong {
+  color: #d86b4a;
+}
+
+.service-warning {
+  margin: 0;
+  color: #d86b4a;
+  font-size: 0.88rem;
+}
+
+/* Two normal commands, not one paragraph-sized submit. */
+.service-actions {
+  display: flex;
+  gap: 0.5rem;
+  padding-top: 0.2rem;
+}
+
+.service-actions button {
+  flex: 0 0 auto;
+  min-height: 2.4rem;
+  padding: 0.4rem 1.1rem;
+}
