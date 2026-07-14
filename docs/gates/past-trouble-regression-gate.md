@@ -113,6 +113,18 @@ while `npm run selfplay:browser` passed in 38.5 seconds. **The Gate was the firs
 | The enemies get the leftovers | Fixed bands (command zone + log + party strip) reserve ~250px, so at 1280x720 the enemy stage is 227px and the art reads small. Etrian Odyssey gives the enemies a WHOLE SCREEN; modern single-screen JRPGs OVERLAY commands and log on the scene. | **OPEN.** Overlay the command menu and log on the stage rather than reserving a permanent band. | — (not yet built) |
 
 
+### Town services and completion screens (2026-07-14)
+
+| Area | Past failure | Blocking expectation | Regression cover |
+| --- | --- | --- | --- |
+| Completion mixed with administration | The 6/6 guild screen said "Party ready", showed the finished 3+3 — and under it six Bench buttons, the reserve, the retired, the portable vault and a character sheet with Retire / Reclass / Deposit / Edit. Five commands sat below the fold at y=986 in a 720px frame. | A completion screen says ONE thing. Administration is behind a command. | `town-services.spec.ts` |
+| A service that reads as a web form | Recovery was a large empty field, then six plain cards edge to edge (five saying "No treatment."), then a full-width submit the height of a paragraph. The healthy members used most of the screen to say nothing, and the cost — the number that decides the answer — was a footnote. | A town service is a counter: only what needs deciding, the price, and two ordinary commands. A healthy party gets one line. | `town-services.spec.ts` |
+| **A test that passed by luck** | The first recovery lock assumed the party would take a hit on one expedition. It passed the day it was written and would have failed the next. | If a screen needs a state, DRIVE the game to that state and fail loudly if it cannot be reached — do not hope for it. | `town-services.spec.ts` (`returnToTownHurt`) |
+| Dead CSS from an earlier layout | An old `.recovery-plan` auto-fit grid template was still in the sheet, so the rebuilt rows collapsed into one narrow column and "Mira" rendered as "M". | When rebuilding a component, name the properties the old rules set. `styles.css` keeps its ghosts. | — |
+| A chrome label reused as a screen's command | A "Back to town" button added inside the recovery panel collided with the chrome bar's identically-named one, quietly made the service-navigation helper ambiguous, and hung a test that had nothing to do with recovery. | A screen's own commands do not borrow chrome's labels. | `town.spec.ts` |
+| **The enemies get the leftovers** | Fixed rows (party strip / message / command zone / dock) reserve the screen, so at the 1280x720 minimum Gate the enemy stage is **227px — 32% of the screen** (534px / 49% at 1920x1080). Etrian Odyssey gives the enemies a whole screen; modern single-screen JRPGs OVERLAY the command box and log on the scene. | **OPEN.** Overlay the command menu and log on the stage rather than reserving rows for them. | — (not yet built) |
+
+
 ## Browser Self-Play
 
 Use [Browser Self-Play Gate](browser-selfplay-gate.md) when a change touches the
