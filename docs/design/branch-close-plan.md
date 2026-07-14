@@ -46,32 +46,28 @@ Work:
 
 ---
 
-## DEFERRED — B3, its own branch (`feat/party-menu`) — DO NOT FORGET
+## COMPLETED — B3, branch `feat/party-menu` (2026-07-14)
 
-### B3 — There is no menu/status screen, and half the stats are dead  *(large)*
-Raised by the user and **confirmed in code**:
+### B3 — Party menu and meaningful aptitudes  *(large)*
 
-- **No menu screen at all.** In the dungeon there is only **Camp**, which offers exactly
-  two things: change a member's row, and use a healing item. There is **no status screen,
-  no inventory list, no valuables/key-item detail** anywhere.
-- **Aptitudes are mostly decorative.** Of the five:
-  - `might` / `spirit` → only feed **starting max HP / max MP** at character creation.
-  - `luck` → **crit chance only** (`CRIT_BASE_CHANCE + luck * CRIT_PER_LUCK`).
-  - **`agility` and `wit` are used NOWHERE in combat math.** They are rolled, stored,
-    shown at creation — and then do nothing.
+The original audit correctly found that there was no real party menu. Its aptitude note
+was partly stale by implementation time: agility already fed accuracy/speed, and wit fed
+MP, but neither had a clear defensive/offensive payoff or any player-visible explanation.
 
-So the player cannot inspect their party, cannot manage items, and half of what they
-"built" at creation has no effect. This is a core RPG gap, not polish.
+Delivered:
 
-Work:
-1. **Menu screen** (town + dungeon): party status (full derived stats, equipment,
-   resistances, level/xp to next), inventory (use / examine / discard), valuables &
-   key items with descriptions.
-2. **Make the aptitudes real**: `agility` → turn order + evasion; `wit` → spell power /
-   status land-rate (and/or MP). Then surface them in the status screen so the build
-   choice is legible.
-3. Balance follow-through: giving agility/wit real effects changes combat math — re-run
-   the Gates from B1.
+1. A shared town/dungeon party menu with a fixed controller surface, 3+3 formation,
+   portraits, level/XP, effective combat stats, aptitude effects, resistances, all six
+   equipment slots, carried items, and protected valuables.
+2. Item use and confirmed discard from the menu. Key items, treasure, return items, and
+   equipped instances cannot be discarded. Equipment can be changed in town and reviewed
+   in the dungeon.
+3. Agility now drives effective initiative and evasion. Wit drives MP as before and now
+   also modifies spell power and status-spell success. The status page reports the same
+   calculations used by combat.
+4. Browser/controller proof at 1280x720 plus the full unit and relevant E2E Gates.
+
+Evidence: `docs/evidence/party-menu-2026-07-14/README.md`.
 
 ---
 
@@ -81,7 +77,7 @@ Work:
 2. ✅ B1 (rebuild the balance model + re-tune + Gates)
 3. ✅ Full suite green (unit + e2e)
 4. ✅ Merged `feat/verdant-scenario` → `main` (2026-07-13, `c03c58f`)
-5. ⬜ `feat/party-menu` for B3 — still owed
+5. ✅ `feat/party-menu` B3 implementation complete; merge remains a separate action
 
 Step 3 originally read "…+ **user real-play**". That was wrong to put on a list I own: verifying
 a player-facing change in a real browser is my job, and the user reviews continuously and raises

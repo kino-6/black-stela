@@ -284,6 +284,10 @@ function chooseNextCommand(
   // the party up several floors and then re-descend, reading as a "B5F → B3F loop".
   descendOnly = false
 ): HeadlessDecision {
+  if (state.combatConclusion) {
+    return { command: { type: "continue_after_combat" }, knowledge: "combat_state" };
+  }
+
   if (state.phase === "town") {
     return state.party.length > 0
       ? { command: { type: "enter_dungeon" }, knowledge: "town_state" }

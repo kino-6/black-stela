@@ -20,7 +20,7 @@ interface DungeonCockpitProps {
   run: (command: Command) => void;
   isTempoRunning: boolean;
   onToggleTempo: () => void;
-  onOpenCamp: () => void;
+  onOpenPartyMenu: () => void;
   onOpenFullMap: () => void;
   onAutoExplore: () => void;
   canUseStairs: boolean;
@@ -49,7 +49,7 @@ export function DungeonCockpit({
   run,
   isTempoRunning,
   onToggleTempo,
-  onOpenCamp,
+  onOpenPartyMenu,
   onOpenFullMap,
   onAutoExplore,
   canUseStairs,
@@ -179,7 +179,7 @@ export function DungeonCockpit({
         onCommand={run}
         isTempoRunning={isTempoRunning}
         onToggleTempo={onToggleTempo}
-        onOpenCamp={onOpenCamp}
+        onOpenPartyMenu={onOpenPartyMenu}
         onOpenFullMap={onOpenFullMap}
         debugMode={debugMode}
         onAutoExplore={onAutoExplore}

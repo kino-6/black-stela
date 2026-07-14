@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { getFloorIdForRoom, getGridCellForRoom, getGridEdge, getRoom, isTraversableEdge, secretKey } from "../domain/scenario";
 import type { Direction, GameState, ScenarioWorld } from "../domain/types";
 import { buildDungeonScene, type CorridorSegment, type EdgeKindVisual, type EnemyAnchor } from "./dungeonScene";
@@ -41,14 +41,38 @@ const MAX_DEPTH = 4;
 
 export function DungeonView({ state, world, label, onEnemyAnchors }: DungeonViewProps) {
   const mountRef = useRef<HTMLDivElement | null>(null);
+  const [renderSize, setRenderSize] = useState({ width: 0, height: 0 });
   const viewModel = useMemo(() => getDungeonViewModel(state, world), [state.position, state.discoveredSecrets, world]);
   const corridor = useMemo(
     () => projectCorridorAhead(state, world),
     [state.position, state.discoveredSecrets, world]
   );
 
+  useLayoutEffect(() => {
+    const mount = mountRef.current;
+    if (!mount) {
+      return;
+    }
+
+    const updateSize = (width: number, height: number) => {
+      const next = {
+        width: Math.max(1, Math.round(width)),
+        height: Math.max(1, Math.round(height))
+      };
+      setRenderSize((current) =>
+        current.width === next.width && current.height === next.height ? current : next
+      );
+    };
+    const observer = new ResizeObserver(([entry]) => {
+      updateSize(entry.contentRect.width, entry.contentRect.height);
+    });
+    observer.observe(mount);
+    updateSize(mount.clientWidth, mount.clientHeight);
+    return () => observer.disconnect();
+  }, []);
+
   useEffect(() => {
-    if (!mountRef.current || !state.position || !viewModel) {
+    if (!mountRef.current || !state.position || !viewModel || renderSize.width <= 0 || renderSize.height <= 0) {
       return;
     }
 
@@ -91,6 +115,8 @@ export function DungeonView({ state, world, label, onEnemyAnchors }: DungeonView
     // a group of N draws N figures and must lose one as each falls.
     state.combat?.enemyGroups.map((group) => `${group.enemyId}:${group.count}`).join(","),
     state.resolvedTraps,
+    renderSize.width,
+    renderSize.height,
     corridor,
     viewModel,
     world

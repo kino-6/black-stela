@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
+import { createHash } from "node:crypto";
 import { asset, catalogIconUrl, cssArtVariables, ICON_PLACEHOLDER, portraitUrl } from "../src/ui/artAssets";
 import { scenarioWorldSchema } from "../src/domain/scenario";
 
@@ -43,6 +44,11 @@ const defaultEnemies = [
   "cinder-keeper",
   "oath-warden",
   "ash-votary"
+] as const;
+
+const portraitKeys = [
+  "gate", "ruin", "vial", "coin", "map", "ward",
+  "road", "pit", "ink", "grave", "dock", "cloak"
 ] as const;
 
 function pngSize(path: URL): { width: number; height: number } {
@@ -150,6 +156,16 @@ describe("art resolver", () => {
         ).toEqual({ width: 1024, height: 1024 });
       }
     }
+  });
+
+  it("ships twelve distinct 512px Verdant portraits under the shared basenames", () => {
+    const hashes = portraitKeys.map((name) => {
+      const path = new URL(`../content/worlds/verdant/assets/portraits/${name}.png`, import.meta.url);
+      expect(pngSize(path), name).toEqual({ width: 512, height: 512 });
+      return createHash("sha256").update(readFileSync(path)).digest("hex");
+    });
+
+    expect(new Set(hashes).size).toBe(portraitKeys.length);
   });
 
   it("keeps Default enemy and hurt sprites on the P14 square canvas", () => {

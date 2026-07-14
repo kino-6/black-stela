@@ -163,17 +163,18 @@ export function CombatCockpit({
           </p>
         )}
         <CombatLog t={t} beats={logLines} revealed={revealedBeats} onAdvance={onAdvanceLog} />
-        <span className="combat-order-progress" data-testid="combat-order-list">
-          {t("play.orderProgress", { ready: orderedCount, total: activeParty.length })}
-        </span>
+        {!playingBack && !isTempoRunning && (
+          <span className="combat-order-progress" data-testid="combat-order-list">
+            {t("play.orderProgress", { ready: orderedCount, total: activeParty.length })}
+          </span>
+        )}
       </div>
-      {tempo}
 
       {/* The command zone keeps its height whether it holds the menu, the confirm step, or
           nothing at all (during beat playback). It used to simply unmount, and the enemy
           stage — being flex:1 — swelled to fill the gap and shrank back a moment later. */}
       <div className="combat-command-zone">
-      {selectedActor && !playingBack && (
+      {isTempoRunning ? tempo : selectedActor && !playingBack ? (
         <CombatCommandMenu
           actor={selectedActor}
           livingGroups={livingEnemyGroups}
@@ -193,8 +194,8 @@ export function CombatCockpit({
           onQueueItem={onQueueItem}
           onUndo={onUndo}
         />
-      )}
-      {ordersReady && confirmRound && !playingBack && (
+      ) : null}
+      {!isTempoRunning && ordersReady && confirmRound && !playingBack && (
         <div
           className="combat-command-menu combat-confirm"
           data-testid="combat-confirm-round"

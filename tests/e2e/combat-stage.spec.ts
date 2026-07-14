@@ -49,6 +49,44 @@ test.describe("combat stage", () => {
     await expect(mark.locator(".enemy-mark-name")).not.toContainText("×");
   });
 
+  test("all six adventurers keep portraits, level, and complete vitals in combat", async ({ page }) => {
+    await page.setViewportSize(CONTROLLER_VIEWPORT);
+    await startDebugRun(page, { progress: "floor_2" });
+    await walkUntilCombat(page);
+
+    const tokens = page.getByTestId("combat-actor");
+    await expect(tokens).toHaveCount(6);
+    await expect(page.getByTestId("combat-party-portrait")).toHaveCount(6);
+    await expect(page.getByTestId("combat-front-row").getByTestId("combat-actor")).toHaveCount(3);
+    await expect(page.getByTestId("combat-back-row").getByTestId("combat-actor")).toHaveCount(3);
+
+    for (const token of await tokens.all()) {
+      await expect(token).toContainText(/Lv \d+/);
+      await expect(token).toContainText(/HP \d+\/\d+/);
+      await expect(token).toContainText(/MP (?:\d+\/\d+|—)/);
+    }
+
+    await expectFitsViewport(page, "combat party identity");
+    await page.screenshot({ path: "docs/evidence/improve-012-2026-07-14/combat-party-default-1280.png" });
+  });
+
+  test("Verdant combat resolves the scenario portrait set for all six members", async ({ page }) => {
+    await page.setViewportSize(CONTROLLER_VIEWPORT);
+    await page.addInitScript(() => window.localStorage.setItem("black-stela:settings:locale", "ja"));
+    await startDebugRun(page, { progress: "floor_2", world: "verdant" });
+    await walkUntilCombat(page);
+
+    const portraits = page.getByTestId("combat-party-portrait");
+    await expect(portraits).toHaveCount(6);
+    const sources = await portraits.evaluateAll((images) => images.map((image) => image.getAttribute("src") ?? ""));
+    expect(
+      sources.every((source) => /\/(?:gate|ruin|vial|coin|map|ward|road|pit|ink|grave|dock|cloak)(?:-|\.png)/.test(source)),
+      `unexpected portrait source: ${sources.join(", ")}`
+    ).toBe(true);
+    await expectFitsViewport(page, "Verdant combat party identity");
+    await page.screenshot({ path: "docs/evidence/improve-012-2026-07-14/combat-party-verdant-ja-1280.png" });
+  });
+
   test("the layout does not move while the fight plays out", async ({ page }) => {
     await startDebugRun(page, { progress: "floor_2" });
     await walkUntilCombat(page);
@@ -97,7 +135,31 @@ test.describe("combat stage", () => {
     }
   });
 
-  test("the combat log scrolls inside a fixed box instead of growing the page", async ({ page }) => {
+  test("Auto and fast Auto replace the reserved command region without moving combat", async ({ page }) => {
+    await page.setViewportSize(CONTROLLER_VIEWPORT);
+    await startDebugRun(page, { progress: "floor_2" });
+    await walkUntilCombat(page);
+
+    const selectors = [".enemy-stage", ".party-strip", ".combat-message", ".combat-command-zone", ".combat-command-window"];
+    const measure = async () =>
+      Promise.all(selectors.map(async (selector) => {
+        const box = (await page.locator(selector).first().boundingBox())!;
+        return { x: Math.round(box.x), y: Math.round(box.y), width: Math.round(box.width), height: Math.round(box.height) };
+      }));
+    const before = await measure();
+
+    await page.getByTestId("combat-auto").click();
+    await expect(page.getByTestId("tempo-indicator")).toBeVisible();
+    const normal = await measure();
+    await page.getByTestId("tempo-speed").click();
+    const fast = await measure();
+
+    expect(normal).toEqual(before);
+    expect(fast).toEqual(before);
+    await page.getByTestId("tempo-stop").click();
+  });
+
+  test("the live combat band shows current context without becoming a history focus stop", async ({ page }) => {
     await startDebugRun(page, { progress: "floor_2" });
     await walkUntilCombat(page);
 
@@ -122,9 +184,45 @@ test.describe("combat stage", () => {
     const box = await beats.boundingBox().catch(() => null);
     if (box) {
       expect(Math.round(box.height), "the log box grew with its contents").toBe(Math.round(before));
-      const overflow = await beats.evaluate((el) => getComputedStyle(el).overflowY);
-      expect(overflow).toBe("auto");
+      expect(await page.getByTestId("combat-log").evaluate((el) => el.tagName)).toBe("DIV");
+      expect(await page.locator(".combat-log-context").count()).toBeLessThanOrEqual(1);
+      expect(await page.locator(".combat-log-beat").count()).toBe(1);
     }
+  });
+
+  test("Verdant small packs meet the combat framing floor and use the stage width", async ({ page }) => {
+    await page.setViewportSize(CONTROLLER_VIEWPORT);
+    await page.addInitScript(() => window.localStorage.setItem("black-stela:settings:locale", "ja"));
+    await startDebugRun(page, { progress: "floor_2", world: "verdant" });
+    await walkUntilCombat(page);
+
+    const canvas = page.getByTestId("dungeon-canvas");
+    await expect.poll(async () => Number(await canvas.getAttribute("data-combat-minimum-silhouette"))).toBeGreaterThanOrEqual(72);
+    const stageWidth = (await page.locator(".enemy-stage").boundingBox())!.width;
+    const formationWidth = Number(await canvas.getAttribute("data-combat-formation-width"));
+    expect(formationWidth / stageWidth).toBeGreaterThanOrEqual(0.4);
+    expect(formationWidth / stageWidth).toBeLessThanOrEqual(0.65);
+    await page.screenshot({ path: "docs/evidence/improve-009-011-2026-07-14/03-verdant-combat-1280.png" });
+
+    await page.setViewportSize({ width: 1920, height: 1080 });
+    await expect.poll(async () => (await page.locator(".enemy-stage").boundingBox())?.height ?? 0).toBeGreaterThan(500);
+    const stage1080 = (await page.locator(".enemy-stage").boundingBox())!;
+    const canvas1080 = (await canvas.boundingBox())!;
+    // The stage and its inner view each contribute a 1px border. Anything beyond
+    // those four edge pixels means the generic exploration canvas cap has leaked
+    // back into combat and recreated the large black void seen in IMP-011.
+    expect(Math.abs(stage1080.height - canvas1080.height)).toBeLessThanOrEqual(4);
+    const webglCanvas = canvas.locator("canvas");
+    await expect.poll(async () => (await webglCanvas.boundingBox())?.height ?? 0).toBeGreaterThan(500);
+    const rendererSize = await webglCanvas.evaluate((element) => ({
+      cssHeight: element.clientHeight,
+      bufferHeight: (element as HTMLCanvasElement).height,
+      pixelRatio: window.devicePixelRatio
+    }));
+    expect(Math.abs(stage1080.height - rendererSize.cssHeight)).toBeLessThanOrEqual(5);
+    expect(rendererSize.bufferHeight).toBeGreaterThanOrEqual(rendererSize.cssHeight * rendererSize.pixelRatio - 2);
+    expect(Number(await canvas.getAttribute("data-combat-minimum-silhouette"))).toBeGreaterThan(72);
+    await page.screenshot({ path: "docs/evidence/improve-009-011-2026-07-14/04-verdant-combat-1920.png" });
   });
 
   test("the four commands fit their box — 防御 is not clipped off the bottom", async ({ page }) => {

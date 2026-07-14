@@ -234,6 +234,15 @@ const DungeonPositionSchema = z.object({
   facing: DirectionSchema
 });
 
+const CombatConclusionSchema = z.object({
+  enemyIds: z.array(z.string().min(1)),
+  enemyNames: z.array(z.string().min(1)),
+  xp: z.number().int().nonnegative(),
+  gold: z.number().int().nonnegative(),
+  levelUps: z.array(z.object({ name: z.string().min(1), level: z.number().int().positive() })),
+  resumePosition: DungeonPositionSchema.nullable()
+});
+
 const DungeonMapStateSchema = z.object({
   floorId: z.string().nullable().default(null),
   currentRoomId: z.string().nullable().default(null),
@@ -261,6 +270,7 @@ export const GameStateSchema = z.object({
   retired: z.array(CharacterSchema).default([]),
   position: DungeonPositionSchema.nullable(),
   combat: CombatStateSchema.nullable(),
+  combatConclusion: CombatConclusionSchema.nullable().optional(),
   defeatedEnemies: z.array(z.string()),
   floorClearedEnemies: z.array(z.string()).default([]),
   stepsSinceEncounter: z.number().default(0),

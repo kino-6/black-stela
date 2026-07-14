@@ -1,4 +1,4 @@
-# Handoff to Claude Code - Combat Log, Tempo Layout, and Victory Flow
+# Handoff to Claude Code - IMP-010 Combat Log, Tempo Layout, and Victory Flow
 
 ## Verdict
 
@@ -136,8 +136,9 @@ npm run build
 
 ```text
 Read AGENTS.md, Improve.md, this handoff, and the combat/browser Gates. Implement
-the combat-log/tempo layout fix and explicit victory-result-resume flow without
-changing combat rewards or encounter balance. Keep all combat regions stable at
+only IMP-010 before IMP-011. Implement the combat-log/tempo layout fix and
+explicit victory-result-resume flow without changing combat rewards or encounter
+balance. Keep all combat regions stable at
 1280x720, make Result an owned state rather than a log-watching overlay, and
 prove final blow -> result -> same-cell exploration through controller-only E2E.
 Report changed files, state transitions, bounding-box evidence, tests, and any

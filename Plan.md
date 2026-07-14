@@ -11,17 +11,16 @@ Completed plan lanes and task slices are archived in:
 
 Black Stela has deterministic rules, save/load, debug starts, headless probes,
 English/Japanese UI, scenario validation, tactical combat, guild character
-authorship + a curated roster (reclass/retire/portable vault), economy,
-first-person rendering, and minimap. All eight floors (B1F–B8F) are generated
-棒倒し法 mazes with sole-approach boss/toll chokes, safe stair landings, and
-secret vaults; under-strength descents are punished by pack scaling + squads;
-combat is keyboard/controller-playable with auto/repeat and DebugMode aids.
+authorship and roster management, economy, first-person rendering, minimap,
+party menu, browser Self-Play, and responsive combat staging. All eight floors
+(B1F-B8F) are dense continuous-grid mazes with safe stair landings, rewards,
+hazards, and authored return routes.
 
-The labyrinth is now real. The remaining problems are (a) combat *balance* — the
-descentSim Gate proves it is survivable but currently too easy (deferred tuning),
-and (b) finishing the `App.tsx` decomposition (Lane R). Headless runs are not
-proof of UX, fun, fairness, visual legibility, or grid-maze honesty — the e2e
-suite and a real player playtest are.
+All executable Plan lanes and browser improvements through `IMP-011` are
+complete. The only remaining items are the environment- or architecture-gated
+follow-ups listed under Deferred Lanes. Headless runs are never proof of UX,
+fun, fairness, visual legibility, or grid-maze honesty; browser evidence and
+human visual review remain required.
 
 ## UI Reference Findings
 
@@ -34,204 +33,36 @@ suite and a real player playtest are.
 
 ## Product Guardrails
 
-- Startup, AI, save/debug, and configuration affordances must not break mood.
-- Player characters' speech, inner life, portraits, profiles, notes, classes,
-  traits, aptitude, stats, and memory remain player-authored fantasy.
-- Scenario prose must read as native Japanese: concrete object, sensory/spatial
-  cue, short line, no theme explanation or translated-English syntax.
-- Japanese line layout is part of prose quality. Avoid one-character orphan
-  wraps, punctuation stranded at line starts, and awkward message-box breaks;
-  rewrite copy or provide display-specific variants when needed.
-- Player-facing dialogue, service copy, room text, item text, and guidance
-  should live in scenario/localization data where practical, not hardcoded in
-  React components.
-- Japanese normal play must not mix stray English names or units. Keep genre
-  conventions only when they are natural in Japanese RPGs; localize enemy names,
-  place names, shop text, rewards, and logs.
-- Local narration stays hidden, local-first, non-canonical, and unable to mutate
-  `GameState`.
-- Return/escape, save, automation, and debug affordances must respect DRPG rules.
-- Normal-play UI is controller/keyboard first. Guild, town, dungeon, combat,
-  shop, recovery, records, and configuration flows use staged choices, stable
-  focus order, confirm/cancel semantics, and fixed command/message areas before
-  mouse convenience.
-- Controller-first is a blocking completion rule. Changed normal-play surfaces
-  need browser proof for directional focus, confirm, and cancel/back where
-  applicable; mouse-only operation means the task is unfinished.
-- Dungeon topology is a continuous grid of cells, walls, doors, stairs, and edge
-  rules. Arbitrary linked rooms are not a DRPG maze.
-- Party formation is six-member, row-visible, and reviewed in browser before
-  player-facing work is called done.
-- Equipment must be a DRPG preparation layer, not a two-stat accessory list.
-  Use original items with classic party-DRPG structure: weapon, offhand, body,
-  head, hands, accessory, class/role fit, price tension, and visible tradeoffs.
-- Newly registered or suggested adventurers must start with class-appropriate
-  minimum gear. A fighter, healer, scout, or caster may be poorly equipped, but
-  they should not enter the labyrinth with empty hands and no basic protection
-  unless the scenario intentionally marks them as such.
-- Shops must sell through clear categories such as weapons, armor, shields,
-  accessories, tools, and consumables. Before purchase, the UI must warn when
-  the selected adventurer cannot equip the item; when they can, it must compare
-  the item against the currently equipped slot before money is spent.
-- Combat must resolve as party tactics, not one debug-like button press. Normal
-  play queues visible actor commands, shows target/risk/order, then resolves a
-  bounded round without moving the command window.
-- Combat command entry follows classic party RPG structure: the next unresolved
-  adventurer receives a command in party order; formation cards are status, not
-  arbitrary actor selectors.
-- The town loop must feel like returning, recovering, buying, and preparing for
-  another descent, not falling back into guild-registration or web-form context.
-- Repeat and auto actions must feel intentional and fast. When repeat or auto
-  is running, the UI must show the active mode, current repeated command, speed,
-  and stop/cancel affordance; unexplained waits are a UX bug.
-- Stairs, return seals, and next-floor progression must be browser-visible.
-- Past user-visible failures are recorded in
-  [Past Trouble Regression Gate](docs/gates/past-trouble-regression-gate.md)
-  and must be checked before player-facing work is called done.
-- Classic DRPGs are structure references only. Do not copy proprietary content.
+- Player-authored characters keep their portraits, profiles, traits, stats,
+  classes, notes, and memories. New recruits start with role-appropriate gear.
+- Japanese copy and line breaks must read naturally; externalize scenario text
+  where practical and reject stray English, orphan characters, and translated
+  sentence shapes.
+- Normal play hides AI, save/debug, provider, route-id, and admin controls. Local
+  narration is non-canonical and cannot mutate `GameState`.
+- Controller-first is blocking: stable focus, confirm/cancel, fixed command and
+  message regions, six-person formation, and browser proof are required.
+- The dungeon is a continuous grid whose minimap, view, movement, doors, stairs,
+  returns, traps, and enemies share one truth.
+- Combat queues every active member in formation order, keeps vitals visible,
+  resolves explicit rounds, and owns victory/result/resume as distinct phases.
+- Town, shop, recovery, equipment, Repeat, and Auto must preserve DRPG attrition
+  and preparation while showing costs, comparisons, state, speed, and interrupts.
+- Apply [Past Trouble Regression Gate](docs/gates/past-trouble-regression-gate.md)
+  before completion. Classic DRPGs are structure references, not copy sources.
 
 ## Active Lanes
 
-- [x] Lane V: Scenario Text Externalization and Japanese Line Layout.
-  Archived: [docs/archive/Tasks.completed-text-externalization-line-layout.md](docs/archive/Tasks.completed-text-externalization-line-layout.md).
-- [x] Lane W: Starting Gear, Categorized Shop, and Pre-Purchase Preview.
-  Archived: [docs/archive/Tasks.completed-starting-gear-categorized-shop.md](docs/archive/Tasks.completed-starting-gear-categorized-shop.md).
-- [x] Lane Z: Dungeon Structure, Checkpoints, and Wiz/Etrian Gimmicks.
-  Shipped: rest points, checkpoint resume, emergency return item, shortcuts, and
-  the spinner/teleporter/damage/darkness/gather/hidden-passage gimmicks. Deferred
-  gimmicks: pit/chute, FOE roamers.
-  Archived: [docs/archive/Plan.completed-dungeon-gimmicks.md](docs/archive/Plan.completed-dungeon-gimmicks.md).
-- [x] Combat Overhaul (see [CombatPlan.md](CombatPlan.md)): level growth, MP +
-  class spells, status ailments, elements/weakness, criticals, enemy AI. Balance
-  numbers first-pass.
-- [x] Dense floor maps + backward movement + honest first-person rendering (see
-  [DungeonPlan.md](DungeonPlan.md)). **Complete: B1F–B8F are all generated 棒倒し法
-  mazes** (`scripts/genFloorMaze.mjs` + `scripts/placeFloor.mjs`). Each floor has a
-  sole-approach boss/toll choke to its descent (verified via `placeFloor --sole`), a
-  safe no-encounter stair landing, and a searchable secret vault. Honest full-sweep
-  292–338 steps per floor; universal maze Gate in `tests/dungeonDesign.test.ts`.
-- [x] Lane Y: Guild Roster Management, Registration Lifecycle, Cross-Scenario
-  Adventurers (roster bench/recall, reclass, two-tier retire, portable vault).
-  Archived: [docs/archive/Plan.completed-guild-roster-lifecycle.md](docs/archive/Plan.completed-guild-roster-lifecycle.md).
-- [x] Difficulty Pressure, Full B1–B8 Maze Rollout, Playability & App Decomposition.
-  Archived: [docs/archive/Plan.completed-difficulty-maze-decomposition.md](docs/archive/Plan.completed-difficulty-maze-decomposition.md).
-- [x] **#58 Combat balance tuning.** 12 enemies tuned; a no-grind push now ramps
-  93→79→77→67→43→30% (deep floors + bosses bite) and survives with zero downs.
-  descentSim Gate tightened to a two-sided band (`0.12 < deepestTrough < 0.55`).
-- [x] **Lane R — Source Decomposition.** All cleanly-separable panels extracted
-  (App.tsx 2778 → 2132): the 6 command/overlay/debug/title panels + the town
-  `RecoveryPanel`/`RecordsPanel`/`TownEntryPanel`/`ShopPanel`. Only the guild
-  registration stepper stays inline — a reducer/context refactor, tracked below.
-- [x] **Lane X — Repeat/Auto Tempo Feedback.** Live `TempoIndicator` (mode + step +
-  speed tier + immediate Stop) while the runner is active; ×1/×2 speed toggle; the
-  engine already stops on every interrupt (trap/encounter/event/stairs/branch/boss/
-  squad/danger). e2e-proven.
-- [x] **Lane G — Desktop Productization (completable scope).** Save-schema migration
-  seam (`migrateSaveData`/`parseSaveData`, forward-only, refuses newer; wired into
-  both repos); `npm run build` is the smoke test and passes. Env-gated Tauri FS /
-  portrait-file / per-OS bundle work scoped in
-  [docs/desktop-productization.md](docs/desktop-productization.md).
-- [x] **Lane H — Hidden Local Narration Operations.** Provider health checks,
-  prompt/version metadata, dev-only diagnostics ring buffer, guard wired into
-  `requestNarration`, and party-name redaction from the provider's input — all
-  background-only and player-hidden. Unit-tested; live-LLM generation still needs a
-  real local endpoint (inherent).
-
-### [ ] Lane X: Repeat and Auto Action Tempo Feedback
-
-Goal: make repeat and auto actions feel like deliberate DRPG convenience
-features, not a stalled UI or hidden debug timer.
-
-Planned slice:
-
-- [ ] Audit current repeat and auto execution timing to identify artificial
-  waits, animation delays, command throttles, or state-update pauses.
-- [ ] Add an on-screen active-mode indicator for repeat/auto: mode name,
-  repeated command, current step, and whether the next action is pending.
-- [ ] Provide a controller-friendly stop/cancel action that is visible while
-  repeat/auto is running and works immediately.
-- [ ] Add speed tiers or a fast-forward setting for repeat/auto, with a safe
-  default and a clearly visible current speed.
-- [ ] Ensure repeat/auto never hides important interrupts: combat, blocked
-  movement, traps, stairs, treasure, low HP, new floor, return marker, or
-  dialogue/event stops.
-- [ ] Add Browser Self-Play or targeted Playwright evidence that repeat/auto
-  starts, displays active state, speeds up, stops on command, and stops on
-  meaningful interrupts.
-
-### [ ] Lane R: Source Decomposition and Refactoring
-
-Goal: cut the largest files down to focused modules without changing behaviour,
-so the codebase stays workable as the dungeon/roster features grow. This is a
-structural clean-up lane — **no functional changes** — and the existing suite
-(243 unit + 59 e2e) is the safety net: every slice must keep it green.
-
-Measured hot spots (lines, at time of writing):
-
-- `src/App.tsx` — **2624**. A God component: UI state, ~40 handlers, guild/draft
-  flow, save/load, keyboard controller, per-phase JSX render, *and* domain rules
-  (`runTempoDungeonStep`/`runTempoCombatStep`) that do not belong in the view.
-- `src/domain/rulesEngine.ts` — 1408. Cohesive but broad (movement, combat,
-  town/economy, gates/gimmicks) in one file.
-- `src/domain/characterCreation.ts` — 585; `src/services/scenarioPackLoader.ts`
-  — 568; `src/components/DungeonView.tsx` — 488 (React component + Three.js
-  scene builder in one).
-
-Progress: the pure-function slices shipped first (new modules `src/domain/tempo.ts`,
-`src/ui/controllerFocus.ts`, `src/ui/format.ts`, `src/ui/catalog.ts`,
-`src/ui/characterDraft.ts`, `src/components/dungeonScene.ts`; +5 tempo unit tests).
-Then 6 App **panel extractions** (title, camp, floor-map, debug, dungeon dock,
-combat dock). App.tsx 2624 → 2132. The only remaining chunk is the town/guild
-render (state-coupled, its own focused pass).
-
-Planned slices (ordered by value/risk; one extraction per commit, suite green
-after each):
-
-- [x] Extract the tempo/auto-move **rules** out of `App.tsx` into
-  `src/domain/tempo.ts` (`runTempoStep`, `runTempoCombatStep`,
-  `runTempoDungeonStep`, `getTempoModeForPhase`). These are pure game rules;
-  move them to the domain and add unit tests (they currently have none).
-- [x] Extract the **keyboard controller / focus** helpers (`getActiveController*`,
-  `moveControllerFocus`, `activateControllerCancel`, `isTypingTarget`, …) into
-  `src/ui/controllerFocus.ts`.
-- [x] Extract **presentation helpers** (`formatPhase`, `formatStatDelta`,
-  `formatEquipmentEffect`, …) into `src/ui/format.ts`, and catalog lookups
-  (`localizedCatalogName`, `equippedName`, `previewEquipmentStats`,
-  `shopCategoryFor`, `ShopCategory`, …) into `src/ui/catalog.ts`.
-- [x] Split `DungeonView.tsx`: moved the Three.js scene construction into
-  `src/components/dungeonScene.ts` (`buildDungeonScene`), leaving the React
-  component thin (514 → 222 lines).
-- [x] Extract the **pure character-draft helpers** (`CharacterDraft`,
-  `createFreshDraft`, bonus-pool rolls, `getAllocatedBonusPoints`, guild-recruit
-  suggestion) into `src/ui/characterDraft.ts`. (The remaining *stateful* draft
-  handlers stay wired in App; a `useCharacterDraft` hook is optional follow-up.)
-- [x] Move the **remaining presentation helpers** out of App: pure-t
-  combat/aptitude formatters into `src/ui/format.ts`; world-aware character/shop
-  formatters into `src/ui/catalog.ts`.
-- [ ] (Deferred) Lift **save/load/import** into a `useSaveLoad` hook — low value:
-  the handlers are thin view-glue over `saveRepository`, so a hook mostly shuffles
-  ~10 setter deps rather than decomposing logic.
-- [x] Split the per-phase JSX render into panel components — **all cleanly-separable
-  panels extracted** (one per commit, suite green after each, dead imports pruned):
-  `TitleScreen`, `CampPanel`, `FloorMapOverlay`, `DebugPanel`, `DungeonCommandDock`,
-  `CombatCommandDock`, plus the town services `RecoveryPanel`, `RecordsPanel`,
-  `TownEntryPanel`, `ShopPanel` (all under `src/components/`). **App.tsx 2778 → 2132.**
-- [ ] (Deferred — needs a state refactor, not a verbatim move) The guild studio's
-  **registration stepper** (briefing/class/appearance/bonus/name) stays inline: it is
-  a stateful draft flow whose ~40 draft handlers would become a mega-prop component
-  (the anti-pattern this lane warns against). Decompose it only alongside a
-  `useReducer`/context refactor of the draft state — a feature-shaped change, tracked
-  separately from this behaviour-preserving lane.
-- [ ] (Skip) Grouping `rulesEngine.ts` by concern — the movement/combat/gate logic
-  is tightly coupled; splitting would fragment it against the lane's own guidance.
-
-App.tsx: 2624 (lane start) → 2132 after the panel-extraction slices; DungeonView
-514 → 222. The command docks, overlays, debug panel, and title screen are all now
-their own components; the town/guild render remains the last large chunk in App.
-
-Guardrails: behaviour-preserving only; no API/UX changes in this lane; prefer
-moving code verbatim then re-wiring imports; run `tsc`, unit, and e2e after each
-slice; do not mix a refactor with a feature change in the same commit.
+- [x] V/W/Y: Japanese text layout, starting gear/shop previews, and full guild
+  roster lifecycle. See the completed Plan/Task indexes above.
+- [x] Z + dungeon rollout: B1F-B8F continuous-grid mazes, authored stairs and
+  returns, checkpoints, secrets, rewards, hazards, and dungeon gimmicks.
+- [x] Combat overhaul + #58 tuning: growth, MP/spells, status/elements, enemy AI,
+  bounded balance Gate, full-party command entry, Repeat, and Auto.
+- [x] R/X/G/H: separable panel extraction, tempo feedback, save migration seam,
+  and hidden local-narration operations. Environment follow-ups remain below.
+- [x] `IMP-001` to `IMP-011`: controller/browser UX, Verdant art, combat result
+  flow, and responsive enemy framing. See [Improve.md](Improve.md).
 
 ## Deferred Lanes
 
@@ -264,10 +95,11 @@ deferred by choice:
 
 ## Current Milestone Recommendation
 
-**All handheld Plan lanes are cleared** (the "clear everything" pass): #58 balance,
-Lane R panel decomposition, Lane X tempo feedback, Lane G desktop (completable
-scope), and Lane H narration ops — on top of the earlier V/W/Y/Z, Combat Overhaul,
-and full B1F–B8F maze rollout. All green: **production build + 251 unit + 60 e2e**.
+**All executable Plan lanes are cleared.** The latest acceptance is green on the
+production build, **344 unit tests**, and a **32-test focused Chromium Gate** that
+includes the controller route, combat regression/staging, Japanese line layout,
+portrait integration, keyboard victory, and Browser Self-Play. The complete
+`gate:final` suite also passes **99/99 Playwright tests**.
 
 ### NextAction (recommended order)
 

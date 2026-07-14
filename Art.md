@@ -12,11 +12,10 @@ scenario pack brief for the asset you are generating or reviewing.
 - Default / Ash: P14 delivered. Its 11 enemy sprites and 11 hurt frames now use
   the ordered 768×768 clean-alpha canvas without redesigning the approved art.
   P6/P9/P12/P13 remain integration work.
-- Verdant: **48/48 required files delivered**. Act II/III wall/floor textures,
-  fourteen scenario-specific enemy sprites, and eight scenario-specific
-  item/equipment icons now ship in the pack. Browser review rejected the Act I
-  wall as fitted green masonry; file delivery is complete, but that asset still
-  requires a structural retake.
+- Verdant: **48/48 required files delivered**. Act I's wall structural retake is
+  browser-verified; Act II/III textures, fourteen scenario-specific enemies,
+  eight item/equipment icons, and the 2026-07-14 Japanese 2D RPG portrait retake
+  now ship in the pack.
 - Optional Verdant minimap marker overrides are not included in the required
   count.
 
@@ -38,5 +37,8 @@ scenario pack brief for the asset you are generating or reviewing.
   assets. Program-side lighting owns atmosphere; asset art owns material color,
   silhouette, and identity.
 - Do not remove color while trying to stay grim. Low fantasy is not grayscale.
+- Character portraits must read as an original Japanese 2D game ensemble, not
+  photorealistic headshots, generic generated concept art, or a demographic
+  checklist. Role silhouette and personality must survive at gameplay size.
 - Rebuild after adding files. Vite's asset glob is build-time, not a runtime
   folder scan.

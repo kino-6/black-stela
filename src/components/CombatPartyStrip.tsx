@@ -1,5 +1,6 @@
 import type { CombatBeat, Character } from "../domain/types";
 import type { Translator } from "../i18n";
+import { renderPortraitContent } from "../ui/portrait";
 
 interface CombatPartyStripProps {
   members: Character[];
@@ -37,36 +38,46 @@ export function CombatPartyStrip({ members, selectedActorId, orderedActorIds, ac
                   aria-current={active ? "step" : undefined}
                   className={`party-token-combat${active ? " active" : ""}${ordered ? " ordered" : ""}${hit ? " beat-hit" : ""}${down ? " down" : ""}`}
                 >
-                  <span className="pt-head">
-                    <span className="pt-name">{member.name}</span>
-                    <span className="pt-pip" aria-hidden="true">{ordered ? "⚔" : active ? "▶" : ""}</span>
-                  </span>
-                  <div
-                    className={`stat-gauge hp-gauge${danger ? " danger" : ""}`}
-                    data-testid="combat-hp-gauge"
-                    role="meter"
-                    aria-valuenow={member.hp}
-                    aria-valuemax={member.maxHp}
-                    aria-label={`${member.name} HP`}
-                  >
-                    <span className="stat-gauge-fill" style={{ width: `${Math.max(0, (member.hp / member.maxHp) * 100)}%` }} />
+                  <div className="pt-portrait" style={{ borderColor: member.accentColor }}>
+                    {renderPortraitContent({
+                      portraitRef: member.portraitRef,
+                      backgroundId: member.backgroundId,
+                      fallback: member.name,
+                      alt: member.name,
+                      testId: "combat-party-portrait"
+                    })}
                   </div>
-                  {member.maxMp > 0 && (
+                  <div className="pt-body">
+                    <span className="pt-head">
+                      <span className="pt-name">{member.name}</span>
+                      <span className="pt-pip" aria-hidden="true">{ordered ? "⚔" : active ? "▶" : ""}</span>
+                    </span>
                     <div
-                      className="stat-gauge mp-gauge"
-                      data-testid="combat-mp-gauge"
+                      className={`stat-gauge hp-gauge${danger ? " danger" : ""}`}
+                      data-testid="combat-hp-gauge"
                       role="meter"
-                      aria-valuenow={member.mp}
-                      aria-valuemax={member.maxMp}
-                      aria-label={`${member.name} MP`}
+                      aria-valuenow={member.hp}
+                      aria-valuemax={member.maxHp}
+                      aria-label={`${member.name} HP`}
                     >
-                      <span className="stat-gauge-fill" style={{ width: `${Math.max(0, (member.mp / member.maxMp) * 100)}%` }} />
+                      <span className="stat-gauge-fill" style={{ width: `${Math.max(0, (member.hp / member.maxHp) * 100)}%` }} />
                     </div>
-                  )}
-                  <span className="pt-hp-text">
-                    {member.hp}/{member.maxHp}
-                    {member.maxMp > 0 && <> · {t("play.mpShort")} {member.mp}</>}
-                  </span>
+                    {member.maxMp > 0 && (
+                      <div
+                        className="stat-gauge mp-gauge"
+                        data-testid="combat-mp-gauge"
+                        role="meter"
+                        aria-valuenow={member.mp}
+                        aria-valuemax={member.maxMp}
+                        aria-label={`${member.name} MP`}
+                      >
+                        <span className="stat-gauge-fill" style={{ width: `${Math.max(0, (member.mp / member.maxMp) * 100)}%` }} />
+                      </div>
+                    )}
+                    <span className="pt-hp-text">
+                      Lv {member.level} · HP {member.hp}/{member.maxHp} · {t("play.mpShort")} {member.maxMp > 0 ? `${member.mp}/${member.maxMp}` : "—"}
+                    </span>
+                  </div>
                   {hit && activeBeat?.damage != null && (
                     <span className="hit-number" key={beatKey}>-{activeBeat.damage}</span>
                   )}

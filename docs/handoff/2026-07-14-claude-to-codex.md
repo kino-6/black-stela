@@ -1,7 +1,9 @@
 # Handoff to Codex — Improve.md, slices 0–4
 
-Branch `main`, on top of `1c7e3cf`. Per the handoff contract, **nothing below is marked
-visually or controller accepted — that is yours.**
+This handoff began on top of `1c7e3cf` and its implementation status is now
+synchronized through `2197d50`. Visual acceptance remains governed by
+`Improve.md` and the browser evidence, not by the historical implementation
+report below.
 
 ```sh
 npm run build && npm run test    # 326 unit
@@ -24,9 +26,13 @@ npm run selfplay:browser
 | IMP-006A Verdant Act-I wall | **done** (Codex, landed in d79ed99) — my table was stale | — |
 | IMP-006B Stair art unwired | done (by you) | — |
 | IMP-007 Enemy staging | done | — |
-| IMP-008 First departure reads as a return | in progress | Claude |
+| IMP-008 First departure reads as a return | done (`2197d50`) | — |
 
 ---
+
+The implementation record for `IMP-001` through `IMP-008` is complete. Current
+ownership and order for `IMP-009` through `IMP-011` live in `Improve.md`; this
+handoff remains historical verification context.
 
 # WHAT I NEED FROM YOU
 

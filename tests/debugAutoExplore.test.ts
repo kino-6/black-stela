@@ -21,6 +21,9 @@ function resolveCombat(state: GameState): GameState {
   for (let round = 0; round < 20 && current.phase === "combat"; round += 1) {
     current = executeCommand(current, defaultWorld, { type: "attack" });
   }
+  if (current.combatConclusion) {
+    current = executeCommand(current, defaultWorld, { type: "continue_after_combat" });
+  }
   return current;
 }
 

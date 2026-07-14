@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { DoorOpen, HeartPulse, ScrollText, ShoppingBag, Users } from "lucide-react";
+import { DoorOpen, HeartPulse, ScrollText, ShoppingBag, Users, UsersRound } from "lucide-react";
 import type { Character, Command, ScenarioWorld } from "../domain/types";
 import { getLocalizedRoomText } from "../domain/scenario";
 import type { Locale, Translator } from "../i18n";
@@ -26,6 +26,7 @@ interface TownEntryPanelProps {
   unlockedCheckpoints: Checkpoint[];
   onCommand: (command: Command) => void;
   onEnterMode: (mode: "guild" | "shop" | "recovery" | "records") => void;
+  onOpenPartyMenu: () => void;
 }
 
 // The town entry cockpit — status ledger, checkpoint resume, and the service menu.
@@ -50,7 +51,8 @@ export function TownEntryPanel({
   hasEquipmentLoot,
   unlockedCheckpoints,
   onCommand,
-  onEnterMode
+  onEnterMode,
+  onOpenPartyMenu
 }: TownEntryPanelProps) {
   // Start the cursor on the command a party standing in town is here to give. App's
   // focusFirstControllerChoice() is a no-op once focus already sits on an interactive element
@@ -151,6 +153,10 @@ export function TownEntryPanel({
         <button type="button" data-testid="town-service-guild" onClick={() => onEnterMode("guild")}>
           <Users size={18} />
           {t("town.guild")}
+        </button>
+        <button type="button" data-testid="town-party-menu" onClick={onOpenPartyMenu} disabled={partyEmpty}>
+          <UsersRound size={18} />
+          {t("partyMenu.title")}
         </button>
         <button
           type="button"

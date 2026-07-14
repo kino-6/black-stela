@@ -9,14 +9,14 @@ import { DungeonView } from "./components/DungeonView";
 import { MapPanel } from "./components/MapPanel";
 import { ScenarioValidationPanel } from "./components/ScenarioValidationPanel";
 import { TitleScreen } from "./components/TitleScreen";
-import { CampPanel } from "./components/CampPanel";
+import { PartyMenuPanel } from "./components/PartyMenuPanel";
 import { FloorMapOverlay } from "./components/FloorMapOverlay";
 import { DebugPanel } from "./components/DebugPanel";
 import { DungeonCommandDock } from "./components/DungeonCommandDock";
 import { CombatCommandDock } from "./components/CombatCommandDock";
 import { CombatCommandMenu } from "./components/CombatCommandMenu";
 import { CombatLog } from "./components/CombatLog";
-import { CombatResultPanel, type CombatResult } from "./components/CombatResultPanel";
+import { CombatResultPanel } from "./components/CombatResultPanel";
 import { CombatEnemyStage } from "./components/CombatEnemyStage";
 import { CombatPartyStrip } from "./components/CombatPartyStrip";
 import { CombatCockpit } from "./components/CombatCockpit";
@@ -177,7 +177,6 @@ export function App() {
   const [locale, setLocale] = useState<Locale>(() => loadLocale());
   const [autoBattleSafety, setAutoBattleSafety] = useState<boolean>(() => loadAutoBattleSafety());
   const [instantCombatLog, setInstantCombatLog] = useState<boolean>(() => loadInstantCombatLog());
-  const [combatResult, setCombatResult] = useState<CombatResult | null>(null);
   const [confirmRound, setConfirmRound] = useState<boolean>(() => loadConfirmRound());
   const [revealedBeats, setRevealedBeats] = useState(0);
   const t = useMemo(() => createTranslator(locale), [locale]);
@@ -210,7 +209,7 @@ export function App() {
   const [tempoStep, setTempoStep] = useState(0);
   const [guildCreationStep, setGuildCreationStep] = useState<GuildCreationStep>("briefing");
   const [guildOfferState, setGuildOfferState] = useState<GuildOfferState>("ask");
-  const [campOpen, setCampOpen] = useState(false);
+  const [partyMenuOpen, setPartyMenuOpen] = useState(false);
   const [fullMapOpen, setFullMapOpen] = useState(false);
   const [combatOrders, setCombatOrders] = useState<CombatActionDeclaration[]>([]);
   // The last fully-declared round, remembered so リピート (Repeat) can re-run the
@@ -468,33 +467,6 @@ export function App() {
       return snap ? { ...member, hp: snap.hp } : member;
     });
   }, [activeBeat, state.party]);
-
-  // Post-victory result screen: when a new combat_rewards event lands (after the
-  // playback commits), gather the XP/gold/defeated + any same-turn level-ups and
-  // hold them on screen until dismissed. The hydration guard skips rewards already
-  // in a loaded log so a resumed game does not pop a stale result.
-  const combatResultSeenRef = useRef<string | null>(null);
-  const combatResultHydratedRef = useRef(false);
-  useEffect(() => {
-    const rewardEntry = [...state.log].reverse().find((entry) => entry.event?.type === "combat_rewards");
-    const latestId = rewardEntry?.id ?? null;
-    if (!combatResultHydratedRef.current) {
-      combatResultHydratedRef.current = true;
-      combatResultSeenRef.current = latestId;
-      return;
-    }
-    if (!rewardEntry || rewardEntry.event?.type !== "combat_rewards" || latestId === combatResultSeenRef.current) {
-      return;
-    }
-    combatResultSeenRef.current = latestId;
-    const reward = rewardEntry.event;
-    const levelUps = state.log
-      .filter((entry) => entry.event?.type === "character_leveled_up" && entry.turn === rewardEntry.turn)
-      .map((entry) => (entry.event?.type === "character_leveled_up" ? { name: entry.event.characterName, level: entry.event.level } : null))
-      .filter((entry): entry is { name: string; level: number } => entry !== null);
-    const enemyNames = (reward.enemyIds ?? []).map((id) => localizeEnemyName(id));
-    setCombatResult({ enemyNames: enemyNames.length > 0 ? enemyNames : reward.enemyNames, xp: reward.xp, gold: reward.gold, levelUps });
-  }, [state.log]);
 
   // On first mount (e.g. Continue into the dungeon) snap any beats already in the
   // loaded log to fully-revealed, so a resumed game does not replay an old fight.
@@ -1088,10 +1060,9 @@ export function App() {
       const key = event.key.toLowerCase();
       // The victory result modal owns the keyboard while up: Enter/Space/Esc dismiss
       // it, everything else is swallowed so the party doesn't move behind it.
-      if (combatResult) {
-        if (key === "enter" || key === " " || key === "escape") {
+      if (state.combatConclusion) {
+        if (key !== "enter" && key !== " ") {
           event.preventDefault();
-          setCombatResult(null);
         }
         return;
       }
@@ -1115,10 +1086,18 @@ export function App() {
         return;
       }
 
+      // The party menu is a modal controller surface. Its controls own arrows,
+      // confirm, and cancel; all other shortcuts must not reach the dungeon or
+      // automation behind it.
+      if (partyMenuOpen && key !== "escape") {
+        return;
+      }
+
       // In the dungeon the arrow keys drive the party (up = forward, down =
       // step back, left/right = turn) rather than moving button focus.
       if (
         state.phase === "dungeon" &&
+        !partyMenuOpen &&
         (key === "arrowup" || key === "arrowdown" || key === "arrowleft" || key === "arrowright")
       ) {
         event.preventDefault();
@@ -1154,10 +1133,14 @@ export function App() {
         if (activateControllerCancel()) {
           return;
         }
-        // Escape closes an open overlay first (full map, camp) before anything else.
-        if (fullMapOpen || campOpen) {
+        // Escape closes an open overlay before anything else.
+        if (fullMapOpen || partyMenuOpen) {
           setFullMapOpen(false);
-          setCampOpen(false);
+          setPartyMenuOpen(false);
+          return;
+        }
+        if (state.phase === "town" && townMode !== "entry") {
+          enterTownMode("entry");
           return;
         }
         if (tempoMode !== "idle") {
@@ -1204,14 +1187,16 @@ export function App() {
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [campOpen, combatOrdersReady, combatResult, fullMapOpen, isTempoRunning, selectedActor, selectedTarget, state, t, tempoMode]);
+  }, [combatOrdersReady, fullMapOpen, isTempoRunning, partyMenuOpen, selectedActor, selectedTarget, state, t, tempoMode, townMode]);
 
-  // Camp and the full-floor map are exploration-only; a fight or a return to
-  // town closes them.
+  // The floor map is exploration-only. The party menu works in town and the
+  // dungeon, but never interrupts combat.
   useEffect(() => {
     if (state.phase !== "dungeon") {
-      setCampOpen(false);
       setFullMapOpen(false);
+    }
+    if (state.phase === "combat") {
+      setPartyMenuOpen(false);
     }
   }, [state.phase]);
 
@@ -1232,7 +1217,7 @@ export function App() {
     });
 
     return () => window.cancelAnimationFrame(frame);
-  }, [guildCreationStep, guildOfferState, screen, state.combat?.round, state.party.length, state.phase, townMode]);
+  }, [guildCreationStep, guildOfferState, partyMenuOpen, screen, state.combat?.round, state.party.length, state.phase, townMode]);
 
   function cycleSelectedTarget(step: number) {
     if (livingEnemyGroups.length === 0) {
@@ -1510,8 +1495,15 @@ export function App() {
         )}
 
         <section className="panel play-panel" aria-labelledby="location-heading">
-          {combatResult && (
-            <CombatResultPanel result={combatResult} t={t} onDismiss={() => setCombatResult(null)} />
+          {state.combatConclusion && (
+            <CombatResultPanel
+              result={{
+                ...state.combatConclusion,
+                enemyNames: state.combatConclusion.enemyIds.map(localizeEnemyName)
+              }}
+              t={t}
+              onDismiss={() => run({ type: "continue_after_combat" })}
+            />
           )}
           <div className="section-title">
             <h2 id="location-heading">{state.phase === "town" ? t("play.town") : state.phase === "combat" ? t("play.combat") : roomText?.name}</h2>
@@ -2243,6 +2235,7 @@ export function App() {
                   unlockedCheckpoints={unlockedCheckpoints}
                   onCommand={run}
                   onEnterMode={enterTownMode}
+                  onOpenPartyMenu={() => setPartyMenuOpen(true)}
                 />
               )}
               {townMode === "recovery" && (
@@ -2321,7 +2314,7 @@ export function App() {
                   run={run}
                   isTempoRunning={isTempoRunning}
                   onToggleTempo={() => toggleTempoMode("dungeon")}
-                  onOpenCamp={() => setCampOpen(true)}
+                  onOpenPartyMenu={() => setPartyMenuOpen(true)}
                   onOpenFullMap={() => setFullMapOpen(true)}
                   onAutoExplore={() => setState((current) => debugAutoExplore(current, activeWorld))}
                   canUseStairs={canUseStairs}
@@ -2383,13 +2376,14 @@ export function App() {
           )}
         </section>
       </section>
-        {campOpen && state.phase === "dungeon" && (
-          <CampPanel
-            party={state.party}
-            inventory={state.inventory}
+        {partyMenuOpen && state.phase !== "combat" && (
+          <PartyMenuPanel
+            state={state}
+            world={activeWorld}
+            locale={locale}
             t={t}
             onCommand={run}
-            onClose={() => setCampOpen(false)}
+            onClose={() => setPartyMenuOpen(false)}
           />
         )}
         {fullMapOpen && state.phase === "dungeon" && (

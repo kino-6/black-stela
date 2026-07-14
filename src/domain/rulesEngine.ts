@@ -2,6 +2,7 @@ import { appendEventLogs } from "./replayLog";
 import { applyLevelUps } from "./leveling";
 import { PARTY_SIZE_LIMIT, findClass, importAdventurer, reclassCharacter } from "./characterCreation";
 import { SPELLS, knownSpells } from "./spells";
+import { getCriticalChance, getEvasionChance, getInitiativeScore, getSpellPowerBonus, getStatusSpellChance } from "./combatMath";
 import { FEAR_ACCURACY_PENALTY, POISON_DAMAGE, STATUS_WEAR_OFF, statusResistPct } from "./status";
 import {
   getExit,
@@ -79,9 +80,6 @@ const OPPOSITE_DIRECTION: Record<Direction, Direction> = {
   west: "east"
 };
 
-// Criticals: a small base chance plus the actor's luck, dealing bonus damage.
-const CRIT_BASE_CHANCE = 5;
-const CRIT_PER_LUCK = 3;
 const CRIT_MULTIPLIER = 1.5;
 
 // Element weakness multiplier applied to incoming damage of a given element
@@ -132,6 +130,9 @@ export function executeCommand(state: GameState, world: ScenarioWorld, command: 
 }
 
 export function resolveCommand(state: GameState, world: ScenarioWorld, command: Command): CommandResult {
+  if (state.combatConclusion && command.type !== "continue_after_combat") {
+    return noChange(state);
+  }
   switch (command.type) {
     case "enter_dungeon":
       return enterDungeon(state, world);
@@ -183,8 +184,12 @@ export function resolveCommand(state: GameState, world: ScenarioWorld, command: 
       return defend(state);
     case "use_item":
       return useItem(state, world, command.itemId, command.targetCharacterId);
+    case "discard_item":
+      return discardItem(state, command.itemId, command.plus, command.affix);
     case "set_member_row":
       return setMemberRow(state, command.characterId, command.row);
+    case "swap_member_rows":
+      return swapMemberRows(state, command.characterId, command.targetCharacterId);
     case "buy_item":
       return buyItem(state, world, command.shopId, command.itemId);
     case "sell_item":
@@ -193,6 +198,8 @@ export function resolveCommand(state: GameState, world: ScenarioWorld, command: 
       return equipItem(state, world, command.characterId, command.equipmentId, command.plus, command.affix);
     case "declare_round":
       return declareRound(state, world, command.actions);
+    case "continue_after_combat":
+      return continueAfterCombat(state);
     case "retreat":
       return retreat(state);
     case "recover_party":
@@ -224,6 +231,29 @@ function setMemberRow(state: GameState, characterId: string, row: CombatRow): Co
     party: state.party.map((candidate) => (candidate.id === characterId ? { ...candidate, row } : candidate))
   };
   return withEvents(next, [{ type: "party_member_reformed", characterName: member.name, row }]);
+}
+
+function swapMemberRows(state: GameState, characterId: string, targetCharacterId: string): CommandResult {
+  if (state.phase === "combat") {
+    return noChange(state);
+  }
+  const member = state.party.find((candidate) => candidate.id === characterId);
+  const target = state.party.find((candidate) => candidate.id === targetCharacterId);
+  if (!member || !target || member.row === target.row) {
+    return noChange(state);
+  }
+
+  const party = state.party.map((candidate) =>
+    candidate.id === member.id
+      ? { ...candidate, row: target.row }
+      : candidate.id === target.id
+        ? { ...candidate, row: member.row }
+        : candidate
+  );
+  return withEvents({ ...state, party, turn: state.turn + 1 }, [
+    { type: "party_member_reformed", characterName: member.name, row: target.row },
+    { type: "party_member_reformed", characterName: target.name, row: member.row }
+  ]);
 }
 
 // Move an active party member to the guild bench (reserve). Town-only.
@@ -913,7 +943,7 @@ function declareRound(state: GameState, world: ScenarioWorld, actions: CombatAct
   const orderedActions = [...validation.actions].sort((left, right) => {
     const leftActor = party.find((member) => member.id === left.actorId);
     const rightActor = party.find((member) => member.id === right.actorId);
-    return (rightActor?.speed ?? 0) - (leftActor?.speed ?? 0);
+    return (rightActor ? getInitiativeScore(rightActor, world) : 0) - (leftActor ? getInitiativeScore(leftActor, world) : 0);
   });
 
   for (const action of orderedActions) {
@@ -958,7 +988,7 @@ function declareRound(state: GameState, world: ScenarioWorld, actions: CombatAct
       party = party.map((member) => (member.id === actor.id ? { ...member, mp: member.mp - spell.mpCost } : member));
 
       if (spell.effect.kind === "heal" && action.targetCharacterId) {
-        const amount = spell.effect.amount;
+        const amount = spell.effect.amount + (spell.kind === "spell" ? getSpellPowerBonus(actor) : 0);
         let healedName = "";
         party = party.map((member) => {
           if (member.id !== action.targetCharacterId) {
@@ -973,7 +1003,8 @@ function declareRound(state: GameState, world: ScenarioWorld, actions: CombatAct
         if (group) {
           const raw = rollDamage(`${state.turn}:${combat.round}:${actor.id}:${group.id}:spell`, spell.effect.min, spell.effect.max, 0);
           const weakness = elementMultiplier(group.weaknesses, spell.effect.element);
-          const damage = Math.round(raw * weakness);
+          const spellPower = spell.kind === "spell" ? getSpellPowerBonus(actor) : 0;
+          const damage = Math.round((raw + spellPower) * weakness);
           enemyGroups = damageGroup(enemyGroups, group.id, damage);
           const updated = enemyGroups.find((candidate) => candidate.id === group.id);
           // Martial 特技 land as strikes; arcane bolts scorch.
@@ -988,7 +1019,7 @@ function declareRound(state: GameState, world: ScenarioWorld, actions: CombatAct
         const targetGroup = enemyGroups.find((group) => group.id === action.targetGroupId);
         const resist = statusResistPct(targetGroup?.resistances, ailment);
         const roll = rollPercent(`${state.turn}:${combat.round}:${actor.id}:${targetGroup?.id}:ailment`);
-        if (roll < resist) {
+        if (roll >= getStatusSpellChance(actor, resist)) {
           beat(`${findGroupName(enemyGroups, action.targetGroupId)} resists ${spell.id}.`, { kind: "cast", actorId: actor.id, actorName: actor.name, targetGroupId: action.targetGroupId, targetEnemyId: targetGroup?.enemyId, spellId: spell.id, statusName: ailment });
         } else {
           enemyGroups = enemyGroups.map((group) =>
@@ -1020,7 +1051,7 @@ function declareRound(state: GameState, world: ScenarioWorld, actions: CombatAct
 
     const rawDamage = rollDamage(`${state.turn}:${combat.round}:${actor.id}:${group.id}:damage`, actorStats.damageMin, actorStats.damageMax, group.armor);
     const weakened = Math.round(rawDamage * elementMultiplier(group.weaknesses, "physical"));
-    const critChance = CRIT_BASE_CHANCE + (actor.aptitude.luck ?? 0) * CRIT_PER_LUCK;
+    const critChance = getCriticalChance(actor);
     const crit = rollPercent(`${state.turn}:${combat.round}:${actor.id}:${group.id}:crit`) < critChance;
     const damage = crit ? Math.round(weakened * CRIT_MULTIPLIER) : weakened;
     enemyGroups = damageGroup(enemyGroups, group.id, damage);
@@ -1056,6 +1087,16 @@ function declareRound(state: GameState, world: ScenarioWorld, actions: CombatAct
       ...state,
       phase: "dungeon",
       combat: null,
+      combatConclusion: {
+        enemyIds: defeatedEnemyIds,
+        enemyNames: defeatedNames,
+        xp,
+        gold,
+        levelUps: levelEvents
+          .filter((event) => event.type === "character_leveled_up")
+          .map((event) => ({ name: event.characterName, level: event.level })),
+        resumePosition: state.position ? { ...state.position } : null
+      },
       party: grownParty,
       partyGold: state.partyGold + gold,
       inventory,
@@ -1120,7 +1161,7 @@ function declareRound(state: GameState, world: ScenarioWorld, actions: CombatAct
     }
 
     const hitRoll = rollPercent(`${state.turn}:${combat.round}:${group.id}:${target.id}:hit`);
-    if (hitRoll > group.accuracy) {
+    if (hitRoll > Math.max(5, group.accuracy - getEvasionChance(target, world))) {
       beat(`${group.name} misses ${target.name}.`, { kind: "miss", actorEnemyId: group.enemyId, targetCharacterId: target.id, targetName: target.name });
       continue;
     }
@@ -1272,6 +1313,16 @@ function debugForceVictory(state: GameState): CommandResult {
     ...state,
     phase: "dungeon",
     combat: null,
+    combatConclusion: {
+      enemyIds: defeatedEnemyIds,
+      enemyNames: defeatedNames,
+      xp,
+      gold,
+      levelUps: levelEvents
+        .filter((event) => event.type === "character_leveled_up")
+        .map((event) => ({ name: event.characterName, level: event.level })),
+      resumePosition: state.position ? { ...state.position } : null
+    },
     party: grownParty,
     partyGold: state.partyGold + gold,
     defeatedEnemies: Array.from(new Set([...state.defeatedEnemies, ...defeatedEnemyIds])),
@@ -1288,6 +1339,32 @@ function debugForceVictory(state: GameState): CommandResult {
     { type: "combat_rewards", xp, gold, enemyNames: defeatedNames, enemyIds: defeatedEnemyIds },
     ...levelEvents
   ]);
+}
+
+function continueAfterCombat(state: GameState): CommandResult {
+  const conclusion = state.combatConclusion;
+  if (!conclusion) {
+    return noChange(state);
+  }
+
+  const position = conclusion.resumePosition ? { ...conclusion.resumePosition } : state.position;
+  return {
+    state: {
+      ...state,
+      phase: "dungeon",
+      combatConclusion: null,
+      position,
+      map: position
+        ? {
+            ...state.map,
+            currentRoomId: position.roomId,
+            currentCellId: position.cellId ?? state.map.currentCellId ?? null,
+            currentFacing: position.facing
+          }
+        : state.map
+    },
+    events: []
+  };
 }
 
 // Debug: fully restore the party in place — HP, MP, injuries, and round statuses.
@@ -1367,6 +1444,38 @@ function useItem(state: GameState, world: ScenarioWorld, itemId: string, targetC
       healAmount: item.healAmount ?? 0
     }
   ]);
+}
+
+function discardItem(state: GameState, itemId: string, plus?: number, affix?: string): CommandResult {
+  if (state.phase === "combat") {
+    return noChange(state);
+  }
+
+  const key = equipmentInstanceKey(itemId, plus, affix);
+  const item = state.inventory.find(
+    (candidate) => equipmentInstanceKey(candidate.id, candidate.plus, candidate.affix) === key && candidate.quantity > 0
+  );
+  const protectedKind = item && ["key", "treasure", "escape"].includes(item.kind);
+  const equippedCount = state.party.reduce(
+    (count, member) =>
+      count +
+      Object.values(member.equipment).filter(
+        (entry) => entry && equipmentInstanceKey(entry.id, entry.plus, entry.affix) === key
+      ).length,
+    0
+  );
+  if (!item || protectedKind || item.quantity <= equippedCount) {
+    return noChange(state);
+  }
+
+  return withEvents(
+    {
+      ...state,
+      inventory: removeInventoryItem(state.inventory, itemId, 1, plus, affix),
+      turn: state.turn + 1
+    },
+    [{ type: "item_discarded", itemId: item.id, itemName: item.name }]
+  );
 }
 
 function buyItem(state: GameState, world: ScenarioWorld, shopId: string, itemId: string): CommandResult {
@@ -1462,19 +1571,28 @@ function equipItem(
     return noChange(state);
   }
 
+  const equippedOwners = state.party.flatMap((member) =>
+    Object.entries(member.equipment)
+      .filter(([, equipped]) => equipped && equipmentInstanceKey(equipped.id, equipped.plus, equipped.affix) === key)
+      .map(([memberSlot]) => ({ characterId: member.id, slot: memberSlot as EquipmentSlot }))
+  );
+  const targetAlreadyHasInstance = equippedOwners.some((owner) => owner.characterId === characterId);
+  const transferFrom = !targetAlreadyHasInstance && equippedOwners.length >= item.quantity
+    ? equippedOwners.find((owner) => owner.characterId !== characterId)
+    : undefined;
+
   const next: GameState = {
     ...state,
-    party: state.party.map((member) =>
-      member.id === characterId
-        ? {
-            ...member,
-            equipment: {
-              ...member.equipment,
-              [slot]: { id: equipmentId, plus, affix }
-            }
-          }
-        : member
-    ),
+    party: state.party.map((member) => {
+      const nextEquipment = { ...member.equipment };
+      if (transferFrom?.characterId === member.id) {
+        delete nextEquipment[transferFrom.slot];
+      }
+      if (member.id === characterId) {
+        nextEquipment[slot] = { id: equipmentId, plus, affix };
+      }
+      return { ...member, equipment: nextEquipment };
+    }),
     turn: state.turn + 1
   };
 

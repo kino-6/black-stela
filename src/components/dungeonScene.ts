@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { asset, assetOrNull, blockTextures, getEnemySpriteTextureUrl } from "../ui/artAssets";
 import type { EnemyElevation, EnemySize, ScenePalette } from "../domain/types";
+import { calculateCombatFraming, ENEMY_WORLD_HEIGHT, MAX_FIGURES_BY_SIZE } from "../ui/combatFraming";
 import { getSpriteMetrics, measureSpriteMetrics } from "../ui/spriteMetrics";
 
 const DEFAULT_ART_PACK = "default";
@@ -65,27 +66,6 @@ const WALL_HEIGHT = 3.2;
 const WALL_MID_Y = 1.5;
 const CEILING_Y = 3.1;
 
-// How tall each creature actually stands, in the same world units as the corridor
-// (WALL_HEIGHT = 3.2). A "huge" boss nearly fills the passage; a "small" mite comes up to
-// your knee. This — not the image file — is what makes size read.
-const ENEMY_WORLD_HEIGHT: Record<EnemySize, number> = {
-  small: 1,
-  medium: 1.7,
-  large: 2.4,
-  huge: 3.1
-};
-// How many of a pack actually line up in the corridor. Five vermin read as a swarm; five
-// armoured blockers read as one indistinct wall of sprites, because each is nearly as wide
-// as the passage. Bigger creature, fewer abreast. The pack still fights at full strength —
-// this is staging, not combat.
-const MAX_FIGURES_BY_SIZE: Record<EnemySize, number> = {
-  small: 5,
-  medium: 4,
-  large: 3,
-  huge: 1
-};
-// Half the horizontal band the line-up may occupy; keeps figures off the corridor walls.
-const FIGURE_HALF_SPAN = 2.9;
 const SHADOW_GEOMETRY_RADIUS = 1.22;
 
 /** Where a group's figures stand on screen, as a % of the canvas box (0–100). */
@@ -125,8 +105,8 @@ export function buildDungeonScene(mount: HTMLDivElement, input: DungeonSceneInpu
   camera.lookAt(0, 1.32, -6);
 
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, preserveDrawingBuffer: true });
-  renderer.setSize(width, height);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setSize(width, height);
   renderer.shadowMap.enabled = true;
   mount.appendChild(renderer.domElement);
 
@@ -269,46 +249,42 @@ export function buildDungeonScene(mount: HTMLDivElement, input: DungeonSceneInpu
     // fighting distance — it left even a boss occupying a third of the frame, which is why
     // the art read as small. Closing to ~4m lets perspective do the work: a huge creature
     // now fills most of the passage and a mite still comes up to your knee.
-    const frontWallIndex = input.frontWallIndex ?? -1;
-    const wallZ = frontWallIndex >= 0 ? -frontWallIndex * CELL : -Infinity;
-    const enemyZ = frontWallIndex >= 0 ? Math.min(-0.8, Math.max(-1.2, wallZ + 1.3)) : -1.2;
-
-    // One entry per individual creature, keeping same-type figures adjacent.
-    const figures = input.enemies.flatMap((group, groupIndex) =>
-      Array.from({ length: Math.max(1, Math.min(group.count ?? 1, MAX_FIGURES_BY_SIZE[group.size ?? "medium"])) }, () => ({
+    const stagedGroups = input.enemies.map((group, groupIndex) => {
+      const metrics = getSpriteMetrics(getEnemySpriteTextureUrl(group.id, pack));
+      return {
         group,
-        groupIndex
+        groupId: group.groupId ?? `${groupIndex}`,
+        bodyAspect: metrics
+          ? (metrics.imageAspect * metrics.widthFrac) / Math.max(0.08, metrics.heightFrac)
+          : 0.8
+      };
+    });
+    const framing = calculateCombatFraming(
+      width,
+      height,
+      stagedGroups.map(({ group, groupId, bodyAspect }) => ({
+        groupId,
+        size: group.size,
+        count: Math.max(1, Math.min(group.count ?? 1, MAX_FIGURES_BY_SIZE[group.size ?? "medium"])),
+        bodyAspect
       }))
     );
-    const total = figures.length;
-    // Space them by how WIDE they actually are, not by a flat gap — otherwise a rank of
-    // broad blockers overlaps into a single mass while thin vermin stand oddly far apart.
-    // The measured silhouette gives the real width; fall back to the height while the art
-    // is still loading. Clamped so the line-up never spills past the corridor walls.
-    const widestBody = Math.max(
-      ...figures.map(({ group }) => {
-        const worldHeight = ENEMY_WORLD_HEIGHT[group.size ?? "medium"];
-        const m = getSpriteMetrics(getEnemySpriteTextureUrl(group.id, pack));
-        if (!m) {
-          return worldHeight;
-        }
-        return (worldHeight / Math.max(0.08, m.heightFrac)) * m.imageAspect * m.widthFrac;
-      })
-    );
-    // SPREAD them, then clamp — never the other way round. The old formula was
-    // `min(bodyWidth * 0.82, cap)`, which can only ever place figures CLOSER TOGETHER THAN
-    // THEY ARE WIDE: it had no term that opens a gap, so small creatures always overlapped and
-    // a pack of four landed in one huddle in the middle of the corridor. Now the line-up uses
-    // the corridor it has, and only genuinely broad blockers are allowed to touch.
-    const spacing = total > 1 ? Math.min((2 * FIGURE_HALF_SPAN) / (total - 1), widestBody * 1.6) : 0;
+    mount.dataset.combatFormationWidth = `${Math.round(framing.formationWidthPx)}`;
+    mount.dataset.combatMinimumSilhouette = `${Math.round(framing.minimumSilhouetteHeightPx)}`;
+    const frontWallIndex = input.frontWallIndex ?? -1;
+    const wallZ = frontWallIndex >= 0 ? -frontWallIndex * CELL - CELL / 2 : -Infinity;
+    const figures = framing.figures.map((figure) => {
+      const staged = stagedGroups.find((candidate) => candidate.groupId === figure.groupId)!;
+      return { ...figure, ...staged };
+    });
 
     const anchors = new Map<string, { xSum: number; n: number; z: number; baseY: number }>();
 
-    figures.forEach(({ group, groupIndex }, index) => {
+    figures.forEach(({ group, groupId, x, z: framedZ }) => {
       const url = getEnemySpriteTextureUrl(group.id, pack);
-      const offsetX = (index - (total - 1) / 2) * spacing;
-      // Stagger depth slightly so overlapping sprites never fight for the same plane.
-      const z = enemyZ - (index % 2) * 0.14;
+      const offsetX = x;
+      // Never place a figure behind the wall that closes the current view.
+      const z = Math.max(framedZ, wallZ + 0.65);
       const elevation = group.elevation ?? "ground";
       // A creature leaves the floor either because it is tactically out of reach (elevation) or
       // simply because it flies (hover). The second is a picture; the first is a rule.
@@ -372,7 +348,7 @@ export function buildDungeonScene(mount: HTMLDivElement, input: DungeonSceneInpu
         scene.add(shadow);
       }
 
-      const key = group.groupId ?? `${groupIndex}`;
+      const key = groupId;
       const anchor = anchors.get(key) ?? { xSum: 0, n: 0, z, baseY: lift };
       anchor.xSum += offsetX;
       anchor.n += 1;
@@ -425,6 +401,8 @@ export function buildDungeonScene(mount: HTMLDivElement, input: DungeonSceneInpu
     renderer.dispose();
     delete mount.dataset.returnVisual;
     delete mount.dataset.frontStairVisual;
+    delete mount.dataset.combatFormationWidth;
+    delete mount.dataset.combatMinimumSilhouette;
     mount.removeChild(renderer.domElement);
   };
 }

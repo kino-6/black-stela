@@ -176,10 +176,13 @@ function resolveFight(
   world: ScenarioWorld,
   encounter: PlannedEncounter
 ): { state: GameState; midFightLow: number } {
+  const readyState = state.combatConclusion
+    ? executeCommand(state, world, { type: "continue_after_combat" })
+    : state;
   let current: GameState = {
-    ...state,
+    ...readyState,
     phase: "combat",
-    combat: createCombatState(state.position?.roomId ?? "sim", encounter.enemy, encounter.count)
+    combat: createCombatState(readyState.position?.roomId ?? "sim", encounter.enemy, encounter.count)
   };
   let midFightLow = lowestHpPct(current.party);
 

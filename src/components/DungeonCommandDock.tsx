@@ -13,7 +13,7 @@ import {
   Search,
   ShieldCheck,
   Square,
-  Tent,
+  UsersRound,
   Volume2
 } from "lucide-react";
 import type { Command } from "../domain/types";
@@ -24,7 +24,7 @@ interface DungeonCommandDockProps {
   onCommand: (command: Command) => void;
   isTempoRunning: boolean;
   onToggleTempo: () => void;
-  onOpenCamp: () => void;
+  onOpenPartyMenu: () => void;
   onOpenFullMap: () => void;
   debugMode: boolean;
   onAutoExplore: () => void;
@@ -45,7 +45,7 @@ export function DungeonCommandDock({
   onCommand,
   isTempoRunning,
   onToggleTempo,
-  onOpenCamp,
+  onOpenPartyMenu,
   onOpenFullMap,
   debugMode,
   onAutoExplore,
@@ -103,9 +103,9 @@ export function DungeonCommandDock({
         <Volume2 size={18} />
         {t("play.listen")}
       </button>
-      <button type="button" onClick={onOpenCamp} data-testid="camp-open">
-        <Tent size={18} />
-        {t("play.camp")}
+      <button type="button" onClick={onOpenPartyMenu} data-testid="party-menu-open">
+        <UsersRound size={18} />
+        {t("partyMenu.title")}
       </button>
       <button type="button" onClick={onOpenFullMap} data-testid="full-map-open">
         <MapIcon size={18} />

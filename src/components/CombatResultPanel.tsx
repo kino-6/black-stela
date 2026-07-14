@@ -1,15 +1,9 @@
 import { useEffect, useRef } from "react";
+import type { CombatConclusion } from "../domain/types";
 import type { Translator } from "../i18n";
 
-export interface CombatResult {
-  enemyNames: string[];
-  xp: number;
-  gold: number;
-  levelUps: { name: string; level: number }[];
-}
-
 interface CombatResultPanelProps {
-  result: CombatResult;
+  result: CombatConclusion;
   t: Translator;
   onDismiss: () => void;
 }
@@ -24,7 +18,15 @@ export function CombatResultPanel({ result, t, onDismiss }: CombatResultPanelPro
   }, []);
 
   return (
-    <div className="combat-result-overlay" role="dialog" aria-modal="true" aria-label={t("result.title")} data-testid="combat-result">
+    <div
+      className="combat-result-overlay"
+      role="dialog"
+      aria-modal="true"
+      aria-label={t("result.title")}
+      data-testid="combat-result"
+      data-controller-active="true"
+      data-controller-surface="combat-result"
+    >
       <div className="combat-result-card">
         <h2 className="combat-result-title">{t("result.title")}</h2>
         {result.enemyNames.length > 0 && (

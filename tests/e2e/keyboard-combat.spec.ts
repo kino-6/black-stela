@@ -28,6 +28,13 @@ test("a fight can be fought to victory by keyboard alone", async ({ page }) => {
     await page.waitForTimeout(50);
   }
 
-  await expect(page.getByRole("heading", { name: "Combat" })).toHaveCount(0);
+  const result = page.getByTestId("combat-result");
+  await expect(result).toBeVisible();
+  await expect(page.getByTestId("combat-result-continue")).toBeFocused();
+  await page.screenshot({ path: "docs/evidence/improve-009-011-2026-07-14/05-combat-result-1280.png" });
+  await page.keyboard.press("Enter");
+  await expect(result).toHaveCount(0);
+  await expect(page.getByTestId("dungeon-command-window")).toBeVisible();
   await expect(page.getByRole("heading", { name: "Hall of Old Dust" })).toBeVisible();
+  await page.screenshot({ path: "docs/evidence/improve-009-011-2026-07-14/06-same-cell-resume-1280.png" });
 });

@@ -47,6 +47,11 @@ function getActiveControllerSurfaces() {
     return [];
   }
 
+  const modal = document.querySelector<HTMLElement>("[aria-modal='true'][data-controller-surface][data-controller-active='true']");
+  if (modal) {
+    return [modal];
+  }
+
   return Array.from(document.querySelectorAll<HTMLElement>(controllerSurfaceSelector));
 }
 

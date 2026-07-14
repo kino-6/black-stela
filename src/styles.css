@@ -2334,7 +2334,6 @@ textarea {
 .enemy-stage {
   position: relative;
   flex: 1 1 auto;
-  flex: 1 1 auto;
   min-height: clamp(9rem, 22vh, 28rem);
   border: 1px solid #2a2c27;
   border-radius: 4px;
@@ -2350,6 +2349,17 @@ textarea {
 
 .enemy-stage-backdrop .dungeon-view,
 .enemy-stage-backdrop .dungeon-canvas {
+  height: 100%;
+  min-height: 0;
+}
+
+/* The generic cockpit canvas cap is intentionally small for exploration, but it
+   must not win inside combat. Otherwise a 1080p enemy stage grows around a
+   15rem canvas and leaves a black void below the rendered corridor. */
+.combat-cockpit .enemy-stage-backdrop .dungeon-view,
+.combat-cockpit .enemy-stage-backdrop .dungeon-canvas,
+.debug-panel:not(.collapsed) ~ .game-grid .combat-cockpit .enemy-stage-backdrop .dungeon-view,
+.debug-panel:not(.collapsed) ~ .game-grid .combat-cockpit .enemy-stage-backdrop .dungeon-canvas {
   height: 100%;
   min-height: 0;
 }
@@ -2559,12 +2569,37 @@ textarea {
   flex: 1 1 0;
   min-width: 5.5rem;
   display: flex;
-  flex-direction: column;
-  gap: 0.1rem;
-  padding: 0.22rem 0.4rem;
+  align-items: center;
+  gap: 0.32rem;
+  padding: 0.22rem 0.3rem;
   border: 1px solid #2f332b;
   border-radius: 3px;
   background: #131612;
+}
+
+.party-token-combat .pt-portrait {
+  flex: 0 0 2rem;
+  width: 2rem;
+  height: 2rem;
+  overflow: hidden;
+  border: 1px solid #4a4639;
+  border-radius: 2px;
+  background: #080a08;
+}
+
+.party-token-combat .pt-portrait img,
+.party-token-combat .pt-portrait .portrait-asset {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.party-token-combat .pt-body {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: grid;
+  gap: 0.08rem;
 }
 
 .party-token-combat.active {
@@ -2602,8 +2637,11 @@ textarea {
 }
 
 .party-token-combat .pt-hp-text {
-  font-size: 0.66rem;
+  font-size: 0.62rem;
   color: #9aa08e;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .combat-order-progress {
@@ -2615,6 +2653,12 @@ textarea {
 @media (max-width: 720px) {
   .party-strip-group {
     flex-basis: 100%;
+  }
+
+  .party-token-combat .pt-portrait {
+    flex-basis: 1.65rem;
+    width: 1.65rem;
+    height: 1.65rem;
   }
 }
 
@@ -3007,6 +3051,13 @@ textarea {
   min-height: 0;
 }
 
+.combat-command-zone > .tempo-indicator {
+  height: 100%;
+  margin: 0.1rem 0 0;
+  align-content: center;
+  justify-content: center;
+}
+
 .combat-command-menu {
   border: 1px solid #4a4230;
   border-radius: 4px;
@@ -3257,8 +3308,9 @@ textarea {
 }
 
 .combat-log {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: auto minmax(0, 1fr);
   gap: 0.15rem;
   width: 100%;
   text-align: left;
@@ -3268,10 +3320,10 @@ textarea {
   background: #0c0d0b;
   color: inherit;
   font: inherit;
-  cursor: pointer;
 }
 
 .combat-log-title {
+  grid-column: 1 / -1;
   font-size: 0.7rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -3279,25 +3331,31 @@ textarea {
 }
 
 .combat-log-beats {
-  list-style: none;
-  margin: 0;
-  padding: 0;
+  min-width: 0;
+  height: clamp(2.4rem, 6vh, 3.6rem);
+  overflow: hidden;
   display: flex;
   flex-direction: column;
-  gap: 0.15rem;
-  /* FIXED height, scrolled — not min-height. The log used to grow a line at a time as the
-     round played out, and since the enemy stage is flex:1 it shrank by exactly as much:
-     the whole screen breathed in and out every blow. */
-  height: clamp(2.4rem, 6vh, 3.6rem);
-  overflow-y: auto;
-  scrollbar-width: thin;
+  justify-content: flex-end;
+  gap: 0.1rem;
 }
 
 .combat-log-beat {
+  margin: 0;
   font-size: 0.82rem;
   line-height: 1.35;
   color: #e7dcc2;
   animation: combat-beat-in 0.18s ease-out;
+}
+
+.combat-log-context {
+  margin: 0;
+  color: #85897e;
+  font-size: 0.72rem;
+  line-height: 1.2;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .combat-log-empty {
@@ -3306,7 +3364,9 @@ textarea {
 }
 
 .combat-log-more {
-  align-self: flex-end;
+  align-self: end;
+  margin: 0 0 0 0.4rem;
+  padding: 0.3rem 0.5rem;
   font-size: 0.68rem;
   color: #b8a06a;
 }
@@ -4100,86 +4160,403 @@ textarea {
   }
 }
 
-/* Camp — an in-dungeon overlay for reforming the party and sharing supplies. */
-.camp-overlay {
+/* Party menu — a fixed JRPG command surface shared by town and exploration. */
+.party-menu-overlay {
   position: fixed;
   inset: 0;
-  z-index: 40;
+  z-index: 70;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 1.5rem;
-  background: rgba(4, 5, 4, 0.72);
+  padding: 1rem;
+  background: rgba(4, 5, 4, 0.82);
 }
 
-.camp-panel {
-  width: min(32rem, 100%);
-  max-height: 90vh;
-  overflow-y: auto;
+.party-menu-panel {
+  width: min(70rem, 100%);
+  height: min(43rem, calc(100vh - 2rem));
+  min-height: 34rem;
   display: grid;
-  gap: 0.9rem;
-  padding: 1.1rem 1.2rem;
+  grid-template-rows: auto auto auto minmax(0, 1fr) auto;
+  gap: 0.65rem;
+  padding: 0.9rem 1rem;
   border: 1px solid #4b5148;
-  border-radius: 8px;
+  border-radius: 6px;
   background: #12140f;
   box-shadow: 0 18px 48px rgba(0, 0, 0, 0.55);
 }
 
-.camp-head h3 {
+.party-menu-head h2,
+.party-menu-head p,
+.party-menu-profile h3,
+.party-menu-profile p,
+.party-menu-page h3,
+.party-menu-page p {
   margin: 0;
-  color: #f2efe5;
 }
 
-.camp-head p {
+.party-menu-head h2 {
+  color: #f2efe5;
+  font-size: 1.25rem;
+}
+
+.party-menu-head p {
   margin: 0.2rem 0 0;
   color: #9c988b;
   font-size: 0.85rem;
 }
 
-.camp-roster {
-  list-style: none;
-  margin: 0;
-  padding: 0;
+.party-menu-tabs {
   display: grid;
-  gap: 0.5rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.35rem;
 }
 
-.camp-member {
+.party-menu-tabs button,
+.party-menu-row button,
+.party-item-list button,
+.party-item-actions button,
+.party-menu-footer button {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  padding: 0.6rem 0.7rem;
+  justify-content: center;
+  gap: 0.4rem;
+}
+
+.party-menu-tabs button {
+  min-height: 2.35rem;
+}
+
+.party-menu-tabs button.active,
+.party-menu-row button.active,
+.party-item-list button.active {
+  border-color: #d5ae57;
+  background: #2b2819;
+  color: #f2d78b;
+}
+
+.party-menu-formation {
+  display: grid;
+  gap: 0.3rem;
+  padding: 0.45rem 0.55rem;
   border: 1px solid #30372f;
-  border-radius: 6px;
   background: #0d100d;
 }
 
-.camp-member-info {
+.party-menu-row {
   display: grid;
-  gap: 0.15rem;
+  grid-template-columns: 3.3rem minmax(0, 1fr);
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.party-menu-row > span {
+  color: #bda45e;
+  font-size: 0.78rem;
+}
+
+.party-menu-row > div {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.35rem;
+}
+
+.party-menu-row button {
+  display: grid;
+  gap: 0.1rem;
+  min-height: 2.7rem;
+  padding: 0.3rem 0.45rem;
+  text-align: left;
+}
+
+.party-menu-row button strong,
+.party-menu-row button small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.party-menu-row button small {
+  color: #9c988b;
+  font-size: 0.72rem;
+}
+
+.party-menu-content {
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 15rem minmax(0, 1fr);
+  gap: 0.75rem;
+  overflow: hidden;
+}
+
+.party-menu-profile {
   min-width: 0;
+  display: grid;
+  grid-template-columns: 4.25rem minmax(0, 1fr);
+  align-content: start;
+  gap: 0.65rem;
+  padding: 0.75rem;
+  border: 1px solid #30372f;
+  background: #0d100d;
 }
 
-.camp-member-info strong {
+.party-menu-portrait {
+  width: 4.25rem;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border: 2px solid #7b765f;
+  background: #181b16;
+}
+
+.party-menu-portrait img,
+.party-menu-portrait .portrait-asset {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.party-menu-profile h3 {
   color: #f2efe5;
+  font-size: 1.05rem;
 }
 
-.camp-member-info span {
+.party-menu-profile p {
+  color: #aaa596;
+  font-size: 0.76rem;
+  line-height: 1.45;
+}
+
+.party-menu-profile .party-menu-condition.danger {
+  color: #d58c79;
+}
+
+.party-menu-profile dl {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 0.3rem;
+  margin: 0;
+}
+
+.party-menu-swap {
+  grid-column: 1 / -1;
+  min-height: 2.25rem;
+}
+
+.party-menu-profile dl div,
+.equipment-slot-list div {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.8rem;
+  padding-bottom: 0.25rem;
+  border-bottom: 1px solid #242a23;
+}
+
+.party-menu-profile dt,
+.equipment-slot-list dt {
+  color: #8f8b7f;
+}
+
+.party-menu-profile dd,
+.equipment-slot-list dd {
+  margin: 0;
+  color: #ddd8ca;
+  text-align: right;
+}
+
+.party-menu-page {
+  min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+  display: grid;
+  align-content: start;
+  gap: 0.65rem;
+  padding-right: 0.2rem;
+}
+
+.party-menu-section {
+  padding: 0.7rem 0.8rem;
+  border: 1px solid #30372f;
+  background: #0d100d;
+}
+
+.party-menu-section h3 {
+  margin-bottom: 0.55rem;
+  color: #d6bf7b;
+  font-size: 0.9rem;
+}
+
+.party-stat-grid,
+.aptitude-grid,
+.equipment-slot-list {
+  margin: 0;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.party-stat-grid {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.party-stat-grid div {
+  padding: 0.45rem 0.5rem;
+  border-left: 2px solid #565542;
+  background: #151813;
+}
+
+.party-stat-grid dt,
+.aptitude-grid dd {
+  color: #8f8b7f;
+  font-size: 0.72rem;
+}
+
+.party-stat-grid dd,
+.aptitude-grid dd {
+  margin: 0.1rem 0 0;
+}
+
+.party-stat-grid dd,
+.aptitude-grid dt {
+  color: #e5e0d4;
+}
+
+.aptitude-grid {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.aptitude-grid div {
+  min-width: 0;
+  padding-right: 0.45rem;
+  border-right: 1px solid #30372f;
+}
+
+.aptitude-grid div:last-child {
+  border-right: 0;
+}
+
+.aptitude-grid dd {
+  line-height: 1.4;
+}
+
+.party-resistance-section p,
+.party-menu-note {
   color: #bdb8aa;
   font-size: 0.8rem;
 }
 
-.camp-member-actions {
-  display: flex;
-  gap: 0.4rem;
-  flex-shrink: 0;
+.equipment-slot-list {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
-.camp-member-actions button {
-  min-height: 2.1rem;
-  padding: 0.4rem 0.7rem;
-  font-size: 0.85rem;
+.party-item-page {
+  grid-template-columns: minmax(12rem, 0.8fr) minmax(16rem, 1.2fr);
+  overflow: hidden;
+}
+
+.party-item-list,
+.party-item-detail {
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0.6rem;
+  border: 1px solid #30372f;
+  background: #0d100d;
+}
+
+.party-item-list {
+  display: grid;
+  align-content: start;
+  gap: 0.3rem;
+}
+
+.party-item-list button {
+  justify-content: space-between;
+  min-height: 2.35rem;
+  padding: 0.4rem 0.55rem;
+  text-align: left;
+}
+
+.party-item-list button span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.party-item-detail h3 {
+  color: #f2efe5;
+}
+
+.party-item-detail > p {
+  margin-top: 0.5rem;
+  color: #aaa596;
+  line-height: 1.55;
+}
+
+.party-item-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.4rem;
+  margin-top: 0.9rem;
+}
+
+.party-item-actions .danger-action {
+  border-color: #a75c50;
+  color: #ffd2c9;
+}
+
+.party-menu-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  min-height: 2.6rem;
+  border-top: 1px solid #30372f;
+  padding-top: 0.55rem;
+}
+
+.party-menu-footer span {
+  min-width: 0;
+  overflow: hidden;
+  color: #9c988b;
+  font-size: 0.78rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.party-menu-footer button {
+  flex: 0 0 8rem;
+}
+
+@media (max-width: 760px) {
+  .party-menu-panel {
+    height: calc(100vh - 1rem);
+    min-height: 0;
+    padding: 0.65rem;
+  }
+
+  .party-menu-content {
+    grid-template-columns: 1fr;
+    overflow-y: auto;
+  }
+
+  .party-menu-profile {
+    grid-template-columns: 3.5rem minmax(0, 1fr) minmax(8rem, 1fr);
+  }
+
+  .party-menu-portrait {
+    width: 3.5rem;
+  }
+
+  .party-menu-profile dl {
+    grid-column: auto;
+  }
+
+  .party-stat-grid,
+  .equipment-slot-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .aptitude-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 
 /* Full-floor map — an in-dungeon overlay showing every explored cell at once. */

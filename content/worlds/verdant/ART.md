@@ -127,13 +127,41 @@ Verdant should override the global portraits. Character creation is part of the
 scenario mood; do not leave the ash/default adventurer portraits in a living
 forest pack.
 
+### Locked portrait direction
+
+The portrait set uses the visual grammar of an original Japanese 2D dungeon RPG:
+clear inked contours, expressive anime faces, slightly exaggerated proportions,
+readable costume silhouettes, and cel-like shadow groups softened by restrained
+paint texture. Classic forest-labyrinth and witch-brigade RPGs are references for
+clarity and ensemble appeal only; do not copy a proprietary character, costume,
+composition, or a specific living artist's line.
+
+- **Do not use photorealistic or semi-photographic cast portraits.** Glossy skin,
+  fashion-editorial lighting, realistic headshots, and uniformly rendered
+  three-quarter busts make the set look like generic generated concept art.
+- **Do not design the cast as a demographic checklist.** Variety comes from role,
+  age archetype, build, expression, hair shape, equipment, palette, and personal
+  history. Each person must first read as a character who belongs to this world.
+- Give every portrait one dominant silhouette and one memorable role cue that
+  survives at 48–80 px: spear and pauldron, goggles and vial, map case, warding
+  coat, caravan hook, rope, spectacles, mourning sprig, and so on.
+- Use purposeful, clearly separated colors. Verdant is not a green wash and dark
+  fantasy is not desaturation. Skin, hair, clothing, and role prop must remain
+  distinguishable in the party rail.
+- Keep the backdrop flat and graphic, with at most two simple color fields. Do
+  not bake a forest scene, global green grade, torchlight, bloom, or cinematic
+  atmosphere into a portrait.
+- Reject repeated faces, repeated three-quarter poses, malformed hands or props,
+  over-detailed trim, unreadable pupils, and costume details that collapse at
+  gameplay size.
+
 Use the same 12 portrait basenames as the default pack:
 `gate`, `ruin`, `vial`, `coin`, `map`, `ward`, `road`, `pit`, `ink`, `grave`,
-`dock`, `cloak`. ✅ generated
+`dock`, `cloak`. ✅ retaken as an original Japanese 2D RPG ensemble (2026-07-14)
 
-Post-generation review note: `grave` and `cloak` are intentionally darker than
-the others. If they lose readability in the in-game party rail, retake those two
-with brighter face midtones while keeping the same subdued mood.
+Acceptance requires both a 12-up contact-sheet review and browser proof in the
+character-creation preview and six-person party HUD. File dimensions and basename
+resolution alone do not prove the portraits are usable.
 
 ## Delivery audit (2026-07-13)
 

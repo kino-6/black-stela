@@ -134,6 +134,19 @@ describe("tactical combat", () => {
     expect(next.party[0]).toMatchObject({ xp: 5, gold: 3 });
     expect(next.partyGold).toBe(state.partyGold + 3);
     expect(next.log.at(-1)?.text).toMatch(/Victory/i);
+    expect(next.combatConclusion).toMatchObject({
+      enemyIds: ["enemy.b1f.ash-slime"],
+      xp: 5,
+      gold: 3,
+      resumePosition: state.position
+    });
+
+    const blocked = executeCommand(next, defaultWorld, { type: "move_forward" });
+    expect(blocked).toBe(next);
+
+    const resumed = executeCommand(next, defaultWorld, { type: "continue_after_combat" });
+    expect(resumed.combatConclusion).toBeNull();
+    expect(resumed.position).toEqual(state.position);
   });
 
   it("consumes healing items used as declared round actions", () => {

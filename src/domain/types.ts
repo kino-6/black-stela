@@ -29,11 +29,14 @@ export type Command =
   | { type: "attack" }
   | { type: "defend" }
   | { type: "use_item"; itemId: string; targetCharacterId: string }
+  | { type: "discard_item"; itemId: string; plus?: number; affix?: string }
   | { type: "set_member_row"; characterId: string; row: CombatRow }
+  | { type: "swap_member_rows"; characterId: string; targetCharacterId: string }
   | { type: "buy_item"; shopId: string; itemId: string }
   | { type: "sell_item"; itemId: string; plus?: number; affix?: string }
   | { type: "equip_item"; characterId: string; equipmentId: string; plus?: number; affix?: string }
   | { type: "declare_round"; actions: CombatActionDeclaration[] }
+  | { type: "continue_after_combat" }
   | { type: "retreat" }
   | { type: "recover_party" }
   | { type: "return_to_town" }
@@ -291,6 +294,7 @@ export type GameEvent =
   | { type: "character_leveled_up"; characterId: string; characterName: string; level: number }
   | { type: "party_defended"; enemyId: string; enemyName: string; damage: number }
   | { type: "item_used"; itemId: string; itemName: string; targetCharacterId: string; targetName: string; healAmount: number }
+  | { type: "item_discarded"; itemId: string; itemName: string }
   | { type: "inventory_item_gained"; itemId: string; itemName: string; quantity: number; source: "treasure" | "reward"; plus?: number; affix?: string }
   | { type: "item_bought"; itemId: string; itemName: string; gold: number }
   | { type: "item_sold"; itemId: string; itemName: string; gold: number }
@@ -430,6 +434,15 @@ export interface DungeonMapState {
   secretCandidates: Partial<Record<string, Direction[]>>;
 }
 
+export interface CombatConclusion {
+  enemyIds: string[];
+  enemyNames: string[];
+  xp: number;
+  gold: number;
+  levelUps: { name: string; level: number }[];
+  resumePosition: DungeonPosition | null;
+}
+
 export interface GameState {
   phase: "town" | "dungeon" | "combat";
   party: Character[];
@@ -437,6 +450,9 @@ export interface GameState {
   retired: Character[];
   position: DungeonPosition | null;
   combat: CombatState | null;
+  /** Domain-owned result subphase. While present, only the explicit Continue
+   *  command may return control to dungeon exploration. */
+  combatConclusion?: CombatConclusion | null;
   defeatedEnemies: string[];
   /** Enemy types cleared on the CURRENT floor visit. Encounter suppression is scoped
    *  here, NOT to defeatedEnemies — so leaving and re-entering a floor repopulates its

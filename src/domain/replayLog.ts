@@ -161,6 +161,11 @@ export function projectEventToLog(event: GameEvent, locale: Locale = "en", world
         }),
         tags: ["item"]
       };
+    case "item_discarded":
+      return {
+        text: t("events.itemDiscarded", { item: resolveCatalogName(event.itemId, event.itemName, world, locale) }),
+        tags: ["item"]
+      };
     case "inventory_item_gained": {
       const base = resolveCatalogName(event.itemId, event.itemName, world, locale);
       const prefix = event.affix ? `${t(`affix.${event.affix}` as Parameters<typeof t>[0])} ` : "";

@@ -1,11 +1,11 @@
-# Handoff to Claude Code - IMP-007 Enemy Scale Follow-up
+# Handoff to Claude Code - IMP-011 Enemy Scale and Framing
 
 ## Verdict
 
-The first IMP-007 pass improved horizontal spacing, measured contact shadows,
+The implemented `IMP-007` pass improved horizontal spacing, measured contact shadows,
 and presentation-only hovering. It did **not** yet make the enemies large enough
-to carry the combat screen or justify the delivered art. Treat IMP-007 as
-implementation-progress, not visual acceptance.
+to carry the combat screen or justify the delivered art. Preserve `IMP-007` as
+implementation history and deliver this remaining visual requirement as `IMP-011`.
 
 The screenshot reported by the user shows a small Verdant group occupying only
 a narrow patch in the centre of a large corridor. Its badge reads `ad4287b`, so
@@ -94,7 +94,7 @@ npm run build
 
 ```text
 Read AGENTS.md, Improve.md, this handoff, and the combat/browser Gates. Implement
-only the IMP-007 enemy-scale follow-up. Keep Enemy.size and elevation semantics
+only IMP-011 after IMP-010 establishes the combat layout budget. Keep Enemy.size and elevation semantics
 unchanged; solve readability with a measured, testable combat-framing rule.
 Verify small, mixed, large, and boss encounters at 1280x720. Report changed
 files, calculations, tests, screenshots, and residual clipping risk. Leave final
