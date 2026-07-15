@@ -118,6 +118,10 @@ const scenarioEquipmentSchema = z.object({
   hpBonus: z.number().int().optional(),
   mpBonus: z.number().int().optional(),
   resistBonus: z.record(z.enum(["poison", "fear", "silence", "sleep", "ward"]), z.number()).optional(),
+  // A weapon's damage element (loader-checked against world.elements). Weapons only.
+  element: z.string().min(1).optional(),
+  // Incoming-damage multipliers per element id (loader-checked). <1 resistant, >1 vulnerable.
+  elementResist: z.record(z.string().min(1), z.number().min(0).max(2)).optional(),
   allowedClasses: z
     .array(
       z.enum([

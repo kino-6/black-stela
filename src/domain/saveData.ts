@@ -178,6 +178,9 @@ const EnemySchema = z.object({
     })
     .optional(),
   drops: z.array(z.string()).optional(),
+  // Element weaknesses were being dropped on save, so a reloaded fight lost every element
+  // interaction — the salt blade stopped mattering the moment you continued a run.
+  weaknesses: z.record(z.string(), z.number()).optional(),
   role: z.enum(["attrition", "blocker", "status", "ambusher", "caster", "miniboss", "boss"]).optional(),
   dangerTier: z.number().int().positive().optional(),
   tags: z.array(z.string()).optional(),
@@ -215,6 +218,10 @@ const CombatEnemyGroupSchema = z.object({
   xp: z.number().int().nonnegative().default(0),
   gold: z.number().int().nonnegative().default(0),
   role: z.enum(["attrition", "blocker", "status", "ambusher", "caster", "miniboss", "boss"]).optional(),
+  // The group carries the enemy's weaknesses/elevation (createCombatState copies them), so a
+  // reloaded fight must keep them or the element interactions vanish on continue.
+  weaknesses: z.record(z.string(), z.number()).optional(),
+  elevation: z.enum(["ground", "mid", "air"]).optional(),
   status: z.array(z.enum(["poison", "fear", "silence", "sleep", "ward"])).default([])
 });
 

@@ -79,6 +79,12 @@ export const ICON_PLACEHOLDER: Record<string, string> = {
   "equip.swift-anklet": "equip-black-thread-ring",
   "equip.knight-plate": "equip-padded-jack",
   "equip.warlord-blade": "equip-militia-sabre",
+  // Elemental counterplay gear — own icons pending from Codex; fall back to a like-shaped one so
+  // every catalog id still resolves (own-basename wins the moment the real icon lands).
+  "equip.ember-brand": "equip-militia-sabre",
+  "equip.salt-etched-blade": "equip-militia-sabre",
+  "equip.starlit-needle": "equip-rusted-dirk",
+  "equip.cinder-warded-jack": "equip-padded-jack",
   "item.greater-draught": "item-healing-draught",
   "item.antidote": "item-healing-draught",
   "item.clarity-draught": "item-healing-draught",

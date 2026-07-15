@@ -85,9 +85,11 @@ treasureTables:
   - id: treasure.verdant.g7.keep
     tier: 3
     entries:
-      - { itemId: item.verdant.greater-sap, weight: 6 }
+      # The axe to the heart — found before the rootheart, never sold. The boss resists fire and
+      # is weak to metal, so a party that explored for this fells it; one that did not, does not.
+      - { itemId: equip.verdant.reaver-axe, weight: 6 }
+      - { itemId: item.verdant.greater-sap, weight: 5 }
       - { itemId: item.verdant.homing-spore, weight: 4 }
-      - { itemId: equip.verdant.thorn-lash, weight: 3 }
       - { itemId: equip.verdant.living-charm, weight: 3 }
   - id: treasure.verdant.g8.side
     tier: 3

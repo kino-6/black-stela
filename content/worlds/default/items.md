@@ -506,6 +506,67 @@ equipment:
       ja:
         name: 覇者の剣
         description: 長く均衡の取れた刃。強い前列に深く食い込む。
+  # ---- Elemental counterplay (黒碑: fire / salt / star) ----
+  # Fire dries the ash-husks; salt kills the damp rot of the cisterns; star is the only thing the
+  # votary answers to — found deep, never sold. Match the weapon to the enemy's weakness and a
+  # lower-level prepared party gets through. Resist gear turns the fire-throwers' threat aside.
+  - id: equip.ember-brand
+    name: Ember Brand
+    description: A blade quenched in cinder-oil; its edge carries a low, dry flame.
+    slot: weapon
+    tier: 2
+    attackBonus: 3
+    element: fire
+    price: 120
+    sellValue: 40
+    allowedClasses: [vanguard, sellsword, bulwark, duelist, seeker, scout]
+    tags: [blade, fire]
+    locales:
+      ja:
+        name: 熾火の刃
+        description: 燠の油に焼き入れた刃。乾いた低い炎を宿す。
+  - id: equip.salt-etched-blade
+    name: Salt-Etched Blade
+    description: A blade pitted with grey salt; it bites what is damp, rotten, or unclean.
+    slot: weapon
+    tier: 2
+    attackBonus: 4
+    element: salt
+    price: 165
+    sellValue: 55
+    allowedClasses: [vanguard, sellsword, bulwark, duelist, seeker, scout, cutpurse]
+    tags: [blade, salt]
+    locales:
+      ja:
+        name: 塩喰みの刃
+        description: 灰塩に蝕まれた刃。湿ったもの、腐ったもの、穢れたものを喰らう。
+  - id: equip.starlit-needle
+    name: Starlit Needle
+    description: A pale sliver of the sky the pit shut out. It alone reaches the stela's root.
+    slot: weapon
+    tier: 3
+    attackBonus: 5
+    element: star
+    sellValue: 160
+    tags: [blade, star, keyed]
+    locales:
+      ja:
+        name: 星明かりの針
+        description: 坑が閉め出した空の、淡いひとかけら。碑の根に届くのはこれだけだ。
+  - id: equip.cinder-warded-jack
+    name: Cinder-Warded Jack
+    description: A padded coat treated against flame; the ash-callers' fire slides off it.
+    slot: body
+    tier: 2
+    defenseBonus: 2
+    elementResist: { fire: 0.5 }
+    price: 140
+    sellValue: 46
+    tags: [armor, fire-ward]
+    locales:
+      ja:
+        name: 燠避けの胴着
+        description: 炎に強く仕立てた綿入れ。灰呼びの火を受け流す。
 shops:
   - id: shop.stela-general
     name: Stela Gate General Store
@@ -640,6 +701,19 @@ shops:
         price: 340
         availability: unlocked
         unlockFlag: flag.b7f.descent
+      # Counterplay: buyable once the descent opens. The star weapon is NOT here — it is found.
+      - itemId: equip.ember-brand
+        price: 120
+        availability: unlocked
+        unlockFlag: flag.b2f.descent
+      - itemId: equip.salt-etched-blade
+        price: 165
+        availability: unlocked
+        unlockFlag: flag.b2f.descent
+      - itemId: equip.cinder-warded-jack
+        price: 140
+        availability: unlocked
+        unlockFlag: flag.b2f.descent
     locales:
       ja:
         name: 黒碑門の雑貨店

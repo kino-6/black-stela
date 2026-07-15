@@ -1,6 +1,7 @@
 ---
 enemies:
   - id: enemy.b1f.ash-slime
+    weaknesses: { fire: 1.5 }
     name: Ash Slime
     locales:
       ja:
@@ -20,6 +21,7 @@ enemies:
     dangerTier: 1
     tags: [tutorial, slime]
   - id: enemy.b1f.dust-crawler
+    weaknesses: { fire: 1.5 }
     name: Dust Crawler
     locales:
       ja:
@@ -37,10 +39,9 @@ enemies:
     role: attrition
     size: small
     dangerTier: 1
-    weaknesses:
-      fire: 1.5
     tags: [beast]
   - id: enemy.b2f.hook-rat
+    weaknesses: { fire: 1.25 }
     name: Hook Rat
     locales:
       ja:
@@ -62,6 +63,7 @@ enemies:
   # Squad pair: the warden shields the caller from melee. Mashing Attack barely
   # dents the warden (physical 0.5); fire cuts it, or a spell reaches the caller.
   - id: enemy.b2f.ash-warden
+    weaknesses: { physical: 0.5, salt: 1.5 }
     name: Ash Warden
     locales:
       ja:
@@ -78,13 +80,11 @@ enemies:
     gold: 5
     role: blocker
     size: large
-    weaknesses:
-      physical: 0.5
-      fire: 1.5
     dangerTier: 2
     tags: [construct]
     elevation: ground
   - id: enemy.b2f.ash-caller
+    weaknesses: { fire: 0.5, salt: 1.75 }
     name: Ash Caller
     locales:
       ja:
@@ -101,8 +101,6 @@ enemies:
     gold: 6
     role: caster
     size: medium
-    weaknesses:
-      physical: 1.5
     dangerTier: 2
     tags: [caster]
     elevation: air
@@ -115,6 +113,7 @@ enemies:
           max: 5
           element: fire
   - id: enemy.b3f.bitter-mote
+    weaknesses: { fire: 0.5, salt: 2.0 }
     name: Bitter Mote
     locales:
       ja:
@@ -134,12 +133,11 @@ enemies:
     inflicts:
       status: poison
       chance: 45
-    weaknesses:
-      fire: 1.5
     dangerTier: 3
     tags: [status]
     elevation: air
   - id: enemy.b4f.lantern-ward
+    weaknesses: { fire: 0.5, salt: 1.5 }
     name: Lantern Ward
     locales:
       ja:
@@ -173,6 +171,7 @@ enemies:
           kind: status
           status: fear
   - id: enemy.b5f.cinder-keeper
+    weaknesses: { fire: 0.5, salt: 1.75 }
     name: Cinder Keeper
     locales:
       ja:
@@ -192,9 +191,8 @@ enemies:
     dangerTier: 4
     isBoss: true
     tags: [midpoint, boss]
-    weaknesses:
-      fire: 0.5
   - id: enemy.b3f.cistern-warden
+    weaknesses: { fire: 0.5, salt: 2.0 }
     name: Cistern Warden
     locales:
       ja:
@@ -215,6 +213,7 @@ enemies:
     isBoss: true
     tags: [block-cap, boss]
   - id: enemy.b6f.oath-warden
+    weaknesses: { salt: 1.5, star: 1.5 }
     name: Oath Warden
     locales:
       ja:
@@ -235,6 +234,7 @@ enemies:
     isBoss: true
     tags: [block-cap, boss]
   - id: enemy.b6f.oath-cutter
+    weaknesses: { fire: 1.25, salt: 1.25 }
     name: Oath Cutter
     locales:
       ja:
@@ -254,6 +254,7 @@ enemies:
     dangerTier: 4
     tags: [blade]
   - id: enemy.b7f.vault-husk
+    weaknesses: { fire: 1.75 }
     name: Vault Husk
     locales:
       ja:
@@ -273,6 +274,7 @@ enemies:
     dangerTier: 5
     tags: [optional]
   - id: enemy.b8f.ash-votary
+    weaknesses: { star: 2.0, fire: 0.4, salt: 0.4 }
     name: Ash Votary
     locales:
       ja:

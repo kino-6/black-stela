@@ -187,6 +187,16 @@ export function validateScenarioGraph(world: ScenarioWorld, filePath = "world.md
       }
     }
   }
+  for (const gear of world.equipment) {
+    if (gear.element && !declaredElements.has(gear.element)) {
+      errors.push({ filePath, fieldPath: `${gear.id}.element`, reason: `Weapon deals an undeclared element: ${gear.element}` });
+    }
+    for (const element of Object.keys(gear.elementResist ?? {})) {
+      if (!declaredElements.has(element)) {
+        errors.push({ filePath, fieldPath: `${gear.id}.elementResist.${element}`, reason: `Resists an undeclared element: ${element}` });
+      }
+    }
+  }
 
   for (const dungeon of world.dungeons) {
     if (!roomIds.has(dungeon.startRoom)) {

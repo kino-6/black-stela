@@ -77,9 +77,11 @@ describe("front-blocker / back-caster squad", () => {
     expect(afterCaller === undefined || afterCaller.count === 0 || afterCaller.hpEach < callerGroup.hpEach).toBe(true);
   });
 
-  it("the warden shrugs off physical blows (resists melee, weak to fire)", () => {
+  it("the warden shrugs off physical blows (an armored blocker), and answers to salt not steel", () => {
+    // The ash-warden is a stone blocker: blades slide off it (physical 0.5), so you cannot just
+    // out-hit the front line — you reach past it, or you dissolve its ash-mortar with salt.
     expect(warden.weaknesses?.physical).toBe(0.5);
-    expect(warden.weaknesses?.fire).toBeGreaterThan(1);
+    expect(warden.weaknesses?.salt).toBeGreaterThan(1);
     expect(warden.hp).toBeGreaterThanOrEqual(12);
   });
 

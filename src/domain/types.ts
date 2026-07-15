@@ -655,6 +655,12 @@ export interface ScenarioEquipment {
   hpBonus?: number;
   mpBonus?: number;
   resistBonus?: Partial<Record<CombatStatus, number>>;
+  /** A weapon's damage element: the wielder's basic attack deals this instead of physical, so a
+   *  salt-brand or an iron edge can hit an enemy's weakness. Weapons only; omitted = physical. */
+  element?: Element;
+  /** Incoming-damage multipliers per element (<1 = resistant). Armour/charms carry these so a
+   *  prepared party is not hurt by the threat it expected. Multiplied across worn gear. */
+  elementResist?: Partial<Record<string, number>>;
   allowedClasses?: CharacterClassId[];
   tags?: string[];
   price?: number;

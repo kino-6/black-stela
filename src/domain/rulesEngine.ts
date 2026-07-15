@@ -1050,7 +1050,7 @@ function declareRound(state: GameState, world: ScenarioWorld, actions: CombatAct
     }
 
     const rawDamage = rollDamage(`${state.turn}:${combat.round}:${actor.id}:${group.id}:damage`, actorStats.damageMin, actorStats.damageMax, group.armor);
-    const weakened = Math.round(rawDamage * elementMultiplier(group.weaknesses, "physical"));
+    const weakened = Math.round(rawDamage * elementMultiplier(group.weaknesses, actorStats.attackElement));
     const critChance = getCriticalChance(actor);
     const crit = rollPercent(`${state.turn}:${combat.round}:${actor.id}:${group.id}:crit`) < critChance;
     const damage = crit ? Math.round(weakened * CRIT_MULTIPLIER) : weakened;
@@ -1134,12 +1134,14 @@ function declareRound(state: GameState, world: ScenarioWorld, actions: CombatAct
         const targetStats = getEffectiveCharacterStats(target, world);
         const guarded = target.status?.includes("ward");
         const armor = targetStats.armor + (guarded ? 2 : 0);
-        const damage = rollDamage(
+        const rawAbilityDamage = rollDamage(
           `${state.turn}:${combat.round}:${group.id}:${target.id}:ability`,
           ability.effect.min,
           ability.effect.max,
           armor
         );
+        const resistMult = targetStats.elementResist[ability.effect.element] ?? 1;
+        const damage = Math.max(0, Math.round(rawAbilityDamage * resistMult));
         party = damagePartyMember(party, target.id, damage, injuredEvents);
         beat(`${group.name} looses ${ability.name} at ${target.name} for ${damage}.`, { kind: "enemyHit", actorEnemyId: group.enemyId, targetCharacterId: target.id, targetName: target.name, damage, abilityName: ability.name });
       } else {

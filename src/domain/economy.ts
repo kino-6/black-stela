@@ -1,4 +1,5 @@
-import type { Character, CombatStatus, EquipmentSlot, InventoryItem, ScenarioEquipment, ScenarioItem, ScenarioWorld } from "./types";
+import type { Character, CombatStatus, Element, EquipmentSlot, InventoryItem, ScenarioEquipment, ScenarioItem, ScenarioWorld } from "./types";
+import { PHYSICAL } from "./types";
 import { equipmentInstanceKey, findAffix, plusPrimaryStat } from "./affixes";
 
 export const STARTING_PARTY_GOLD = 75;
@@ -15,6 +16,10 @@ export interface EffectiveCharacterStats {
   maxHp: number;
   maxMp: number;
   resistance: Partial<Record<CombatStatus, number>>;
+  /** The element this character's basic attack deals (from the equipped weapon; default physical). */
+  attackElement: Element;
+  /** Incoming-damage multiplier per element, aggregated across worn gear (default 1 = no resist). */
+  elementResist: Record<string, number>;
 }
 
 export function createInventoryItemFromCatalog(world: ScenarioWorld, itemId: string, quantity = 1): InventoryItem | null {
@@ -106,6 +111,8 @@ export function getEffectiveCharacterStats(character: Character, world: Scenario
   let hpBonus = 0;
   let mpBonus = 0;
   const resistance: Partial<Record<CombatStatus, number>> = { ...(character.resistance ?? {}) };
+  let attackElement: Element = PHYSICAL;
+  const elementResist: Record<string, number> = {};
 
   for (const equipped of Object.values(character.equipment)) {
     const catalog = equipped ? findEquipment(world, equipped.id) : undefined;
@@ -121,6 +128,15 @@ export function getEffectiveCharacterStats(character: Character, world: Scenario
     mpBonus += catalog.mpBonus ?? 0;
     for (const [status, value] of Object.entries(catalog.resistBonus ?? {})) {
       resistance[status as CombatStatus] = (resistance[status as CombatStatus] ?? 0) + (value ?? 0);
+    }
+    // A weapon's element becomes the wielder's basic-attack element (last weapon worn wins).
+    if (catalog.slot === "weapon" && catalog.element) {
+      attackElement = catalog.element;
+    }
+    // Element resistances MULTIPLY across gear — two 0.5 pieces stack to 0.25 — so a build can
+    // commit to shrugging off one threat entirely, at the cost of the slots it took.
+    for (const [element, value] of Object.entries(catalog.elementResist ?? {})) {
+      elementResist[element] = (elementResist[element] ?? 1) * (value ?? 1);
     }
 
     // A numeric "+N" upgrade reinforces the slot's primary stat.
@@ -154,7 +170,9 @@ export function getEffectiveCharacterStats(character: Character, world: Scenario
     speed: Math.max(0, character.speed + speedBonus),
     maxHp: Math.max(1, character.maxHp + hpBonus),
     maxMp: Math.max(0, character.maxMp + mpBonus),
-    resistance
+    resistance,
+    attackElement,
+    elementResist
   };
 }
 

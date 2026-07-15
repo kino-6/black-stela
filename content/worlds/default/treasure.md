@@ -176,6 +176,10 @@ treasureTables:
   - id: treasure.b7f.secret
     tier: 5
     entries:
+      # The star weapon — found here, never sold. The B8F votary resists fire AND salt, so the
+      # finale is a wall without it: a party must have explored the deep secret to be ready.
+      - itemId: equip.starlit-needle
+        weight: 6
       - itemId: equip.militia-sabre
         weight: 3
       - itemId: equip.black-thread-ring
