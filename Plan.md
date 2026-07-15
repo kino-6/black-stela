@@ -7,7 +7,7 @@ Completed plan lanes and task slices are archived in:
 - [docs/archive/Plan.completed-index.md](docs/archive/Plan.completed-index.md)
 - [docs/archive/Tasks.completed-index.md](docs/archive/Tasks.completed-index.md)
 
-## Current Baseline
+## Current Baseline (2026-07-16)
 
 Black Stela has deterministic rules, save/load, debug starts, headless probes,
 English/Japanese UI, scenario validation, tactical combat, guild character
@@ -16,10 +16,14 @@ party menu, browser Self-Play, and responsive combat staging. All eight floors
 (B1F-B8F) are dense continuous-grid mazes with safe stair landings, rewards,
 hazards, and authored return routes.
 
-All executable Plan lanes and browser improvements through `IMP-011` are
-complete. The only remaining items are the environment- or architecture-gated
-follow-ups listed under Deferred Lanes. Headless runs are never proof of UX,
-fun, fairness, visual legibility, or grid-maze honesty; browser evidence and
+Shipped since `IMP-011`: the **5-slice elemental balance** (per-world cosmology,
+gear counterplay, XP falloff, two `world.md` `balance:` knobs — a naive party
+wipes, a prepared one clears ~10 levels lower); **Q1 growth items + Q2 the quest
+board** (authored data in `content/worlds/<id>/`); **character presence
+IMP-018..020** (portable visual identity, in-combat presence lane, GM-aware
+framing); and the **combat enemy-stage overlay** (translucent HUD over a
+full-frame stage, stage share 36%→71% at 720p). Headless runs are never proof of
+UX, fun, fairness, visual legibility, or grid-maze honesty; browser evidence and
 human visual review remain required.
 
 ## UI Reference Findings
@@ -95,21 +99,26 @@ deferred by choice:
 
 ## Current Milestone Recommendation
 
-**All executable Plan lanes are cleared.** The latest acceptance is green on the
-production build, **344 unit tests**, and a **32-test focused Chromium Gate** that
-includes the controller route, combat regression/staging, Japanese line layout,
-portrait integration, keyboard victory, and Browser Self-Play. The complete
-`gate:final` suite also passes **99/99 Playwright tests**.
+The latest acceptance is green on the production build, **380+ unit tests**, and the
+full `gate:final` suite passing **114 Playwright tests** (`main` @ `5fb01a4`, pushed).
+
+**Active milestone: Combat FEEL** — the last pre-balance item. The command-RPG rebuild
+and the three-zone / enemy-overlay screen are shipped, so a round reads well and plays on
+a controller; what remains is making a round FEEL worth playing (per-round friction, hit
+weight, earned outcomes). It is design-first — see `Tasks.md` and
+[docs/design/combat-ui-redesign.md](docs/design/combat-ui-redesign.md); align the lever set
+with the user before implementing.
 
 ### NextAction (recommended order)
 
-1. **Player evaluation / playtest.** The product is in a coherent, fully-green state
-   to assess; the DebugMode force-win / revive aids and the ×1/×2 auto-runner make a
-   full descent quick to walk through.
-2. **On evaluation feedback:** re-tune balance (the descentSim Gate band makes it a
-   dial), or open one of the three gated follow-ups (desktop bundle verification,
-   the guild-stepper reducer refactor, or live-LLM narration) — each is scoped and
-   seamed, none is blocked on unknowns.
+1. **Combat FEEL** (active) — align the plan, then ship one browser-verified slice at a time.
+2. **Approved capability backlog** ([Improve.md](Improve.md)) in dependency order:
+   **IMP-021** (vocation mastery) → **IMP-022** (rare equipment / appraisal / bulk conversion)
+   → **IMP-023** (deterministic content & economy simulation Gate). Claude Code owns each
+   `*A` data/rules contract and the controller-first player routes; Codex owns content, art,
+   and the simulator; a `*A` contract freezes before its content/route work starts.
+3. Gated follow-ups (unchanged, none blocked on unknowns): desktop bundle verification, the
+   guild-stepper reducer refactor, live-LLM narration.
 
 ## Planning Rule
 

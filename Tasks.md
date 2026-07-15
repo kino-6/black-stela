@@ -7,33 +7,60 @@ Completed task slices and traceability are archived in:
 - [docs/archive/Tasks.completed-index.md](docs/archive/Tasks.completed-index.md)
 - [docs/archive/Plan.completed-index.md](docs/archive/Plan.completed-index.md)
 
-## Active Milestone: Command-Menu Combat UI ("コマンドRPG化")
+## Active Milestone: Combat FEEL (残る唯一の pre-balance 項目)
 
-From a live combat playtest, the verdict: individual button fixes don't add up to a
-command RPG — it still reads as "ボタンぽちぽち". **Design-first, research-grounded.**
-Plan + acceptance Gate in [docs/combat-command-ui-plan.md](docs/combat-command-ui-plan.md).
-A background research pass (what makes DRPGs fun + combat presentation / 数字感) is
-grounding the plan — **no implementation of the redesign until the plan is aligned**
-with the research and the user, so the invested player isn't betrayed by shallow fixes.
+The command-RPG rebuild ("コマンドRPG化") and the three-zone screen are shipped. A round
+now READS well and can be PLAYED on a controller. What is still missing is that a round
+does not yet FEEL worth playing: six actors × (command → target) + a confirm step, mostly
+to press 攻撃, for a fight whose outcome is rarely in doubt. **Design-first — align the plan
+with the user before implementing** (the invested player must not get shallow fixes).
 
-- [x] **#64 Command order** — front-row-first formation order (shipped).
-- [ ] **#69 Combat presentation** — beat-by-beat on-screen log with damage NUMBERS +
-  HP changes (数字感), tap-to-advance / hold-to-fast-forward / message-speed setting;
-  combat currently resolves instantly with no tension or 納得感.
-- [ ] **#65 Back-row reach weapons** — back row can't attack behind a standing front
-  (Wiz-authentic). Add a `reach`/back-capable weapon property (bow / long weapon),
-  design 1–2 such weapons, equip back-row starters with one, make canAttack honor it.
-- [ ] **#66 Multi-enemy encounters** — normal fights are 1 enemy. Author encounters
-  with multiple groups of multiple monsters (FC Wiz-style; user chose *both* groups
-  and counts). Display / targeting / tempo / rewards must handle multi-group.
-- [ ] **#67 Auto/Repeat split + auto-stop → Config** — split the one tempo button into
-  オート (continuous auto-battle) and リピート (re-run last round's orders). The
-  discretionary combat auto-stops (boss/tactical/danger) default OFF; Config toggle
-  to re-enable. Keep terminal stops (combat ended / no one can act).
-- [ ] **#68 Fixed dock layout** — context buttons/clues (descent-locked clue, stairs,
-  return, charm) reflow the command dock (UI stretch/shrink). Move clue text to the
-  log/message window and/or keep fixed positions + disable (AGENTS "fixed command
-  areas").
+Grounded in [docs/design/combat-ui-redesign.md](docs/design/combat-ui-redesign.md) ("where
+combat animation then lives") and `.claude/skills/combat-ui-drpg`. Candidate levers (to be
+scoped with the user, not all at once): reduce per-round friction (smart-default / hold-to-
+confirm / fewer steps to a plain attack), give hits weight (impact FX, hurt flash, defeat
+dissolve on the big new stage), and make outcomes feel earned (tension cues when a round is
+actually in doubt). The damage-number / beat playback (数字感) already ships.
+
+### Shipped since the last stocktake (2026-07-16)
+
+- [x] **#64 Command order** — front-row-first formation order.
+- [x] **#65 Back-row reach weapons** — `weaponReaches`; a bow/long weapon lets the back row
+  strike past a standing front line.
+- [x] **#66 Multi-enemy encounters** — `room.encounterSquad` + multi-group encounter tables;
+  a pack of N is N bodies, display/targeting/tempo/rewards all handle multi-group.
+- [x] **#67 Auto/Repeat split** — オート (continuous) vs リピート (re-run last orders);
+  discretionary auto-stops (boss/tactical/danger) as Config toggles; terminal stops kept.
+- [x] **#68 Fixed dock layout** — context clues moved off the dock; fixed command regions.
+- [x] **#69 Combat presentation** — beat-by-beat playback with floating damage NUMBERS on the
+  struck enemy (`hit-number`, crit variant) + hit flash; tap-to-advance; message-speed / instant
+  Config. (The remaining *feel* work is this milestone, above.)
+- [x] **Elemental balance (5 slices)** — per-world cosmology, gear counterplay, XP falloff,
+  two `world.md` `balance:` knobs; a naive party wipes, a prepared one clears ~10 levels lower.
+- [x] **Q1 growth items** (`c72b9c6`) + **Q2 quest board** (`241d1e3`) — authored data in
+  `content/worlds/<id>/`; reward XP bypasses the falloff by construction.
+- [x] **Character presence IMP-018..020** (Codex, merged `f4f097b`) — portable visual identity,
+  in-combat presence lane, GM-aware framing.
+- [x] **Enemy-stage OVERLAY** (`5fb01a4`) — HUD is translucent overlays over a full-frame stage;
+  stage share 36%→71% at 720p (80% at 1080p); creatures scale into the frame.
+
+## Next backlog: approved capability proposals (see [Improve.md](Improve.md))
+
+Three big product capabilities are approved as `Proposed` with owner boundaries + sub-IMP order.
+**Claude Code owns the data/rules contract (`*A`) and the controller-first player routes (`*C/*D`);
+Codex owns content authoring, art, and the deterministic simulator; each has an independent
+browser verifier.** Do not start `*B/*C` until the matching `*A` contract is frozen.
+
+- [ ] **IMP-021 Career/vocation mastery** — build = the history of vocations mastered; level
+  persists, mastery advances separately, techniques stay learned, prerequisites gate advanced
+  vocations. `IMP-021A` (contract: vocation data + save schema + mastery/unlock/migration) is
+  Claude Code and lands FIRST.
+- [ ] **IMP-022 Rare equipment, appraisal, bulk conversion** — rare affixes, appraisal, favorite/
+  lock, previewed bulk sell/dismantle, an enemy record. `IMP-022A` (affix pools/rarity/instance
+  identity/appraisal state contract) is Claude Code and lands first.
+- [ ] **IMP-023 Deterministic content & economy simulation Gate** — a seeded simulator over the
+  PRODUCTION loaders/rules that gates dominant builds, dead affixes, and inflation. Mostly Codex;
+  depends on `IMP-021A` + `IMP-022A`. Claude Code is the independent parity verifier (`IMP-023V`).
 
 ## Previous Milestone: all handheld Plan lanes cleared (shipped)
 
@@ -56,10 +83,11 @@ All green: **production build + 251 unit + 60 e2e**. Detail in [Plan.md](Plan.md
 
 ### NextAction
 
-1. **Player evaluation / playtest** (owner: user) — the product is coherent and
-   fully green; DebugMode aids + ×2 auto-runner make a full descent quick to walk.
-2. On feedback: re-tune balance (the Gate band is a dial), or open one gated
-   follow-up above (each is scoped + seamed).
+1. **Combat FEEL** (active milestone, above) — design-first; align the lever set with the
+   user, then implement one browser-verified slice at a time.
+2. Then the approved capability backlog in dependency order: **IMP-021A** (vocation contract)
+   → IMP-022A (affix/appraisal contract) → their player routes → **IMP-023** simulation Gate.
+   Each `*A` contract freezes before its `*B/*C` content/route work starts.
 
 ## Recently Completed (archived)
 
