@@ -29,7 +29,7 @@ Also: `npm run build` (tsc -b) is the real typecheck; `npm run test` is the unit
   `controller-first-ui` (keyboard/gamepad UI + gates that can fail),
   `combat-ui-drpg` (the combat screen), `drpg-scenario` (building a world; world-owned copy).
 - **Design docs** (`docs/design/`) — `dungeon-areas.md` / `verdant-areas.md` (the 3-act curve),
-  `growth-and-quests.md` (Q1 done, Q2 = the quest board, next), `combat-stage-plan.md`.
+  `growth-and-quests.md` (Q1 growth items + Q2 quest board both done), `combat-stage-plan.md`.
 - **Gates** (`docs/gates/`) — `past-trouble-regression-gate.md` is the record of every bug that
   shipped and the assertion that now blocks it. Read it before player-facing work.
 - **Content is data** (`content/worlds/<id>/`) — dungeons, enemies, gear, items, and per-world
@@ -38,10 +38,12 @@ Also: `npm run build` (tsc -b) is the real typecheck; `npm run test` is the unit
 
 ## Current state (2026-07-15)
 
-`Improve.md` is EMPTY (IMP-001..014 archived). B3 (party menu + real aptitudes) is done. The
-5-slice elemental balance is done — **a naive party wipes; a prepared one clears ~10 levels lower**;
-tune via the `world.md` `balance:` knobs, not per enemy. Quest slice Q1 (growth items) is done;
-Q2 (the quest board) is next. `black-stela-open-work` has the detail.
+B3 (party menu + real aptitudes) is done. The 5-slice elemental balance is done — **a naive party
+wipes; a prepared one clears ~10 levels lower**; tune via the `world.md` `balance:` knobs, not per
+enemy. The growth/quest slices are done: **Q1 (growth items) and Q2 (the quest board)** — quests are
+authored data in `content/worlds/<id>/quests.md` (bounties + delivery tithes; reward XP bypasses the
+falloff by construction). `black-stela-open-work` has the detail. `Improve.md` carries the deferred
+art/identity items IMP-018..020 (Codex-owned).
 
 ## How the two agents split work
 

@@ -301,7 +301,18 @@ export const GameStateSchema = z.object({
   map: DungeonMapStateSchema,
   log: z.array(AdventureLogEntrySchema),
   turn: z.number().int().nonnegative(),
-  aiEnabled: z.boolean()
+  aiEnabled: z.boolean(),
+  // Optional so existing saves load with no accepted quests — same reasoning as `expeditions`.
+  quests: z
+    .array(
+      z.object({
+        questId: z.string().min(1),
+        status: z.enum(["active", "done"]).default("active"),
+        killCount: z.number().int().nonnegative().default(0),
+        claims: z.number().int().nonnegative().default(0)
+      })
+    )
+    .default([])
 });
 
 export const SaveDataV1Schema = z.object({

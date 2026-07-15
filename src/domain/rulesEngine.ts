@@ -29,6 +29,7 @@ import {
   weaponReaches
 } from "./economy";
 import { EQUIPMENT_AFFIXES, equipmentInstanceKey } from "./affixes";
+import { findQuest, getQuestProgress, isQuestReadyToClaim, recordQuestKills } from "./quests";
 import type {
   Character,
   CharacterClassId,
@@ -191,6 +192,10 @@ export function resolveCommand(state: GameState, world: ScenarioWorld, command: 
       return setMemberRow(state, command.characterId, command.row);
     case "swap_member_rows":
       return swapMemberRows(state, command.characterId, command.targetCharacterId);
+    case "accept_quest":
+      return acceptQuest(state, world, command.questId);
+    case "claim_quest":
+      return claimQuest(state, world, command.questId);
     case "buy_item":
       return buyItem(state, world, command.shopId, command.itemId);
     case "sell_item":
@@ -208,7 +213,7 @@ export function resolveCommand(state: GameState, world: ScenarioWorld, command: 
     case "return_to_town":
       return returnToTown(state, world);
     case "debug_force_victory":
-      return debugForceVictory(state);
+      return debugForceVictory(state, world);
     case "debug_revive_party":
       return debugReviveParty(state);
     default:
@@ -1103,6 +1108,11 @@ function declareRound(state: GameState, world: ScenarioWorld, actions: CombatAct
       inventory,
       defeatedEnemies: Array.from(new Set([...state.defeatedEnemies, ...defeatedEnemyIds])),
       floorClearedEnemies: Array.from(new Set([...state.floorClearedEnemies, ...defeatedEnemyIds])),
+      quests: recordQuestKills(
+        state.quests,
+        world,
+        combat.enemyGroups.map((group) => ({ enemyId: group.enemyId, bodies: group.initialCount ?? group.count }))
+      ),
       turn: state.turn + 1
     };
 
@@ -1286,7 +1296,7 @@ function defend(state: GameState): CommandResult {
 // Debug: end the current fight as a win, awarding the same rewards / level-ups /
 // first-contact bookkeeping the party would earn by clearing it normally. Lets a
 // playtester skip a fight that isn't what they're testing. No-op outside combat.
-function debugForceVictory(state: GameState): CommandResult {
+function debugForceVictory(state: GameState, world: ScenarioWorld): CommandResult {
   const combat = state.combat;
   if (state.phase !== "combat" || !combat) {
     return noChange(state);
@@ -1330,6 +1340,11 @@ function debugForceVictory(state: GameState): CommandResult {
     partyGold: state.partyGold + gold,
     defeatedEnemies: Array.from(new Set([...state.defeatedEnemies, ...defeatedEnemyIds])),
     floorClearedEnemies: Array.from(new Set([...state.floorClearedEnemies, ...defeatedEnemyIds])),
+    quests: recordQuestKills(
+      state.quests,
+      world,
+      combat.enemyGroups.map((group) => ({ enemyId: group.enemyId, bodies: group.initialCount ?? group.count }))
+    ),
     turn: state.turn + 1
   };
 
@@ -1547,6 +1562,95 @@ function discardItem(state: GameState, itemId: string, plus?: number, affix?: st
     },
     [{ type: "item_discarded", itemId: item.id, itemName: item.name }]
   );
+}
+
+// Take a quest off the board. Only in town, and only once: an already-accepted quest keeps its
+// record (a repeatable one stays "active" across claims; a one-shot ends "done"), so getQuestProgress
+// being set blocks re-accepting either.
+function acceptQuest(state: GameState, world: ScenarioWorld, questId: string): CommandResult {
+  if (state.phase !== "town") {
+    return noChange(state);
+  }
+  const quest = findQuest(world, questId);
+  if (!quest || getQuestProgress(state, questId)) {
+    return noChange(state);
+  }
+
+  const next: GameState = {
+    ...state,
+    quests: [...state.quests, { questId, status: "active", killCount: 0, claims: 0 }],
+    turn: state.turn + 1
+  };
+  return withEvents(next, [{ type: "quest_accepted", questId, questName: quest.name }]);
+}
+
+// Turn a met quest in for its reward. A bounty must have tallied enough kills; a delivery must be
+// carrying enough of its target item (which it hands over). Gold and item rewards land in the
+// party's purse/pack; an XP reward is granted DIRECTLY to each active member, so — like a growth
+// item's xp — it never runs through the out-levelling falloff. A repeatable quest resets to active
+// for another run; a one-shot is marked done.
+function claimQuest(state: GameState, world: ScenarioWorld, questId: string): CommandResult {
+  if (state.phase !== "town") {
+    return noChange(state);
+  }
+  const quest = findQuest(world, questId);
+  const progress = getQuestProgress(state, questId);
+  if (!quest || !progress || !isQuestReadyToClaim(state, quest, progress)) {
+    return noChange(state);
+  }
+
+  const levelEvents: GameEvent[] = [];
+  const xpGrant = quest.reward.xp ?? 0;
+  const party = state.party.map((member) => {
+    if (xpGrant <= 0) {
+      return member;
+    }
+    const leveled = applyLevelUps({ ...member, xp: member.xp + xpGrant });
+    levelEvents.push(...leveled.events);
+    return leveled.character;
+  });
+
+  // A delivery consumes the items it hands over.
+  let inventory = state.inventory;
+  if (quest.kind === "delivery" && quest.targetItemId) {
+    inventory = removeInventoryItem(inventory, quest.targetItemId, quest.requiredCount);
+  }
+  // An item reward drops into the pack.
+  let rewardItemName: string | undefined;
+  if (quest.reward.itemId) {
+    const rewardItem = createInventoryItemFromCatalog(world, quest.reward.itemId, quest.reward.itemQuantity ?? 1);
+    if (rewardItem) {
+      inventory = addInventoryItem(inventory, rewardItem);
+      rewardItemName = rewardItem.name;
+    }
+  }
+
+  const claimedProgress = {
+    ...progress,
+    claims: progress.claims + 1,
+    killCount: 0,
+    status: quest.repeatable ? ("active" as const) : ("done" as const)
+  };
+
+  const next: GameState = {
+    ...state,
+    party,
+    partyGold: state.partyGold + (quest.reward.gold ?? 0),
+    inventory,
+    quests: state.quests.map((entry) => (entry.questId === questId ? claimedProgress : entry)),
+    turn: state.turn + 1
+  };
+  return withEvents(next, [
+    {
+      type: "quest_claimed",
+      questId,
+      questName: quest.name,
+      gold: quest.reward.gold ?? 0,
+      xp: xpGrant,
+      itemName: rewardItemName
+    },
+    ...levelEvents
+  ]);
 }
 
 function buyItem(state: GameState, world: ScenarioWorld, shopId: string, itemId: string): CommandResult {

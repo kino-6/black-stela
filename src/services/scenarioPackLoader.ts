@@ -5,6 +5,7 @@ import {
   parseScenarioEncounters,
   parseScenarioItems,
   parseScenarioProgression,
+  parseScenarioQuests,
   parseScenarioTreasure,
   parseScenarioWorld
 } from "../domain/scenario";
@@ -85,7 +86,7 @@ function loadCatalogData(
   const data: Partial<
     Pick<
       ScenarioWorld,
-      "items" | "equipment" | "shops" | "enemies" | "encounterTables" | "treasureTables" | "progressionFlags"
+      "items" | "equipment" | "shops" | "enemies" | "encounterTables" | "treasureTables" | "progressionFlags" | "quests"
     >
   > = {};
 
@@ -142,6 +143,18 @@ function loadCatalogData(
   );
   if (progression) {
     data.progressionFlags = progression.progressionFlags;
+  }
+
+  const quests = parseOptionalDataFile(
+    files,
+    rootPath,
+    manifest.dataFiles.quests,
+    "dataFiles.quests",
+    parseScenarioQuests,
+    errors
+  );
+  if (quests) {
+    data.quests = quests.quests;
   }
 
   return data;
@@ -344,6 +357,30 @@ export function validateScenarioGraph(world: ScenarioWorld, filePath = "world.md
           reason: `Unknown treasure item reference: ${entry.itemId}`
         });
       }
+    }
+  }
+
+  for (const quest of world.quests) {
+    if (quest.kind === "bounty" && (!quest.targetEnemyId || !enemyIds.has(quest.targetEnemyId))) {
+      errors.push({
+        filePath,
+        fieldPath: `${quest.id}.targetEnemyId`,
+        reason: `Bounty targets an enemy not in the catalog: ${quest.targetEnemyId ?? "(none)"}`
+      });
+    }
+    if (quest.kind === "delivery" && (!quest.targetItemId || !itemIds.has(quest.targetItemId))) {
+      errors.push({
+        filePath,
+        fieldPath: `${quest.id}.targetItemId`,
+        reason: `Delivery names an item not in the catalog: ${quest.targetItemId ?? "(none)"}`
+      });
+    }
+    if (quest.reward.itemId && !purchasableIds.has(quest.reward.itemId)) {
+      errors.push({
+        filePath,
+        fieldPath: `${quest.id}.reward.itemId`,
+        reason: `Quest reward names an unknown item: ${quest.reward.itemId}`
+      });
     }
   }
 

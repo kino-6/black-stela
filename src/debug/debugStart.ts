@@ -78,7 +78,8 @@ export function createDebugStateFromProgress(world: ScenarioWorld, progress: Deb
     },
     log: [],
     turn: 0,
-    aiEnabled: true
+    aiEnabled: true,
+    quests: []
   };
 
   if (progress === "ready") {

@@ -1564,6 +1564,131 @@ textarea {
   overflow: auto;
 }
 
+/* Town quest board — bounties and delivery tithes posted in town. */
+.quest-board-service {
+  max-height: calc(100vh - 9rem);
+  overflow: auto;
+}
+
+.service-intro {
+  color: #aaa99d;
+  font-size: 0.82rem;
+  margin: 0 0 0.5rem;
+}
+
+.quest-list {
+  display: grid;
+  gap: 0.55rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.quest-row {
+  display: grid;
+  gap: 0.3rem;
+  padding: 0.6rem 0.7rem;
+  border: 1px solid #2c332d;
+  border-radius: 4px;
+  background: #14170f;
+}
+
+.quest-row.quest-ready {
+  border-color: #c9a765;
+  background: #1d1a10;
+}
+
+.quest-row.quest-done {
+  opacity: 0.62;
+}
+
+.quest-head {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.quest-kind {
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 0.1rem 0.4rem;
+  border-radius: 3px;
+  border: 1px solid #3a4238;
+  color: #cfd2c4;
+}
+
+.quest-kind-bounty {
+  border-color: #6e4a3a;
+  color: #d9a98c;
+}
+
+.quest-kind-delivery {
+  border-color: #3f5a4a;
+  color: #9fc9ac;
+}
+
+.quest-name {
+  font-size: 0.98rem;
+  color: #f2e6c8;
+  flex: 1 1 auto;
+}
+
+.quest-status {
+  font-size: 0.74rem;
+  color: #8f9188;
+}
+
+.quest-status-ready {
+  color: #f2d58c;
+}
+
+.quest-status-done {
+  color: #6f8f6f;
+}
+
+.quest-desc {
+  color: #aaa99d;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  margin: 0;
+}
+
+.quest-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.9rem;
+  font-size: 0.78rem;
+  color: #c3c4b7;
+}
+
+.quest-progress {
+  font-variant-numeric: tabular-nums;
+  color: #f2d58c;
+}
+
+.quest-reward {
+  color: #d9c48c;
+}
+
+.quest-tag {
+  font-size: 0.7rem;
+  color: #8f9188;
+  border: 1px solid #2c332d;
+  border-radius: 3px;
+  padding: 0.02rem 0.32rem;
+}
+
+.quest-actions {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.quest-actions:empty {
+  display: none;
+}
+
 .shop-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { DoorOpen, HeartPulse, ScrollText, ShoppingBag, Users, UsersRound } from "lucide-react";
+import { ClipboardList, DoorOpen, HeartPulse, ScrollText, ShoppingBag, Users, UsersRound } from "lucide-react";
 import type { Character, Command, ScenarioWorld } from "../domain/types";
 import { getLocalizedRoomText } from "../domain/scenario";
 import type { Locale, Translator } from "../i18n";
@@ -25,7 +25,7 @@ interface TownEntryPanelProps {
   hasEquipmentLoot: boolean;
   unlockedCheckpoints: Checkpoint[];
   onCommand: (command: Command) => void;
-  onEnterMode: (mode: "guild" | "shop" | "recovery" | "records") => void;
+  onEnterMode: (mode: "guild" | "shop" | "recovery" | "records" | "quests") => void;
   onOpenPartyMenu: () => void;
 }
 
@@ -170,6 +170,15 @@ export function TownEntryPanel({
         <button type="button" onClick={() => onEnterMode("recovery")}>
           <HeartPulse size={18} />
           {t("town.recovery")}
+        </button>
+        <button
+          type="button"
+          data-testid="town-service-quests"
+          onClick={() => onEnterMode("quests")}
+          disabled={(world.quests?.length ?? 0) === 0}
+        >
+          <ClipboardList size={18} />
+          {t("town.quests")}
         </button>
         <button type="button" onClick={() => onEnterMode("records")}>
           <ScrollText size={18} />

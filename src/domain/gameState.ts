@@ -42,7 +42,8 @@ export function createInitialGameState(): GameState {
     },
     log: [],
     turn: 0,
-    aiEnabled: true
+    aiEnabled: true,
+    quests: []
   };
 }
 

@@ -22,7 +22,35 @@ player's effort/cleverness, not mindless repetition (2026-07-14/15):
 - Content: 黒碑 ashroot-tonic / whetstone-rite / emberwit-ash (buyable) + deed-of-passage (found);
   翠碑 heartsap-tonic (buyable) + rootgrowth-seed (found). Locked by `tests/growthItems.test.ts`.
 
-## Q2 — the quest board: STILL TO BUILD (its own slice — externalize, don't hardcode)
+## Q2 — the quest board: DONE (2026-07-15)
+
+Built as its own slice, fully externalized. A quest is authored data in `content/worlds/<id>/
+quests.md` (`quests:` front matter); **source holds only the mechanism**, never a specific quest.
+
+- **Schema** (`domain/scenario.ts` `scenarioQuestSchema`): `id`, `kind: "bounty" | "delivery"`,
+  `name`/`description` (+`locales`), `targetEnemyId` (bounty) / `targetItemId` (delivery),
+  `requiredCount`, `repeatable`, and a `reward: { gold?, xp?, itemId?, itemQuantity? }`. The loader
+  (`validateScenarioGraph`) checks each target/reward id against the enemy/item catalogs.
+- **Progress record**: `GameState.quests: QuestProgress[]` (`{ questId, status, killCount, claims }`),
+  optional in the save schema (defaults to `[]`) so old saves load — the `expeditions` pattern.
+- **Pure helpers** live in `domain/quests.ts` (board view-model, live objective count, kill credit);
+  the command handlers (`acceptQuest`/`claimQuest`) and the kill hook are in `rulesEngine`.
+- **Kill credit**: on combat victory, `recordQuestKills` credits each defeated group's *bodies*
+  (`initialCount`) to any active bounty on that enemy — a pack of three counts as three.
+- **Reward XP bypasses the falloff by construction** — it is granted directly to each member, never
+  through the combat-reward path (the same reason growth-item XP does). This is *the* mechanical
+  reason a repeatable bounty on a `prizedXp` runner stays worth doing.
+- **UI**: `components/QuestBoardPanel.tsx`, reached from the town entry menu (`town-service-quests`).
+  A real controller surface (`data-controller-surface="town-quests"`, answers Cancel). Its cancel
+  button is labelled "Cancel" (`town.serviceCancel`), NOT "Back to town" — never reuse the chrome
+  label (a past collision bug). Copy is in `questBoard.*` (en/ja) + `events.quest*`.
+- **Content**: 黒碑 glimmer-hunt (repeatable bounty on the star-weak runner, XP+gold) / cull-the-ash
+  (5× ash-slime, gold) / shard-tithe (deliver 3 stela-shards → gold + a growth item); 翠碑 mirrors
+  with sporecloud-hunt / thin-the-swarm / heartseed-tithe.
+- **Locks**: `tests/quests.test.ts` (7 unit) + `tests/e2e/quest-board.spec.ts` (the board is a
+  reachable, focused, no-overlap controller surface, and accepting updates state).
+
+## Q2 — the quest board: original spec (delivered above)
 
 Everything below is **content in `content/worlds/<id>/`**, driven by data, per the project's
 externalization boundary (dungeon/enemy/gear/items = data; formulas = code).

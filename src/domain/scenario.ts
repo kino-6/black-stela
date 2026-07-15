@@ -1,7 +1,7 @@
 import yaml from "js-yaml";
 import { expandFloorMap, isMapFloor } from "./floorMap";
 import { z } from "zod";
-import type { Direction, DungeonFloor, DungeonGridCell, DungeonGridEdge, ScenarioWorld } from "./types";
+import type { Direction, DungeonFloor, DungeonGridCell, DungeonGridEdge, ScenarioQuest, ScenarioWorld } from "./types";
 
 const directionSchema = z.enum(["north", "east", "south", "west"]);
 const floorRoleSchema = z.enum([
@@ -214,6 +214,30 @@ const progressionFlagSchema = z.object({
   description: z.string().min(1)
 });
 
+const questRewardSchema = z.object({
+  gold: z.number().int().nonnegative().optional(),
+  // A direct XP grant per active member. It never runs through the combat-reward path, so the
+  // out-levelling falloff cannot trim it — the mechanical reason a bounty stays worth doing.
+  xp: z.number().int().positive().optional(),
+  itemId: z.string().min(1).optional(),
+  itemQuantity: z.number().int().positive().optional()
+});
+
+const scenarioQuestSchema = z.object({
+  id: z.string().min(1),
+  kind: z.enum(["bounty", "delivery"]),
+  name: z.string().min(1),
+  description: z.string().min(1),
+  // A bounty names the enemy whose kills count; a delivery names the item the party hands over.
+  // The loader checks each against the world's enemy/item catalogs (validateScenarioGraph).
+  targetEnemyId: z.string().min(1).optional(),
+  targetItemId: z.string().min(1).optional(),
+  requiredCount: z.number().int().positive().default(1),
+  repeatable: z.boolean().optional(),
+  reward: questRewardSchema,
+  locales: localizedNameDescriptionSchema.optional()
+});
+
 const explorationGateSchema = z.object({
   id: z.string().min(1),
   direction: directionSchema.optional(),
@@ -341,7 +365,8 @@ export const scenarioWorldSchema = z.object({
   enemies: z.array(enemySchema).default([]),
   encounterTables: z.array(encounterTableSchema).default([]),
   treasureTables: z.array(treasureTableSchema).default([]),
-  progressionFlags: z.array(progressionFlagSchema).default([])
+  progressionFlags: z.array(progressionFlagSchema).default([]),
+  quests: z.array(scenarioQuestSchema).default([])
 });
 
 export const scenarioItemsSchema = z.object({
@@ -364,6 +389,10 @@ export const scenarioTreasureSchema = z.object({
 
 export const scenarioProgressionSchema = z.object({
   progressionFlags: z.array(progressionFlagSchema).default([])
+});
+
+export const scenarioQuestsSchema = z.object({
+  quests: z.array(scenarioQuestSchema).default([])
 });
 
 interface FrontMatterDocument<T> {
@@ -407,7 +436,7 @@ export function parseScenarioWorld(
   data: Partial<
     Pick<
       ScenarioWorld,
-      "items" | "equipment" | "shops" | "enemies" | "encounterTables" | "treasureTables" | "progressionFlags"
+      "items" | "equipment" | "shops" | "enemies" | "encounterTables" | "treasureTables" | "progressionFlags" | "quests"
     >
   > = {}
 ): ScenarioWorld {
@@ -428,7 +457,8 @@ export function parseScenarioWorld(
     enemies: data.enemies ?? [],
     encounterTables: data.encounterTables ?? [],
     treasureTables: data.treasureTables ?? [],
-    progressionFlags: data.progressionFlags ?? []
+    progressionFlags: data.progressionFlags ?? [],
+    quests: data.quests ?? []
   }) as ScenarioWorld;
 }
 
@@ -450,6 +480,13 @@ export function parseScenarioTreasure(markdown: string) {
 
 export function parseScenarioProgression(markdown: string) {
   return parseMarkdownFrontMatter(markdown, scenarioProgressionSchema).data;
+}
+
+export function parseScenarioQuests(markdown: string): { quests: ScenarioQuest[] } {
+  // parseMarkdownFrontMatter's generic collapses zod's input/output types, so a `.default()`
+  // field (requiredCount) reads back as optional. The schema guarantees it at runtime; assert
+  // the resolved shape so callers get the canonical ScenarioQuest.
+  return parseMarkdownFrontMatter(markdown, scenarioQuestsSchema).data as { quests: ScenarioQuest[] };
 }
 
 export function getRoom(world: ScenarioWorld, roomId: string) {

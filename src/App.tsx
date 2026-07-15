@@ -27,6 +27,8 @@ import { RecoveryPanel } from "./components/RecoveryPanel";
 import { RecordsPanel } from "./components/RecordsPanel";
 import { TownEntryPanel } from "./components/TownEntryPanel";
 import { ShopPanel } from "./components/ShopPanel";
+import { QuestBoardPanel } from "./components/QuestBoardPanel";
+import { questBoardEntries } from "./domain/quests";
 import { TempoIndicator } from "./components/TempoIndicator";
 import { createInitialGameState, addCharacter } from "./domain/gameState";
 import {
@@ -136,7 +138,7 @@ import { cssArtVariables, portraitUrl, setActiveArtPack } from "./ui/artAssets";
 
 type GuildCreationStep = "briefing" | "class" | "appearance" | "bonus" | "name";
 type GuildOfferState = "ask" | "suggestion" | "dismissed";
-type TownMode = "guild" | "shop" | "recovery" | "records" | "entry";
+type TownMode = "guild" | "shop" | "recovery" | "records" | "quests" | "entry";
 type AppScreen = "title" | "config" | "scenario" | "game";
 
 const AUTO_SAVE_SLOT = "autosave";
@@ -2302,6 +2304,18 @@ export function App() {
                   activeShopCategory={activeShopCategory}
                   onSetCategory={setShopCategory}
                   onCommand={run}
+                />
+              )}
+              {townMode === "quests" && (
+                <QuestBoardPanel
+                  t={t}
+                  locale={locale}
+                  world={activeWorld}
+                  entries={questBoardEntries(state, activeWorld)}
+                  latestLogText={latestLogText}
+                  latestEventType={latestEventType ?? null}
+                  onCommand={run}
+                  onClose={() => enterTownMode("entry")}
                 />
               )}
               {townMode === "records" && (

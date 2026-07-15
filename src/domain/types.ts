@@ -32,6 +32,8 @@ export type Command =
   | { type: "discard_item"; itemId: string; plus?: number; affix?: string }
   | { type: "set_member_row"; characterId: string; row: CombatRow }
   | { type: "swap_member_rows"; characterId: string; targetCharacterId: string }
+  | { type: "accept_quest"; questId: string }
+  | { type: "claim_quest"; questId: string }
   | { type: "buy_item"; shopId: string; itemId: string }
   | { type: "sell_item"; itemId: string; plus?: number; affix?: string }
   | { type: "equip_item"; characterId: string; equipmentId: string; plus?: number; affix?: string }
@@ -316,6 +318,8 @@ export type GameEvent =
   | { type: "item_bought"; itemId: string; itemName: string; gold: number }
   | { type: "item_sold"; itemId: string; itemName: string; gold: number }
   | { type: "equipment_changed"; itemId: string; characterName: string; itemName: string; slot: EquipmentSlot }
+  | { type: "quest_accepted"; questId: string; questName: string }
+  | { type: "quest_claimed"; questId: string; questName: string; gold: number; xp: number; itemName?: string }
   | { type: "party_recovered"; gold: number }
   | { type: "recovery_blocked"; goldRequired: number; goldAvailable: number }
   | { type: "party_retreated" }
@@ -532,6 +536,50 @@ export interface GameState {
   log: AdventureLogEntry[];
   turn: number;
   aiEnabled: boolean;
+  /** Accepted quests and their progress. Absence of an entry = the quest is still on the board,
+   *  unaccepted. Optional in the save schema (defaults to []) so old saves load — same pattern
+   *  as `expeditions`. */
+  quests: QuestProgress[];
+}
+
+export type QuestKind = "bounty" | "delivery";
+
+export interface QuestReward {
+  gold?: number;
+  /** A direct XP grant to each active member. Because the out-levelling falloff lives only in the
+   *  combat-reward path, a quest reward pays full value by construction — the same reason a growth
+   *  item's `xp` bypasses it. */
+  xp?: number;
+  itemId?: string;
+  itemQuantity?: number;
+}
+
+/** A quest authored in `content/worlds/<id>/quests.md`. A bounty tallies kills of `targetEnemyId`;
+ *  a delivery hands over `targetItemId`. Both grant `reward` on claim. `repeatable` bounties/
+ *  deliveries can be turned in again and again — often against a `prizedXp` runner. */
+export interface ScenarioQuest {
+  id: string;
+  kind: QuestKind;
+  name: string;
+  description: string;
+  targetEnemyId?: string;
+  targetItemId?: string;
+  /** Kills (bounty) or items (delivery) needed for one completion. */
+  requiredCount: number;
+  repeatable?: boolean;
+  reward: QuestReward;
+  locales?: LocalizedNameDescription;
+}
+
+/** Per-run progress on one accepted quest. */
+export interface QuestProgress {
+  questId: string;
+  /** active = accepted, in progress or ready to claim; done = a non-repeatable quest already claimed. */
+  status: "active" | "done";
+  /** Bounty kill tally toward the CURRENT completion; resets to 0 on each repeatable claim. */
+  killCount: number;
+  /** How many times this quest's reward has been claimed. */
+  claims: number;
 }
 
 /** Per-scenario colour of the first-person scene. Wall/floor tint multiplies the
@@ -577,6 +625,7 @@ export interface ScenarioWorld {
   encounterTables: EncounterTable[];
   treasureTables: TreasureTable[];
   progressionFlags: ProgressionFlag[];
+  quests: ScenarioQuest[];
   importPolicy?: ScenarioImportPolicy;
 }
 

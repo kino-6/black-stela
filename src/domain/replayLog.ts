@@ -190,6 +190,24 @@ export function projectEventToLog(event: GameEvent, locale: Locale = "en", world
         text: t("events.equipmentChanged", { name: event.characterName, item: resolveCatalogName(event.itemId, event.itemName, world, locale) }),
         tags: ["town", "equipment"]
       };
+    case "quest_accepted":
+      return {
+        text: t("events.questAccepted", { quest: resolveQuestName(event.questId, event.questName, world, locale) }),
+        tags: ["town", "quest"]
+      };
+    case "quest_claimed": {
+      const rewardParts: string[] = [];
+      if (event.gold > 0) rewardParts.push(t("events.questRewardGold", { gold: event.gold }));
+      if (event.xp > 0) rewardParts.push(t("events.questRewardXp", { xp: event.xp }));
+      if (event.itemName) rewardParts.push(event.itemName);
+      return {
+        text: t("events.questClaimed", {
+          quest: resolveQuestName(event.questId, event.questName, world, locale),
+          reward: rewardParts.join(t("events.questRewardSeparator"))
+        }),
+        tags: ["town", "quest", "reward"]
+      };
+    }
     case "party_recovered":
       return { text: t("events.partyRecovered", { gold: event.gold }), tags: ["town", "recovery"] };
     case "recovery_blocked":
@@ -211,6 +229,13 @@ function resolveRoomName(roomId: string, fallback: string, world: ScenarioWorld 
 
 function resolveRoomEventText(roomId: string, fallback: string, world: ScenarioWorld | undefined, locale: Locale) {
   return locale === "ja" && world ? getLocalizedRoomText(world, roomId, "ja").event ?? fallback : fallback;
+}
+
+function resolveQuestName(questId: string, fallback: string, world: ScenarioWorld | undefined, locale: Locale) {
+  if (locale !== "ja") {
+    return fallback;
+  }
+  return world?.quests.find((quest) => quest.id === questId)?.locales?.ja?.name ?? fallback;
 }
 
 function resolveCatalogName(itemId: string, fallback: string, world: ScenarioWorld | undefined, locale: Locale) {

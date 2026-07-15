@@ -21,6 +21,7 @@ dataFiles:
   encounters: encounters.md
   treasure: treasure.md
   progression: progression.md
+  quests: quests.md
 compatibility:
   minAppVersion: 0.1.0
 ---
