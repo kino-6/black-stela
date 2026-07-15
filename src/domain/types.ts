@@ -95,6 +95,19 @@ export interface CharacterAptitudes {
   luck: number;
 }
 
+// What a growth item permanently grants on use. Any aptitude, any core stat, and/or direct XP.
+export interface ItemGrants {
+  might?: number;
+  agility?: number;
+  spirit?: number;
+  wit?: number;
+  luck?: number;
+  maxHp?: number;
+  maxMp?: number;
+  attack?: number;
+  xp?: number;
+}
+
 export interface CharacterCreationHistory {
   method: CharacterCreationMethod;
   seed?: string;
@@ -199,7 +212,11 @@ export interface EquippedItem {
 export interface InventoryItem {
   id: string;
   name: string;
-  kind: "healing" | "utility" | "key" | "treasure" | "equipment" | "escape" | "cure" | "focus";
+  kind: "healing" | "utility" | "key" | "treasure" | "equipment" | "escape" | "cure" | "focus" | "growth";
+  /** Permanent growth this item grants on use (outside combat). Aptitudes and core stats raise the
+   *  member; `xp` is a DIRECT grant that bypasses the out-levelling falloff by construction (it never
+   *  touches the combat-reward path). This is the player's "工夫" the design keeps rewarding. */
+  grants?: ItemGrants;
   quantity: number;
   healAmount?: number;
   restoreMp?: number;
@@ -646,7 +663,8 @@ export type EnemyRole = "attrition" | "blocker" | "status" | "ambusher" | "caste
 export interface ScenarioItem {
   id: string;
   name: string;
-  kind: "healing" | "utility" | "key" | "treasure" | "escape" | "cure" | "focus";
+  kind: "healing" | "utility" | "key" | "treasure" | "escape" | "cure" | "focus" | "growth";
+  grants?: ItemGrants;
   tier: number;
   price?: number;
   sellValue?: number;

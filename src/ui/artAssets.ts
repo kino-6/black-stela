@@ -89,7 +89,11 @@ export const ICON_PLACEHOLDER: Record<string, string> = {
   "item.antidote": "item-healing-draught",
   "item.clarity-draught": "item-healing-draught",
   "item.calm-draught": "item-healing-draught",
-  "item.spirit-tonic": "item-lantern-oil"
+  "item.spirit-tonic": "item-lantern-oil",
+  "item.ashroot-tonic": "item-healing-draught",
+  "item.whetstone-rite": "item-lantern-oil",
+  "item.emberwit-ash": "item-lantern-oil",
+  "item.deed-of-passage": "item-stela-shard"
 };
 
 export function catalogIconUrl(id: string, pack: string = activePack): string | undefined {

@@ -97,13 +97,27 @@ const trapSchema = z.object({
 const scenarioItemSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
-  kind: z.enum(["healing", "utility", "key", "treasure", "escape", "cure", "focus"]),
+  kind: z.enum(["healing", "utility", "key", "treasure", "escape", "cure", "focus", "growth"]),
   tier: z.number().int().nonnegative(),
   price: z.number().int().nonnegative().optional(),
   sellValue: z.number().int().nonnegative().optional(),
   healAmount: z.number().int().positive().optional(),
   restoreMp: z.number().int().positive().optional(),
   curesStatuses: z.array(z.enum(["poison", "fear", "silence", "sleep"])).optional(),
+  // Permanent growth granted on use (outside combat); see ItemGrants. `xp` bypasses the falloff.
+  grants: z
+    .object({
+      might: z.number().int().optional(),
+      agility: z.number().int().optional(),
+      spirit: z.number().int().optional(),
+      wit: z.number().int().optional(),
+      luck: z.number().int().optional(),
+      maxHp: z.number().int().optional(),
+      maxMp: z.number().int().optional(),
+      attack: z.number().int().optional(),
+      xp: z.number().int().positive().optional()
+    })
+    .optional(),
   locales: localizedNameDescriptionSchema.optional()
 });
 

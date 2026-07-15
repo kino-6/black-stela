@@ -33,6 +33,7 @@ export function createInventoryItemFromCatalog(world: ScenarioWorld, itemId: str
       healAmount: item.healAmount,
       restoreMp: item.restoreMp,
       curesStatuses: item.curesStatuses,
+      grants: item.grants,
       sellValue: item.sellValue
     };
   }

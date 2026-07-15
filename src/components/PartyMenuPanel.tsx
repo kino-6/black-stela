@@ -84,7 +84,7 @@ export function PartyMenuPanel({ state, world, locale, t, onCommand, onClose }: 
   const nextLevelXp = xpForLevel(member.level + 1);
   const selectedEquipment = selectedItem ? world.equipment.find((candidate) => candidate.id === selectedItem.id) : undefined;
   const canEquip = Boolean(selectedEquipment && isEquipmentUsableBy(selectedEquipment, member));
-  const canUse = Boolean(selectedItem && ["healing", "cure", "focus"].includes(selectedItem.kind));
+  const canUse = Boolean(selectedItem && ["healing", "cure", "focus", "growth"].includes(selectedItem.kind));
   const equippedCount = selectedItem
     ? state.party.reduce(
         (count, candidate) =>

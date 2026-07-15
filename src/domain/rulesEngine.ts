@@ -49,6 +49,7 @@ import type {
   ExplorationGate,
   GameEvent,
   GameState,
+  InventoryItem,
   PortableAdventurer,
   RoomEntryMotion,
   ScenarioWorld
@@ -1421,6 +1422,9 @@ function useItem(state: GameState, world: ScenarioWorld, itemId: string, targetC
   if (item?.kind === "escape") {
     return useEscapeItem(state, world, item);
   }
+  if (item?.kind === "growth" && item.grants) {
+    return useGrowthItem(state, world, item, targetCharacterId);
+  }
 
   const target = state.party.find((member) => member.id === targetCharacterId);
   const isConsumable = item && (item.kind === "healing" || item.kind === "cure" || item.kind === "focus");
@@ -1446,6 +1450,71 @@ function useItem(state: GameState, world: ScenarioWorld, itemId: string, targetC
       healAmount: item.healAmount ?? 0
     }
   ]);
+}
+
+
+// A growth item raises a member permanently, or grants XP directly. Used OUTSIDE combat only, so
+// the XP grant never routes through the combat-reward path and is untouched by the out-levelling
+// falloff — this is the mechanical reason "成長アイテムでの稼ぎはOK" holds. Consumes one.
+function useGrowthItem(state: GameState, world: ScenarioWorld, item: InventoryItem, targetCharacterId: string): CommandResult {
+  if (state.phase === "combat") {
+    return noChange(state);
+  }
+  const target = state.party.find((member) => member.id === targetCharacterId);
+  const grants = item.grants;
+  if (!target || !grants) {
+    return noChange(state);
+  }
+
+  const levelBefore = target.level;
+  const grown = state.party.map((member) => {
+    if (member.id !== target.id) {
+      return member;
+    }
+    const raisedAptitude = {
+      ...member.aptitude,
+      might: member.aptitude.might + (grants.might ?? 0),
+      agility: member.aptitude.agility + (grants.agility ?? 0),
+      spirit: member.aptitude.spirit + (grants.spirit ?? 0),
+      wit: member.aptitude.wit + (grants.wit ?? 0),
+      luck: member.aptitude.luck + (grants.luck ?? 0)
+    };
+    const maxHp = member.maxHp + (grants.maxHp ?? 0);
+    const maxMp = member.maxMp + (grants.maxMp ?? 0);
+    let next: Character = {
+      ...member,
+      aptitude: raisedAptitude,
+      maxHp,
+      hp: member.hp + (grants.maxHp ?? 0), // the new HP is usable immediately
+      maxMp,
+      mp: member.mp + (grants.maxMp ?? 0),
+      attack: member.attack + (grants.attack ?? 0),
+      damageMin: member.damageMin + (grants.attack ?? 0),
+      damageMax: member.damageMax + (grants.attack ?? 0),
+      xp: member.xp + (grants.xp ?? 0)
+    };
+    if (grants.xp) {
+      next = applyLevelUps(next).character;
+    }
+    return next;
+  });
+
+  const grownTarget = grown.find((member) => member.id === target.id)!;
+  const next: GameState = {
+    ...state,
+    party: grown,
+    inventory: state.inventory.map((candidate) =>
+      candidate.id === item.id ? { ...candidate, quantity: Math.max(0, candidate.quantity - 1) } : candidate
+    ),
+    turn: state.turn + 1
+  };
+  const events: GameEvent[] = [
+    { type: "item_used", itemId: item.id, itemName: item.name, targetCharacterId: target.id, targetName: target.name, healAmount: 0 }
+  ];
+  if (grownTarget.level > levelBefore) {
+    events.push({ type: "character_leveled_up", characterId: target.id, characterName: target.name, level: grownTarget.level });
+  }
+  return withEvents(next, events);
 }
 
 function discardItem(state: GameState, itemId: string, plus?: number, affix?: string): CommandResult {

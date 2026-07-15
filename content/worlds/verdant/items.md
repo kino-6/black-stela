@@ -55,6 +55,27 @@ items:
       ja:
         name: 大樹の種
         description: 樹心の芯から採れた、脈打つ種。
+  # ---- Growth items (verdant flavour; XP grants bypass the falloff) ----
+  - id: item.verdant.heartsap-tonic
+    name: Heartsap Tonic
+    kind: growth
+    tier: 3
+    sellValue: 60
+    grants: { maxHp: 6 }
+    locales:
+      ja:
+        name: 樹心の強壮液
+        description: 樹心近くの濃い樹液を練った強壮液。飲めば身が一回り太くなる。
+  - id: item.verdant.rootgrowth-seed
+    name: Rootgrowth Seed
+    kind: growth
+    tier: 4
+    sellValue: 90
+    grants: { xp: 60 }
+    locales:
+      ja:
+        name: 芽吹きの種
+        description: 噛めば脈打つ緑が身の内で芽吹く。潜った日々が糧になる。
 equipment:
   - id: equip.verdant.thorn-lash
     name: Thorn Lash
@@ -146,6 +167,7 @@ shops:
       - { itemId: item.verdant.greater-sap, price: 75, availability: unlocked, unlockFlag: flag.verdant.g3f.shortcut }
       - { itemId: equip.verdant.bark-plate, price: 95, availability: unlocked, unlockFlag: flag.verdant.g3f.shortcut }
       - { itemId: equip.verdant.iron-edge, price: 150, availability: unlocked, unlockFlag: flag.verdant.g3f.shortcut }
+      - { itemId: item.verdant.heartsap-tonic, price: 180, availability: unlocked, unlockFlag: flag.verdant.g3f.shortcut }
 ---
 
 # Verdant items

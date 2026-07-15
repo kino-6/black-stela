@@ -104,6 +104,47 @@ items:
       ja:
         name: 気付けの霊薬
         description: 涸れた気力を汲み戻す澄んだ霊薬。
+  # ---- Growth items (the player's earned edge; XP grants bypass the out-levelling falloff) ----
+  - id: item.ashroot-tonic
+    name: Ashroot Tonic
+    kind: growth
+    tier: 3
+    sellValue: 60
+    grants: { maxHp: 6 }
+    locales:
+      ja:
+        name: 灰根の強壮薬
+        description: 苦い灰根を煮出した強壮薬。飲めば身の内が一回り厚くなる。
+  - id: item.whetstone-rite
+    name: Whetstone Rite
+    kind: growth
+    tier: 3
+    sellValue: 70
+    grants: { attack: 1 }
+    locales:
+      ja:
+        name: 研ぎの儀
+        description: 刃と腕を同時に研ぐ古い作法。一打が確かに重くなる。
+  - id: item.emberwit-ash
+    name: Emberwit Ash
+    kind: growth
+    tier: 3
+    sellValue: 65
+    grants: { wit: 1 }
+    locales:
+      ja:
+        name: 燠知の灰
+        description: 舐めれば頭の奥が冴える灰。呪の通りが良くなる。
+  - id: item.deed-of-passage
+    name: Deed of Passage
+    kind: growth
+    tier: 4
+    sellValue: 90
+    grants: { xp: 60 }
+    locales:
+      ja:
+        name: 通過の証文
+        description: 先に逝った者の踏破の記録。読み解けば我が身の糧になる。
 equipment:
   - id: equip.rusted-dirk
     name: Rusted Dirk
@@ -712,6 +753,19 @@ shops:
         unlockFlag: flag.b2f.descent
       - itemId: equip.cinder-warded-jack
         price: 140
+        availability: unlocked
+        unlockFlag: flag.b2f.descent
+      # Permanent growth for gold — the player's earned edge.
+      - itemId: item.ashroot-tonic
+        price: 180
+        availability: unlocked
+        unlockFlag: flag.b2f.descent
+      - itemId: item.whetstone-rite
+        price: 210
+        availability: unlocked
+        unlockFlag: flag.b2f.descent
+      - itemId: item.emberwit-ash
+        price: 200
         availability: unlocked
         unlockFlag: flag.b2f.descent
     locales:

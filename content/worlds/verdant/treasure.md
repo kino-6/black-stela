@@ -64,6 +64,7 @@ treasureTables:
   - id: treasure.verdant.g6.side
     tier: 2
     entries:
+      - { itemId: item.verdant.rootgrowth-seed, weight: 4 }
       - { itemId: item.healing-draught, weight: 6 }
       - { itemId: item.verdant.sap-draught, weight: 5 }
       - { itemId: item.verdant.pollen-salve, weight: 4 }
