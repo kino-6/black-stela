@@ -1,4 +1,4 @@
-import { executeCommand } from "./rulesEngine";
+import { executeCommand, meleeTargetableGroup } from "./rulesEngine";
 import { weaponReaches } from "./economy";
 import { getGridEdge, getRoom } from "./scenario";
 import type { CombatActionDeclaration, GameState, ScenarioWorld } from "./types";
@@ -31,7 +31,13 @@ export function chooseAutoRoundActions(state: GameState, world: ScenarioWorld): 
   if (state.phase !== "combat" || !state.combat) {
     return [];
   }
-  const target = state.combat.enemyGroups.find((group) => group.count > 0);
+  // Target a group a melee swing can actually LAND on — the reachable front line first.
+  // Blindly taking the first living group made auto-battle hammer a shielded back-row group
+  // (a front blocker still standing) forever: every swing was blocked, no damage landed, and the
+  // fight never ended. The enemy turn also re-sorts the groups by speed, so "first living" could
+  // become the shielded caster after round one. Once the front falls, the back becomes targetable.
+  const groups = state.combat.enemyGroups;
+  const target = groups.find((group) => meleeTargetableGroup(group, groups)) ?? groups.find((group) => group.count > 0);
   const activeParty = state.party.filter((member) => member.hp > 0 && !member.injury);
   if (!target || activeParty.length === 0) {
     return [];

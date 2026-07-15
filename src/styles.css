@@ -3879,6 +3879,17 @@ textarea {
   padding: 0.25rem 0.6rem;
 }
 
+/* 全員でかかる — the primary quick-fight action reads as the emphasized default. */
+.combat-cockpit .command-dock button.combat-all-out {
+  border-color: rgba(201, 167, 101, 0.7);
+  background: linear-gradient(180deg, rgba(58, 52, 24, 0.55), rgba(36, 31, 14, 0.55));
+  color: #f2d58c;
+}
+
+.combat-cockpit .command-dock button.combat-all-out:disabled {
+  opacity: 0.5;
+}
+
 @media (max-width: 1100px) {
   .guild-studio-grid {
     grid-template-columns: 1fr;

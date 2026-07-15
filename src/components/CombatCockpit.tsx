@@ -62,6 +62,8 @@ interface CombatCockpitProps {
   // Dock
   isTempoRunning: boolean;
   onToggleTempo: () => void;
+  onAllOut: () => void;
+  canAllOut: boolean;
   onRepeatRound: () => void;
   canRepeat: boolean;
   onRetreat: () => void;
@@ -107,6 +109,8 @@ export function CombatCockpit({
   onExecuteRound,
   isTempoRunning,
   onToggleTempo,
+  onAllOut,
+  canAllOut,
   onRepeatRound,
   canRepeat,
   onRetreat,
@@ -245,6 +249,8 @@ export function CombatCockpit({
         t={t}
         isTempoRunning={isTempoRunning}
         onToggleTempo={onToggleTempo}
+        onAllOut={onAllOut}
+        canAllOut={canAllOut}
         onRepeatRound={onRepeatRound}
         canRepeat={canRepeat}
         onRetreat={onRetreat}

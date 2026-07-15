@@ -1,10 +1,12 @@
-import { PlayCircle, RotateCcw, ShieldCheck, Square, Sword } from "lucide-react";
+import { PlayCircle, RotateCcw, ShieldCheck, Square, Sword, Swords } from "lucide-react";
 import type { Translator } from "../i18n";
 
 interface CombatCommandDockProps {
   t: Translator;
   isTempoRunning: boolean;
   onToggleTempo: () => void;
+  onAllOut: () => void;
+  canAllOut: boolean;
   onRepeatRound: () => void;
   canRepeat: boolean;
   onRetreat: () => void;
@@ -20,6 +22,8 @@ export function CombatCommandDock({
   t,
   isTempoRunning,
   onToggleTempo,
+  onAllOut,
+  canAllOut,
   onRepeatRound,
   canRepeat,
   onRetreat,
@@ -35,6 +39,20 @@ export function CombatCommandDock({
       data-controller-surface="combat-meta"
       data-testid="combat-command-window"
     >
+      {/* The friction cure: commit the whole round with the smart attack default in one press,
+          instead of six × (command → target) + confirm. The fast path for a plain fight. */}
+      <button
+        type="button"
+        className="combat-all-out"
+        onClick={onAllOut}
+        disabled={!canAllOut}
+        data-testid="combat-all-out"
+        title={t("tempo.allOutHint")}
+      >
+        <Swords size={18} />
+        {t("tempo.allOut")}
+        <kbd className="key-hint">F</kbd>
+      </button>
       <button type="button" aria-pressed={isTempoRunning} onClick={onToggleTempo} data-testid="combat-auto">
         {isTempoRunning ? <Square size={18} /> : <PlayCircle size={18} />}
         {isTempoRunning ? t("tempo.stop") : t("tempo.auto")}

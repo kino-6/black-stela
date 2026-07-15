@@ -472,6 +472,8 @@ export const ja = {
     statusDone: "達成済み"
   },
   tempo: {
+    allOut: "全員でかかる",
+    allOutHint: "全員が攻撃——1操作でラウンドを一気に処理",
     repeat: "リピート",
     auto: "オート",
     repeatRound: "リピート",

@@ -257,24 +257,33 @@ test.describe("combat stage", () => {
     await startDebugRun(page, { progress: "floor_2", world: "verdant" });
     await walkUntilCombat(page);
 
-    const initialGroup = page.locator('[data-testid="combat-enemy-group"][data-enemy-count]:not([data-enemy-count="1"])').first();
-    await expect(initialGroup).toBeVisible();
-    const groupId = await initialGroup.getAttribute("data-enemy-group-id");
-    expect(groupId).toBeTruthy();
-    const group = page.locator(`[data-testid="combat-enemy-group"][data-enemy-group-id="${groupId}"]`);
+    await expect(page.locator('[data-testid="combat-enemy-group"][data-enemy-count]:not([data-enemy-count="1"])').first()).toBeVisible();
 
-    const samples: number[] = [];
-    const counts: number[] = [];
-    let capturedMemberChange = false;
+    // Track EVERY group's condition across the auto run, keyed by group id. Auto now focus-fires
+    // the reachable front line (a shielded back-liner is left alone until the front falls), so we
+    // must lock the invariant on whichever group actually loses a member, not a fixed pick.
+    const history = new Map<string, { health: number[]; counts: number[] }>();
+    let screenshotTaken = false;
     await page.getByTestId("combat-auto").click();
-    for (let index = 0; index < 80; index += 1) {
-      if (!(await group.isVisible().catch(() => false))) {
+    for (let index = 0; index < 90; index += 1) {
+      const marks = await page.getByTestId("combat-enemy-group").evaluateAll((els) =>
+        els.map((el) => ({
+          id: el.getAttribute("data-enemy-group-id") ?? "",
+          health: Number(el.getAttribute("data-health-percent")),
+          count: Number(el.getAttribute("data-enemy-count"))
+        }))
+      );
+      if (marks.length === 0) {
         break;
       }
-      samples.push(Number(await group.getAttribute("data-health-percent")));
-      counts.push(Number(await group.getAttribute("data-enemy-count")));
-      if (!capturedMemberChange && counts.at(-1)! < counts[0]) {
-        capturedMemberChange = true;
+      for (const mark of marks) {
+        const entry = history.get(mark.id) ?? { health: [], counts: [] };
+        entry.health.push(mark.health);
+        entry.counts.push(mark.count);
+        history.set(mark.id, entry);
+      }
+      if (!screenshotTaken && marks.some((m) => (history.get(m.id)?.counts[0] ?? m.count) > m.count)) {
+        screenshotTaken = true;
         const stop = page.getByTestId("tempo-stop");
         if (await stop.isVisible().catch(() => false)) {
           await stop.click();
@@ -284,13 +293,16 @@ test.describe("combat stage", () => {
       await page.waitForTimeout(80);
     }
 
-    expect(samples.length).toBeGreaterThan(2);
-    expect(Math.min(...samples)).toBeLessThan(samples[0]);
-    expect(Math.min(...counts)).toBeLessThan(counts[0]);
-    expect(capturedMemberChange).toBe(true);
-    for (let index = 1; index < samples.length; index += 1) {
-      expect(samples[index], `group condition refilled at sample ${index}: ${samples.join(" -> ")}`)
-        .toBeLessThanOrEqual(samples[index - 1] + 0.001);
+    // A group that lost a member is the thing under test: its condition bar must have DROPPED
+    // (not refilled to full as the next member "steps forward") and never risen at any sample.
+    const drained = [...history.values()].filter((entry) => Math.min(...entry.counts) < entry.counts[0]);
+    expect(drained.length, "no enemy group lost a member under auto-battle").toBeGreaterThan(0);
+    for (const entry of drained) {
+      expect(Math.min(...entry.health)).toBeLessThan(entry.health[0]);
+      for (let index = 1; index < entry.health.length; index += 1) {
+        expect(entry.health[index], `group condition refilled at sample ${index}: ${entry.health.join(" -> ")}`)
+          .toBeLessThanOrEqual(entry.health[index - 1] + 0.001);
+      }
     }
   });
 

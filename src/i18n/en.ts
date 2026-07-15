@@ -470,6 +470,8 @@ export const en = {
     statusDone: "Completed"
   },
   tempo: {
+    allOut: "All-out",
+    allOutHint: "Everyone attacks — resolve the whole round in one press",
     repeat: "Repeat",
     auto: "Auto",
     repeatRound: "Repeat",

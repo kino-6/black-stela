@@ -665,6 +665,22 @@ export function App() {
     resolveRound(replay);
   }
 
+  // 全員でかかる (All-out attack): commit the WHOLE round in one press. Every able member attacks
+  // the reachable front line (a back-row member with no reach defends) — the same smart default the
+  // auto-runner uses, resolved once. This is the friction cure for the common "I just want to
+  // attack" round: it replaces six × (command → target) + confirm with a single action. Tactical
+  // fights still use the per-actor menu; this is the fast path, not the only path.
+  function commitAllOutAttack() {
+    if (state.phase !== "combat" || tempoMode !== "idle" || playback) {
+      return;
+    }
+    const actions = chooseAutoRoundActions(state, activeWorld);
+    if (actions.length === 0) {
+      return;
+    }
+    resolveRound(actions);
+  }
+
   function menuQueueAttack(groupId: string) {
     if (selectedActor) {
       queueCombatOrder({ actorId: selectedActor.id, action: "attack", targetGroupId: groupId });
@@ -1202,6 +1218,10 @@ export function App() {
       } else if (key === " " || key === "r") {
         event.preventDefault();
         toggleTempoMode();
+      } else if (state.phase === "combat" && key === "f") {
+        // 全員でかかる — one press commits the whole round with the smart attack default.
+        event.preventDefault();
+        commitAllOutAttack();
       } else if (state.phase === "dungeon" && (key === "w" || key === "enter")) {
         event.preventDefault();
         run({ type: "move_forward" });
@@ -2478,6 +2498,8 @@ export function App() {
                   onExecuteRound={executeCombatOrders}
                   isTempoRunning={isTempoRunning}
                   onToggleTempo={() => toggleTempoMode("combat")}
+                  onAllOut={commitAllOutAttack}
+                  canAllOut={tempoMode === "idle" && !playback && activeParty.length > 0 && livingEnemyGroups.length > 0}
                   onRepeatRound={repeatLastRound}
                   canRepeat={lastCombatOrders.length > 0 && !isTempoRunning && combatOrders.length === 0}
                   onRetreat={() => run({ type: "retreat" })}
