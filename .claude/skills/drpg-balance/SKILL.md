@@ -108,3 +108,36 @@ Two rules follow:
   hovering is a separate field (`hover: true`).
 - **Any change to what melee can reach is a BALANCE change.** Re-run `descentSim` against the
   `none` model and re-check the act curve. It does not matter that the diff looked like content.
+
+## Preparation over levels — the "prepare or wipe" model (2026-07-15)
+
+The user's difficulty design: a naive party (no counterplay, no grind) can WIPE; preparation
+(the right elemental weapon + resist gear) is worth ~10 levels. So the descent is genuinely hard,
+and the lever out is preparation, not just grinding — with grinding itself made a trickle by the
+XP falloff (see leveling.rewardXpFor: ~0.86 per level over, floor 0.12; prized runners bypass it).
+
+Two knobs, authored in `world.md` `balance:` and applied once at load by `domain/balance.applyBalance`:
+- `threatScalar` — multiplies enemy damage. Raise until a naive party actually wipes.
+- `counterplayBoost` — pushes weaknesses further from 1 and deepens element resists, so a PREPARED
+  party's edge SCALES with the raised threat. Without this, cranking damage just walls everyone —
+  the boost is what converts difficulty into a preparation gap instead of a grind gap.
+
+Tune the two knobs against `descentSim.preparationValue(world)`, NOT by editing every enemy:
+- `simulateDescent(world, { policy: "naive" | "prepared", startLevel })` — naive keeps the party's
+  starter loadout; prepared swaps in the counter weapon + resist per enemy, using the real
+  weakness/resist math.
+- `minClearLevel(world, policy)` — lowest level that clears COMFORTABLY (deepest trough ≥ 25%, not
+  "survived at 3%").
+- `preparationValue` = { naiveMinLevel, preparedMinLevel, levelsSaved }. Drive `levelsSaved` toward
+  ~10 while `preparedMinLevel` stays near the entry level.
+
+Achieved: 黒碑 threatScalar 2.4 / boost 2.0 → naive Lv13, prepared Lv3, **saved 10**. 翠碑 2.2 / 3.0
+→ naive Lv8, prepared Lv1, **saved 7** — shallower BY DESIGN, because verdant's counterplay is
+offense-led (bring metal) with few elemental threats to resist. Adding elemental threats to verdant
+enemies (defensive counterplay) would lift its swing toward ten.
+
+The Gate reframed (descentSim.test / verdantBalance.test): a naive party WIPES (difficulty is real),
+a prepared party clears with the act curve intact (Act I gentlest, deep floors hardest — but a
+hard-countered boss may fall fast, so assert non-increasing, not strictly decreasing), and
+`levelsSaved` is large. Do not re-add a "naive never wipes" assertion — that was the OLD gentle
+design and contradicts this one.

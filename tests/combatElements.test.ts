@@ -27,6 +27,19 @@ function fightWith(member: Character, enemyId: string): GameState {
 /** Rounds of "everyone attacks the front group" until it falls. Averages over the seeded RNG, so
  *  it compares loadouts honestly rather than one noisy roll (different weapons map the same seed to
  *  different numbers, so a single-blow comparison is not apples to apples). */
+/** Total damage the party deals to the front group in a single declared round (seeded). */
+function oneRoundDamage(state: GameState): number {
+  const group = state.combat!.enemyGroups[0];
+  const after = executeCommand(state, defaultWorld, {
+    type: "declare_round",
+    actions: state.party.filter((m) => m.hp > 0).map((m) => ({ actorId: m.id, action: "attack" as const, targetGroupId: group.id }))
+  });
+  const beats = after.log.map((entry) => entry.event).flatMap((event) =>
+    event?.type === "combat_round_resolved" ? event.beats : []
+  );
+  return beats.reduce((total, beat) => total + ((beat?.targetGroupId === group.id ? beat?.damage ?? 0 : 0)), 0);
+}
+
 function roundsToClear(state: GameState, maxRounds = 40): number {
   let current = state;
   for (let round = 0; round < maxRounds; round += 1) {
@@ -57,15 +70,17 @@ describe("elemental counterplay in combat", () => {
     expect(getEffectiveCharacterStats(plain, defaultWorld).attackElement).toBe("physical");
 
     const warded = frontliner({ body: { id: "equip.cinder-warded-jack" } });
-    expect(getEffectiveCharacterStats(warded, defaultWorld).elementResist.fire).toBe(0.5);
+    // <1 = resistant (the exact depth is the world's counterplayBoost; direction is what matters).
+    expect(getEffectiveCharacterStats(warded, defaultWorld).elementResist.fire).toBeLessThan(1);
   });
 
-  it("a salt loadout clears the salt-weak, fire-resistant cyst faster than a plain one", () => {
-    // The cistern-warden (hp 17, salt 2.0 / fire 0.5) is a proper target — a salt weapon should fell it in fewer rounds than a
-    // plain blade — the counterplay loop, measured on the real engine over the seeded RNG.
-    const saltRounds = roundsToClear(fightWith(frontliner({ weapon: { id: "equip.salt-etched-blade" } }), "enemy.b3f.cistern-warden"));
-    const plainRounds = roundsToClear(fightWith(frontliner({ weapon: { id: "equip.rusted-dirk" } }), "enemy.b3f.cistern-warden"));
-    expect(saltRounds).toBeLessThan(plainRounds);
+  it("a salt loadout deals more to the salt-weak, fire-resistant cyst than a plain one", () => {
+    // The cistern-warden is salt-weak / fire-resistant. In one round, a full salt party lands more
+    // than a plain (physical) one — the counterplay loop, measured on the real engine. (Rounds-to-
+    // clear is too coarse once damage is scaled up; total damage in a round is the clean signal.)
+    const salt = oneRoundDamage(fightWith(frontliner({ weapon: { id: "equip.salt-etched-blade" } }), "enemy.b3f.cistern-warden"));
+    const plain = oneRoundDamage(fightWith(frontliner({ weapon: { id: "equip.rusted-dirk" } }), "enemy.b3f.cistern-warden"));
+    expect(salt).toBeGreaterThan(plain);
   });
 
   it("bringing fire to the drowned wood is the WRONG tool — wet bark shrugs it off, metal cuts it", () => {

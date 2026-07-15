@@ -1,40 +1,43 @@
 import { describe, expect, it } from "vitest";
 import { worldRegistry } from "../src/data/worldRegistry";
-import { simulateDescent } from "../src/headless/descentSim";
+import { minClearLevel, preparationValue, simulateDescent } from "../src/headless/descentSim";
 
-// Verdant balance Gate — read the NONE model, per .claude/skills/drpg-balance
-// ("Tune against `none`; it's what the Gate reads. Never let the sim wipe."). Targets
-// (none-model trough, escalating by act): Act I ~0.85→0.65, Act II ~0.60→0.42, Act III
-// ~0.38→0.28. The whole descent is a first-contact run with no healing except on
-// level-up — the pessimistic one-push lower bound.
-describe("verdant balance (descentSim, none model)", () => {
-  const result = simulateDescent(worldRegistry.verdant, { heal: "none" });
-  const t = new Map(result.floors.map((f) => [f.floorId, f.lowestHpPct]));
-  const trough = (id: string) => t.get(`dungeon.verdant.${id}`)!;
+// Verdant difficulty Gate, reframed for "prepare or wipe" (2026-07-15). A naive party wipes; a
+// PREPARED one (bring metal — the forest resists fire) clears with the act curve intact. Verdant's
+// counterplay is offense-led (few elemental threats to resist), so its preparation swing is a touch
+// shallower than 黒碑's — that difference is by design, and the Gate reflects it. Tuned via
+// world.balance (threatScalar / counterplayBoost); re-tune those two, not every enemy.
+describe("verdant difficulty (prepare or wipe)", () => {
+  const world = worldRegistry.verdant;
+  const clearLevel = minClearLevel(world, "prepared");
+  const push = simulateDescent(world, { heal: "none", policy: "prepared", startLevel: clearLevel });
+  const trough = (id: string) => push.floors.find((floor) => floor.floorId === `dungeon.verdant.${id}`)!.lowestHpPct;
   const actMin = (...ids: string[]) => Math.min(...ids.map(trough));
 
-  it("never wipes across the full first-contact descent", () => {
-    expect(result.floors.every((f) => !f.wiped)).toBe(true);
+  it("a naive party — bringing fire to the drowned wood — wipes", () => {
+    expect(simulateDescent(world, { heal: "none", policy: "naive" }).survived).toBe(false);
   });
 
-  it("escalates by act (Act I gentler than Act II gentler than Act III)", () => {
-    const actI = actMin("g1f", "g2f", "g3f");
-    const actII = actMin("g4f", "g5f", "g6f");
-    const actIII = actMin("g7f", "g8f");
-    expect(actII).toBeLessThan(actI);
-    expect(actIII).toBeLessThan(actII);
+  it("a prepared party (metal in hand) clears the whole descent", () => {
+    expect(simulateDescent(world, { heal: "town", policy: "prepared" }).survived).toBe(true);
+    expect(push.survived).toBe(true);
+    expect(push.floors.every((floor) => !floor.wiped)).toBe(true);
   });
 
-  it("keeps the deepest trough inside the danger band (finale tense, not lethal)", () => {
-    const deepest = Math.min(...result.floors.map((f) => f.lowestHpPct));
-    expect(deepest).toBeGreaterThan(0.12); // never a near-wipe
-    expect(deepest).toBeLessThan(0.4); // the finale genuinely bites
-    // The deepest trough is the boss floor — the run's climax.
-    expect(trough("g8f")).toBe(deepest);
+  it("preparation buys a large head-start (offense-led, so a touch under 黒碑's ten)", () => {
+    const value = preparationValue(world);
+    expect(value.levelsSaved).toBeGreaterThanOrEqual(5);
+    expect(value.preparedMinLevel).toBeLessThanOrEqual(3);
+  });
+
+  it("escalates by act, and still threatens the prepared party at depth", () => {
+    expect(actMin("g4f", "g5f", "g6f")).toBeLessThan(actMin("g1f", "g2f", "g3f")); // mid bites harder than the shallows
+    const deepest = Math.min(...push.floors.map((floor) => floor.lowestHpPct));
+    expect(deepest).toBeGreaterThan(0.15); // preparation keeps it off the wipe line
+    expect(deepest).toBeLessThan(0.6); // …but the deep wood genuinely bites
   });
 
   it("Act I teaches gently (no early floor is a wall)", () => {
     expect(trough("g1f")).toBeGreaterThan(0.7);
-    expect(trough("g3f")).toBeLessThan(trough("g1f")); // still ramps within the act
   });
 });

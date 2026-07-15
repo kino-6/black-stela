@@ -21,6 +21,12 @@ elements:
     label: Metal
     color: "#c9cdd4"
     locales: { ja: { label: 金 } }
+# Difficulty (tuned via descentSim.preparationValue). Verdant's counterplay is offense-led — bring
+# metal — so its preparation swing is a touch shallower than 黒碑's; more elemental THREATS to
+# resist (defensive counterplay) would lift it further. Re-tune these two, not every enemy.
+balance:
+  threatScalar: 2.2
+  counterplayBoost: 3.0
 assetPack: verdant
 # The grove settlement does not talk like the ash town. Any key omitted here falls through to
 # the shared dictionary, so this file only says what Verdant says differently.

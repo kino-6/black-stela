@@ -1,13 +1,17 @@
 import { describe, expect, it } from "vitest";
 import { addCharacter, createInitialGameState } from "../src/domain/gameState";
 import { createGuildCharacter } from "../src/domain/characterCreation";
+import { applyLevelUps, xpForLevel } from "../src/domain/leveling";
 import { createCombatState, executeCommand } from "../src/domain/rulesEngine";
 import { defaultWorld } from "../src/data/defaultWorld";
 import type { GameState } from "../src/domain/types";
 
 function fightAgainst(enemyId: string): GameState {
   const enemy = defaultWorld.enemies.find((candidate) => candidate.id === enemyId)!;
-  const base = addCharacter(createInitialGameState(), createGuildCharacter({ name: "Cael", classId: "mender", seed: "ai" }));
+  // Level the defender up so it outlasts the (now hard-hitting) ward long enough for its 40%-chance
+  // ability to roll — otherwise the test measures the new damage, not the AI.
+  const raised = applyLevelUps({ ...createGuildCharacter({ name: "Cael", classId: "bulwark", seed: "ai" }), level: 1, xp: xpForLevel(8) }).character;
+  const base = addCharacter(createInitialGameState(), { ...raised, hp: raised.maxHp });
   return {
     ...base,
     phase: "combat",

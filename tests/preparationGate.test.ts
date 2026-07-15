@@ -16,13 +16,15 @@ import { minClearLevel, preparationValue, simulateDescent } from "../src/headles
 describe("preparation Gate (what counterplay is worth)", () => {
   const worlds = Object.entries(worldRegistry);
 
-  it("preparation roughly doubles the survival margin at equal level, in both worlds", () => {
+  it("at equal level, a prepared party survives where a naive one is far worse off", () => {
     for (const [id, world] of worlds) {
-      const naive = simulateDescent(world, { heal: "none", policy: "naive" });
-      const prepared = simulateDescent(world, { heal: "none", policy: "prepared" });
+      // At the prepared clear level, prepared is comfortable and naive is still in trouble — the
+      // honest same-level advantage. (At Lv1 both may wipe under the new difficulty, so a floor-1
+      // comparison would just read 0 vs 0.)
+      const level = minClearLevel(world, "prepared");
+      const naive = simulateDescent(world, { heal: "none", policy: "naive", startLevel: level });
+      const prepared = simulateDescent(world, { heal: "none", policy: "prepared", startLevel: level });
       const trough = (result: typeof naive) => Math.min(...result.floors.map((floor) => floor.lowestHpPct));
-      // A prepared party bottoms out far higher — it hits weaknesses (fights end sooner) and wears
-      // resist gear (takes less). The gap is the whole counterplay loop, measured end to end.
       expect(trough(prepared), `${id}: preparation gives no survival advantage`).toBeGreaterThan(trough(naive) + 0.2);
     }
   });

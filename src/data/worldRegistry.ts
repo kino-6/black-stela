@@ -92,6 +92,8 @@ const baseCatalog = {
 // Merge the shared starter catalog into a world (world entries win). Exported so an
 // imported scenario pack (which is parsed outside this registry) also gets resolvable
 // starter gear for the standard party.
+import { applyBalance } from "../domain/balance";
+
 export function mergeBaseCatalog(world: ScenarioWorld): ScenarioWorld {
   const equipIds = new Set(world.equipment.map((item) => item.id));
   const itemIds = new Set(world.items.map((item) => item.id));
@@ -107,7 +109,7 @@ export const worldRegistry: Record<string, ScenarioWorld> = Object.fromEntries(
     worldId,
     // Default is left byte-identical (it already defines the whole base); only other
     // worlds inherit the shared starter gear.
-    worldId === DEFAULT_WORLD_ID ? world : mergeBaseCatalog(world)
+    applyBalance(worldId === DEFAULT_WORLD_ID ? world : mergeBaseCatalog(world))
   ])
 );
 

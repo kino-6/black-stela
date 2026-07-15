@@ -21,6 +21,12 @@ elements:
     label: Star
     color: "#9ec7ff"
     locales: { ja: { label: 星 } }
+# Difficulty (tuned via descentSim.preparationValue): a naive party — no counterplay, no grinding —
+# genuinely wipes; a prepared one clears ~10 levels lower. threatScalar raises the danger,
+# counterplayBoost makes the right tools scale with it. Re-tune these two numbers, not every enemy.
+balance:
+  threatScalar: 2.4
+  counterplayBoost: 2.0
 startDungeon: dungeon.b1f
 startRoom: room.b1f.001
 aiPolicy:

@@ -1,63 +1,57 @@
 import { describe, expect, it } from "vitest";
 import { defaultWorld } from "../src/data/defaultWorld";
-import { simulateDescent } from "../src/headless/descentSim";
+import { minClearLevel, preparationValue, simulateDescent } from "../src/headless/descentSim";
 
-// Completability guard, complementary to the headless *reachability* probes: those
-// prove the party can walk each floor; this proves a starter party's growth keeps
-// it alive through the fights of a full B1F -> B8F descent without grinding. It
-// drives the real combat + level-up engine and mirrors the engine's first-contact
-// encounter model (each enemy type fought once), so a future content/tuning change
-// that makes any floor lethal to a no-grind starter party trips this test.
-describe("descent survivability (no grind)", () => {
-  it("clears all eight floors when healing in town between floors", () => {
-    const result = simulateDescent(defaultWorld, { heal: "town" });
-    expect(result.floors).toHaveLength(8);
-    expect(result.survived).toBe(true);
-    expect(result.floors.every((floor) => !floor.wiped && floor.downed === 0)).toBe(true);
+// The difficulty Gate, reframed for the "prepare or wipe" design (2026-07-15). The old Gate asked
+// "does a naive starter party survive?" — but the user's call is that a naive party (no counterplay,
+// no grind) SHOULD be able to wipe, and preparation is worth ~10 levels. So the Gate now protects
+// three things at once: a naive party is genuinely threatened, a PREPARED party clears with the act
+// curve intact, and preparation buys a large, real head-start. Tuned via the world.balance knobs
+// (threatScalar / counterplayBoost) against these numbers — re-tune those, not every enemy.
+describe("descent difficulty (prepare or wipe)", () => {
+  const clearLevel = minClearLevel(defaultWorld, "prepared");
+
+  it("a naive party — no counterplay, no grinding — genuinely wipes at the entry level", () => {
+    // This is the point of the design: bring the wrong tools and you die. If this ever survives,
+    // the difficulty has drained back out of the descent.
+    expect(simulateDescent(defaultWorld, { heal: "none", policy: "naive" }).survived).toBe(false);
   });
 
-  it("survives a single continuous push with no consumables (level-up healing only)", () => {
-    const result = simulateDescent(defaultWorld, { heal: "none" });
-    expect(result.floors).toHaveLength(8);
-    expect(result.survived).toBe(true);
-    expect(result.floors.every((floor) => !floor.wiped)).toBe(true);
+  it("a PREPARED party clears all eight floors — with town rest, and on a single push at its level", () => {
+    expect(simulateDescent(defaultWorld, { heal: "town", policy: "prepared" }).survived).toBe(true);
+    const push = simulateDescent(defaultWorld, { heal: "none", policy: "prepared", startLevel: clearLevel });
+    expect(push.floors).toHaveLength(8);
+    expect(push.survived).toBe(true);
+    expect(push.floors.every((floor) => !floor.wiped)).toBe(true);
   });
 
-  it("keeps the party at a sane level (few first-contact fights, not over-grown)", () => {
-    // The first-contact model means only ~one fight per new enemy type, so the
-    // party stays low — a guard against a future change that lets it balloon.
-    const result = simulateDescent(defaultWorld, { heal: "town" });
-    expect(result.finalLevel).toBeGreaterThanOrEqual(3);
-    expect(result.finalLevel).toBeLessThanOrEqual(8);
+  it("preparation is worth roughly ten levels (the design target)", () => {
+    const value = preparationValue(defaultWorld);
+    expect(value.levelsSaved).toBeGreaterThanOrEqual(8); // ~10, with headroom for RNG/tuning wobble
+    expect(value.preparedMinLevel).toBeLessThanOrEqual(4); // and prepared clears near the entry level
   });
 
-  // Difficulty Gate (turns the balance Sim into an enforced band, not just a
-  // survivability check). Two-sided: the descent must NOT wipe a no-grind party,
-  // and must NOT be a no-damage cakewalk. After the 2026-07 area-tuning pass a
-  // full-party no-grind push troughs by floor ≈ 93/93/79/86/64/57/33/20% — Act I
-  // gentle, Act II bites, Act III (finale) threatens — and survives with zero downs.
-  // This Gate FAILS if a change flattens the descent toward zero threat (deepest
-  // trough climbs above ~0.55) OR pushes it into a near-certain wipe (below ~0.12).
-  it("threatens the party somewhere on a no-grind descent (difficulty Gate)", () => {
-    const result = simulateDescent(defaultWorld, { heal: "none" });
-    const deepestTrough = Math.min(...result.floors.map((floor) => floor.lowestHpPct));
-    expect(result.survived).toBe(true); // still survivable
-    expect(deepestTrough).toBeLessThan(0.55); // deep floors must genuinely bite
-    expect(deepestTrough).toBeGreaterThan(0.12); // ...but not be a near-certain wipe
+  it("still threatens a prepared party (not a cakewalk once you have the right tools)", () => {
+    const push = simulateDescent(defaultWorld, { heal: "none", policy: "prepared", startLevel: clearLevel });
+    const deepest = Math.min(...push.floors.map((floor) => floor.lowestHpPct));
+    expect(deepest).toBeLessThan(0.6); // deep floors bite even prepared
+    expect(deepest).toBeGreaterThan(0.15); // …but preparation keeps it off the wipe line
   });
 
-  // Area pacing Gate (see docs/design/dungeon-areas.md + skill drpg-balance): the
-  // descent is three escalating acts. The worst trough of each act must deepen act by
-  // act — Act II harder than Act I, Act III (finale) harder than Act II — so a future
-  // change can't flatten the ramp back into "trivial then sudden spike".
-  it("escalates in pressure act by act (I → II → III)", () => {
-    const result = simulateDescent(defaultWorld, { heal: "none" });
-    const troughByFloor = new Map(result.floors.map((floor) => [floor.floorId, floor.lowestHpPct]));
-    const actMin = (ids: string[]) => Math.min(...ids.map((id) => troughByFloor.get(id) ?? 1));
+  it("escalates in pressure — Act I is the gentlest, the deep floors are the hardest", () => {
+    const push = simulateDescent(defaultWorld, { heal: "none", policy: "prepared", startLevel: clearLevel });
+    const trough = new Map(push.floors.map((floor) => [floor.floorId, floor.lowestHpPct]));
+    const actMin = (ids: string[]) => Math.min(...ids.map((id) => trough.get(id) ?? 1));
     const act1 = actMin(["dungeon.b1f", "dungeon.b2f", "dungeon.b3f"]);
     const act2 = actMin(["dungeon.b4f", "dungeon.b5f", "dungeon.b6f"]);
     const act3 = actMin(["dungeon.b7f", "dungeon.b8f"]);
-    expect(act2).toBeLessThan(act1);
-    expect(act3).toBeLessThan(act2);
+    expect(act2).toBeLessThan(act1); // the middle bites harder than the shallows
+    expect(act3).toBeLessThanOrEqual(act2); // and the deep floors no gentler than the middle
+  });
+
+  it("keeps a prepared party at a sane level on a no-grind push (not over-grown)", () => {
+    const push = simulateDescent(defaultWorld, { heal: "none", policy: "prepared", startLevel: clearLevel });
+    expect(push.finalLevel).toBeGreaterThanOrEqual(clearLevel);
+    expect(push.finalLevel).toBeLessThanOrEqual(clearLevel + 8);
   });
 });

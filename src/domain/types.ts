@@ -541,6 +541,9 @@ export interface ScenarioWorld {
   /** This world's elemental cosmology. Weaknesses and threats may only name elements declared
    *  here (plus the universal `physical`). Empty/absent = the world uses physical only. */
   elements?: ElementDef[];
+  /** Difficulty knobs (domain/balance.ts): enemy-damage scalar + counterplay boost, tuned so a
+   *  prepared party can clear ~10 levels under a naive one. Applied once when the world is loaded. */
+  balance?: { threatScalar?: number; counterplayBoost?: number };
   /** Art pack folder under content/worlds/<assetPack>/assets (defaults to "default").
    *  Lets a scenario ship its own atmosphere pack. */
   assetPack?: string;
