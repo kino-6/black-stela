@@ -57,22 +57,28 @@ export async function checkNarratorHealth(
 export async function requestNarration(
   state: GameState,
   world: ScenarioWorld,
-  inputSettings: Partial<AiSettings> = {}
+  inputSettings: Partial<AiSettings> = {},
+  context: { subjectId?: string } = {}
 ): Promise<NarrationProposal> {
   const settings = parseAiSettings({
     ...defaultAiSettings,
     ...inputSettings
   });
   const provider = pickProvider(settings);
-  const result = await provider.narrate({ state, world, settings });
+  const result = await provider.narrate({ state, world, settings, subjectId: context.subjectId });
 
   if (result.status === "success") {
     // Background flavor is non-canonical: it must pass the policy guard (no speaking
     // or acting for player characters, no scenario-forbidden content) before use.
     // A blocked line is recorded for developers and replaced by deterministic text.
-    const guarded = guardNarration(state, world, result.proposal);
+    const guarded = guardNarration(state, world, result.proposal, context.subjectId);
     if (guarded.accepted) {
-      return { source: result.proposal.source, prose: guarded.prose };
+      return {
+        source: result.proposal.source,
+        prose: guarded.prose,
+        ...(result.proposal.subjectId ? { subjectId: result.proposal.subjectId } : {}),
+        ...(result.proposal.subjectId && result.proposal.tone ? { tone: result.proposal.tone } : {})
+      };
     }
 
     recordNarrationDiagnostic({

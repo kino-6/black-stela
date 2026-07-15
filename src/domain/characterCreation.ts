@@ -4,6 +4,7 @@ import type {
   CharacterBackgroundId,
   CharacterClassId,
   CharacterCreationMethod,
+  CharacterVisualProfile,
   CharacterTraitId,
   CombatRow,
   EquipmentSlot,
@@ -59,6 +60,7 @@ export interface GuildCharacterInput {
   aptitudeFocus?: keyof CharacterAptitudes | "balanced";
   bonusAptitude?: Partial<CharacterAptitudes>;
   portraitRef?: string;
+  visualProfile?: CharacterVisualProfile;
   accentColor?: string;
   method?: CharacterCreationMethod;
   seed?: string;
@@ -444,6 +446,7 @@ export function createGuildCharacter(input: GuildCharacterInput): Character {
     },
     memory: createEmptyRosterMemory(),
     portraitRef: input.portraitRef,
+    visualProfile: input.visualProfile,
     row: classDef.rowPreference,
     level: 1,
     hp: stats.maxHp,
@@ -537,7 +540,8 @@ export function toPortableAdventurer(
       title: character.title,
       notes: character.notes,
       accentColor: character.accentColor,
-      portraitRef: character.portraitRef
+      portraitRef: character.portraitRef,
+      visualProfile: character.visualProfile
     },
     build: {
       classId: character.classId,
@@ -624,6 +628,7 @@ export function importAdventurer(
     creation: { method: "import", registeredAtTurn: 0 },
     memory,
     portraitRef: portable.identity.portraitRef,
+    visualProfile: portable.identity.visualProfile,
     row: classDef.rowPreference,
     level,
     hp: stats.maxHp,

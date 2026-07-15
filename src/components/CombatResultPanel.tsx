@@ -65,6 +65,8 @@ export function CombatResultPanel({ result, party, t, onDismiss }: CombatResultP
                         <span className="combat-result-portrait" style={{ borderColor: member.accentColor }}>
                           {renderPortraitContent({
                             portraitRef: member.portraitRef,
+                            visualProfile: member.visualProfile,
+                            context: "profile",
                             backgroundId: member.backgroundId,
                             fallback: member.name,
                             alt: member.name

@@ -41,6 +41,8 @@ export function CombatPartyStrip({ members, selectedActorId, orderedActorIds, ac
                   <div className="pt-portrait" style={{ borderColor: member.accentColor }}>
                     {renderPortraitContent({
                       portraitRef: member.portraitRef,
+                      visualProfile: member.visualProfile,
+                      context: "token",
                       backgroundId: member.backgroundId,
                       fallback: member.name,
                       alt: member.name,

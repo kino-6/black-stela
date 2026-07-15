@@ -69,6 +69,13 @@ const MemorySchema = z.object({
   deeds: z.array(z.string()).default([])
 });
 
+const CharacterVisualProfileSchema = z.object({
+  baseRef: z.string().optional(),
+  battleRef: z.string().optional(),
+  focusX: z.number().min(0).max(100).default(50),
+  focusY: z.number().min(0).max(100).default(38)
+});
+
 export const PortableAdventurerSchema = z.object({
   formatVersion: z.literal(1),
   exportedAt: z.string(),
@@ -78,7 +85,8 @@ export const PortableAdventurerSchema = z.object({
     title: z.string().default(""),
     notes: z.string().default(""),
     accentColor: z.string().default("#c9a765"),
-    portraitRef: z.string().optional()
+    portraitRef: z.string().optional(),
+    visualProfile: CharacterVisualProfileSchema.optional()
   }),
   build: z.object({
     classId: ClassIdSchema,

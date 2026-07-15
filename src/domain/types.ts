@@ -125,6 +125,16 @@ export interface RosterMemory {
   deeds: string[];
 }
 
+export interface CharacterVisualProfile {
+  /** Embedded data URL or durable app-data reference used in compact/profile contexts. */
+  baseRef?: string;
+  /** Optional transparent bust/character art used when the adventurer owns the scene. */
+  battleRef?: string;
+  /** Percentage focal point shared by all crops; defaults to the face-friendly 50/38. */
+  focusX: number;
+  focusY: number;
+}
+
 // A scenario-independent snapshot of a registered adventurer: identity, the
 // build (class/background/aptitude/traits), and earned progress (level/xp/
 // reputation). Deliberately excludes scenario-bound equipment ids, dungeon
@@ -140,6 +150,7 @@ export interface PortableAdventurer {
     notes: string;
     accentColor: string;
     portraitRef?: string;
+    visualProfile?: CharacterVisualProfile;
   };
   build: {
     classId: CharacterClassId;
@@ -184,6 +195,7 @@ export interface Character {
   creation: CharacterCreationHistory;
   memory: RosterMemory;
   portraitRef?: string;
+  visualProfile?: CharacterVisualProfile;
   row: CombatRow;
   level: number;
   hp: number;

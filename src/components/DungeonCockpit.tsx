@@ -7,6 +7,9 @@ import { renderPortraitContent } from "../ui/portrait";
 import { DungeonView } from "./DungeonView";
 import { MapPanel } from "./MapPanel";
 import { DungeonCommandDock } from "./DungeonCommandDock";
+import { CharacterPresence } from "./CharacterPresence";
+import { getRoom } from "../domain/scenario";
+import { selectNarrationSubject } from "../services/narrationSubject";
 
 interface DungeonCockpitProps {
   state: GameState;
@@ -62,6 +65,11 @@ export function DungeonCockpit({
   showEscapeItem,
   onUseEscapeItem
 }: DungeonCockpitProps) {
+  const currentRoom = state.position ? getRoom(world, state.position.roomId) : undefined;
+  const eventSubject = currentRoom?.event
+    ? selectNarrationSubject(state, currentRoom.id)
+    : undefined;
+
   return (
     <>
       <div className="cockpit-scene">
@@ -92,6 +100,8 @@ export function DungeonCockpit({
                         <div className="party-token-portrait" style={{ borderColor: member.accentColor }}>
                           {renderPortraitContent({
                             portraitRef: member.portraitRef,
+                            visualProfile: member.visualProfile,
+                            context: "token",
                             backgroundId: member.backgroundId,
                             fallback: member.name,
                             alt: member.name,
@@ -168,10 +178,20 @@ export function DungeonCockpit({
       </aside>
 
       <div className="cockpit-message">
-        <p className="room-copy">{roomDescription}</p>
-        <p className="event-window" aria-live="polite">
-          {message}
-        </p>
+        <div className="dungeon-message-copy">
+          <p className="room-copy">{roomDescription}</p>
+          <p className="event-window" aria-live="polite">
+            {message}
+          </p>
+        </div>
+        {eventSubject && (
+          <CharacterPresence
+            character={eventSubject}
+            locale={locale}
+            mode="event"
+            testId="event-character-presence"
+          />
+        )}
       </div>
       {tempo}
       <DungeonCommandDock

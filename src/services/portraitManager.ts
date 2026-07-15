@@ -26,7 +26,12 @@ export function bindPortraitReference(character: Character, portrait: PortraitRe
 
   return {
     ...character,
-    portraitRef: portrait.storagePath
+    portraitRef: portrait.storagePath,
+    visualProfile: {
+      baseRef: portrait.storagePath,
+      focusX: 50,
+      focusY: 38
+    }
   };
 }
 
