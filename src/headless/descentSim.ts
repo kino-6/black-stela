@@ -21,6 +21,7 @@
 //   "none" — carry HP across floors, healing only from level-ups (pessimistic
 //            one-push lower bound with no consumables).
 import { createCombatState, executeCommand } from "../domain/rulesEngine";
+import { applyLevelUps, xpForLevel } from "../domain/leveling";
 import { createDebugStateFromProgress } from "../debug/debugStart";
 import { analyzeFloorGraph } from "../domain/floorGraph";
 import { WANDERING_COOLDOWN_STEPS, WANDERING_ENCOUNTER_PCT } from "../domain/rulesEngine";
@@ -171,14 +172,88 @@ function planFloor(world: ScenarioWorld, floorId: string, seen: Set<string>): Pl
 // Also reports the lowest party HP% reached *during* the fight — the real danger
 // trough, which the post-victory state hides because winning awards XP that
 // level-ups then heal away.
+
+// Two ways to play a descent, so the Gate can measure what preparation is worth. The design the
+// user set: "対策装備・対策アイテムがあればLvが多少低くてもなんとかなる … 埋める差はLv10." So we run
+// the SAME descent two ways and compare the lowest level each can clear at.
+export type SimPolicy = "naive" | "prepared";
+
+// Bring a party to a target level by granting the XP for it and applying the real level-ups, so
+// stats/HP grow exactly as they would in play.
+function partyAtLevel(party: Character[], level: number): Character[] {
+  return party.map((member) => {
+    const raised = applyLevelUps({ ...member, level: 1, xp: xpForLevel(level) });
+    return { ...raised.character, hp: raised.character.maxHp, mp: raised.character.maxMp };
+  });
+}
+
+// The element this enemy is MOST weak to, and a world weapon that deals it (if one exists). This
+// is the "prepared" party's offense: carry the right tool and swap to it per fight.
+function bestWeaponFor(world: ScenarioWorld, enemy: Enemy): string | undefined {
+  const weaknesses = enemy.weaknesses ?? {};
+  let bestElement: string | undefined;
+  let bestMult = 1.0001; // must actually be a weakness (>1) to bother
+  for (const [element, mult] of Object.entries(weaknesses)) {
+    if ((mult ?? 1) > bestMult) {
+      bestMult = mult ?? 1;
+      bestElement = element;
+    }
+  }
+  if (!bestElement) {
+    return undefined;
+  }
+  return world.equipment.find((gear) => gear.slot === "weapon" && gear.element === bestElement)?.id;
+}
+
+// A body/charm that resists this enemy's elemental THREAT (its damage abilities), if one exists.
+function bestResistFor(world: ScenarioWorld, enemy: Enemy): string | undefined {
+  const threats = new Set(
+    (enemy.abilities ?? [])
+      .map((ability) => (ability.effect.kind === "damage" ? ability.effect.element : undefined))
+      .filter((element): element is string => Boolean(element) && element !== "physical")
+  );
+  if (threats.size === 0) {
+    return undefined;
+  }
+  return world.equipment.find(
+    (gear) => gear.slot !== "weapon" && Object.entries(gear.elementResist ?? {}).some(([el, m]) => threats.has(el) && (m ?? 1) < 1)
+  )?.id;
+}
+
+// Kit the party for THIS enemy. Prepared: the counter weapon + the resisting armour where they
+// exist. Naive: a plain physical weapon, no resist — the loadout of a party that read nothing.
+function equipPartyForEnemy(party: Character[], world: ScenarioWorld, enemy: Enemy, policy: SimPolicy): Character[] {
+  // Naive keeps the party's own starter loadout untouched — the point is only that it brought no
+  // COUNTERPLAY, so the existing (naive) balance curve is unchanged. Prepared layers the counter
+  // weapon and the resisting armour on top, per this enemy.
+  if (policy === "naive") {
+    return party;
+  }
+  const weapon = bestWeaponFor(world, enemy);
+  const resist = bestResistFor(world, enemy);
+  if (!weapon && !resist) {
+    return party;
+  }
+  return party.map((member) => ({
+    ...member,
+    equipment: {
+      ...member.equipment,
+      ...(weapon ? { weapon: { id: weapon } } : {}),
+      ...(resist ? { body: { id: resist } } : {})
+    }
+  }));
+}
+
 function resolveFight(
   state: GameState,
   world: ScenarioWorld,
-  encounter: PlannedEncounter
+  encounter: PlannedEncounter,
+  policy: SimPolicy = "naive"
 ): { state: GameState; midFightLow: number } {
-  const readyState = state.combatConclusion
-    ? executeCommand(state, world, { type: "continue_after_combat" })
-    : state;
+  const kitted = { ...state, party: equipPartyForEnemy(state.party, world, encounter.enemy, policy) };
+  const readyState = kitted.combatConclusion
+    ? executeCommand(kitted, world, { type: "continue_after_combat" })
+    : kitted;
   let current: GameState = {
     ...readyState,
     phase: "combat",
@@ -206,11 +281,18 @@ function resolveFight(
   return { state: current, midFightLow };
 }
 
-export function simulateDescent(world: ScenarioWorld, options: { heal?: "town" | "none" } = {}): DescentSimResult {
+export function simulateDescent(
+  world: ScenarioWorld,
+  options: { heal?: "town" | "none"; policy?: SimPolicy; startLevel?: number } = {}
+): DescentSimResult {
   const heal = options.heal ?? "town";
+  const policy = options.policy ?? "naive";
 
   const base = createDebugStateFromProgress(world, "ready");
   let party = base.party.map((member) => ({ ...member }));
+  if (options.startLevel && options.startLevel > 1) {
+    party = partyAtLevel(party, options.startLevel);
+  }
   const floors: FloorSimResult[] = [];
 
   // The world's own dungeon order (registry orders by floor level): b1..b8 for the
@@ -238,7 +320,7 @@ export function simulateDescent(world: ScenarioWorld, options: { heal?: "town" |
     let workState: GameState = { ...base, phase: "dungeon", party, position: { roomId: floorRoom, facing: "north" } };
 
     for (const encounter of encounters) {
-      const outcome = resolveFight(workState, world, encounter);
+      const outcome = resolveFight(workState, world, encounter, policy);
       workState = outcome.state;
       party = workState.party;
       lowest = Math.min(lowest, outcome.midFightLow);
@@ -272,4 +354,44 @@ export function simulateDescent(world: ScenarioWorld, options: { heal?: "town" |
     survived: !floors.some((floor) => floor.wiped),
     finalLevel: floors.length ? floors[floors.length - 1].departLevel : avgLevel(party)
   };
+}
+
+// Does a party STARTING at `startLevel` clear the whole descent (no wipe on any floor) under a
+// given policy? Uses the pessimistic `none` heal model so the answer is "can they actually take
+// it", not "with a town trip between every floor".
+export function clearsAtLevel(world: ScenarioWorld, startLevel: number, policy: SimPolicy, margin = 0.25): boolean {
+  const result = simulateDescent(world, { heal: "none", policy, startLevel });
+  if (!result.survived) {
+    return false;
+  }
+  // Not "survived at 3% HP" — clears with room to spare. Surviving on a knife-edge is the naive
+  // floor preparation is meant to lift the party off.
+  const deepest = Math.min(...result.floors.map((floor) => floor.lowestHpPct));
+  return deepest >= margin;
+}
+
+// The lowest start level at which a party clears under `policy`. Monotonic in level (more level
+// never hurts), so a plain scan up to a cap is exact. Returns cap + 1 if it never clears.
+export function minClearLevel(world: ScenarioWorld, policy: SimPolicy, cap = 24, margin = 0.25): number {
+  for (let level = 1; level <= cap; level += 1) {
+    if (clearsAtLevel(world, level, policy, margin)) {
+      return level;
+    }
+  }
+  return cap + 1;
+}
+
+// What preparation is worth, in levels: how many levels LOWER a prepared party can start and still
+// clear, versus a naive one. This is the number the whole balance design turns on — the user's
+// target is around ten. Positive = preparation genuinely substitutes for levels.
+export interface PreparationValue {
+  naiveMinLevel: number;
+  preparedMinLevel: number;
+  levelsSaved: number;
+}
+export function preparationValue(world: ScenarioWorld, cap = 24): PreparationValue {
+  const naiveMinLevel = minClearLevel(world, "naive", cap);
+  const preparedMinLevel = minClearLevel(world, "prepared", cap);
+  // levelsSaved = how many levels a prepared party can shave off and still clear comfortably.
+  return { naiveMinLevel, preparedMinLevel, levelsSaved: naiveMinLevel - preparedMinLevel };
 }
