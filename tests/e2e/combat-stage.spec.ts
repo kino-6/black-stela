@@ -21,6 +21,36 @@ test.describe("combat stage", () => {
     await expectFitsViewport(page, "combat");
   });
 
+  // The screen budget (see .claude/skills/combat-ui-drpg): the enemy stage used to be a flex:1
+  // child that got only the LEFTOVERS after four reserved bands — 227px, 36% of the cockpit at
+  // 720p — so the art read small no matter how good it was. The HUD is now translucent overlays
+  // floating over a full-frame stage; the creatures scale into it. This locks the win: the old
+  // layout (36%) fails this, and the always-on six-vital strip must still hold the bottom.
+  test("the enemy stage dominates the screen, with the party strip still pinned below it", async ({ page }) => {
+    await page.setViewportSize(CONTROLLER_VIEWPORT);
+    await startDebugRun(page, { progress: "floor_2" });
+    await walkUntilCombat(page);
+    await page.waitForTimeout(300);
+
+    const cockpit = (await page.locator(".combat-cockpit").boundingBox())!;
+    const stage = (await page.locator(".enemy-stage").boundingBox())!;
+    const share = stage.height / cockpit.height;
+    expect(share, `enemy stage is only ${Math.round(share * 100)}% of the cockpit`).toBeGreaterThan(0.6);
+
+    // The creatures scaled up with the taller frame — the smallest silhouette clears the old floor.
+    const silhouette = Number(await page.getByTestId("dungeon-canvas").getAttribute("data-combat-minimum-silhouette"));
+    expect(silhouette, "the creatures did not grow into the taller stage").toBeGreaterThanOrEqual(110);
+
+    // The always-on six-member strip stays pinned along the bottom edge of the cockpit (a thin
+    // persistent HUD, not a reserved band that starves the stage).
+    const strip = (await page.locator(".party-strip").boundingBox())!;
+    await expect(page.getByTestId("combat-actor")).toHaveCount(6);
+    expect(strip.y, "the party strip floated up off the bottom").toBeGreaterThan(stage.y + stage.height - 4);
+    expect(Math.abs(cockpit.y + cockpit.height - (strip.y + strip.height)), "the strip is not near the bottom edge").toBeLessThan(120);
+
+    await expectFitsViewport(page, "combat overlay layout");
+  });
+
   test("enemy cards are gone — the creatures are the only representation", async ({ page }) => {
     await startDebugRun(page, { progress: "floor_2" });
     await walkUntilCombat(page);

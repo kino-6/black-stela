@@ -55,15 +55,21 @@ function clamp(value: number, min: number, max: number) {
 
 function targetHeight(size: EnemySize, stageHeight: number, figureCount: number) {
   const crowd = clamp(1 - Math.max(0, figureCount - 2) * 0.025, 0.9, 1);
+  // The upper caps used to be LOWER than the target fractions (0.25 vs 0.38, …), so a creature
+  // was always clamped DOWN to a quarter of the stage. That was fine when the stage was a 227px
+  // sliver; now the stage owns most of the screen (the overlay layout), so the caps are lifted to
+  // sit just above the target fractions — the target binds, and a creature scales INTO the taller
+  // frame instead of staying small in the top corner. The px floors keep it readable if the stage
+  // is ever short again.
   switch (size) {
     case "small":
-      return clamp(stageHeight * 0.38 * crowd, 72, Math.max(96, stageHeight * 0.25));
+      return clamp(stageHeight * 0.38 * crowd, 72, Math.max(96, stageHeight * 0.42));
     case "medium":
-      return clamp(stageHeight * 0.52 * crowd, 100, Math.max(140, stageHeight * 0.32));
+      return clamp(stageHeight * 0.52 * crowd, 100, Math.max(140, stageHeight * 0.56));
     case "large":
-      return clamp(stageHeight * 0.67 * crowd, 140, Math.max(190, stageHeight * 0.42));
+      return clamp(stageHeight * 0.67 * crowd, 140, Math.max(190, stageHeight * 0.72));
     case "huge":
-      return clamp(stageHeight * 0.7, stageHeight * 0.6, stageHeight * 0.75);
+      return clamp(stageHeight * 0.78, stageHeight * 0.6, stageHeight * 0.82);
   }
 }
 

@@ -36,14 +36,16 @@ Also: `npm run build` (tsc -b) is the real typecheck; `npm run test` is the unit
   cosmology (`world.md` `elements:`), difficulty (`balance:`), and voice (`copy:`) are ALL authored
   here. Source holds formulas only. A new scenario should need no code change.
 
-## Current state (2026-07-15)
+## Current state (2026-07-16)
 
 B3 (party menu + real aptitudes) is done. The 5-slice elemental balance is done — **a naive party
 wipes; a prepared one clears ~10 levels lower**; tune via the `world.md` `balance:` knobs, not per
 enemy. The growth/quest slices are done: **Q1 (growth items) and Q2 (the quest board)** — quests are
-authored data in `content/worlds/<id>/quests.md` (bounties + delivery tithes; reward XP bypasses the
-falloff by construction). `black-stela-open-work` has the detail. `Improve.md` carries the deferred
-art/identity items IMP-018..020 (Codex-owned).
+authored data in `content/worlds/<id>/quests.md`. **Codex's IMP-018..020 (character presence) is
+merged**, and the **combat enemy-stage OVERLAY** is done — the HUD is translucent overlays floating
+over a full-frame stage (share 36%→71% at 720p; the command menu overlays only while choosing, the
+creatures own the screen during playback). Next pre-balance item: **combat FEEL**.
+`black-stela-open-work` has the detail.
 
 ## How the two agents split work
 

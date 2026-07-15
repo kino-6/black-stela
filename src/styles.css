@@ -3277,6 +3277,19 @@ textarea {
   justify-content: center;
 }
 
+/* In the overlay layout the command zone floats over the creatures. During Auto/Repeat the whole
+   right column used to be an opaque tempo bar planted right over them; shrink it to a compact pill
+   pinned to the overlay's top-right so the beats play out across the big creatures, not behind a
+   panel. (The stage is the show — see .claude/skills/combat-ui-drpg.) */
+.combat-cockpit > .combat-command-zone > .tempo-indicator {
+  height: auto;
+  align-self: start;
+  justify-self: end;
+  grid-column: 2;
+  margin: 0;
+  background: rgba(20, 17, 8, 0.82);
+}
+
 .combat-character-presence-slot {
   min-width: 0;
   min-height: 0;
@@ -4282,6 +4295,82 @@ textarea {
      not scroll, so オート / リピート / 退却 were unreachable at 1280x720 while every test
      stayed green. */
   overflow: hidden;
+  /* OVERLAY, do not reserve (see .claude/skills/combat-ui-drpg "the screen budget"). The
+     enemy stage used to be a flex:1 child that got only the LEFTOVERS after four reserved
+     bands — 227px, 36% of the screen at 720p — and the renderer bottom-anchors the creatures,
+     so the little room they had was at the bottom. Now everything is taken OUT of flow: the
+     stage fills the cockpit down to a COMPACT persistent HUD (log ticker + party strip + meta
+     dock), so the creatures scale into a tall frame and stand fully visible just above it. The
+     per-actor command menu is a TRANSIENT overlay that floats over the scene's lower edge only
+     while you are choosing — during the beat playback (the impact) it clears and the big
+     creatures own the screen. Absolutely-positioned overlays cannot reflow, so the no-reflow
+     guarantee survives for free. */
+  position: relative;
+  /* Persistent bottom bands (always on screen) and the transient command overlay. */
+  --hud-dock: 2.9rem;
+  --hud-strip: 4.3rem;
+  --hud-log: clamp(4.2rem, 9.5vh, 5.4rem);
+  --hud-base: calc(var(--hud-dock) + var(--hud-strip) + var(--hud-log));
+  --hud-command: clamp(10.6rem, 23vh, 12rem);
+}
+
+/* The stage is the screen: it fills the cockpit above the persistent HUD. */
+.combat-cockpit > .enemy-stage {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: var(--hud-base);
+  z-index: 0;
+  border: none;
+  border-radius: 0;
+}
+
+/* The HUD bands are absolute overlays with fixed positions/heights, so nothing reflows. */
+.combat-cockpit > .party-strip,
+.combat-cockpit > .combat-message,
+.combat-cockpit > .combat-command-zone,
+.combat-cockpit > .command-dock {
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 3;
+  margin: 0;
+  backdrop-filter: blur(3px);
+}
+
+/* Persistent stack, bottom-up: meta dock, party strip, one-line log ticker. */
+.combat-cockpit > .command-dock {
+  bottom: 0;
+  height: var(--hud-dock);
+  background: rgba(8, 9, 7, 0.74);
+}
+
+.combat-cockpit > .party-strip {
+  bottom: var(--hud-dock);
+  height: var(--hud-strip);
+  background: rgba(10, 11, 9, 0.74);
+  border-color: rgba(90, 96, 82, 0.5);
+}
+
+.combat-cockpit > .combat-message {
+  bottom: calc(var(--hud-dock) + var(--hud-strip));
+  height: var(--hud-log);
+}
+
+/* The transient command overlay floats just above the persistent HUD while choosing. Its own
+   background is drawn by its children (menu / presence / confirm), so during playback — when it
+   is empty — it is fully see-through and the creatures behind it are unobscured. */
+.combat-cockpit > .combat-command-zone {
+  bottom: var(--hud-base);
+  height: var(--hud-command);
+  background: none;
+  backdrop-filter: none;
+  pointer-events: none;
+}
+
+.combat-cockpit > .combat-command-zone > * {
+  pointer-events: auto;
 }
 
 .combat-cockpit .cockpit-message {
@@ -4289,18 +4378,23 @@ textarea {
   min-height: 0;
   /* FIXED, not auto. The log's "tap for the rest" row appears once the beats overflow, and an
      auto-height band grew by that row — shrinking the enemy stage mid-round, which is exactly
-     the reflow this layout exists to forbid. Anything that does not fit scrolls inside. */
-  height: clamp(5.6rem, 12.5vh, 7.5rem);
+     the reflow this layout exists to forbid. Anything that does not fit scrolls inside. Height
+     is the shared --hud-log so the stage's bottom (var(--hud-base)) and this band agree. */
+  height: var(--hud-log);
   overflow: hidden;
 }
 
-.combat-cockpit .cockpit-message,
 .combat-rail .battle-side,
 .combat-command-window {
   background:
     linear-gradient(180deg, rgba(7, 8, 6, 0.88), rgba(7, 8, 6, 0.82)),
     var(--art-combat-vignette, none) center / cover no-repeat,
     #080906;
+}
+
+/* The combat log overlays the scene now — keep it legible but let the corridor show through. */
+.combat-cockpit .cockpit-message {
+  background: rgba(7, 8, 6, 0.72);
 }
 
 .combat-cockpit .cockpit-message {
