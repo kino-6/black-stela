@@ -1065,8 +1065,8 @@ export function App() {
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
       const key = event.key.toLowerCase();
-      // The victory result modal owns the keyboard while up: Enter/Space/Esc dismiss
-      // it, everything else is swallowed so the party doesn't move behind it.
+      // The battle aftermath owns the keyboard while up: Enter/Space confirms it;
+      // everything else is swallowed so the party cannot move behind it.
       if (state.combatConclusion) {
         if (key !== "enter" && key !== " ") {
           event.preventDefault();
@@ -1508,6 +1508,7 @@ export function App() {
                 ...state.combatConclusion,
                 enemyNames: state.combatConclusion.enemyIds.map(localizeEnemyName)
               }}
+              party={state.party}
               t={t}
               onDismiss={() => run({ type: "continue_after_combat" })}
             />

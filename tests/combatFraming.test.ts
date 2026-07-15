@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { calculateCombatFraming } from "../src/ui/combatFraming";
+import { calculateCombatFraming, COMBAT_LANE_HALF_WIDTH, ENEMY_WORLD_HEIGHT } from "../src/ui/combatFraming";
 
 describe("combat framing", () => {
-  it("keeps a small pack readable and uses the battlefield width at 720p", () => {
+  it("keeps a small pack readable inside the central combat lane at 720p", () => {
     const frame = calculateCombatFraming(1200, 227, [
       { groupId: "gnat", size: "small", count: 1, bodyAspect: 0.55 },
       { groupId: "mite", size: "small", count: 3, bodyAspect: 0.9 }
@@ -10,8 +10,7 @@ describe("combat framing", () => {
 
     expect(frame.figures).toHaveLength(4);
     expect(frame.minimumSilhouetteHeightPx).toBeGreaterThanOrEqual(72);
-    expect(frame.formationWidthPx / 1200).toBeGreaterThanOrEqual(0.4);
-    expect(frame.formationWidthPx / 1200).toBeLessThanOrEqual(0.65);
+    expect(frame.maximumBodyEdgeWorld).toBeLessThanOrEqual(COMBAT_LANE_HALF_WIDTH);
   });
 
   it("keeps small, medium, large, and huge silhouettes distinct", () => {
@@ -31,5 +30,21 @@ describe("combat framing", () => {
     expect(one.formationWidthPx).toBe(0);
     expect(five.formationWidthPx).toBeGreaterThan(0);
     expect(five.minimumSilhouetteHeightPx).toBeGreaterThanOrEqual(72);
+  });
+
+  it("keeps every visible body inside the authored corridor instead of spreading onto the walls", () => {
+    const bodyAspects = new Map([
+      ["blocker", 1.5],
+      ["flier", 0.7]
+    ]);
+    const frame = calculateCombatFraming(1900, 460, [
+      { groupId: "blocker", size: "large", count: 1, bodyAspect: bodyAspects.get("blocker") },
+      { groupId: "flier", size: "small", count: 1, bodyAspect: bodyAspects.get("flier") }
+    ]);
+
+    for (const figure of frame.figures) {
+      const bodyWidth = ENEMY_WORLD_HEIGHT[figure.size] * bodyAspects.get(figure.groupId)!;
+      expect(Math.abs(figure.x) + bodyWidth / 2).toBeLessThanOrEqual(COMBAT_LANE_HALF_WIDTH);
+    }
   });
 });

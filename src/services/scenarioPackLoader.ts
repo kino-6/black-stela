@@ -163,6 +163,31 @@ export function validateScenarioGraph(world: ScenarioWorld, filePath = "world.md
     errors.push({ filePath, fieldPath: "aiPolicy", reason: "AI policy must declare allowed or forbidden behavior." });
   }
 
+  // Elements are the world's own cosmology. A weakness or a threat that names an element the
+  // world never declared is an authoring bug, and it fails HERE rather than reading as a silent
+  // multiplier of 1 for the rest of the game. `physical` is universal and never needs declaring.
+  const declaredElements = new Set(["physical", ...(world.elements ?? []).map((element) => element.id)]);
+  for (const enemy of world.enemies) {
+    for (const element of Object.keys(enemy.weaknesses ?? {})) {
+      if (!declaredElements.has(element)) {
+        errors.push({
+          filePath,
+          fieldPath: `${enemy.id}.weaknesses.${element}`,
+          reason: `Weakness names an element this world never declares: ${element}`
+        });
+      }
+    }
+    for (const ability of enemy.abilities ?? []) {
+      if (ability.effect.kind === "damage" && !declaredElements.has(ability.effect.element)) {
+        errors.push({
+          filePath,
+          fieldPath: `${enemy.id}.abilities`,
+          reason: `Ability "${ability.name}" deals an element this world never declares: ${ability.effect.element}`
+        });
+      }
+    }
+  }
+
   for (const dungeon of world.dungeons) {
     if (!roomIds.has(dungeon.startRoom)) {
       errors.push({ filePath, fieldPath: `${dungeon.id}.startRoom`, reason: `Unknown start room: ${dungeon.startRoom}` });

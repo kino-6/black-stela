@@ -5,7 +5,10 @@ import type { GameState } from "../src/domain/types";
 import { defaultWorld } from "../src/data/defaultWorld";
 
 function combatState(enemyAttack = 5): GameState {
-  const member = createCharacter({ name: "Mira", notes: "Mapper" });
+  // Combat rolls include the actor id in their deterministic seed. Leaving the
+  // generated UUID here made this supposedly deterministic fixture randomly hit
+  // or miss across full-suite runs.
+  const member = { ...createCharacter({ name: "Mira", notes: "Mapper" }), id: "char.injury-test.mira" };
   return {
     ...addCharacter(createInitialGameState(), { ...member, hp: 2, maxHp: 12, equipment: {} }),
     phase: "combat",

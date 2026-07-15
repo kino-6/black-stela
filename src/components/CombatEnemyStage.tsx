@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import type { CombatBeat, CombatEnemyGroup } from "../domain/types";
 import type { Locale, Translator } from "../i18n";
 import { localizedEnemyGroupName } from "../ui/catalog";
+import { enemyGroupHealthPercent } from "../ui/enemyGroupPresentation";
 import type { EnemyAnchor } from "./dungeonScene";
 
 interface CombatEnemyStageProps {
@@ -53,7 +54,7 @@ export function CombatEnemyStage({
           const selected = targetingActive && group.id === selectedTargetId;
           const hit = activeBeat?.targetGroupId === group.id;
           const dead = group.count === 0;
-          const hpPct = group.maxHpEach > 0 ? Math.max(0, (group.hpEach / group.maxHpEach) * 100) : 0;
+          const hpPct = enemyGroupHealthPercent(group);
           const name = localizedEnemyGroupName(group, locale);
           return (
             <div
@@ -62,6 +63,9 @@ export function CombatEnemyStage({
               data-testid="combat-enemy-group"
               aria-current={selected ? "true" : undefined}
               aria-label={`${name} · ${group.count}`}
+              data-enemy-group-id={group.id}
+              data-health-percent={hpPct.toFixed(3)}
+              data-enemy-count={group.count}
               className={`enemy-mark${selected ? " selected" : ""}${hit ? " beat-hit" : ""}${dead ? " defeated" : ""}`}
               // Anchored to the creatures' feet. Until the scene reports (first frame, or a
               // headless test with no WebGL) they fall back to a sane spread so the labels
@@ -85,8 +89,8 @@ export function CombatEnemyStage({
               <div
                 className="enemy-hp"
                 role="meter"
-                aria-valuenow={group.hpEach}
-                aria-valuemax={group.maxHpEach}
+                aria-valuenow={Math.round(hpPct)}
+                aria-valuemax={100}
                 aria-label={`${name} HP`}
               >
                 <span className="enemy-hp-fill" style={{ width: `${hpPct}%` }} />

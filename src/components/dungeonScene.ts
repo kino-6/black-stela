@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { asset, assetOrNull, blockTextures, getEnemySpriteTextureUrl } from "../ui/artAssets";
 import type { EnemyElevation, EnemySize, ScenePalette } from "../domain/types";
-import { calculateCombatFraming, ENEMY_WORLD_HEIGHT, MAX_FIGURES_BY_SIZE } from "../ui/combatFraming";
+import { calculateCombatFraming, CORRIDOR_HALF_WIDTH, ENEMY_WORLD_HEIGHT, MAX_FIGURES_BY_SIZE } from "../ui/combatFraming";
 import { getSpriteMetrics, measureSpriteMetrics } from "../ui/spriteMetrics";
 
 const DEFAULT_ART_PACK = "default";
@@ -61,7 +61,7 @@ export interface DungeonSceneInput {
 // One grid cell is CELL deep; the camera stands in the current cell looking down
 // the corridor, and successive cells recede toward the fog.
 const CELL = 3.5;
-const HALF_WIDTH = 4;
+const HALF_WIDTH = CORRIDOR_HALF_WIDTH;
 const WALL_HEIGHT = 3.2;
 const WALL_MID_Y = 1.5;
 const CEILING_Y = 3.1;
@@ -153,6 +153,7 @@ export function buildDungeonScene(mount: HTMLDivElement, input: DungeonSceneInpu
 
   mount.dataset.returnVisual = "none";
   mount.dataset.frontStairVisual = "none";
+  mount.dataset.frontStairPlacement = "none";
 
   const ambient = new THREE.AmbientLight(p.ambient, 1.7);
   const torch = new THREE.PointLight(p.torch, 55, 26);
@@ -217,7 +218,11 @@ export function buildDungeonScene(mount: HTMLDivElement, input: DungeonSceneInpu
 
     if (segment.frontCap) {
       if (segment.frontCap === "stairs") {
-        mount.dataset.frontStairVisual = stairTextureFor(input.stairDescends ?? false) ? "asset" : "geometry";
+        const usesStairAsset = Boolean(stairTextureFor(input.stairDescends ?? false));
+        mount.dataset.frontStairVisual = usesStairAsset ? "asset" : "geometry";
+        mount.dataset.frontStairPlacement = usesStairAsset
+          ? input.stairDescends ? "floor" : "upright"
+          : "geometry";
       }
       addFrontCap(
         scene,
@@ -271,6 +276,7 @@ export function buildDungeonScene(mount: HTMLDivElement, input: DungeonSceneInpu
     );
     mount.dataset.combatFormationWidth = `${Math.round(framing.formationWidthPx)}`;
     mount.dataset.combatMinimumSilhouette = `${Math.round(framing.minimumSilhouetteHeightPx)}`;
+    mount.dataset.combatMaximumBodyEdge = `${framing.maximumBodyEdgeWorld.toFixed(3)}`;
     const frontWallIndex = input.frontWallIndex ?? -1;
     const wallZ = frontWallIndex >= 0 ? -frontWallIndex * CELL - CELL / 2 : -Infinity;
     const figures = framing.figures.map((figure) => {
@@ -401,8 +407,10 @@ export function buildDungeonScene(mount: HTMLDivElement, input: DungeonSceneInpu
     renderer.dispose();
     delete mount.dataset.returnVisual;
     delete mount.dataset.frontStairVisual;
+    delete mount.dataset.frontStairPlacement;
     delete mount.dataset.combatFormationWidth;
     delete mount.dataset.combatMinimumSilhouette;
+    delete mount.dataset.combatMaximumBodyEdge;
     mount.removeChild(renderer.domElement);
   };
 }
@@ -478,9 +486,8 @@ function addFrontCap(
   wall.position.set(0, WALL_MID_Y, z);
   scene.add(wall);
 
-  // P6: the painted stair prop's archway is TRANSPARENT in the middle, so the wall's
-  // stone-course lines would show straight through the opening. Skip them when the
-  // prop is drawn — the art carries its own masonry.
+  // Pack art supplies the stair opening itself. Keep procedural stone courses off
+  // that cell; overlaid lines read as a barrier behind a floor-mounted descent.
   const stairUrl = kind === "stairs" ? stairTexture?.(descends) : undefined;
   if (!stairUrl) {
     addStoneCourses(scene, wallMaterial, z);
@@ -492,11 +499,11 @@ function addFrontCap(
     scene.add(door);
   } else if (kind === "stairs") {
     if (stairUrl) {
-      const sprite = createStairSprite(stairUrl, 0, z + 0.2, 3.4);
-      // The wall's stone-course lines are transparent too and would otherwise draw
-      // over the prop (the sprite writes no depth). Draw the stair last.
-      sprite.renderOrder = 2;
-      scene.add(sprite);
+      const stair = descends
+        ? createDescendingStairPlane(stairUrl, z)
+        : createStairSprite(stairUrl, 0, z + 0.2, 3.4);
+      stair.renderOrder = 2;
+      scene.add(stair);
     } else {
       scene.add(createStairs(floorMaterial, edgeMaterial, z, descends));
     }
@@ -564,6 +571,21 @@ function createStairSprite(texture: THREE.Texture, x: number, z: number, scale: 
   sprite.position.set(x, 0.02, z);
   sprite.renderOrder = 2;
   return sprite;
+}
+
+function createDescendingStairPlane(texture: THREE.Texture, z: number) {
+  const plane = new THREE.Mesh(
+    new THREE.PlaneGeometry(2.9, 2.9),
+    new THREE.MeshBasicMaterial({
+      map: texture,
+      transparent: true,
+      depthWrite: false,
+      side: THREE.DoubleSide
+    })
+  );
+  plane.rotation.x = -Math.PI / 2;
+  plane.position.set(0, 0.025, z + 0.55);
+  return plane;
 }
 
 function createReturnStairSprite(texture: THREE.Texture) {

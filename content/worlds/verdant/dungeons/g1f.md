@@ -57,13 +57,13 @@ edges:
 rooms:
   - id: room.verdant.g1f.001
     name: Sunken Threshold
-    description: The way in from the surface — a mossy stair climbs back toward daylight.
+    description: A vine-wrapped ladder leads back to the surface.
     stairsToTown: true
     returnStyle: stairs
     locales:
       ja:
         name: 沈んだ入口
-        description: 地上への入口。苔むした階段が陽の光へと登っていく。
+        description: 蔦の絡んだ梯子が、地上へ向かって伸びている。
   - id: room.verdant.g1f.02
     name: Green Chamber 1
     description: A chamber where the canopy-light pools green on standing water.
@@ -102,11 +102,11 @@ rooms:
         description: 回廊の奥の静かな木立。
   - id: room.verdant.g1f.exit
     name: Root Descent
-    description: Roots twist down toward the next depth; a chain of vine falls away below.
+    description: A vine-wrapped ladder drops through a gap in the roots.
     locales:
       ja:
         name: 根の下り
-        description: 根が次の深みへとねじれ落ちる。蔦の鎖が下へ垂れている。
+        description: 根の隙間から、蔦を巻いた梯子が下の階へ降りている。
   - id: room.verdant.g1f.gate
     name: Sealed Bar
     description: A heavy vine-bar can be lifted to open a shorter way down.

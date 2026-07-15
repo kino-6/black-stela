@@ -3184,82 +3184,181 @@ textarea {
   100% { opacity: 0; transform: translateY(-1.2rem) scale(1); }
 }
 
-/* Post-victory result screen — an overlay the player confirms so a win reads. */
+/* Post-victory aftermath. It is anchored to the play surface like a classic RPG
+   result window, not floated in the middle as an application modal. */
 .combat-result-overlay {
   position: absolute;
   inset: 0;
   z-index: 40;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(6, 7, 5, 0.72);
-  backdrop-filter: blur(2px);
+  align-items: flex-end;
+  background: linear-gradient(180deg, rgba(6, 7, 5, 0.12) 0%, rgba(6, 7, 5, 0.7) 50%, rgba(6, 7, 5, 0.96) 100%);
 }
 
-.combat-result-card {
-  min-width: min(22rem, 90%);
-  max-width: 26rem;
-  padding: 1.2rem 1.4rem 1rem;
-  border: 1px solid #6a5a2a;
-  border-radius: 6px;
-  background: linear-gradient(180deg, #17140c, #0c0b07);
-  box-shadow: 0 0 32px rgba(213, 181, 109, 0.25);
-  text-align: center;
+.combat-result-aftermath {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  width: 100%;
+  max-height: 76%;
+  min-height: 13rem;
+  border-top: 1px solid #8b7339;
+  background: rgba(9, 10, 8, 0.97);
+  box-shadow: inset 0 1px rgba(238, 202, 115, 0.12);
+  color: #eee8d8;
+}
+
+.combat-result-heading {
+  display: flex;
+  align-items: baseline;
+  gap: 1rem;
+  padding: 0.85rem 1.2rem 0.7rem;
+  border-bottom: 1px solid #343127;
 }
 
 .combat-result-title {
-  margin: 0 0 0.6rem;
-  font-size: 1.5rem;
-  letter-spacing: 0.14em;
+  margin: 0;
+  font-size: 1.35rem;
+  letter-spacing: 0;
   color: #ffd27a;
 }
 
 .combat-result-defeated {
-  margin: 0 0 0.8rem;
+  margin: 0;
   color: #c9c3b2;
   font-size: 0.9rem;
 }
 
+.combat-result-body {
+  display: grid;
+  grid-template-columns: minmax(15rem, 0.7fr) minmax(24rem, 1.3fr);
+  min-height: 0;
+  padding: 1rem 1.2rem;
+}
+
+.combat-result-body.no-growth {
+  grid-template-columns: minmax(0, 28rem);
+}
+
+.combat-result-spoils,
+.combat-result-growth {
+  min-width: 0;
+}
+
+.combat-result-spoils {
+  padding-right: 1.2rem;
+}
+
+.combat-result-growth {
+  padding-left: 1.2rem;
+  border-left: 1px solid #343127;
+}
+
+.combat-result-spoils h3,
+.combat-result-growth h3 {
+  margin: 0 0 0.65rem;
+  color: #aaa58f;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
 .combat-result-rewards {
-  display: flex;
-  justify-content: center;
-  gap: 2rem;
-  margin: 0 0 0.8rem;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem;
+  margin: 0;
 }
 
 .combat-result-rewards div {
-  display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: baseline;
+  gap: 0.6rem;
+  padding: 0.7rem 0.8rem;
+  border-block: 1px solid #3b382d;
 }
 
 .combat-result-rewards dt {
-  font-size: 0.72rem;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  font-size: 0.78rem;
+  letter-spacing: 0;
   color: #8a8f82;
 }
 
 .combat-result-rewards dd {
   margin: 0;
-  font-size: 1.35rem;
+  font-size: 1.2rem;
   font-weight: 700;
   color: #efe6d0;
 }
 
 .combat-result-levelups {
   list-style: none;
-  margin: 0 0 0.9rem;
+  margin: 0;
   padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.45rem;
 }
 
 .combat-result-levelups li {
-  color: #7ec46f;
+  display: grid;
+  grid-template-columns: 2.65rem minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.55rem;
+  min-height: 3.35rem;
+  padding: 0.35rem 0.55rem;
+  border-block: 1px solid #3b382d;
+}
+
+.combat-result-portrait {
+  display: grid;
+  place-items: center;
+  width: 2.65rem;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border: 1px solid #625a42;
+  background: #171914;
+}
+
+.combat-result-portrait img,
+.combat-result-portrait .portrait-asset {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.combat-result-growth-copy {
+  display: grid;
+  min-width: 0;
+  gap: 0.08rem;
+}
+
+.combat-result-growth-copy strong {
+  overflow: hidden;
+  color: #eee8d8;
+  font-size: 0.9rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.combat-result-growth-copy span {
+  color: #84bf73;
+  font-size: 0.72rem;
+}
+
+.combat-result-levelups b {
+  color: #d5b56d;
+  font-size: 0.78rem;
   font-weight: 600;
-  font-size: 0.92rem;
+  white-space: nowrap;
+}
+
+.combat-result-footer {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0.65rem 1.2rem;
+  border-top: 1px solid #343127;
+  background: #080907;
 }
 
 .combat-result-continue {
@@ -3270,8 +3369,9 @@ textarea {
   font-size: 1rem;
   font-weight: 700;
   border: 1px solid #6a5a2a;
-  border-radius: 4px;
-  background: linear-gradient(180deg, #3a3418, #241f0e);
+  min-width: 13rem;
+  border-radius: 2px;
+  background: #2d2814;
   color: #ffe6a6;
   cursor: pointer;
 }
@@ -3279,6 +3379,54 @@ textarea {
 .combat-result-continue:focus-visible {
   outline: 2px solid #ffd27a;
   outline-offset: 2px;
+}
+
+@media (max-width: 900px) {
+  .combat-result-aftermath {
+    max-height: 90%;
+    overflow: auto;
+  }
+
+  .combat-result-heading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.2rem;
+  }
+
+  .combat-result-body,
+  .combat-result-body.no-growth {
+    grid-template-columns: 1fr;
+  }
+
+  .combat-result-spoils {
+    padding: 0 0 0.8rem;
+  }
+
+  .combat-result-growth {
+    padding: 0.8rem 0 0;
+    border-top: 1px solid #343127;
+    border-left: 0;
+  }
+
+  .combat-result-levelups {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .combat-result-footer {
+    position: sticky;
+    bottom: 0;
+  }
+}
+
+@media (max-width: 560px) {
+  .combat-result-levelups,
+  .combat-result-rewards {
+    grid-template-columns: 1fr;
+  }
+
+  .combat-result-continue {
+    width: 100%;
+  }
 }
 
 .combat-confirm {

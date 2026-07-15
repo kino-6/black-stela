@@ -58,11 +58,11 @@ edges:
 rooms:
   - id: room.verdant.g8f.001
     name: Root Landing
-    description: A landing of knotted roots; a stair climbs back toward the floor above.
+    description: A vine-wrapped ladder climbs from the knotted-root landing.
     locales:
       ja:
         name: 根の踊り場
-        description: 根の絡む踊り場。階段が上の階へと登っていく。
+        description: 根の絡む踊り場。蔦を巻いた梯子が上の階へ伸びている。
   - id: room.verdant.g8f.02
     name: Green Chamber 1
     description: A chamber where the canopy-light pools green on standing water.

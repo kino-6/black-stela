@@ -35,10 +35,13 @@ export const en = {
   result: {
     title: "Victory",
     defeated: "{names} defeated.",
+    spoils: "Spoils",
+    growth: "Growth",
     xp: "Experience",
     gold: "Gold",
-    levelUp: "{name} reached Lv {level}!",
-    continue: "Continue"
+    levelUp: "Level up",
+    level: "Level {level}",
+    continue: "Return to exploration"
   },
   title: {
     menu: "Title menu",

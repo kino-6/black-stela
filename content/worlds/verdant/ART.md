@@ -42,14 +42,22 @@ Not stone. **Root/bark/moss surfaces**, wetter and more overgrown with depth:
   vein-like roots; floor of bone-pale rootmat. ✅ generated
 (The basenames are fixed by the renderer — the *content* is what changes.)
 
-### `dungeon/stair-down.png` — the descent (PNG RGBA, ~768², billboard) ✅ generated and wired
+### `dungeon/stair-down.png` — the descent (PNG RGBA, ~768², floor plane) ✅ generated and browser-verified
 **A vine ladder / hanging root-stair**, not steps: knotted vines and aerial roots dropping
 through a hole in the rootmat into green dark below. Must read instantly as "go down."
 Bottom-weighted, clean alpha. *(This is the piece the player sees most; do not ship a
 recoloured stone stair.)*
 
+**Scale restraint (2026-07-14 retake).** This is ordinary floor-to-floor equipment,
+not a landmark, gate, shrine, or boss entrance. Use a narrow practical timber/rope
+ladder with a few vines wrapped around it and only enough rootmat rim to explain the
+opening. No monumental root arch, huge framed shaft, ceremonial symmetry, or portal
+silhouette. The ladder is the subject; the hole is supporting context.
+
 ### `dungeon/stair-up.png` — the ascent ✅ generated and browser-verified
-The same ladder seen from below, climbing toward a **pale shaft of daylight**.
+The same modest ladder seen from below, climbing through a small break in the
+rootmat. Keep the daylight cue restrained and renderer-friendly; do not turn it
+into a giant luminous arch or bake a global light shaft into the sprite.
 
 ### `dungeon/wood-door.jpg` — 1024² ✅ generated
 Not planks. A **curtain of hanging vines / a split trunk** — a soft, living barrier.

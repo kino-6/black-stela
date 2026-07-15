@@ -4,7 +4,7 @@ Last browser acceptance: 2026-07-14, Chromium, 1280x720 and 1920x1080.
 
 ## Active Status
 
-`IMP-001` through `IMP-014` are archived. **The backlog is empty.**
+`IMP-001` through `IMP-017` are archived. **The backlog is empty.**
 
 | Item | Priority | State | Player-visible problem |
 | --- | --- | --- | --- |
@@ -29,6 +29,10 @@ Archived work:
   [docs/archive/Improve.completed-imp-009-011-2026-07-14.md](docs/archive/Improve.completed-imp-009-011-2026-07-14.md)
 - `IMP-012`:
   [docs/archive/Improve.completed-imp-012-2026-07-14.md](docs/archive/Improve.completed-imp-012-2026-07-14.md)
+- `IMP-015` to `IMP-016`:
+  [docs/archive/Improve.completed-imp-015-016-2026-07-14.md](docs/archive/Improve.completed-imp-015-016-2026-07-14.md)
+- `IMP-017`:
+  [docs/archive/Improve.completed-imp-017-2026-07-14.md](docs/archive/Improve.completed-imp-017-2026-07-14.md)
 
 ## IMP-013: Separate Party Completion From Roster Administration
 

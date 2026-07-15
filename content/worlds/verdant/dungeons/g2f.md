@@ -63,11 +63,11 @@ edges:
 rooms:
   - id: room.verdant.g2f.001
     name: Root Landing
-    description: A landing of knotted roots; a stair climbs back toward the floor above.
+    description: A vine-wrapped ladder climbs from the knotted-root landing.
     locales:
       ja:
         name: 根の踊り場
-        description: 根の絡む踊り場。階段が上の階へと登っていく。
+        description: 根の絡む踊り場。蔦を巻いた梯子が上の階へ伸びている。
   - id: room.verdant.g2f.02
     name: Green Chamber 1
     description: A chamber where the canopy-light pools green on standing water.
@@ -108,11 +108,11 @@ rooms:
         description: 根の壁に囲まれた狭い番所。奥へはここを抜けるほかない。
   - id: room.verdant.g2f.exit
     name: Root Descent
-    description: Roots twist down toward the next depth; a chain of vine falls away below.
+    description: A vine-wrapped ladder drops through a gap in the roots.
     locales:
       ja:
         name: 根の下り
-        description: 根が次の深みへとねじれ落ちる。蔦の鎖が下へ垂れている。
+        description: 根の隙間から、蔦を巻いた梯子が下の階へ降りている。
   - id: room.verdant.g2f.gate
     name: Sealed Bar
     description: A heavy vine-bar can be lifted to open a shorter way down.

@@ -175,8 +175,13 @@ test("browser self-play completes the visible dungeon loop without headless shor
       await page.getByRole("button", { name: "Back to town" }).click();
       await clickCommand("Recovery");
       await expect(page.getByRole("heading", { name: "Recovery" })).toBeVisible();
-      await expect(page.getByText(/Recovery cost:/)).toBeVisible();
       await expect(page.getByTestId("recovery-plan")).toBeVisible();
+      if (await page.getByTestId("recovery-total").isVisible().catch(() => false)) {
+        await expect(page.getByTestId("recovery-total")).toContainText(/Recovery cost:/);
+      } else {
+        await expect(page.getByTestId("recovery-plan")).toContainText("No treatment needed");
+        await expect(page.getByTestId("recovery-confirm")).toBeDisabled();
+      }
       await capture("recovery");
     });
 

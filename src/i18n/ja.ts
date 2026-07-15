@@ -36,11 +36,14 @@ export const ja = {
   },
   result: {
     title: "勝利",
-    defeated: "{names} を倒した。",
+    defeated: "{names}を倒した。",
+    spoils: "戦果",
+    growth: "成長",
     xp: "経験値",
     gold: "ゴールド",
-    levelUp: "{name} はLv{level}になった！",
-    continue: "つづける"
+    levelUp: "レベルアップ",
+    level: "レベル {level}",
+    continue: "探索へ戻る"
   },
   title: {
     menu: "タイトルメニュー",

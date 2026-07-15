@@ -51,13 +51,10 @@ const enemySchema = z.object({
       chance: z.number().int().min(0).max(100)
     })
     .optional(),
-  weaknesses: z
-    .object({
-      physical: z.number().min(0).max(4).optional(),
-      fire: z.number().min(0).max(4).optional(),
-      frost: z.number().min(0).max(4).optional()
-    })
-    .optional(),
+  // An incoming-damage multiplier per element id (>1 weak, <1 resistant). The keys are the
+  // world's own element ids — validated against `world.elements` by the loader, so a typo or an
+  // element the world never declared fails at load rather than reading as multiplier 1 forever.
+  weaknesses: z.record(z.string().min(1), z.number().min(0).max(4)).optional(),
   abilities: z
     .array(
       z.object({
@@ -68,7 +65,8 @@ const enemySchema = z.object({
             kind: z.literal("damage"),
             min: z.number().int().nonnegative(),
             max: z.number().int().nonnegative(),
-            element: z.enum(["physical", "fire", "frost"])
+            // The threat's element — any string; the loader checks it against `world.elements`.
+            element: z.string().min(1)
           }),
           z.object({ kind: z.literal("status"), status: z.enum(["poison", "fear", "silence", "sleep", "ward"]) })
         ])
@@ -284,6 +282,18 @@ export const scenarioWorldSchema = z.object({
   // Scenario-owned player-facing copy, keyed by locale then by translation key. Overrides the
   // i18n dictionary for this world only; anything omitted falls through. See createWorldTranslator.
   copy: z.record(z.string(), z.record(z.string(), z.string())).optional(),
+  // This world's elemental cosmology. Weaknesses and threats may only name these ids (plus the
+  // universal `physical`). Each id carries a UI label and may localize it.
+  elements: z
+    .array(
+      z.object({
+        id: z.string().min(1),
+        label: z.string().min(1),
+        locales: z.record(z.string(), z.object({ label: z.string().min(1).optional() })).optional(),
+        color: z.string().min(1).optional()
+      })
+    )
+    .optional(),
   assetPack: z.string().min(1).optional(),
   // Per-scenario scene colour (fog/lights/wall+floor tint). Omitted → default ash.
   palette: z

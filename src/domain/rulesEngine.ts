@@ -1094,7 +1094,7 @@ function declareRound(state: GameState, world: ScenarioWorld, actions: CombatAct
         gold,
         levelUps: levelEvents
           .filter((event) => event.type === "character_leveled_up")
-          .map((event) => ({ name: event.characterName, level: event.level })),
+          .map((event) => ({ characterId: event.characterId, name: event.characterName, level: event.level })),
         resumePosition: state.position ? { ...state.position } : null
       },
       party: grownParty,
@@ -1320,7 +1320,7 @@ function debugForceVictory(state: GameState): CommandResult {
       gold,
       levelUps: levelEvents
         .filter((event) => event.type === "character_leveled_up")
-        .map((event) => ({ name: event.characterName, level: event.level })),
+        .map((event) => ({ characterId: event.characterId, name: event.characterName, level: event.level })),
       resumePosition: state.position ? { ...state.position } : null
     },
     party: grownParty,
@@ -1802,6 +1802,7 @@ function createEnemyGroup(enemy: Enemy, count: number): CombatEnemyGroup {
     enemyId: enemy.id,
     name: enemy.name,
     count,
+    initialCount: count,
     hpEach: enemy.hp,
     maxHpEach: enemy.hp,
     attack: enemy.attack,
@@ -1961,7 +1962,14 @@ function isStockAvailable(stock: NonNullable<ScenarioWorld["shops"][number]["sto
 }
 
 function normalizeCombat(combat: CombatState): CombatState {
-  const enemyGroups = combat.enemyGroups?.length > 0 ? combat.enemyGroups : [createEnemyGroup(combat.enemy, 1)];
+  const sourceGroups = combat.enemyGroups?.length > 0 ? combat.enemyGroups : [createEnemyGroup(combat.enemy, 1)];
+  // Saves from before group-condition bars do not carry the encounter's starting
+  // count. Preserve compatibility and ensure the denominator can never fall below
+  // the number of bodies that currently stand.
+  const enemyGroups = sourceGroups.map((group) => ({
+    ...group,
+    initialCount: Math.max(group.initialCount ?? group.count, group.count, 1)
+  }));
   return syncCombatEnemy({
     ...combat,
     round: combat.round ?? 1,

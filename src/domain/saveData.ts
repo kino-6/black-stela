@@ -202,6 +202,7 @@ const CombatEnemyGroupSchema = z.object({
   enemyId: z.string().min(1),
   name: z.string().min(1),
   count: z.number().int().nonnegative(),
+  initialCount: z.number().int().positive().optional(),
   hpEach: z.number().int().nonnegative(),
   maxHpEach: z.number().int().positive(),
   attack: z.number().int().nonnegative(),
@@ -239,7 +240,11 @@ const CombatConclusionSchema = z.object({
   enemyNames: z.array(z.string().min(1)),
   xp: z.number().int().nonnegative(),
   gold: z.number().int().nonnegative(),
-  levelUps: z.array(z.object({ name: z.string().min(1), level: z.number().int().positive() })),
+  levelUps: z.array(z.object({
+    characterId: z.string().min(1).optional(),
+    name: z.string().min(1),
+    level: z.number().int().positive()
+  })),
   resumePosition: DungeonPositionSchema.nullable()
 });
 

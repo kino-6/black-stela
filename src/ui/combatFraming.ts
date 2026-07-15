@@ -14,6 +14,14 @@ export const MAX_FIGURES_BY_SIZE: Record<EnemySize, number> = {
   huge: 1
 };
 
+// DungeonScene builds the corridor at this half-width. Combat framing shares the
+// same truth so a screen-space composition can never plant a body through a wall.
+export const CORRIDOR_HALF_WIDTH = 4;
+// Combatants stand in a readable centre lane rather than grazing the physical
+// wall. Using the full corridor width made screen-space spread look as though
+// creatures were pasted onto the side walls.
+export const COMBAT_LANE_HALF_WIDTH = 2.6;
+
 interface FramingGroup {
   groupId: string;
   size?: EnemySize;
@@ -35,6 +43,7 @@ export interface CombatFraming {
   figures: FramedEnemyFigure[];
   formationWidthPx: number;
   minimumSilhouetteHeightPx: number;
+  maximumBodyEdgeWorld: number;
 }
 
 const CAMERA_Z = 2.4;
@@ -75,12 +84,14 @@ export function calculateCombatFraming(
       groupId: group.groupId,
       indexInGroup,
       size,
-      bodyAspect: clamp(group.bodyAspect ?? 0.8, 0.35, 1.8)
+      // Before a texture has loaded its alpha silhouette is unknown. Reserve the
+      // widest supported body rather than risk a first-encounter wall overlap.
+      bodyAspect: clamp(group.bodyAspect ?? 1.8, 0.35, 1.8)
     }));
   });
 
   if (specs.length === 0 || stageWidth <= 0 || stageHeight <= 0) {
-    return { figures: [], formationWidthPx: 0, minimumSilhouetteHeightPx: 0 };
+    return { figures: [], formationWidthPx: 0, minimumSilhouetteHeightPx: 0, maximumBodyEdgeWorld: 0 };
   }
 
   const focalPx = stageHeight / (2 * Math.tan((CAMERA_FOV_DEGREES * Math.PI) / 360));
@@ -96,22 +107,43 @@ export function calculateCombatFraming(
       ? 0
       : clamp(Math.max(stageWidth * 0.42, bodySpan * 0.82), stageWidth * 0.4, stageWidth * 0.65);
 
-  const figures = projected.map((figure, index) => {
+  const positioned = projected.map((figure, index) => {
     const xPx = projected.length === 1 ? 0 : (index / (projected.length - 1) - 0.5) * formationWidthPx;
     const worldPerPixel = figure.distance / focalPx;
+    const bodyWorldWidth = ENEMY_WORLD_HEIGHT[figure.size] * figure.bodyAspect;
+    const maxCenterX = Math.max(0, COMBAT_LANE_HALF_WIDTH - bodyWorldWidth / 2);
+    const x = clamp(xPx * worldPerPixel, -maxCenterX, maxCenterX);
     return {
       groupId: figure.groupId,
       indexInGroup: figure.indexInGroup,
       size: figure.size,
-      x: xPx * worldPerPixel,
+      x,
       z: CAMERA_Z - figure.distance,
-      projectedHeightPx: figure.projectedHeightPx
+      projectedHeightPx: figure.projectedHeightPx,
+      screenCenterPx: x / worldPerPixel,
+      bodyHalfWidthPx: bodyWorldWidth / 2 / worldPerPixel,
+      bodyHalfWidthWorld: bodyWorldWidth / 2
     };
   });
 
+  const figures = positioned.map(({
+    screenCenterPx: _screenCenterPx,
+    bodyHalfWidthPx: _bodyHalfWidthPx,
+    bodyHalfWidthWorld: _bodyHalfWidthWorld,
+    ...figure
+  }) => figure);
+  const actualFormationWidthPx = positioned.length === 1
+    ? 0
+    : Math.max(...positioned.map((figure) => figure.screenCenterPx + figure.bodyHalfWidthPx)) -
+      Math.min(...positioned.map((figure) => figure.screenCenterPx - figure.bodyHalfWidthPx));
+  const maximumBodyEdgeWorld = Math.max(
+    ...positioned.map((figure) => Math.abs(figure.x) + figure.bodyHalfWidthWorld)
+  );
+
   return {
     figures,
-    formationWidthPx,
-    minimumSilhouetteHeightPx: Math.min(...figures.map((figure) => figure.projectedHeightPx))
+    formationWidthPx: actualFormationWidthPx,
+    minimumSilhouetteHeightPx: Math.min(...figures.map((figure) => figure.projectedHeightPx)),
+    maximumBodyEdgeWorld
   };
 }

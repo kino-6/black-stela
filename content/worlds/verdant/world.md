@@ -6,6 +6,21 @@ locales:
   ja:
     title: 翠碑 — 沈む樹心
     tagline: 世界を覆って閉じた樹海。ここにあるものは皆、生きて、濡れて、静かに息を塞ぐ。
+# 翠碑の三要素 — 五行の相剋を一辺だけ裏返す。火剋金・金剋木・そして「木剋火」ではなく——
+# 濡れた生木は燃えない、木は火を拒む。だから灰の民が持って降りる火は、樹海では最悪の手。金を持て。
+elements:
+  - id: fire
+    label: Fire
+    color: "#e07a3a"
+    locales: { ja: { label: 火 } }
+  - id: wood
+    label: Wood
+    color: "#6fae54"
+    locales: { ja: { label: 木 } }
+  - id: metal
+    label: Metal
+    color: "#c9cdd4"
+    locales: { ja: { label: 金 } }
 assetPack: verdant
 # The grove settlement does not talk like the ash town. Any key omitted here falls through to
 # the shared dictionary, so this file only says what Verdant says differently.

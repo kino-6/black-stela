@@ -371,7 +371,32 @@ export interface CombatState {
 
 export type CombatStatus = "poison" | "fear" | "silence" | "sleep" | "ward";
 
-export type Element = "physical" | "fire" | "frost";
+// An element is now a WORLD's own cosmology, not a fixed engine union — the ash pit fights
+// with fire / salt / star, the drowned wood with fire / wood / metal, and a future scenario
+// can invent its own. So an element id is any string; the world declares the set it uses
+// (ScenarioWorld.elements), and the loader rejects any weakness or threat that names one the
+// world never declared. `physical` is universal — every world has bodies — and is the baseline
+// a basic attack always deals; it need not be declared.
+export type Element = string;
+export const PHYSICAL: Element = "physical";
+
+// One element in a world's cosmology: its id, a localized label for the UI, and an optional
+// accent colour. The relations between elements (what is weak to what) live on each enemy as
+// `weaknesses`; the 相剋 cycle is how those are AUTHORED, not a table the engine reads.
+export interface ElementDef {
+  id: string;
+  label: string;
+  locales?: Partial<Record<string, { label?: string }>>;
+  color?: string;
+}
+
+export interface EnemyAbility {
+  name: string;
+  chance: number;
+  effect:
+    | { kind: "damage"; min: number; max: number; element: Element }
+    | { kind: "status"; status: CombatStatus };
+}
 
 export interface EnemyAbility {
   name: string;
@@ -386,6 +411,9 @@ export interface CombatEnemyGroup {
   enemyId: string;
   name: string;
   count: number;
+  /** Number of bodies when this group entered combat. Presentation uses it to
+   *  show one monotonically depleting group-condition bar across member deaths. */
+  initialCount?: number;
   hpEach: number;
   maxHpEach: number;
   attack: number;
@@ -439,7 +467,7 @@ export interface CombatConclusion {
   enemyNames: string[];
   xp: number;
   gold: number;
-  levelUps: { name: string; level: number }[];
+  levelUps: { characterId?: string; name: string; level: number }[];
   resumePosition: DungeonPosition | null;
 }
 
@@ -499,6 +527,9 @@ export interface ScenarioWorld {
   /** Player-facing copy this world says in its own voice, by locale then translation key.
    *  Overrides the i18n dictionary for this world; anything omitted falls through to it. */
   copy?: Partial<Record<string, Record<string, string>>>;
+  /** This world's elemental cosmology. Weaknesses and threats may only name elements declared
+   *  here (plus the universal `physical`). Empty/absent = the world uses physical only. */
+  elements?: ElementDef[];
   /** Art pack folder under content/worlds/<assetPack>/assets (defaults to "default").
    *  Lets a scenario ship its own atmosphere pack. */
   assetPack?: string;

@@ -190,7 +190,7 @@ test.describe("combat stage", () => {
     }
   });
 
-  test("Verdant small packs meet the combat framing floor and use the stage width", async ({ page }) => {
+  test("Verdant enemies stay readable inside the corridor's central combat lane", async ({ page }) => {
     await page.setViewportSize(CONTROLLER_VIEWPORT);
     await page.addInitScript(() => window.localStorage.setItem("black-stela:settings:locale", "ja"));
     await startDebugRun(page, { progress: "floor_2", world: "verdant" });
@@ -198,11 +198,8 @@ test.describe("combat stage", () => {
 
     const canvas = page.getByTestId("dungeon-canvas");
     await expect.poll(async () => Number(await canvas.getAttribute("data-combat-minimum-silhouette"))).toBeGreaterThanOrEqual(72);
-    const stageWidth = (await page.locator(".enemy-stage").boundingBox())!.width;
-    const formationWidth = Number(await canvas.getAttribute("data-combat-formation-width"));
-    expect(formationWidth / stageWidth).toBeGreaterThanOrEqual(0.4);
-    expect(formationWidth / stageWidth).toBeLessThanOrEqual(0.65);
-    await page.screenshot({ path: "docs/evidence/improve-009-011-2026-07-14/03-verdant-combat-1280.png" });
+    await expect.poll(async () => Number(await canvas.getAttribute("data-combat-maximum-body-edge"))).toBeLessThanOrEqual(2.6);
+    await page.screenshot({ path: "docs/evidence/improve-015-016-2026-07-14/01-verdant-combat-lane-1280.png" });
 
     await page.setViewportSize({ width: 1920, height: 1080 });
     await expect.poll(async () => (await page.locator(".enemy-stage").boundingBox())?.height ?? 0).toBeGreaterThan(500);
@@ -222,7 +219,49 @@ test.describe("combat stage", () => {
     expect(Math.abs(stage1080.height - rendererSize.cssHeight)).toBeLessThanOrEqual(5);
     expect(rendererSize.bufferHeight).toBeGreaterThanOrEqual(rendererSize.cssHeight * rendererSize.pixelRatio - 2);
     expect(Number(await canvas.getAttribute("data-combat-minimum-silhouette"))).toBeGreaterThan(72);
-    await page.screenshot({ path: "docs/evidence/improve-009-011-2026-07-14/04-verdant-combat-1920.png" });
+    await page.screenshot({ path: "docs/evidence/improve-015-016-2026-07-14/02-verdant-combat-lane-1920.png" });
+  });
+
+  test("an enemy group condition bar never refills when its next member steps forward", async ({ page }) => {
+    await page.setViewportSize(CONTROLLER_VIEWPORT);
+    await startDebugRun(page, { progress: "floor_2", world: "verdant" });
+    await walkUntilCombat(page);
+
+    const initialGroup = page.locator('[data-testid="combat-enemy-group"][data-enemy-count]:not([data-enemy-count="1"])').first();
+    await expect(initialGroup).toBeVisible();
+    const groupId = await initialGroup.getAttribute("data-enemy-group-id");
+    expect(groupId).toBeTruthy();
+    const group = page.locator(`[data-testid="combat-enemy-group"][data-enemy-group-id="${groupId}"]`);
+
+    const samples: number[] = [];
+    const counts: number[] = [];
+    let capturedMemberChange = false;
+    await page.getByTestId("combat-auto").click();
+    for (let index = 0; index < 80; index += 1) {
+      if (!(await group.isVisible().catch(() => false))) {
+        break;
+      }
+      samples.push(Number(await group.getAttribute("data-health-percent")));
+      counts.push(Number(await group.getAttribute("data-enemy-count")));
+      if (!capturedMemberChange && counts.at(-1)! < counts[0]) {
+        capturedMemberChange = true;
+        const stop = page.getByTestId("tempo-stop");
+        if (await stop.isVisible().catch(() => false)) {
+          await stop.click();
+        }
+        await page.screenshot({ path: "docs/evidence/improve-015-016-2026-07-14/03-group-condition-after-member-falls-1280.png" });
+      }
+      await page.waitForTimeout(80);
+    }
+
+    expect(samples.length).toBeGreaterThan(2);
+    expect(Math.min(...samples)).toBeLessThan(samples[0]);
+    expect(Math.min(...counts)).toBeLessThan(counts[0]);
+    expect(capturedMemberChange).toBe(true);
+    for (let index = 1; index < samples.length; index += 1) {
+      expect(samples[index], `group condition refilled at sample ${index}: ${samples.join(" -> ")}`)
+        .toBeLessThanOrEqual(samples[index - 1] + 0.001);
+    }
   });
 
   test("the four commands fit their box — 防御 is not clipped off the bottom", async ({ page }) => {
