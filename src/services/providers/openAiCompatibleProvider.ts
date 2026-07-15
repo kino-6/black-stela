@@ -29,7 +29,7 @@ export const openAiCompatibleProvider: NarratorProvider = {
           messages: [
             {
               role: "system",
-              content: "You only provide environmental flavor. Do not speak or act for player characters."
+              content: "Describe only the environment around the supplied subject. Never speak, act, decide, or feel for a player character."
             },
             {
               role: "user",
@@ -52,7 +52,9 @@ export const openAiCompatibleProvider: NarratorProvider = {
         model: request.settings.model,
         proposal: {
           source: "local_ai",
-          prose: data.choices?.[0]?.message?.content ?? ""
+          prose: data.choices?.[0]?.message?.content ?? "",
+          subjectId: request.subjectId,
+          tone: "observe"
         }
       };
     } catch (error) {

@@ -219,6 +219,8 @@ export function PartyMenuPanel({ state, world, locale, t, onCommand, onClose }: 
             <div className="party-menu-portrait" style={{ borderColor: member.accentColor }}>
               {renderPortraitContent({
                 portraitRef: member.portraitRef,
+                visualProfile: member.visualProfile,
+                context: "profile",
                 backgroundId: member.backgroundId,
                 fallback: member.name,
                 alt: member.name,

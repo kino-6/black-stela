@@ -42,7 +42,9 @@ export const ollamaProvider: NarratorProvider = {
         model: request.settings.model,
         proposal: {
           source: "local_ai",
-          prose: data.response ?? ""
+          prose: data.response ?? "",
+          subjectId: request.subjectId,
+          tone: "observe"
         }
       };
     } catch (error) {

@@ -22,7 +22,9 @@ import { CombatEnemyStage } from "./components/CombatEnemyStage";
 import { CombatPartyStrip } from "./components/CombatPartyStrip";
 import { CombatCockpit } from "./components/CombatCockpit";
 import { DungeonCockpit } from "./components/DungeonCockpit";
+import { CharacterVisualPreview } from "./components/CharacterVisualPreview";
 import { renderPortraitContent } from "./ui/portrait";
+import { normalizeVisualProfile, shiftVisualFocus } from "./ui/characterVisual";
 import { RecoveryPanel } from "./components/RecoveryPanel";
 import { RecordsPanel } from "./components/RecordsPanel";
 import { TownEntryPanel } from "./components/TownEntryPanel";
@@ -882,7 +884,46 @@ export function App() {
       reader.readAsDataURL(file);
     });
 
-    setDraft((current) => ({ ...current, portraitRef: dataUrl }));
+    setDraft((current) => ({
+      ...current,
+      portraitRef: dataUrl,
+      visualProfile: normalizeVisualProfile({
+        ...normalizeVisualProfile(current.visualProfile, current.portraitRef),
+        baseRef: dataUrl
+      })
+    }));
+  }
+
+  async function importBattleArt(file: File | undefined) {
+    if (!file) {
+      return;
+    }
+
+    const dataUrl = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.addEventListener("load", () => resolve(String(reader.result)));
+      reader.addEventListener("error", () => reject(reader.error));
+      reader.readAsDataURL(file);
+    });
+
+    setDraft((current) => ({
+      ...current,
+      visualProfile: normalizeVisualProfile({
+        ...normalizeVisualProfile(current.visualProfile, current.portraitRef),
+        battleRef: dataUrl
+      })
+    }));
+  }
+
+  function shiftDraftPortraitFocus(x: number, y: number) {
+    setDraft((current) => ({
+      ...current,
+      visualProfile: shiftVisualFocus(
+        normalizeVisualProfile(current.visualProfile, current.portraitRef),
+        x,
+        y
+      )
+    }));
   }
 
   // Synchronously point every world consumer at `world` BEFORE the next render, so
@@ -1363,6 +1404,8 @@ export function App() {
                   <div className="portrait">
                     {renderPortraitContent({
                       portraitRef: member.portraitRef,
+                      visualProfile: member.visualProfile,
+                      context: "token",
                       backgroundId: member.backgroundId,
                       fallback: member.name
                     })}
@@ -1485,6 +1528,8 @@ export function App() {
               <div className="portrait portrait-large" style={{ borderColor: draft.accentColor }}>
                 {renderPortraitContent({
                   portraitRef: draft.portraitRef,
+                  visualProfile: draft.visualProfile,
+                  context: "profile",
                   backgroundId: draft.backgroundId,
                   fallback: draft.name || findClass(draft.classId).label[locale],
                   alt: t("party.portraitPreview"),
@@ -1646,25 +1691,36 @@ export function App() {
                       {guildCreationStep === "appearance" && (
                         <section className="guild-step-panel" data-controller-active="true" data-controller-surface="guild-appearance" data-testid="guild-step-appearance">
                           <h4>{t("party.chooseAppearance")}</h4>
-                          <div className="creator-topline">
-                            <div className="portrait portrait-large" style={{ borderColor: draft.accentColor }}>
-                              {renderPortraitContent({
-                                portraitRef: draft.portraitRef,
-                                backgroundId: draft.backgroundId,
-                                fallback: draft.name || findClass(draft.classId).label[locale],
-                                alt: t("party.portraitPreview"),
-                                testId: "portrait-preview"
-                              })}
+                          <div className="creator-topline visual-authoring">
+                            <CharacterVisualPreview
+                              portraitRef={draft.portraitRef}
+                              visualProfile={draft.visualProfile}
+                              backgroundId={draft.backgroundId}
+                              fallback={draft.name || findClass(draft.classId).label[locale]}
+                              accentColor={draft.accentColor}
+                              t={t}
+                              onShiftFocus={shiftDraftPortraitFocus}
+                            />
+                            <div className="visual-imports">
+                              <label className="portrait-import">
+                                {t("party.portrait")}
+                                <input
+                                  data-testid="portrait-input"
+                                  type="file"
+                                  accept="image/*"
+                                  onChange={(event) => importPortrait(event.target.files?.[0])}
+                                />
+                              </label>
+                              <label className="portrait-import">
+                                {t("party.battleArt")}
+                                <input
+                                  data-testid="battle-art-input"
+                                  type="file"
+                                  accept="image/*"
+                                  onChange={(event) => importBattleArt(event.target.files?.[0])}
+                                />
+                              </label>
                             </div>
-                            <label className="portrait-import">
-                              {t("party.portrait")}
-                              <input
-                                data-testid="portrait-input"
-                                type="file"
-                                accept="image/*"
-                                onChange={(event) => importPortrait(event.target.files?.[0])}
-                              />
-                            </label>
                           </div>
                           <div className="creator-grid compact">
                             <label>
@@ -1852,6 +1908,8 @@ export function App() {
                                   <div className="portrait" style={{ borderColor: suggestedRecruit.accentColor }}>
                                     {renderPortraitContent({
                                       portraitRef: suggestedRecruit.portraitRef,
+                                      visualProfile: suggestedRecruit.visualProfile,
+                                      context: "profile",
                                       backgroundId: suggestedRecruit.backgroundId,
                                       fallback: suggestedRecruit.name
                                     })}
@@ -1957,6 +2015,8 @@ export function App() {
                                         <div className="portrait">
                                           {renderPortraitContent({
                                             portraitRef: member.portraitRef,
+                                            visualProfile: member.visualProfile,
+                                            context: "token",
                                             backgroundId: member.backgroundId,
                                             fallback: member.name
                                           })}
@@ -1998,6 +2058,8 @@ export function App() {
                                   <div className="portrait">
                                     {renderPortraitContent({
                                       portraitRef: member.portraitRef,
+                                      visualProfile: member.visualProfile,
+                                      context: "token",
                                       backgroundId: member.backgroundId,
                                       fallback: member.name
                                     })}
@@ -2120,6 +2182,8 @@ export function App() {
                           <div className="portrait portrait-large" style={{ borderColor: selectedProfile.accentColor }}>
                             {renderPortraitContent({
                               portraitRef: selectedProfile.portraitRef,
+                              visualProfile: selectedProfile.visualProfile,
+                              context: "profile",
                               backgroundId: selectedProfile.backgroundId,
                               fallback: selectedProfile.name,
                               testId: "profile-portrait"

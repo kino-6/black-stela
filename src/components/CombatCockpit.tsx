@@ -13,6 +13,7 @@ import { CombatPartyStrip } from "./CombatPartyStrip";
 import { CombatLog } from "./CombatLog";
 import { CombatCommandMenu } from "./CombatCommandMenu";
 import { CombatCommandDock } from "./CombatCommandDock";
+import { CharacterPresence } from "./CharacterPresence";
 
 interface CombatCockpitProps {
   state: GameState;
@@ -115,6 +116,13 @@ export function CombatCockpit({
   // Where the renderer actually planted each group's figures. The stage overlays the
   // name/HP on the creatures themselves, so it needs their screen position, not a card.
   const [enemyAnchors, setEnemyAnchors] = useState<EnemyAnchor[]>([]);
+  const beatActor = activeBeat?.actorId
+    ? displayedParty.find((member) => member.id === activeBeat.actorId)
+    : undefined;
+  const beatTarget = activeBeat?.targetCharacterId
+    ? displayedParty.find((member) => member.id === activeBeat.targetCharacterId)
+    : undefined;
+  const presenceActor = playingBack ? beatActor ?? beatTarget : selectedActor;
 
   const caption = `${t("play.round", { round: state.combat?.round ?? 1 })} · ${
     selectedActor && selectedTarget
@@ -174,55 +182,64 @@ export function CombatCockpit({
           nothing at all (during beat playback). It used to simply unmount, and the enemy
           stage — being flex:1 — swelled to fill the gap and shrank back a moment later. */}
       <div className="combat-command-zone">
-      {isTempoRunning ? tempo : selectedActor && !playingBack ? (
-        <CombatCommandMenu
-          actor={selectedActor}
-          livingGroups={livingEnemyGroups}
-          spells={knownSpells(selectedActor.classId, selectedActor.level)}
-          abilityKind={isCasterClass(selectedActor.classId) ? "spell" : "skill"}
-          localizeGroup={(group) => localizedEnemyGroupName(group, locale)}
-          canAttack={
-            livingEnemyGroups.length > 0 &&
-            !(selectedActor.row === "back" && frontRowStanding && !weaponReaches(selectedActor, world))
-          }
-          consumables={consumables}
-          partyTargets={activeParty.map((member) => ({ id: member.id, name: member.name }))}
-          t={t}
-          onQueueAttack={onQueueAttack}
-          onQueueSpell={onQueueSpell}
-          onQueueDefend={onQueueDefend}
-          onQueueItem={onQueueItem}
-          onUndo={onUndo}
-        />
-      ) : null}
-      {!isTempoRunning && ordersReady && confirmRound && !playingBack && (
-        <div
-          className="combat-command-menu combat-confirm"
-          data-testid="combat-confirm-round"
-          data-controller-active="true"
-          data-controller-surface="combat-menu"
-          onKeyDown={(event) => {
-            const key = event.key.toLowerCase();
-            if (key === "escape" || key === "backspace" || key === "a") {
-              event.preventDefault();
-              onUndo();
-            }
-          }}
-        >
-          <p className="combat-command-menu-head">{t("play.confirmRoundPrompt")}</p>
-          <button
-            type="button"
-            className="combat-confirm-button"
-            data-testid="combat-confirm-execute"
-            ref={(node) => node?.focus()}
-            onClick={onExecuteRound}
-          >
-            {t("play.executeRound")}
-            <kbd className="key-hint">Enter</kbd>
-          </button>
-          <p className="combat-command-menu-hint">{t("play.confirmRoundHint")}</p>
+        <div className="combat-character-presence-slot" aria-hidden={!presenceActor}>
+          {presenceActor && (
+            <CharacterPresence
+              character={presenceActor}
+              locale={locale}
+              mode={playingBack ? "action" : "command"}
+            />
+          )}
         </div>
-      )}
+        {isTempoRunning ? tempo : selectedActor && !playingBack ? (
+          <CombatCommandMenu
+            actor={selectedActor}
+            livingGroups={livingEnemyGroups}
+            spells={knownSpells(selectedActor.classId, selectedActor.level)}
+            abilityKind={isCasterClass(selectedActor.classId) ? "spell" : "skill"}
+            localizeGroup={(group) => localizedEnemyGroupName(group, locale)}
+            canAttack={
+              livingEnemyGroups.length > 0 &&
+              !(selectedActor.row === "back" && frontRowStanding && !weaponReaches(selectedActor, world))
+            }
+            consumables={consumables}
+            partyTargets={activeParty.map((member) => ({ id: member.id, name: member.name }))}
+            t={t}
+            onQueueAttack={onQueueAttack}
+            onQueueSpell={onQueueSpell}
+            onQueueDefend={onQueueDefend}
+            onQueueItem={onQueueItem}
+            onUndo={onUndo}
+          />
+        ) : null}
+        {!isTempoRunning && ordersReady && confirmRound && !playingBack && (
+          <div
+            className="combat-command-menu combat-confirm"
+            data-testid="combat-confirm-round"
+            data-controller-active="true"
+            data-controller-surface="combat-menu"
+            onKeyDown={(event) => {
+              const key = event.key.toLowerCase();
+              if (key === "escape" || key === "backspace" || key === "a") {
+                event.preventDefault();
+                onUndo();
+              }
+            }}
+          >
+            <p className="combat-command-menu-head">{t("play.confirmRoundPrompt")}</p>
+            <button
+              type="button"
+              className="combat-confirm-button"
+              data-testid="combat-confirm-execute"
+              ref={(node) => node?.focus()}
+              onClick={onExecuteRound}
+            >
+              {t("play.executeRound")}
+              <kbd className="key-hint">Enter</kbd>
+            </button>
+            <p className="combat-command-menu-hint">{t("play.confirmRoundHint")}</p>
+          </div>
+        )}
       </div>
       <CombatCommandDock
         t={t}

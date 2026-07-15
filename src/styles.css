@@ -423,6 +423,97 @@ small {
   object-fit: cover;
 }
 
+/* One source image must survive three very different game uses. The authoring
+   preview shows those crops together so a player can fix composition once instead
+   of discovering a severed face after registration. */
+.character-visual-preview {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.65rem;
+  align-items: end;
+  min-width: 0;
+}
+
+.character-visual-frames {
+  display: grid;
+  grid-template-columns: 3.4rem 6.2rem minmax(8rem, 11rem);
+  gap: 0.55rem;
+  align-items: end;
+}
+
+.visual-frame {
+  display: grid;
+  gap: 0.25rem;
+  margin: 0;
+  min-width: 0;
+}
+
+.visual-frame > div {
+  overflow: hidden;
+  border: 1px solid var(--character-accent, #6b5a2e);
+  border-radius: 3px;
+  background: #090a08;
+}
+
+.visual-frame img,
+.visual-frame .portrait-asset {
+  width: 100%;
+  height: 100%;
+}
+
+.visual-frame img {
+  object-fit: cover;
+}
+
+.token-frame > div {
+  aspect-ratio: 1;
+}
+
+.profile-frame > div {
+  aspect-ratio: 4 / 5;
+}
+
+.battle-frame > div {
+  aspect-ratio: 3 / 4;
+}
+
+.battle-frame img {
+  object-fit: contain;
+}
+
+.visual-frame figcaption {
+  color: #a9a796;
+  font-size: 0.68rem;
+  text-align: center;
+}
+
+.visual-focus-pad {
+  display: grid;
+  grid-template-columns: repeat(2, 2.35rem);
+  gap: 0.3rem;
+}
+
+.visual-focus-pad button {
+  display: grid;
+  place-items: center;
+  width: 2.35rem;
+  min-height: 2.35rem;
+  padding: 0;
+}
+
+.visual-authoring {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(11rem, 15rem);
+  gap: 0.8rem;
+  align-items: end;
+}
+
+.visual-imports {
+  display: grid;
+  gap: 0.45rem;
+  align-content: end;
+}
+
 .portrait-asset {
   position: relative;
   display: grid;
@@ -3049,6 +3140,9 @@ textarea {
   height: clamp(10.6rem, 23vh, 12rem);
   flex: 0 0 auto;
   min-height: 0;
+  display: grid;
+  grid-template-columns: clamp(8rem, 12vw, 10.5rem) minmax(0, 1fr);
+  gap: 0.45rem;
 }
 
 .combat-command-zone > .tempo-indicator {
@@ -3056,6 +3150,83 @@ textarea {
   margin: 0.1rem 0 0;
   align-content: center;
   justify-content: center;
+}
+
+.combat-character-presence-slot {
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+}
+
+.character-presence {
+  position: relative;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  height: 100%;
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--character-accent, #6b5a2e) 70%, #25251f);
+  border-radius: 3px;
+  background: #090a08;
+}
+
+.character-presence-art {
+  min-height: 0;
+  overflow: hidden;
+  background: radial-gradient(circle at 50% 38%, rgba(183, 153, 79, 0.12), transparent 58%);
+}
+
+.character-presence-art img,
+.character-presence-art .portrait-asset {
+  width: 100%;
+  height: 100%;
+}
+
+.character-presence-art img {
+  display: block;
+  object-fit: contain;
+}
+
+.character-presence-name {
+  display: grid;
+  gap: 0.05rem;
+  padding: 0.3rem 0.4rem;
+  border-top: 1px solid rgba(201, 167, 101, 0.24);
+  background: rgba(5, 6, 5, 0.9);
+  line-height: 1.1;
+}
+
+.character-presence-name strong {
+  color: #f1e5c9;
+  font-size: 0.78rem;
+  overflow-wrap: anywhere;
+}
+
+.character-presence-name span {
+  color: #aaa48f;
+  font-size: 0.64rem;
+}
+
+.character-presence.action {
+  box-shadow: inset 0 0 0 1px rgba(224, 182, 74, 0.4);
+}
+
+.character-presence.event {
+  grid-template-columns: 4rem minmax(5.5rem, 8rem);
+  grid-template-rows: 1fr;
+  width: clamp(10rem, 16vw, 13rem);
+  height: 4.2rem;
+  align-self: center;
+}
+
+.character-presence.event .character-presence-name {
+  align-content: center;
+  border-top: 0;
+  border-left: 1px solid rgba(201, 167, 101, 0.24);
+}
+
+.character-presence.event .character-presence-art img {
+  object-fit: cover;
 }
 
 .combat-command-menu {
@@ -3721,6 +3892,7 @@ textarea {
 .dungeon-cockpit .cockpit-message {
   grid-area: message;
   display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   gap: 0.25rem;
   align-content: center;
   min-height: 3.2rem;
@@ -3728,6 +3900,13 @@ textarea {
   border: 1px solid #2a2c27;
   border-radius: 4px;
   background: #0c0d0b;
+}
+
+.dungeon-message-copy {
+  display: grid;
+  gap: 0.25rem;
+  align-content: center;
+  min-width: 0;
 }
 
 .dungeon-cockpit .cockpit-message .room-copy {
@@ -4674,6 +4853,19 @@ textarea {
 }
 
 @media (max-width: 760px) {
+  .visual-authoring,
+  .character-visual-preview {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .character-visual-frames {
+    grid-template-columns: 3.1rem 5.4rem minmax(6.8rem, 9rem);
+  }
+
+  .visual-focus-pad {
+    grid-template-columns: repeat(4, 2.35rem);
+  }
+
   .party-menu-panel {
     height: calc(100vh - 1rem);
     min-height: 0;

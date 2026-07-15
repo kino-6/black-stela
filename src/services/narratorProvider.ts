@@ -1,15 +1,17 @@
 import type { GameState, ScenarioWorld } from "../domain/types";
 import type { NarrationProposal } from "./aiPolicyGuard";
 import type { AiSettings } from "./aiSettings";
+import { buildNarrationSubject } from "./narrationSubject";
 
 // Bump when the narration prompt shape changes. Carried on every request/result so
 // a generated line is reproducible from (promptVersion, model, publicSituation).
-export const NARRATION_PROMPT_VERSION = "narration/2026-07-10";
+export const NARRATION_PROMPT_VERSION = "narration/2026-07-15-subject-v1";
 
 export interface NarratorProviderRequest {
   state: GameState;
   world: ScenarioWorld;
   settings: AiSettings;
+  subjectId?: string;
 }
 
 export type NarratorProviderResult =
@@ -60,15 +62,23 @@ export const noneNarratorProvider: NarratorProvider = {
 // event text is redacted of party-member names — the narrator gets environmental
 // context but never the identities it must not voice. The prompt version is
 // included so a result can be reproduced.
-export function buildPublicNarrationInput({ state, world }: NarratorProviderRequest) {
+export function buildPublicNarrationInput(request: NarratorProviderRequest) {
+  const { state, world } = request;
+  const subject = request.subjectId
+    ? state.party.find((member) => member.id === request.subjectId)
+    : undefined;
   return {
-    role: "environment_flavor_only",
+    role: subject ? "environment_with_selected_adventurer" : "environment_flavor_only",
     promptVersion: NARRATION_PROMPT_VERSION,
     publicSituation: {
       phase: state.phase,
       position: state.position,
       recentEvents: state.log.slice(-5).map((entry) => redactPartyNames(entry.text, state.party))
     },
+    subject: subject ? buildNarrationSubject(subject) : undefined,
+    constraints: subject
+      ? ["never_speak_for_subject", "never_choose_subject_action", "never_invent_subject_feelings", "never_change_game_state"]
+      : ["never_change_game_state"],
     allowed: world.aiPolicy.allowed,
     forbidden: world.aiPolicy.forbidden
   };

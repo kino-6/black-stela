@@ -24,6 +24,13 @@ const EquipmentRecordSchema = z.object({
   accessory: EquippedItemSchema.optional()
 });
 
+const CharacterVisualProfileSchema = z.object({
+  baseRef: z.string().optional(),
+  battleRef: z.string().optional(),
+  focusX: z.number().min(0).max(100).default(50),
+  focusY: z.number().min(0).max(100).default(38)
+});
+
 const CharacterSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
@@ -111,6 +118,7 @@ const CharacterSchema = z.object({
     })
     .default({ injuries: 0, retreats: 0, notableVictories: [], deeds: [] }),
   portraitRef: z.string().optional(),
+  visualProfile: CharacterVisualProfileSchema.optional(),
   row: z.enum(["front", "back"]).default("front"),
   level: z.number().int().positive().default(1),
   hp: z.number().int().nonnegative(),

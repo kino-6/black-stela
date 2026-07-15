@@ -11,7 +11,8 @@ import type {
   CharacterAptitudes,
   CharacterBackgroundId,
   CharacterClassId,
-  CharacterTraitId
+  CharacterTraitId,
+  CharacterVisualProfile
 } from "../domain/types";
 import type { Locale } from "../i18n";
 
@@ -33,6 +34,7 @@ export interface CharacterDraft {
   identitySeed: number;
   accentColor: string;
   portraitRef?: string;
+  visualProfile?: CharacterVisualProfile;
 }
 
 export const aptitudeKeys: (keyof CharacterAptitudes)[] = ["might", "agility", "spirit", "wit", "luck"];

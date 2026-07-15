@@ -13,6 +13,7 @@ Use these subfolders:
 - `dungeon/` for wall/floor textures, doors, stairs, markers, traps, enemies.
 - `icons/` for item and equipment icons.
 - `portraits/` for character portraits.
+- `characters/` for optional transparent battle/bust character art.
 - `minimap/` for minimap markers.
 - `title/` for title backgrounds.
 - `ui/` for town, guild, combat, and FX stills.
@@ -40,12 +41,31 @@ variables. Treat these as drop-in assets too.
 | Enemy sprite | PNG RGBA | **768x768 square** | yes | the shared scale box — see below. Not negotiable per-pack |
 | Prop sprite (stairs, markers) | PNG RGBA | per brief | yes | centered, bottom-weighted, clean alpha |
 | Portrait | PNG or JPG | 512x512 | optional | bust framing; must read in party UI |
+| Character battle/bust | PNG RGBA | 1024x1536 preferred | yes | optional progressive enhancement; no baked scene lighting |
 | Icon | PNG RGBA | 256x256 | yes | single object, centered, generous padding |
 | Title still | JPG | 1920x1080 | none | no baked UI text unless the brief asks |
 | UI still | JPG | usually 1600x900 | none | town, guild, combat, or pack-specific scene |
 
 Keep replacement sprites at the same aspect ratio as the asset they replace
 unless the renderer scale is changed deliberately.
+
+## Character Visual Profiles
+
+A playable character has one visual identity used at three scales: formation
+token, profile record, and combat/event presence. The base portrait plus focal
+point is the required fallback. A transparent battle or bust image is optional;
+missing extra art must never produce a blank slot or block registration.
+
+- Review all three crops together before accepting imported or scenario art.
+- Keep the eyes and identifying silhouette readable at token size.
+- Battle/bust art uses honest alpha, neutral lighting, and no floor, backdrop,
+  torch wash, particles, or UI frame baked into the file.
+- Do not stretch a square portrait into a tall lane. The renderer crops it from
+  its focal point; optional battle art uses `contain` inside the same lane.
+- Save and portable-adventurer export embed the visual profile. Do not replace
+  player-authored art with a machine-local path that breaks after transfer.
+- Expression, hurt, and growth variants are progressive enhancement. Their
+  absence uses the restrained base/battle fallback rather than placeholder art.
 
 ## Enemy Sprite Framing
 
@@ -131,4 +151,3 @@ Before calling art done:
 - Run `npm run build` when claiming assets are wired into the application.
 - Use browser screenshots when claiming player-facing visibility, layout, or
   in-game presentation.
-
