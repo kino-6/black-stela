@@ -14,7 +14,15 @@ player's effort/cleverness, not mindless repetition (2026-07-14/15):
 - **The bypass rule itself** — `leveling.rewardXpFor` applies the falloff only to ordinary combat
   XP; a `prizedXp` enemy, and any *direct* XP grant, pay full by construction.
 
-## Still to build (its own slice — externalize, don't hardcode)
+## Q1 — growth items: DONE (2026-07-15, `c72b9c6`)
+
+- Item `kind: "growth"` + a `grants` map (aptitudes / maxHp / maxMp / attack / xp), authored in
+  `content/worlds/*/items.md`. On use OUTSIDE combat, `rulesEngine.useGrowthItem` raises the target
+  permanently; `grants.xp` is applied directly (bypasses the falloff by construction).
+- Content: 黒碑 ashroot-tonic / whetstone-rite / emberwit-ash (buyable) + deed-of-passage (found);
+  翠碑 heartsap-tonic (buyable) + rootgrowth-seed (found). Locked by `tests/growthItems.test.ts`.
+
+## Q2 — the quest board: STILL TO BUILD (its own slice — externalize, don't hardcode)
 
 Everything below is **content in `content/worlds/<id>/`**, driven by data, per the project's
 externalization boundary (dungeon/enemy/gear/items = data; formulas = code).
