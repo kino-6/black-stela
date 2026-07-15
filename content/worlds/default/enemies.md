@@ -294,6 +294,27 @@ enemies:
     dangerTier: 5
     isBoss: true
     tags: [finale, boss]
+  - id: enemy.rare.ashsilver-glimmer
+    name: Ashsilver Glimmer
+    locales:
+      ja:
+        name: 灰銀の残光
+    hp: 8
+    attack: 3
+    armor: 12
+    accuracy: 60
+    damageMin: 1
+    damageMax: 3
+    speed: 12
+    morale: 2
+    xp: 60
+    gold: 30
+    weaknesses: { star: 2.5, physical: 0.1, fire: 0.1, salt: 0.1 }
+    role: attrition
+    size: small
+    dangerTier: 2
+    prizedXp: true
+    tags: [rare, prized]
 ---
 
 # Enemies

@@ -218,10 +218,13 @@ const CombatEnemyGroupSchema = z.object({
   xp: z.number().int().nonnegative().default(0),
   gold: z.number().int().nonnegative().default(0),
   role: z.enum(["attrition", "blocker", "status", "ambusher", "caster", "miniboss", "boss"]).optional(),
-  // The group carries the enemy's weaknesses/elevation (createCombatState copies them), so a
-  // reloaded fight must keep them or the element interactions vanish on continue.
+  // The group carries the enemy's weaknesses/elevation/level (createCombatState copies them), so a
+  // reloaded fight must keep them or the element interactions and XP falloff vanish on continue.
   weaknesses: z.record(z.string(), z.number()).optional(),
   elevation: z.enum(["ground", "mid", "air"]).optional(),
+  level: z.number().int().positive().optional(),
+  dangerTier: z.number().int().positive().optional(),
+  prizedXp: z.boolean().optional(),
   status: z.array(z.enum(["poison", "fear", "silence", "sleep", "ward"])).default([])
 });
 

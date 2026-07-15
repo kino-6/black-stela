@@ -76,6 +76,8 @@ const enemySchema = z.object({
   drops: z.array(z.string().min(1)).optional(),
   role: enemyRoleSchema.optional(),
   dangerTier: z.number().int().positive().optional(),
+  level: z.number().int().positive().optional(),
+  prizedXp: z.boolean().optional(),
   tags: z.array(z.string().min(1)).default([]),
   isBoss: z.boolean().optional(),
   elevation: z.enum(["ground", "mid", "air"]).optional(),

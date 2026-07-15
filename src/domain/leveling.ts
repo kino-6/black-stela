@@ -1,4 +1,4 @@
-import type { Character, GameEvent } from "./types";
+import type { Character, Enemy, GameEvent } from "./types";
 
 /**
  * Character growth: XP thresholds and the stat gains applied on level-up.
@@ -12,6 +12,39 @@ export function xpForLevel(level: number): number {
     return 0;
   }
   return 4 * (level - 1) * level;
+}
+
+// The level a fight is "meant for". Authored per-enemy where it matters; otherwise derived from
+// dangerTier so every enemy has one. Tier 1..5 → level 1,3,5,7,9 — spread across the party's range.
+export function enemyLevel(enemy: Pick<Enemy, "level" | "dangerTier">): number {
+  return enemy.level ?? Math.max(1, (enemy.dangerTier ?? 1) * 2 - 1);
+}
+
+// Diminishing returns for out-levelling the content. NOT a cap (the user's call: "頭打ちは言い過ぎ
+// で、成長速度がUXとして明らかに鈍るがいい") — grinding a floor you have outgrown keeps paying, but
+// visibly less each level over: each level of gap trims XP by ~14%, flooring at 12%. So time-in
+// spent farming trash is quietly discouraged, while a PREPARED lower-level party still earns full
+// value from fights that are actually a threat. Enemies that are a deliberate growth reward
+// (bounty targets, the rare "prized" runners) bypass this entirely — see rewardXpFor.
+const FALLOFF_PER_LEVEL = 0.86;
+const FALLOFF_FLOOR = 0.12;
+export function xpFalloffMultiplier(memberLevel: number, targetLevel: number): number {
+  const over = memberLevel - targetLevel;
+  if (over <= 0) {
+    return 1;
+  }
+  return Math.max(FALLOFF_FLOOR, FALLOFF_PER_LEVEL ** over);
+}
+
+// The XP one member earns from one defeated enemy: the enemy's base XP, trimmed by how far the
+// member has out-levelled it — unless the enemy is `prizedXp` (a metal-slime-style reward you had
+// to seek out and land), which pays in full at any level. This is the single place the "grinding
+// slows, preparation doesn't" rule and its exceptions live.
+export function rewardXpFor(baseXp: number, memberLevel: number, enemy: Pick<Enemy, "level" | "dangerTier" | "prizedXp">): number {
+  if (enemy.prizedXp) {
+    return baseXp;
+  }
+  return Math.max(1, Math.round(baseXp * xpFalloffMultiplier(memberLevel, enemyLevel(enemy))));
 }
 
 export interface LevelUpResult {

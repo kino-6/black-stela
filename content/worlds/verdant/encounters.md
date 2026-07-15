@@ -24,6 +24,8 @@ encounterTables:
     entries:
       - { enemyId: enemy.verdant.g4.pollen-drifter, weight: 10, minCount: 1, maxCount: 2 }
       - { enemyId: enemy.verdant.g2.thorn-crawler, weight: 5, minCount: 1, maxCount: 1 }
+      # The prized runner — rare, single, prized XP (bypasses the falloff).
+      - { enemyId: enemy.verdant.rare.gilded-sporecloud, weight: 1, minCount: 1, maxCount: 1 }
   - id: encounters.verdant.g5.pack
     floorId: dungeon.verdant.g5f
     entries:

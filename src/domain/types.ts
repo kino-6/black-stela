@@ -338,6 +338,12 @@ export interface Enemy {
   drops?: string[];
   role?: EnemyRole;
   dangerTier?: number;
+  /** The level this fight is meant for (XP falloff compares the party to it). Derived from
+   *  dangerTier when omitted. */
+  level?: number;
+  /** A deliberate growth reward — a bounty target or a rare "prized" runner (metal-slime style).
+   *  Its XP bypasses the out-levelling falloff and pays in full at any level. */
+  prizedXp?: boolean;
   tags?: string[];
   isBoss?: boolean;
   elevation?: EnemyElevation;
@@ -425,6 +431,11 @@ export interface CombatEnemyGroup {
   morale: number;
   xp: number;
   gold: number;
+  /** The level this fight is meant for + whether its XP bypasses the out-levelling falloff.
+   *  Carried from the enemy so the victory reward can trim (or not trim) XP per party member. */
+  level?: number;
+  dangerTier?: number;
+  prizedXp?: boolean;
   role?: EnemyRole;
   /** Front line (ground) shields the back line (mid/air) from melee until it falls. */
   elevation?: EnemyElevation;

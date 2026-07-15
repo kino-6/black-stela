@@ -1,5 +1,5 @@
 import { appendEventLogs } from "./replayLog";
-import { applyLevelUps } from "./leveling";
+import { applyLevelUps, rewardXpFor } from "./leveling";
 import { PARTY_SIZE_LIMIT, findClass, importAdventurer, reclassCharacter } from "./characterCreation";
 import { SPELLS, knownSpells } from "./spells";
 import { getCriticalChance, getEvasionChance, getInitiativeScore, getSpellPowerBonus, getStatusSpellChance } from "./combatMath";
@@ -1072,7 +1072,7 @@ function declareRound(state: GameState, world: ScenarioWorld, actions: CombatAct
     const grownParty = party.map((member) => {
       const rewarded: typeof member = {
         ...member,
-        xp: member.xp + xp,
+        xp: member.xp + memberXpFromGroups(combat.enemyGroups, member.level),
         gold: member.gold + gold,
         memory: {
           ...member.memory,
@@ -1299,7 +1299,7 @@ function debugForceVictory(state: GameState): CommandResult {
   const grownParty = state.party.map((member) => {
     const rewarded: typeof member = {
       ...member,
-      xp: member.xp + xp,
+      xp: member.xp + memberXpFromGroups(combat.enemyGroups, member.level),
       gold: member.gold + gold,
       memory: {
         ...member.memory,
@@ -1798,6 +1798,17 @@ export function resolveEncounterTable(world: ScenarioWorld, tableId: string, see
     .filter((group): group is { enemy: Enemy; count: number } => group !== null);
 }
 
+// XP one member banks from a cleared fight: each defeated group's base XP, trimmed by how far the
+// member has out-levelled it (or paid in full for a prized runner). Members earn different amounts
+// — a fresh recruit gets the fight's full worth, a veteran who has outgrown the floor gets a
+// trickle — which is the whole point of the falloff. See leveling.rewardXpFor.
+function memberXpFromGroups(groups: CombatEnemyGroup[], memberLevel: number): number {
+  return groups.reduce(
+    (total, group) => total + rewardXpFor(group.xp * group.count, memberLevel, group),
+    0
+  );
+}
+
 function createEnemyGroup(enemy: Enemy, count: number): CombatEnemyGroup {
   return {
     id: `group.${enemy.id}`,
@@ -1816,6 +1827,9 @@ function createEnemyGroup(enemy: Enemy, count: number): CombatEnemyGroup {
     morale: enemy.morale ?? 7,
     xp: enemy.xp ?? Math.max(1, enemy.dangerTier ?? 1),
     gold: enemy.gold ?? Math.max(0, enemy.dangerTier ?? 1),
+    level: enemy.level,
+    dangerTier: enemy.dangerTier,
+    prizedXp: enemy.prizedXp,
     role: enemy.role,
     elevation: enemy.elevation,
     status: [],

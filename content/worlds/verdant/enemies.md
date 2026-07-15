@@ -260,6 +260,28 @@ enemies:
     isBoss: true
     dangerTier: 5
     tags: [boss, heartwood, finale]
+  - id: enemy.verdant.rare.gilded-sporecloud
+    name: Gilded Sporecloud
+    locales:
+      ja:
+        name: 黄金の胞子雲
+    hp: 8
+    attack: 3
+    armor: 12
+    accuracy: 60
+    damageMin: 1
+    damageMax: 3
+    speed: 12
+    morale: 2
+    xp: 60
+    gold: 30
+    weaknesses: { metal: 2.5, physical: 0.1, fire: 0.1, wood: 0.1 }
+    role: attrition
+    size: small
+    dangerTier: 2
+    prizedXp: true
+    hover: true
+    tags: [rare, prized]
 ---
 
 # Verdant enemies

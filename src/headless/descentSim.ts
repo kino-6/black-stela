@@ -158,7 +158,7 @@ function planFloor(world: ScenarioWorld, floorId: string, seen: Set<string>): Pl
     }
     for (const entry of table.entries) {
       const enemy = world.enemies.find((candidate) => candidate.id === entry.enemyId);
-      if (enemy) {
+      if (enemy && !enemy.prizedXp) {
         take(enemy, entry.maxCount ?? entry.minCount ?? 1);
       }
     }

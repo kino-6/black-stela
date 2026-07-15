@@ -39,6 +39,8 @@ encounterTables:
         weight: 5
         minCount: 1
         maxCount: 2
+      # The prized runner — rare, single, its huge XP bypasses the falloff (a growth reward).
+      - { enemyId: enemy.rare.ashsilver-glimmer, weight: 1, minCount: 1, maxCount: 1 }
   # B3F cistern: the fresh bitter-mote, sometimes with a trailing hook-rat (groupsMax 2).
   - id: encounters.b3f.cistern
     floorId: dungeon.b3f
@@ -52,6 +54,8 @@ encounterTables:
         weight: 5
         minCount: 1
         maxCount: 2
+      # The prized runner — rare, single, its huge XP bypasses the falloff (a growth reward).
+      - { enemyId: enemy.rare.ashsilver-glimmer, weight: 1, minCount: 1, maxCount: 1 }
   # B4F fielded only ONE type, so the floor drew almost no attrition and read as a
   # sudden lull between B3F and B5F. A second, lighter type gives it a real floor drain.
   - id: encounters.b4f.dark
