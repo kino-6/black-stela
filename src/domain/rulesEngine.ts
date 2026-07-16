@@ -41,6 +41,7 @@ import {
   resolveVocationState,
   setLoadout
 } from "./vocations";
+import { rollEquipmentDrop } from "./loot";
 import type {
   Character,
   CharacterClassId,
@@ -2137,14 +2138,23 @@ function collectRoomTreasure(
     return { state, events: [] };
   }
 
-  // Dropped equipment can roll a numeric "+N" upgrade and/or a named enchant,
-  // scaled by floor depth. Deterministic on (room, turn) so replays match.
+  // Dropped equipment rolls a numeric "+N" upgrade and a RARITY (IMP-022A): a common stacks and is
+  // known, a rare/epic is a unique unidentified instance carrying an authored affix. Deterministic
+  // on (room, turn) so replays match.
   if (item.kind === "equipment") {
     const equipment = findEquipment(world, entry.itemId);
     if (equipment) {
-      const rolled = rollEquipmentInstance(equipment.slot, floorNumberForRoom(world, roomId), `${roomId}:${state.turn}`);
-      item.plus = rolled.plus;
-      item.affix = rolled.affix;
+      const floor = floorNumberForRoom(world, roomId);
+      const seed = `${roomId}:${state.turn}`;
+      item.plus = rollEquipmentInstance(equipment.slot, floor, seed).plus;
+      const drop = rollEquipmentDrop(world, entry.itemId, floor, seed);
+      if (drop) {
+        item.rarity = drop.rarity;
+        item.identified = drop.identified;
+        item.instanceId = drop.instanceId;
+        // A rare's rolled affix wins; a common keeps whatever the +N roll gave it (if any).
+        if (drop.affix) item.affix = drop.affix;
+      }
     }
   }
 

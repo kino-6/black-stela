@@ -271,7 +271,18 @@ export interface InventoryItem {
   // base id, plus, and affix all match (see equipmentInstanceKey).
   plus?: number;
   affix?: string;
+  // IMP-022A — rare-loot instance identity. A COMMON drop is known on acquisition (identified) and
+  // still stacks. A RARE-or-higher drop is a UNIQUE instance (its own instanceId) that may conceal
+  // its rolled affix until appraised, and can be locked / favorited to protect it from bulk
+  // conversion. See docs/design/rare-loot.md.
+  instanceId?: string;
+  rarity?: ItemRarity;
+  identified?: boolean;
+  locked?: boolean;
+  favorite?: boolean;
 }
+
+export type ItemRarity = "common" | "rare" | "epic";
 
 // One resolved action within a combat round, carrying both the text line and a
 // snapshot of the battlefield AFTER it resolved, so the UI can play the fight
@@ -668,6 +679,8 @@ export interface ScenarioWorld {
   /** Authored advanced vocations (+ optional basic re-skins). Built-in classes are merged in by
    *  resolveVocationCatalog; this holds only what the world adds. */
   vocations: ScenarioVocation[];
+  /** Authored equipment affixes, merged with the built-in pool (resolveAffixCatalog). */
+  affixes: ScenarioAffix[];
   importPolicy?: ScenarioImportPolicy;
 }
 
@@ -763,6 +776,23 @@ export interface ScenarioItem {
   restoreMp?: number;
   curesStatuses?: CombatStatus[];
   locales?: LocalizedNameDescription;
+}
+
+// IMP-022A: an authored equipment affix (a "named enchant"). Merged with the built-in pool
+// (EQUIPMENT_AFFIXES) — authored wins on a shared id. `rarity` sets how exclusive the roll is and
+// which tier of drop it can appear on. See docs/design/rare-loot.md.
+export interface ScenarioAffix {
+  id: string;
+  label: string;
+  slots: EquipmentSlot[];
+  minFloor: number;
+  rarity: ItemRarity;
+  weight?: number;
+  attackBonus?: number;
+  defenseBonus?: number;
+  accuracyBonus?: number;
+  speedBonus?: number;
+  locales?: Partial<Record<string, { label?: string }>>;
 }
 
 // IMP-021A: an authored vocation (usually ADVANCED). `basic`-tier entries with a built-in id

@@ -1,6 +1,7 @@
 import type { Character, CombatStatus, Element, EquipmentSlot, InventoryItem, ScenarioEquipment, ScenarioItem, ScenarioWorld } from "./types";
 import { PHYSICAL } from "./types";
-import { equipmentInstanceKey, findAffix, plusPrimaryStat } from "./affixes";
+import { equipmentInstanceKey, plusPrimaryStat } from "./affixes";
+import { findResolvedAffix } from "./loot";
 
 export const STARTING_PARTY_GOLD = 75;
 const RECOVERY_HP_COST = 1;
@@ -58,6 +59,11 @@ export function createInventoryItemFromCatalog(world: ScenarioWorld, itemId: str
 }
 
 export function addInventoryItem(inventory: InventoryItem[], item: InventoryItem): InventoryItem[] {
+  // A rare/epic drop is a UNIQUE instance (IMP-022A): it carries its own instanceId and must never
+  // stack with another — appraisal, lock, and favorite are per-instance.
+  if (item.instanceId) {
+    return [...inventory, item];
+  }
   const key = equipmentInstanceKey(item.id, item.plus, item.affix);
   const existing = inventory.find((candidate) => equipmentInstanceKey(candidate.id, candidate.plus, candidate.affix) === key);
   if (!existing) {
@@ -153,7 +159,8 @@ export function getEffectiveCharacterStats(character: Character, world: Scenario
     }
 
     // A named enchant adds its own stat bonuses on top.
-    const affix = findAffix(equipped.affix);
+    // Resolve the enchant from the world's merged affix catalog (built-in + authored, IMP-022A).
+    const affix = findResolvedAffix(world, equipped.affix);
     if (affix) {
       attackBonus += affix.attackBonus ?? 0;
       defenseBonus += affix.defenseBonus ?? 0;

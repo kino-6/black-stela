@@ -4,6 +4,7 @@ import {
   parseScenarioEnemies,
   parseScenarioEncounters,
   parseScenarioItems,
+  parseScenarioAffixes,
   parseScenarioProgression,
   parseScenarioQuests,
   parseScenarioTreasure,
@@ -88,7 +89,7 @@ function loadCatalogData(
   const data: Partial<
     Pick<
       ScenarioWorld,
-      "items" | "equipment" | "shops" | "enemies" | "encounterTables" | "treasureTables" | "progressionFlags" | "quests" | "vocations"
+      "items" | "equipment" | "shops" | "enemies" | "encounterTables" | "treasureTables" | "progressionFlags" | "quests" | "vocations" | "affixes"
     >
   > = {};
 
@@ -169,6 +170,18 @@ function loadCatalogData(
   );
   if (vocations) {
     data.vocations = vocations.vocations;
+  }
+
+  const affixes = parseOptionalDataFile(
+    files,
+    rootPath,
+    manifest.dataFiles.affixes,
+    "dataFiles.affixes",
+    parseScenarioAffixes,
+    errors
+  );
+  if (affixes) {
+    data.affixes = affixes.affixes;
   }
 
   return data;

@@ -72,7 +72,7 @@ test("captures authoring and B2F screenshot review states", async ({ page }) => 
 
   await page.goto("/?debug=1");
   await page.getByTestId("debug-panel-toggle").click(); // expand the collapsed debug panel
-  await page.getByTestId("scenario-pack-input").setInputFiles(defaultPackFiles(["manifest.md", "world.md", "items.md", "enemies.md", "encounters.md", "treasure.md", "progression.md", "quests.md", "vocations.md", "dungeons/b1f.md", "dungeons/b2f.md", "dungeons/b3f.md", "dungeons/b4f.md", "dungeons/b5f.md", "dungeons/b6f.md", "dungeons/b7f.md", "dungeons/b8f.md"]));
+  await page.getByTestId("scenario-pack-input").setInputFiles(defaultPackFiles(["manifest.md", "world.md", "items.md", "enemies.md", "encounters.md", "treasure.md", "progression.md", "quests.md", "vocations.md", "affixes.md", "dungeons/b1f.md", "dungeons/b2f.md", "dungeons/b3f.md", "dungeons/b4f.md", "dungeons/b5f.md", "dungeons/b6f.md", "dungeons/b7f.md", "dungeons/b8f.md"]));
   await expect(page.getByText("Loaded Black Stela - Gate of Ash (8 floors).")).toBeVisible();
   await page.screenshot({ path: "test-results/screenshot-review/scenario-import-success.png", fullPage: true });
 

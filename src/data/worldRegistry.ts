@@ -3,6 +3,7 @@
 // pulls every world's markdown (Vite ?raw, eager), groups files by world-folder id,
 // and parses each into a ScenarioWorld. See docs/design/scenario-switching.md.
 import {
+  parseScenarioAffixes,
   parseScenarioEncounters,
   parseScenarioEnemies,
   parseScenarioItems,
@@ -50,6 +51,7 @@ function buildWorld(worldId: string, files: Record<string, string>): ScenarioWor
   const progression = files["progression"] ? parseScenarioProgression(files["progression"]) : { progressionFlags: [] };
   const quests = files["quests"] ? parseScenarioQuests(files["quests"]) : { quests: [] };
   const vocations = files["vocations"] ? parseScenarioVocations(files["vocations"]) : { vocations: [] };
+  const affixes = files["affixes"] ? parseScenarioAffixes(files["affixes"]) : { affixes: [] };
 
   // Dungeons in descent order: by each floor's `level` front-matter, then by name.
   const dungeonMarkdowns = Object.entries(files)
@@ -66,7 +68,8 @@ function buildWorld(worldId: string, files: Record<string, string>): ScenarioWor
     treasureTables: treasure.treasureTables,
     progressionFlags: progression.progressionFlags,
     quests: quests.quests,
-    vocations: vocations.vocations
+    vocations: vocations.vocations,
+    affixes: affixes.affixes
   });
 
   // A scenario's art pack defaults to its OWN folder (its content/worlds/<id>/assets),

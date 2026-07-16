@@ -1,7 +1,7 @@
 import yaml from "js-yaml";
 import { expandFloorMap, isMapFloor } from "./floorMap";
 import { z } from "zod";
-import type { Direction, DungeonFloor, DungeonGridCell, DungeonGridEdge, ScenarioQuest, ScenarioVocation, ScenarioWorld } from "./types";
+import type { Direction, DungeonFloor, DungeonGridCell, DungeonGridEdge, ScenarioAffix, ScenarioQuest, ScenarioVocation, ScenarioWorld } from "./types";
 
 const directionSchema = z.enum(["north", "east", "south", "west"]);
 const floorRoleSchema = z.enum([
@@ -95,6 +95,20 @@ const trapSchema = z.object({
 });
 
 const equipmentSlotSchema = z.enum(["weapon", "offhand", "body", "head", "hands", "accessory"]);
+
+const scenarioAffixSchema = z.object({
+  id: z.string().min(1),
+  label: z.string().min(1),
+  slots: z.array(equipmentSlotSchema).min(1),
+  minFloor: z.number().int().positive(),
+  rarity: z.enum(["common", "rare", "epic"]),
+  weight: z.number().int().positive().optional(),
+  attackBonus: z.number().int().optional(),
+  defenseBonus: z.number().int().optional(),
+  accuracyBonus: z.number().int().optional(),
+  speedBonus: z.number().int().optional(),
+  locales: z.record(z.object({ label: z.string().min(1).optional() })).optional()
+});
 
 const scenarioVocationSchema = z.object({
   id: z.string().min(1),
@@ -397,7 +411,8 @@ export const scenarioWorldSchema = z.object({
   treasureTables: z.array(treasureTableSchema).default([]),
   progressionFlags: z.array(progressionFlagSchema).default([]),
   quests: z.array(scenarioQuestSchema).default([]),
-  vocations: z.array(scenarioVocationSchema).default([])
+  vocations: z.array(scenarioVocationSchema).default([]),
+  affixes: z.array(scenarioAffixSchema).default([])
 });
 
 export const scenarioItemsSchema = z.object({
@@ -428,6 +443,10 @@ export const scenarioQuestsSchema = z.object({
 
 export const scenarioVocationsSchema = z.object({
   vocations: z.array(scenarioVocationSchema).default([])
+});
+
+export const scenarioAffixesSchema = z.object({
+  affixes: z.array(scenarioAffixSchema).default([])
 });
 
 interface FrontMatterDocument<T> {
@@ -471,7 +490,7 @@ export function parseScenarioWorld(
   data: Partial<
     Pick<
       ScenarioWorld,
-      "items" | "equipment" | "shops" | "enemies" | "encounterTables" | "treasureTables" | "progressionFlags" | "quests" | "vocations"
+      "items" | "equipment" | "shops" | "enemies" | "encounterTables" | "treasureTables" | "progressionFlags" | "quests" | "vocations" | "affixes"
     >
   > = {}
 ): ScenarioWorld {
@@ -494,7 +513,8 @@ export function parseScenarioWorld(
     treasureTables: data.treasureTables ?? [],
     progressionFlags: data.progressionFlags ?? [],
     quests: data.quests ?? [],
-    vocations: data.vocations ?? []
+    vocations: data.vocations ?? [],
+    affixes: data.affixes ?? []
   }) as ScenarioWorld;
 }
 
@@ -527,6 +547,10 @@ export function parseScenarioQuests(markdown: string): { quests: ScenarioQuest[]
 
 export function parseScenarioVocations(markdown: string): { vocations: ScenarioVocation[] } {
   return parseMarkdownFrontMatter(markdown, scenarioVocationsSchema).data as { vocations: ScenarioVocation[] };
+}
+
+export function parseScenarioAffixes(markdown: string): { affixes: ScenarioAffix[] } {
+  return parseMarkdownFrontMatter(markdown, scenarioAffixesSchema).data as { affixes: ScenarioAffix[] };
 }
 
 export function getRoom(world: ScenarioWorld, roomId: string) {

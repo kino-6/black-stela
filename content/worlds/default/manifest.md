@@ -23,6 +23,7 @@ dataFiles:
   progression: progression.md
   quests: quests.md
   vocations: vocations.md
+  affixes: affixes.md
 compatibility:
   minAppVersion: 0.1.0
 ---

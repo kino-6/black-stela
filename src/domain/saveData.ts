@@ -169,7 +169,13 @@ const InventoryItemSchema = z.object({
   speedBonus: z.number().int().optional(),
   sellValue: z.number().int().nonnegative().optional(),
   plus: z.number().int().positive().optional(),
-  affix: z.string().min(1).optional()
+  affix: z.string().min(1).optional(),
+  // IMP-022A rare-loot instance identity (optional; legacy items read as identified commons).
+  instanceId: z.string().min(1).optional(),
+  rarity: z.enum(["common", "rare", "epic"]).optional(),
+  identified: z.boolean().optional(),
+  locked: z.boolean().optional(),
+  favorite: z.boolean().optional()
 });
 
 const EnemySchema = z.object({
