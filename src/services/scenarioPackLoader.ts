@@ -418,6 +418,20 @@ export function validateScenarioGraph(world: ScenarioWorld, filePath = "world.md
     }
   }
 
+  // IMP-023 (deterministic content Gate): a DEAD affix — one that can never roll because no
+  // equipment carries a slot it rolls on — is authoring waste and a silent balance hole. Reject it
+  // before playtest. (The seeded ECONOMY simulator + AI-authoring loop are Codex, IMP-023A/B/C.)
+  const equipmentSlots = new Set(world.equipment.map((gear) => gear.slot));
+  for (const affix of world.affixes) {
+    if (!affix.slots.some((slot) => equipmentSlots.has(slot))) {
+      errors.push({
+        filePath,
+        fieldPath: `${affix.id}.slots`,
+        reason: `Affix can never roll: no equipment exists for any of its slots (${affix.slots.join(", ")})`
+      });
+    }
+  }
+
   for (const quest of world.quests) {
     if (quest.kind === "bounty" && (!quest.targetEnemyId || !enemyIds.has(quest.targetEnemyId))) {
       errors.push({
