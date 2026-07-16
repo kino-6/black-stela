@@ -9,11 +9,10 @@ import { CONTROLLER_VIEWPORT } from "./controllerGate";
 test.describe("combat all-out (one-press round)", () => {
   test.beforeEach(async ({ page }) => {
     await page.setViewportSize(CONTROLLER_VIEWPORT);
-    // Resolve rounds instantly so the test reads round-to-round state without waiting on playback.
-    await page.addInitScript(() => window.localStorage.setItem("black-stela:settings:instant-combat-log", "on"));
   });
 
-  test("the F key resolves a whole round and clears the fight without a per-actor loop", async ({ page }) => {
+  test("the F key resolves a whole round (played back at 2x) and clears the fight", async ({ page }) => {
+    test.setTimeout(60_000);
     await page.addInitScript(() => window.localStorage.setItem("black-stela:settings:locale", "ja"));
     await startDebugRun(page, { progress: "floor_2", world: "verdant" });
     await walkUntilCombat(page);
@@ -23,21 +22,24 @@ test.describe("combat all-out (one-press round)", () => {
     await expect(allOut).toBeVisible();
     await expect(allOut).toBeEnabled();
 
-    // One press advances the round: the enemy roster changes (damage / a group falls) and the
-    // fight terminates within a sane number of presses — no infinite stall.
+    // Each press plays the whole round back at 2x (never skips), so wait for the round to finish —
+    // the all-out button re-enables when playback ends — before the next press. The fight must
+    // PROGRESS and END (no infinite stall).
+    const isOver = async () =>
+      (await page.getByTestId("combat-result").count()) > 0 || // victory result screen
+      (await page.getByTestId("combat-cockpit").count()) === 0 || // dragged back to town
+      (await page.getByTestId("combat-enemy-group").count()) === 0; // no enemies left
+
     let ended = false;
-    for (let i = 0; i < 15; i += 1) {
-      if ((await page.getByTestId("combat-enemy-group").count()) === 0) {
-        ended = true;
-        break;
-      }
+    for (let i = 0; i < 15 && !ended; i += 1) {
+      if (await isOver()) { ended = true; break; }
       await page.keyboard.press("f");
-      await page.waitForTimeout(120);
-      // Combat may resolve into the victory conclusion, or the party may be dragged back to town.
-      if ((await page.getByTestId("combat-cockpit").count()) === 0 && (await page.locator(".enemy-stage").count()) === 0) {
-        ended = true;
-        break;
-      }
+      // Wait out this round's 2x playback: the button is disabled during playback, then re-enables
+      // (or the fight ends into the result screen).
+      await expect
+        .poll(async () => ((await isOver()) ? "over" : (await allOut.isEnabled()) ? "ready" : "playing"), { timeout: 15_000 })
+        .not.toBe("playing");
+      if (await isOver()) ended = true;
     }
     expect(ended, "the fight did not end after 15 all-out rounds").toBe(true);
   });

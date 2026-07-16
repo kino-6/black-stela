@@ -10,6 +10,8 @@ interface TitleScreenProps {
   autoBattleSafety: boolean;
   instantCombatLog: boolean;
   confirmRound: boolean;
+  /** The instant-combat-log skip is a DEBUG convenience (it hides what happened); only expose it in debug. */
+  debugMode?: boolean;
   onNewGame: () => void;
   onContinue: () => void;
   onToggleConfig: () => void;
@@ -30,6 +32,7 @@ export function TitleScreen({
   autoBattleSafety,
   instantCombatLog,
   confirmRound,
+  debugMode,
   onNewGame,
   onContinue,
   onToggleConfig,
@@ -79,15 +82,17 @@ export function TitleScreen({
             />
             {t("config.autoBattleSafety")}
           </label>
-          <label className="config-toggle">
-            <input
-              type="checkbox"
-              data-testid="config-instant-combat-log"
-              checked={instantCombatLog}
-              onChange={(event) => onToggleInstantCombatLog(event.target.checked)}
-            />
-            {t("config.instantCombatLog")}
-          </label>
+          {debugMode && (
+            <label className="config-toggle">
+              <input
+                type="checkbox"
+                data-testid="config-instant-combat-log"
+                checked={instantCombatLog}
+                onChange={(event) => onToggleInstantCombatLog(event.target.checked)}
+              />
+              {t("config.instantCombatLog")}
+            </label>
+          )}
           <label className="config-toggle">
             <input
               type="checkbox"

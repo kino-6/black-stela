@@ -429,13 +429,16 @@ export function App() {
   // result is committed. `playback` holds the round's structured beats plus the
   // already-resolved `pending` state; the battlefield renders from the current
   // beat's snapshot (enemies fall as the hit lands) until the last beat commits.
-  const [playback, setPlayback] = useState<{ beats: CombatBeat[]; index: number; pending: GameState } | null>(null);
+  const [playback, setPlayback] = useState<{ beats: CombatBeat[]; index: number; pending: GameState; fast?: boolean } | null>(null);
   const activeBeat = playback ? playback.beats[playback.index] ?? null : null;
 
   function commitPlayback() {
     if (playback) {
       setState(playback.pending);
       setPlayback(null);
+      // The log was shown IN SYNC with each blow during playback; reveal it fully now so it does
+      // not re-play the same beats a second time (the "後追い / when is this log from?" lag).
+      setRevealedBeats(Number.MAX_SAFE_INTEGER);
     }
   }
 
@@ -443,17 +446,24 @@ export function App() {
     if (!playback) {
       return;
     }
+    // 全員でかかる / Repeat play back at DOUBLE speed (fast) — the user still sees each blow, just
+    // quicker; a one-press auto-round should never SKIP the animation (that reads as broken), only
+    // accelerate it. A hand-entered round uses the tempo-speed setting.
+    const fast = playback.fast || tempoSpeed === "fast";
     if (playback.index >= playback.beats.length - 1) {
       // Hold on the finishing blow a beat longer, then commit the real result.
       const timer = setTimeout(() => {
         setState(playback.pending);
         setPlayback(null);
-      }, tempoSpeed === "fast" ? 300 : 700);
+        // Fully reveal the log — it was already shown in sync with the blows during playback, so it
+        // must NOT re-play the beats afterward (the 後追い lag the player couldn't place).
+        setRevealedBeats(Number.MAX_SAFE_INTEGER);
+      }, fast ? 300 : 700);
       return () => clearTimeout(timer);
     }
     const timer = setTimeout(() => {
       setPlayback((current) => (current ? { ...current, index: current.index + 1 } : null));
-    }, tempoSpeed === "fast" ? 170 : 430);
+    }, fast ? 170 : 430);
     return () => clearTimeout(timer);
   }, [playback, tempoSpeed]);
 
@@ -601,7 +611,7 @@ export function App() {
   // Resolve a manually declared round. When paced playback is on (default), hold
   // the resolved state and play the round's beats forward first so the battlefield
   // updates blow-by-blow; instant mode (or a beatless round) commits immediately.
-  function resolveRound(actions: CombatActionDeclaration[], opts: { fromAuto?: boolean } = {}) {
+  function resolveRound(actions: CombatActionDeclaration[], opts: { fromAuto?: boolean; fast?: boolean } = {}) {
     if (playback) {
       return;
     }
@@ -613,7 +623,10 @@ export function App() {
     }
     const roundEntry = [...resolved.log].reverse().find((entry) => entry.event?.type === "combat_round_resolved");
     const beats = roundEntry?.event?.type === "combat_round_resolved" ? roundEntry.event.beats ?? [] : [];
-    if (instantCombatLog || beats.length === 0) {
+    // A one-press auto command (全員でかかる / Repeat) always PLAYS the round (at 2x) even if the
+    // instant-log debug shortcut is on — skipping it entirely reads as broken. Instant only applies
+    // to a hand-entered round.
+    if ((instantCombatLog && !opts.fast) || beats.length === 0) {
       setState(resolved);
       return;
     }
@@ -622,7 +635,7 @@ export function App() {
     if (isTempoRunning && !opts.fromAuto) {
       setTempoMode("idle");
     }
-    setPlayback({ beats, index: 0, pending: resolved });
+    setPlayback({ beats, index: 0, pending: resolved, fast: opts.fast });
   }
 
   function executeCombatOrders() {
@@ -665,7 +678,7 @@ export function App() {
       setTempoStatus(t("tempo.repeatRoundUnavailable"));
       return;
     }
-    resolveRound(replay);
+    resolveRound(replay, { fast: true });
   }
 
   // 全員でかかる (All-out attack): commit the WHOLE round in one press. Every able member attacks
@@ -681,7 +694,7 @@ export function App() {
     if (actions.length === 0) {
       return;
     }
-    resolveRound(actions);
+    resolveRound(actions, { fast: true });
   }
 
   function menuQueueAttack(groupId: string) {
@@ -1357,6 +1370,7 @@ export function App() {
             saveAutoBattleSafety(enabled);
           }}
           instantCombatLog={instantCombatLog}
+          debugMode={debugMode}
           onToggleInstantCombatLog={(enabled) => {
             setInstantCombatLog(enabled);
             saveInstantCombatLog(enabled);

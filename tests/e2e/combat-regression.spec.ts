@@ -109,12 +109,12 @@ test("a declared round PLAYS OUT on the battlefield with a floating damage numbe
   }
   expect(sawHitNumber).toBeTruthy();
 
-  // Players who dislike the paced playback can turn it off; it defaults to on.
+  // The instant-log SKIP hides what happened, so it is a debug-only convenience — NOT offered in
+  // normal Config. The default is paced playback, and a one-press auto command (全員でかかる) plays
+  // back at 2x rather than skipping.
   await page.goto("/");
   await page.getByRole("button", { name: "Config" }).click();
-  const toggle = page.getByTestId("config-instant-combat-log");
-  await expect(toggle).toBeVisible();
-  await expect(toggle).not.toBeChecked();
+  await expect(page.getByTestId("config-instant-combat-log")).toHaveCount(0);
 });
 
 test("a win shows a result screen with XP/gold, dismissed to continue (#81)", async ({ page }) => {
