@@ -167,13 +167,13 @@ loot floods, or enemies with only one answer.
 
 ### Sub-IMP ownership and order
 
-- [ ] `IMP-023A` — **Codex / owner:** after `IMP-021A` and `IMP-022A` freeze their
+- [x] `IMP-023A` — **Codex / owner:** after `IMP-021A` and `IMP-022A` freeze their
   contracts, build a seeded simulator that uses production loaders and rules;
   do not duplicate a second set of combat, mastery, or loot formulas.
-- [ ] `IMP-023B` — **Codex / owner:** report vocation unlock timing, mastery gain,
+- [x] `IMP-023B` — **Codex / owner:** report vocation unlock timing, mastery gain,
   party-route performance, drop/appraisal/conversion income, equipment-update
   cadence, affix use, enemy-counter coverage, defeat rate, and outlier seeds.
-- [ ] `IMP-023C` — **Codex / owner:** add a documented AI-assisted authoring loop
+- [x] `IMP-023C` — **Codex / owner:** add a documented AI-assisted authoring loop
   in which AI proposes external data, the deterministic simulator rejects or
   reports it, and a human/browser review accepts player-facing feel. AI never
   mutates runtime `GameState` or silently tunes production data.
