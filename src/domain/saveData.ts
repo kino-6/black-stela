@@ -320,6 +320,8 @@ export const GameStateSchema = z.object({
   discoveredSecrets: z.array(z.string()),
   inventory: z.array(InventoryItemSchema).default([]),
   partyGold: z.number().int().nonnegative().default(75),
+  // Optional (no default) so a save that predates IMP-022C round-trips unchanged; code reads `?? 0`.
+  materials: z.number().int().nonnegative().optional(),
   claimedTreasures: z.array(z.string()).default([]),
   floorClaimedTreasures: z.array(z.string()).default([]),
   map: DungeonMapStateSchema,

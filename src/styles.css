@@ -1905,6 +1905,114 @@ textarea {
   color: #f2e6c8;
 }
 
+/* Town appraiser / loot (IMP-022C). */
+.loot-service {
+  max-height: calc(100vh - 9rem);
+  overflow: auto;
+}
+
+.loot-bulk {
+  margin: 0 0 0.7rem;
+  padding: 0.5rem 0.6rem;
+  border: 1px solid #2c332d;
+  border-radius: 4px;
+  background: #14170f;
+}
+
+.loot-bulk h4 {
+  margin: 0 0 0.3rem;
+  color: #c9a765;
+  font-size: 0.8rem;
+}
+
+.loot-bulk-preview {
+  margin: 0 0 0.4rem;
+  color: #d9c48c;
+  font-size: 0.82rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.loot-list {
+  display: grid;
+  gap: 0.4rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.loot-row {
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid #2c332d;
+  border-radius: 4px;
+  background: #12140d;
+}
+
+.loot-row.loot-rare {
+  border-color: rgba(96, 148, 201, 0.5);
+}
+
+.loot-row.loot-epic {
+  border-color: rgba(201, 167, 101, 0.6);
+  background: #1a1710;
+}
+
+.loot-row.protected {
+  opacity: 0.9;
+}
+
+.loot-row-head {
+  display: flex;
+  align-items: baseline;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+}
+
+.loot-name {
+  color: #f2e6c8;
+  flex: 1 1 auto;
+}
+
+.loot-rarity {
+  font-size: 0.66rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 0.06rem 0.36rem;
+  border-radius: 3px;
+  border: 1px solid #3a4238;
+  color: #cfd2c4;
+}
+
+.loot-rarity-rare {
+  border-color: #3f5a72;
+  color: #9fc0d9;
+}
+
+.loot-rarity-epic {
+  border-color: #6e5a2e;
+  color: #f2d58c;
+}
+
+.loot-tag {
+  font-size: 0.68rem;
+  color: #8f9188;
+  border: 1px solid #2c332d;
+  border-radius: 3px;
+  padding: 0.02rem 0.32rem;
+}
+
+.loot-tag.loot-unid {
+  color: #d9a98c;
+  border-color: #6e4a3a;
+}
+
+.loot-row-actions {
+  display: flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
 .shop-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

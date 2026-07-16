@@ -36,6 +36,10 @@ export type Command =
   | { type: "claim_quest"; questId: string }
   | { type: "change_vocation"; characterId: string; vocationId: string }
   | { type: "set_loadout"; characterId: string; loadout: string[] }
+  | { type: "appraise_item"; instanceId: string }
+  | { type: "toggle_item_lock"; instanceId: string }
+  | { type: "toggle_item_favorite"; instanceId: string }
+  | { type: "bulk_convert"; mode: "sell" | "dismantle" }
   | { type: "buy_item"; shopId: string; itemId: string }
   | { type: "sell_item"; itemId: string; plus?: number; affix?: string }
   | { type: "equip_item"; characterId: string; equipmentId: string; plus?: number; affix?: string }
@@ -370,6 +374,8 @@ export type GameEvent =
   | { type: "quest_accepted"; questId: string; questName: string }
   | { type: "quest_claimed"; questId: string; questName: string; gold: number; xp: number; itemName?: string }
   | { type: "vocation_changed"; characterId: string; characterName: string; vocationId: string; vocationName: string }
+  | { type: "item_appraised"; itemId: string; itemName: string; affix?: string; rarity: ItemRarity }
+  | { type: "bulk_converted"; mode: "sell" | "dismantle"; count: number; gold: number; materials: number }
   | { type: "party_recovered"; gold: number }
   | { type: "recovery_blocked"; goldRequired: number; goldAvailable: number }
   | { type: "party_retreated" }
@@ -578,6 +584,8 @@ export interface GameState {
   discoveredSecrets: string[];
   inventory: InventoryItem[];
   partyGold: number;
+  /** IMP-022C — salvage materials from dismantling. Optional in the save schema (defaults to 0). */
+  materials?: number;
   claimedTreasures: string[];
   /** Treasure rooms looted on the CURRENT floor visit — resets with the floor, so a
    *  re-entered floor's chambers hold loot again. */

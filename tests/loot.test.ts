@@ -10,7 +10,9 @@ import {
   sellValueOf
 } from "../src/domain/loot";
 import { equipmentInstanceKey } from "../src/domain/affixes";
-import type { InventoryItem } from "../src/domain/types";
+import { executeCommand } from "../src/domain/rulesEngine";
+import { createInitialGameState } from "../src/domain/gameState";
+import type { GameState, InventoryItem } from "../src/domain/types";
 
 const WEAPON = "equip.militia-sabre";
 
@@ -80,6 +82,30 @@ describe("rare-loot contract", () => {
     const epic: InventoryItem = { ...common, rarity: "epic" };
     expect(sellValueOf(epic)).toBeGreaterThan(sellValueOf(common));
     expect(dismantleYield(epic)).toBeGreaterThan(dismantleYield(common));
+  });
+
+  it("appraise / lock / bulk-convert commands respect the protection guard (IMP-022C)", () => {
+    const rare: InventoryItem = { id: WEAPON, name: "Sabre", kind: "equipment", quantity: 1, slot: "weapon", sellValue: 5, rarity: "rare", affix: "affix.saltbitten", identified: false, instanceId: "inst-rare" };
+    const common: InventoryItem = { id: WEAPON, name: "Sabre", kind: "equipment", quantity: 1, slot: "weapon", sellValue: 5, rarity: "common", identified: true };
+    const keeper: InventoryItem = { id: WEAPON, name: "Sabre", kind: "equipment", quantity: 1, rarity: "rare", affix: "affix.saltbitten", identified: true, locked: true, instanceId: "inst-keep" };
+    const base: GameState = { ...createInitialGameState(), phase: "town", inventory: [rare, common, keeper], partyGold: 0 };
+
+    // A bulk sell now leaves the unidentified rare AND the locked keeper, taking only the common.
+    const soldEarly = executeCommand(base, defaultWorld, { type: "bulk_convert", mode: "sell" });
+    expect(soldEarly.inventory.map((i) => i.instanceId ?? i.id)).toEqual(expect.arrayContaining(["inst-rare", "inst-keep"]));
+    expect(soldEarly.inventory.some((i) => i.rarity === "common")).toBe(false); // the common was sold
+    expect(soldEarly.partyGold).toBeGreaterThan(0);
+
+    // Appraise the rare → it is no longer protected by "unidentified".
+    const appraised = executeCommand(base, defaultWorld, { type: "appraise_item", instanceId: "inst-rare" });
+    expect(appraised.inventory.find((i) => i.instanceId === "inst-rare")?.identified).toBe(true);
+
+    // Locking the appraised rare re-protects it from a subsequent bulk dismantle.
+    const locked = executeCommand(appraised, defaultWorld, { type: "toggle_item_lock", instanceId: "inst-rare" });
+    const dismantled = executeCommand(locked, defaultWorld, { type: "bulk_convert", mode: "dismantle" });
+    expect(dismantled.inventory.some((i) => i.instanceId === "inst-rare")).toBe(true); // locked → kept
+    expect(dismantled.inventory.some((i) => i.instanceId === "inst-keep")).toBe(true); // locked → kept
+    expect(dismantled.materials ?? 0).toBeGreaterThan(0); // the common yielded materials
   });
 
   it("applies an authored affix's bonus in combat via the merged catalog", () => {

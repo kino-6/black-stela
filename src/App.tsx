@@ -32,6 +32,7 @@ import { ShopPanel } from "./components/ShopPanel";
 import { QuestBoardPanel } from "./components/QuestBoardPanel";
 import { questBoardEntries } from "./domain/quests";
 import { CareerPanel } from "./components/CareerPanel";
+import { LootPanel } from "./components/LootPanel";
 import { TempoIndicator } from "./components/TempoIndicator";
 import { createInitialGameState, addCharacter } from "./domain/gameState";
 import {
@@ -141,7 +142,7 @@ import { cssArtVariables, portraitUrl, setActiveArtPack } from "./ui/artAssets";
 
 type GuildCreationStep = "briefing" | "class" | "appearance" | "bonus" | "name";
 type GuildOfferState = "ask" | "suggestion" | "dismissed";
-type TownMode = "guild" | "shop" | "recovery" | "records" | "quests" | "career" | "entry";
+type TownMode = "guild" | "shop" | "recovery" | "records" | "quests" | "career" | "loot" | "entry";
 type AppScreen = "title" | "config" | "scenario" | "game";
 
 const AUTO_SAVE_SLOT = "autosave";
@@ -2412,6 +2413,21 @@ export function App() {
                   party={state.party}
                   selectedMemberId={careerMemberId ?? state.party[0]?.id ?? null}
                   onSelectMember={setCareerMemberId}
+                  latestLogText={latestLogText}
+                  latestEventType={latestEventType ?? null}
+                  onCommand={run}
+                  onClose={() => enterTownMode("entry")}
+                />
+              )}
+              {townMode === "loot" && (
+                <LootPanel
+                  t={t}
+                  locale={locale}
+                  world={activeWorld}
+                  party={state.party}
+                  inventory={state.inventory}
+                  partyGold={state.partyGold}
+                  materials={state.materials ?? 0}
                   latestLogText={latestLogText}
                   latestEventType={latestEventType ?? null}
                   onCommand={run}

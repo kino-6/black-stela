@@ -216,6 +216,19 @@ export function projectEventToLog(event: GameEvent, locale: Locale = "en", world
         }),
         tags: ["town", "vocation"]
       };
+    case "item_appraised":
+      return {
+        text: t("events.itemAppraised", { item: resolveCatalogName(event.itemId, event.itemName, world, locale) }),
+        tags: ["town", "loot"]
+      };
+    case "bulk_converted":
+      return {
+        text:
+          event.mode === "sell"
+            ? t("events.bulkSold", { count: event.count, gold: event.gold })
+            : t("events.bulkDismantled", { count: event.count, materials: event.materials }),
+        tags: ["town", "loot"]
+      };
     case "party_recovered":
       return { text: t("events.partyRecovered", { gold: event.gold }), tags: ["town", "recovery"] };
     case "recovery_blocked":

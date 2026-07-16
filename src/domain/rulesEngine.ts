@@ -41,7 +41,7 @@ import {
   resolveVocationState,
   setLoadout
 } from "./vocations";
-import { rollEquipmentDrop } from "./loot";
+import { appraiseInstance, dismantleYield, isProtectedFromBulk, isUnidentifiedRare, rollEquipmentDrop, sellValueOf } from "./loot";
 import type {
   Character,
   CharacterClassId,
@@ -212,6 +212,14 @@ export function resolveCommand(state: GameState, world: ScenarioWorld, command: 
       return changeVocationCommand(state, world, command.characterId, command.vocationId);
     case "set_loadout":
       return setLoadoutCommand(state, command.characterId, command.loadout);
+    case "appraise_item":
+      return appraiseItemCommand(state, command.instanceId);
+    case "toggle_item_lock":
+      return toggleItemFlagCommand(state, command.instanceId, "locked");
+    case "toggle_item_favorite":
+      return toggleItemFlagCommand(state, command.instanceId, "favorite");
+    case "bulk_convert":
+      return bulkConvertCommand(state, world, command.mode);
     case "buy_item":
       return buyItem(state, world, command.shopId, command.itemId);
     case "sell_item":
@@ -1716,6 +1724,90 @@ function setLoadoutCommand(state: GameState, characterId: string, loadout: strin
     },
     events: []
   };
+}
+
+// The equipmentInstanceKeys currently worn by the party — bulk conversion must not touch worn gear.
+function equippedInstanceKeys(state: GameState): Set<string> {
+  const keys = new Set<string>();
+  for (const member of state.party) {
+    for (const equipped of Object.values(member.equipment)) {
+      if (equipped) {
+        keys.add(equipmentInstanceKey(equipped.id, equipped.plus, equipped.affix));
+      }
+    }
+  }
+  return keys;
+}
+
+// IMP-022C: appraise an unidentified rare, revealing its rolled affix. Town only.
+function appraiseItemCommand(state: GameState, instanceId: string): CommandResult {
+  if (state.phase !== "town") {
+    return noChange(state);
+  }
+  const item = state.inventory.find((candidate) => candidate.instanceId === instanceId);
+  if (!item || !isUnidentifiedRare(item)) {
+    return noChange(state);
+  }
+  const next: GameState = {
+    ...state,
+    inventory: state.inventory.map((candidate) => (candidate.instanceId === instanceId ? appraiseInstance(candidate) : candidate)),
+    turn: state.turn + 1
+  };
+  return withEvents(next, [
+    { type: "item_appraised", itemId: item.id, itemName: item.name, affix: item.affix, rarity: item.rarity ?? "rare" }
+  ]);
+}
+
+// IMP-022C: toggle a per-instance protection flag (lock / favorite). Town only, no turn cost.
+function toggleItemFlagCommand(state: GameState, instanceId: string, flag: "locked" | "favorite"): CommandResult {
+  if (state.phase !== "town") {
+    return noChange(state);
+  }
+  const item = state.inventory.find((candidate) => candidate.instanceId === instanceId);
+  if (!item) {
+    return noChange(state);
+  }
+  return {
+    state: {
+      ...state,
+      inventory: state.inventory.map((candidate) =>
+        candidate.instanceId === instanceId ? { ...candidate, [flag]: !candidate[flag] } : candidate
+      )
+    },
+    events: []
+  };
+}
+
+// IMP-022C: convert every UNPROTECTED equipment item at once — sell for gold or dismantle for
+// materials. Equipped / locked / favorite / unidentified-rare items are left untouched (the guard).
+function bulkConvertCommand(state: GameState, world: ScenarioWorld, mode: "sell" | "dismantle"): CommandResult {
+  if (state.phase !== "town") {
+    return noChange(state);
+  }
+  const equippedKeys = equippedInstanceKeys(state);
+  const convertible = state.inventory.filter(
+    (item) => item.kind === "equipment" && !isProtectedFromBulk(item, equippedKeys)
+  );
+  if (convertible.length === 0) {
+    return noChange(state);
+  }
+  const goldGained = mode === "sell" ? convertible.reduce((total, item) => total + sellValueOf(item) * item.quantity, 0) : 0;
+  const materialsGained = mode === "dismantle" ? convertible.reduce((total, item) => total + dismantleYield(item), 0) : 0;
+  const convertedCount = convertible.reduce((total, item) => total + item.quantity, 0);
+  const convertedKeys = new Set(convertible.map((item) => item.instanceId ?? equipmentInstanceKey(item.id, item.plus, item.affix)));
+
+  const next: GameState = {
+    ...state,
+    inventory: state.inventory.filter(
+      (item) => !convertedKeys.has(item.instanceId ?? equipmentInstanceKey(item.id, item.plus, item.affix))
+    ),
+    partyGold: state.partyGold + goldGained,
+    materials: (state.materials ?? 0) + materialsGained,
+    turn: state.turn + 1
+  };
+  return withEvents(next, [
+    { type: "bulk_converted", mode, count: convertedCount, gold: goldGained, materials: materialsGained }
+  ]);
 }
 
 function buyItem(state: GameState, world: ScenarioWorld, shopId: string, itemId: string): CommandResult {
