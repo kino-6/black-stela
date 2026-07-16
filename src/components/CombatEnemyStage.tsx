@@ -12,6 +12,8 @@ interface CombatEnemyStageProps {
   anchors: EnemyAnchor[];
   selectedTargetId?: string;
   targetingActive: boolean;
+  /** Pick this group as the attack target by pointing at it on the stage (not a text list). */
+  onSelectTarget?: (groupId: string) => void;
   activeBeat: CombatBeat | null;
   beatKey?: number;
   locale: Locale;
@@ -37,6 +39,7 @@ export function CombatEnemyStage({
   anchors,
   selectedTargetId,
   targetingActive,
+  onSelectTarget,
   activeBeat,
   beatKey,
   locale,
@@ -54,6 +57,7 @@ export function CombatEnemyStage({
           const selected = targetingActive && group.id === selectedTargetId;
           const hit = activeBeat?.targetGroupId === group.id;
           const dead = group.count === 0;
+          const targetable = targetingActive && !dead && Boolean(onSelectTarget);
           const hpPct = enemyGroupHealthPercent(group);
           const name = localizedEnemyGroupName(group, locale);
           return (
@@ -66,7 +70,7 @@ export function CombatEnemyStage({
               data-enemy-group-id={group.id}
               data-health-percent={hpPct.toFixed(3)}
               data-enemy-count={group.count}
-              className={`enemy-mark${selected ? " selected" : ""}${hit ? " beat-hit" : ""}${dead ? " defeated" : ""}`}
+              className={`enemy-mark${selected ? " selected" : ""}${targetable ? " targetable" : ""}${hit ? " beat-hit" : ""}${dead ? " defeated" : ""}`}
               // Anchored to the creatures' feet. Until the scene reports (first frame, or a
               // headless test with no WebGL) they fall back to a sane spread so the labels
               // are never stranded off-screen.
@@ -74,7 +78,16 @@ export function CombatEnemyStage({
                 left: `${anchor?.xPct ?? 50}%`,
                 top: `${anchor?.yPct ?? 72}%`
               }}
+              // Point at the enemy ON THE STAGE to target it — not a business-app list row.
+              onPointerDown={targetable ? () => onSelectTarget!(group.id) : undefined}
             >
+              {/* Target reticle: a pulsing frame + arrow over the chosen creature, so "this is the
+                  one you will strike" reads on the stage itself. */}
+              {selected && (
+                <span className="enemy-reticle" aria-hidden="true">
+                  <span className="enemy-reticle-arrow" />
+                </span>
+              )}
               {hit && (
                 <>
                   <span className="fx-flash" key={`f${beatKey}`} aria-hidden="true" />

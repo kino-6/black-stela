@@ -27,6 +27,7 @@ interface CombatCockpitProps {
   enemyGroups: CombatEnemyGroup[];
   livingEnemyGroups: CombatEnemyGroup[];
   selectedTarget?: CombatEnemyGroup;
+  onSelectTarget?: (groupId: string) => void;
   activeBeat: CombatBeat | null;
   /** Playback index; also the "playback is running" signal (undefined = interactive). */
   beatKey?: number;
@@ -85,6 +86,7 @@ export function CombatCockpit({
   enemyGroups,
   livingEnemyGroups,
   selectedTarget,
+  onSelectTarget,
   activeBeat,
   beatKey,
   playingBack,
@@ -150,6 +152,7 @@ export function CombatCockpit({
         anchors={enemyAnchors}
         selectedTargetId={selectedTarget?.id}
         targetingActive={!playingBack}
+        onSelectTarget={onSelectTarget}
         activeBeat={activeBeat}
         beatKey={beatKey}
         locale={locale}

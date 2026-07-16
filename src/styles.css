@@ -2928,6 +2928,43 @@ textarea {
   box-shadow: 0 0 0 1px #ffd27a, 0 0 10px rgba(255, 210, 122, 0.5);
 }
 
+/* You point at the enemy ON THE STAGE to target it — a cursor + a soft lift on hover, so the
+   creatures read as selectable, not a business-app list. */
+.enemy-mark.targetable {
+  cursor: pointer;
+}
+
+.enemy-mark.targetable:hover .enemy-mark-name {
+  color: #ffe6a6;
+  text-shadow: 0 0 8px rgba(255, 210, 122, 0.5), 0 1px 2px #000;
+}
+
+/* Target reticle: a bright, pulsing downward arrow that sits over the chosen creature (above its
+   feet-mark), so "this is the one you will strike" reads on the stage itself. */
+.enemy-reticle {
+  position: absolute;
+  left: 50%;
+  bottom: 100%;
+  transform: translate(-50%, -0.4rem);
+  pointer-events: none;
+  animation: reticle-bob 0.9s ease-in-out infinite;
+}
+
+.enemy-reticle-arrow {
+  display: block;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 0.8rem 0.55rem 0 0.55rem;
+  border-color: #ffd27a transparent transparent transparent;
+  filter: drop-shadow(0 0 5px rgba(255, 210, 122, 0.8));
+}
+
+@keyframes reticle-bob {
+  0%, 100% { transform: translate(-50%, -0.4rem); }
+  50% { transform: translate(-50%, -0.9rem); }
+}
+
 .enemy-mark.beat-hit {
   animation: beat-shake 0.28s ease-out;
 }

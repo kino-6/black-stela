@@ -2505,6 +2505,7 @@ export function App() {
                   enemyGroups={displayedEnemyGroups}
                   livingEnemyGroups={livingEnemyGroups}
                   selectedTarget={selectedTarget}
+                  onSelectTarget={(groupId) => setSelectedTargetId(groupId)}
                   activeBeat={activeBeat}
                   beatKey={playback?.index}
                   playingBack={Boolean(playback)}
