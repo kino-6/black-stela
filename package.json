@@ -11,10 +11,11 @@
     "test:e2e": "playwright test",
     "selfplay:browser": "playwright test tests/e2e/selfplay.spec.ts --workers=1",
     "gate:final": "FINAL_GATE=1 playwright test",
-    "headless:reachability": "esbuild scripts/headless-clear.ts --bundle --platform=node --format=esm --loader:.md=text --outfile=.tmp/headless-clear.mjs --log-level=error && node .tmp/headless-clear.mjs",
-    "headless:clear": "esbuild scripts/headless-clear.ts --bundle --platform=node --format=esm --loader:.md=text --outfile=.tmp/headless-clear.mjs --log-level=error && node .tmp/headless-clear.mjs",
-    "headless:probes": "esbuild scripts/headless-probes.ts --bundle --platform=node --format=esm --loader:.md=text --outfile=.tmp/headless-probes.mjs --log-level=error && node .tmp/headless-probes.mjs",
-    "headless:combat": "esbuild scripts/combat-probes.ts --bundle --platform=node --format=esm --loader:.md=text --outfile=.tmp/combat-probes.mjs --log-level=error && node .tmp/combat-probes.mjs",
+    "headless:reachability": "node scripts/run-vite-module.mjs scripts/headless-clear.ts",
+    "headless:clear": "node scripts/run-vite-module.mjs scripts/headless-clear.ts",
+    "headless:probes": "node scripts/run-vite-module.mjs scripts/headless-probes.ts",
+    "headless:combat": "node scripts/run-vite-module.mjs scripts/combat-probes.ts",
+    "sim:content": "node scripts/run-vite-module.mjs scripts/content-sim.ts",
     "tauri": "tauri"
   },
   "dependencies": {

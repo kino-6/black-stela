@@ -4,14 +4,14 @@ Last browser acceptance: 2026-07-15, Chromium, 1280x720.
 
 ## Active Status
 
-`IMP-001` through `IMP-020` are archived. `IMP-021`/`IMP-022`/`IMP-023` are in
-progress: the Claude-owned contracts and player routes are shipped, and the
-deterministic tooling is landing; the remaining content authoring is enrichment.
+`IMP-001` through `IMP-020` are archived. `IMP-021B` and `IMP-022B` now ship
+authored content for both worlds. Their controller routes pass, but independent
+visual acceptance remains blocked by the player-route findings recorded below.
 
 | Item | Priority | State | Player-visible problem |
 | --- | --- | --- | --- |
-| `IMP-021` | High | Shipped (A,C); B enriched | Class choice ends at the current class instead of becoming an adventurer's accumulated career. |
-| `IMP-022` | High | Shipped (A,C,D); B enriched | Rare drops lack an identification, comparison, retention, and bulk-conversion loop that makes repeated expeditions rewarding. |
+| `IMP-021` | High | A/B/C shipped; V blocked | Class choice ends at the current class instead of becoming an adventurer's accumulated career. |
+| `IMP-022` | High | A/B/C/D shipped; V blocked | Rare drops lack an identification, comparison, retention, and bulk-conversion loop that makes repeated expeditions rewarding. |
 | `IMP-023` | High | Static Gate + seeded simulator shipped | Externalized jobs, affixes, enemies, and economy data have no deterministic simulation Gate against dominant builds, dead effects, or inflation. |
 
 Archived work:
@@ -60,7 +60,7 @@ unlock stronger advanced vocations.
   data, character/save schema, mastery gain, unlock prerequisites, retained
   techniques, migration, and content validation. This lands before other
   `IMP-021` work edits shared domain types.
-- [ ] `IMP-021B` — **Codex / content and simulation owner:** author an original
+- [x] `IMP-021B` — **Codex / content and simulation owner:** author an original
   basic-to-advanced vocation graph and seeded progression fixtures after
   `IMP-021A` freezes the contract. Check intended unlock floors and low-floor
   mastery-farming decay without changing the runtime contract in parallel.
@@ -71,6 +71,22 @@ unlock stronger advanced vocations.
 - [ ] `IMP-021V` — **Codex / independent verifier:** run browser normal-route
   acceptance at 1920x1080 and the 1280x720 minimum Gate, then compare the
   progression report with actual town and combat behavior.
+
+### IMP-021V verifier result (2026-07-17)
+
+Controller-only normal routes pass at 1920x1080 (黒碑) and 1280x720 Japanese
+(翠碑), with no pointer events, no page scroll, and stable Cancel. Visual
+acceptance remains blocked:
+
+- The service occupies a narrow left column and leaves most of the screen empty,
+  reading as a long web list rather than a town command window.
+- Authored vocation `signature`, stat changes, equipment access, and granted
+  techniques are not shown, so a player cannot tell what an advanced vocation
+  is good at before pursuing it.
+- All basic and advanced vocations share one long scrolling list. The screen
+  needs staged basic/advanced destinations or another bounded command structure.
+- Introductory copy explains the implementation ("level stays; mastery grows
+  apart") instead of presenting the career decision through the game world.
 
 ### Acceptance
 
@@ -111,7 +127,7 @@ into a small, useful set of assets.
 - [x] `IMP-022A` — **Claude Code / contract owner:** define external affix pools,
   rarity/slot rules, seeded rolling, item-instance identity, save migration,
   appraisal state, favorite/lock state, and sale/dismantle yields.
-- [ ] `IMP-022B` — **Codex / content owner:** author original affix pools by
+- [x] `IMP-022B` — **Codex / content owner:** author original affix pools by
   equipment category, floor tier, and enemy family. Every effect family must
   have recurring authored encounters where it matters, with at least two viable
   answers to each dangerous enemy rather than a mandatory key item.
@@ -127,6 +143,25 @@ into a small, useful set of assets.
   Japanese item naming, enemy-record disclosure, comparison clarity, protection
   rules, one-screen town handling, and the resulting economy report without
   changing `IMP-022A` types.
+
+### IMP-022V verifier result (2026-07-17)
+
+The Japanese appraiser is reachable at 1280x720 through the controller-only
+normal route with no pointer events or overflow. Rule tests prove protected
+items survive bulk conversion. Visual and economy acceptance remain blocked:
+
+- Appraisal costs no gold, despite the approved rare-item loop using appraisal
+  as a deliberate cost.
+- Bulk sell/dismantle executes immediately; there is no filter/selection stage
+  or confirm/cancel step after the preview.
+- Dismantling creates `materials`, but no rule or town service spends them.
+- The appraiser does not show current-equipment comparison or offer an equip
+  decision after appraisal.
+- The frozen affix contract exposes only attack/defense/accuracy/speed bonuses;
+  it cannot yet author regeneration suppression, status resistance, species
+  slaying, or other enemy-specific effects named by the acceptance criteria.
+- The empty and populated layouts use a narrow service column with a large
+  unused field, retaining the admin/web-service presentation the Gate forbids.
 
 ### Acceptance
 

@@ -44,3 +44,18 @@ family has ≥2 answers / no dead affix" balance check is IMP-023 (the simulator
 - Bulk sell/dismantle is filterable, reversible before confirm, shows exact totals, and never
   consumes equipped / locked / favorite / unidentified items (IMP-022C UI enforces via the guard).
 - Currency/material count stays small; no profit loops.
+
+## IMP-022B — authored affix pools (DONE 2026-07-17)
+
+- 黒碑 and 翠碑 each ship eight original rare/epic affixes.
+- Every equipment slot has an authored roll, and attack, defense, accuracy, and
+  speed each have more than one authored answer.
+- The seeded simulator derives useful strategy axes from dangerous enemy data
+  and reports any enemy that has fewer than two affix-supported approaches by
+  the floor where it appears.
+- `tests/contentAuthoring.test.ts` and `tests/contentSim.test.ts` lock both world
+  packs.
+
+`IMP-022V` remains open: appraisal is currently free, bulk conversion has no
+confirmation/filter stage, dismantled materials have no spending rule, and the
+appraiser does not show equipment comparison.

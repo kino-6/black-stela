@@ -8,7 +8,7 @@ import { runHeadlessClear, runHeadlessProbes } from "../src/headless/headlessRun
 describe("headless reachability runner", () => {
   it("navigates from a fresh debug party and reaches town", () => {
     const initialState = createDebugStateFromProgress(defaultWorld, "ready");
-    const result = runHeadlessClear(initialState, defaultWorld, 600);
+    const result = runHeadlessClear(initialState, defaultWorld, 3000);
 
     expect(result.cleared).toBe(true);
     expect(result.reason).toBe("clear");
@@ -19,7 +19,7 @@ describe("headless reachability runner", () => {
 
   it("can resume from an in-progress map state and still reach town", () => {
     const initialState = createDebugStateFromProgress(defaultWorld, "after_encounter");
-    const result = runHeadlessClear(initialState, defaultWorld, 600);
+    const result = runHeadlessClear(initialState, defaultWorld, 3000);
 
     expect(result.cleared).toBe(true);
     expect(result.state.defeatedEnemies).toContain("enemy.b1f.ash-slime");

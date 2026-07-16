@@ -96,6 +96,19 @@ interface CharacterVocationState {
 
 ## Out of scope (later sub-IMPs)
 
-- IMP-021B (Codex): the authored basic→advanced graph + seeded progression fixtures (黒碑 ships two
-  advanced vocations now as a stand-in; Codex enriches the graph).
 - IMP-023: the deterministic simulator that gates dominant/compulsory routes.
+
+## IMP-021B — authored vocation graphs (DONE 2026-07-17)
+
+- 黒碑 and 翠碑 each ship six original advanced destinations.
+- Every one of the 12 shared basic vocations opens at least one destination; no
+  basic vocation is required by every destination.
+- `tests/contentAuthoring.test.ts` locks prerequisite coverage, localized names
+  and signatures, known technique ids, and the absence of leaked class ids in
+  Japanese copy.
+- `simulateContent` reports prerequisite use, uncovered/compulsory basics,
+  estimated fights per destination, and weak-floor versus matched-floor mastery
+  gain.
+
+`IMP-021V` remains open because the current town screen does not display the
+authored signature, stat changes, equipment access, or granted techniques.

@@ -11,8 +11,10 @@ affixes, compulsory careers, loot floods, or enemies with a single answer.
 - **Seeded content/economy SIMULATOR** (`src/headless/contentSim.ts` `simulateContent`, IMP-023A/B):
   runs the PRODUCTION drop/economy/mastery rules over a world + seed and reports the rarity split,
   per-affix usage (unused = candidate dead content), sell/dismantle income, mastery timing, and
-  in/out-of-band findings against versioned, scenario-overridable thresholds. Identical seed ⇒
-  identical report. Locked by `tests/contentSim.test.ts`.
+  in/out-of-band findings against versioned thresholds. It also reports basic-vocation route
+  coverage, compulsory prerequisites, weak-floor mastery decay, estimated unlock fights, and
+  dangerous enemies with fewer than two affix-supported strategies. Identical seed ⇒ identical
+  report. Locked by `tests/contentSim.test.ts`.
 - **Acceptance harness** (`reviewAffixProposal` / `reviewVocationProposal`, IMP-023C): merges a
   PROPOSED affix/vocation into a candidate world and runs the same validator + simulator a release
   would, returning accept/reject with reasons. The proposer (AI/Codex) and the final "does it feel
@@ -36,9 +38,12 @@ IMP-023V parity verifier (reproduce selected seeds in browser) for any Codex sim
 
 Locked by `tests/contentGate.test.ts` (each rejection + the shipped default world passing clean).
 
-## Deferred to the Codex simulator (IMP-023A/B thresholds)
+## Delivered Codex simulator checks
 
 - Enemy counter coverage (every dangerous enemy has ≥2 supported approaches, no mandatory key),
-  vocation unlock TIMING and mastery-farming decay, drop/appraisal/conversion income cadence, and
-  outlier seeds. These need the seeded run over production rules and versioned, scenario-overridable
-  thresholds — the simulator's job, not a static loader check.
+  vocation prerequisite coverage and unlock timing, mastery-farming decay, affix roll coverage,
+  rarity bands, and sell/dismantle income are reported from production rules.
+
+Still pending under `IMP-021V`/`IMP-022V`: player-facing vocation decision
+quality, appraisal cost, conversion confirmation/filtering, a material sink,
+equipment comparison, and Claude's selected-seed browser parity review.

@@ -14,7 +14,7 @@ affixes:
   - id: affix.ashguarded
     label: Ash-Guarded
     slots: [offhand, body, head]
-    minFloor: 3
+    minFloor: 2
     rarity: rare
     weight: 3
     defenseBonus: 3
@@ -45,7 +45,32 @@ affixes:
     rarity: epic
     weight: 2
     attackBonus: 4
-    locales: { ja: { label: 破滅の } }
+    locales: { ja: { label: 破城の } }
+  - id: affix.surestruck
+    label: Surestruck
+    slots: [weapon, hands]
+    minFloor: 2
+    rarity: rare
+    weight: 4
+    accuracyBonus: 4
+    locales: { ja: { label: 必中の } }
+  - id: affix.cinderbound
+    label: Cinder-Bound
+    slots: [offhand, body, head]
+    minFloor: 5
+    rarity: rare
+    weight: 3
+    defenseBonus: 2
+    speedBonus: 1
+    locales: { ja: { label: 灰締めの } }
+  - id: affix.gravesealed
+    label: Grave-Sealed
+    slots: [head, accessory]
+    minFloor: 7
+    rarity: epic
+    weight: 2
+    defenseBonus: 4
+    locales: { ja: { label: 墓封じの } }
 ---
 
 # Affixes — Gate of Ash

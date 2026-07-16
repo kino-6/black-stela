@@ -51,16 +51,17 @@ Three big product capabilities are approved as `Proposed` with owner boundaries 
 Codex owns content authoring, art, and the deterministic simulator; each has an independent
 browser verifier.** Do not start `*B/*C` until the matching `*A` contract is frozen.
 
-- [ ] **IMP-021 Career/vocation mastery** — build = the history of vocations mastered; level
-  persists, mastery advances separately, techniques stay learned, prerequisites gate advanced
-  vocations. `IMP-021A` (contract: vocation data + save schema + mastery/unlock/migration) is
-  Claude Code and lands FIRST.
-- [ ] **IMP-022 Rare equipment, appraisal, bulk conversion** — rare affixes, appraisal, favorite/
-  lock, previewed bulk sell/dismantle, an enemy record. `IMP-022A` (affix pools/rarity/instance
-  identity/appraisal state contract) is Claude Code and lands first.
-- [ ] **IMP-023 Deterministic content & economy simulation Gate** — a seeded simulator over the
-  PRODUCTION loaders/rules that gates dominant builds, dead affixes, and inflation. Mostly Codex;
-  depends on `IMP-021A` + `IMP-022A`. Claude Code is the independent parity verifier (`IMP-023V`).
+- [ ] **IMP-021 Career/vocation mastery** — A/B/C shipped. Codex authored six advanced
+  destinations in each world, covering all 12 basics, and verified controller routes at
+  1920x1080/1280x720. `IMP-021V` remains blocked on the visual/decision findings in
+  [Improve.md](Improve.md).
+- [ ] **IMP-022 Rare equipment, appraisal, bulk conversion** — A/B/C/D shipped. Codex authored
+  eight affixes in each world and the simulator finds at least two affix strategies for every
+  dangerous enemy. `IMP-022V` remains blocked on appraisal cost, confirmation/filtering,
+  material use, comparison, and presentation findings in [Improve.md](Improve.md).
+- [ ] **IMP-023 Deterministic content & economy simulation Gate** — A/B/C shipped and extended
+  with vocation-route coverage, weak-floor mastery decay, and dangerous-enemy affix coverage.
+  Claude Code remains the independent parity verifier (`IMP-023V`).
 
 ## Previous Milestone: all handheld Plan lanes cleared (shipped)
 

@@ -5,9 +5,9 @@
 // numbers here are balance evidence only — browser play remains required for feel. The AI-assisted
 // authoring loop (IMP-023C) layers on top of this report; it is Codex-owned.
 import { dismantleYield, resolveAffixCatalog, rollEquipmentDrop, sellValueOf } from "../domain/loot";
-import { MASTERY_POINTS_PER_RANK, masteryGain } from "../domain/vocations";
+import { BUILTIN_VOCATION_IDS, MASTERED_RANK, MASTERY_POINTS_PER_RANK, masteryGain } from "../domain/vocations";
 import { validateScenarioGraph } from "../services/scenarioPackLoader";
-import type { ItemRarity, ScenarioAffix, ScenarioVocation, ScenarioWorld } from "../domain/types";
+import type { Enemy, ItemRarity, ScenarioAffix, ScenarioVocation, ScenarioWorld } from "../domain/types";
 
 export interface ContentSimOptions {
   /** Seed — identical seed + world + options ⇒ identical report. */
@@ -43,7 +43,73 @@ export interface ContentSimReport {
   economy: { sellGold: number; dismantleMaterials: number };
   /** Fights (at memberLevel, against a representative floor enemy) to bank one mastery rank. */
   fightsToFirstMasteryRank: number;
+  vocations: {
+    advancedCount: number;
+    prerequisiteUse: Record<string, number>;
+    uncoveredBasics: string[];
+    requiredByAllAdvanced: string[];
+    weakFloorMasteryGain: number;
+    matchedFloorMasteryGain: number;
+    estimatedFightsToUnlock: Record<string, number>;
+  };
+  enemyCounters: {
+    strategiesByEnemy: Record<string, AffixStrategy[]>;
+    uncoveredEnemies: string[];
+  };
   findings: string[];
+}
+
+type AffixStrategy = "attack" | "defense" | "accuracy" | "speed";
+
+function inferEnemyFloor(enemy: Enemy): number {
+  const authoredFloor = enemy.id.match(/(?:^|\.)(?:b|g)(\d+)f?(?:\.|$)/i)?.[1];
+  return authoredFloor ? Number(authoredFloor) : Math.max(1, enemy.dangerTier ?? enemy.level ?? 1);
+}
+
+function affixStrategiesAtFloor(world: ScenarioWorld, floor: number): Set<AffixStrategy> {
+  const strategies = new Set<AffixStrategy>();
+  for (const affix of world.affixes.filter((candidate) => candidate.minFloor <= floor)) {
+    if ((affix.attackBonus ?? 0) > 0) strategies.add("attack");
+    if ((affix.defenseBonus ?? 0) > 0) strategies.add("defense");
+    if ((affix.accuracyBonus ?? 0) > 0) strategies.add("accuracy");
+    if ((affix.speedBonus ?? 0) > 0) strategies.add("speed");
+  }
+  return strategies;
+}
+
+function usefulStrategiesAgainst(enemy: Enemy): Set<AffixStrategy> {
+  const useful = new Set<AffixStrategy>();
+  const role = enemy.role ?? "attrition";
+  const hasStatusPressure =
+    Boolean(enemy.inflicts) ||
+    enemy.abilities?.some((ability) => ability.effect.kind === "status") ||
+    role === "status";
+  const hasHeavyPressure =
+    (enemy.damageMax ?? enemy.attack + 1) >= 6 ||
+    role === "ambusher" ||
+    role === "caster" ||
+    role === "miniboss" ||
+    role === "boss";
+  const isHardTarget =
+    (enemy.armor ?? 0) >= 2 ||
+    enemy.hp >= 15 ||
+    role === "blocker" ||
+    role === "miniboss" ||
+    role === "boss";
+  const rewardsTempoOrPrecision =
+    (enemy.speed ?? 4) >= 6 ||
+    enemy.elevation === "air" ||
+    role === "ambusher" ||
+    role === "caster" ||
+    role === "status";
+
+  if (isHardTarget) useful.add("attack");
+  if (hasHeavyPressure || hasStatusPressure) useful.add("defense");
+  if (rewardsTempoOrPrecision) {
+    useful.add("accuracy");
+    useful.add("speed");
+  }
+  return useful;
 }
 
 // Round-robin the world's equipment so every slot gets sampled; the drop roller decides rarity/affix.
@@ -75,6 +141,64 @@ export function simulateContent(world: ScenarioWorld, options: ContentSimOptions
   const probeEnemy = { level: options.floor, dangerTier: Math.max(1, Math.min(5, options.floor)) };
   const perFight = Math.max(1, masteryGain(probeLevel, probeEnemy));
   const fightsToFirstMasteryRank = Math.ceil(MASTERY_POINTS_PER_RANK / perFight);
+  const weakFloorMasteryGain = masteryGain(probeLevel, { level: 1, dangerTier: 1 });
+  const matchedFloorMasteryGain = masteryGain(probeLevel, {
+    level: probeLevel,
+    dangerTier: Math.max(1, Math.min(5, probeLevel))
+  });
+
+  const advancedVocations = world.vocations.filter((vocation) => vocation.tier === "advanced");
+  const prerequisiteUse = Object.fromEntries(BUILTIN_VOCATION_IDS.map((id) => [id, 0]));
+  for (const vocation of advancedVocations) {
+    for (const prerequisite of vocation.requires?.mastered ?? []) {
+      if (prerequisite in prerequisiteUse) {
+        prerequisiteUse[prerequisite] += 1;
+      }
+    }
+  }
+  const uncoveredBasics = BUILTIN_VOCATION_IDS.filter((id) => prerequisiteUse[id] === 0);
+  const requiredByAllAdvanced =
+    advancedVocations.length === 0
+      ? []
+      : BUILTIN_VOCATION_IDS.filter((id) =>
+          advancedVocations.every((vocation) => (vocation.requires?.mastered ?? []).includes(id))
+        );
+  const estimatedFightsToUnlock = Object.fromEntries(
+    advancedVocations.map((vocation) => {
+      const requiredCount = vocation.requires?.mastered?.length ?? 0;
+      const targetLevel = vocation.requires?.minLevel ?? probeLevel;
+      const pointsPerFight = Math.max(
+        1,
+        masteryGain(targetLevel, {
+          level: targetLevel,
+          dangerTier: Math.max(1, Math.min(5, targetLevel))
+        })
+      );
+      const fightsPerMastery = Math.ceil((MASTERY_POINTS_PER_RANK * MASTERED_RANK) / pointsPerFight);
+      return [vocation.id, requiredCount * fightsPerMastery];
+    })
+  );
+
+  const dangerousEnemies = world.enemies.filter(
+    (enemy) =>
+      (enemy.dangerTier ?? 1) >= 3 ||
+      enemy.role === "status" ||
+      enemy.role === "ambusher" ||
+      enemy.role === "caster" ||
+      enemy.role === "miniboss" ||
+      enemy.role === "boss"
+  );
+  const strategiesByEnemy: Record<string, AffixStrategy[]> = {};
+  const uncoveredEnemies: string[] = [];
+  for (const enemy of dangerousEnemies) {
+    const available = affixStrategiesAtFloor(world, inferEnemyFloor(enemy));
+    const useful = usefulStrategiesAgainst(enemy);
+    const supported = Array.from(useful).filter((strategy) => available.has(strategy));
+    strategiesByEnemy[enemy.id] = supported;
+    if (supported.length < 2) {
+      uncoveredEnemies.push(enemy.id);
+    }
+  }
 
   const findings: string[] = [];
   if (authoredAffixes.length > 0 && unusedAffixes.length > 0) {
@@ -90,6 +214,20 @@ export function simulateContent(world: ScenarioWorld, options: ContentSimOptions
   if (world.affixes.length > 0 && resolveAffixCatalog(world).every((affix) => affix.rarity === "common")) {
     findings.push("The world authors affixes but none resolve above common rarity.");
   }
+  if (uncoveredBasics.length > 0) {
+    findings.push(`Basic vocations with no authored advanced destination: ${uncoveredBasics.join(", ")}`);
+  }
+  if (requiredByAllAdvanced.length > 0) {
+    findings.push(`Basic vocations required by every advanced destination: ${requiredByAllAdvanced.join(", ")}`);
+  }
+  if (weakFloorMasteryGain >= matchedFloorMasteryGain) {
+    findings.push(
+      `Weak-floor mastery (${weakFloorMasteryGain}) is not below matched-floor mastery (${matchedFloorMasteryGain}).`
+    );
+  }
+  if (uncoveredEnemies.length > 0) {
+    findings.push(`Dangerous enemies with fewer than two authored affix strategies: ${uncoveredEnemies.join(", ")}`);
+  }
 
   return {
     seed: options.seed,
@@ -100,6 +238,19 @@ export function simulateContent(world: ScenarioWorld, options: ContentSimOptions
     unusedAffixes,
     economy: { sellGold, dismantleMaterials },
     fightsToFirstMasteryRank,
+    vocations: {
+      advancedCount: advancedVocations.length,
+      prerequisiteUse,
+      uncoveredBasics,
+      requiredByAllAdvanced,
+      weakFloorMasteryGain,
+      matchedFloorMasteryGain,
+      estimatedFightsToUnlock
+    },
+    enemyCounters: {
+      strategiesByEnemy,
+      uncoveredEnemies
+    },
     findings
   };
 }

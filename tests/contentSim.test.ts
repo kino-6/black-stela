@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { defaultWorld } from "../src/data/defaultWorld";
+import { worldRegistry } from "../src/data/worldRegistry";
 import { reviewAffixProposal, reviewVocationProposal, simulateContent } from "../src/headless/contentSim";
 import type { ScenarioAffix, ScenarioVocation } from "../src/domain/types";
 
@@ -21,6 +22,20 @@ describe("content simulator", () => {
     expect(report.economy.sellGold).toBeGreaterThan(0);
     expect(report.economy.dismantleMaterials).toBeGreaterThan(0);
     expect(report.fightsToFirstMasteryRank).toBeGreaterThan(0);
+  });
+
+  it.each([
+    ["default", worldRegistry.default],
+    ["verdant", worldRegistry.verdant]
+  ] as const)("%s reports complete vocation routes, mastery decay, and enemy counter coverage", (worldId, world) => {
+    const report = simulateContent(world, { seed: `${worldId}-coverage`, drops: 2400, floor: 8, memberLevel: 8 });
+    expect(report.vocations.uncoveredBasics, `${worldId}: uncovered basics`).toEqual([]);
+    expect(report.vocations.requiredByAllAdvanced, `${worldId}: compulsory basics`).toEqual([]);
+    expect(report.vocations.weakFloorMasteryGain, `${worldId}: weak-floor mastery`).toBeLessThan(
+      report.vocations.matchedFloorMasteryGain
+    );
+    expect(report.enemyCounters.uncoveredEnemies, `${worldId}: dangerous enemies without two affix strategies`).toEqual([]);
+    expect(report.findings, `${worldId}: ${report.findings.join("; ")}`).toEqual([]);
   });
 
   it("flags an out-of-band rare rate against versioned, overridable thresholds", () => {

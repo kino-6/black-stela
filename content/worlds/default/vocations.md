@@ -44,7 +44,49 @@ vocations:
     locales:
       ja:
         name: 星の信徒
-        signature: 遅く現れる星の文字を読んだ occultist。その火は、身を捧げた者にのみ応える。
+        signature: 地下に遅く現れる星の文字を読み、その火を術へ変える。
+  - id: vocation.needle-dancer
+    tier: advanced
+    name: Needle Dancer
+    signature: A knife-hand who turns a stolen opening into a precise, vanishing strike.
+    requires:
+      mastered: [duelist, cutpurse]
+      minLevel: 6
+    statModifiers: { attack: 2, accuracy: 5, speed: 2, maxHp: -2 }
+    allowedSlots: [weapon, body, hands, accessory]
+    grantsTechniques: [power-strike]
+    locales:
+      ja:
+        name: 針舞い
+        signature: 奪った一瞬へ刃を通し、反撃の前に間合いを外す。
+  - id: vocation.dust-ranger
+    tier: advanced
+    name: Dust Ranger
+    signature: A route-reader who marks danger, keeps distance, and strikes before the trail closes.
+    requires:
+      mastered: [seeker, scout]
+      minLevel: 6
+    statModifiers: { maxHp: 4, accuracy: 6, speed: 2 }
+    allowedSlots: [weapon, body, head, hands, accessory]
+    grantsTechniques: [power-strike]
+    locales:
+      ja:
+        name: 塵路師
+        signature: 痕跡から危険の先を読み、道が閉じる前に射抜く。
+  - id: vocation.candle-pilgrim
+    tier: advanced
+    name: Candle Pilgrim
+    signature: A ward-bearer who remembers the road home and keeps a small light alive through panic.
+    requires:
+      mastered: [chanter, wayfinder]
+      minLevel: 8
+    statModifiers: { maxHp: 4, maxMp: 6, armor: 2, speed: 1 }
+    allowedSlots: [weapon, offhand, body, head, accessory]
+    grantsTechniques: [heal, sleep]
+    locales:
+      ja:
+        name: 灯巡り
+        signature: 帰り道を失わず、恐慌の中でも小さな灯を絶やさない。
 ---
 
 # Vocations — Gate of Ash
