@@ -288,6 +288,13 @@ export interface InventoryItem {
 
 export type ItemRarity = "common" | "rare" | "epic";
 
+// IMP-022D — what the party has OBSERVED of an enemy. Defeating it reveals its weaknesses and its
+// rare-drop sources; the raw HP/coefficients are never stored here.
+export interface EnemyRecordEntry {
+  encountered: number;
+  defeated: number;
+}
+
 // One resolved action within a combat round, carrying both the text line and a
 // snapshot of the battlefield AFTER it resolved, so the UI can play the fight
 // forward blow-by-blow (enemies fall as the hit lands) instead of snapping to the
@@ -586,6 +593,9 @@ export interface GameState {
   partyGold: number;
   /** IMP-022C — salvage materials from dismantling. Optional in the save schema (defaults to 0). */
   materials?: number;
+  /** IMP-022D — the enemy record (bestiary): observations that accumulate as the party fights.
+   *  Keyed by enemyId. Optional in the save schema. Coarse only — never exact HP or raw coefficients. */
+  enemyRecord?: Record<string, EnemyRecordEntry>;
   claimedTreasures: string[];
   /** Treasure rooms looted on the CURRENT floor visit — resets with the floor, so a
    *  re-entered floor's chambers hold loot again. */

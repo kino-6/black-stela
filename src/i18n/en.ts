@@ -448,6 +448,17 @@ export const en = {
       accessory: "Accessory"
     }
   },
+  bestiary: {
+    heading: "Bestiary",
+    logHeading: "Adventure log",
+    empty: "No enemies recorded yet.",
+    threat: "Threat {threat}",
+    defeated: "Defeated ×{count}",
+    weaknesses: "Weakness",
+    drops: "Drops",
+    none: "—",
+    unknown: "Defeat one to learn its weaknesses and drops."
+  },
   loot: {
     title: "Appraiser",
     intro: "Reveal rare finds, protect keepers, and clear routine loot in one safe operation.",

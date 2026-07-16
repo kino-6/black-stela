@@ -322,6 +322,10 @@ export const GameStateSchema = z.object({
   partyGold: z.number().int().nonnegative().default(75),
   // Optional (no default) so a save that predates IMP-022C round-trips unchanged; code reads `?? 0`.
   materials: z.number().int().nonnegative().optional(),
+  // IMP-022D bestiary — optional so older saves round-trip unchanged.
+  enemyRecord: z
+    .record(z.string(), z.object({ encountered: z.number().int().nonnegative(), defeated: z.number().int().nonnegative() }))
+    .optional(),
   claimedTreasures: z.array(z.string()).default([]),
   floorClaimedTreasures: z.array(z.string()).default([]),
   map: DungeonMapStateSchema,

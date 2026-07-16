@@ -450,6 +450,17 @@ export const ja = {
       accessory: "装身具"
     }
   },
+  bestiary: {
+    heading: "魔物図鑑",
+    logHeading: "最近の記録",
+    empty: "まだ記録された魔物はいない。",
+    threat: "脅威度 {threat}",
+    defeated: "討伐 ×{count}",
+    weaknesses: "弱点",
+    drops: "ドロップ",
+    none: "―",
+    unknown: "一度倒せば、弱点とドロップが分かる。"
+  },
   loot: {
     title: "鑑定所",
     intro: "レアを鑑定し、残す品を守り、雑多な戦利品を一手で安全に処分する。",

@@ -2013,6 +2013,75 @@ textarea {
   flex-wrap: wrap;
 }
 
+/* Bestiary (IMP-022D) inside the records service. */
+.bestiary {
+  margin: 0 0 0.8rem;
+}
+
+.bestiary h4 {
+  margin: 0 0 0.35rem;
+  color: #c9a765;
+  font-size: 0.82rem;
+}
+
+.bestiary-list {
+  display: grid;
+  gap: 0.35rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.bestiary-row {
+  padding: 0.4rem 0.55rem;
+  border: 1px solid #2c332d;
+  border-radius: 4px;
+  background: #12140d;
+}
+
+.bestiary-row.known {
+  border-color: rgba(90, 96, 82, 0.55);
+}
+
+.bestiary-head {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.bestiary-head strong {
+  color: #f2e6c8;
+  flex: 1 1 auto;
+}
+
+.bestiary-threat {
+  color: #d9a24a;
+  font-size: 0.78rem;
+  letter-spacing: 0.05em;
+}
+
+.bestiary-count {
+  color: #8f9188;
+  font-size: 0.74rem;
+}
+
+.bestiary-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.2rem 1.1rem;
+  margin-top: 0.2rem;
+  font-size: 0.78rem;
+  color: #c3c4b7;
+}
+
+.bestiary-unknown {
+  margin: 0.2rem 0 0;
+  font-size: 0.76rem;
+  color: #8f9188;
+  font-style: italic;
+}
+
 .shop-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

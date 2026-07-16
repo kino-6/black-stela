@@ -2435,7 +2435,7 @@ export function App() {
                 />
               )}
               {townMode === "records" && (
-                <RecordsPanel t={t} log={state.log} locale={locale} world={activeWorld} />
+                <RecordsPanel t={t} log={state.log} enemyRecord={state.enemyRecord} locale={locale} world={activeWorld} />
               )}
               {townMode === "records" && (
                 <>

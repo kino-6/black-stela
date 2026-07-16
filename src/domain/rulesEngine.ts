@@ -42,6 +42,7 @@ import {
   setLoadout
 } from "./vocations";
 import { appraiseInstance, dismantleYield, isProtectedFromBulk, isUnidentifiedRare, rollEquipmentDrop, sellValueOf } from "./loot";
+import { recordDefeats, recordEncounters } from "./bestiary";
 import type {
   Character,
   CharacterClassId,
@@ -715,7 +716,15 @@ function moveForward(
       ? null
       : beginRoomEncounter(world, room, next) ?? beginWanderingEncounter(world, room, next);
   if (started) {
-    next = { ...next, phase: "combat", combat: started.combat, stepsSinceEncounter: 0 };
+    // IMP-022D: seeing an enemy records it in the bestiary (defeating it later reveals more).
+    const encounteredIds = Array.from(new Set(started.combat.enemyGroups.map((group) => group.enemyId)));
+    next = {
+      ...next,
+      phase: "combat",
+      combat: started.combat,
+      stepsSinceEncounter: 0,
+      enemyRecord: recordEncounters(next.enemyRecord, encounteredIds)
+    };
     events.push(started.event);
   }
 
@@ -1140,6 +1149,7 @@ function declareRound(state: GameState, world: ScenarioWorld, actions: CombatAct
         world,
         combat.enemyGroups.map((group) => ({ enemyId: group.enemyId, bodies: group.initialCount ?? group.count }))
       ),
+      enemyRecord: recordDefeats(state.enemyRecord, defeatedEnemyIds),
       turn: state.turn + 1
     };
 
@@ -1373,6 +1383,7 @@ function debugForceVictory(state: GameState, world: ScenarioWorld): CommandResul
       world,
       combat.enemyGroups.map((group) => ({ enemyId: group.enemyId, bodies: group.initialCount ?? group.count }))
     ),
+    enemyRecord: recordDefeats(state.enemyRecord, defeatedEnemyIds),
     turn: state.turn + 1
   };
 
