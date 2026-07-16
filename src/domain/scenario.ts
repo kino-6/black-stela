@@ -1,7 +1,7 @@
 import yaml from "js-yaml";
 import { expandFloorMap, isMapFloor } from "./floorMap";
 import { z } from "zod";
-import type { Direction, DungeonFloor, DungeonGridCell, DungeonGridEdge, ScenarioQuest, ScenarioWorld } from "./types";
+import type { Direction, DungeonFloor, DungeonGridCell, DungeonGridEdge, ScenarioQuest, ScenarioVocation, ScenarioWorld } from "./types";
 
 const directionSchema = z.enum(["north", "east", "south", "west"]);
 const floorRoleSchema = z.enum([
@@ -92,6 +92,36 @@ const trapSchema = z.object({
   damage: z.number().int().nonnegative(),
   detectDc: z.number().int().positive(),
   warning: z.string().min(1).optional()
+});
+
+const equipmentSlotSchema = z.enum(["weapon", "offhand", "body", "head", "hands", "accessory"]);
+
+const scenarioVocationSchema = z.object({
+  id: z.string().min(1),
+  tier: z.enum(["basic", "advanced"]),
+  name: z.string().min(1),
+  signature: z.string().min(1).optional(),
+  requires: z
+    .object({
+      mastered: z.array(z.string().min(1)).optional(),
+      minLevel: z.number().int().positive().optional()
+    })
+    .optional(),
+  statModifiers: z
+    .object({
+      maxHp: z.number().int().optional(),
+      maxMp: z.number().int().optional(),
+      attack: z.number().int().optional(),
+      damageMin: z.number().int().optional(),
+      damageMax: z.number().int().optional(),
+      accuracy: z.number().int().optional(),
+      armor: z.number().int().optional(),
+      speed: z.number().int().optional()
+    })
+    .optional(),
+  allowedSlots: z.array(equipmentSlotSchema).optional(),
+  grantsTechniques: z.array(z.string().min(1)).optional(),
+  locales: z.record(z.object({ name: z.string().min(1).optional(), signature: z.string().min(1).optional() })).optional()
 });
 
 const scenarioItemSchema = z.object({
@@ -366,7 +396,8 @@ export const scenarioWorldSchema = z.object({
   encounterTables: z.array(encounterTableSchema).default([]),
   treasureTables: z.array(treasureTableSchema).default([]),
   progressionFlags: z.array(progressionFlagSchema).default([]),
-  quests: z.array(scenarioQuestSchema).default([])
+  quests: z.array(scenarioQuestSchema).default([]),
+  vocations: z.array(scenarioVocationSchema).default([])
 });
 
 export const scenarioItemsSchema = z.object({
@@ -393,6 +424,10 @@ export const scenarioProgressionSchema = z.object({
 
 export const scenarioQuestsSchema = z.object({
   quests: z.array(scenarioQuestSchema).default([])
+});
+
+export const scenarioVocationsSchema = z.object({
+  vocations: z.array(scenarioVocationSchema).default([])
 });
 
 interface FrontMatterDocument<T> {
@@ -436,7 +471,7 @@ export function parseScenarioWorld(
   data: Partial<
     Pick<
       ScenarioWorld,
-      "items" | "equipment" | "shops" | "enemies" | "encounterTables" | "treasureTables" | "progressionFlags" | "quests"
+      "items" | "equipment" | "shops" | "enemies" | "encounterTables" | "treasureTables" | "progressionFlags" | "quests" | "vocations"
     >
   > = {}
 ): ScenarioWorld {
@@ -458,7 +493,8 @@ export function parseScenarioWorld(
     encounterTables: data.encounterTables ?? [],
     treasureTables: data.treasureTables ?? [],
     progressionFlags: data.progressionFlags ?? [],
-    quests: data.quests ?? []
+    quests: data.quests ?? [],
+    vocations: data.vocations ?? []
   }) as ScenarioWorld;
 }
 
@@ -487,6 +523,10 @@ export function parseScenarioQuests(markdown: string): { quests: ScenarioQuest[]
   // field (requiredCount) reads back as optional. The schema guarantees it at runtime; assert
   // the resolved shape so callers get the canonical ScenarioQuest.
   return parseMarkdownFrontMatter(markdown, scenarioQuestsSchema).data as { quests: ScenarioQuest[] };
+}
+
+export function parseScenarioVocations(markdown: string): { vocations: ScenarioVocation[] } {
+  return parseMarkdownFrontMatter(markdown, scenarioVocationsSchema).data as { vocations: ScenarioVocation[] };
 }
 
 export function getRoom(world: ScenarioWorld, roomId: string) {

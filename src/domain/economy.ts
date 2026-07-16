@@ -162,15 +162,22 @@ export function getEffectiveCharacterStats(character: Character, world: Scenario
     }
   }
 
+  // IMP-021A: the ACTIVE vocation's stat modifiers layer on top of the aptitude-derived base. Only
+  // AUTHORED vocations carry modifiers (a basic/class vocation's stats are already the character's
+  // base, so it is absent from world.vocations and contributes nothing). Read inline — importing
+  // domain/vocations here would cycle through characterCreation → economy. See docs/design/vocation-mastery.md.
+  const currentVocation = character.vocation?.current ?? character.classId;
+  const voc = world.vocations.find((vocation) => vocation.id === currentVocation)?.statModifiers ?? {};
+
   return {
-    attack: character.attack + attackBonus,
-    damageMin: character.damageMin + attackBonus,
-    damageMax: character.damageMax + attackBonus,
-    accuracy: Math.max(0, Math.min(100, character.accuracy + accuracyBonus)),
-    armor: character.armor + defenseBonus,
-    speed: Math.max(0, character.speed + speedBonus),
-    maxHp: Math.max(1, character.maxHp + hpBonus),
-    maxMp: Math.max(0, character.maxMp + mpBonus),
+    attack: character.attack + attackBonus + (voc.attack ?? 0),
+    damageMin: character.damageMin + attackBonus + (voc.damageMin ?? voc.attack ?? 0),
+    damageMax: character.damageMax + attackBonus + (voc.damageMax ?? voc.attack ?? 0),
+    accuracy: Math.max(0, Math.min(100, character.accuracy + accuracyBonus + (voc.accuracy ?? 0))),
+    armor: character.armor + defenseBonus + (voc.armor ?? 0),
+    speed: Math.max(0, character.speed + speedBonus + (voc.speed ?? 0)),
+    maxHp: Math.max(1, character.maxHp + hpBonus + (voc.maxHp ?? 0)),
+    maxMp: Math.max(0, character.maxMp + mpBonus + (voc.maxMp ?? 0)),
     resistance,
     attackElement,
     elementResist

@@ -15,7 +15,8 @@ export const scenarioPackManifestSchema = z.object({
       encounters: z.string().min(1).optional(),
       treasure: z.string().min(1).optional(),
       progression: z.string().min(1).optional(),
-      quests: z.string().min(1).optional()
+      quests: z.string().min(1).optional(),
+      vocations: z.string().min(1).optional()
     })
     .default({}),
   compatibility: z.object({

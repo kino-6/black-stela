@@ -119,6 +119,16 @@ const CharacterSchema = z.object({
     .default({ injuries: 0, retreats: 0, notableVictories: [], deeds: [] }),
   portraitRef: z.string().optional(),
   visualProfile: CharacterVisualProfileSchema.optional(),
+  // IMP-021A vocation/mastery state (optional; resolveVocationState defaults it from classId).
+  vocation: z
+    .object({
+      current: z.string().min(1),
+      mastery: z.record(z.string(), z.number().int().nonnegative()).default({}),
+      progress: z.record(z.string(), z.number().nonnegative()).default({}),
+      learned: z.array(z.string().min(1)).default([]),
+      loadout: z.array(z.string().min(1)).default([])
+    })
+    .optional(),
   row: z.enum(["front", "back"]).default("front"),
   level: z.number().int().positive().default(1),
   hp: z.number().int().nonnegative(),

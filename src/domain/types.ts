@@ -178,12 +178,36 @@ export interface ScenarioImportPolicy {
 
 export type ImportAdjustmentKind = "level_capped" | "gold_capped" | "class_remapped" | "progress_reset";
 
+// A vocation id is data-extensible (like Element): the 12 built-in classes use their class id;
+// authored ADVANCED vocations add their own. Nothing hard-codes "a vocation is one of twelve".
+export type VocationId = string;
+
+// IMP-021A: an adventurer's build IS the history of vocations they have mastered. Level lives on
+// Character; this tracks vocation identity, per-vocation mastery, and the techniques kept across
+// every vocation change. Optional on Character for incremental adoption — resolveVocationState
+// (domain/vocations) materialises a default from `classId` when absent. See docs/design/vocation-mastery.md.
+export interface CharacterVocationState {
+  /** The active vocation — a built-in class id or an authored advanced id. */
+  current: VocationId;
+  /** Mastery rank reached per vocation ever worked (0 = touched, capped at its mastered rank). */
+  mastery: Record<VocationId, number>;
+  /** Mastery points banked toward the CURRENT vocation's next rank. */
+  progress: Record<VocationId, number>;
+  /** Technique ids (spells/skills) learned and RETAINED across vocation changes (a union). */
+  learned: string[];
+  /** The bounded set active in combat (a subset of `learned`). */
+  loadout: string[];
+}
+
 export interface Character {
   id: string;
   name: string;
   notes: string;
   title: string;
   classId: CharacterClassId;
+  /** IMP-021A vocation/mastery state. Optional so existing characters/tests need no change;
+   *  resolveVocationState fills a default from `classId`. */
+  vocation?: CharacterVocationState;
   roleTags: string[];
   rowPreference: CombatRow;
   backgroundId: CharacterBackgroundId;
@@ -638,6 +662,9 @@ export interface ScenarioWorld {
   treasureTables: TreasureTable[];
   progressionFlags: ProgressionFlag[];
   quests: ScenarioQuest[];
+  /** Authored advanced vocations (+ optional basic re-skins). Built-in classes are merged in by
+   *  resolveVocationCatalog; this holds only what the world adds. */
+  vocations: ScenarioVocation[];
   importPolicy?: ScenarioImportPolicy;
 }
 
@@ -733,6 +760,24 @@ export interface ScenarioItem {
   restoreMp?: number;
   curesStatuses?: CombatStatus[];
   locales?: LocalizedNameDescription;
+}
+
+// IMP-021A: an authored vocation (usually ADVANCED). `basic`-tier entries with a built-in id
+// re-skin that class; advanced entries are new destinations gated by `requires`. See
+// docs/design/vocation-mastery.md.
+export interface ScenarioVocation {
+  id: VocationId;
+  tier: "basic" | "advanced";
+  name: string;
+  signature?: string;
+  /** Unlock gate: vocations that must be MASTERED (plus an optional character level). */
+  requires?: { mastered?: VocationId[]; minLevel?: number };
+  /** Applied on top of the aptitude-derived base when this vocation is active. */
+  statModifiers?: Partial<Pick<Character, "maxHp" | "maxMp" | "attack" | "damageMin" | "damageMax" | "accuracy" | "armor" | "speed">>;
+  allowedSlots?: EquipmentSlot[];
+  /** Technique ids learned on adopting this vocation and kept forever after. */
+  grantsTechniques?: string[];
+  locales?: Partial<Record<string, { name?: string; signature?: string }>>;
 }
 
 export interface ScenarioEquipment {

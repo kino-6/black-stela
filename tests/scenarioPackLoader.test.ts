@@ -15,6 +15,7 @@ import defaultEncounters from "../content/worlds/default/encounters.md?raw";
 import defaultTreasure from "../content/worlds/default/treasure.md?raw";
 import defaultProgression from "../content/worlds/default/progression.md?raw";
 import defaultQuests from "../content/worlds/default/quests.md?raw";
+import defaultVocations from "../content/worlds/default/vocations.md?raw";
 import missingDungeonManifest from "./fixtures/scenarios/missing-dungeon/manifest.md?raw";
 import missingDungeonWorld from "./fixtures/scenarios/missing-dungeon/world.md?raw";
 import invalidExitManifest from "./fixtures/scenarios/invalid-exit/manifest.md?raw";
@@ -43,7 +44,8 @@ describe("scenario pack loader", () => {
       "encounters.md": defaultEncounters,
       "treasure.md": defaultTreasure,
       "progression.md": defaultProgression,
-      "quests.md": defaultQuests
+      "quests.md": defaultQuests,
+      "vocations.md": defaultVocations
     });
 
     expect(result).toMatchObject({
@@ -397,6 +399,7 @@ function defaultPackFiles() {
     "encounters.md": defaultEncounters,
     "treasure.md": defaultTreasure,
     "progression.md": defaultProgression,
-    "quests.md": defaultQuests
+    "quests.md": defaultQuests,
+      "vocations.md": defaultVocations
   };
 }

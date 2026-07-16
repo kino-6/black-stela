@@ -30,6 +30,7 @@ import {
 } from "./economy";
 import { EQUIPMENT_AFFIXES, equipmentInstanceKey } from "./affixes";
 import { findQuest, getQuestProgress, isQuestReadyToClaim, recordQuestKills } from "./quests";
+import { applyMastery, masteryGain, resolveVocationState } from "./vocations";
 import type {
   Character,
   CharacterClassId,
@@ -1080,6 +1081,7 @@ function declareRound(state: GameState, world: ScenarioWorld, actions: CombatAct
         ...member,
         xp: member.xp + memberXpFromGroups(combat.enemyGroups, member.level),
         gold: member.gold + gold,
+        vocation: applyMastery(resolveVocationState(member), memberMasteryFromGroups(combat.enemyGroups, member.level)),
         memory: {
           ...member.memory,
           notableVictories: Array.from(new Set([...member.memory.notableVictories, ...defeatedNames]))
@@ -1312,6 +1314,7 @@ function debugForceVictory(state: GameState, world: ScenarioWorld): CommandResul
       ...member,
       xp: member.xp + memberXpFromGroups(combat.enemyGroups, member.level),
       gold: member.gold + gold,
+      vocation: applyMastery(resolveVocationState(member), memberMasteryFromGroups(combat.enemyGroups, member.level)),
       memory: {
         ...member.memory,
         notableVictories: Array.from(new Set([...member.memory.notableVictories, ...defeatedNames]))
@@ -1980,6 +1983,12 @@ function memberXpFromGroups(groups: CombatEnemyGroup[], memberLevel: number): nu
     (total, group) => total + rewardXpFor(group.xp * group.count, memberLevel, group),
     0
   );
+}
+
+// IMP-021A: mastery a fight grants a member — one masteryGain per defeated group, through the same
+// out-levelling falloff as XP, so grinding weak floors does not race a vocation to mastery.
+function memberMasteryFromGroups(groups: CombatEnemyGroup[], memberLevel: number): number {
+  return groups.reduce((total, group) => total + masteryGain(memberLevel, group), 0);
 }
 
 function createEnemyGroup(enemy: Enemy, count: number): CombatEnemyGroup {

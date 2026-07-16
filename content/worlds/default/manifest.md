@@ -22,6 +22,7 @@ dataFiles:
   treasure: treasure.md
   progression: progression.md
   quests: quests.md
+  vocations: vocations.md
 compatibility:
   minAppVersion: 0.1.0
 ---

@@ -7,8 +7,10 @@ import {
   parseScenarioProgression,
   parseScenarioQuests,
   parseScenarioTreasure,
+  parseScenarioVocations,
   parseScenarioWorld
 } from "../domain/scenario";
+import { BUILTIN_VOCATION_IDS } from "../domain/vocations";
 import { parseScenarioPackManifest, type ScenarioPackManifest, type ScenarioValidationError } from "../domain/scenarioPack";
 import type { ScenarioWorld } from "../domain/types";
 import type { Direction, DungeonGridCell, DungeonGridEdge } from "../domain/types";
@@ -86,7 +88,7 @@ function loadCatalogData(
   const data: Partial<
     Pick<
       ScenarioWorld,
-      "items" | "equipment" | "shops" | "enemies" | "encounterTables" | "treasureTables" | "progressionFlags" | "quests"
+      "items" | "equipment" | "shops" | "enemies" | "encounterTables" | "treasureTables" | "progressionFlags" | "quests" | "vocations"
     >
   > = {};
 
@@ -155,6 +157,18 @@ function loadCatalogData(
   );
   if (quests) {
     data.quests = quests.quests;
+  }
+
+  const vocations = parseOptionalDataFile(
+    files,
+    rootPath,
+    manifest.dataFiles.vocations,
+    "dataFiles.vocations",
+    parseScenarioVocations,
+    errors
+  );
+  if (vocations) {
+    data.vocations = vocations.vocations;
   }
 
   return data;
@@ -357,6 +371,37 @@ export function validateScenarioGraph(world: ScenarioWorld, filePath = "world.md
           reason: `Unknown treasure item reference: ${entry.itemId}`
         });
       }
+    }
+  }
+
+  // IMP-021A: every advanced vocation's prerequisites must resolve (to a built-in class or another
+  // authored vocation), and the unlock graph must have no cycles — else an "advanced" job could gate
+  // itself and never be reachable.
+  const vocationIds = new Set<string>([...BUILTIN_VOCATION_IDS, ...world.vocations.map((v) => v.id)]);
+  for (const vocation of world.vocations) {
+    for (const prereq of vocation.requires?.mastered ?? []) {
+      if (!vocationIds.has(prereq)) {
+        errors.push({ filePath, fieldPath: `${vocation.id}.requires.mastered`, reason: `Prerequisite names an unknown vocation: ${prereq}` });
+      }
+    }
+  }
+  const prereqEdges = new Map(world.vocations.map((v) => [v.id, (v.requires?.mastered ?? []).filter((p) => world.vocations.some((w) => w.id === p))]));
+  const CYCLE_STATE = { unseen: 0, active: 1, done: 2 };
+  const cycleState = new Map<string, number>();
+  const hasCycleFrom = (id: string): boolean => {
+    if (cycleState.get(id) === CYCLE_STATE.active) return true;
+    if (cycleState.get(id) === CYCLE_STATE.done) return false;
+    cycleState.set(id, CYCLE_STATE.active);
+    for (const next of prereqEdges.get(id) ?? []) {
+      if (hasCycleFrom(next)) return true;
+    }
+    cycleState.set(id, CYCLE_STATE.done);
+    return false;
+  };
+  for (const vocation of world.vocations) {
+    if (hasCycleFrom(vocation.id)) {
+      errors.push({ filePath, fieldPath: `${vocation.id}.requires`, reason: `Vocation unlock graph has a cycle involving ${vocation.id}` });
+      break;
     }
   }
 

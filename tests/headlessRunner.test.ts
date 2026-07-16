@@ -76,6 +76,7 @@ const blockedWorld: ScenarioWorld = {
   treasureTables: [],
   progressionFlags: [],
   quests: [],
+  vocations: [],
   dungeons: [
     {
       id: "dungeon.blocked",
@@ -107,6 +108,7 @@ const loopWorld: ScenarioWorld = {
   treasureTables: [],
   progressionFlags: [],
   quests: [],
+  vocations: [],
   dungeons: [
     {
       id: "dungeon.loop",

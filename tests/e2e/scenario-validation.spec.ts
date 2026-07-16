@@ -36,6 +36,7 @@ test("debug scenario import reports success for a local pack file set", async ({
       "treasure.md",
       "progression.md",
       "quests.md",
+      "vocations.md",
       "dungeons/b1f.md",
       "dungeons/b2f.md",
       "dungeons/b3f.md",
