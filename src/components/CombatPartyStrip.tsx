@@ -52,6 +52,19 @@ export function CombatPartyStrip({ members, selectedActorId, orderedActorIds, ac
                   <div className="pt-body">
                     <span className="pt-head">
                       <span className="pt-name">{member.name}</span>
+                      {/* Why a member acts oddly or is skipped must be VISIBLE: sleep can't act,
+                          fear misses, silence can't cast, poison bleeds. Show the ailments (and a
+                          wound) as labelled pips, not just a dimmed token. */}
+                      {(member.status?.length || member.injury) && (
+                        <span className="pt-status" data-testid="combat-status">
+                          {member.injury && <span className="pt-status-pip status-wounded">{t("partyMenu.wounded")}</span>}
+                          {member.status?.map((status) => (
+                            <span key={status} className={`pt-status-pip status-${status}`}>
+                              {t(`partyMenu.status.${status}` as Parameters<typeof t>[0])}
+                            </span>
+                          ))}
+                        </span>
+                      )}
                       <span className="pt-pip" aria-hidden="true">{ordered ? "⚔" : active ? "▶" : ""}</span>
                     </span>
                     <div

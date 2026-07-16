@@ -103,6 +103,19 @@ function elementMultiplier(weaknesses: Partial<Record<Element, number>> | undefi
   return weaknesses?.[element] ?? 1;
 }
 
+// A CONNECTING blow that resistance rounds down to 0 should not read as blank. A heavily-resisted hit
+// (e.g. physical against the metal-slime's 0.1) still has a 65% chance to chip for 1 — so wrong-element
+// play feels weak but is never strictly un-damageable (a hard 0-wall stalls the fight and reads as
+// broken). Bringing the right element is still far better; this only removes the pure-zero floor.
+// Deterministic on the hit seed so replays match.
+const RESISTED_CHIP_CHANCE = 65;
+function chipThroughResistance(damage: number, seed: string): number {
+  if (damage > 0) {
+    return damage;
+  }
+  return hashSeed(`${seed}:chip`) % 100 < RESISTED_CHIP_CHANCE ? 1 : 0;
+}
+
 // Enemy AI: pick the first ability whose chance roll lands this turn (else the
 // enemy makes a plain attack).
 function selectEnemyAbility(abilities: EnemyAbility[] | undefined, seed: string): EnemyAbility | null {
@@ -1042,10 +1055,11 @@ function declareRound(state: GameState, world: ScenarioWorld, actions: CombatAct
       } else if (spell.effect.kind === "damage" && action.targetGroupId) {
         const group = enemyGroups.find((candidate) => candidate.id === action.targetGroupId && candidate.count > 0);
         if (group) {
-          const raw = rollDamage(`${state.turn}:${combat.round}:${actor.id}:${group.id}:spell`, spell.effect.min, spell.effect.max, 0);
+          const spellSeed = `${state.turn}:${combat.round}:${actor.id}:${group.id}:spell`;
+          const raw = rollDamage(spellSeed, spell.effect.min, spell.effect.max, 0);
           const weakness = elementMultiplier(group.weaknesses, spell.effect.element);
           const spellPower = spell.kind === "spell" ? getSpellPowerBonus(actor) : 0;
-          const damage = Math.round((raw + spellPower) * weakness);
+          const damage = chipThroughResistance(Math.round((raw + spellPower) * weakness), spellSeed);
           enemyGroups = damageGroup(enemyGroups, group.id, damage);
           const updated = enemyGroups.find((candidate) => candidate.id === group.id);
           // Martial 特技 land as strikes; arcane bolts scorch.
@@ -1090,8 +1104,9 @@ function declareRound(state: GameState, world: ScenarioWorld, actions: CombatAct
       continue;
     }
 
-    const rawDamage = rollDamage(`${state.turn}:${combat.round}:${actor.id}:${group.id}:damage`, actorStats.damageMin, actorStats.damageMax, group.armor);
-    const weakened = Math.round(rawDamage * elementMultiplier(group.weaknesses, actorStats.attackElement));
+    const attackSeed = `${state.turn}:${combat.round}:${actor.id}:${group.id}:damage`;
+    const rawDamage = rollDamage(attackSeed, actorStats.damageMin, actorStats.damageMax, group.armor);
+    const weakened = chipThroughResistance(Math.round(rawDamage * elementMultiplier(group.weaknesses, actorStats.attackElement)), attackSeed);
     const critChance = getCriticalChance(actor);
     const crit = rollPercent(`${state.turn}:${combat.round}:${actor.id}:${group.id}:crit`) < critChance;
     const damage = crit ? Math.round(weakened * CRIT_MULTIPLIER) : weakened;
