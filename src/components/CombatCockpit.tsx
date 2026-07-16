@@ -3,7 +3,8 @@ import type { ReactNode } from "react";
 import type { Character, CombatBeat, CombatEnemyGroup, GameState, ScenarioWorld } from "../domain/types";
 import type { Locale, Translator } from "../i18n";
 import type { SpellId } from "../domain/spells";
-import { isCasterClass, knownSpells } from "../domain/spells";
+import { isCasterClass } from "../domain/spells";
+import { combatLoadout } from "../domain/vocations";
 import { getEffectiveCharacterStats, weaponReaches } from "../domain/economy";
 import { localizedEnemyGroupName } from "../ui/catalog";
 import { DungeonView } from "./DungeonView";
@@ -199,7 +200,7 @@ export function CombatCockpit({
           <CombatCommandMenu
             actor={selectedActor}
             livingGroups={livingEnemyGroups}
-            spells={knownSpells(selectedActor.classId, selectedActor.level)}
+            spells={combatLoadout(selectedActor)}
             abilityKind={isCasterClass(selectedActor.classId) ? "spell" : "skill"}
             localizeGroup={(group) => localizedEnemyGroupName(group, locale)}
             canAttack={

@@ -1780,6 +1780,131 @@ textarea {
   display: none;
 }
 
+/* Town career service (IMP-021C). */
+.career-service {
+  max-height: calc(100vh - 9rem);
+  overflow: auto;
+}
+
+.career-member-select {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin: 0.4rem 0 0.6rem;
+}
+
+.career-member-select button {
+  padding: 0.3rem 0.65rem;
+  min-height: 2.1rem;
+  border: 1px solid #2c332d;
+  border-radius: 3px;
+  background: #14170f;
+  color: #cfd2c4;
+}
+
+.career-member-select button.selected {
+  border-color: #c9a765;
+  background: #241f12;
+  color: #f2d58c;
+}
+
+.career-current {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1.5rem;
+  margin: 0 0 0.6rem;
+}
+
+.career-current dt {
+  color: #8f9188;
+  font-size: 0.72rem;
+}
+
+.career-current dd {
+  margin: 0;
+  color: #f2e6c8;
+  font-size: 0.95rem;
+}
+
+.career-vocations {
+  display: grid;
+  gap: 0.45rem;
+  list-style: none;
+  margin: 0 0 0.7rem;
+  padding: 0;
+}
+
+.career-vocation {
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid #2c332d;
+  border-radius: 4px;
+  background: #14170f;
+}
+
+.career-vocation.current {
+  border-color: #c9a765;
+  background: #1d1a10;
+}
+
+.career-vocation-head {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.career-vocation-head strong {
+  color: #f2e6c8;
+  flex: 1 1 auto;
+}
+
+.career-rank {
+  font-size: 0.74rem;
+  color: #f2d58c;
+}
+
+.career-requires {
+  margin: 0;
+  font-size: 0.76rem;
+  color: #aa9d7c;
+}
+
+.career-current-tag {
+  font-size: 0.76rem;
+  color: #f2d58c;
+}
+
+.career-locked {
+  font-size: 0.76rem;
+  color: #8f9188;
+}
+
+.career-technique-list {
+  display: grid;
+  gap: 0.3rem;
+  list-style: none;
+  margin: 0.3rem 0 0;
+  padding: 0;
+}
+
+.career-technique {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  padding: 0.3rem 0.55rem;
+  border: 1px solid #2c332d;
+  border-radius: 3px;
+  background: #12140d;
+}
+
+.career-technique.in-loadout {
+  border-color: rgba(201, 167, 101, 0.5);
+  color: #f2e6c8;
+}
+
 .shop-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

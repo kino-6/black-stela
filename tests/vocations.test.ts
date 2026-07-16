@@ -14,7 +14,13 @@ import {
   resolveVocationCatalog,
   resolveVocationState
 } from "../src/domain/vocations";
+import { createInitialGameState } from "../src/domain/gameState";
+import { applyLevelUps } from "../src/domain/leveling";
 import type { CharacterVocationState, Enemy, GameState } from "../src/domain/types";
+
+function townState(): GameState {
+  return { ...createInitialGameState(), phase: "town" };
+}
 
 const weakEnemy: Pick<Enemy, "level" | "dangerTier" | "prizedXp"> = { level: 1, dangerTier: 1 };
 const strongEnemy: Pick<Enemy, "level" | "dangerTier" | "prizedXp"> = { level: 12, dangerTier: 4 };
@@ -89,6 +95,35 @@ describe("vocation mastery contract", () => {
     const asReaver = getEffectiveCharacterStats({ ...hero, vocation: reaverState }, defaultWorld);
     expect(asReaver.attack).toBe(base.attack + 3); // ash-reaver: attack +3
     expect(asReaver.maxHp).toBe(base.maxHp + 8);
+  });
+
+  it("change_vocation keeps the character's level and unions techniques (IMP-021C)", () => {
+    const hero = applyLevelUps({ ...createGuildCharacter({ name: "Rook", classId: "vanguard", seed: "cmd" }), xp: 400 }).character;
+    const levelBefore = hero.level;
+    expect(levelBefore).toBeGreaterThan(1);
+    const state: GameState = { ...townState(), party: [hero] };
+    // Vanguard → sellsword (a basic vocation, no prereqs).
+    const after = executeCommand(state, defaultWorld, { type: "change_vocation", characterId: hero.id, vocationId: "sellsword" });
+    const changed = after.party[0];
+    expect(changed.vocation?.current).toBe("sellsword");
+    expect(changed.classId).toBe("sellsword");
+    expect(changed.level).toBe(levelBefore); // the vocation change does NOT reset level
+  });
+
+  it("change_vocation is refused when prerequisites are unmet", () => {
+    const hero = createGuildCharacter({ name: "Rook", classId: "vanguard", seed: "cmd2" });
+    const state: GameState = { ...townState(), party: [{ ...hero, level: 3 }] };
+    const after = executeCommand(state, defaultWorld, { type: "change_vocation", characterId: hero.id, vocationId: "vocation.ash-reaver" });
+    expect(after.party[0].vocation?.current ?? "vanguard").not.toBe("vocation.ash-reaver");
+  });
+
+  it("set_loadout keeps only learned techniques and caps at the limit", () => {
+    const hero = createGuildCharacter({ name: "Sei", classId: "mender", seed: "load" });
+    const withState = { ...hero, vocation: { current: "mender", mastery: {}, progress: {}, learned: ["heal", "sleep"], loadout: [] } };
+    const state: GameState = { ...townState(), party: [withState] };
+    const after = executeCommand(state, defaultWorld, { type: "set_loadout", characterId: hero.id, loadout: ["heal", "firebolt", "sleep"] });
+    // firebolt is not learned → dropped; heal + sleep kept.
+    expect(after.party[0].vocation?.loadout).toEqual(["heal", "sleep"]);
   });
 
   it("a combat victory advances the current vocation's mastery", () => {

@@ -30,7 +30,17 @@ import {
 } from "./economy";
 import { EQUIPMENT_AFFIXES, equipmentInstanceKey } from "./affixes";
 import { findQuest, getQuestProgress, isQuestReadyToClaim, recordQuestKills } from "./quests";
-import { applyMastery, masteryGain, resolveVocationState } from "./vocations";
+import {
+  applyMastery,
+  canAdoptVocation,
+  changeCharacterVocation,
+  findVocation,
+  localizedVocationName,
+  combatLoadout,
+  masteryGain,
+  resolveVocationState,
+  setLoadout
+} from "./vocations";
 import type {
   Character,
   CharacterClassId,
@@ -197,6 +207,10 @@ export function resolveCommand(state: GameState, world: ScenarioWorld, command: 
       return acceptQuest(state, world, command.questId);
     case "claim_quest":
       return claimQuest(state, world, command.questId);
+    case "change_vocation":
+      return changeVocationCommand(state, world, command.characterId, command.vocationId);
+    case "set_loadout":
+      return setLoadoutCommand(state, command.characterId, command.loadout);
     case "buy_item":
       return buyItem(state, world, command.shopId, command.itemId);
     case "sell_item":
@@ -981,7 +995,9 @@ function declareRound(state: GameState, world: ScenarioWorld, actions: CombatAct
 
     if (action.action === "cast" && action.spellId) {
       const spell = SPELLS[action.spellId];
-      if (!spell || !knownSpells(actor.classId, actor.level).includes(spell.id)) {
+      // IMP-021C: an actor may cast only a technique on its combat loadout (which defaults to the
+      // class's known spells until a player edits it).
+      if (!spell || !combatLoadout(actor).includes(spell.id)) {
         continue;
       }
       if (actor.status?.includes("silence")) {
@@ -1654,6 +1670,51 @@ function claimQuest(state: GameState, world: ScenarioWorld, questId: string): Co
     },
     ...levelEvents
   ]);
+}
+
+// IMP-021C: change an adventurer's vocation in town. Only if its prerequisites are met; keeps level
+// and every learned technique (changeCharacterVocation). A basic vocation reclasses the base stats;
+// an advanced one layers its modifiers.
+function changeVocationCommand(state: GameState, world: ScenarioWorld, characterId: string, vocationId: string): CommandResult {
+  if (state.phase !== "town") {
+    return noChange(state);
+  }
+  const member = state.party.find((candidate) => candidate.id === characterId);
+  const vocation = findVocation(world, vocationId);
+  if (!member || !vocation || !canAdoptVocation(member, vocationId, world)) {
+    return noChange(state);
+  }
+  if (resolveVocationState(member).current === vocationId) {
+    return noChange(state);
+  }
+  const changed = changeCharacterVocation(member, vocation, world);
+  const next: GameState = {
+    ...state,
+    party: state.party.map((candidate) => (candidate.id === characterId ? changed : candidate)),
+    turn: state.turn + 1
+  };
+  return withEvents(next, [
+    { type: "vocation_changed", characterId, characterName: member.name, vocationId, vocationName: localizedVocationName(world, vocationId, "en") }
+  ]);
+}
+
+// IMP-021C: set an adventurer's bounded combat loadout (a subset of learned techniques). Town only.
+function setLoadoutCommand(state: GameState, characterId: string, loadout: string[]): CommandResult {
+  if (state.phase !== "town") {
+    return noChange(state);
+  }
+  const member = state.party.find((candidate) => candidate.id === characterId);
+  if (!member) {
+    return noChange(state);
+  }
+  const nextVocation = setLoadout(resolveVocationState(member), loadout);
+  return {
+    state: {
+      ...state,
+      party: state.party.map((candidate) => (candidate.id === characterId ? { ...candidate, vocation: nextVocation } : candidate))
+    },
+    events: []
+  };
 }
 
 function buyItem(state: GameState, world: ScenarioWorld, shopId: string, itemId: string): CommandResult {

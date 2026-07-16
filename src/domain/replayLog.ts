@@ -208,6 +208,14 @@ export function projectEventToLog(event: GameEvent, locale: Locale = "en", world
         tags: ["town", "quest", "reward"]
       };
     }
+    case "vocation_changed":
+      return {
+        text: t("events.vocationChanged", {
+          name: event.characterName,
+          vocation: resolveVocationDisplayName(event.vocationId, event.vocationName, world, locale)
+        }),
+        tags: ["town", "vocation"]
+      };
     case "party_recovered":
       return { text: t("events.partyRecovered", { gold: event.gold }), tags: ["town", "recovery"] };
     case "recovery_blocked":
@@ -229,6 +237,13 @@ function resolveRoomName(roomId: string, fallback: string, world: ScenarioWorld 
 
 function resolveRoomEventText(roomId: string, fallback: string, world: ScenarioWorld | undefined, locale: Locale) {
   return locale === "ja" && world ? getLocalizedRoomText(world, roomId, "ja").event ?? fallback : fallback;
+}
+
+function resolveVocationDisplayName(vocationId: string, fallback: string, world: ScenarioWorld | undefined, locale: Locale) {
+  if (locale !== "ja" || !world) {
+    return fallback;
+  }
+  return world.vocations.find((vocation) => vocation.id === vocationId)?.locales?.ja?.name ?? fallback;
 }
 
 function resolveQuestName(questId: string, fallback: string, world: ScenarioWorld | undefined, locale: Locale) {

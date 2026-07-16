@@ -5,10 +5,10 @@
 // vocations add their own, and resolveVocationCatalog merges them. Character LEVEL is untouched by
 // vocation changes; MASTERY advances separately (through the same out-levelling falloff as XP, so
 // farming weak floors is not the optimal mastery route), and learned techniques are kept forever.
-import { classCatalog } from "./characterCreation";
+import { classCatalog, reclassCharacter } from "./characterCreation";
 import { rewardXpFor } from "./leveling";
-import { knownSpells } from "./spells";
-import type { Character, CharacterVocationState, Enemy, EquipmentSlot, ScenarioVocation, ScenarioWorld, VocationId } from "./types";
+import { SPELLS, knownSpells, type SpellId } from "./spells";
+import type { Character, CharacterClassId, CharacterVocationState, Enemy, EquipmentSlot, ScenarioVocation, ScenarioWorld, VocationId } from "./types";
 
 export const BUILTIN_VOCATION_IDS: VocationId[] = classCatalog.map((definition) => definition.id);
 
@@ -75,6 +75,13 @@ export function resolveVocationState(character: Character): CharacterVocationSta
 /** Mastery points a fight grants a member — the XP falloff applies, so weak-floor farming decays. */
 export function masteryGain(memberLevel: number, enemy: Pick<Enemy, "level" | "dangerTier" | "prizedXp">): number {
   return rewardXpFor(MASTERY_BASE_PER_FIGHT, memberLevel, enemy);
+}
+
+// The techniques usable in combat this fight: the bounded loadout, resolved to real spells/skills.
+// For a character that has never touched the vocation UI, resolveVocationState defaults the loadout
+// to its class's known spells — so combat is unchanged until a player edits a loadout.
+export function combatLoadout(character: Character): SpellId[] {
+  return resolveVocationState(character).loadout.filter((id): id is SpellId => Object.prototype.hasOwnProperty.call(SPELLS, id));
 }
 
 export function masteryRank(state: CharacterVocationState, vocationId: VocationId): number {
@@ -145,4 +152,45 @@ export function vocationStatModifiers(
 ): NonNullable<ScenarioVocation["statModifiers"]> {
   const state = resolveVocationState(character);
   return findVocation(world, state.current)?.statModifiers ?? {};
+}
+
+// Apply a whole vocation change to a character (IMP-021C). A BASIC vocation IS a class, so it
+// reclasses — re-deriving the class base at the character's LEVEL (reclassCharacter re-levels from
+// the retained xp, so level is kept) and learning that class's techniques. An ADVANCED vocation
+// keeps the class base and layers its modifiers (via vocationStatModifiers). Either way the learned
+// set is a UNION — nothing is forgotten — and `current` points at the new vocation.
+export function changeCharacterVocation(character: Character, vocation: ResolvedVocation, world: ScenarioWorld): Character {
+  const isBasicClass = vocation.tier === "basic" && BUILTIN_VOCATION_IDS.includes(vocation.id);
+  const rebuilt = isBasicClass ? reclassCharacter(character, vocation.id as CharacterClassId, world) : character;
+  const priorState = resolveVocationState(rebuilt);
+  const classTechniques = isBasicClass ? (knownSpells(rebuilt.classId, rebuilt.level) as string[]) : [];
+  const withClassTechniques: CharacterVocationState = {
+    ...priorState,
+    learned: Array.from(new Set([...priorState.learned, ...classTechniques]))
+  };
+  return { ...rebuilt, vocation: adoptVocationState(withClassTechniques, vocation) };
+}
+
+// Set the bounded combat loadout to `desired`, keeping only genuinely-learned techniques and never
+// exceeding LOADOUT_LIMIT. Order is preserved (the loadout is reorderable in the UI).
+export function setLoadout(state: CharacterVocationState, desired: string[]): CharacterVocationState {
+  const learned = new Set(state.learned);
+  const loadout: string[] = [];
+  for (const technique of desired) {
+    if (learned.has(technique) && !loadout.includes(technique) && loadout.length < LOADOUT_LIMIT) {
+      loadout.push(technique);
+    }
+  }
+  return { ...state, loadout };
+}
+
+// The localized display name of a vocation (authored locales win; a built-in falls back to its
+// class label). `world.vocations` carries authored locales; the built-in label lives in the class.
+export function localizedVocationName(world: ScenarioWorld, id: VocationId, locale: string): string {
+  const authored = world.vocations.find((vocation) => vocation.id === id);
+  if (authored) {
+    return authored.locales?.[locale]?.name ?? authored.name;
+  }
+  const builtIn = classCatalog.find((definition) => definition.id === id);
+  return (builtIn?.label as Record<string, string> | undefined)?.[locale] ?? builtIn?.label.en ?? id;
 }

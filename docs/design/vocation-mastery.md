@@ -81,8 +81,21 @@ interface CharacterVocationState {
 - Weak early-floor encounters cannot be the optimal mastery strategy (falloff).
 - Japanese labels/descriptions come from localization/scenario data.
 
-## Out of scope for IMP-021A (later sub-IMPs)
+## IMP-021C — town career service + combat loadout (DONE 2026-07-16)
 
-- IMP-021B (Codex): the authored basic→advanced graph + seeded progression fixtures.
-- IMP-021C (Claude): the controller-first town career service + the combat loadout UI.
+- Commands `change_vocation` / `set_loadout` (town-only). `change_vocation` calls
+  `changeCharacterVocation`: a BASIC target reclasses the base at the current level (reclassCharacter
+  re-levels from retained xp, so level is kept) and learns that class's techniques; an ADVANCED
+  target keeps the base and layers modifiers. Learned techniques are always a UNION.
+- Combat now draws each actor's abilities from its `combatLoadout` (defaults to the class's known
+  spells until edited — so untouched characters are unchanged); the cast-validation path honours it too.
+- UI: `components/CareerPanel.tsx`, town service `town-service-career` (surface `town-career`).
+  Shows current vocation + mastery, every vocation with adopt/current/locked-with-requirements, and
+  a bounded loadout editor. Copy in `career.*` + `events.vocationChanged`. Locked by
+  `tests/e2e/career.spec.ts` + the command tests in `tests/vocations.test.ts`.
+
+## Out of scope (later sub-IMPs)
+
+- IMP-021B (Codex): the authored basic→advanced graph + seeded progression fixtures (黒碑 ships two
+  advanced vocations now as a stand-in; Codex enriches the graph).
 - IMP-023: the deterministic simulator that gates dominant/compulsory routes.

@@ -31,6 +31,7 @@ import { TownEntryPanel } from "./components/TownEntryPanel";
 import { ShopPanel } from "./components/ShopPanel";
 import { QuestBoardPanel } from "./components/QuestBoardPanel";
 import { questBoardEntries } from "./domain/quests";
+import { CareerPanel } from "./components/CareerPanel";
 import { TempoIndicator } from "./components/TempoIndicator";
 import { createInitialGameState, addCharacter } from "./domain/gameState";
 import {
@@ -140,7 +141,7 @@ import { cssArtVariables, portraitUrl, setActiveArtPack } from "./ui/artAssets";
 
 type GuildCreationStep = "briefing" | "class" | "appearance" | "bonus" | "name";
 type GuildOfferState = "ask" | "suggestion" | "dismissed";
-type TownMode = "guild" | "shop" | "recovery" | "records" | "quests" | "entry";
+type TownMode = "guild" | "shop" | "recovery" | "records" | "quests" | "career" | "entry";
 type AppScreen = "title" | "config" | "scenario" | "game";
 
 const AUTO_SAVE_SLOT = "autosave";
@@ -223,6 +224,7 @@ export function App() {
   const [selectedTargetId, setSelectedTargetId] = useState<string | null>(null);
   const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null);
   const [shopCategory, setShopCategory] = useState<ShopCategory>("weapon");
+  const [careerMemberId, setCareerMemberId] = useState<string | null>(null);
   const [reclassClassId, setReclassClassId] = useState<CharacterClassId | "">("");
   const [eraseConfirmId, setEraseConfirmId] = useState<string | null>(null);
   const [editProfileId, setEditProfileId] = useState<string | null>(null);
@@ -2396,6 +2398,20 @@ export function App() {
                   locale={locale}
                   world={activeWorld}
                   entries={questBoardEntries(state, activeWorld)}
+                  latestLogText={latestLogText}
+                  latestEventType={latestEventType ?? null}
+                  onCommand={run}
+                  onClose={() => enterTownMode("entry")}
+                />
+              )}
+              {townMode === "career" && (
+                <CareerPanel
+                  t={t}
+                  locale={locale}
+                  world={activeWorld}
+                  party={state.party}
+                  selectedMemberId={careerMemberId ?? state.party[0]?.id ?? null}
+                  onSelectMember={setCareerMemberId}
                   latestLogText={latestLogText}
                   latestEventType={latestEventType ?? null}
                   onCommand={run}

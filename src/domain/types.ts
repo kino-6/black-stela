@@ -34,6 +34,8 @@ export type Command =
   | { type: "swap_member_rows"; characterId: string; targetCharacterId: string }
   | { type: "accept_quest"; questId: string }
   | { type: "claim_quest"; questId: string }
+  | { type: "change_vocation"; characterId: string; vocationId: string }
+  | { type: "set_loadout"; characterId: string; loadout: string[] }
   | { type: "buy_item"; shopId: string; itemId: string }
   | { type: "sell_item"; itemId: string; plus?: number; affix?: string }
   | { type: "equip_item"; characterId: string; equipmentId: string; plus?: number; affix?: string }
@@ -356,6 +358,7 @@ export type GameEvent =
   | { type: "equipment_changed"; itemId: string; characterName: string; itemName: string; slot: EquipmentSlot }
   | { type: "quest_accepted"; questId: string; questName: string }
   | { type: "quest_claimed"; questId: string; questName: string; gold: number; xp: number; itemName?: string }
+  | { type: "vocation_changed"; characterId: string; characterName: string; vocationId: string; vocationName: string }
   | { type: "party_recovered"; gold: number }
   | { type: "recovery_blocked"; goldRequired: number; goldAvailable: number }
   | { type: "party_retreated" }
