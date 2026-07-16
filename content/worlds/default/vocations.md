@@ -31,6 +31,20 @@ vocations:
       ja:
         name: 塩の守り手
         signature: 癒しを覚えた盾守。戦線を保ち、倒れかけた者を立たせ続ける。
+  - id: vocation.star-votary
+    tier: advanced
+    name: Star Votary
+    signature: An occultist who read the late star-script — its fire answers only to the devoted.
+    requires:
+      mastered: [occultist, arcanist]
+      minLevel: 8
+    statModifiers: { maxMp: 8, attack: -1 }
+    allowedSlots: [weapon, head, hands, accessory]
+    grantsTechniques: [firebolt]
+    locales:
+      ja:
+        name: 星の信徒
+        signature: 遅く現れる星の文字を読んだ occultist。その火は、身を捧げた者にのみ応える。
 ---
 
 # Vocations — Gate of Ash

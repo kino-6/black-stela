@@ -4,16 +4,26 @@ Externalized jobs, affixes, enemies, and economy need one deterministic check be
 new scenarios (and AI-assisted data proposals) enter play in a bounded range instead of shipping dead
 affixes, compulsory careers, loot floods, or enemies with a single answer.
 
-## Owner split (per AGENTS.md / the two-agent rule)
+## What is delivered
 
-- **Claude (delivered here):** the DETERMINISTIC STATIC content Gate — loader-level rejections that
-  run inside `validateScenarioGraph`, so a bad pack fails to load rather than reaching playtest.
-- **Codex (IMP-023A/B/C, NOT done here):** the seeded ECONOMY SIMULATOR over the production loaders/
-  rules (progression/drop/appraisal/economy report), and the AI-assisted authoring loop where AI
-  proposes external data and the simulator accepts/rejects it. These are art/content/simulation
-  ownership and must not be built by the code agent.
-- **Claude (IMP-023V):** parity verifier — reproduce selected simulator seeds in browser before the
-  Gate can block releases (pending the Codex simulator).
+- **Static content Gate** (`validateScenarioGraph`): loader-level deterministic rejections so a bad
+  pack fails to LOAD, before playtest. See "Static Gate checks" below.
+- **Seeded content/economy SIMULATOR** (`src/headless/contentSim.ts` `simulateContent`, IMP-023A/B):
+  runs the PRODUCTION drop/economy/mastery rules over a world + seed and reports the rarity split,
+  per-affix usage (unused = candidate dead content), sell/dismantle income, mastery timing, and
+  in/out-of-band findings against versioned, scenario-overridable thresholds. Identical seed ⇒
+  identical report. Locked by `tests/contentSim.test.ts`.
+- **Acceptance harness** (`reviewAffixProposal` / `reviewVocationProposal`, IMP-023C): merges a
+  PROPOSED affix/vocation into a candidate world and runs the same validator + simulator a release
+  would, returning accept/reject with reasons. The proposer (AI/Codex) and the final "does it feel
+  good" browser review sit outside this deterministic core.
+
+## Owner note (AGENTS.md two-agent rule)
+
+The deterministic tooling above is Claude's (code/gates). The AUTHORED content it checks —
+enriched vocation graphs and affix pools (IMP-021B / IMP-022B) and the live AI proposer wired to a
+provider — is Codex's ownership; 黒碑 ships a working set that Codex enriches. Claude remains the
+IMP-023V parity verifier (reproduce selected seeds in browser) for any Codex simulator additions.
 
 ## Static Gate checks (Claude — in `validateScenarioGraph`)
 

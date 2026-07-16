@@ -29,6 +29,23 @@ affixes:
     accuracyBonus: 5
     speedBonus: 1
     locales: { ja: { label: 星明りの } }
+  - id: affix.fleetstep
+    label: Fleetstep
+    slots: [accessory, hands, body]
+    minFloor: 4
+    rarity: rare
+    weight: 3
+    speedBonus: 2
+    accuracyBonus: 1
+    locales: { ja: { label: 疾風の } }
+  - id: affix.ruinous
+    label: Ruinous
+    slots: [weapon]
+    minFloor: 7
+    rarity: epic
+    weight: 2
+    attackBonus: 4
+    locales: { ja: { label: 破滅の } }
 ---
 
 # Affixes — Gate of Ash
