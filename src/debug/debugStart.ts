@@ -355,7 +355,7 @@ function createExpectedParty(): Character[] {
       ...createGuildCharacter({
         name: "Bran",
         notes: "Second front line. Keeps six-member formation visible in debug starts.",
-        classId: "vanguard",
+        classId: "bulwark",
         backgroundId: "debtor",
         traitIds: ["steady"],
         portraitRef: "debug://portrait/bran",
@@ -376,7 +376,7 @@ function createExpectedParty(): Character[] {
       ...createGuildCharacter({
         name: "Lio",
         notes: "Rear support. Keeps row separation visible in debug starts.",
-        classId: "mender",
+        classId: "chanter",
         backgroundId: "cartographer",
         traitIds: ["curious"],
         portraitRef: "debug://portrait/lio",
