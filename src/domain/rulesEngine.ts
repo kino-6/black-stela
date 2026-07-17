@@ -41,7 +41,7 @@ import {
   resolveVocationState,
   setLoadout
 } from "./vocations";
-import { appraiseInstance, dismantleYield, isProtectedFromBulk, isUnidentifiedRare, rollEquipmentDrop, sellValueOf } from "./loot";
+import { appraisalFee, appraiseInstance, dismantleYield, isProtectedFromBulk, isUnidentifiedRare, rollEquipmentDrop, sellValueOf } from "./loot";
 import { recordDefeats, recordEncounters } from "./bestiary";
 import type {
   Character,
@@ -1778,13 +1778,20 @@ function appraiseItemCommand(state: GameState, instanceId: string): CommandResul
   if (!item || !isUnidentifiedRare(item)) {
     return noChange(state);
   }
+  // IMP-022V: appraisal is a paid service. Can't afford the reading → nothing happens (the UI
+  // disables the button and shows why), so gold never goes negative.
+  const fee = appraisalFee(item);
+  if (state.partyGold < fee) {
+    return noChange(state);
+  }
   const next: GameState = {
     ...state,
+    partyGold: state.partyGold - fee,
     inventory: state.inventory.map((candidate) => (candidate.instanceId === instanceId ? appraiseInstance(candidate) : candidate)),
     turn: state.turn + 1
   };
   return withEvents(next, [
-    { type: "item_appraised", itemId: item.id, itemName: item.name, affix: item.affix, rarity: item.rarity ?? "rare" }
+    { type: "item_appraised", itemId: item.id, itemName: item.name, affix: item.affix, rarity: item.rarity ?? "rare", cost: fee }
   ]);
 }
 

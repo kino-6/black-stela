@@ -194,3 +194,10 @@ export function localizedVocationName(world: ScenarioWorld, id: VocationId, loca
   const builtIn = classCatalog.find((definition) => definition.id === id);
   return (builtIn?.label as Record<string, string> | undefined)?.[locale] ?? builtIn?.label.en ?? id;
 }
+
+/** The one-line role signature a player reads to judge a destination, in the active locale.
+ *  Authored vocations carry it; a built-in basic has none (returns ""). */
+export function localizedVocationSignature(world: ScenarioWorld, id: VocationId, locale: string): string {
+  const authored = world.vocations.find((vocation) => vocation.id === id);
+  return authored?.locales?.[locale]?.signature ?? authored?.signature ?? "";
+}

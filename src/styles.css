@@ -1786,6 +1786,12 @@ textarea {
   overflow: auto;
 }
 
+/* The career service earns its width: two panes (who they are | where they can go) instead of the
+   default ~34rem service column that left two-thirds of the counter empty (IMP-021V finding). */
+.career-service .service-counter {
+  width: min(72rem, 100%);
+}
+
 .career-member-select {
   display: flex;
   flex-wrap: wrap;
@@ -1905,10 +1911,208 @@ textarea {
   color: #f2e6c8;
 }
 
+/* IMP-021V: two panes — who they are (left) vs where they can go (right) — so the service uses the
+   whole counter instead of a narrow column, and every destination is judgeable at a glance. */
+.career-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.65fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+/* Pin "who they are" so it stays in view while the (taller) destinations column scrolls — the left
+   column no longer empties out under the reader. */
+.career-overview {
+  position: sticky;
+  top: 0;
+  align-self: start;
+}
+
+@media (max-width: 860px) {
+  .career-body {
+    grid-template-columns: 1fr;
+  }
+}
+
+.career-pane-title {
+  margin: 0 0 0.5rem;
+  font-size: 0.82rem;
+  letter-spacing: 0.02em;
+  color: #cdc9b9;
+  border-bottom: 1px solid #2c332d;
+  padding-bottom: 0.3rem;
+}
+
+.career-group-title {
+  margin: 0.6rem 0 0.35rem;
+  font-size: 0.74rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #8f9188;
+}
+
+.career-vocation.available {
+  border-color: rgba(201, 167, 101, 0.4);
+}
+
+.career-signature {
+  margin: 0.1rem 0 0.15rem;
+  font-size: 0.82rem;
+  line-height: 1.35;
+  color: #c3c6b6;
+}
+
+.career-vocation-facts {
+  display: grid;
+  gap: 0.28rem;
+  margin: 0.15rem 0 0.1rem;
+}
+
+.career-fact {
+  display: grid;
+  grid-template-columns: 4.2rem 1fr;
+  gap: 0.4rem;
+  align-items: baseline;
+}
+
+.career-fact dt {
+  margin: 0;
+  font-size: 0.68rem;
+  color: #8f9188;
+}
+
+.career-fact dd {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.career-shift,
+.career-slot,
+.career-grant {
+  font-size: 0.72rem;
+  padding: 0.05rem 0.4rem;
+  border-radius: 999px;
+  border: 1px solid #2c332d;
+  background: #12140d;
+  color: #cfd2c4;
+  white-space: nowrap;
+}
+
+.career-shift.up {
+  border-color: rgba(122, 178, 122, 0.5);
+  color: #a7d6a0;
+}
+
+.career-shift.down {
+  border-color: rgba(196, 120, 108, 0.5);
+  color: #e2a79b;
+}
+
+.career-grant {
+  border-color: rgba(201, 167, 101, 0.45);
+  color: #f2d58c;
+}
+
+.career-fact-none {
+  font-size: 0.72rem;
+  color: #6f7268;
+}
+
 /* Town appraiser / loot (IMP-022C). */
 .loot-service {
   max-height: calc(100vh - 9rem);
   overflow: auto;
+}
+
+/* The appraiser earns its width too (IMP-022V) — the loot list + per-item fit comparison need room. */
+.loot-service .service-counter {
+  width: min(60rem, 100%);
+}
+
+/* Shared "which adventurer" tab row (career + loot). */
+.loot-member-select {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin: 0.2rem 0 0.6rem;
+}
+
+.loot-member-select button {
+  padding: 0.3rem 0.65rem;
+  min-height: 2.1rem;
+  border: 1px solid #2c332d;
+  border-radius: 3px;
+  background: #14170f;
+  color: #cfd2c4;
+}
+
+.loot-member-select button.selected {
+  border-color: #c9a765;
+  background: #241f12;
+  color: #f2d58c;
+}
+
+/* Bulk conversion confirm stage — a preview never destroys on first press. */
+.loot-confirm {
+  display: grid;
+  gap: 0.4rem;
+  padding: 0.5rem 0.6rem;
+  border: 1px solid rgba(201, 167, 101, 0.5);
+  border-radius: 4px;
+  background: #1d1a10;
+}
+
+.loot-confirm-question {
+  margin: 0;
+  color: #f2e6c8;
+  font-size: 0.9rem;
+}
+
+/* Per-item fit comparison against the selected adventurer. */
+.loot-compare {
+  display: grid;
+  gap: 0.3rem;
+  margin-top: 0.35rem;
+  padding-top: 0.35rem;
+  border-top: 1px solid #262b22;
+}
+
+.loot-compare-label {
+  font-size: 0.68rem;
+  color: #8f9188;
+}
+
+.loot-compare-deltas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.loot-delta {
+  font-size: 0.72rem;
+  padding: 0.05rem 0.4rem;
+  border-radius: 999px;
+  border: 1px solid #2c332d;
+  background: #12140d;
+  white-space: nowrap;
+}
+
+.loot-delta.up {
+  border-color: rgba(122, 178, 122, 0.5);
+  color: #a7d6a0;
+}
+
+.loot-delta.down {
+  border-color: rgba(196, 120, 108, 0.5);
+  color: #e2a79b;
+}
+
+.loot-compare-note {
+  margin: 0;
+  font-size: 0.72rem;
+  color: #aa9d7c;
 }
 
 .loot-bulk {

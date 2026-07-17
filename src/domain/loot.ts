@@ -145,6 +145,15 @@ export function isProtectedFromBulk(item: InventoryItem, equippedKeys: Set<strin
 const RARITY_SELL_BONUS: Record<ItemRarity, number> = { common: 0, rare: 12, epic: 30 };
 const RARITY_MATERIALS: Record<ItemRarity, number> = { common: 1, rare: 2, epic: 4 };
 
+// IMP-022V: appraisal is a paid service, not free knowledge — the fee scales with how exclusive the
+// find is (an epic costs more to read than a rare), so identifying is a spending decision. Kept
+// below the item's own value so appraising a keeper is still worth it.
+const RARITY_APPRAISAL_FEE: Record<ItemRarity, number> = { common: 0, rare: 20, epic: 55 };
+
+export function appraisalFee(item: Pick<InventoryItem, "rarity">): number {
+  return RARITY_APPRAISAL_FEE[item.rarity ?? "common"];
+}
+
 // Gold from selling — deliberately below any purchase price (no buy→resell loop).
 export function sellValueOf(item: InventoryItem): number {
   return (item.sellValue ?? 0) + RARITY_SELL_BONUS[item.rarity ?? "common"];

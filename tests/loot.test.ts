@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { defaultWorld } from "../src/data/defaultWorld";
 import {
+  appraisalFee,
   appraiseInstance,
   dismantleYield,
   isProtectedFromBulk,
@@ -88,17 +89,18 @@ describe("rare-loot contract", () => {
     const rare: InventoryItem = { id: WEAPON, name: "Sabre", kind: "equipment", quantity: 1, slot: "weapon", sellValue: 5, rarity: "rare", affix: "affix.saltbitten", identified: false, instanceId: "inst-rare" };
     const common: InventoryItem = { id: WEAPON, name: "Sabre", kind: "equipment", quantity: 1, slot: "weapon", sellValue: 5, rarity: "common", identified: true };
     const keeper: InventoryItem = { id: WEAPON, name: "Sabre", kind: "equipment", quantity: 1, rarity: "rare", affix: "affix.saltbitten", identified: true, locked: true, instanceId: "inst-keep" };
-    const base: GameState = { ...createInitialGameState(), phase: "town", inventory: [rare, common, keeper], partyGold: 0 };
+    const base: GameState = { ...createInitialGameState(), phase: "town", inventory: [rare, common, keeper], partyGold: 100 };
 
     // A bulk sell now leaves the unidentified rare AND the locked keeper, taking only the common.
     const soldEarly = executeCommand(base, defaultWorld, { type: "bulk_convert", mode: "sell" });
     expect(soldEarly.inventory.map((i) => i.instanceId ?? i.id)).toEqual(expect.arrayContaining(["inst-rare", "inst-keep"]));
     expect(soldEarly.inventory.some((i) => i.rarity === "common")).toBe(false); // the common was sold
-    expect(soldEarly.partyGold).toBeGreaterThan(0);
+    expect(soldEarly.partyGold).toBeGreaterThan(base.partyGold); // the sale added gold
 
-    // Appraise the rare → it is no longer protected by "unidentified".
+    // Appraise the rare → it is no longer protected by "unidentified", and the fee is charged.
     const appraised = executeCommand(base, defaultWorld, { type: "appraise_item", instanceId: "inst-rare" });
     expect(appraised.inventory.find((i) => i.instanceId === "inst-rare")?.identified).toBe(true);
+    expect(appraised.partyGold).toBe(base.partyGold - appraisalFee(rare)); // IMP-022V: appraisal costs gold
 
     // Locking the appraised rare re-protects it from a subsequent bulk dismantle.
     const locked = executeCommand(appraised, defaultWorld, { type: "toggle_item_lock", instanceId: "inst-rare" });
@@ -106,6 +108,19 @@ describe("rare-loot contract", () => {
     expect(dismantled.inventory.some((i) => i.instanceId === "inst-rare")).toBe(true); // locked → kept
     expect(dismantled.inventory.some((i) => i.instanceId === "inst-keep")).toBe(true); // locked → kept
     expect(dismantled.materials ?? 0).toBeGreaterThan(0); // the common yielded materials
+  });
+
+  it("appraisal is a paid service — an epic costs more than a rare, and a broke party can't afford it (IMP-022V)", () => {
+    const rare: InventoryItem = { id: WEAPON, name: "Sabre", kind: "equipment", quantity: 1, rarity: "rare", affix: "affix.saltbitten", identified: false, instanceId: "inst-rare" };
+    const epic: InventoryItem = { ...rare, rarity: "epic", instanceId: "inst-epic" };
+    expect(appraisalFee(epic)).toBeGreaterThan(appraisalFee(rare));
+    expect(appraisalFee({ rarity: "common" })).toBe(0);
+
+    // Not enough gold → nothing happens (no reveal, no negative gold).
+    const broke: GameState = { ...createInitialGameState(), phase: "town", inventory: [rare], partyGold: appraisalFee(rare) - 1 };
+    const blocked = executeCommand(broke, defaultWorld, { type: "appraise_item", instanceId: "inst-rare" });
+    expect(blocked.inventory.find((i) => i.instanceId === "inst-rare")?.identified).toBe(false);
+    expect(blocked.partyGold).toBe(broke.partyGold); // untouched, never negative
   });
 
   it("applies an authored affix's bonus in combat via the merged catalog", () => {

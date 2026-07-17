@@ -381,7 +381,7 @@ export type GameEvent =
   | { type: "quest_accepted"; questId: string; questName: string }
   | { type: "quest_claimed"; questId: string; questName: string; gold: number; xp: number; itemName?: string }
   | { type: "vocation_changed"; characterId: string; characterName: string; vocationId: string; vocationName: string }
-  | { type: "item_appraised"; itemId: string; itemName: string; affix?: string; rarity: ItemRarity }
+  | { type: "item_appraised"; itemId: string; itemName: string; affix?: string; rarity: ItemRarity; cost?: number }
   | { type: "bulk_converted"; mode: "sell" | "dismantle"; count: number; gold: number; materials: number }
   | { type: "party_recovered"; gold: number }
   | { type: "recovery_blocked"; goldRequired: number; goldAvailable: number }
