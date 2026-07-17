@@ -91,4 +91,22 @@ test.describe("Codex verification for IMP-021 / IMP-022", () => {
     await expect(page.getByTestId("town-cockpit")).toBeVisible();
     await expectNoMouseUsed(page, "appraiser route");
   });
+
+  test("the workshop (materials sink) is reachable without a pointer at the minimum viewport", async ({ page }) => {
+    await page.setViewportSize(CONTROLLER_VIEWPORT);
+    await reachTown(page, { locale: "ja", scenario: /黒碑|灰の門/ });
+
+    await activateByController(page, "錬成所");
+    await expect(page.getByTestId("workshop-panel")).toBeVisible();
+    await expect(page.getByTestId("workshop-list")).toBeVisible();
+    // The starter party wears gear, so at least one reinforce control is present (materials gate it).
+    await expect(page.locator('[data-testid^="workshop-reinforce-"]').first()).toBeVisible();
+    await expectControllerFocus(page, "workshop", { surface: "town-workshop", exclusive: true });
+    await expectFitsViewport(page, "workshop");
+    await page.screenshot({ path: `${evidenceDir}/workshop-ja-1280.png`, fullPage: false });
+
+    await pressCancel(page);
+    await expect(page.getByTestId("town-cockpit")).toBeVisible();
+    await expectNoMouseUsed(page, "workshop route");
+  });
 });

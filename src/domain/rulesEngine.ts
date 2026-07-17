@@ -41,7 +41,7 @@ import {
   resolveVocationState,
   setLoadout
 } from "./vocations";
-import { appraisalFee, appraiseInstance, dismantleYield, isProtectedFromBulk, isUnidentifiedRare, rollEquipmentDrop, sellValueOf } from "./loot";
+import { MAX_REINFORCE, appraisalFee, appraiseInstance, dismantleYield, isProtectedFromBulk, isUnidentifiedRare, reinforceCost, rollEquipmentDrop, sellValueOf } from "./loot";
 import { recordDefeats, recordEncounters } from "./bestiary";
 import type {
   Character,
@@ -241,6 +241,8 @@ export function resolveCommand(state: GameState, world: ScenarioWorld, command: 
       return sellItem(state, world, command.itemId, command.plus, command.affix);
     case "equip_item":
       return equipItem(state, world, command.characterId, command.equipmentId, command.plus, command.affix);
+    case "reinforce_equipment":
+      return reinforceEquipmentCommand(state, world, command.characterId, command.slot);
     case "declare_round":
       return declareRound(state, world, command.actions);
     case "continue_after_combat":
@@ -1813,6 +1815,41 @@ function toggleItemFlagCommand(state: GameState, instanceId: string, flag: "lock
     },
     events: []
   };
+}
+
+// The materials SINK (workshop / 錬成所): spend dismantled materials to reinforce a WORN piece one
+// step (+1 to its slot's primary stat via the existing `plus` mechanic). Guards: town only, an item
+// is worn in that slot, it isn't already at the cap, and the party can afford the step. Never spends
+// past what it has, never exceeds MAX_REINFORCE.
+function reinforceEquipmentCommand(state: GameState, world: ScenarioWorld, characterId: string, slot: EquipmentSlot): CommandResult {
+  if (state.phase !== "town") {
+    return noChange(state);
+  }
+  const member = state.party.find((candidate) => candidate.id === characterId);
+  const equipped = member?.equipment[slot];
+  if (!member || !equipped) {
+    return noChange(state);
+  }
+  const currentPlus = equipped.plus ?? 0;
+  const cost = reinforceCost(currentPlus);
+  if (currentPlus >= MAX_REINFORCE || (state.materials ?? 0) < cost) {
+    return noChange(state);
+  }
+  const nextPlus = currentPlus + 1;
+  const definition = world.equipment.find((candidate) => candidate.id === equipped.id);
+  const next: GameState = {
+    ...state,
+    materials: (state.materials ?? 0) - cost,
+    party: state.party.map((candidate) =>
+      candidate.id === characterId
+        ? { ...candidate, equipment: { ...candidate.equipment, [slot]: { ...equipped, plus: nextPlus } } }
+        : candidate
+    ),
+    turn: state.turn + 1
+  };
+  return withEvents(next, [
+    { type: "equipment_reinforced", characterName: member.name, itemId: equipped.id, itemName: definition?.name ?? equipped.id, slot, plus: nextPlus, cost }
+  ]);
 }
 
 // IMP-022C: convert every UNPROTECTED equipment item at once — sell for gold or dismantle for

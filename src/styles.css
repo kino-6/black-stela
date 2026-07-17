@@ -2115,6 +2115,72 @@ textarea {
   color: #aa9d7c;
 }
 
+/* Town workshop / reforge (materials sink). */
+.workshop-service {
+  max-height: calc(100vh - 9rem);
+  overflow: auto;
+}
+
+.workshop-service .service-counter {
+  width: min(46rem, 100%);
+}
+
+.workshop-list {
+  display: grid;
+  gap: 0.45rem;
+  list-style: none;
+  margin: 0.2rem 0 0.7rem;
+  padding: 0;
+}
+
+.workshop-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 0.75rem;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid #2c332d;
+  border-radius: 4px;
+  background: #14170f;
+}
+
+.workshop-row-head {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.workshop-slot {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #8f9188;
+}
+
+.workshop-name {
+  color: #f2e6c8;
+}
+
+.workshop-plus {
+  font-size: 0.76rem;
+  color: #f2d58c;
+}
+
+.workshop-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.workshop-boost {
+  font-size: 0.72rem;
+  color: #a7d6a0;
+  white-space: nowrap;
+}
+
 .loot-bulk {
   margin: 0 0 0.7rem;
   padding: 0.5rem 0.6rem;

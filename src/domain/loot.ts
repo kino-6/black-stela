@@ -163,3 +163,12 @@ export function sellValueOf(item: InventoryItem): number {
 export function dismantleYield(item: InventoryItem): number {
   return RARITY_MATERIALS[item.rarity ?? "common"] * Math.max(1, item.quantity);
 }
+
+// The materials SINK (the workshop, 錬成所): dismantled loot becomes reinforcement. A worn piece can
+// be pushed to +MAX_REINFORCE, each step costing more so the total is a real spend of a dungeon's
+// junk on one keeper — closing the dismantle → materials → stronger-gear loop.
+export const MAX_REINFORCE = 5;
+
+export function reinforceCost(currentPlus: number): number {
+  return (currentPlus + 1) * 2;
+}

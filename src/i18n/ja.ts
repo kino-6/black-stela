@@ -376,6 +376,7 @@ export const ja = {
     quests: "依頼掲示板",
     career: "生業",
     reliquary: "鑑定所",
+    workshop: "錬成所",
     entry: "迷宮入口",
     serviceCancel: "やめる",
     backToTown: "町へ戻る",
@@ -549,6 +550,19 @@ export const ja = {
       accessory: "装飾"
     }
   },
+  workshop: {
+    title: "錬成所",
+    intro: "打ち直しの炉。分解で得た素材を注ぎ、冒険者が今身につけている装備を鍛え上げる。",
+    member: "冒険者",
+    materials: "素材 {materials}",
+    reinforce: "強化（{cost}）",
+    cantAfford: "素材{cost}必要",
+    atCap: "鍛え切った",
+    boosts: "→ {stat} +1",
+    current: "+{plus}",
+    nothingWorn: "強化できる装備がない。",
+    back: "戻る"
+  },
   questBoard: {
     title: "依頼掲示板",
     intro: "街に常設された依頼。契約を受け、討伐か納品を果たして戻れ。",
@@ -680,6 +694,7 @@ export const ja = {
     itemBought: "{item} を {gold}G で買った。",
     itemSold: "{item} を売り、{gold}G を得た。",
     equipmentChanged: "{name} は {item} を装備した。",
+    equipmentReinforced: "{name} の {item} を +{plus} に鍛えた。",
     vocationChanged: "{name} は{vocation}に就いた。",
     itemAppraised: "鑑定した：{item}。",
     bulkSold: "{count}個を売り、{gold}G を得た。",

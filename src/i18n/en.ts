@@ -374,6 +374,7 @@ export const en = {
     quests: "Quest board",
     career: "Vocations",
     reliquary: "Appraiser",
+    workshop: "Forge",
     entry: "Dungeon Entry",
     serviceCancel: "Cancel",
     backToTown: "Back to town",
@@ -547,6 +548,19 @@ export const en = {
       accessory: "Accessory"
     }
   },
+  workshop: {
+    title: "Forge",
+    intro: "The reforge. Spend materials — the take from dismantled loot — to temper what an adventurer already wears.",
+    member: "Adventurer",
+    materials: "{materials} materials",
+    reinforce: "Reinforce ({cost})",
+    cantAfford: "Need {cost}",
+    atCap: "Fully tempered",
+    boosts: "→ {stat} +1",
+    current: "+{plus}",
+    nothingWorn: "Nothing equipped to reinforce.",
+    back: "Back"
+  },
   questBoard: {
     title: "Quest board",
     intro: "Standing work posted in town. Take a contract, then bring back the kill or the goods.",
@@ -678,6 +692,7 @@ export const en = {
     itemBought: "Bought {item} for {gold} gold.",
     itemSold: "Sold {item} for {gold} gold.",
     equipmentChanged: "{name} equips {item}.",
+    equipmentReinforced: "Reforged {item} to +{plus} for {name}.",
     vocationChanged: "{name} takes up the {vocation} vocation.",
     itemAppraised: "Appraised: {item}.",
     bulkSold: "Sold {count} items for {gold} gold.",

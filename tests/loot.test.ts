@@ -1,17 +1,21 @@
 import { describe, expect, it } from "vitest";
 import { defaultWorld } from "../src/data/defaultWorld";
 import {
+  MAX_REINFORCE,
   appraisalFee,
   appraiseInstance,
   dismantleYield,
   isProtectedFromBulk,
   isUnidentifiedRare,
+  reinforceCost,
   resolveAffixCatalog,
   rollEquipmentDrop,
   sellValueOf
 } from "../src/domain/loot";
 import { equipmentInstanceKey } from "../src/domain/affixes";
 import { executeCommand } from "../src/domain/rulesEngine";
+import { createGuildCharacter } from "../src/domain/characterCreation";
+import { getEffectiveCharacterStats } from "../src/domain/economy";
 import { createInitialGameState } from "../src/domain/gameState";
 import type { GameState, InventoryItem } from "../src/domain/types";
 
@@ -121,6 +125,34 @@ describe("rare-loot contract", () => {
     const blocked = executeCommand(broke, defaultWorld, { type: "appraise_item", instanceId: "inst-rare" });
     expect(blocked.inventory.find((i) => i.instanceId === "inst-rare")?.identified).toBe(false);
     expect(blocked.partyGold).toBe(broke.partyGold); // untouched, never negative
+  });
+
+  it("the workshop spends materials to reinforce worn gear — cost climbs, caps, and a broke party can't (IMP-022V sink)", () => {
+    expect(reinforceCost(0)).toBe(2);
+    expect(reinforceCost(1)).toBeGreaterThan(reinforceCost(0)); // each step costs more
+
+    const hero = { ...createGuildCharacter({ name: "Rook", classId: "vanguard", seed: "forge" }), equipment: { weapon: { id: WEAPON } } };
+    const base: GameState = { ...createInitialGameState(), phase: "town", party: [hero], materials: 10 };
+
+    const forged = executeCommand(base, defaultWorld, { type: "reinforce_equipment", characterId: hero.id, slot: "weapon" });
+    expect(forged.party[0].equipment.weapon?.plus).toBe(1); // reinforced
+    expect(forged.materials).toBe(10 - reinforceCost(0)); // materials spent
+    // The +1 actually raises the weapon's primary stat (attack).
+    expect(getEffectiveCharacterStats(forged.party[0], defaultWorld).attack).toBe(
+      getEffectiveCharacterStats(base.party[0], defaultWorld).attack + 1
+    );
+
+    // Broke → nothing happens (no negative materials, no free upgrade).
+    const broke: GameState = { ...base, materials: 0 };
+    const blocked = executeCommand(broke, defaultWorld, { type: "reinforce_equipment", characterId: hero.id, slot: "weapon" });
+    expect(blocked.party[0].equipment.weapon?.plus ?? 0).toBe(0);
+    expect(blocked.materials).toBe(0);
+
+    // At the cap → refused even with materials to spare.
+    const maxed = { ...base, party: [{ ...hero, equipment: { weapon: { id: WEAPON, plus: MAX_REINFORCE } } }], materials: 999 };
+    const overCap = executeCommand(maxed, defaultWorld, { type: "reinforce_equipment", characterId: hero.id, slot: "weapon" });
+    expect(overCap.party[0].equipment.weapon?.plus).toBe(MAX_REINFORCE); // unchanged
+    expect(overCap.materials).toBe(999); // nothing spent
   });
 
   it("applies an authored affix's bonus in combat via the merged catalog", () => {
