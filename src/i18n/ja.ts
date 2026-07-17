@@ -27,6 +27,7 @@ export const ja = {
     enemyHit: "{actor}の攻撃！ {target}に{damage}のダメージ",
     enemyAbility: "{actor}の{ability}！ {target}に{damage}のダメージ",
     afflict: "{target}は{status}",
+    resistStatus: "{target}は{actor}の{ability}をはねのけた",
     poison: "毒が{target}を{damage}蝕む",
     asleep: "{actor}は眠っている",
     statusSleep: "眠り",

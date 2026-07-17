@@ -77,6 +77,7 @@ import {
   formatCombatOrder,
   localizedCatalogName,
   localizedEnemyGroupName,
+  localizedEnemyAbilityName,
   shopCategoryFor,
   type ShopCategory
 } from "./ui/catalog";
@@ -305,9 +306,13 @@ export function App() {
     (enemyId: string) => localizedEnemyGroupName({ enemyId, name: enemyId }, locale),
     [locale]
   );
+  const localizeAbilityName = useCallback(
+    (enemyId: string | undefined, rawName: string) => localizedEnemyAbilityName(enemyId, rawName, locale),
+    [locale]
+  );
   const formatBeatLine = useCallback(
-    (beat: CombatBeat) => formatCombatBeat(beat, t, localizeEnemyName),
-    [t, localizeEnemyName]
+    (beat: CombatBeat) => formatCombatBeat(beat, t, localizeEnemyName, localizeAbilityName),
+    [t, localizeEnemyName, localizeAbilityName]
   );
 
   const livingEnemyGroups = useMemo(

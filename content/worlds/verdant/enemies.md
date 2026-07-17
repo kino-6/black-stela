@@ -56,6 +56,10 @@ enemies:
     role: attrition
     size: small
     tags: [beast, thorn]
+    # Its barbs fester — a light poison to open the attrition threat early (Act I).
+    inflicts:
+      status: poison
+      chance: 25
   # ---- Act I squad (G2 front-blocker + back-caster) ----
   - id: enemy.verdant.g2.bramble-shield
     weaknesses: { metal: 1.5, fire: 0.4 }
@@ -94,6 +98,16 @@ enemies:
     hover: true
     dangerTier: 2
     tags: [caster, spore, status]
+    # The squad's back-caster: reaches OVER the bramble-shield to sleep an exposed caster.
+    # Introduces the "protect your back row" threat basic melee can't express.
+    abilities:
+      - name: Spore Slumber
+        chance: 40
+        target: back
+        locales: { ja: { name: 眠りの胞子 } }
+        effect:
+          kind: status
+          status: sleep
   # ---- Act II trash (G4-G6) ----
   - id: enemy.verdant.g4.pollen-drifter
     weaknesses: { fire: 2.0 }
@@ -113,6 +127,15 @@ enemies:
     size: medium
     hover: true
     tags: [spore, status]
+    # Act II pressure: clouds the back line, silencing a caster's spells.
+    abilities:
+      - name: Beguiling Pollen
+        chance: 45
+        target: back
+        locales: { ja: { name: 惑わしの花粉 } }
+        effect:
+          kind: status
+          status: silence
   - id: enemy.verdant.g6.thorn-cutter
     weaknesses: { metal: 1.5, fire: 0.6 }
     name: Thorn Cutter
@@ -131,6 +154,10 @@ enemies:
     size: medium
     dangerTier: 3
     tags: [ambusher, thorn]
+    # A deeper, meaner bleed than the crawler's.
+    inflicts:
+      status: poison
+      chance: 30
   # ---- Act III trash (G7-G8) ----
   - id: enemy.verdant.g7.husk-spawn
     weaknesses: { fire: 1.5, metal: 1.25 }
@@ -169,6 +196,15 @@ enemies:
     size: large
     dangerTier: 3
     tags: [miniboss, spore, status]
+    # First real "handle this" moment — a miniboss that puts your casters to sleep.
+    abilities:
+      - name: Sleeping Bloom
+        chance: 50
+        target: back
+        locales: { ja: { name: 眠り花 } }
+        effect:
+          kind: status
+          status: sleep
   - id: enemy.verdant.g4.bark-ward
     weaknesses: { metal: 1.75, fire: 0.4 }
     name: Bark Ward
@@ -205,6 +241,17 @@ enemies:
     size: large
     dangerTier: 4
     tags: [miniboss, sap, toll]
+    # The toll bites: a wood-element geyser that seeks the most wounded (wood-resist counters it).
+    abilities:
+      - name: Sap Geyser
+        chance: 50
+        target: any
+        locales: { ja: { name: 樹液の噴出 } }
+        effect:
+          kind: damage
+          min: 4
+          max: 7
+          element: wood
   - id: enemy.verdant.g6.strangler-warden
     weaknesses: { metal: 1.75, fire: 0.4 }
     name: Strangler Warden
@@ -223,6 +270,17 @@ enemies:
     size: large
     dangerTier: 4
     tags: [miniboss, thorn]
+    # Reaches past the front line to crush an exposed caster (wood-element vines).
+    abilities:
+      - name: Coiling Vines
+        chance: 50
+        target: back
+        locales: { ja: { name: 蔓の緊縛 } }
+        effect:
+          kind: damage
+          min: 4
+          max: 6
+          element: wood
   - id: enemy.verdant.g7.heartwood-husk
     weaknesses: { metal: 1.5, fire: 0.5 }
     name: Heartwood Husk
@@ -241,6 +299,15 @@ enemies:
     size: large
     dangerTier: 4
     tags: [miniboss, blocker, heartwood]
+    # A dread aura that can rout a party member (fear) — Act III unease.
+    abilities:
+      - name: Withering Dread
+        chance: 40
+        target: any
+        locales: { ja: { name: 朽ちの畏れ } }
+        effect:
+          kind: status
+          status: fear
   - id: enemy.verdant.g8.rootheart
     weaknesses: { metal: 2.0, fire: 0.4 }
     name: Rootheart
@@ -260,6 +327,18 @@ enemies:
     isBoss: true
     dangerTier: 5
     tags: [boss, heartwood, finale]
+    # The finale spike: a grove-wide wood eruption that seeks the most wounded. Credible wipe
+    # without wood-resist prep — the "prepare or fall" moment the descent builds toward.
+    abilities:
+      - name: Wrath of the Grove
+        chance: 55
+        target: any
+        locales: { ja: { name: 森の怒り } }
+        effect:
+          kind: damage
+          min: 6
+          max: 9
+          element: wood
   - id: enemy.verdant.rare.gilded-sporecloud
     name: Gilded Sporecloud
     locales:

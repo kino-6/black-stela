@@ -480,17 +480,18 @@ export interface ElementDef {
   color?: string;
 }
 
-export interface EnemyAbility {
-  name: string;
-  chance: number;
-  effect:
-    | { kind: "damage"; min: number; max: number; element: Element }
-    | { kind: "status"; status: CombatStatus };
-}
+/** Who an enemy ability strikes. `front` is the default (positional melee — the tank soaks it);
+ *  `back` reaches OVER the front line to the exposed casters (a spell / spore cloud / lashing
+ *  vine) — this is the "protect your back row" threat basic melee cannot express; `any` picks the
+ *  most vulnerable target regardless of row. Omitted ⇒ `front`. */
+export type EnemyAbilityTarget = "front" | "back" | "any";
 
 export interface EnemyAbility {
   name: string;
   chance: number;
+  target?: EnemyAbilityTarget;
+  /** Localized ability name for the combat log (falls back to `name`). Keyed by locale. */
+  locales?: Partial<Record<string, { name?: string }>>;
   effect:
     | { kind: "damage"; min: number; max: number; element: Element }
     | { kind: "status"; status: CombatStatus };

@@ -65,6 +65,17 @@ export function localizedEnemyGroupName(group: { enemyId: string; name: string }
   return enemy?.locales?.[locale]?.name ?? enemy?.name ?? group.name;
 }
 
+/** The combat log carries an enemy ability's raw (English) name; resolve it to the active
+ *  locale from the owning enemy's authored `abilities[].locales`. Falls back to the raw name. */
+export function localizedEnemyAbilityName(enemyId: string | undefined, rawName: string, locale: Locale) {
+  if (!enemyId) {
+    return rawName;
+  }
+  const enemy = getActiveWorld().enemies.find((candidate) => candidate.id === enemyId);
+  const ability = enemy?.abilities?.find((candidate) => candidate.name === rawName);
+  return ability?.locales?.[locale]?.name ?? rawName;
+}
+
 export function previewEquipmentStats(member: Character, equipment: ScenarioEquipment) {
   return getEffectiveCharacterStats(
     {

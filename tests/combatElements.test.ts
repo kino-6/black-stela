@@ -40,6 +40,20 @@ function oneRoundDamage(state: GameState): number {
   return beats.reduce((total, beat) => total + ((beat?.targetGroupId === group.id ? beat?.damage ?? 0 : 0)), 0);
 }
 
+/** Mean single-round damage a loadout deals to `enemyId`, averaged over many seeds. One round is a
+ *  single hit/miss + damage roll — far too noisy to compare loadouts (a lone miss reads as 0). The
+ *  combat RNG is seeded on turn/actor/group ids (which carry run-to-run randomness), so we sample
+ *  across turns and let the mean speak: an element the enemy is WEAK to dominates the average even
+ *  though any single blow can whiff. */
+function meanRoundDamage(weaponId: string, enemyId: string, samples = 40): number {
+  let total = 0;
+  for (let i = 0; i < samples; i += 1) {
+    const state = fightWith(frontliner({ weapon: { id: weaponId } }), enemyId);
+    total += oneRoundDamage({ ...state, turn: i + 1 });
+  }
+  return total / samples;
+}
+
 function roundsToClear(state: GameState, maxRounds = 40): number {
   let current = state;
   for (let round = 0; round < maxRounds; round += 1) {
@@ -75,11 +89,12 @@ describe("elemental counterplay in combat", () => {
   });
 
   it("a salt loadout deals more to the salt-weak, fire-resistant cyst than a plain one", () => {
-    // The cistern-warden is salt-weak / fire-resistant. In one round, a full salt party lands more
-    // than a plain (physical) one — the counterplay loop, measured on the real engine. (Rounds-to-
-    // clear is too coarse once damage is scaled up; total damage in a round is the clean signal.)
-    const salt = oneRoundDamage(fightWith(frontliner({ weapon: { id: "equip.salt-etched-blade" } }), "enemy.b3f.cistern-warden"));
-    const plain = oneRoundDamage(fightWith(frontliner({ weapon: { id: "equip.rusted-dirk" } }), "enemy.b3f.cistern-warden"));
+    // The cistern-warden is salt-weak / fire-resistant. Averaged over many seeded rounds, a salt
+    // blade lands markedly more than a plain (physical) one — the counterplay loop, measured on the
+    // real engine. (A single round is too noisy — one whiffed swing reads as 0; the mean is the
+    // clean signal. See meanRoundDamage.)
+    const salt = meanRoundDamage("equip.salt-etched-blade", "enemy.b3f.cistern-warden");
+    const plain = meanRoundDamage("equip.rusted-dirk", "enemy.b3f.cistern-warden");
     expect(salt).toBeGreaterThan(plain);
   });
 

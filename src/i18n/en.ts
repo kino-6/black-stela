@@ -25,6 +25,7 @@ export const en = {
     enemyHit: "{actor} strikes {target} for {damage}.",
     enemyAbility: "{actor}'s {ability} hits {target} for {damage}.",
     afflict: "{target} is {status}.",
+    resistStatus: "{target} shrugs off {actor}'s {ability}.",
     poison: "Poison gnaws {target} for {damage}.",
     asleep: "{actor} is asleep.",
     statusSleep: "asleep",

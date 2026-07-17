@@ -21,11 +21,16 @@ const STATUS_LABEL: Record<string, TranslationKey> = {
 export function formatCombatBeat(
   beat: CombatBeat,
   t: Translator,
-  localizeEnemy: (enemyId: string) => string
+  localizeEnemy: (enemyId: string) => string,
+  localizeAbility?: (enemyId: string | undefined, rawName: string) => string
 ): string {
   const actor = beat.actorName ?? (beat.actorEnemyId ? localizeEnemy(beat.actorEnemyId) : "");
   const target = beat.targetName ?? (beat.targetEnemyId ? localizeEnemy(beat.targetEnemyId) : "");
-  const ability = beat.spellId ? t(SPELL_LABEL[beat.spellId]) : beat.abilityName ?? "";
+  const ability = beat.spellId
+    ? t(SPELL_LABEL[beat.spellId])
+    : beat.abilityName
+      ? localizeAbility?.(beat.actorEnemyId, beat.abilityName) ?? beat.abilityName
+      : "";
   const statusKey = beat.statusName ? STATUS_LABEL[beat.statusName] : undefined;
   const status = statusKey ? t(statusKey) : beat.statusName ?? "";
   const damage = beat.damage ?? 0;
@@ -55,6 +60,14 @@ export function formatCombatBeat(
         ? t("beat.enemyAbility", { actor, ability, target, damage })
         : t("beat.enemyHit", { actor, target, damage });
     case "status":
+      // A named enemy ability reads richer than a bare affliction: name the spell that landed
+      // (or was shrugged off). An unnamed on-hit rider (inflicts) keeps the terse afflict line.
+      if (beat.abilityName && status) {
+        return t("beat.castStatus", { actor, ability, target, status });
+      }
+      if (beat.abilityName) {
+        return t("beat.resistStatus", { actor, ability, target });
+      }
       return status ? t("beat.afflict", { target, status }) : beat.text;
     case "poison":
       return t("beat.poison", { target, damage });

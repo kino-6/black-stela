@@ -60,6 +60,7 @@ import type {
   Enemy,
   EquipmentSlot,
   EnemyAbility,
+  EnemyAbilityTarget,
   ExplorationGate,
   GameEvent,
   GameState,
@@ -1186,12 +1187,15 @@ function declareRound(state: GameState, world: ScenarioWorld, actions: CombatAct
       continue;
     }
 
-    const target = chooseEnemyTarget(party);
+    const ability = selectEnemyAbility(group.abilities, `${state.turn}:${combat.round}:${group.id}`);
+    // A basic swing stays front-first; an ability honours its own reach (back row / most wounded).
+    const target = ability?.target
+      ? chooseEnemyTargetFor(party, ability.target, `${state.turn}:${combat.round}:${group.id}:ability-target`)
+      : chooseEnemyTarget(party);
     if (!target) {
       continue;
     }
 
-    const ability = selectEnemyAbility(group.abilities, `${state.turn}:${combat.round}:${group.id}`);
     if (ability) {
       if (ability.effect.kind === "damage") {
         const targetStats = getEffectiveCharacterStats(target, world);
@@ -2520,6 +2524,25 @@ function chooseEnemyTarget(party: Character[]): Character | null {
     party.find((member) => member.hp > 0 && !member.injury) ??
     null
   );
+}
+
+/** Row-aware target picker for enemy ABILITIES (see EnemyAbility.target). Basic melee stays
+ *  front-first via chooseEnemyTarget; an ability can reach OVER the front line: `back` strikes the
+ *  exposed casters, `any` seeks the most wounded regardless of row, `front` mirrors basic reach.
+ *  Seeded so it is deterministic (replay/tests) yet spreads across a row instead of always the
+ *  first body. Only ever targets a standing, un-injured member (null ⇒ enemy skips). */
+export function chooseEnemyTargetFor(party: Character[], pref: EnemyAbilityTarget, seed: string): Character | null {
+  const alive = party.filter((member) => member.hp > 0 && !member.injury);
+  if (alive.length === 0) {
+    return null;
+  }
+  if (pref === "any") {
+    return alive.reduce((lowest, member) => (member.hp < lowest.hp ? member : lowest), alive[0]);
+  }
+  const wantedRow: CombatRow = pref === "back" ? "back" : "front";
+  const inRow = alive.filter((member) => member.row === wantedRow);
+  const pool = inRow.length > 0 ? inRow : alive;
+  return pool[hashSeed(seed) % pool.length];
 }
 
 function findGroupName(groups: CombatEnemyGroup[], groupId: string) {

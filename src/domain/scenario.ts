@@ -60,6 +60,10 @@ const enemySchema = z.object({
       z.object({
         name: z.string().min(1),
         chance: z.number().int().min(0).max(100),
+        // Who it strikes: front (default, tank soaks) / back (reaches the exposed casters) / any.
+        target: z.enum(["front", "back", "any"]).optional(),
+        // Localized ability name for the combat log (falls back to `name`).
+        locales: z.record(z.object({ name: z.string().min(1).optional() })).optional(),
         effect: z.union([
           z.object({
             kind: z.literal("damage"),
