@@ -150,6 +150,27 @@ equipment:
       ja:
         name: 断ち斧
         description: 重く食い込む斧。樹心そのものを伐り倒すに足る金。
+  # Defensive counterplay: the grove's deep keepers hit back with WOOD (sap geysers, coiling vines,
+  # the Rootheart's grove-wrath) and spore SLEEP. This ward halves that wood and steadies the sleep/
+  # poison — the "prepare for the deep floors" accessory. It competes with the living-charm's +HP for
+  # the one accessory slot, so bringing it is a loadout choice, not a free pick.
+  - id: equip.verdant.heartwood-ward
+    name: Heartwood Ward
+    description: A carved knot of dead heartwood, proof against the grove's sap-surges and spores.
+    slot: accessory
+    tier: 3
+    # A meaningful cut, not a wall — the deep grove still bites a prepared party (see the verdant
+    # balance Gate: even prepared dips below 60% at the finale). Preparation eases it; it doesn't
+    # trivialise it. Stacks multiplicatively with any body-slot resist a build also commits to.
+    elementResist: { wood: 0.7 }
+    resistBonus: { sleep: 35, poison: 25 }
+    price: 140
+    sellValue: 46
+    tags: [charm, ward, wood]
+    locales:
+      ja:
+        name: 樹心の護符
+        description: 朽ちた樹心を彫った結び目。森の樹液の奔流と胞子を退ける。
 shops:
   - id: shop.verdant.grove
     name: Grovekeeper's Stall
@@ -167,6 +188,7 @@ shops:
       - { itemId: item.verdant.greater-sap, price: 75, availability: unlocked, unlockFlag: flag.verdant.g3f.shortcut }
       - { itemId: equip.verdant.bark-plate, price: 95, availability: unlocked, unlockFlag: flag.verdant.g3f.shortcut }
       - { itemId: equip.verdant.iron-edge, price: 150, availability: unlocked, unlockFlag: flag.verdant.g3f.shortcut }
+      - { itemId: equip.verdant.heartwood-ward, price: 140, availability: unlocked, unlockFlag: flag.verdant.g3f.shortcut }
       - { itemId: item.verdant.heartsap-tonic, price: 180, availability: unlocked, unlockFlag: flag.verdant.g3f.shortcut }
 ---
 

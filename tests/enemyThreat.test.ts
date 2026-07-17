@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { chooseEnemyTargetFor } from "../src/domain/rulesEngine";
 import { formatCombatBeat } from "../src/domain/combatBeatText";
+import { createGuildCharacter } from "../src/domain/characterCreation";
+import { getEffectiveCharacterStats } from "../src/domain/economy";
 import { createTranslator } from "../src/i18n";
 import { worldRegistry } from "../src/data/worldRegistry";
 import type { Character, CombatBeat } from "../src/domain/types";
@@ -89,5 +91,20 @@ describe("the Verdant roster acts with intent", () => {
     const line = formatCombatBeat(beat, ja, (id) => id ?? "", localizeAbility);
     expect(line).toContain(jaName); // localized name present
     expect(line).not.toContain(raw); // no English leak
+  });
+
+  it("offers DEFENSIVE counterplay to the wood spikes it now deals (the prepare loop closes)", () => {
+    // The deep keepers deal wood + spore sleep; a ward must exist that actually blunts them, or the
+    // new threat is a flat wall rather than a preparation gap (drpg-balance: threat + counter).
+    const ward = worldRegistry.verdant.equipment.find(
+      (item) => item.slot === "accessory" && (item.elementResist?.wood ?? 1) < 1
+    );
+    expect(ward, "verdant needs a wood-resist accessory to counter its wood abilities").toBeTruthy();
+
+    const bare = createGuildCharacter({ name: "Prep", classId: "vanguard", seed: "ward" });
+    const warded: Character = { ...bare, equipment: { accessory: { id: ward!.id } } };
+    const stats = getEffectiveCharacterStats(warded, worldRegistry.verdant);
+    expect(stats.elementResist.wood).toBeLessThan(1); // takes less wood damage
+    expect(stats.resistance?.sleep ?? 0).toBeGreaterThan(0); // steadier against the spore sleep
   });
 });

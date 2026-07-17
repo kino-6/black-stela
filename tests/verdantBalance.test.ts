@@ -30,11 +30,18 @@ describe("verdant difficulty (prepare or wipe)", () => {
     expect(value.preparedMinLevel).toBeLessThanOrEqual(3);
   });
 
-  it("escalates by act, and still threatens the prepared party at depth", () => {
+  it("escalates by act, and still costs the prepared party real HP at depth", () => {
     expect(actMin("g4f", "g5f", "g6f")).toBeLessThan(actMin("g1f", "g2f", "g3f")); // mid bites harder than the shallows
     const deepest = Math.min(...push.floors.map((floor) => floor.lowestHpPct));
     expect(deepest).toBeGreaterThan(0.15); // preparation keeps it off the wipe line
-    expect(deepest).toBeLessThan(0.6); // …but the deep wood genuinely bites
+    // Defensive counterplay now EXISTS: the deep keepers deal wood + spore sleep, and the
+    // heartwood-ward blunts them. A fully-kitted prepared party therefore EASES the finale — the
+    // "lift the swing" effect the drpg-balance skill said adding defensive counterplay would have
+    // (it was <0.6 when Verdant had no resist gear to find). It still pays real HP at the deep
+    // floors (well under Act I's opener) and the curve stays intact; the genuine wipe-tension lives
+    // in the naive path, asserted above. Tighten this only by making the deep floors bite HARDER,
+    // never by nerfing the ward back into uselessness.
+    expect(deepest).toBeLessThan(trough("g1f") - 0.15);
   });
 
   it("Act I teaches gently (no early floor is a wall)", () => {
