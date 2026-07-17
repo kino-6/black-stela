@@ -116,9 +116,9 @@ reads at the right weight.
 `item-verdant-homing-spore` (glowing spore pod) · `item-verdant-greater-sap` (rich sap vial) ·
 `item-verdant-heartseed` (pulsing green seed) · `equip-verdant-thorn-lash` (living bramble
 whip) · `equip-verdant-bark-plate` (bark-scute armour) · `equip-verdant-living-charm`
-(green-wood charm).
+(green-wood charm) · `equip-verdant-heartwood-ward` (weathered heartwood ward).
 
-**Delivery status: 8/8.** All Verdant-specific item and equipment icons are
+**Delivery status: 9/9.** All Verdant-specific item and equipment icons are
 delivered under their own basenames.
 
 ## UI / stills
@@ -171,9 +171,9 @@ Acceptance requires both a 12-up contact-sheet review and browser proof in the
 character-creation preview and six-person party HUD. File dimensions and basename
 resolution alone do not prove the portraits are usable.
 
-## Delivery audit (2026-07-13)
+## Delivery audit (2026-07-17)
 
-Required asset files in this order: **48**. Delivered: **48**. Undelivered: **0**.
+Required asset files in this order: **49**. Delivered: **49**. Undelivered: **0**.
 Optional Verdant minimap-marker overrides are excluded from this count.
 
 | Area | Ordered | Delivered | Missing |
@@ -181,7 +181,7 @@ Optional Verdant minimap-marker overrides are excluded from this count.
 | Block wall/floor textures | 6 | 6 | 0 |
 | Door, stairs, return marker | 4 | 4 | 0 |
 | Enemy sprites | 14 | 14 | 0 |
-| Verdant item/equipment icons | 8 | 8 | 0 |
+| Verdant item/equipment icons | 9 | 9 | 0 |
 | Title and UI stills | 4 | 4 | 0 |
 | Character portraits | 12 | 12 | 0 |
 

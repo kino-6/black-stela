@@ -225,3 +225,6 @@ src-tauri/gen/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Agent image-generation scratch
+tmp/
