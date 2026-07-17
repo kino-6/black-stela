@@ -44,24 +44,30 @@ actually in doubt). The damage-number / beat playback (数字感) already ships.
 - [x] **Enemy-stage OVERLAY** (`5fb01a4`) — HUD is translucent overlays over a full-frame stage;
   stage share 36%→71% at 720p (80% at 1080p); creatures scale into the frame.
 
-## Next backlog: approved capability proposals (see [Improve.md](Improve.md))
-
-Three big product capabilities are approved as `Proposed` with owner boundaries + sub-IMP order.
-**Claude Code owns the data/rules contract (`*A`) and the controller-first player routes (`*C/*D`);
-Codex owns content authoring, art, and the deterministic simulator; each has an independent
-browser verifier.** Do not start `*B/*C` until the matching `*A` contract is frozen.
+## Next Backlog (see [Improve.md](Improve.md))
 
 - [ ] **IMP-021 Career/vocation mastery** — A/B/C shipped. Codex authored six advanced
-  destinations in each world, covering all 12 basics, and verified controller routes at
-  1920x1080/1280x720. `IMP-021V` remains blocked on the visual/decision findings in
-  [Improve.md](Improve.md).
+  destinations in each world and the functional controller routes pass.
+  `IMP-021V` remains blocked on bounded decision context and vocation presentation.
 - [ ] **IMP-022 Rare equipment, appraisal, bulk conversion** — A/B/C/D shipped. Codex authored
-  eight affixes in each world and the simulator finds at least two affix strategies for every
-  dangerous enemy. `IMP-022V` remains blocked on appraisal cost, confirmation/filtering,
-  material use, comparison, and presentation findings in [Improve.md](Improve.md).
+  affixes in each world; paid appraisal, comparison/equip, confirmation, protection,
+  and the Forge material sink now ship. `IMP-022V` remains blocked on bulk filtering,
+  broader enemy-answer affixes, and service presentation.
 - [ ] **IMP-023 Deterministic content & economy simulation Gate** — A/B/C shipped and extended
   with vocation-route coverage, weak-floor mastery decay, and dangerous-enemy affix coverage.
   Claude Code remains the independent parity verifier (`IMP-023V`).
+- [ ] **IMP-024 Combat enemy readability** — keep enemy bodies and marks outside the
+  portrait/command/message HUD; add screen-space non-intersection assertions.
+- [ ] **IMP-025 Town preparation hierarchy** — replace ten peer service buttons with a small
+  diegetic destination set and a clear return-to-preparation-to-departure rhythm.
+- [ ] **IMP-026 Exploration command surface** — directional input owns movement; the focused
+  command window shows only current-cell and party/map decisions.
+- [ ] **IMP-027 Return-loop continuity** — direct departure from the 6/6 Guild screen must
+  return to the same expedition-result/preparation state as departure from the town hub.
+- [ ] **IMP-028 Character-focused creation** — replace class cards and aptitude form rows
+  with bounded command/detail/status windows that keep the adventurer preview visible.
+- [ ] **Recovery E2E Gate repair** — after a party wipe, stop the scripted dungeon path and
+  assert the town/recovery state instead of retrying movement until the 180s timeout.
 
 ## Previous Milestone: all handheld Plan lanes cleared (shipped)
 
@@ -84,11 +90,11 @@ All green: **production build + 251 unit + 60 e2e**. Detail in [Plan.md](Plan.md
 
 ### NextAction
 
-1. **Combat FEEL** (active milestone, above) — design-first; align the lever set with the
-   user, then implement one browser-verified slice at a time.
-2. Then the approved capability backlog in dependency order: **IMP-021A** (vocation contract)
-   → IMP-022A (affix/appraisal contract) → their player routes → **IMP-023** simulation Gate.
-   Each `*A` contract freezes before its `*B/*C` content/route work starts.
+1. **IMP-024 / IMP-027** first because combat readability and return-loop truth are core play.
+2. **IMP-028**, then **IMP-025 / IMP-026**, as separate controller-first composition slices.
+3. Repair the recovery E2E wipe branch before using the full-route suite as release evidence.
+4. Close the remaining `IMP-021V / IMP-022V / IMP-023V` acceptance items without reopening
+   their frozen contracts unless a verified contract limitation requires it.
 
 ## Recently Completed (archived)
 

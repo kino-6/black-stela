@@ -13,6 +13,10 @@ combat, automation, or save/debug change, read:
 Do not call player-facing work done only because unit tests, build, or headless
 reachability passed. Browser-visible proof, Japanese/layout checks when
 relevant, and an explicit note about which past trouble could recur are required.
+Use the repository's Playwright/Chromium runner for browser proof by default.
+Do not attempt or report the optional Playwright MCP Chrome extension on each
+run. Ask the user before proposing its installation, and only when a concrete
+test cannot be performed with the repository runner.
 
 Normal play must not expose debug/admin/product controls, AI provider setup,
 arbitrary save/load, raw route ids, or implementation terms. Dungeon work must
