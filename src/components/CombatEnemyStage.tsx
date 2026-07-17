@@ -16,6 +16,9 @@ interface CombatEnemyStageProps {
   onSelectTarget?: (groupId: string) => void;
   activeBeat: CombatBeat | null;
   beatKey?: number;
+  /** Current per-beat interval (ms). Stage FX scale to it so each blow's animation finishes inside
+   *  its beat and stays in step with the log, instead of a fixed ~0.7s that lags at 2x. */
+  beatMs?: number;
   locale: Locale;
   t: Translator;
   caption: string;
@@ -42,14 +45,18 @@ export function CombatEnemyStage({
   onSelectTarget,
   activeBeat,
   beatKey,
+  beatMs,
   locale,
   t,
   caption
 }: CombatEnemyStageProps) {
   const anchorFor = (groupId: string) => anchors.find((anchor) => anchor.groupId === groupId);
+  // Cap the hit-FX at ~85% of a beat so it plays fully and clears before the next blow lands — in
+  // step with the log, which advances once per beat. Fixed to a readable floor for the interactive view.
+  const fxMs = Math.max(140, Math.round((beatMs ?? 430) * 0.85));
 
   return (
-    <div className="enemy-stage">
+    <div className="enemy-stage" style={{ ["--fx-ms" as string]: `${fxMs}ms` }}>
       <div className="enemy-stage-backdrop">{backdrop}</div>
       <div className="enemy-stage-figures" role="list" aria-label={t("play.enemyGroups")}>
         {groups.map((group) => {

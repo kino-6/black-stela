@@ -1193,7 +1193,7 @@ function declareRound(state: GameState, world: ScenarioWorld, actions: CombatAct
     // A basic swing stays front-first; an ability honours its own reach (back row / most wounded).
     const target = ability?.target
       ? chooseEnemyTargetFor(party, ability.target, `${state.turn}:${combat.round}:${group.id}:ability-target`)
-      : chooseEnemyTarget(party);
+      : chooseEnemyTarget(party, `${state.turn}:${combat.round}:${group.id}:target`);
     if (!target) {
       continue;
     }
@@ -2562,12 +2562,18 @@ function damageGroup(groups: CombatEnemyGroup[], groupId: string, damage: number
   });
 }
 
-function chooseEnemyTarget(party: Character[]): Character | null {
-  return (
-    party.find((member) => member.row === "front" && member.hp > 0 && !member.injury) ??
-    party.find((member) => member.hp > 0 && !member.injury) ??
-    null
-  );
+// A basic swing lands on the FRONT row (positional), but SPREADS across whoever stands there —
+// seeded, so it is deterministic yet no longer hammers the same front-left body every time (the
+// "enemies only ever hit the front character" complaint). Falls back to any standing member if the
+// front row has fallen. Only ever targets a standing, un-injured member (null ⇒ the enemy skips).
+function chooseEnemyTarget(party: Character[], seed: string): Character | null {
+  const standing = party.filter((member) => member.hp > 0 && !member.injury);
+  if (standing.length === 0) {
+    return null;
+  }
+  const front = standing.filter((member) => member.row === "front");
+  const pool = front.length > 0 ? front : standing;
+  return pool[hashSeed(seed) % pool.length];
 }
 
 /** Row-aware target picker for enemy ABILITIES (see EnemyAbility.target). Basic melee stays

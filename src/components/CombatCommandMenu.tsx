@@ -27,6 +27,9 @@ interface CombatCommandMenuProps {
   onQueueDefend: () => void;
   onQueueItem: (itemId: string, targetCharacterId: string) => void;
   onUndo: () => void;
+  /** While a target submenu is open, reports the group under the cursor so the STAGE reticle tracks
+   *  it — you pick the enemy by watching it light up on the battlefield, not by reading a list. */
+  onTargetPreview?: (groupId: string | null) => void;
 }
 
 type MenuView = "command" | "attackTarget" | "spell" | "spellTarget" | "itemSelect" | "itemTarget";
@@ -51,7 +54,8 @@ export function CombatCommandMenu({
   onQueueSpell,
   onQueueDefend,
   onQueueItem,
-  onUndo
+  onUndo,
+  onTargetPreview
 }: CombatCommandMenuProps) {
   const [view, setView] = useState<MenuView>("command");
   const [cursor, setCursor] = useState(0);
@@ -145,6 +149,13 @@ export function CombatCommandMenu({
       onSelect: () => pendingItem && onQueueItem(pendingItem, ally.id)
     }));
   })();
+
+  // Drive the stage reticle from the target cursor: while an enemy-target submenu is open, the group
+  // under the cursor is the one highlighted on the battlefield (null clears it back to none).
+  const previewGroupId = view === "attackTarget" || view === "spellTarget" ? rows[cursor]?.key ?? null : null;
+  useEffect(() => {
+    onTargetPreview?.(previewGroupId);
+  }, [previewGroupId, onTargetPreview]);
 
   function selectCommand(kind: CommandKind) {
     if (kind === "attack") {

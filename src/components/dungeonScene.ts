@@ -284,7 +284,7 @@ export function buildDungeonScene(mount: HTMLDivElement, input: DungeonSceneInpu
       return { ...figure, ...staged };
     });
 
-    const anchors = new Map<string, { xSum: number; n: number; z: number; baseY: number }>();
+    const anchors = new Map<string, { x: number; z: number; baseY: number }>();
 
     figures.forEach(({ group, groupId, x, z: framedZ }) => {
       const url = getEnemySpriteTextureUrl(group.id, pack);
@@ -355,11 +355,18 @@ export function buildDungeonScene(mount: HTMLDivElement, input: DungeonSceneInpu
       }
 
       const key = groupId;
-      const anchor = anchors.get(key) ?? { xSum: 0, n: 0, z, baseY: lift };
-      anchor.xSum += offsetX;
-      anchor.n += 1;
-      // Hang the name/HP mark under the CREATURE, not under the patch of floor it happens to
-      // be above. A hovering swarm otherwise gets a label stranded on bare ground below it.
+      // Pin the group's name/HP mark to its LEFTMOST figure — a single, stable creature — NOT the
+      // average of all figures. Averaging drops the label in the empty gap between a spread group's
+      // members (a pack of 2 puts it dead-centre on bare floor), and the average shifts every time a
+      // figure falls, so the label appeared to wander. The leftmost figure is deterministic and
+      // always under an actual creature.
+      const existing = anchors.get(key);
+      const anchor = existing ?? { x: offsetX, z, baseY: lift };
+      if (offsetX < anchor.x) {
+        anchor.x = offsetX;
+        anchor.z = z;
+      }
+      // Hang the mark under the CREATURE, not under the patch of floor it happens to be above.
       anchor.baseY = Math.min(anchor.baseY, lift);
       anchors.set(key, anchor);
     });
@@ -369,7 +376,7 @@ export function buildDungeonScene(mount: HTMLDivElement, input: DungeonSceneInpu
     if (input.onEnemyAnchors) {
       const projected: EnemyAnchor[] = [];
       anchors.forEach((anchor, groupId) => {
-        const point = new THREE.Vector3(anchor.xSum / anchor.n, anchor.baseY, anchor.z).project(camera);
+        const point = new THREE.Vector3(anchor.x, anchor.baseY, anchor.z).project(camera);
         projected.push({
           groupId,
           xPct: ((point.x + 1) / 2) * 100,

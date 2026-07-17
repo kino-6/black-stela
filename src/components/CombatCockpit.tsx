@@ -27,11 +27,13 @@ interface CombatCockpitProps {
   enemyGroups: CombatEnemyGroup[];
   livingEnemyGroups: CombatEnemyGroup[];
   selectedTarget?: CombatEnemyGroup;
-  onSelectTarget?: (groupId: string) => void;
+  onSelectTarget?: (groupId: string | null) => void;
   activeBeat: CombatBeat | null;
   /** Playback index; also the "playback is running" signal (undefined = interactive). */
   beatKey?: number;
   playingBack: boolean;
+  /** Current per-beat interval (ms) so stage FX complete within one beat and stay in sync with the log. */
+  beatMs?: number;
 
   // Party
   displayedParty: Character[];
@@ -90,6 +92,7 @@ export function CombatCockpit({
   activeBeat,
   beatKey,
   playingBack,
+  beatMs,
   displayedParty,
   activeParty,
   selectedActor,
@@ -155,6 +158,7 @@ export function CombatCockpit({
         onSelectTarget={onSelectTarget}
         activeBeat={activeBeat}
         beatKey={beatKey}
+        beatMs={beatMs}
         locale={locale}
         t={t}
         caption={caption}
@@ -218,6 +222,7 @@ export function CombatCockpit({
             onQueueDefend={onQueueDefend}
             onQueueItem={onQueueItem}
             onUndo={onUndo}
+            onTargetPreview={onSelectTarget}
           />
         ) : null}
         {!isTempoRunning && ordersReady && confirmRound && !playingBack && (

@@ -3248,7 +3248,7 @@ textarea {
   background: rgba(255, 240, 210, 0.55);
   mix-blend-mode: screen;
   pointer-events: none;
-  animation: fx-flash 0.22s ease-out forwards;
+  animation: fx-flash var(--fx-ms, 0.22s) ease-out forwards;
 }
 
 .fx-slash {
@@ -3262,7 +3262,7 @@ textarea {
   background: linear-gradient(90deg, transparent, #fff 45%, #ffe6a6 55%, transparent);
   filter: drop-shadow(0 0 4px rgba(255, 230, 166, 0.9));
   pointer-events: none;
-  animation: fx-slash 0.26s ease-out forwards;
+  animation: fx-slash var(--fx-ms, 0.26s) ease-out forwards;
 }
 
 .fx-slash.crit {
@@ -4113,7 +4113,7 @@ textarea {
   color: #ffd27a;
   text-shadow: 0 1px 2px #000, 0 0 6px rgba(0, 0, 0, 0.8);
   pointer-events: none;
-  animation: hit-number-rise 0.7s ease-out forwards;
+  animation: hit-number-rise var(--fx-ms, 0.7s) ease-out forwards;
 }
 
 @keyframes beat-shake {

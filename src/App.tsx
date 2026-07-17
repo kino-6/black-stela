@@ -437,11 +437,18 @@ export function App() {
   // beat's snapshot (enemies fall as the hit lands) until the last beat commits.
   const [playback, setPlayback] = useState<{ beats: CombatBeat[]; index: number; pending: GameState; fast?: boolean } | null>(null);
   const activeBeat = playback ? playback.beats[playback.index] ?? null : null;
+  // A round is "resolving" from the first press until its playback fully commits. The keyboard
+  // handler's closure can hold a STALE `playback` (it isn't in that effect's deps), so a spammed F
+  // would otherwise defeat the `if (playback) return` guard and restart playback from beat 0 every
+  // press — the fight never finishes and the screen looks frozen. A ref is read live from any
+  // closure, so this guard cannot go stale.
+  const resolvingRef = useRef(false);
 
   function commitPlayback() {
     if (playback) {
       setState(playback.pending);
       setPlayback(null);
+      resolvingRef.current = false;
       // The log was shown IN SYNC with each blow during playback; reveal it fully now so it does
       // not re-play the same beats a second time (the "後追い / when is this log from?" lag).
       setRevealedBeats(Number.MAX_SAFE_INTEGER);
@@ -461,6 +468,7 @@ export function App() {
       const timer = setTimeout(() => {
         setState(playback.pending);
         setPlayback(null);
+        resolvingRef.current = false; // round fully committed — the next press may resolve again
         // Fully reveal the log — it was already shown in sync with the blows during playback, so it
         // must NOT re-play the beats afterward (the 後追い lag the player couldn't place).
         setRevealedBeats(Number.MAX_SAFE_INTEGER);
@@ -618,9 +626,12 @@ export function App() {
   // the resolved state and play the round's beats forward first so the battlefield
   // updates blow-by-blow; instant mode (or a beatless round) commits immediately.
   function resolveRound(actions: CombatActionDeclaration[], opts: { fromAuto?: boolean; fast?: boolean } = {}) {
-    if (playback) {
+    // Read the ref (not `playback`) so a stale keyboard closure can't slip a second round in while
+    // one is already resolving — that was the F-spam freeze.
+    if (playback || resolvingRef.current) {
       return;
     }
+    resolvingRef.current = true;
     const resolved = executeCommand(state, activeWorld, { type: "declare_round", actions });
     setLastCombatOrders(actions);
     setCombatOrders([]);
@@ -634,6 +645,7 @@ export function App() {
     // to a hand-entered round.
     if ((instantCombatLog && !opts.fast) || beats.length === 0) {
       setState(resolved);
+      resolvingRef.current = false; // committed immediately — no playback to wait on
       return;
     }
     // A manual round stops any running tempo; an auto round keeps it going so the
@@ -693,7 +705,7 @@ export function App() {
   // attack" round: it replaces six × (command → target) + confirm with a single action. Tactical
   // fights still use the per-actor menu; this is the fast path, not the only path.
   function commitAllOutAttack() {
-    if (state.phase !== "combat" || tempoMode !== "idle" || playback) {
+    if (state.phase !== "combat" || tempoMode !== "idle" || playback || resolvingRef.current) {
       return;
     }
     const actions = chooseAutoRoundActions(state, activeWorld);
@@ -2542,6 +2554,7 @@ export function App() {
                   activeBeat={activeBeat}
                   beatKey={playback?.index}
                   playingBack={Boolean(playback)}
+                  beatMs={playback ? (playback.fast || tempoSpeed === "fast" ? 170 : 430) : 430}
                   displayedParty={displayedParty}
                   activeParty={activeParty}
                   selectedActor={selectedActor}

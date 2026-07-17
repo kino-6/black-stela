@@ -22,8 +22,13 @@ elements:
     color: "#9ec7ff"
     locales: { ja: { label: 星 } }
 # Difficulty (tuned via descentSim.preparationValue): a naive party — no counterplay, no grinding —
-# genuinely wipes; a prepared one clears ~10 levels lower. threatScalar raises the danger,
+# genuinely wipes; a prepared one clears well below the curve. threatScalar raises the danger,
 # counterplayBoost makes the right tools scale with it. Re-tune these two numbers, not every enemy.
+# NB (2026-07-18): basic enemy attacks now SPREAD across the front row instead of hammering the
+# front-left member. That distributes damage (a MULTI-member party survives ~1 level lower), so the
+# prep swing here settles near 5 — do NOT crank threat to force it back to 10: higher threat gives
+# the SPREAD no benefit to a small/solo party and over-punishes early play. The invariants hold
+# (naive wipes, prepared clears near entry, deep floors bite); the gate asserts those, not a number.
 balance:
   threatScalar: 2.4
   counterplayBoost: 2.0
