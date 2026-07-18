@@ -1706,6 +1706,32 @@ export function App() {
                         ))}
                       </ol>
 
+                      {/* IMP-028: a portrait + summary reserved above EVERY step, so the chosen visual
+                          identity and the developing character stay in view while you decide — class
+                          and aptitude changes update it live, no step hides the person being made. */}
+                      {guildCreationStep !== "briefing" && (
+                        <div className="guild-preview" data-testid="guild-preview">
+                          <div className="guild-preview-portrait" style={{ borderColor: draft.accentColor }}>
+                            {renderPortraitContent({
+                              portraitRef: draft.portraitRef,
+                              visualProfile: draft.visualProfile,
+                              context: "token",
+                              backgroundId: draft.backgroundId,
+                              fallback: draft.name || findClass(draft.classId).label[locale],
+                              alt: t("party.portraitPreview"),
+                              testId: "guild-preview-portrait"
+                            })}
+                          </div>
+                          <div className="guild-preview-summary">
+                            <strong>{draft.name || t("party.namePlaceholder")}</strong>
+                            <span>{findClass(draft.classId).label[locale]} · {formatCombatRow(draftPreview.row, t)}</span>
+                            <span className="guild-preview-stats">
+                              HP {draftPreview.maxHp} · {t("party.damage")} {draftPreview.damageMin}-{draftPreview.damageMax} · {t("party.speed")} {draftPreview.speed}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+
                       {guildCreationStep === "briefing" && (
                         <section className="guild-step-panel" data-testid="guild-step-briefing">
                           <h4>{t("party.guildMaster")}</h4>
@@ -1868,20 +1894,30 @@ export function App() {
                               {t("party.rerollBonus")}
                             </button>
                           </div>
+                          {/* IMP-028: a status window, not scattered form rows — base → current per
+                              aptitude, the allocated delta, and the ± steppers in fixed columns. */}
                           <div className="bonus-grid" aria-label={t("party.allocateBonus")}>
+                            <div className="bonus-grid-head" aria-hidden="true">
+                              <span>{t("party.aptitudeLabel")}</span>
+                              <span>{t("party.base")}</span>
+                              <span />
+                              <span>{t("party.current")}</span>
+                              <span />
+                              <span>{t("party.allocated")}</span>
+                            </div>
                             {aptitudeKeys.map((key) => (
                               <div className="bonus-row" key={key}>
-                                <span>{t(`aptitude.${key}` as Parameters<Translator>[0])}</span>
+                                <span className="bonus-apt">{t(`aptitude.${key}` as Parameters<Translator>[0])}</span>
+                                <span className="bonus-base">{draftPreview.aptitude[key] - draft.bonusAptitude[key]}</span>
                                 <button
                                   type="button"
                                   aria-label={`${t(`aptitude.${key}` as Parameters<Translator>[0])} -`}
                                   disabled={draft.bonusAptitude[key] <= 0}
                                   onClick={() => adjustBonusAptitude(key, -1)}
                                 >
-                                  -
+                                  −
                                 </button>
-                                <strong>{draftPreview.aptitude[key]}</strong>
-                                <small>{draft.bonusAptitude[key] > 0 ? `+${draft.bonusAptitude[key]}` : ""}</small>
+                                <strong className="bonus-final">{draftPreview.aptitude[key]}</strong>
                                 <button
                                   type="button"
                                   aria-label={`${t(`aptitude.${key}` as Parameters<Translator>[0])} +`}
@@ -1890,6 +1926,7 @@ export function App() {
                                 >
                                   +
                                 </button>
+                                <small className="bonus-alloc">{draft.bonusAptitude[key] > 0 ? `+${draft.bonusAptitude[key]}` : ""}</small>
                               </div>
                             ))}
                           </div>
