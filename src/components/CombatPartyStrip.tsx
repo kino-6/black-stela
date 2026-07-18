@@ -22,6 +22,9 @@ export function CombatPartyStrip({ members, selectedActorId, orderedActorIds, ac
       {rows.map((row, index) => (
         <div className="party-strip-group" data-row={row} data-testid={`combat-${row}-row`} key={row}>
           {index === 1 && <span className="party-strip-divider" aria-hidden="true" />}
+          {/* IMP-024: a group-level 前衛/後衛 tag so the formation reads at a glance — no per-actor
+              row labels needed. */}
+          <span className="party-strip-row-label">{t(row === "front" ? "play.frontRow" : "play.backRow")}</span>
           {members
             .filter((member) => member.row === row)
             .map((member) => {

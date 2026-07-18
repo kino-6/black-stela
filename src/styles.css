@@ -3385,8 +3385,26 @@ textarea {
 }
 
 .party-strip-group[data-row="back"] {
-  border-left: 1px dashed #2f332b;
-  padding-left: 0.6rem;
+  border-left: 1px solid #3a4033;
+  padding-left: 0.7rem;
+}
+
+/* IMP-024: a compact front/back tag so a still frame reads the 3+3 formation without per-actor labels. */
+.party-strip-row-label {
+  flex: 0 0 auto;
+  align-self: center;
+  writing-mode: vertical-rl;
+  text-orientation: upright;
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  color: #8a8f7f;
+  padding: 0 0.1rem;
+  user-select: none;
+}
+
+.party-strip-group[data-row="front"] .party-strip-row-label {
+  color: #c9a765;
 }
 
 .party-token-combat {
@@ -4962,13 +4980,17 @@ textarea {
   --hud-command: clamp(10.6rem, 23vh, 12rem);
 }
 
-/* The stage is the screen: it fills the cockpit above the persistent HUD. */
+/* IMP-024: the stage is the TOP region and the command bar is fully BELOW it — the creatures (which
+   the renderer bottom-anchors) never blur behind the command surface that should inform the choice.
+   The stage bottom is CONSTANT (command space is always reserved), so the layout never breathes as
+   you go command -> target -> cancel -> next actor -> playback. The + mark allowance grounds the
+   creatures a touch above the bar's top edge, since the name/HP mark hangs just below their feet. */
 .combat-cockpit > .enemy-stage {
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
-  bottom: var(--hud-base);
+  bottom: calc(var(--hud-base) + var(--hud-command) + 2.75rem);
   z-index: 0;
   border: none;
   border-radius: 0;
@@ -5009,11 +5031,14 @@ textarea {
 /* The transient command overlay floats just above the persistent HUD while choosing. Its own
    background is drawn by its children (menu / presence / confirm), so during playback — when it
    is empty — it is fully see-through and the creatures behind it are unobscured. */
+/* IMP-024: the command zone is an OPAQUE bottom bar — a clean decision surface distinct from the
+   battlefield above it. The stage no longer runs under it, so it holds the menu (while choosing) or
+   the acting character's presence (during playback) without ever filming over a creature. */
 .combat-cockpit > .combat-command-zone {
   bottom: var(--hud-base);
   height: var(--hud-command);
-  background: none;
-  backdrop-filter: none;
+  background: rgba(8, 9, 7, 0.9);
+  backdrop-filter: blur(3px);
   pointer-events: none;
 }
 

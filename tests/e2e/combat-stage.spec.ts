@@ -26,7 +26,7 @@ test.describe("combat stage", () => {
   // 720p — so the art read small no matter how good it was. The HUD is now translucent overlays
   // floating over a full-frame stage; the creatures scale into it. This locks the win: the old
   // layout (36%) fails this, and the always-on six-vital strip must still hold the bottom.
-  test("the enemy stage dominates the screen, with the party strip still pinned below it", async ({ page }) => {
+  test("the enemy stage is the largest zone, above a command bar that never covers it", async ({ page }) => {
     await page.setViewportSize(CONTROLLER_VIEWPORT);
     await startDebugRun(page, { progress: "floor_2" });
     await walkUntilCombat(page);
@@ -34,12 +34,21 @@ test.describe("combat stage", () => {
 
     const cockpit = (await page.locator(".combat-cockpit").boundingBox())!;
     const stage = (await page.locator(".enemy-stage").boundingBox())!;
+    const cmd = (await page.locator(".combat-command-zone").boundingBox())!;
+    // IMP-024 (option A): the stage no longer OVERLAYS the command surface — it is the TOP region
+    // above a persistent, opaque command bar. So it is the single largest zone (bigger than the
+    // command bar) and a meaningful share, but no longer >60%, because the bar is reserved rather
+    // than overlaid. That the creatures are never HIDDEN behind the HUD is the geometry gate in
+    // combat-layout.spec; here we only fix that the enemies remain the primary zone.
     const share = stage.height / cockpit.height;
-    expect(share, `enemy stage is only ${Math.round(share * 100)}% of the cockpit`).toBeGreaterThan(0.6);
+    expect(stage.height, "the command bar is taller than the enemy stage").toBeGreaterThan(cmd.height);
+    expect(share, `enemy stage is only ${Math.round(share * 100)}% of the cockpit`).toBeGreaterThan(0.33);
 
-    // The creatures scaled up with the taller frame — the smallest silhouette clears the old floor.
+    // The creatures still read at a legible silhouette on the (now top-anchored) stage. Reserving the
+    // command bar (option A) trades some height, so the smallest silhouette is ~78px here (was ~110
+    // under the full-frame overlay that hid the creatures behind the menu) — still clearly readable.
     const silhouette = Number(await page.getByTestId("dungeon-canvas").getAttribute("data-combat-minimum-silhouette"));
-    expect(silhouette, "the creatures did not grow into the taller stage").toBeGreaterThanOrEqual(110);
+    expect(silhouette, "the creatures are too small to read").toBeGreaterThanOrEqual(72);
 
     // The always-on six-member strip stays pinned along the bottom edge of the cockpit (a thin
     // persistent HUD, not a reserved band that starves the stage).
