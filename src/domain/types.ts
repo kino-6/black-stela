@@ -813,6 +813,13 @@ export interface ScenarioAffix {
   defenseBonus?: number;
   accuracyBonus?: number;
   speedBonus?: number;
+  // IMP-022: richer affix answers — resilience, status/element wards, regen, and species-specific bite.
+  hpBonus?: number;
+  mpBonus?: number;
+  resistBonus?: Partial<Record<CombatStatus, number>>;
+  elementResist?: Partial<Record<string, number>>;
+  regen?: number;
+  speciesBonus?: { tag: string; multiplier: number };
   locales?: Partial<Record<string, { label?: string }>>;
 }
 

@@ -3,7 +3,7 @@
 // affix, producing a unique instance that may be unidentified until appraised. See
 // docs/design/rare-loot.md. Pure + deterministic (seeded) so drops replay identically.
 import { EQUIPMENT_AFFIXES, equipmentInstanceKey } from "./affixes";
-import type { EquipmentSlot, InventoryItem, ItemRarity, ScenarioWorld } from "./types";
+import type { CombatStatus, EquipmentSlot, InventoryItem, ItemRarity, ScenarioWorld } from "./types";
 
 export interface ResolvedAffix {
   id: string;
@@ -16,6 +16,12 @@ export interface ResolvedAffix {
   defenseBonus?: number;
   accuracyBonus?: number;
   speedBonus?: number;
+  hpBonus?: number;
+  mpBonus?: number;
+  resistBonus?: Partial<Record<CombatStatus, number>>;
+  elementResist?: Partial<Record<string, number>>;
+  regen?: number;
+  speciesBonus?: { tag: string; multiplier: number };
 }
 
 const RARITY_ORDER: ItemRarity[] = ["common", "rare", "epic"];
@@ -58,7 +64,13 @@ export function resolveAffixCatalog(world: ScenarioWorld): ResolvedAffix[] {
     attackBonus: affix.attackBonus,
     defenseBonus: affix.defenseBonus,
     accuracyBonus: affix.accuracyBonus,
-    speedBonus: affix.speedBonus
+    speedBonus: affix.speedBonus,
+    hpBonus: affix.hpBonus,
+    mpBonus: affix.mpBonus,
+    resistBonus: affix.resistBonus,
+    elementResist: affix.elementResist,
+    regen: affix.regen,
+    speciesBonus: affix.speciesBonus
   }));
   return [...builtIn, ...authored];
 }

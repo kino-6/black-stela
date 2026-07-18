@@ -21,6 +21,8 @@ import {
   effectiveMaxHp,
   effectiveMaxMp,
   createInventoryItemFromCatalog,
+  characterRegen,
+  characterSpeciesMultiplier,
   findEquipment,
   getEffectiveCharacterStats,
   getEquipmentSlot,
@@ -995,6 +997,21 @@ function declareRound(state: GameState, world: ScenarioWorld, actions: CombatAct
     });
   };
 
+  // IMP-022: a regen affix restores HP to its standing wearer at the top of the round (capped at
+  // max HP). Applied before actions so the round opens with the trickle already in the party strip.
+  party = party.map((member) => {
+    if (member.hp <= 0 || member.injury) {
+      return member;
+    }
+    const regen = characterRegen(member, world);
+    if (regen <= 0) {
+      return member;
+    }
+    const maxHp = getEffectiveCharacterStats(member, world).maxHp;
+    const healed = Math.min(maxHp, member.hp + regen);
+    return healed > member.hp ? { ...member, hp: healed } : member;
+  });
+
   const orderedActions = [...validation.actions].sort((left, right) => {
     const leftActor = party.find((member) => member.id === left.actorId);
     const rightActor = party.find((member) => member.id === right.actorId);
@@ -1109,7 +1126,9 @@ function declareRound(state: GameState, world: ScenarioWorld, actions: CombatAct
 
     const attackSeed = `${state.turn}:${combat.round}:${actor.id}:${group.id}:damage`;
     const rawDamage = rollDamage(attackSeed, actorStats.damageMin, actorStats.damageMax, group.armor);
-    const weakened = chipThroughResistance(Math.round(rawDamage * elementMultiplier(group.weaknesses, actorStats.attackElement)), attackSeed);
+    // IMP-022: a species-bane affix multiplies damage against the matching enemy family.
+    const speciesMult = characterSpeciesMultiplier(actor, world, world.enemies.find((candidate) => candidate.id === group.enemyId)?.tags);
+    const weakened = chipThroughResistance(Math.round(rawDamage * elementMultiplier(group.weaknesses, actorStats.attackElement) * speciesMult), attackSeed);
     const critChance = getCriticalChance(actor);
     const crit = rollPercent(`${state.turn}:${combat.round}:${actor.id}:${group.id}:crit`) < critChance;
     const damage = crit ? Math.round(weakened * CRIT_MULTIPLIER) : weakened;

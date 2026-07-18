@@ -166,6 +166,16 @@ export function getEffectiveCharacterStats(character: Character, world: Scenario
       defenseBonus += affix.defenseBonus ?? 0;
       accuracyBonus += affix.accuracyBonus ?? 0;
       speedBonus += affix.speedBonus ?? 0;
+      // IMP-022: an affix can also harden the wearer — flat HP/MP, status wards, and element resist,
+      // stacking with the gear's own bonuses (regen/species bite are applied in combat, not here).
+      hpBonus += affix.hpBonus ?? 0;
+      mpBonus += affix.mpBonus ?? 0;
+      for (const [status, value] of Object.entries(affix.resistBonus ?? {})) {
+        resistance[status as CombatStatus] = (resistance[status as CombatStatus] ?? 0) + (value ?? 0);
+      }
+      for (const [element, value] of Object.entries(affix.elementResist ?? {})) {
+        elementResist[element] = (elementResist[element] ?? 1) * (value ?? 1);
+      }
     }
   }
 
@@ -189,6 +199,37 @@ export function getEffectiveCharacterStats(character: Character, world: Scenario
     attackElement,
     elementResist
   };
+}
+
+// IMP-022: affix effects that live in COMBAT, not the flat stat block — summed across the wearer's
+// equipped affixes.
+
+/** HP the wearer regenerates at the start of each round they can act (0 if no regen affix). */
+export function characterRegen(character: Character, world: ScenarioWorld): number {
+  let regen = 0;
+  for (const equipped of Object.values(character.equipment)) {
+    if (!equipped?.affix) continue;
+    regen += findResolvedAffix(world, equipped.affix)?.regen ?? 0;
+  }
+  return regen;
+}
+
+/** Outgoing-damage multiplier vs an enemy carrying any of `enemyTags` — the best matching species
+ *  affix, or 1 when nothing matches. Lets a "bane" enchant answer a whole family (spore, husk, …). */
+export function characterSpeciesMultiplier(character: Character, world: ScenarioWorld, enemyTags: string[] | undefined): number {
+  if (!enemyTags || enemyTags.length === 0) {
+    return 1;
+  }
+  const tags = new Set(enemyTags);
+  let multiplier = 1;
+  for (const equipped of Object.values(character.equipment)) {
+    if (!equipped?.affix) continue;
+    const species = findResolvedAffix(world, equipped.affix)?.speciesBonus;
+    if (species && tags.has(species.tag)) {
+      multiplier = Math.max(multiplier, species.multiplier);
+    }
+  }
+  return multiplier;
 }
 
 // Effective HP/MP caps including gear bonuses — equipping raises the ceiling;

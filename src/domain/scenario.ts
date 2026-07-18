@@ -111,6 +111,16 @@ const scenarioAffixSchema = z.object({
   defenseBonus: z.number().int().optional(),
   accuracyBonus: z.number().int().optional(),
   speedBonus: z.number().int().optional(),
+  // IMP-022: affix effects beyond four flat bonuses, so gear can ANSWER an enemy family —
+  // resilience (hp/mp), status/element wards, in-combat regen, and species/tag-specific bite.
+  hpBonus: z.number().int().optional(),
+  mpBonus: z.number().int().optional(),
+  resistBonus: z.record(z.enum(["poison", "fear", "silence", "sleep", "ward"]), z.number().int().min(0).max(100)).optional(),
+  elementResist: z.record(z.string().min(1), z.number().min(0).max(2)).optional(),
+  // HP restored to the wearer at the start of each combat round they act.
+  regen: z.number().int().positive().optional(),
+  // A multiplier applied to this wearer's outgoing damage against enemies carrying `tag`.
+  speciesBonus: z.object({ tag: z.string().min(1), multiplier: z.number().min(1).max(4) }).optional(),
   locales: z.record(z.object({ label: z.string().min(1).optional() })).optional()
 });
 

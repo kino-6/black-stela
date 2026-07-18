@@ -72,6 +72,49 @@ affixes:
     attackBonus: 2
     defenseBonus: 2
     locales: { ja: { label: 絞り蔓の } }
+  # IMP-022: affixes that ANSWER a family rather than adding a flat stat — a defensive and an
+  # offensive answer for the grove's two dangerous families (spore casters, deep wood/husks).
+  - id: affix.verdant.spore-proof
+    label: Spore-Proof
+    slots: [head, body, accessory]
+    minFloor: 3
+    rarity: rare
+    weight: 3
+    resistBonus: { sleep: 35, silence: 25 }
+    locales: { ja: { label: 防胞子の } }
+  - id: affix.verdant.grove-warded
+    label: Grove-Warded
+    slots: [offhand, body, accessory]
+    minFloor: 5
+    rarity: rare
+    weight: 3
+    elementResist: { wood: 0.6 }
+    locales: { ja: { label: 森防ぎの } }
+  - id: affix.verdant.sap-fed
+    label: Sap-Fed
+    slots: [accessory, body]
+    minFloor: 4
+    rarity: epic
+    weight: 2
+    regen: 3
+    locales: { ja: { label: 樹液養いの } }
+  - id: affix.verdant.spore-bane
+    label: Spore-Bane
+    slots: [weapon]
+    minFloor: 3
+    rarity: rare
+    weight: 3
+    speciesBonus: { tag: spore, multiplier: 1.6 }
+    locales: { ja: { label: 胞子断ちの } }
+  - id: affix.verdant.husk-cleaving
+    label: Husk-Cleaving
+    slots: [weapon]
+    minFloor: 6
+    rarity: epic
+    weight: 2
+    attackBonus: 1
+    speciesBonus: { tag: husk, multiplier: 1.7 }
+    locales: { ja: { label: 殻割りの } }
 ---
 
 # Affixes — Verdant
