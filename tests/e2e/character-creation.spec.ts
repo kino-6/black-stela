@@ -26,13 +26,16 @@ test("guild registration supports quick and detailed recruits without roster sco
   await page.getByRole("button", { name: "Skip explanation" }).click();
   await expect(page.getByTestId("guild-suggestion")).toHaveCount(0);
   await expect(page.getByText("Want me to pick one?")).toHaveCount(0);
-  await expect(page.getByTestId("guild-step-class").locator(".class-card")).toHaveCount(12);
-  await expect(page.getByTestId("guild-step-class").locator(".class-gear")).toHaveCount(12);
-  await expect(page.getByTestId("guild-step-class").locator(".class-gear").first()).toContainText("Equipment:");
-  await expect(page.getByText("Reads hinges, dust, and floor scars")).toBeVisible();
+  // IMP-028: a bounded class list beside a stable detail pane, not a two-column card wall.
+  await expect(page.getByTestId("guild-step-class").locator(".guild-class-option")).toHaveCount(12);
+  // The pane reads the calling under the cursor — focus Seeker and its signature + gear appear there.
+  await page.getByTestId("guild-class-seeker").focus();
+  const classDetail = page.getByTestId("guild-class-detail");
+  await expect(classDetail).toContainText("Seeker");
+  await expect(classDetail).toContainText("Reads hinges, dust, and floor scars");
+  await expect(classDetail).toContainText("Equipment");
   await expect(page.getByText("Front line")).toHaveCount(0);
   await expect(page.getByText("Retreat guard")).toHaveCount(0);
-  await page.getByTestId("guild-step-class").getByRole("button", { name: /Seeker/ }).click();
   await page.getByTestId("guild-step-class").getByRole("button", { name: "Next" }).click();
   await expect(page.getByTestId("portrait-preview")).toBeVisible();
   await expect(page.getByLabel("Accent")).toHaveCount(0);
@@ -145,9 +148,9 @@ test("Japanese guild registration remains usable on mobile", async ({ page }) =>
 
   await page.getByRole("button", { name: "説明を聞かない" }).click();
   await expect(page.getByText("迷うなら、見繕うが？")).toHaveCount(0);
-  await expect(page.getByTestId("guild-step-class").locator(".class-card")).toHaveCount(12);
-  await expect(page.getByText("蝶番、埃、床の傷を読み")).toBeVisible();
-  await page.getByTestId("guild-step-class").getByRole("button", { name: /探索者/ }).click();
+  await expect(page.getByTestId("guild-step-class").locator(".guild-class-option")).toHaveCount(12);
+  await page.getByTestId("guild-class-seeker").focus();
+  await expect(page.getByTestId("guild-class-detail")).toContainText("蝶番、埃、床の傷を読み");
   await page.getByTestId("guild-step-class").getByRole("button", { name: "次へ" }).click();
   await expect(page.getByTestId("portrait-preview")).toBeVisible();
   await expect(page.getByLabel("色")).toHaveCount(0);

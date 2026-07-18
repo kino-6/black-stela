@@ -383,6 +383,8 @@ export function App() {
   }), [draft, state.turn, t]);
   const selectedProfile = state.party.find((member) => member.id === selectedProfileId) ?? state.party[0] ?? draftPreview;
   const selectedProfileStats = getEffectiveCharacterStats(selectedProfile, activeWorld);
+  // IMP-028: the class step's stable detail pane reads from the class under the cursor.
+  const selectedClass = classCatalog.find((classDef) => classDef.id === draft.classId) ?? classCatalog[0];
   const availableShopCategories = useMemo(
     () => SHOP_CATEGORY_ORDER.filter((category) => (townShop?.stock ?? []).some((stock) => shopCategoryFor(stock.itemId) === category)),
     [townShop?.stock]
@@ -1722,29 +1724,56 @@ export function App() {
                       {guildCreationStep === "class" && (
                         <section className="guild-step-panel" data-controller-active="true" data-controller-surface="guild-class" data-testid="guild-step-class">
                           <h4>{t("party.chooseClass")}</h4>
-                          <div className="class-card-grid">
-                            {classCatalog.map((classDef) => (
-                              <button
-                                type="button"
-                                className={draft.classId === classDef.id ? "class-card selected" : "class-card"}
-                                key={classDef.id}
-                                aria-pressed={draft.classId === classDef.id}
-                                onClick={(event) => {
-                                  setDraft((current) => ({ ...current, classId: classDef.id }));
-                                  // Jump focus to the confirm button so picking a
-                                  // class and proceeding is two presses, not a hunt.
-                                  event.currentTarget
-                                    .closest("section")
-                                    ?.querySelector<HTMLButtonElement>("[data-guild-advance]")
-                                    ?.focus();
-                                }}
-                              >
-                                <strong>{classDef.label[locale]}</strong>
-                                <span>{formatCombatRow(classDef.rowPreference, t)}</span>
-                                <small>{classDef.description[locale]}</small>
-                                <small className="class-gear">{t("party.equipment")}: {Object.values(classDef.equipment).map((id) => localizedCatalogName(id, locale)).join(" / ")}</small>
-                              </button>
-                            ))}
+                          {/* IMP-028: a bounded class LIST beside a stable detail pane — the cursor's
+                              class updates the pane immediately (role, formation, signature, aptitude,
+                              starting gear), instead of a two-column card wall that scrolled Next away. */}
+                          <div className="guild-class-body">
+                            <ul className="guild-class-list" data-testid="guild-class-list" role="listbox" aria-label={t("party.chooseClass")}>
+                              {classCatalog.map((classDef) => {
+                                const isSelected = draft.classId === classDef.id;
+                                return (
+                                  <li key={classDef.id} role="presentation">
+                                    <button
+                                      type="button"
+                                      role="option"
+                                      aria-selected={isSelected}
+                                      className={isSelected ? "guild-class-option selected" : "guild-class-option"}
+                                      data-testid={`guild-class-${classDef.id}`}
+                                      // Cursor = preview: focusing a calling reads it into the detail pane.
+                                      onFocus={() => setDraft((current) => (current.classId === classDef.id ? current : { ...current, classId: classDef.id }))}
+                                      onClick={() => setDraft((current) => ({ ...current, classId: classDef.id }))}
+                                    >
+                                      <strong>{classDef.label[locale]}</strong>
+                                      <span className="guild-class-option-row">{formatCombatRow(classDef.rowPreference, t)}</span>
+                                    </button>
+                                  </li>
+                                );
+                              })}
+                            </ul>
+                            <div className="guild-class-detail" data-testid="guild-class-detail" aria-live="polite">
+                              <h5>{selectedClass.label[locale]}</h5>
+                              <p className="guild-class-signature">{selectedClass.description[locale]}</p>
+                              <dl className="guild-class-facts">
+                                <div>
+                                  <dt>{t("party.formation")}</dt>
+                                  <dd>{formatCombatRow(selectedClass.rowPreference, t)}</dd>
+                                </div>
+                                <div>
+                                  <dt>{t("party.aptitudeLabel")}</dt>
+                                  <dd className="guild-class-aptitude">
+                                    {Object.entries(selectedClass.aptitude).map(([key, value]) => (
+                                      <span className="guild-apt-chip" key={key}>
+                                        {t(`aptitude.${key}` as Parameters<Translator>[0])} +{value}
+                                      </span>
+                                    ))}
+                                  </dd>
+                                </div>
+                                <div>
+                                  <dt>{t("party.equipment")}</dt>
+                                  <dd>{Object.values(selectedClass.equipment).map((id) => localizedCatalogName(id, locale)).join(" / ")}</dd>
+                                </div>
+                              </dl>
+                            </div>
                           </div>
                           <div className="flow-actions">
                             <button type="button" data-controller-cancel="true" onClick={() => setGuildCreationStep("briefing")}>{t("party.back")}</button>

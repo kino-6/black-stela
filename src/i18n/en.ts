@@ -102,6 +102,8 @@ export const en = {
     startRegistration: "Begin registration",
     skipBriefing: "Skip explanation",
     chooseClass: "Choose a calling",
+    formation: "Formation",
+    aptitudeLabel: "Aptitude",
     chooseAppearance: "Choose origin and bearing",
     rerollOrigin: "Pick origin",
     allocateBonus: "Sharpen a talent",

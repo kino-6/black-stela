@@ -104,6 +104,8 @@ export const ja = {
     startRegistration: "登録を始める",
     skipBriefing: "説明を聞かない",
     chooseClass: "職業を選ぶ",
+    formation: "隊列",
+    aptitudeLabel: "素質",
     chooseAppearance: "出自と印象を選ぶ",
     rerollOrigin: "来歴を見繕う",
     allocateBonus: "伸ばす才を決める",
