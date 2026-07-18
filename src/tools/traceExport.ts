@@ -91,8 +91,23 @@ function dungeonRoute(world: ScenarioWorld): { initial: GameState; commands: Com
   return { initial, commands };
 }
 
+// Turning and listening only — no world lookup, no RNG. The first route brought to full GDScript
+// parity (S3); movement/search/combat routes follow as their rules are ported.
+function turnsRoute(world: ScenarioWorld): { initial: GameState; commands: Command[] } {
+  const initial = createDebugStateFromProgress(world, "after_encounter");
+  const commands: Command[] = [
+    { type: "turn_left" },
+    { type: "turn_right" },
+    { type: "turn_right" },
+    { type: "turn_left" },
+    { type: "listen" }
+  ];
+  return { initial, commands };
+}
+
 // The slice's golden routes. More can be added as the vertical slice grows.
 export const SLICE_ROUTES: TraceRoute[] = [
+  { name: "b1f-turns", worldId: "default", build: turnsRoute },
   { name: "b1f-combat-victory", worldId: "default", build: combatRoute },
   { name: "b1f-exploration", worldId: "default", build: dungeonRoute }
 ];

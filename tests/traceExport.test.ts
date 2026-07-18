@@ -28,7 +28,7 @@ describe("golden trace fixtures (Godot migration S1)", () => {
   });
 
   it("carries a serialized initial state so a runtime can replay from it", () => {
-    const route = SLICE_ROUTES[0];
+    const route = SLICE_ROUTES.find((candidate) => candidate.name === "b1f-combat-victory")!;
     const fixture = buildTraceFixture(route, worldRegistry[route.worldId]);
     expect(fixture.initialState.party.length).toBeGreaterThan(0);
     // Character ids are stable under the route's deterministic-id seed (not random UUIDs), so the
