@@ -408,11 +408,19 @@ export function App() {
     stateRef.current = state;
   }, [state]);
 
+  // IMP-027: leaving town for the dungeon closes any open service panel — a direct 6/6-guild
+  // departure otherwise leaves townMode on "guild", so the authored return marker lands back on
+  // Adventurer Registration instead of the town hub. Resetting on the way OUT routes EVERY return
+  // (stairs, marker, defeat rescue) through the one town-arrival state, and never disturbs the
+  // new-game guild flow (which hasn't left town yet).
+  const prevPhaseRef = useRef(state.phase);
   useEffect(() => {
-    if (state.phase === "town" && state.log.at(-1)?.event?.type === "returned_to_town") {
+    const prev = prevPhaseRef.current;
+    prevPhaseRef.current = state.phase;
+    if (state.phase === "dungeon" && prev === "town") {
       setTownMode("entry");
     }
-  }, [state.phase, state.log]);
+  }, [state.phase]);
 
   useEffect(() => {
     if (state.phase !== "combat") {
