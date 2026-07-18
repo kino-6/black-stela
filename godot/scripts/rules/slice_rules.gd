@@ -9,7 +9,9 @@ class_name SliceRules
 const LEFT_OF := {"north": "west", "west": "south", "south": "east", "east": "north"}
 const RIGHT_OF := {"north": "east", "east": "south", "south": "west", "west": "north"}
 
-static func resolve(state: Dictionary, command: Dictionary, world: Dictionary = {}) -> Dictionary:
+const CombatRound := preload("res://scripts/rules/combat_round.gd")
+
+static func resolve(state: Dictionary, command: Dictionary, world: Dictionary = {}, engine: Dictionary = {}) -> Dictionary:
 	match command.get("type", ""):
 		"turn_left":
 			return _turn(state, "left")
@@ -19,6 +21,8 @@ static func resolve(state: Dictionary, command: Dictionary, world: Dictionary = 
 			return _log_only(state, {"type": "inspection_made", "mode": "listen"})
 		"search":
 			return _search(state, world)
+		"declare_round":
+			return CombatRound.declare_round(state, world, command.get("actions", []), engine)
 		_:
 			# Not yet ported — a no-op keeps the replay honest (the harness will flag the hash mismatch).
 			return {"state": state, "events": []}

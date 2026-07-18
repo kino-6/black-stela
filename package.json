@@ -21,7 +21,8 @@
     "export:rng": "node scripts/run-vite-module.mjs scripts/export-rng-samples.ts",
     "export:stats": "node scripts/run-vite-module.mjs scripts/export-stat-samples.ts",
     "export:combat-helpers": "node scripts/run-vite-module.mjs scripts/export-combat-helper-samples.ts",
-    "export:godot": "npm run export:packs && npm run export:traces && npm run export:rng && npm run export:stats && npm run export:combat-helpers",
+    "export:engine": "node scripts/run-vite-module.mjs scripts/export-engine-data.ts",
+    "export:godot": "npm run export:packs && npm run export:traces && npm run export:rng && npm run export:stats && npm run export:combat-helpers && npm run export:engine",
     "tauri": "tauri"
   },
   "dependencies": {

@@ -36,7 +36,7 @@ export const SPELLS: Record<SpellId, Spell> = {
 };
 
 // The level at which each class learns each ability (spell or 特技).
-const CLASS_ABILITIES: Partial<Record<CharacterClassId, { level: number; spellId: SpellId }[]>> = {
+export const CLASS_ABILITIES: Partial<Record<CharacterClassId, { level: number; spellId: SpellId }[]>> = {
   mender: [{ level: 1, spellId: "heal" }],
   chanter: [
     { level: 1, spellId: "heal" },
