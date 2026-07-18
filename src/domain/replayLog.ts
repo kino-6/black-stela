@@ -1,4 +1,5 @@
 import type { AdventureLogEntry, GameEvent, RoomEntryMotion } from "./types";
+import { newId } from "./ids";
 import { getLocalizedRoomText } from "./scenario";
 import type { ScenarioWorld } from "./types";
 import { createTranslator, type Locale, type Translator } from "../i18n";
@@ -30,7 +31,7 @@ export function projectEventsToLogEntries(events: GameEvent[], turn: number): Ad
     }
 
     return [{
-      id: crypto.randomUUID(),
+      id: newId(),
       turn,
       text: projection.text,
       tags: projection.tags,

@@ -1,4 +1,5 @@
 import type { Character, GameState } from "./types";
+import { newId } from "./ids";
 import { appendEventLogs } from "./replayLog";
 import { createLegacyGuildCharacter, PARTY_SIZE_LIMIT } from "./characterCreation";
 import { STARTING_PARTY_GOLD } from "./economy";
@@ -77,7 +78,7 @@ export function appendLog(state: GameState, text: string, tags: string[]) {
   return [
     ...state.log,
     {
-      id: crypto.randomUUID(),
+      id: newId(),
       turn: state.turn,
       text,
       tags

@@ -14,6 +14,7 @@ import type {
   ScenarioImportPolicy,
   ScenarioWorld
 } from "./types";
+import { newId } from "./ids";
 import { baseMaxMpForClass } from "./spells";
 import { applyLevelUps, xpForLevel } from "./leveling";
 import { findEquipment, isEquipmentUsableBy } from "./economy";
@@ -426,7 +427,7 @@ export function createGuildCharacter(input: GuildCharacterInput): Character {
   const loadout: Partial<Record<EquipmentSlot, string>> = { ...classDef.equipment };
 
   return {
-    id: crypto.randomUUID(),
+    id: newId(),
     name: trimmedName,
     notes: input.notes?.trim() || background.notes.en,
     title: input.title?.trim() || classDef.label.en,
@@ -612,7 +613,7 @@ export function importAdventurer(
   }
 
   const base: Character = {
-    id: crypto.randomUUID(),
+    id: newId(),
     name: portable.identity.name,
     notes: portable.identity.notes,
     title: portable.identity.title,

@@ -183,6 +183,29 @@ they can't drift from the shipping engine:
 to an independent production combat loop (IMP-023V). See
 `docs/design/sim-parity.md`.
 
+### Deterministic trace fixtures (the migration parity oracle)
+
+`headless/traceFixture.ts` is the cross-runtime parity primitive the Godot /
+Babylon comparison rests on (`docs/design/godot-migration-plan.md`, Phase 0). A
+**trace** is an initial state, a command sequence, and — after each command — the
+emitted events plus a **hash of the resulting state**. `runTrace(world, initial,
+commands)` folds the production `resolveCommand` and records each step; the hash
+is a deliberately trivial, portable function (canonical JSON → FNV-1a 32-bit) so a
+GDScript port can reimplement it byte-for-byte and compare. A candidate runtime
+that replays the same commands must reproduce the same events and hashes or it has
+drifted. `tests/traceFixture.test.ts` locks this.
+
+**Determinism caveat found while building this (a migration prerequisite):** the
+combat engine is deterministic (seeded rolls, deterministic loot ids), but three
+places mint `crypto.randomUUID()` during normal play — the adventure-log entry id
+(`replayLog.ts`), and character ids (`gameState.ts`, `characterCreation.ts`). The
+log is a *derived* projection, so `hashState` excludes it (the semantic content —
+events — is compared directly instead), and that alone makes combat traces fully
+reproducible. But **before full-play golden traces (any route that mints character
+ids) can parity-check across runtimes, id generation must be made
+injectable/seedable.** That is a concrete, cheap prerequisite the port should land
+first — not a blocker discovered mid-port.
+
 ---
 
 ## 5. Presentation layer (React / Three.js)
