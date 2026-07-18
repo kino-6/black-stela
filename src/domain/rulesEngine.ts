@@ -114,7 +114,7 @@ function elementMultiplier(weaknesses: Partial<Record<Element, number>> | undefi
 // broken). Bringing the right element is still far better; this only removes the pure-zero floor.
 // Deterministic on the hit seed so replays match.
 const RESISTED_CHIP_CHANCE = 65;
-function chipThroughResistance(damage: number, seed: string): number {
+export function chipThroughResistance(damage: number, seed: string): number {
   if (damage > 0) {
     return damage;
   }
@@ -2236,14 +2236,14 @@ function rollPercent(seed: string) {
   return (hashSeed(seed) % 100) + 1;
 }
 
-function rollDamage(seed: string, min: number, max: number, armor: number) {
+export function rollDamage(seed: string, min: number, max: number, armor: number) {
   const low = Math.min(min, max);
   const high = Math.max(min, max);
   const span = high - low + 1;
   return Math.max(1, low + (hashSeed(seed) % span) - armor);
 }
 
-function hashSeed(seed: string) {
+export function hashSeed(seed: string) {
   let hash = 2166136261;
   for (let index = 0; index < seed.length; index += 1) {
     hash ^= seed.charCodeAt(index);

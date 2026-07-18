@@ -18,7 +18,8 @@
     "sim:content": "node scripts/run-vite-module.mjs scripts/content-sim.ts",
     "export:packs": "node scripts/run-vite-module.mjs scripts/export-packs.ts",
     "export:traces": "node scripts/run-vite-module.mjs scripts/export-traces.ts",
-    "export:godot": "npm run export:packs && npm run export:traces",
+    "export:rng": "node scripts/run-vite-module.mjs scripts/export-rng-samples.ts",
+    "export:godot": "npm run export:packs && npm run export:traces && npm run export:rng",
     "tauri": "tauri"
   },
   "dependencies": {
