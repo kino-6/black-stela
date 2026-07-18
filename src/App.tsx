@@ -1233,6 +1233,16 @@ export function App() {
         return;
       }
 
+      // IMP-026: in the dungeon R/Space toggle auto-explore no matter which command
+      // holds focus. Movement owns the arrows, so a command button (Search, Map, …) is
+      // usually the focused element; without this, Space would confirm that button
+      // instead of starting auto. Enter still confirms the focused command.
+      if (state.phase === "dungeon" && !partyMenuOpen && (key === " " || key === "r")) {
+        event.preventDefault();
+        toggleTempoMode();
+        return;
+      }
+
       if (key === "arrowdown" || key === "arrowright" || key === "arrowup" || key === "arrowleft") {
         // Left/Right keep the linear focus ring (traverses every control);
         // Up/Down navigate spatially so a card grid moves row-by-row as it looks.

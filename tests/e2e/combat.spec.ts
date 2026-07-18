@@ -5,7 +5,7 @@ test("resolves combat through the nested command menu", async ({ page }) => {
   await startNewExpedition(page);
   await registerAdventurer(page, { name: "Mira" });
   await page.getByRole("button", { name: "Enter dungeon" }).click();
-  await page.getByRole("button", { name: "Move" }).click();
+  await page.keyboard.press("w");
 
   await expect(page.getByLabel("Battle screen")).toBeVisible();
   // The enemy is the stage: a large figure with its name + HP, not a text list.
@@ -37,7 +37,7 @@ test("six-member party keeps front and back rows visible; the menu does not refl
 
   await expect(page.getByTestId("party-front-row").getByTestId("party-token")).toHaveCount(3);
   await expect(page.getByTestId("party-back-row").getByTestId("party-token")).toHaveCount(3);
-  await page.getByRole("button", { name: "Move" }).click();
+  await page.keyboard.press("w");
 
   await expect(page.getByLabel("Battle screen")).toBeVisible();
   // The six members are one compact strip: three front, three back, no reflow.
@@ -62,7 +62,7 @@ test("Japanese mobile combat menu stays readable without horizontal overflow", a
   await page.getByTestId("scenario-card-default").click({ timeout: 5000 }).catch(() => {});
   await createStarterParty(page, "ja");
   await page.getByRole("button", { name: "迷宮に入る" }).click();
-  await page.getByRole("button", { name: "進む" }).click();
+  await page.keyboard.press("w");
 
   await expect(page.getByRole("heading", { name: "戦闘", exact: true })).toBeVisible();
   await expect(page.getByTestId("combat-enemy-group")).toContainText("灰泥");

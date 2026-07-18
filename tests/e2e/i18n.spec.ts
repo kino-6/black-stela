@@ -24,7 +24,7 @@ test("plays the MVP flow with Japanese room text and log projection", async ({ p
   await expect(page.getByRole("heading", { name: "静まり返った石室" })).toBeVisible();
   await expect(page.getByText("治癒の水薬 を 1 個見つけた。")).toBeVisible();
 
-  await page.getByRole("button", { name: "進む" }).click();
+  await page.keyboard.press("w");
   await expect(page.getByRole("heading", { name: "戦闘", exact: true })).toBeVisible();
   await expect(page.getByLabel("戦闘画面")).toBeVisible();
   await expect(page.getByTestId("combat-enemy-group")).toContainText("灰泥");

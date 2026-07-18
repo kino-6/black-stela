@@ -67,6 +67,7 @@ import type {
   GameEvent,
   GameState,
   InventoryItem,
+  ItemRarity,
   PortableAdventurer,
   RoomEntryMotion,
   ScenarioWorld
@@ -236,7 +237,7 @@ export function resolveCommand(state: GameState, world: ScenarioWorld, command: 
     case "toggle_item_favorite":
       return toggleItemFlagCommand(state, command.instanceId, "favorite");
     case "bulk_convert":
-      return bulkConvertCommand(state, world, command.mode);
+      return bulkConvertCommand(state, world, command.mode, command.rarities);
     case "buy_item":
       return buyItem(state, world, command.shopId, command.itemId);
     case "sell_item":
@@ -1871,15 +1872,25 @@ function reinforceEquipmentCommand(state: GameState, world: ScenarioWorld, chara
   ]);
 }
 
-// IMP-022C: convert every UNPROTECTED equipment item at once — sell for gold or dismantle for
-// materials. Equipped / locked / favorite / unidentified-rare items are left untouched (the guard).
-function bulkConvertCommand(state: GameState, world: ScenarioWorld, mode: "sell" | "dismantle"): CommandResult {
+// IMP-022C: convert UNPROTECTED equipment — sell for gold or dismantle for materials. Equipped /
+// locked / favorite / unidentified-rare items are left untouched (the guard). IMP-022 filter: an
+// optional `rarities` list scopes the conversion (e.g. clear commons, keep rares) — omit for all.
+function bulkConvertCommand(
+  state: GameState,
+  world: ScenarioWorld,
+  mode: "sell" | "dismantle",
+  rarities?: ItemRarity[]
+): CommandResult {
   if (state.phase !== "town") {
     return noChange(state);
   }
+  const rarityFilter = rarities && rarities.length > 0 ? new Set(rarities) : null;
   const equippedKeys = equippedInstanceKeys(state);
   const convertible = state.inventory.filter(
-    (item) => item.kind === "equipment" && !isProtectedFromBulk(item, equippedKeys)
+    (item) =>
+      item.kind === "equipment" &&
+      !isProtectedFromBulk(item, equippedKeys) &&
+      (!rarityFilter || rarityFilter.has(item.rarity ?? "common"))
   );
   if (convertible.length === 0) {
     return noChange(state);

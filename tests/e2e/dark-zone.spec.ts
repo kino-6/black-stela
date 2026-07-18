@@ -11,7 +11,7 @@ import { clearAnyCombat, faceDirection } from "./helpers";
 // clear both around every move.
 async function move(page: import("@playwright/test").Page) {
   await clearAnyCombat(page);
-  await page.getByRole("button", { name: "Move", exact: true }).click({ timeout: 5000 });
+  await page.keyboard.press("w");
   await clearAnyCombat(page);
 }
 

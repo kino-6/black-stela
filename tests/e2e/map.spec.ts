@@ -31,7 +31,7 @@ for (const viewport of [
     await expect(page.locator(".mini-map-link")).toHaveCount(0);
     await expect(page.getByTestId("map-directions")).toHaveCount(0);
 
-    await page.getByRole("button", { name: "Move" }).click();
+    await page.keyboard.press("w");
     if (await page.getByLabel("Battle screen").isVisible()) {
       await resolveVisibleCombat(page);
     }

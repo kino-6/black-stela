@@ -13,7 +13,7 @@ test("a secret wall opens only after searching", async ({ page }) => {
   await expect(page.getByTestId("map-current")).toContainText("Quiet Vault Gallery");
 
   // The south wall reads as solid: moving into it is blocked, party stays put.
-  await page.getByRole("button", { name: "Move", exact: true }).click();
+  await page.keyboard.press("w");
   await expect(page.getByTestId("map-current")).toContainText("Quiet Vault Gallery");
 
   // Searching reveals the hidden passage...
@@ -21,6 +21,6 @@ test("a secret wall opens only after searching", async ({ page }) => {
   await expect(page.getByText(/hidden passage/i)).toBeVisible();
 
   // ...and now the party can step through into the cache.
-  await page.getByRole("button", { name: "Move", exact: true }).click();
+  await page.keyboard.press("w");
   await expect(page.getByTestId("map-current")).toContainText("Hidden Cache");
 });

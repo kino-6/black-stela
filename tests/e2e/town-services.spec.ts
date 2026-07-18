@@ -13,7 +13,7 @@ import { CONTROLLER_VIEWPORT, expectControllerFocus, expectFitsViewport } from "
 /** One full expedition on the normal route: fight, descend, come back up, return to town. */
 async function runExpedition(page: Page) {
   await page.getByTestId("town-enter-dungeon").click();
-  await page.getByRole("button", { name: "Move", exact: true }).click();
+  await page.keyboard.press("w");
   await resolveVisibleCombat(page);
   await descendB1fViaWarden(page);
   await page.getByRole("button", { name: "Use stairs" }).click();

@@ -17,7 +17,7 @@ test("a direct 6/6-guild departure still returns to the town hub, not Adventurer
 
   // Thread B1F to the authored return marker and use it: step into the first encounter, win it,
   // then walk to the marker.
-  await page.getByRole("button", { name: "Move" }).click();
+  await page.keyboard.press("w");
   await resolveVisibleCombat(page);
   await advanceToB1fMarker(page);
   await expect(page.getByRole("button", { name: "Use return marker" })).toBeVisible();

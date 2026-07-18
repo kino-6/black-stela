@@ -39,7 +39,7 @@ export type Command =
   | { type: "appraise_item"; instanceId: string }
   | { type: "toggle_item_lock"; instanceId: string }
   | { type: "toggle_item_favorite"; instanceId: string }
-  | { type: "bulk_convert"; mode: "sell" | "dismantle" }
+  | { type: "bulk_convert"; mode: "sell" | "dismantle"; rarities?: ItemRarity[] }
   | { type: "buy_item"; shopId: string; itemId: string }
   | { type: "sell_item"; itemId: string; plus?: number; affix?: string }
   | { type: "equip_item"; characterId: string; equipmentId: string; plus?: number; affix?: string }

@@ -66,7 +66,7 @@ test("Japanese message boxes wrap without orphan tails or stranded punctuation",
   }
 
   // 4) Combat round message (drive one move into the encounter)
-  await page.getByRole("button", { name: "進む", exact: true }).click();
+  await page.keyboard.press("w");
   if (await page.getByRole("heading", { name: "戦闘" }).isVisible().catch(() => false)) {
     const combatMessage = page.getByTestId("combat-command-window").locator(".event-window").first();
     if (await combatMessage.isVisible().catch(() => false)) {

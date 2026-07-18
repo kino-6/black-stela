@@ -29,7 +29,7 @@ test("create party, import portrait, enter dungeon, fight, use stairs, and view 
   await expect(page.getByTestId("party-front-row")).toBeVisible();
   await expect(page.getByTestId("party-back-row")).toBeVisible();
 
-  await page.getByRole("button", { name: "Move" }).click();
+  await page.keyboard.press("w");
   await expect(page.getByLabel("Battle screen")).toBeVisible();
   await expect(page.getByTestId("character-profile")).toHaveCount(0);
   await expect(page.getByTestId("combat-enemy-group")).toContainText("Ash Slime");

@@ -114,6 +114,27 @@ describe("rare-loot contract", () => {
     expect(dismantled.materials ?? 0).toBeGreaterThan(0); // the common yielded materials
   });
 
+  it("a rarity filter scopes the bulk conversion — clear commons, keep the appraised rares (IMP-022)", () => {
+    const common: InventoryItem = { id: WEAPON, name: "Sabre", kind: "equipment", quantity: 1, slot: "weapon", sellValue: 5, rarity: "common", identified: true };
+    const rare: InventoryItem = { id: WEAPON, name: "Sabre", kind: "equipment", quantity: 1, slot: "weapon", sellValue: 5, rarity: "rare", affix: "affix.saltbitten", identified: true, instanceId: "inst-rare" };
+    const base: GameState = { ...createInitialGameState(), phase: "town", inventory: [common, rare], partyGold: 100 };
+
+    // Filter to commons only: the appraised rare is untouched even though it is unprotected.
+    const soldCommons = executeCommand(base, defaultWorld, { type: "bulk_convert", mode: "sell", rarities: ["common"] });
+    expect(soldCommons.inventory.some((i) => i.instanceId === "inst-rare")).toBe(true); // rare kept
+    expect(soldCommons.inventory.some((i) => i.rarity === "common")).toBe(false); // common sold
+    expect(soldCommons.partyGold).toBeGreaterThan(base.partyGold);
+
+    // Filter to rares only: the common survives, the rare converts.
+    const soldRares = executeCommand(base, defaultWorld, { type: "bulk_convert", mode: "sell", rarities: ["rare"] });
+    expect(soldRares.inventory.some((i) => i.rarity === "common")).toBe(true); // common kept
+    expect(soldRares.inventory.some((i) => i.instanceId === "inst-rare")).toBe(false); // rare sold
+
+    // No filter (or empty) → the whole unprotected pile converts, as before.
+    const soldAll = executeCommand(base, defaultWorld, { type: "bulk_convert", mode: "sell" });
+    expect(soldAll.inventory.filter((i) => i.kind === "equipment")).toHaveLength(0);
+  });
+
   it("appraisal is a paid service — an epic costs more than a rare, and a broke party can't afford it (IMP-022V)", () => {
     const rare: InventoryItem = { id: WEAPON, name: "Sabre", kind: "equipment", quantity: 1, rarity: "rare", affix: "affix.saltbitten", identified: false, instanceId: "inst-rare" };
     const epic: InventoryItem = { ...rare, rarity: "epic", instanceId: "inst-epic" };

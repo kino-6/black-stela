@@ -9,7 +9,7 @@ import { faceDirection, resolveVisibleCombat } from "./helpers";
  * from the entry threads the cistern galleries down through the warden's mark.
  */
 async function move(page: import("@playwright/test").Page) {
-  await page.getByRole("button", { name: "Move", exact: true }).click();
+  await page.keyboard.press("w");
   if (await page.getByLabel("Battle screen").isVisible().catch(() => false)) {
     await resolveVisibleCombat(page);
   }

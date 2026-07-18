@@ -26,13 +26,13 @@ test("captures desktop screenshot review states", async ({ page }) => {
   await page.getByRole("button", { name: "Enter dungeon" }).click();
   await expect(page.getByRole("heading", { name: "Silent Stone Chamber" })).toBeVisible();
   await page.screenshot({ path: "test-results/screenshot-review/desktop-dungeon-start.png", fullPage: true });
-  await page.getByLabel("Turn right").click();
+  await page.keyboard.press("d");
   await expect(page.getByTestId("minimap-facing")).toHaveClass(/facing-west/);
   await expect(page.getByTestId("dungeon-canvas")).toHaveAttribute("data-front-visual", "blocked-wall");
   await page.screenshot({ path: "test-results/screenshot-review/desktop-dungeon-start-west-wall.png", fullPage: true });
-  await page.getByLabel("Turn left").click();
+  await page.keyboard.press("a");
 
-  await page.getByRole("button", { name: "Move" }).click();
+  await page.keyboard.press("w");
   await expect(page.getByRole("heading", { name: "Combat" })).toBeVisible();
   await page.screenshot({ path: "test-results/screenshot-review/desktop-combat.png", fullPage: true });
 

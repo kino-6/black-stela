@@ -47,6 +47,9 @@ export function LootPanel({
   const [fitMemberId, setFitMemberId] = useState<string | null>(party[0]?.id ?? null);
   // Bulk conversion is a two-step: preview → confirm/cancel, so one press never destroys loot.
   const [pendingBulk, setPendingBulk] = useState<"sell" | "dismantle" | null>(null);
+  // IMP-022: a controller-first rarity filter scopes WHICH loot converts — "clear the commons, keep
+  // the rares" is a real keep/convert decision that "all eligible" alone can't express.
+  const [bulkFilter, setBulkFilter] = useState<ItemRarity | "all">("all");
 
   useEffect(() => {
     const frame = window.requestAnimationFrame(() => firstRef.current?.focus());
@@ -73,9 +76,19 @@ export function LootPanel({
   const fitMember = party.find((candidate) => candidate.id === fitMemberId) ?? party[0];
   const equipment = inventory.filter((item) => item.kind === "equipment");
   const convertible = equipment.filter((item) => !isProtectedFromBulk(item, equippedKeys));
-  const sellTotal = convertible.reduce((total, item) => total + sellValueOf(item) * item.quantity, 0);
-  const dismantleTotal = convertible.reduce((total, item) => total + dismantleYield(item), 0);
-  const convertCount = convertible.reduce((total, item) => total + item.quantity, 0);
+  // Which rarities are actually present in the convertible pile — the filter only offers real choices.
+  const presentRarities = (["common", "rare", "epic"] as const).filter((rarity) =>
+    convertible.some((item) => (item.rarity ?? "common") === rarity)
+  );
+  // A filter that no longer matches anything (its last item was converted) falls back to "all".
+  const activeFilter: ItemRarity | "all" =
+    bulkFilter !== "all" && !presentRarities.includes(bulkFilter) ? "all" : bulkFilter;
+  const filteredConvertible =
+    activeFilter === "all" ? convertible : convertible.filter((item) => (item.rarity ?? "common") === activeFilter);
+  const sellTotal = filteredConvertible.reduce((total, item) => total + sellValueOf(item) * item.quantity, 0);
+  const dismantleTotal = filteredConvertible.reduce((total, item) => total + dismantleYield(item), 0);
+  const convertCount = filteredConvertible.reduce((total, item) => total + item.quantity, 0);
+  const bulkRarities = activeFilter === "all" ? undefined : [activeFilter];
 
   const affixLabel = (affixId: string | undefined): string => {
     if (!affixId) return "";
@@ -154,6 +167,33 @@ export function LootPanel({
         {/* Bulk conversion — preview totals, then a CONFIRM stage before anything is destroyed. */}
         <div className="loot-bulk" data-testid="loot-bulk">
           <h4>{t("loot.bulkHeading")}</h4>
+          {/* IMP-022: scope the conversion by rarity — the filter is only shown once there is a
+              choice to make (more than one rarity in the convertible pile). */}
+          {!pendingBulk && presentRarities.length > 1 && (
+            <div className="loot-bulk-filter" role="group" aria-label={t("loot.filterHeading")} data-testid="loot-bulk-filter">
+              <button
+                type="button"
+                aria-pressed={activeFilter === "all"}
+                className={activeFilter === "all" ? "selected" : undefined}
+                data-testid="loot-filter-all"
+                onClick={() => setBulkFilter("all")}
+              >
+                {t("loot.filterAll")}
+              </button>
+              {presentRarities.map((rarity) => (
+                <button
+                  type="button"
+                  key={rarity}
+                  aria-pressed={activeFilter === rarity}
+                  className={activeFilter === rarity ? "selected" : undefined}
+                  data-testid={`loot-filter-${rarity}`}
+                  onClick={() => setBulkFilter(rarity)}
+                >
+                  {rarityLabel(rarity)}
+                </button>
+              ))}
+            </div>
+          )}
           {convertCount === 0 ? (
             <p className="service-empty">{t("loot.nothingToConvert")}</p>
           ) : pendingBulk ? (
@@ -170,7 +210,7 @@ export function LootPanel({
                   ref={confirmRef}
                   data-testid="loot-bulk-confirm-yes"
                   onClick={() => {
-                    onCommand({ type: "bulk_convert", mode: pendingBulk });
+                    onCommand({ type: "bulk_convert", mode: pendingBulk, rarities: bulkRarities });
                     setPendingBulk(null);
                   }}
                 >

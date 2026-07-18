@@ -2389,6 +2389,30 @@ textarea {
   font-size: 0.8rem;
 }
 
+/* IMP-022: rarity filter chips — scope the bulk conversion to a keep/convert decision. */
+.loot-bulk-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin: 0 0 0.5rem;
+}
+
+.loot-bulk-filter button {
+  padding: 0.25rem 0.6rem;
+  min-height: 2rem;
+  border: 1px solid #2c332d;
+  border-radius: 3px;
+  background: #10130b;
+  color: #cfd2c4;
+  font-size: 0.8rem;
+}
+
+.loot-bulk-filter button.selected {
+  border-color: #c9a765;
+  background: #241f12;
+  color: #f2d58c;
+}
+
 .loot-bulk-preview {
   margin: 0 0 0.4rem;
   color: #d9c48c;
@@ -4945,10 +4969,43 @@ textarea {
   font-size: 0.95rem;
 }
 
-/* Group the movement controls (turn/sidestep/forward/back) with a subtle warm
-   border so they read as one cluster, distinct from Search/Listen/Camp/Map. */
-.dungeon-cockpit .command-dock button.move-command {
-  border-color: rgba(201, 168, 74, 0.28);
+/* IMP-026: the movement legend is a compact, non-interactive hint that spans the
+   dock's first row. It reminds a player of the directional keys without adding a
+   focusable button that duplicates the controller. */
+.dungeon-cockpit .command-dock .dungeon-move-legend {
+  grid-column: 1 / -1;
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.15rem 0.1rem;
+  color: #9c8a5e;
+  font-size: 0.8rem;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* IMP-026: auto-explore reads as a compact status chip at the end of the dock,
+   not a full-height command tile, so it never poses as the first decision. */
+.dungeon-cockpit .command-dock button.tempo-status {
+  grid-column: 1 / -1;
+  min-height: 2.3rem;
+  justify-self: end;
+  align-self: end;
+  width: fit-content;
+  padding-inline: 0.85rem;
+  font-size: 0.85rem;
+  gap: 0.35rem;
+  color: #cbb89a;
+  border-color: rgba(201, 168, 74, 0.24);
+  background: rgba(28, 24, 18, 0.5);
+}
+
+.dungeon-cockpit .command-dock button.tempo-status[aria-pressed="true"] {
+  border-color: rgba(214, 122, 92, 0.6);
+  color: #f0c9b6;
 }
 
 .scene-meta {

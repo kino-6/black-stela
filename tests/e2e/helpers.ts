@@ -315,7 +315,7 @@ async function walkB1fPath(page: Page, dirs: Dir[]) {
   for (const dir of dirs) {
     await pressDungeon(page, () => faceDirection(page, dir));
     await pressDungeon(page, async () => {
-      await page.getByRole("button", { name: "Move", exact: true }).click({ timeout: 4000 });
+      await page.keyboard.press("w");
     });
     await clearAnyCombat(page);
   }
@@ -355,7 +355,7 @@ export async function faceDirection(page: Page, dir: "north" | "south" | "east" 
     if ((await currentFacing(page)) === dir) {
       return;
     }
-    await page.getByLabel("Turn right").click();
+    await page.keyboard.press("d");
     await page.waitForTimeout(30);
   }
 }
@@ -369,7 +369,7 @@ export async function walkB1fMaxEnemyTypes(page: Page): Promise<number> {
   // designed multi-group fight fields two distinct types.
   for (const dir of [...B1F_ENTRANCE_TO_NEEDLE, ...B1F_NEEDLE_TO_WARDEN]) {
     await faceDirection(page, dir);
-    await page.getByRole("button", { name: "Move", exact: true }).click();
+    await page.keyboard.press("w");
     await page.waitForTimeout(55);
     if (await page.getByLabel("Battle screen").isVisible().catch(() => false)) {
       const names = await page.getByTestId("combat-enemy-group").locator(".enemy-mark-name").allTextContents().catch(() => []);

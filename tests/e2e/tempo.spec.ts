@@ -28,7 +28,7 @@ test("combat and town recovery keep the loop playable", async ({ page }) => {
 
   await registerAdventurer(page, { name: "Mira" });
   await page.getByRole("button", { name: "Enter dungeon" }).click();
-  await page.getByRole("button", { name: "Move" }).click();
+  await page.keyboard.press("w");
 
   await resolveVisibleCombat(page);
   await expect(page.getByRole("heading", { name: "Hall of Old Dust" })).toBeVisible();

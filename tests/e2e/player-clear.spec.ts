@@ -23,7 +23,7 @@ test("clears the MVP route through visible player controls only", async ({ page 
   // The entrance is the town gate — stairs back up are available from the start.
   await expect(page.getByRole("button", { name: "Climb the stairs to town" })).toBeVisible();
 
-  await page.getByRole("button", { name: "Move" }).click();
+  await page.keyboard.press("w");
 
   await expect(page.getByRole("heading", { name: "Combat" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Guild Registry" })).toHaveCount(0);
@@ -92,7 +92,7 @@ test("starting cell south wall matches minimap, first-person view, and movement"
   await expect(page.getByTestId("dungeon-canvas")).toHaveAttribute("data-front-edge", "open");
   await expect(page.getByTestId("dungeon-canvas")).toHaveAttribute("data-front-depth", "corridor");
 
-  await page.getByLabel("Turn right").click();
+  await page.keyboard.press("d");
   await expect(page.getByTestId("minimap-facing")).toHaveClass(/facing-west/);
 
   const canvasShell = page.getByTestId("dungeon-canvas");
@@ -102,7 +102,7 @@ test("starting cell south wall matches minimap, first-person view, and movement"
   await expect(canvasShell).toHaveAttribute("data-left-edge", "open");
   await expect(canvasShell).toHaveAttribute("data-right-edge", "wall");
 
-  await page.getByRole("button", { name: "Move" }).click();
+  await page.keyboard.press("w");
   await expect(page.getByRole("heading", { name: "Silent Stone Chamber" })).toBeVisible();
   await expect(page.getByText("A cold wall blocks the way.")).toBeVisible();
 });
@@ -112,7 +112,7 @@ test("first-person view, minimap, and movement agree when forward is blocked", a
 
   await createStarterParty(page);
   await page.getByRole("button", { name: "Enter dungeon" }).click();
-  await page.getByRole("button", { name: "Move" }).click();
+  await page.keyboard.press("w");
   await resolveVisibleCombat(page);
   await walkB1fToStair(page);
   await expect(page.getByRole("heading", { name: "Winding Stair" })).toBeVisible();
@@ -127,7 +127,7 @@ test("first-person view, minimap, and movement agree when forward is blocked", a
   await expect(canvasShell).toHaveAttribute("data-front-traversable", "false");
   await expect(canvasShell).toHaveAttribute("data-right-edge", "open");
 
-  await page.getByRole("button", { name: "Move" }).click();
+  await page.keyboard.press("w");
   await expect(page.getByRole("heading", { name: "Winding Stair" })).toBeVisible();
   await expect(page.getByText("A cold wall blocks the way.")).toBeVisible();
   await expect(canvasShell).toHaveAttribute("data-front-edge", "wall");

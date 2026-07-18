@@ -1,15 +1,10 @@
 import {
-  ArrowDown,
-  ChevronsLeft,
-  ChevronsRight,
   DoorClosed,
   DoorOpen,
-  Footprints,
+  Gamepad2,
   LogOut,
   Map as MapIcon,
   Repeat2,
-  RotateCcw,
-  RotateCw,
   Search,
   ShieldCheck,
   Square,
@@ -67,47 +62,26 @@ export function DungeonCommandDock({
       data-controller-surface="dungeon-commands"
       data-testid="dungeon-command-window"
     >
-      <button type="button" aria-pressed={isTempoRunning} onClick={onToggleTempo}>
-        {isTempoRunning ? <Square size={18} /> : <Repeat2 size={18} />}
-        {isTempoRunning ? t("tempo.stop") : t("tempo.auto")}
-      </button>
-      <button type="button" className="move-command" aria-label={t("play.turnLeft")} onClick={() => onCommand({ type: "turn_left" })}>
-        <RotateCcw size={18} />
-        {t("play.turnLeft")}
-      </button>
-      <button type="button" className="move-command" aria-label={t("play.strafeLeft")} onClick={() => onCommand({ type: "strafe_left" })}>
-        <ChevronsLeft size={18} />
-        {t("play.strafeLeft")}
-      </button>
-      <button type="button" className="move-command" onClick={() => onCommand({ type: "move_forward" })}>
-        <Footprints size={18} />
-        {t("play.move")}
-      </button>
-      <button type="button" className="move-command" onClick={() => onCommand({ type: "move_backward" })}>
-        <ArrowDown size={18} />
-        {t("play.moveBack")}
-      </button>
-      <button type="button" className="move-command" aria-label={t("play.strafeRight")} onClick={() => onCommand({ type: "strafe_right" })}>
-        <ChevronsRight size={18} />
-        {t("play.strafeRight")}
-      </button>
-      <button type="button" className="move-command" aria-label={t("play.turnRight")} onClick={() => onCommand({ type: "turn_right" })}>
-        <RotateCw size={18} />
-        {t("play.turnRight")}
-      </button>
-      <button type="button" onClick={() => onCommand({ type: "search" })}>
+      {/* IMP-026: movement is directional input only — no turn/strafe/forward/back
+          buttons duplicating the controller. A compact, non-focusable legend outside
+          the focus order reminds a player of the keys without competing for attention. */}
+      <p className="dungeon-move-legend" data-testid="dungeon-move-legend" aria-hidden="true">
+        <Gamepad2 size={15} />
+        {t("play.moveHint")}
+      </p>
+      <button type="button" className="dungeon-command" onClick={() => onCommand({ type: "search" })}>
         <Search size={18} />
         {t("play.search")}
       </button>
-      <button type="button" onClick={() => onCommand({ type: "listen" })}>
+      <button type="button" className="dungeon-command" onClick={() => onCommand({ type: "listen" })}>
         <Volume2 size={18} />
         {t("play.listen")}
       </button>
-      <button type="button" onClick={onOpenPartyMenu} data-testid="party-menu-open">
+      <button type="button" className="dungeon-command" onClick={onOpenPartyMenu} data-testid="party-menu-open">
         <UsersRound size={18} />
         {t("partyMenu.title")}
       </button>
-      <button type="button" onClick={onOpenFullMap} data-testid="full-map-open">
+      <button type="button" className="dungeon-command" onClick={onOpenFullMap} data-testid="full-map-open">
         <MapIcon size={18} />
         {t("play.fullMap")}
       </button>
@@ -172,6 +146,19 @@ export function DungeonCommandDock({
           {t("play.useReturnCharm")}
         </button>
       )}
+      {/* IMP-026: auto-explore is a compact exploration STATUS with an immediate
+          interrupt, not the first command in every room. It rides at the end of the
+          dock, visually distinct from the current-cell decisions. */}
+      <button
+        type="button"
+        className="tempo-status"
+        data-testid="dungeon-tempo"
+        aria-pressed={isTempoRunning}
+        onClick={onToggleTempo}
+      >
+        {isTempoRunning ? <Square size={16} /> : <Repeat2 size={16} />}
+        {isTempoRunning ? t("tempo.stop") : t("tempo.auto")}
+      </button>
     </div>
   );
 }

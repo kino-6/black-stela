@@ -76,15 +76,20 @@ test("town, shop, config, and repeat surfaces remain controller reachable", asyn
   await expect(page.getByRole("heading", { name: "Silent Stone Chamber" })).toBeVisible();
 });
 
-test("repeat mode can be started and stopped through confirm focus", async ({ page }) => {
+test("repeat mode can be started and stopped from the compact auto status", async ({ page }) => {
   await startNewExpedition(page);
   await registerAdventurer(page, { name: "Mira" });
   await page.getByRole("button", { name: "Back to town" }).click();
   await page.getByRole("button", { name: "Enter dungeon" }).click();
 
-  await focusControllerButton(page, "Auto");
-  await page.keyboard.press("Enter");
+  // IMP-026: the arrows drive movement in the dungeon, so auto-explore is toggled by the
+  // dedicated confirm/repeat shortcut, and the compact status chip reflects its state.
+  const tempo = page.getByTestId("dungeon-tempo");
+  await expect(tempo).toHaveAttribute("aria-pressed", "false");
+  await page.keyboard.press("r");
+  await expect(tempo).toHaveAttribute("aria-pressed", "true");
   await expect(page.getByTestId("dungeon-command-window").getByRole("button", { name: "Stop" })).toBeVisible();
-  await page.keyboard.press("Enter");
+  await page.keyboard.press("r");
   await expect(page.getByText("Auto stopped.")).toBeVisible();
+  await expect(tempo).toHaveAttribute("aria-pressed", "false");
 });

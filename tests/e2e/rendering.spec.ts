@@ -56,7 +56,7 @@ for (const viewport of [
     expect(pixels).not.toBeNull();
     expect(pixels!.flatMap((pixel) => pixel.slice(0, 3)).some((channel) => channel > 8)).toBe(true);
 
-    await page.getByRole("button", { name: "Move" }).click();
+    await page.keyboard.press("w");
     await expect(page.getByLabel("Battle screen")).toBeVisible();
     await expect(page.getByTestId("combat-enemy-group")).toContainText("Ash Slime");
     await expect(page.getByText("Ash Slime blocks the passage.")).toHaveCount(0);

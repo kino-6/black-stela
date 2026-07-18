@@ -119,7 +119,7 @@ test("combat exposes defend and item use choices", async ({ page }) => {
 
   await registerAdventurer(page, { name: "Mira" });
   await page.getByRole("button", { name: "Enter dungeon" }).click();
-  await page.getByRole("button", { name: "Move" }).click();
+  await page.keyboard.press("w");
 
   // The command menu exposes Defend (always) and Use item (when an item is carried).
   await expect(page.getByTestId("combat-command-menu")).toBeVisible();

@@ -124,7 +124,9 @@ test("browser self-play completes the visible dungeon loop without headless shor
     });
 
     await recordStep("visible combat resolves through combat commands", "command_shift", async () => {
-      await clickCommand("Move");
+      // IMP-026: movement is directional input, not a toolbar button.
+      await page.keyboard.press("w");
+      report.commands.push("Move");
       await expect(page.getByRole("heading", { name: "Combat" })).toBeVisible();
       await expect(page.getByLabel("Battle screen")).toBeVisible();
       await expect(page.getByLabel("Mini-map")).toHaveCount(0);
