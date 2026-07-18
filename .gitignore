@@ -231,3 +231,4 @@ tmp/
 
 # Godot migration: generated world-pack JSON + golden traces (regenerate with npm run export:packs / export:traces)
 godot/data/
+godot/.godot/

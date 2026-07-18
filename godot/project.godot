@@ -1,0 +1,29 @@
+; Black Stela — Godot 4.7.1 vertical-slice project.
+; See docs/design/migration-execution-plan.md. Rules/data are the TypeScript oracle; this project
+; consumes the exported world JSON (res://data/worlds) and replays golden traces for parity.
+
+config_version=5
+
+[application]
+
+config/name="Black Stela (Godot vertical slice)"
+run/main_scene="res://scenes/boot.tscn"
+config/features=PackedStringArray("4.7", "GL Compatibility")
+
+[autoload]
+
+InputActions="*res://scripts/input_actions.gd"
+SceneManager="*res://scripts/scene_manager.gd"
+WorldLoader="*res://scripts/world_loader.gd"
+
+[display]
+
+window/size/viewport_width=1920
+window/size/viewport_height=1080
+window/stretch/mode="canvas_items"
+window/stretch/aspect="keep"
+
+[rendering]
+
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
