@@ -1,4 +1,18 @@
 import { appendEventLogs } from "./replayLog";
+import { noChange, withEvents } from "./commandResult";
+import type { CommandResult } from "./commandResult";
+export type { CommandResult } from "./commandResult";
+import {
+  appraiseItemCommand,
+  bulkConvertCommand,
+  buyItem,
+  equipItem,
+  reinforceEquipmentCommand,
+  sellItem,
+  toggleItemFlagCommand
+} from "./commands/economyCommands";
+import { changeVocationCommand, setLoadoutCommand } from "./commands/vocationCommands";
+import { acceptQuest, claimQuest } from "./commands/questCommands";
 import { applyLevelUps, rewardXpFor } from "./leveling";
 import { PARTY_SIZE_LIMIT, findClass, importAdventurer, reclassCharacter } from "./characterCreation";
 import { SPELLS, knownSpells } from "./spells";
@@ -25,25 +39,18 @@ import {
   characterSpeciesMultiplier,
   findEquipment,
   getEffectiveCharacterStats,
-  getEquipmentSlot,
-  isEquipmentUsableBy,
   removeInventoryItem,
   weaponReaches
 } from "./economy";
 import { EQUIPMENT_AFFIXES, equipmentInstanceKey } from "./affixes";
-import { findQuest, getQuestProgress, isQuestReadyToClaim, recordQuestKills } from "./quests";
+import { getQuestProgress, recordQuestKills } from "./quests";
 import {
   applyMastery,
-  canAdoptVocation,
-  changeCharacterVocation,
-  findVocation,
-  localizedVocationName,
   combatLoadout,
   masteryGain,
-  resolveVocationState,
-  setLoadout
+  resolveVocationState
 } from "./vocations";
-import { MAX_REINFORCE, appraisalFee, appraiseInstance, dismantleYield, isProtectedFromBulk, isUnidentifiedRare, reinforceCost, rollEquipmentDrop, sellValueOf } from "./loot";
+import { rollEquipmentDrop } from "./loot";
 import { recordDefeats, recordEncounters } from "./bestiary";
 import type {
   Character,
@@ -67,16 +74,10 @@ import type {
   GameEvent,
   GameState,
   InventoryItem,
-  ItemRarity,
   PortableAdventurer,
   RoomEntryMotion,
   ScenarioWorld
 } from "./types";
-
-export interface CommandResult {
-  state: GameState;
-  events: GameEvent[];
-}
 
 const leftOf: Record<Direction, Direction> = {
   north: "west",
@@ -1647,396 +1648,6 @@ function discardItem(state: GameState, itemId: string, plus?: number, affix?: st
 // Take a quest off the board. Only in town, and only once: an already-accepted quest keeps its
 // record (a repeatable one stays "active" across claims; a one-shot ends "done"), so getQuestProgress
 // being set blocks re-accepting either.
-function acceptQuest(state: GameState, world: ScenarioWorld, questId: string): CommandResult {
-  if (state.phase !== "town") {
-    return noChange(state);
-  }
-  const quest = findQuest(world, questId);
-  if (!quest || getQuestProgress(state, questId)) {
-    return noChange(state);
-  }
-
-  const next: GameState = {
-    ...state,
-    quests: [...state.quests, { questId, status: "active", killCount: 0, claims: 0 }],
-    turn: state.turn + 1
-  };
-  return withEvents(next, [{ type: "quest_accepted", questId, questName: quest.name }]);
-}
-
-// Turn a met quest in for its reward. A bounty must have tallied enough kills; a delivery must be
-// carrying enough of its target item (which it hands over). Gold and item rewards land in the
-// party's purse/pack; an XP reward is granted DIRECTLY to each active member, so — like a growth
-// item's xp — it never runs through the out-levelling falloff. A repeatable quest resets to active
-// for another run; a one-shot is marked done.
-function claimQuest(state: GameState, world: ScenarioWorld, questId: string): CommandResult {
-  if (state.phase !== "town") {
-    return noChange(state);
-  }
-  const quest = findQuest(world, questId);
-  const progress = getQuestProgress(state, questId);
-  if (!quest || !progress || !isQuestReadyToClaim(state, quest, progress)) {
-    return noChange(state);
-  }
-
-  const levelEvents: GameEvent[] = [];
-  const xpGrant = quest.reward.xp ?? 0;
-  const party = state.party.map((member) => {
-    if (xpGrant <= 0) {
-      return member;
-    }
-    const leveled = applyLevelUps({ ...member, xp: member.xp + xpGrant });
-    levelEvents.push(...leveled.events);
-    return leveled.character;
-  });
-
-  // A delivery consumes the items it hands over.
-  let inventory = state.inventory;
-  if (quest.kind === "delivery" && quest.targetItemId) {
-    inventory = removeInventoryItem(inventory, quest.targetItemId, quest.requiredCount);
-  }
-  // An item reward drops into the pack.
-  let rewardItemName: string | undefined;
-  if (quest.reward.itemId) {
-    const rewardItem = createInventoryItemFromCatalog(world, quest.reward.itemId, quest.reward.itemQuantity ?? 1);
-    if (rewardItem) {
-      inventory = addInventoryItem(inventory, rewardItem);
-      rewardItemName = rewardItem.name;
-    }
-  }
-
-  const claimedProgress = {
-    ...progress,
-    claims: progress.claims + 1,
-    killCount: 0,
-    status: quest.repeatable ? ("active" as const) : ("done" as const)
-  };
-
-  const next: GameState = {
-    ...state,
-    party,
-    partyGold: state.partyGold + (quest.reward.gold ?? 0),
-    inventory,
-    quests: state.quests.map((entry) => (entry.questId === questId ? claimedProgress : entry)),
-    turn: state.turn + 1
-  };
-  return withEvents(next, [
-    {
-      type: "quest_claimed",
-      questId,
-      questName: quest.name,
-      gold: quest.reward.gold ?? 0,
-      xp: xpGrant,
-      itemName: rewardItemName
-    },
-    ...levelEvents
-  ]);
-}
-
-// IMP-021C: change an adventurer's vocation in town. Only if its prerequisites are met; keeps level
-// and every learned technique (changeCharacterVocation). A basic vocation reclasses the base stats;
-// an advanced one layers its modifiers.
-function changeVocationCommand(state: GameState, world: ScenarioWorld, characterId: string, vocationId: string): CommandResult {
-  if (state.phase !== "town") {
-    return noChange(state);
-  }
-  const member = state.party.find((candidate) => candidate.id === characterId);
-  const vocation = findVocation(world, vocationId);
-  if (!member || !vocation || !canAdoptVocation(member, vocationId, world)) {
-    return noChange(state);
-  }
-  if (resolveVocationState(member).current === vocationId) {
-    return noChange(state);
-  }
-  const changed = changeCharacterVocation(member, vocation, world);
-  const next: GameState = {
-    ...state,
-    party: state.party.map((candidate) => (candidate.id === characterId ? changed : candidate)),
-    turn: state.turn + 1
-  };
-  return withEvents(next, [
-    { type: "vocation_changed", characterId, characterName: member.name, vocationId, vocationName: localizedVocationName(world, vocationId, "en") }
-  ]);
-}
-
-// IMP-021C: set an adventurer's bounded combat loadout (a subset of learned techniques). Town only.
-function setLoadoutCommand(state: GameState, characterId: string, loadout: string[]): CommandResult {
-  if (state.phase !== "town") {
-    return noChange(state);
-  }
-  const member = state.party.find((candidate) => candidate.id === characterId);
-  if (!member) {
-    return noChange(state);
-  }
-  const nextVocation = setLoadout(resolveVocationState(member), loadout);
-  return {
-    state: {
-      ...state,
-      party: state.party.map((candidate) => (candidate.id === characterId ? { ...candidate, vocation: nextVocation } : candidate))
-    },
-    events: []
-  };
-}
-
-// The equipmentInstanceKeys currently worn by the party — bulk conversion must not touch worn gear.
-function equippedInstanceKeys(state: GameState): Set<string> {
-  const keys = new Set<string>();
-  for (const member of state.party) {
-    for (const equipped of Object.values(member.equipment)) {
-      if (equipped) {
-        keys.add(equipmentInstanceKey(equipped.id, equipped.plus, equipped.affix));
-      }
-    }
-  }
-  return keys;
-}
-
-// IMP-022C: appraise an unidentified rare, revealing its rolled affix. Town only.
-function appraiseItemCommand(state: GameState, instanceId: string): CommandResult {
-  if (state.phase !== "town") {
-    return noChange(state);
-  }
-  const item = state.inventory.find((candidate) => candidate.instanceId === instanceId);
-  if (!item || !isUnidentifiedRare(item)) {
-    return noChange(state);
-  }
-  // IMP-022V: appraisal is a paid service. Can't afford the reading → nothing happens (the UI
-  // disables the button and shows why), so gold never goes negative.
-  const fee = appraisalFee(item);
-  if (state.partyGold < fee) {
-    return noChange(state);
-  }
-  const next: GameState = {
-    ...state,
-    partyGold: state.partyGold - fee,
-    inventory: state.inventory.map((candidate) => (candidate.instanceId === instanceId ? appraiseInstance(candidate) : candidate)),
-    turn: state.turn + 1
-  };
-  return withEvents(next, [
-    { type: "item_appraised", itemId: item.id, itemName: item.name, affix: item.affix, rarity: item.rarity ?? "rare", cost: fee }
-  ]);
-}
-
-// IMP-022C: toggle a per-instance protection flag (lock / favorite). Town only, no turn cost.
-function toggleItemFlagCommand(state: GameState, instanceId: string, flag: "locked" | "favorite"): CommandResult {
-  if (state.phase !== "town") {
-    return noChange(state);
-  }
-  const item = state.inventory.find((candidate) => candidate.instanceId === instanceId);
-  if (!item) {
-    return noChange(state);
-  }
-  return {
-    state: {
-      ...state,
-      inventory: state.inventory.map((candidate) =>
-        candidate.instanceId === instanceId ? { ...candidate, [flag]: !candidate[flag] } : candidate
-      )
-    },
-    events: []
-  };
-}
-
-// The materials SINK (workshop / 錬成所): spend dismantled materials to reinforce a WORN piece one
-// step (+1 to its slot's primary stat via the existing `plus` mechanic). Guards: town only, an item
-// is worn in that slot, it isn't already at the cap, and the party can afford the step. Never spends
-// past what it has, never exceeds MAX_REINFORCE.
-function reinforceEquipmentCommand(state: GameState, world: ScenarioWorld, characterId: string, slot: EquipmentSlot): CommandResult {
-  if (state.phase !== "town") {
-    return noChange(state);
-  }
-  const member = state.party.find((candidate) => candidate.id === characterId);
-  const equipped = member?.equipment[slot];
-  if (!member || !equipped) {
-    return noChange(state);
-  }
-  const currentPlus = equipped.plus ?? 0;
-  const cost = reinforceCost(currentPlus);
-  if (currentPlus >= MAX_REINFORCE || (state.materials ?? 0) < cost) {
-    return noChange(state);
-  }
-  const nextPlus = currentPlus + 1;
-  const definition = world.equipment.find((candidate) => candidate.id === equipped.id);
-  const next: GameState = {
-    ...state,
-    materials: (state.materials ?? 0) - cost,
-    party: state.party.map((candidate) =>
-      candidate.id === characterId
-        ? { ...candidate, equipment: { ...candidate.equipment, [slot]: { ...equipped, plus: nextPlus } } }
-        : candidate
-    ),
-    turn: state.turn + 1
-  };
-  return withEvents(next, [
-    { type: "equipment_reinforced", characterName: member.name, itemId: equipped.id, itemName: definition?.name ?? equipped.id, slot, plus: nextPlus, cost }
-  ]);
-}
-
-// IMP-022C: convert UNPROTECTED equipment — sell for gold or dismantle for materials. Equipped /
-// locked / favorite / unidentified-rare items are left untouched (the guard). IMP-022 filter: an
-// optional `rarities` list scopes the conversion (e.g. clear commons, keep rares) — omit for all.
-function bulkConvertCommand(
-  state: GameState,
-  world: ScenarioWorld,
-  mode: "sell" | "dismantle",
-  rarities?: ItemRarity[]
-): CommandResult {
-  if (state.phase !== "town") {
-    return noChange(state);
-  }
-  const rarityFilter = rarities && rarities.length > 0 ? new Set(rarities) : null;
-  const equippedKeys = equippedInstanceKeys(state);
-  const convertible = state.inventory.filter(
-    (item) =>
-      item.kind === "equipment" &&
-      !isProtectedFromBulk(item, equippedKeys) &&
-      (!rarityFilter || rarityFilter.has(item.rarity ?? "common"))
-  );
-  if (convertible.length === 0) {
-    return noChange(state);
-  }
-  const goldGained = mode === "sell" ? convertible.reduce((total, item) => total + sellValueOf(item) * item.quantity, 0) : 0;
-  const materialsGained = mode === "dismantle" ? convertible.reduce((total, item) => total + dismantleYield(item), 0) : 0;
-  const convertedCount = convertible.reduce((total, item) => total + item.quantity, 0);
-  const convertedKeys = new Set(convertible.map((item) => item.instanceId ?? equipmentInstanceKey(item.id, item.plus, item.affix)));
-
-  const next: GameState = {
-    ...state,
-    inventory: state.inventory.filter(
-      (item) => !convertedKeys.has(item.instanceId ?? equipmentInstanceKey(item.id, item.plus, item.affix))
-    ),
-    partyGold: state.partyGold + goldGained,
-    materials: (state.materials ?? 0) + materialsGained,
-    turn: state.turn + 1
-  };
-  return withEvents(next, [
-    { type: "bulk_converted", mode, count: convertedCount, gold: goldGained, materials: materialsGained }
-  ]);
-}
-
-function buyItem(state: GameState, world: ScenarioWorld, shopId: string, itemId: string): CommandResult {
-  if (state.phase !== "town") {
-    return noChange(state);
-  }
-
-  const shop = world.shops.find((candidate) => candidate.id === shopId);
-  const stock = shop?.stock?.find((candidate) => candidate.itemId === itemId);
-  if (!shop || !stock || !isStockAvailable(stock, state)) {
-    return noChange(state);
-  }
-
-  if (state.partyGold < stock.price) {
-    return noChange(state);
-  }
-
-  const item = createInventoryItemFromCatalog(world, itemId, 1);
-  if (!item) {
-    return noChange(state);
-  }
-
-  const next: GameState = {
-    ...state,
-    partyGold: state.partyGold - stock.price,
-    inventory: addInventoryItem(state.inventory, item),
-    turn: state.turn + 1
-  };
-
-  return withEvents(next, [{ type: "item_bought", itemId, itemName: item.name, gold: stock.price }]);
-}
-
-function sellItem(state: GameState, world: ScenarioWorld, itemId: string, plus?: number, affix?: string): CommandResult {
-  if (state.phase !== "town") {
-    return noChange(state);
-  }
-
-  const key = equipmentInstanceKey(itemId, plus, affix);
-  const item = state.inventory.find(
-    (candidate) => equipmentInstanceKey(candidate.id, candidate.plus, candidate.affix) === key && candidate.quantity > 0
-  );
-  if (!item) {
-    return noChange(state);
-  }
-  // Only the exact equipped instance is protected from selling.
-  if (
-    state.party.some((member) =>
-      Object.values(member.equipment).some((slot) => slot && equipmentInstanceKey(slot.id, slot.plus, slot.affix) === key)
-    )
-  ) {
-    return noChange(state);
-  }
-
-  const catalogValue =
-    item.sellValue ??
-    world.items.find((candidate) => candidate.id === itemId)?.sellValue ??
-    world.equipment.find((candidate) => candidate.id === itemId)?.sellValue ??
-    0;
-  if (catalogValue <= 0) {
-    return noChange(state);
-  }
-
-  const next: GameState = {
-    ...state,
-    partyGold: state.partyGold + catalogValue,
-    inventory: removeInventoryItem(state.inventory, itemId, 1, plus, affix),
-    turn: state.turn + 1
-  };
-
-  return withEvents(next, [{ type: "item_sold", itemId, itemName: item.name, gold: catalogValue }]);
-}
-
-function equipItem(
-  state: GameState,
-  world: ScenarioWorld,
-  characterId: string,
-  equipmentId: string,
-  plus?: number,
-  affix?: string
-): CommandResult {
-  if (state.phase !== "town") {
-    return noChange(state);
-  }
-
-  const key = equipmentInstanceKey(equipmentId, plus, affix);
-  const item = state.inventory.find(
-    (candidate) => equipmentInstanceKey(candidate.id, candidate.plus, candidate.affix) === key && candidate.quantity > 0
-  );
-  const equipment = findEquipment(world, equipmentId);
-  const slot = getEquipmentSlot(world, equipmentId);
-  const character = state.party.find((member) => member.id === characterId);
-  if (!item || item.kind !== "equipment" || !equipment || !slot || !character || !isEquipmentUsableBy(equipment, character)) {
-    return noChange(state);
-  }
-
-  const equippedOwners = state.party.flatMap((member) =>
-    Object.entries(member.equipment)
-      .filter(([, equipped]) => equipped && equipmentInstanceKey(equipped.id, equipped.plus, equipped.affix) === key)
-      .map(([memberSlot]) => ({ characterId: member.id, slot: memberSlot as EquipmentSlot }))
-  );
-  const targetAlreadyHasInstance = equippedOwners.some((owner) => owner.characterId === characterId);
-  const transferFrom = !targetAlreadyHasInstance && equippedOwners.length >= item.quantity
-    ? equippedOwners.find((owner) => owner.characterId !== characterId)
-    : undefined;
-
-  const next: GameState = {
-    ...state,
-    party: state.party.map((member) => {
-      const nextEquipment = { ...member.equipment };
-      if (transferFrom?.characterId === member.id) {
-        delete nextEquipment[transferFrom.slot];
-      }
-      if (member.id === characterId) {
-        nextEquipment[slot] = { id: equipmentId, plus, affix };
-      }
-      return { ...member, equipment: nextEquipment };
-    }),
-    turn: state.turn + 1
-  };
-
-  return withEvents(next, [
-    { type: "equipment_changed", itemId: equipmentId, characterName: character.name, itemName: equipment.name, slot }
-  ]);
-}
-
 function retreat(state: GameState): CommandResult {
   if (state.phase !== "combat") {
     return noChange(state);
@@ -2418,14 +2029,6 @@ function resolveTreasureTable(world: ScenarioWorld, tableId: string, seed: strin
   }) ?? table.entries[0];
 }
 
-function isStockAvailable(stock: NonNullable<ScenarioWorld["shops"][number]["stock"]>[number], state: GameState) {
-  if (stock.availability === "unlocked" && stock.unlockFlag) {
-    return state.discoveredSecrets.includes(stock.unlockFlag);
-  }
-
-  return stock.availability !== "unlocked";
-}
-
 function normalizeCombat(combat: CombatState): CombatState {
   const sourceGroups = combat.enemyGroups?.length > 0 ? combat.enemyGroups : [createEnemyGroup(combat.enemy, 1)];
   // Saves from before group-condition bars do not carry the encounter's starting
@@ -2783,20 +2386,6 @@ function logOnly(state: GameState, event: GameEvent): CommandResult {
   };
 
   return withEvents(next, [event]);
-}
-
-function withEvents(state: GameState, events: GameEvent[]): CommandResult {
-  return {
-    state: {
-      ...state,
-      log: appendEventLogs(state, events)
-    },
-    events
-  };
-}
-
-function noChange(state: GameState): CommandResult {
-  return { state, events: [] };
 }
 
 function visitRoom(state: GameState, world: ScenarioWorld, roomId: string, facing: Direction) {

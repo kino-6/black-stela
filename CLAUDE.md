@@ -24,6 +24,9 @@ Also: `npm run build` (tsc -b) is the real typecheck; `npm run test` is the unit
 
 ## Where durable state lives (so you needn't hold it in context)
 
+- **Architecture** (`docs/architecture.md`) — the single map of how the whole system fits together:
+  the four layer boundaries, the command loop, every gameplay subsystem, the simulation oracle, and
+  the durable-core-vs-UI line the Godot migration works against. Read it before structural work.
 - **Skills** (`.claude/skills/`) — deep, current know-how. Load the one that fits:
   `drpg-balance` (the prepare-or-wipe difficulty model + the two world.md knobs),
   `controller-first-ui` (keyboard/gamepad UI + gates that can fail),

@@ -118,6 +118,12 @@ src-tauri/                   Tauri v2 desktop shell
 
 ## Architecture
 
+> **Full reference:** [`docs/architecture.md`](docs/architecture.md) is the
+> single map of how the whole system fits together — the four layer boundaries,
+> the command loop, every gameplay subsystem, the simulation oracle, and the
+> durable-core-vs-UI line the Godot migration works against. The summary below is
+> the elevator version.
+
 The implementation keeps a hard boundary between scenario truth, deterministic
 rules, user interface, and local narration.
 
