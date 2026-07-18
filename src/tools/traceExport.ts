@@ -105,9 +105,22 @@ function turnsRoute(world: ScenarioWorld): { initial: GameState; commands: Comma
   return { initial, commands };
 }
 
+// Turn to face a wall (east at room.b1f.002 has no exit) and step into it — exercises move_forward's
+// blocked-wall branch (movement_blocked + map_exit_blocked, blockedExits updated). Room entry and
+// encounter creation are the larger remaining move_forward work.
+function wallRoute(world: ScenarioWorld): { initial: GameState; commands: Command[] } {
+  const initial = createDebugStateFromProgress(world, "after_encounter");
+  const commands: Command[] = [
+    { type: "turn_left" }, // face east from the default south facing
+    { type: "move_forward" }
+  ];
+  return { initial, commands };
+}
+
 // The slice's golden routes. More can be added as the vertical slice grows.
 export const SLICE_ROUTES: TraceRoute[] = [
   { name: "b1f-turns", worldId: "default", build: turnsRoute },
+  { name: "b1f-wall", worldId: "default", build: wallRoute },
   { name: "b1f-combat-victory", worldId: "default", build: combatRoute },
   { name: "b1f-exploration", worldId: "default", build: dungeonRoute }
 ];
