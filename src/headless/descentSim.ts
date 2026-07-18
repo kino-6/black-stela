@@ -66,7 +66,7 @@ const avgLevel = (party: Character[]) => avg(party.map((m) => m.level));
 const avgHpPct = (party: Character[]) => avg(party.map(hpPct));
 const lowestHpPct = (party: Character[]) => Math.min(...party.map(hpPct));
 
-interface PlannedEncounter {
+export interface PlannedEncounter {
   enemy: Enemy;
   count: number;
 }
@@ -222,7 +222,7 @@ function bestResistFor(world: ScenarioWorld, enemy: Enemy): string | undefined {
 
 // Kit the party for THIS enemy. Prepared: the counter weapon + the resisting armour where they
 // exist. Naive: a plain physical weapon, no resist — the loadout of a party that read nothing.
-function equipPartyForEnemy(party: Character[], world: ScenarioWorld, enemy: Enemy, policy: SimPolicy): Character[] {
+export function equipPartyForEnemy(party: Character[], world: ScenarioWorld, enemy: Enemy, policy: SimPolicy): Character[] {
   // Naive keeps the party's own starter loadout untouched — the point is only that it brought no
   // COUNTERPLAY, so the existing (naive) balance curve is unchanged. Prepared layers the counter
   // weapon and the resisting armour on top, per this enemy.
@@ -244,7 +244,10 @@ function equipPartyForEnemy(party: Character[], world: ScenarioWorld, enemy: Ene
   }));
 }
 
-function resolveFight(
+// Exported for the IMP-023V parity gate: it must resolve a fight ONLY through the production engine
+// (createCombatState + declare_round), never a re-implemented formula, so the simulator can never
+// drift from what a browser session actually rolls. tests/simParity.test.ts locks that.
+export function resolveFight(
   state: GameState,
   world: ScenarioWorld,
   encounter: PlannedEncounter,
