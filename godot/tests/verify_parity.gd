@@ -9,7 +9,11 @@ extends SceneTree
 const StateHash := preload("res://scripts/rules/state_hash.gd")
 const SliceRules := preload("res://scripts/rules/slice_rules.gd")
 
-const PARITY_TRACES := ["b1f-turns"]
+const PARITY_TRACES := ["b1f-turns", "b1f-exploration"]
+
+func _load_world(world_id: String) -> Dictionary:
+	var pack: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/worlds/%s.json" % world_id))
+	return (pack.get("world", {}) if typeof(pack) == TYPE_DICTIONARY else {})
 
 func _initialize() -> void:
 	var failures := 0
@@ -25,6 +29,7 @@ func _check_trace(name: String) -> int:
 		return 1
 
 	var failures := 0
+	var world := _load_world(trace.get("worldId", "default"))
 	var state: Dictionary = trace["initialState"]
 
 	# The initial state must already hash to the oracle's value (the hash port is correct).
@@ -35,7 +40,7 @@ func _check_trace(name: String) -> int:
 	var steps: Array = trace["steps"]
 	for i in steps.size():
 		var step: Dictionary = steps[i]
-		var result: Dictionary = SliceRules.resolve(state, step["command"])
+		var result: Dictionary = SliceRules.resolve(state, step["command"], world)
 		state = result["state"]
 
 		var got_hash := StateHash.hash_state(state)
