@@ -16,6 +16,9 @@
     "headless:probes": "node scripts/run-vite-module.mjs scripts/headless-probes.ts",
     "headless:combat": "node scripts/run-vite-module.mjs scripts/combat-probes.ts",
     "sim:content": "node scripts/run-vite-module.mjs scripts/content-sim.ts",
+    "export:packs": "node scripts/run-vite-module.mjs scripts/export-packs.ts",
+    "export:traces": "node scripts/run-vite-module.mjs scripts/export-traces.ts",
+    "export:godot": "npm run export:packs && npm run export:traces",
     "tauri": "tauri"
   },
   "dependencies": {
