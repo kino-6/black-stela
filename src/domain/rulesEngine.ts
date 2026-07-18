@@ -2175,7 +2175,7 @@ function applyHealingItemToParty(
   };
 }
 
-function damageGroup(groups: CombatEnemyGroup[], groupId: string, damage: number): CombatEnemyGroup[] {
+export function damageGroup(groups: CombatEnemyGroup[], groupId: string, damage: number): CombatEnemyGroup[] {
   return groups.map((group) => {
     if (group.id !== groupId) {
       return group;
@@ -2232,7 +2232,7 @@ function findGroupName(groups: CombatEnemyGroup[], groupId: string) {
   return groups.find((group) => group.id === groupId)?.name ?? "the enemy";
 }
 
-function rollPercent(seed: string) {
+export function rollPercent(seed: string) {
   return (hashSeed(seed) % 100) + 1;
 }
 

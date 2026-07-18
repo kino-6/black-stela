@@ -49,3 +49,7 @@ static func chip_through_resistance(damage: int, seed: String) -> int:
 	if damage > 0:
 		return damage
 	return 1 if (hash_seed(seed + ":chip") % 100 < 65) else 0
+
+## rollPercent(seed): a 1-100 roll off the seeded hash (hit / crit checks).
+static func roll_percent(seed: String) -> int:
+	return (hash_seed(seed) % 100) + 1
