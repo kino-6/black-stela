@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 import type { Page } from "@playwright/test";
 import { mkdir, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import { createStarterParty, descendB1fViaWarden, faceDirection, resolveVisibleCombat, startNewExpedition, walkB1fStairToMarker } from "./helpers";
+import { createStarterParty, descendB1fViaWarden, faceDirection, openTownService, resolveVisibleCombat, startNewExpedition, walkB1fStairToMarker } from "./helpers";
 import { expectFitsViewport } from "./controllerGate";
 
 type FailureCategory =
@@ -164,7 +164,7 @@ test("browser self-play completes the visible dungeon loop without headless shor
       await expect(page.getByText("Next preparation", { exact: true })).toBeVisible();
       await capture("post-return-town");
 
-      await page.getByTestId("town-cockpit").getByRole("button", { name: "Shop" }).click();
+      await openTownService(page, "Shop");
       report.commands.push("Shop");
       await expect(page.getByRole("heading", { name: "Stela Gate General Store" })).toBeVisible();
       await expect(page.getByText(/\d+ gold/).first()).toBeVisible();
@@ -195,9 +195,10 @@ test("browser self-play completes the visible dungeon loop without headless shor
         await japanesePage.getByTestId("scenario-card-default").click({ timeout: 5000 }).catch(() => {});
         await createStarterParty(japanesePage, "ja");
         await japanesePage.getByRole("button", { name: "町へ戻る" }).click();
-        await expect(japanesePage.getByRole("button", { name: "商店" })).toBeVisible();
+        // IMP-025: the square shows destinations (市場通り) + the infirmary; the shop is one step in.
+        await expect(japanesePage.getByRole("button", { name: "市場通り" })).toBeVisible();
         await expect(japanesePage.getByRole("button", { name: "施療院" })).toBeVisible();
-        await japanesePage.getByRole("button", { name: "商店" }).click();
+        await openTownService(japanesePage, "商店", "ja");
         await expect(japanesePage.getByRole("heading", { name: "黒碑門の雑貨店" })).toBeVisible();
         await expect(japanesePage.getByText("見る冒険者")).toBeVisible();
         await expect(japanesePage.getByText("gold")).toHaveCount(0);

@@ -29,6 +29,10 @@ test("party menu opens from town without a mouse", async ({ page }) => {
   await backToTown.focus();
   await page.keyboard.press("Enter");
 
+  // IMP-025: the party menu now lives in the Guild hall — reach it without a mouse.
+  await page.getByTestId("town-location-hall").focus();
+  await page.keyboard.press("Enter");
+
   const open = page.getByTestId("town-party-menu");
   await expect(open).toBeVisible();
   await open.press("Enter");

@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { createStarterParty, startNewExpedition } from "./helpers";
+import { createStarterParty, openTownServiceByTestId, startNewExpedition } from "./helpers";
 import { CONTROLLER_VIEWPORT, expectControllerFocus, expectFitsViewport } from "./controllerGate";
 
 // IMP-021C — the town CAREER service. A build is the vocations mastered: the panel shows the current
@@ -15,7 +15,7 @@ test.describe("town career service", () => {
     await createStarterParty(page);
     await page.keyboard.press("Escape");
 
-    await page.getByTestId("town-service-career").click();
+    await openTownServiceByTestId(page, "town-service-career");
     const panel = page.getByTestId("career-panel");
     await expect(panel).toBeVisible();
     await expectFitsViewport(page, "career");

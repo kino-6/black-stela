@@ -2,20 +2,22 @@ import { expect, test } from "@playwright/test";
 import type { Page } from "@playwright/test";
 import { advanceToB1fMarkerViaNeedle, createStarterParty, openTownService, registerAdventurer, resolveVisibleCombat, setTitleLanguage, startNewExpedition } from "./helpers";
 
-test("town modes expose guild, recovery, records, and dungeon entry", async ({ page }) => {
+test("the town square offers a few destinations plus a separated departure", async ({ page }) => {
   await startNewExpedition(page);
 
-  // A fresh expedition lands on the guild; the town hub (reached with "Back to
-  // town") lists its services as a console menu instead of a tab bar.
+  // IMP-025: the town square (reached with "Back to town") is a handful of DESTINATIONS — guild hall,
+  // market, archive, the infirmary — plus the way down, not a grid of ten equal systems.
   await page.getByRole("button", { name: "Back to town" }).click();
-  await expect(page.getByRole("button", { name: "Guild" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Shop" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Guild hall" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Market row" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Recovery" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Records" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Records hall" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Enter dungeon" })).toBeVisible();
+  // The systems themselves are one step inside a destination, not on the square.
+  await expect(page.getByRole("button", { name: "Shop", exact: true })).toHaveCount(0);
 
-  // Stage into the guild to register, then back out to the hub for services.
-  await page.getByRole("button", { name: "Guild" }).click();
+  // Stage into the guild hall to register, then back out for services.
+  await openTownService(page, "Guild");
   await registerAdventurer(page, { name: "Mira" });
   await expect(page.locator(".party-member").filter({ hasText: "Mira" }).first()).toBeVisible();
 

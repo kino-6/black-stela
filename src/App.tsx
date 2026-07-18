@@ -424,6 +424,16 @@ export function App() {
     }
   }, [state.phase]);
 
+  // Companion to the departure reset: an actual RETURN also lands on the hub. Keyed on the
+  // returned_to_town event (fired only by a real return, never a new game), so a debug run that
+  // begins IN the dungeon — with no town→dungeon departure to reset on — still shows the hub, not the
+  // stale guild screen it started with. (return-loop.spec + rest-points.spec cover both paths.)
+  useEffect(() => {
+    if (state.phase === "town" && state.log.at(-1)?.event?.type === "returned_to_town") {
+      setTownMode("entry");
+    }
+  }, [state.phase, state.log]);
+
   useEffect(() => {
     if (state.phase !== "combat") {
       setSelectedTargetId(null);

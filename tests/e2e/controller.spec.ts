@@ -51,6 +51,9 @@ test("town, shop, config, and repeat surfaces remain controller reachable", asyn
   // Reach the town hub, whose console service menu is controller-reachable.
   await page.getByRole("button", { name: "Back to town" }).click();
 
+  // IMP-025: the shop is in the market — step into the destination, then the service.
+  await focusControllerButton(page, "Market row");
+  await page.keyboard.press("Enter");
   await focusControllerButton(page, "Shop");
   await page.keyboard.press("Enter");
   await expect(page.getByRole("heading", { name: "Stela Gate General Store" })).toBeVisible();
@@ -62,6 +65,8 @@ test("town, shop, config, and repeat surfaces remain controller reachable", asyn
 
   // Cancel back to the hub, then stage into another service and the dungeon.
   await page.getByRole("button", { name: "Back to town" }).click();
+  await focusControllerButton(page, "Records hall");
+  await page.keyboard.press("Enter");
   await focusControllerButton(page, "Records");
   await page.keyboard.press("Enter");
   await expect(page.getByRole("heading", { name: "Records" })).toBeVisible();

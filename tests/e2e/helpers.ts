@@ -50,15 +50,59 @@ export async function createStarterParty(page: Page, locale: "en" | "ja" = "en")
   }
 }
 
-// The town lands on a hub whose service menu (Guild / Shop / Recovery / Records /
-// Enter dungeon) is only visible from the hub itself. This returns to the hub if a
-// service is currently open, then opens the requested service.
+// IMP-025: the town is a two-level hub — a square of DESTINATIONS (guild hall / market / archive),
+// with recovery and departure on the square itself and every other service one step inside a
+// destination. This returns to the square, then opens the requested service wherever it lives —
+// direct on the square, else by trying each destination until the named button appears.
 export async function openTownService(page: Page, name: string | RegExp, locale: "en" | "ja" = "en") {
   const back = page.getByRole("button", { name: locale === "ja" ? "町へ戻る" : "Back to town", exact: true });
   if (await back.isVisible().catch(() => false)) {
     await back.click();
   }
-  await page.getByRole("button", { name, exact: true }).click();
+  const toSquare = page.getByTestId("town-location-back");
+  if (await toSquare.isVisible().catch(() => false)) {
+    await toSquare.click();
+  }
+  const target = page.getByRole("button", { name, exact: true });
+  if (await target.isVisible().catch(() => false)) {
+    await target.click();
+    return;
+  }
+  for (const location of ["town-location-hall", "town-location-market", "town-location-archive"]) {
+    await page.getByTestId(location).click();
+    if (await target.isVisible().catch(() => false)) {
+      await target.click();
+      return;
+    }
+    await page.getByTestId("town-location-back").click();
+  }
+  throw new Error(`town service not found on the hub: ${String(name)}`);
+}
+
+// Open a town service by its stable testid (e.g. "town-service-loot"), navigating the two-level hub.
+export async function openTownServiceByTestId(page: Page, testid: string) {
+  const back = page.getByRole("button", { name: /Back to town|町へ戻る/ });
+  if (await back.first().isVisible().catch(() => false)) {
+    await back.first().click();
+  }
+  const toSquare = page.getByTestId("town-location-back");
+  if (await toSquare.isVisible().catch(() => false)) {
+    await toSquare.click();
+  }
+  const target = page.getByTestId(testid);
+  if (await target.isVisible().catch(() => false)) {
+    await target.click();
+    return;
+  }
+  for (const location of ["town-location-hall", "town-location-market", "town-location-archive"]) {
+    await page.getByTestId(location).click();
+    if (await target.isVisible().catch(() => false)) {
+      await target.click();
+      return;
+    }
+    await page.getByTestId("town-location-back").click();
+  }
+  throw new Error(`town service testid not found on the hub: ${testid}`);
 }
 
 export async function setTitleLanguage(page: Page, locale: "en" | "ja") {

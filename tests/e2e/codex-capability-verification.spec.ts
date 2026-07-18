@@ -42,6 +42,7 @@ test.describe("Codex verification for IMP-021 / IMP-022", () => {
     await page.setViewportSize({ width: 1920, height: 1080 });
     await reachTown(page, { locale: "en", scenario: /Black Stela|Gate of Ash/ });
 
+    await activateByController(page, "Guild hall");
     await activateByController(page, "Vocations");
     await expect(page.getByTestId("career-panel")).toBeVisible();
     await expect(page.locator(".career-vocation.career-advanced")).toHaveCount(6);
@@ -61,6 +62,7 @@ test.describe("Codex verification for IMP-021 / IMP-022", () => {
     await page.setViewportSize(CONTROLLER_VIEWPORT);
     await reachTown(page, { locale: "ja", scenario: /翠碑|沈む樹心/ });
 
+    await activateByController(page, "ギルド館");
     await activateByController(page, "生業");
     await expect(page.getByTestId("career-panel")).toBeVisible();
     const advancedVocations = page.locator(".career-vocation.career-advanced");
@@ -80,6 +82,7 @@ test.describe("Codex verification for IMP-021 / IMP-022", () => {
     await page.setViewportSize(CONTROLLER_VIEWPORT);
     await reachTown(page, { locale: "ja", scenario: /黒碑|灰の門/ });
 
+    await activateByController(page, "市場通り");
     await activateByController(page, "鑑定所");
     await expect(page.getByTestId("loot-panel")).toBeVisible();
     await expect(page.getByTestId("loot-bulk")).toBeVisible();
@@ -96,6 +99,7 @@ test.describe("Codex verification for IMP-021 / IMP-022", () => {
     await page.setViewportSize(CONTROLLER_VIEWPORT);
     await reachTown(page, { locale: "ja", scenario: /黒碑|灰の門/ });
 
+    await activateByController(page, "市場通り");
     await activateByController(page, "錬成所");
     await expect(page.getByTestId("workshop-panel")).toBeVisible();
     await expect(page.getByTestId("workshop-list")).toBeVisible();

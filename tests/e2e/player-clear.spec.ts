@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import type { Page } from "@playwright/test";
-import { advanceToB1fMarker, createStarterParty, descendB1fViaWarden, faceDirection, registerAdventurer, resolveVisibleCombat, startNewExpedition, walkB1fStairToMarker, walkB1fToStair } from "./helpers";
+import { advanceToB1fMarker, createStarterParty, descendB1fViaWarden, faceDirection, openTownService, registerAdventurer, resolveVisibleCombat, startNewExpedition, walkB1fStairToMarker, walkB1fToStair } from "./helpers";
 
 test("clears the MVP route through visible player controls only", async ({ page }) => {
   await startNewExpedition(page);
@@ -53,7 +53,7 @@ test("clears the MVP route through visible player controls only", async ({ page 
 
   await expect(page.getByRole("heading", { name: "Town", exact: true })).toBeVisible();
   await expect(page.getByText("The party returns to town.")).toBeVisible();
-  await page.getByRole("button", { name: "Records" }).click();
+  await openTownService(page, "Records");
   await expect(page.getByText(/^[1-9]\d* records$/)).toBeVisible();
 });
 

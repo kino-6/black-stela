@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { createStarterParty, startNewExpedition } from "./helpers";
+import { createStarterParty, openTownServiceByTestId, startNewExpedition } from "./helpers";
 import { CONTROLLER_VIEWPORT, expectControllerFocus, expectFitsViewport } from "./controllerGate";
 
 // IMP-022C — the town APPRAISER. Reachable, controller-first, no-overlap. The appraise / lock /
@@ -14,7 +14,7 @@ test.describe("town appraiser (loot)", () => {
     await createStarterParty(page);
     await page.keyboard.press("Escape");
 
-    await page.getByTestId("town-service-loot").click();
+    await openTownServiceByTestId(page, "town-service-loot");
     const panel = page.getByTestId("loot-panel");
     await expect(panel).toBeVisible();
     await expectFitsViewport(page, "appraiser");

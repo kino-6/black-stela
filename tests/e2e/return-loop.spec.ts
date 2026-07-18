@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { advanceToB1fMarker, createStarterParty, resolveVisibleCombat, startNewExpedition } from "./helpers";
+import { advanceToB1fMarker, createStarterParty, openTownServiceByTestId, resolveVisibleCombat, startNewExpedition } from "./helpers";
 
 // IMP-027 — every dungeon return lands on the town HUB, whatever path departed. The regression: a
 // DIRECT departure from the 6/6 guild-completion screen left townMode on "guild", so the authored
@@ -32,6 +32,6 @@ test("a direct 6/6-guild departure still returns to the town hub, not Adventurer
   await expect(page.getByText("How about this one?")).toHaveCount(0);
 
   // And the hub's services are reachable (a real preparation loop, not a dead registration screen).
-  await page.getByTestId("town-service-loot").click();
+  await openTownServiceByTestId(page, "town-service-loot");
   await expect(page.getByTestId("loot-panel")).toBeVisible();
 });

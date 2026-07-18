@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { createStarterParty, startNewExpedition } from "./helpers";
+import { createStarterParty, openTownServiceByTestId, startNewExpedition } from "./helpers";
 import { CONTROLLER_VIEWPORT, expectControllerFocus, expectFitsViewport } from "./controllerGate";
 
 // Q2 — the town quest board. Bounties and delivery tithes are authored data
@@ -17,7 +17,7 @@ test.describe("quest board", () => {
     await page.keyboard.press("Escape");
 
     // The board is a town service, reachable from the entry menu.
-    await page.getByTestId("town-service-quests").click();
+    await openTownServiceByTestId(page, "town-service-quests");
     const board = page.getByTestId("quest-board");
     await expect(board).toBeVisible();
     await expectFitsViewport(page, "quest board");
@@ -41,7 +41,7 @@ test.describe("quest board", () => {
     // Cancel returns to town, board state intact.
     await page.keyboard.press("Escape");
     await expect(page.getByTestId("town-cockpit")).toBeVisible();
-    await page.getByTestId("town-service-quests").click();
+    await openTownServiceByTestId(page, "town-service-quests");
     await expect(page.getByTestId("quest-status-quest.glimmer-hunt")).toHaveText("In progress");
   });
 });

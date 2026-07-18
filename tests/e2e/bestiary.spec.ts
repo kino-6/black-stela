@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { createStarterParty, startNewExpedition } from "./helpers";
+import { createStarterParty, openTownService, startNewExpedition } from "./helpers";
 import { CONTROLLER_VIEWPORT } from "./controllerGate";
 
 // IMP-022D — the enemy record lives in the town Records service. A fresh party has met nothing, so
@@ -12,7 +12,7 @@ test.describe("bestiary in records", () => {
     await createStarterParty(page);
     await page.keyboard.press("Escape");
 
-    await page.getByRole("button", { name: "Records" }).click();
+    await openTownService(page, "Records");
     await expect(page.getByTestId("records-panel")).toBeVisible();
     const bestiary = page.getByTestId("bestiary");
     await expect(bestiary).toBeVisible();

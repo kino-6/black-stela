@@ -1,5 +1,5 @@
-import { useEffect, useRef } from "react";
-import { ClipboardList, DoorOpen, Gem, GraduationCap, Hammer, HeartPulse, ScrollText, ShoppingBag, Users, UsersRound } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { ArrowLeft, ClipboardList, DoorOpen, Gem, GraduationCap, Hammer, HeartPulse, Landmark, ScrollText, ShoppingBag, Store, Users, UsersRound } from "lucide-react";
 import type { Character, Command, ScenarioWorld } from "../domain/types";
 import { getLocalizedRoomText } from "../domain/scenario";
 import type { Locale, Translator } from "../i18n";
@@ -66,6 +66,28 @@ export function TownEntryPanel({
     const frame = window.requestAnimationFrame(() => enterDungeonRef.current?.focus());
     return () => window.cancelAnimationFrame(frame);
   }, [partyEmpty]);
+
+  // IMP-025: the town's first level is a handful of DESTINATIONS, not ten equal systems. Roster work,
+  // the market, and the archive each hold their services one step in; recovery and departure stay on
+  // the square. Controller-first: one press to a place, Cancel back to the square.
+  type TownLocation = "hall" | "market" | "archive";
+  const [location, setLocation] = useState<TownLocation | null>(null);
+  const services: Record<TownLocation, { key: string; testid: string; icon: JSX.Element; label: string; onClick: () => void; disabled?: boolean }[]> = {
+    hall: [
+      { key: "guild", testid: "town-service-guild", icon: <Users size={18} />, label: t("town.guild"), onClick: () => onEnterMode("guild") },
+      { key: "party", testid: "town-party-menu", icon: <UsersRound size={18} />, label: t("partyMenu.title"), onClick: onOpenPartyMenu, disabled: partyEmpty },
+      { key: "career", testid: "town-service-career", icon: <GraduationCap size={18} />, label: t("town.career"), onClick: () => onEnterMode("career"), disabled: partyEmpty }
+    ],
+    market: [
+      { key: "shop", testid: "town-service-shop", icon: <ShoppingBag size={18} />, label: t("town.shop"), onClick: () => onEnterMode("shop"), disabled: (world.shops?.length ?? 0) === 0 },
+      { key: "loot", testid: "town-service-loot", icon: <Gem size={18} />, label: t("town.reliquary"), onClick: () => onEnterMode("loot") },
+      { key: "workshop", testid: "town-service-workshop", icon: <Hammer size={18} />, label: t("town.workshop"), onClick: () => onEnterMode("workshop"), disabled: partyEmpty }
+    ],
+    archive: [
+      { key: "records", testid: "town-service-records", icon: <ScrollText size={18} />, label: t("town.records"), onClick: () => onEnterMode("records") },
+      { key: "quests", testid: "town-service-quests", icon: <ClipboardList size={18} />, label: t("town.quests"), onClick: () => onEnterMode("quests"), disabled: (world.quests?.length ?? 0) === 0 }
+    ]
+  };
 
   return (
     <section
@@ -149,69 +171,61 @@ export function TownEntryPanel({
         aria-label={t("town.servicesHeading")}
         data-controller-active="true"
         data-controller-surface="town-services"
+        data-town-location={location ?? "square"}
       >
-        <button type="button" data-testid="town-service-guild" onClick={() => onEnterMode("guild")}>
-          <Users size={18} />
-          {t("town.guild")}
-        </button>
-        <button type="button" data-testid="town-party-menu" onClick={onOpenPartyMenu} disabled={partyEmpty}>
-          <UsersRound size={18} />
-          {t("partyMenu.title")}
-        </button>
-        <button
-          type="button"
-          onClick={() => onEnterMode("shop")}
-          disabled={(world.shops?.length ?? 0) === 0}
-          title={(world.shops?.length ?? 0) === 0 ? t("town.noShop") : undefined}
-        >
-          <ShoppingBag size={18} />
-          {t("town.shop")}
-        </button>
-        <button type="button" onClick={() => onEnterMode("recovery")}>
-          <HeartPulse size={18} />
-          {t("town.recovery")}
-        </button>
-        <button
-          type="button"
-          data-testid="town-service-quests"
-          onClick={() => onEnterMode("quests")}
-          disabled={(world.quests?.length ?? 0) === 0}
-        >
-          <ClipboardList size={18} />
-          {t("town.quests")}
-        </button>
-        <button
-          type="button"
-          data-testid="town-service-career"
-          onClick={() => onEnterMode("career")}
-          disabled={partyEmpty}
-        >
-          <GraduationCap size={18} />
-          {t("town.career")}
-        </button>
-        <button type="button" data-testid="town-service-loot" onClick={() => onEnterMode("loot")}>
-          <Gem size={18} />
-          {t("town.reliquary")}
-        </button>
-        <button type="button" data-testid="town-service-workshop" onClick={() => onEnterMode("workshop")} disabled={partyEmpty}>
-          <Hammer size={18} />
-          {t("town.workshop")}
-        </button>
-        <button type="button" onClick={() => onEnterMode("records")}>
-          <ScrollText size={18} />
-          {t("town.records")}
-        </button>
-        <button
-          type="button"
-          className="primary-action"
-          data-testid="town-enter-dungeon"
-          ref={enterDungeonRef}
-          disabled={partyEmpty}
-          onClick={() => onCommand({ type: "enter_dungeon" })}
-        >
-          <DoorOpen size={18} />
-          {t("play.enterDungeon")}
-        </button>
+        {location === null ? (
+          <>
+            {/* The town square — a few destinations, then the way down. */}
+            <button type="button" data-testid="town-location-hall" onClick={() => setLocation("hall")}>
+              <Landmark size={18} />
+              {t("town.locGuildHall")}
+            </button>
+            <button type="button" data-testid="town-location-market" onClick={() => setLocation("market")}>
+              <Store size={18} />
+              {t("town.locMarket")}
+            </button>
+            <button type="button" data-testid="town-location-archive" onClick={() => setLocation("archive")}>
+              <ScrollText size={18} />
+              {t("town.locArchive")}
+            </button>
+            <button type="button" data-testid="town-service-recovery" onClick={() => onEnterMode("recovery")}>
+              <HeartPulse size={18} />
+              {t("town.recovery")}
+            </button>
+            <button
+              type="button"
+              className="primary-action"
+              data-testid="town-enter-dungeon"
+              ref={enterDungeonRef}
+              disabled={partyEmpty}
+              onClick={() => onCommand({ type: "enter_dungeon" })}
+            >
+              <DoorOpen size={18} />
+              {t("play.enterDungeon")}
+            </button>
+          </>
+        ) : (
+          <>
+            {/* Inside a destination — its services, and one step back to the square. */}
+            <button type="button" data-controller-cancel="true" data-testid="town-location-back" onClick={() => setLocation(null)}>
+              <ArrowLeft size={18} />
+              {t("town.backToHub")}
+            </button>
+            {services[location].map((service) => (
+              <button
+                key={service.key}
+                type="button"
+                data-testid={service.testid}
+                onClick={service.onClick}
+                disabled={service.disabled}
+                title={service.key === "shop" && (world.shops?.length ?? 0) === 0 ? t("town.noShop") : undefined}
+              >
+                {service.icon}
+                {service.label}
+              </button>
+            ))}
+          </>
+        )}
       </nav>
     </section>
   );

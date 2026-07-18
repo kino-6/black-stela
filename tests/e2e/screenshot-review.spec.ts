@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 import type { Page } from "@playwright/test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { advanceToB1fMarker, createStarterParty, resolveVisibleCombat, setTitleLanguage, startNewExpedition } from "./helpers";
+import { advanceToB1fMarker, createStarterParty, openTownService, resolveVisibleCombat, setTitleLanguage, startNewExpedition } from "./helpers";
 
 test("captures desktop screenshot review states", async ({ page }) => {
   await page.goto("/");
@@ -49,7 +49,7 @@ test("captures desktop screenshot review states", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "Town", exact: true })).toBeVisible();
   await page.screenshot({ path: "test-results/screenshot-review/desktop-post-return-town.png", fullPage: true });
 
-  await page.getByTestId("town-cockpit").getByRole("button", { name: "Shop" }).click();
+  await openTownService(page, "Shop");
   await expect(page.getByRole("heading", { name: "Stela Gate General Store" })).toBeVisible();
   await page.screenshot({ path: "test-results/screenshot-review/desktop-shop.png", fullPage: true });
 });
