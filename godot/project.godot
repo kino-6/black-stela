@@ -21,6 +21,10 @@ Run="*res://scripts/run_state.gd"
 
 window/size/viewport_width=1920
 window/size/viewport_height=1080
+; Open MAXIMIZED: a native 1920-point window does not fit a laptop's logical screen, so it would
+; clamp small. Maximized fills the screen and keep-aspect scales the 1920×1080 design up to it.
+window/size/mode=2
+window/dpi/allow_hidpi=true
 window/stretch/mode="canvas_items"
 window/stretch/aspect="keep"
 
