@@ -22,8 +22,10 @@
     "export:stats": "node scripts/run-vite-module.mjs scripts/export-stat-samples.ts",
     "export:combat-helpers": "node scripts/run-vite-module.mjs scripts/export-combat-helper-samples.ts",
     "export:engine": "node scripts/run-vite-module.mjs scripts/export-engine-data.ts",
-    "export:godot": "npm run export:packs && npm run export:traces && npm run export:rng && npm run export:stats && npm run export:combat-helpers && npm run export:engine",
-    "tauri": "tauri"
+    "export:godot": "npm run export:packs && npm run export:traces && npm run export:rng && npm run export:stats && npm run export:combat-helpers && npm run export:engine && npm run export:character-data && npm run export:character-samples",
+    "tauri": "tauri",
+    "export:character-data": "node scripts/run-vite-module.mjs scripts/export-character-data.ts",
+    "export:character-samples": "node scripts/run-vite-module.mjs scripts/export-character-samples.ts"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.0.0",
