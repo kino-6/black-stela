@@ -11,10 +11,11 @@ scenario pack brief for the asset you are generating or reviewing.
 
 - Default / Ash: P14 and P16 delivered. All fourteen authored enemies now have
   dedicated 768×768 clean-alpha art; the three P16 additions also include hurt
-  frames. P6/P9/P12/P13 remain integration work.
-- Verdant: **50/50 required files delivered**. Act I's wall structural retake is
+  frames. P18 adds five town NPCs, seven dungeon objects, and eight own-basename
+  catalog icons. P6/P9/P12/P13/P18 runtime integration remains.
+- Verdant: **54/54 required files delivered**. Act I's wall structural retake is
   browser-verified; Act II/III textures, fifteen scenario-specific enemies,
-  nine item/equipment icons, and the 2026-07-14 Japanese 2D RPG portrait retake
+  thirteen item/equipment icons, and the 2026-07-14 Japanese 2D RPG portrait retake
   now ship in the pack.
 - Shared character-library pilot: P15 delivered **9/9** for three reusable NPCs
   and three adventurer base/action pairs under Default fallback basenames.
@@ -22,6 +23,9 @@ scenario pack brief for the asset you are generating or reviewing.
 - Full adventurer source library: P17 delivered **144/144 masters** covering all
   twelve classes, both genders, three species, and base/attack poses. Masters
   stay outside the eager web asset glob until selected for runtime export.
+- Support art extension: P18 delivered **24/24** files: five service NPCs,
+  seven first-person dungeon objects, eight Default catalog icons, and four
+  Verdant catalog icons.
 - Optional Verdant minimap marker overrides are not included in the required
   count.
 

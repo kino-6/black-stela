@@ -156,9 +156,9 @@ only ash-world direction and asset-specific lists below.
 
 ## 3. Current inventory (what already exists)
 
-`content/worlds/default/assets/` — **117 assets total** (42 `dungeon/` incl. 14
+`content/worlds/default/assets/` — **137 assets total** (49 `dungeon/` incl. 14
 enemy sprites + 14 hurt frames + return/stair props + block/fallback textures +
-door + trap/stela props, 38 `icons/`, 12 `portraits/`, 9 `characters/`, 9
+door + trap/stela/support props, 46 `icons/`, 12 `portraits/`, 14 `characters/`, 9
 `minimap/`, 1 `title/`, 6 `ui/`):
 
 | File | Size | Use | Gap it leaves |
@@ -173,9 +173,10 @@ door + trap/stela props, 38 `icons/`, 12 `portraits/`, 9 `characters/`, 9
 | `stair-down.png` / `stair-up.png` | 768² | descent/ascent stair props | generated; stair sprite wiring pending |
 | `trap-hazard.png` | 512×512 | floor trap decal | generated; trap decal wiring pending |
 | `stela-root.png` | 1024×1536 | finale black-stela root prop | generated; finale prop wiring pending |
+| P18 dungeon objects ×7 | 768×768 | chest states and visible exploration affordances | generated; runtime wiring pending |
 | `portraits/*.png` ×12 | 512×512 | origin portraits | wired in character UI |
-| `characters/*.png` ×9 | 1024×1536 | NPCs and adventurer base/action pairs | P15 delivered; runtime wiring pending |
-| `icons/*.png` ×38 | 256×256 | item/equipment icons | wired in shop/inventory/equip UI |
+| `characters/*.png` ×14 | 1024×1536 | NPCs and adventurer base/action pairs | P15/P18 delivered; runtime wiring pending |
+| `icons/*.png` ×46 | 256×256 | item/equipment icons | wired in shop/inventory/equip UI |
 | `minimap/marker-*.png` ×9 | 32×32 | minimap markers | wired through marker CSS classes |
 | `ui/combat-vignette.jpg` | 1600×900 | combat UI backdrop | wired in combat frame CSS |
 | `ui/guild-hall.jpg` / `ui/town-hub.jpg` | 1600×900 | town/guild backdrops | wired as the town/guild scenes |
@@ -183,11 +184,12 @@ door + trap/stela props, 38 `icons/`, 12 `portraits/`, 9 `characters/`, 9
 | `ui/party-hit-reaction.png` | 1600×900 | party damage overlay | generated; FX wiring pending |
 | `title/black-stela-title.jpg` | 1920×1080 | title background | wired in title screen CSS |
 
-Delivery audit (2026-07-18): P14/P16 are delivered. All fourteen authored
+Delivery audit (2026-07-19): P14/P16/P18 are delivered. All fourteen authored
 Default enemies now have dedicated 768×768 clean-alpha art; all fourteen also
-have matching hurt frames. P6/P9/P12/P13 still need wiring passes before every
-delivered asset appears in normal play. Player-imported portraits still override
-generated origin portraits.
+have matching hurt frames. P18 adds five service NPCs, seven dungeon objects,
+and eight own-basename catalog icons. P6/P9/P12/P13/P18 still need wiring
+passes before every delivered asset appears in normal play. Player-imported
+portraits still override generated origin portraits.
 
 ---
 
@@ -640,9 +642,42 @@ Runtime selection, portrait cropping, and per-character export remain a separate
 integration pass. Keep the complete 1024x1536 library outside `assets/` so Vite
 does not eagerly bundle 178 MB of unused source masters.
 
+### P18 — Service NPCs, dungeon objects, and catalog gaps  ✅ 24/24 delivered
+
+This extension fills player-visible roles that had data or service screens but
+no own art. Delivery does not implement chest, chamber, thief, or dungeon-object
+behavior; those remain controller-first runtime work.
+
+Town NPCs, `assets/characters/`, 1024x1536 PNG RGBA:
+
+- `npc-appraiser`, `npc-smith`, `npc-archivist`
+- `npc-vocation-master`, `npc-quest-broker`
+
+Dungeon objects, `assets/dungeon/`, 768x768 PNG RGBA:
+
+- `treasure-chest-closed`, `treasure-chest-open`
+- `rest-point`, `gather-cache`
+- `teleporter-floor`, `spinner-floor`, `secret-door-revealed`
+
+Default catalog icons, `assets/icons/`, 256x256 PNG RGBA:
+
+- `item-ashroot-tonic`, `item-whetstone-rite`
+- `item-emberwit-ash`, `item-deed-of-passage`
+- `equip-ember-brand`, `equip-salt-etched-blade`
+- `equip-starlit-needle`, `equip-cinder-warded-jack`
+
+The matching four Verdant catalog icons are recorded in that pack's brief.
+Every file has clean alpha, neutral asset lighting, no baked scene, and a
+distinct hash. Review sheets:
+
+- `docs/evidence/art-support-library-p18/npc-contact.png`
+- `docs/evidence/art-support-library-p18/dungeon-object-contact.png`
+- `docs/evidence/art-support-library-p18/icon-contact.png`
+
 ## 8. Retake queue (post-integration review)
 
-The pack art order, including P14, is delivered. P6/P9/P12/P13 remain unwired.
+The pack art order through P18 is delivered.
+P6/P9/P12/P13/P15/P17/P18 still contain unwired presentation work.
 Keep this section for post-integration art-tone corrections that should not be
 forgotten.
 

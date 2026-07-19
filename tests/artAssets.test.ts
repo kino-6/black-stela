@@ -40,7 +40,11 @@ const verdantIcons = [
   "equip-verdant-thorn-lash",
   "equip-verdant-bark-plate",
   "equip-verdant-living-charm",
-  "equip-verdant-heartwood-ward"
+  "equip-verdant-heartwood-ward",
+  "item-verdant-heartsap-tonic",
+  "item-verdant-rootgrowth-seed",
+  "equip-verdant-iron-edge",
+  "equip-verdant-reaver-axe"
 ] as const;
 
 const defaultEnemies = [
@@ -77,6 +81,35 @@ const completedEnemyCoverage = [
 const portraitKeys = [
   "gate", "ruin", "vial", "coin", "map", "ward",
   "road", "pit", "ink", "grave", "dock", "cloak"
+] as const;
+
+const supportNpcs = [
+  "npc-appraiser",
+  "npc-smith",
+  "npc-archivist",
+  "npc-vocation-master",
+  "npc-quest-broker"
+] as const;
+
+const supportDungeonObjects = [
+  "treasure-chest-closed",
+  "treasure-chest-open",
+  "rest-point",
+  "gather-cache",
+  "teleporter-floor",
+  "spinner-floor",
+  "secret-door-revealed"
+] as const;
+
+const defaultSupportIcons = [
+  "item-ashroot-tonic",
+  "item-whetstone-rite",
+  "item-emberwit-ash",
+  "item-deed-of-passage",
+  "equip-ember-brand",
+  "equip-salt-etched-blade",
+  "equip-starlit-needle",
+  "equip-cinder-warded-jack"
 ] as const;
 
 const adventurerClasses = [
@@ -238,6 +271,51 @@ describe("art resolver", () => {
           height: 768
         });
       }
+    }
+  });
+
+  it("ships every P18 support asset at its authored size with distinct RGBA data", () => {
+    const paths = [
+      ...supportNpcs.map((name) => new URL(`../content/worlds/default/assets/characters/${name}.png`, import.meta.url)),
+      ...supportDungeonObjects.map((name) => new URL(`../content/worlds/default/assets/dungeon/${name}.png`, import.meta.url)),
+      ...defaultSupportIcons.map((name) => new URL(`../content/worlds/default/assets/icons/${name}.png`, import.meta.url)),
+      ...verdantIcons.slice(-4).map((name) => new URL(`../content/worlds/verdant/assets/icons/${name}.png`, import.meta.url))
+    ];
+    const hashes: string[] = [];
+
+    for (const path of paths) {
+      const png = readFileSync(path);
+      const expected = path.pathname.includes("/characters/")
+        ? { width: 1024, height: 1536 }
+        : path.pathname.includes("/icons/")
+          ? { width: 256, height: 256 }
+          : { width: 768, height: 768 };
+
+      expect(pngSize(path), path.pathname).toEqual(expected);
+      expect(png[25], `${path.pathname} must use PNG color type 6 (RGBA)`).toBe(6);
+      hashes.push(createHash("sha256").update(png).digest("hex"));
+    }
+
+    expect(paths).toHaveLength(24);
+    expect(new Set(hashes).size).toBe(paths.length);
+  });
+
+  it("resolves every newly supplied catalog icon by its own basename", () => {
+    const entries = [
+      ...defaultSupportIcons.map((basename) => ({
+        basename,
+        id: basename.replace("-", "."),
+        pack: "default"
+      })),
+      ...verdantIcons.slice(-4).map((basename) => ({
+        basename,
+        id: basename.replace(/^([^-]+)-verdant-/, "$1.verdant."),
+        pack: "verdant"
+      }))
+    ];
+
+    for (const { basename, id, pack } of entries) {
+      expect(catalogIconUrl(id, pack), `${pack}:${id}`).toBe(asset(basename, pack));
     }
   });
 });
