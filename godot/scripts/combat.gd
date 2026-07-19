@@ -12,6 +12,9 @@ extends Control
 ## strictly inside proven-ported territory.
 
 const CombatRound := preload("res://scripts/rules/combat_round.gd")
+const I18n := preload("res://scripts/i18n.gd")
+const UIKit := preload("res://scripts/town/ui_kit.gd")
+const CommandMenu := preload("res://scripts/combat/command_menu.gd")
 const Encounter := preload("res://scripts/encounter.gd")
 
 const BG := Color("0b0d09")
@@ -34,6 +37,11 @@ var _party_slots: Dictionary = {}   # member id -> { "bar": ProgressBar, "label"
 var _enemy_stage_rect: Rect2 = Rect2()
 var _busy: bool = false
 var _resolved: bool = false
+var _cmd_box: VBoxContainer = null
+var _actor_index: int = 0            # which adventurer is being given orders (front-first)
+var _stage: String = "command"       # command | skill | spell | item | target-group | target-ally
+var _pending: Dictionary = {}        # the order being assembled for the current actor
+var _declared: Array = []            # orders collected so far this round
 var _run: Node = null   # the shared-state autoload when in continuous play; null under capture
 var _world_id: String = "default"
 
@@ -139,26 +147,16 @@ func _build() -> void:
 	# --- Command window overlay (controller-first) ---
 	_cmd_panel = PanelContainer.new()
 	_cmd_panel.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
-	_cmd_panel.offset_top = -260
+	_cmd_panel.offset_top = -620
 	_cmd_panel.offset_left = size.x - 520
 	_cmd_panel.offset_right = -40
 	_cmd_panel.offset_bottom = -40
 	_cmd_panel.add_theme_stylebox_override("panel", _panel_style(Color("1b1e14f2"), GOLD))
 	add_child(_cmd_panel)
-	var cmd_box := VBoxContainer.new()
-	cmd_box.add_theme_constant_override("separation", 8)
-	_cmd_panel.add_child(cmd_box)
-	cmd_box.add_child(_label("パーティの行動", 22, GOLD))
-
-	var attack := _command_button("攻撃   全員でかかる")
-	attack.pressed.connect(_on_attack_pressed)
-	cmd_box.add_child(attack)
-	for pair in [["防御", "Defend"], ["特技", "Skill"], ["道具", "Item"]]:
-		var b := _command_button("%s   %s" % [pair[0], pair[1]])
-		b.disabled = true  # out of this slice's route (enemy turn / MP not ported yet)
-		cmd_box.add_child(b)
-	cmd_box.add_child(_label("F  全員でかかる / All-out", 14, OK))
-	attack.grab_focus()
+	_cmd_box = VBoxContainer.new()
+	_cmd_box.add_theme_constant_override("separation", 8)
+	_cmd_panel.add_child(_cmd_box)
+	_rebuild_command_menu()
 
 # F = 全員でかかる / All-out (matches the React All-out key). "confirm" needs no handling here — a
 # focused Button fires its own `pressed` on ui_accept.
@@ -167,6 +165,161 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	if event.is_action_pressed("auto"):
 		_on_attack_pressed()
+	elif event.is_action_pressed("cancel"):
+		_menu_back()
+		get_viewport().set_input_as_handled()
+
+## Test seam for the UX-parity gate: force a menu stage so the target/technique surfaces are asserted.
+func set_ui_state(ui: Dictionary) -> void:
+	if ui.has("stage"):
+		_stage = String(ui["stage"])
+		if _stage == "target-group":
+			var actors := _actors()
+			if not actors.is_empty():
+				_pending = {"actorId": actors[_actor_index].get("id", ""), "action": "attack"}
+		_rebuild_command_menu()
+
+# --- per-actor order collection --------------------------------------------------------------------
+# The adventurers who can still act, front row first — the order the player gives commands in.
+func _actors() -> Array:
+	var front := []
+	var back := []
+	for member in _state.get("party", []):
+		if int(member.get("hp", 0)) <= 0 or member.get("injury", null) != null:
+			continue
+		if (member.get("status", []) as Array).has("sleep"):
+			continue
+		if String(member.get("row", "front")) == "front":
+			front.append(member)
+		else:
+			back.append(member)
+	front.append_array(back)
+	return front
+
+func _rebuild_command_menu() -> void:
+	if _cmd_box == null:
+		return
+	for child in _cmd_box.get_children():
+		child.queue_free()
+
+	var actors := _actors()
+	if actors.is_empty() or _actor_index >= actors.size():
+		_cmd_box.add_child(UIKit.label(I18n.t("play.combatCommands"), 20, GOLD))
+		var go := _command_button(I18n.t("tempo.allOut"))
+		go.pressed.connect(_on_attack_pressed)
+		_cmd_box.add_child(go)
+		go.call_deferred("grab_focus")
+		return
+
+	var actor: Dictionary = actors[_actor_index]
+	var built: Dictionary = CommandMenu.build({
+		"actor": actor,
+		"stage": _stage,
+		"loadout": _loadout_for(actor),
+		"party": _state.get("party", []),
+		"groups": _combat().get("enemyGroups", []),
+		"inventory": _state.get("inventory", []),
+		"choose": func(kind, payload): _on_menu_choice(kind, payload),
+		"back": func(): _menu_back()
+	})
+	_cmd_box.add_child(built["control"])
+
+	# 全員でかかる stays reachable: the one-press round for when there is nothing to decide.
+	var allout := _command_button(I18n.t("tempo.allOut"))
+	allout.pressed.connect(_on_attack_pressed)
+	_cmd_box.add_child(allout)
+	var retreat := _command_button(I18n.t("play.retreat"))
+	retreat.pressed.connect(_on_retreat)
+	_cmd_box.add_child(retreat)
+
+	var focus: Variant = built["focus"]
+	if focus != null:
+		(focus as Control).call_deferred("grab_focus")
+	else:
+		allout.call_deferred("grab_focus")
+
+func _loadout_for(actor: Dictionary) -> Array:
+	var vocation: Variant = actor.get("vocation", null)
+	var learned: Array = (vocation as Dictionary).get("loadout", []) if typeof(vocation) == TYPE_DICTIONARY else []
+	if learned.is_empty():
+		var abilities: Variant = (_engine.get("classAbilities", {}) as Dictionary).get(String(actor.get("classId", "")), [])
+		if typeof(abilities) == TYPE_ARRAY:
+			for entry in abilities:
+				if int(actor.get("level", 1)) >= int(entry.get("level", 0)):
+					learned.append(entry.get("spellId", ""))
+	var out := []
+	for id in learned:
+		if CommandMenu.SPELL_COST.has(String(id)):
+			out.append(String(id))
+	return out
+
+func _on_menu_choice(kind: String, payload: Dictionary) -> void:
+	if _busy or _resolved:
+		return
+	var actors := _actors()
+	if _actor_index >= actors.size():
+		return
+	var actor: Dictionary = actors[_actor_index]
+	match kind:
+		"stage":
+			_stage = String(payload["stage"])
+		"defend":
+			_commit({"actorId": actor.get("id", ""), "action": "defend"})
+			return
+		"attack":
+			_pending = {"actorId": actor.get("id", ""), "action": "attack"}
+			_stage = "target-group"
+		"technique":
+			var spell_id := String(payload["spellId"])
+			_pending = {"actorId": actor.get("id", ""), "action": "cast", "spellId": spell_id}
+			_stage = "target-ally" if spell_id == "heal" else "target-group"
+		"item":
+			_pending = {"actorId": actor.get("id", ""), "action": "use_item", "itemId": String(payload["itemId"])}
+			_stage = "target-ally"
+		"target-group":
+			_pending["targetGroupId"] = String(payload["targetGroupId"])
+			_commit(_pending)
+			return
+		"target-ally":
+			_pending["targetCharacterId"] = String(payload["targetCharacterId"])
+			_commit(_pending)
+			return
+	_rebuild_command_menu()
+
+func _commit(order: Dictionary) -> void:
+	_declared.append(order)
+	_pending = {}
+	_stage = "command"
+	_actor_index += 1
+	if _actor_index >= _actors().size():
+		var orders := _declared.duplicate(true)
+		_declared = []
+		_actor_index = 0
+		_resolve_round_with(orders, true)
+		return
+	_rebuild_command_menu()
+
+# Esc backs out exactly one stage: target -> command, command -> the previous adventurer.
+func _menu_back() -> void:
+	if _stage != "command":
+		_stage = "command"
+		_pending = {}
+		_rebuild_command_menu()
+		return
+	if _actor_index > 0:
+		_actor_index -= 1
+		_declared.pop_back()
+		_rebuild_command_menu()
+
+func _on_retreat() -> void:
+	if _busy or _resolved:
+		return
+	var SliceRules := preload("res://scripts/rules/slice_rules.gd")
+	var result: Dictionary = SliceRules.resolve(_state, {"type": "retreat"}, _world, _engine)
+	_state = result.get("state", _state)
+	if _run:
+		_run.state = _state
+	get_tree().change_scene_to_file("res://scenes/dungeon.tscn")
 
 func _on_attack_pressed() -> void:
 	if _busy or _resolved:
@@ -174,6 +327,25 @@ func _on_attack_pressed() -> void:
 	_resolve_round(true)
 
 # --- the round: ONE call into the ported rules, then presentation rebuilt from the state delta -----
+func _resolve_round_with(orders: Array, animated: bool) -> void:
+	if orders.is_empty():
+		return
+	_busy = true
+	if _cmd_panel:
+		_cmd_panel.hide()
+	var before := _enemy_snapshot()
+	var result := CombatRound.declare_round(_state, _world, orders, _engine)
+	var events: Array = result.get("events", [])
+	_state = result.get("state", _state)
+	if _run:
+		_run.state = _state
+	await _playback(before, events, animated)
+	_busy = false
+	_actor_index = 0
+	_stage = "command"
+	_declared = []
+	_rebuild_command_menu()
+
 func _resolve_round(animated: bool) -> void:
 	_busy = true
 	if _cmd_panel:

@@ -363,6 +363,38 @@
         "map.coverage"
       ],
       "notes": "The full-floor overlay is the party's RECORD (visited cells only), never the floor's truth. Cancel closes it."
+    },
+    {
+      "id": "combat-command",
+      "milestone": "M5",
+      "reactPanel": "src/components/CombatCommandMenu.tsx",
+      "scene": "res://scenes/combat.tscn",
+      "evidence": "tests/_ux_combat-command.png",
+      "requiredKeys": [
+        "play.commandFor",
+        "play.attack",
+        "play.defend",
+        "play.mpShort",
+        "play.menuHint",
+        "tempo.allOut",
+        "play.retreat"
+      ],
+      "notes": "Orders are given ONE adventurer at a time, front row first. A choice needing a target opens a second STAGE (標的を選ぶ), never a free-aim cursor. Esc backs out exactly one stage. A technique the actor cannot pay for is shown WITH its cost and disabled, not hidden."
+    },
+    {
+      "id": "combat-target",
+      "milestone": "M5",
+      "reactPanel": "src/components/CombatCommandMenu.tsx",
+      "scene": "res://scenes/combat.tscn",
+      "evidence": "tests/_ux_combat-target.png",
+      "uiState": {
+        "stage": "target-group"
+      },
+      "requiredKeys": [
+        "play.chooseTarget",
+        "play.commandFor"
+      ],
+      "notes": "The target stage lists the standing enemy GROUPS with their remaining counts."
     }
   ]
 }
