@@ -38,7 +38,11 @@ static func effective(character: Dictionary, world: Dictionary) -> Dictionary:
 			attack_element = catalog["element"]
 		_mul_element_resist(element_resist, catalog.get("elementResist", {}))
 
-		var plus := int(equipped.get("plus", 0))
+		# An explicit null `plus` (a UI building a hypothetical loadout) must read as 0. int(null) aborts the
+		# whole function and it silently returns {} — which showed up as an equip preview claiming every stat
+		# dropped to zero. Never let a nullable field reach int() unguarded.
+		var plus_raw: Variant = equipped.get("plus", 0)
+		var plus := int(plus_raw) if plus_raw != null else 0
 		if plus != 0:
 			match _plus_primary(catalog.get("slot", "")):
 				"attackBonus": attack_bonus += plus

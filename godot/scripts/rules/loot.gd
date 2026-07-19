@@ -13,14 +13,14 @@ const RARITY_APPRAISAL_FEE := {"common": 0, "rare": 20, "epic": 55}
 const RARITY_SELL_BONUS := {"common": 0, "rare": 12, "epic": 30}
 const RARITY_MATERIALS := {"common": 1, "rare": 2, "epic": 4}
 
-static func _rarity_rank(rarity: Variant) -> int:
+static func rarity_rank(rarity: Variant) -> int:
 	var r := String(rarity) if typeof(rarity) == TYPE_STRING else "common"
 	return RARITY_ORDER.find(r)
 
-static func _is_unidentified_rare(item: Dictionary) -> bool:
-	return _rarity_rank(item.get("rarity", null)) >= 1 and item.get("identified", null) == false
+static func is_unidentified_rare(item: Dictionary) -> bool:
+	return rarity_rank(item.get("rarity", null)) >= 1 and item.get("identified", null) == false
 
-static func _appraisal_fee(item: Dictionary) -> int:
+static func appraisal_fee(item: Dictionary) -> int:
 	var r := String(item.get("rarity", "common")) if typeof(item.get("rarity", null)) == TYPE_STRING else "common"
 	return int(RARITY_APPRAISAL_FEE.get(r, 0))
 
@@ -36,9 +36,9 @@ static func appraise(state: Dictionary, instance_id: String) -> Dictionary:
 		if candidate.get("instanceId", "") == instance_id:
 			item = candidate
 			break
-	if typeof(item) != TYPE_DICTIONARY or not _is_unidentified_rare(item):
+	if typeof(item) != TYPE_DICTIONARY or not is_unidentified_rare(item):
 		return {"state": state, "events": []}
-	var fee := _appraisal_fee(item)
+	var fee := appraisal_fee(item)
 	if int(state.get("partyGold", 0)) < fee:
 		return {"state": state, "events": []}
 	var next: Dictionary = state.duplicate(true)
@@ -124,7 +124,7 @@ static func reinforce(state: Dictionary, world: Dictionary, character_id: String
 	var event := {"type": "equipment_reinforced", "characterName": member.get("name", ""), "itemId": equipped.get("id", ""), "itemName": item_name, "slot": slot, "plus": next_plus, "cost": cost}
 	return {"state": next, "events": [event]}
 
-static func _equipped_instance_keys(state: Dictionary) -> Dictionary:
+static func equipped_instance_keys(state: Dictionary) -> Dictionary:
 	var keys := {}
 	for member in state.get("party", []):
 		for equipped in (member.get("equipment", {}) as Dictionary).values():
@@ -132,16 +132,16 @@ static func _equipped_instance_keys(state: Dictionary) -> Dictionary:
 				keys[Economy.equipment_instance_key(equipped.get("id", ""), equipped.get("plus", null), equipped.get("affix", null))] = true
 	return keys
 
-static func _is_protected_from_bulk(item: Dictionary, equipped_keys: Dictionary) -> bool:
-	if bool(item.get("locked", false)) or bool(item.get("favorite", false)) or _is_unidentified_rare(item):
+static func is_protected_from_bulk(item: Dictionary, equipped_keys: Dictionary) -> bool:
+	if bool(item.get("locked", false)) or bool(item.get("favorite", false)) or is_unidentified_rare(item):
 		return true
 	return equipped_keys.has(Economy.equipment_instance_key(item.get("id", ""), item.get("plus", null), item.get("affix", null)))
 
-static func _sell_value_of(item: Dictionary) -> int:
+static func sell_value_of(item: Dictionary) -> int:
 	var r := String(item.get("rarity", "common")) if typeof(item.get("rarity", null)) == TYPE_STRING else "common"
 	return int(item.get("sellValue", 0)) + int(RARITY_SELL_BONUS.get(r, 0))
 
-static func _dismantle_yield(item: Dictionary) -> int:
+static func dismantle_yield(item: Dictionary) -> int:
 	var r := String(item.get("rarity", "common")) if typeof(item.get("rarity", null)) == TYPE_STRING else "common"
 	return int(RARITY_MATERIALS.get(r, 1)) * maxi(1, int(item.get("quantity", 1)))
 
@@ -154,12 +154,12 @@ static func bulk_convert(state: Dictionary, mode: String, rarities: Variant) -> 
 		rarity_filter = {}
 		for r in rarities:
 			rarity_filter[String(r)] = true
-	var equipped_keys := _equipped_instance_keys(state)
+	var equipped_keys := equipped_instance_keys(state)
 	var convertible := []
 	for item in state.get("inventory", []):
 		if item.get("kind", "") != "equipment":
 			continue
-		if _is_protected_from_bulk(item, equipped_keys):
+		if is_protected_from_bulk(item, equipped_keys):
 			continue
 		if rarity_filter != null and not (rarity_filter as Dictionary).has(String(item.get("rarity", "common"))):
 			continue
@@ -172,9 +172,9 @@ static func bulk_convert(state: Dictionary, mode: String, rarities: Variant) -> 
 	var converted_keys := {}
 	for item in convertible:
 		if mode == "sell":
-			gold_gained += _sell_value_of(item) * int(item.get("quantity", 1))
+			gold_gained += sell_value_of(item) * int(item.get("quantity", 1))
 		elif mode == "dismantle":
-			materials_gained += _dismantle_yield(item)
+			materials_gained += dismantle_yield(item)
 		converted_count += int(item.get("quantity", 1))
 		converted_keys[_bulk_key(item)] = true
 	var next: Dictionary = state.duplicate(true)

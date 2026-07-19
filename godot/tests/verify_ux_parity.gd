@@ -55,6 +55,25 @@ func _check_screen(entry: Dictionary, copy: Dictionary) -> int:
 	for i in 8:
 		await process_frame
 
+	# Drive the screen from the manifest's fixture so conditional/failure surfaces actually render.
+	var fixture: Dictionary = entry.get("fixture", {})
+	if not fixture.is_empty() and root.has_method("set_state_override"):
+		var base: Dictionary = (JSON.parse_string(FileAccess.get_file_as_string("res://data/traces/b1f-exploration.json")) as Dictionary).get("initialState", {})
+		var patched: Dictionary = base.duplicate(true)
+		patched["phase"] = "town"
+		for key in fixture:
+			patched[key] = fixture[key]
+		if fixture.has("__woundParty"):
+			var hurt := []
+			for member in patched.get("party", []):
+				var m: Dictionary = member.duplicate(true)
+				m["hp"] = maxi(1, int(m.get("maxHp", 10)) - int(fixture["__woundParty"]))
+				hurt.append(m)
+			patched["party"] = hurt
+		root.call("set_state_override", patched)
+		for i in 4:
+			await process_frame
+
 	var service: String = entry.get("service", "")
 	if service != "":
 		if not root.has_method("_open_service"):
@@ -62,6 +81,12 @@ func _check_screen(entry: Dictionary, copy: Dictionary) -> int:
 			root.queue_free()
 			return 1
 		root.call("_open_service", service)
+		for i in 4:
+			await process_frame
+
+	var ui_state: Dictionary = entry.get("uiState", {})
+	if not ui_state.is_empty() and root.has_method("set_ui_state"):
+		root.call("set_ui_state", ui_state)
 		for i in 4:
 			await process_frame
 

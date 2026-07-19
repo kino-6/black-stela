@@ -15,15 +15,36 @@
     "",
     "AGENTS.md is the authority this encodes: 'Do not call town services done if they are just",
     "lists. Shops must show who can use equipment and what changes. Recovery must show cost,",
-    "wounds, before/after, and insufficient-funds states.'"
+    "wounds, before/after, and insufficient-funds states.'",
+    "`fixture` patches the state before the screen builds, so CONDITIONAL and FAILURE surfaces (wounded party, unaffordable, loot to appraise, quest ready to claim, known bestiary entry) are actually asserted — not just the empty happy path."
   ],
   "screens": [
+    {
+      "id": "town-square",
+      "milestone": "M3",
+      "reactPanel": "src/components/TownEntryPanel.tsx",
+      "scene": "res://scenes/town.tscn",
+      "evidence": "tests/_ux_town-square.png",
+      "requiredKeys": [
+        "town.gold",
+        "town.expeditionResult",
+        "town.wounds",
+        "town.loot",
+        "town.nextPreparation",
+        "town.locGuildHall",
+        "town.locMarket",
+        "town.locArchive",
+        "town.recovery",
+        "play.enterDungeon"
+      ],
+      "notes": "IMP-025 two-level hub: a STATUS LEDGER (expedition result, wounds, loot, next preparation) over a few DESTINATIONS, not ten equal systems. Cursor starts on 迷宮に入る; gold means focus only."
+    },
     {
       "id": "town-infirmary",
       "milestone": "M3",
       "reactPanel": "src/components/RecoveryPanel.tsx",
       "scene": "res://scenes/town.tscn",
-      "service": "infirmary",
+      "service": "recovery",
       "evidence": "tests/_ux_town-infirmary.png",
       "requiredKeys": [
         "town.recoveryHeading",
@@ -33,14 +54,18 @@
         "town.recoverParty",
         "town.serviceCancel"
       ],
-      "notes": "Per-wounded row must show hp/maxHp -> maxHp (before/after) and that member's cost; healthy members are NOT listed. town.cannotAffordRecovery must appear when the purse is short."
+      "notes": "Per-wounded row must show hp/maxHp -> maxHp (before/after) and that member's cost; healthy members are NOT listed. town.cannotAffordRecovery must appear when the purse is short.",
+      "fixture": {
+        "__woundParty": 6,
+        "partyGold": 300
+      }
     },
     {
       "id": "town-market",
       "milestone": "M3",
       "reactPanel": "src/components/ShopPanel.tsx",
       "scene": "res://scenes/town.tscn",
-      "service": "market",
+      "service": "shop",
       "evidence": "tests/_ux_town-market.png",
       "requiredKeys": [
         "town.shopStock",
@@ -54,7 +79,10 @@
         "town.equipmentSummary",
         "town.remainingGold"
       ],
-      "notes": "AGENTS.md: a shop MUST show who can use the equipment (town.canEquip/cannotEquip against the selected adventurer) and what changes (town.equipmentSummary stat deltas). A name+price list is a gate failure."
+      "notes": "AGENTS.md: a shop MUST show who can use the equipment (town.canEquip/cannotEquip against the selected adventurer) and what changes (town.equipmentSummary stat deltas). A name+price list is a gate failure.",
+      "fixture": {
+        "partyGold": 400
+      }
     },
     {
       "id": "town-loot",
@@ -71,14 +99,105 @@
         "loot.lock",
         "loot.favorite",
         "loot.bulkHeading",
+        "loot.convertible",
         "loot.dismantleAll",
         "loot.sellAll",
-        "loot.confirm",
-        "loot.cancel",
         "loot.compareFor",
-        "loot.equipOn"
+        "loot.equipOn",
+        "town.serviceCancel"
       ],
-      "notes": "Appraisal is PAID (loot.appraiseCost badge, loot.appraiseCantAfford when broke). Bulk convert has a CONFIRM/CANCEL stage (loot.confirmDismantle/confirmSell). An appraised piece shows a fit comparison vs the selected member and an equip-on-them action."
+      "notes": "Appraisal is PAID (loot.appraiseCost badge; loot.appraiseCantAfford when broke). The entry stage previews what would convert (loot.convertible) and offers sell/dismantle — it must NEVER convert on one press. An appraised piece shows a fit comparison vs the chosen adventurer and an equip action.",
+      "fixture": {
+        "partyGold": 400,
+        "materials": 20,
+        "inventory": [
+          {
+            "id": "equip.iron-cap",
+            "name": "Iron Cap",
+            "kind": "equipment",
+            "quantity": 1,
+            "slot": "head",
+            "sellValue": 6,
+            "rarity": "rare",
+            "identified": false,
+            "affix": "warding",
+            "instanceId": "gate.rare-1"
+          },
+          {
+            "id": "equip.grip-gloves",
+            "name": "Grip Gloves",
+            "kind": "equipment",
+            "quantity": 1,
+            "slot": "hands",
+            "sellValue": 7,
+            "rarity": "rare",
+            "identified": true,
+            "instanceId": "gate.rare-2"
+          },
+          {
+            "id": "equip.ring-mail",
+            "name": "Ring Mail",
+            "kind": "equipment",
+            "quantity": 2,
+            "slot": "body",
+            "sellValue": 25
+          }
+        ]
+      }
+    },
+    {
+      "id": "town-loot-confirm",
+      "milestone": "M3",
+      "reactPanel": "src/components/LootPanel.tsx",
+      "scene": "res://scenes/town.tscn",
+      "service": "loot",
+      "evidence": "tests/_ux_town-loot-confirm.png",
+      "requiredKeys": [
+        "loot.confirmSell",
+        "loot.confirm",
+        "loot.cancel"
+      ],
+      "notes": "The CONFIRM stage. Bulk conversion is two-step: the player sees exactly what will be destroyed and what it yields, then answers 実行/やめる. Cancel returns to the entry stage, not out of the service.",
+      "fixture": {
+        "partyGold": 400,
+        "materials": 20,
+        "inventory": [
+          {
+            "id": "equip.iron-cap",
+            "name": "Iron Cap",
+            "kind": "equipment",
+            "quantity": 1,
+            "slot": "head",
+            "sellValue": 6,
+            "rarity": "rare",
+            "identified": false,
+            "affix": "warding",
+            "instanceId": "gate.rare-1"
+          },
+          {
+            "id": "equip.grip-gloves",
+            "name": "Grip Gloves",
+            "kind": "equipment",
+            "quantity": 1,
+            "slot": "hands",
+            "sellValue": 7,
+            "rarity": "rare",
+            "identified": true,
+            "instanceId": "gate.rare-2"
+          },
+          {
+            "id": "equip.ring-mail",
+            "name": "Ring Mail",
+            "kind": "equipment",
+            "quantity": 2,
+            "slot": "body",
+            "sellValue": 25
+          }
+        ]
+      },
+      "uiState": {
+        "loot_pending": "sell"
+      }
     },
     {
       "id": "town-workshop",
@@ -95,7 +214,10 @@
         "workshop.reinforce",
         "workshop.boosts"
       ],
-      "notes": "Must name the stat each reinforce boosts (workshop.boosts), the materials cost, and the at-cap / cant-afford states (workshop.atCap, workshop.cantAfford)."
+      "notes": "Must name the stat each reinforce boosts (workshop.boosts), the materials cost, and the at-cap / cant-afford states (workshop.atCap, workshop.cantAfford).",
+      "fixture": {
+        "materials": 40
+      }
     },
     {
       "id": "town-quests",
@@ -112,7 +234,18 @@
         "questBoard.accept",
         "questBoard.claim"
       ],
-      "notes": "Each quest must show its objective PROGRESS (questBoard.progress) and reward breakdown (rewardGold/rewardXp), plus repeatable / claimedTimes state."
+      "notes": "Each quest must show its objective PROGRESS (questBoard.progress) and reward breakdown (rewardGold/rewardXp), plus repeatable / claimedTimes state.",
+      "fixture": {
+        "partyGold": 50,
+        "quests": [
+          {
+            "questId": "quest.glimmer-hunt",
+            "status": "active",
+            "killCount": 5,
+            "claims": 1
+          }
+        ]
+      }
     },
     {
       "id": "town-career",
@@ -153,7 +286,34 @@
         "bestiary.defeated",
         "bestiary.logHeading"
       ],
-      "notes": "The bestiary is the decision surface for preparation: threat, weaknesses and drops per known enemy, not a name list."
+      "notes": "The bestiary is the decision surface for preparation: threat, weaknesses and drops per known enemy, not a name list.",
+      "fixture": {
+        "enemyRecord": {
+          "enemy.b1f.ash-slime": {
+            "encountered": 4,
+            "defeated": 3
+          }
+        }
+      }
+    },
+    {
+      "id": "town-party",
+      "milestone": "M3",
+      "reactPanel": "src/components/PartyMenuPanel.tsx",
+      "scene": "res://scenes/town.tscn",
+      "service": "party",
+      "evidence": "tests/_ux_town-party.png",
+      "requiredKeys": [
+        "partyMenu.title",
+        "partyMenu.members",
+        "partyMenu.level",
+        "partyMenu.condition",
+        "partyMenu.combatStats",
+        "partyMenu.equipped",
+        "partyMenu.xpToNext",
+        "partyMenu.close"
+      ],
+      "notes": "Six-person formation: condition, combat stats, resistances, aptitudes and the six equipment slots for the selected adventurer, plus front/back row and bench/recall. The 所持品/貴重品 tabs await use_item."
     }
   ]
 }
