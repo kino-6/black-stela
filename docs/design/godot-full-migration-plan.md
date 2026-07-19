@@ -98,25 +98,21 @@ shell, input map, and the 9-trace baseline. Keep as the spine.
 - **Exit:** build a 3+3 party from scratch, controller-only, JA, and have it persist in `Run`.
 - **Risk:** creation is the most stateful non-combat flow; portraits are presentation (stay simple).
 
-### M3 — Town hub & the preparation services — **RULES DONE / UX NOT DONE** (2026-07-20)
-**M3 is NOT complete.** It was briefly declared done; that was wrong and is retracted here.
+### M3 — Town hub & the preparation services — DONE (2026-07-20)
+Rules parity-clean (16/16 golden traces) AND the town rebuilt as FAITHFUL ports of the React panels
+after a first pass shipped bare button lists and was wrongly declared done.
 
-- **Rules: done and parity-clean (16/16 golden traces).** Traces added: `economy`, `recovery`,
-  `recovery-blocked`, `quests`, `loot`, `vocation`; the `roster` route gained a `reclass_member` step.
-  The class catalog + per-class MP mode now ride on `engine-data.json` so the reclass path
-  (`reclass_character`) re-derives a class identically to TS. `import_member` (portable-adventurer
-  vault) is deferred to save/load — it is not a town prep service.
-- **UX: NOT done.** The six services shipped as bare button lists — the exact thing AGENTS.md already
-  forbade ("do not call town services done if they are just lists"), and a regression of the earlier
-  remediation that fixed these same routes for being "too thin to decide in". `npm run gate:migration`
-  is RED: 14 problems across 7 screens (missing cost/before-after in the infirmary, missing
-  who-can-equip and stat deltas in the shop, no appraiser or forge service at all, career missing its
-  two-pane destination detail, records missing threat/weaknesses/drops).
-- **Decision (user):** port faithfully — same layout composition, same information, same Japanese copy
-  as the React panels (option A). The rebuild is scheduled AFTER the remaining M* milestones; until it
-  lands, M3 stays open and its debt is visible in the gate rather than hidden in a status line.
-- **The gate that now enforces this:** `godot/gates/ux-parity-manifest.json` +
-  `npm run gate:migration`. See AGENTS.md "Migration UX-Parity Gate".
+- **Hub:** the IMP-025 two-level structure — a status ledger (expedition result / wounds / loot / next
+  preparation) over three destinations (ギルド館・市場通り・記録の間) plus recovery and the descent.
+- **Nine counters:** infirmary, shop, appraiser, forge, quest board, career, records, party, guild.
+  Each carries its React panel's decision material and its confirm / failure / cancel states.
+- **Copy comes from `ja.ts`** via `npm run export:i18n` → `i18n-ja.json`, so wording cannot drift.
+- **Gate:** `npm run gate:migration` = UX parity (10 screens: information + comparison screenshot) →
+  town controller traversal (every surface reachable, focusable, cancellable, zero pointer events) →
+  rules parity 16/16. See AGENTS.md "Migration UX-Parity Gate".
+- **Deferred (declared, not hidden):** `import_member` (portable-adventurer vault) rides with save/load
+  in M6; the party menu's 所持品 / 貴重品 tabs await `use_item`, and the screen says so rather than
+  faking the capability.
 
 M3 is also the preparation seam for the future bounded GM, but not its
 implementation milestone. Service commands must retain parity-clean
