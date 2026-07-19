@@ -63,6 +63,12 @@ static func resolve(state: Dictionary, command: Dictionary, world: Dictionary = 
 			return _log_only(state, {"type": "inspection_made", "mode": "inspect_wall"})
 		"open_door":
 			return _log_only(state, {"type": "inspection_made", "mode": "open_door"})
+		"use_stairs":
+			return _use_stairs(state, world)
+		"return_to_town":
+			return _return_to_town(state, world)
+		"disarm_trap":
+			return _disarm_trap(state, world)
 		"declare_round":
 			return CombatRound.declare_round(state, world, command.get("actions", []), engine)
 		"set_member_row":
@@ -162,9 +168,14 @@ static func _search(state: Dictionary, world: Dictionary) -> Dictionary:
 
 	# 2. Gather point (a searchable node yielding its item once).
 	var gather_key := "gather:" + room_id
-	if typeof(room) == TYPE_DICTIONARY and room.get("gatherItem", null) != null and not discovered.has(gather_key):
-		push_error("[slice_rules] gather branch not yet ported (createInventoryItemFromCatalog)")
-		return {"state": state, "events": []}
+	if typeof(room) == TYPE_DICTIONARY and typeof(room.get("gatherItem", null)) == TYPE_STRING and not discovered.has(gather_key):
+		var gathered: Variant = Economy.create_inventory_item(world, String(room["gatherItem"]), 1)
+		if typeof(gathered) == TYPE_DICTIONARY:
+			var picked: Dictionary = state.duplicate(true)
+			picked["inventory"] = Economy.add_inventory_item(picked.get("inventory", []), gathered)
+			(picked["discoveredSecrets"] as Array).append(gather_key)
+			picked["turn"] = int(picked.get("turn", 0)) + 1
+			return {"state": picked, "events": [{"type": "inventory_item_gained", "itemId": gathered.get("id", ""), "itemName": gathered.get("name", ""), "quantity": 1, "source": "reward"}]}
 
 	# 3. Trap detection, else nothing found.
 	var trap: Variant = room.get("trap", null) if typeof(room) == TYPE_DICTIONARY else null
@@ -329,7 +340,11 @@ const Encounter := preload("res://scripts/encounter.gd")
 static func _visit_room(state: Dictionary, world: Dictionary, room_id: String, facing: String) -> Dictionary:
 	var cell: Variant = _grid_cell(world, room_id)
 	var map: Dictionary = (state.get("map", {}) as Dictionary).duplicate(true)
-	var floor_id: Variant = map.get("floorId", world.get("startDungeon", null))
+	# The floor is resolved from the ROOM being entered, never carried over from the map we came from —
+	# otherwise crossing a stair keeps reporting the floor we left (latent until a route used stairs).
+	var floor_id: Variant = _floor_id_for_room(world, room_id)
+	if floor_id == null:
+		floor_id = world.get("startDungeon", null)
 	var exits := _known_grid_directions(world, room_id)
 
 	map["floorId"] = floor_id
@@ -347,6 +362,14 @@ static func _visit_room(state: Dictionary, world: Dictionary, room_id: String, f
 		{"type": "map_room_visited", "floorId": floor_id, "roomId": room_id},
 		{"type": "map_exits_known", "floorId": floor_id, "roomId": room_id, "exits": exits},
 	]}
+
+# The dungeon floor a room belongs to.
+static func _floor_id_for_room(world: Dictionary, room_id: String) -> Variant:
+	for dungeon in world.get("dungeons", []):
+		for room in dungeon.get("rooms", []):
+			if room.get("id", "") == room_id:
+				return dungeon.get("id", null)
+	return null
 
 # Port of getKnownGridDirections: the room's non-wall edge directions (else its room.exits keys).
 static func _known_grid_directions(world: Dictionary, room_id: String) -> Array:
@@ -642,6 +665,103 @@ static func _ensure_chest_for_room(state: Dictionary, room: Dictionary, cell_id:
 	list.append(made)
 	next["chests"] = list
 	return {"state": next, "events": [{"type": "chest_appeared", "cellId": cell_id, "roomId": room_id}]}
+
+
+# --- stairs / town return / disarm ------------------------------------------------------------------
+const STAIR_DIRECTIONS := ["north", "east", "south", "west"]
+
+# The stair edge this cell offers: the one the party faces, else any stair edge on the cell (descending
+# is a CURRENT-CELL action, not a facing-dependent one).
+static func _room_stairs_edge(world: Dictionary, room_id: String, facing: String) -> Variant:
+	var faced: Variant = _grid_edge(world, room_id, facing)
+	if typeof(faced) == TYPE_DICTIONARY and faced.get("kind", "") == "stairs":
+		return {"edge": faced, "direction": facing}
+	for direction in STAIR_DIRECTIONS:
+		var edge: Variant = _grid_edge(world, room_id, direction)
+		if typeof(edge) == TYPE_DICTIONARY and edge.get("kind", "") == "stairs":
+			return {"edge": edge, "direction": direction}
+	return null
+
+static func _use_stairs(state: Dictionary, world: Dictionary) -> Dictionary:
+	if state.get("position", null) == null or state.get("phase", "") != "dungeon":
+		return {"state": state, "events": []}
+	var room_id: String = state["position"]["roomId"]
+	var facing: String = state["position"]["facing"]
+	var stair: Variant = _room_stairs_edge(world, room_id, facing)
+	if typeof(stair) != TYPE_DICTIONARY or typeof((stair["edge"] as Dictionary).get("targetRoomId", null)) != TYPE_STRING:
+		return _log_only(state, {"type": "command_blocked", "reason": "stairs_unavailable", "command": "use_stairs"})
+	var edge: Dictionary = stair["edge"]
+
+	# A locked gate on the STAIR's direction bars the descent until it is opened.
+	var room: Variant = _room(world, room_id)
+	var stair_gate: Variant = _find_gate(room, String(stair["direction"]))
+	if typeof(stair_gate) == TYPE_DICTIONARY and not _is_gate_open(stair_gate, state):
+		var blocked: Dictionary = state.duplicate(true)
+		blocked["turn"] = int(blocked.get("turn", 0)) + 1
+		return {"state": blocked, "events": [{"type": "movement_blocked", "reason": "locked", "roomId": room_id, "facing": facing}]}
+
+	var target_id: String = edge["targetRoomId"]
+	var target_room: Variant = _room(world, target_id)
+	var visit := _visit_room(state, world, target_id, facing)
+	var target_cell: Variant = _grid_cell(world, target_id)
+	var to_floor: Variant = edge.get("targetFloorId", null)
+	if to_floor == null:
+		to_floor = visit["map"].get("floorId", null)
+	var events: Array = [{"type": "stairs_used", "fromRoomId": room_id, "toRoomId": target_id, "toFloorId": to_floor}]
+	events.append_array(visit["events"])
+
+	var next: Dictionary = state.duplicate(true)
+	next["position"]["roomId"] = target_id
+	next["position"]["cellId"] = target_cell.get("id", null) if typeof(target_cell) == TYPE_DICTIONARY else null
+	next["party"] = _mark_deepest_floor(next.get("party", []), visit["map"].get("floorId", state.get("map", {}).get("floorId", null)))
+	next["map"] = visit["map"]
+	# Changing floors REPOPULATES the one you arrive on: the floor-scoped clear state resets, so its
+	# chambers hold enemies and treasure again.
+	next["floorClearedEnemies"] = []
+	next["floorClaimedTreasures"] = []
+	next["chests"] = []
+	next["turn"] = int(next.get("turn", 0)) + 1
+
+	if typeof(target_room) == TYPE_DICTIONARY and not _room_has_encounter(target_room):
+		var chest_result := _ensure_chest_for_room(next, target_room, next["position"].get("cellId", null))
+		next = chest_result["state"]
+		events.append_array(chest_result["events"])
+
+	if typeof(target_room) == TYPE_DICTIONARY and typeof(target_room.get("event", null)) == TYPE_STRING:
+		events.append({"type": "room_event_triggered", "roomId": target_id, "text": target_room["event"]})
+
+	var effects := _apply_cell_effects(next, world, target_room, events)
+	next = effects["state"]
+	# Arriving on a floor by stairs is SAFE — monsters are met by walking the floor, never on the landing.
+	return {"state": next, "events": events}
+
+static func _return_to_town(state: Dictionary, world: Dictionary) -> Dictionary:
+	if state.get("phase", "") != "dungeon" or state.get("position", null) == null:
+		return {"state": state, "events": []}
+	var room: Variant = _room(world, String(state["position"]["roomId"]))
+	if typeof(room) != TYPE_DICTIONARY or (not bool(room.get("stairsToTown", false)) and not bool(room.get("restPoint", false))):
+		return _log_only(state, {"type": "command_blocked", "reason": "town_return_unavailable", "command": "return_to_town"})
+	var next: Dictionary = state.duplicate(true)
+	next["phase"] = "town"
+	next["position"] = null
+	next["combat"] = null
+	next["map"]["currentRoomId"] = null
+	next["map"]["currentCellId"] = null
+	next["map"]["currentFacing"] = null
+	next["turn"] = int(next.get("turn", 0)) + 1
+	return {"state": next, "events": [{"type": "returned_to_town"}]}
+
+static func _disarm_trap(state: Dictionary, world: Dictionary) -> Dictionary:
+	if state.get("position", null) == null:
+		return {"state": state, "events": []}
+	var room: Variant = _room(world, String(state["position"]["roomId"]))
+	var trap: Variant = room.get("trap", null) if typeof(room) == TYPE_DICTIONARY else null
+	if typeof(trap) != TYPE_DICTIONARY or (state.get("resolvedTraps", []) as Array).has(trap.get("id", "")):
+		return _log_only(state, {"type": "trap_disarm_failed", "reason": "none_active"})
+	var next: Dictionary = state.duplicate(true)
+	(next["resolvedTraps"] as Array).append(trap.get("id", ""))
+	next["turn"] = int(next.get("turn", 0)) + 1
+	return {"state": next, "events": [{"type": "trap_disarmed", "trapId": trap.get("id", ""), "trapName": trap.get("name", "")}]}
 
 static func _find_by_id(list: Variant, id: String) -> Dictionary:
 	if typeof(list) == TYPE_ARRAY:

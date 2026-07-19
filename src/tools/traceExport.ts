@@ -347,5 +347,40 @@ export const SLICE_ROUTES: TraceRoute[] = [
   { name: "b2f-hazard", worldId: "default", build: cellFeatureRoute("floor_2", "room.b2f.c1_2", "south", [{ type: "strafe_right" }]) },
   { name: "b4f-spinner", worldId: "default", build: cellFeatureRoute("floor_4", "room.b4f.c2_1", "west", [{ type: "inspect_wall" }, { type: "move_forward" }]) },
   { name: "b4f-teleport", worldId: "default", build: cellFeatureRoute("floor_4", "room.b4f.c16_11", "west", [{ type: "open_door" }]) },
-  { name: "b1f-shortcut", worldId: "default", build: cellFeatureRoute("ready", "room.b1f.c9_12", "south", [{ type: "move_backward" }]) }
+  { name: "b1f-shortcut", worldId: "default", build: cellFeatureRoute("ready", "room.b1f.c9_12", "south", [{ type: "move_backward" }]) },
+  // Descending, resting and coming home. use_stairs REPOPULATES the floor arrived on (floor-scoped
+  // clear state resets); return_to_town only answers on a landing or rest point, and refuses elsewhere.
+  {
+    name: "b1f-stairs",
+    worldId: "default",
+    build: (world: ScenarioWorld) => ({
+      initial: withDebugStartCell(createDebugStateFromProgress(world, "ready"), world, "room.b1f.012", "west"),
+      commands: [{ type: "use_stairs" }, { type: "return_to_town" }] // arrives on B2F, then refuses (not a landing)
+    })
+  },
+  {
+    name: "b1f-return",
+    worldId: "default",
+    build: (world: ScenarioWorld) => ({
+      initial: withDebugStartCell(createDebugStateFromProgress(world, "ready"), world, "room.b1f.001", "north"),
+      commands: [{ type: "return_to_town" }] // a town-stair landing: the party goes home
+    })
+  },
+  // A searchable resource node yields its item ONCE, and a room trap can be disarmed before it bites.
+  {
+    name: "b3f-gather",
+    worldId: "default",
+    build: (world: ScenarioWorld) => ({
+      initial: withDebugStartCell(createDebugStateFromProgress(world, "floor_3"), world, "room.b3f.001", "north"),
+      commands: [{ type: "search" }, { type: "search" }]
+    })
+  },
+  {
+    name: "b3f-disarm",
+    worldId: "default",
+    build: (world: ScenarioWorld) => ({
+      initial: withDebugStartCell(createDebugStateFromProgress(world, "floor_3"), world, "room.b3f.002", "north"),
+      commands: [{ type: "search" }, { type: "disarm_trap" }, { type: "disarm_trap" }]
+    })
+  }
 ];
