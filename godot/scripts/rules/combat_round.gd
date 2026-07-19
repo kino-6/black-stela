@@ -8,6 +8,7 @@ class_name CombatRound
 const CombatRng := preload("res://scripts/rules/combat_rng.gd")
 const CombatHelpers := preload("res://scripts/rules/combat_helpers.gd")
 const CharacterStats := preload("res://scripts/rules/character_stats.gd")
+const Leveling := preload("res://scripts/rules/leveling.gd")
 
 const CRIT_MULTIPLIER := 1.5
 const FEAR_ACCURACY_PENALTY := 20   # matches src/domain/status.ts (was 15 — a latent parity bug)
@@ -197,8 +198,14 @@ static func _victory(state: Dictionary, world: Dictionary, combat: Dictionary, p
 		defeated_names.append(g.get("name", ""))
 
 	var grown := []
+	var level_events := []
 	for member in party:
-		grown.append(_reward_member(member, groups, gold, defeated_names, engine))
+		var rewarded := _reward_member(member, groups, gold, defeated_names, engine)
+		grown.append(rewarded["character"])
+		level_events.append_array(rewarded["events"])
+	var level_ups := []
+	for e in level_events:
+		level_ups.append({"characterId": e.get("characterId", ""), "name": e.get("characterName", ""), "level": e.get("level", 0)})
 
 	var next: Dictionary = state.duplicate(true)
 	next["phase"] = "dungeon"
@@ -210,7 +217,7 @@ static func _victory(state: Dictionary, world: Dictionary, combat: Dictionary, p
 		"enemyNames": defeated_names,
 		"xp": xp,
 		"gold": gold,
-		"levelUps": [],
+		"levelUps": level_ups,
 		"resumePosition": (state["position"].duplicate(true) if state.get("position", null) != null else null)
 	}
 	next["defeatedEnemies"] = _unique_concat(state.get("defeatedEnemies", []), defeated_ids)
@@ -223,6 +230,7 @@ static func _victory(state: Dictionary, world: Dictionary, combat: Dictionary, p
 	for i in defeated_names.size():
 		events.append({"type": "enemy_defeated", "enemyId": defeated_ids[i], "enemyName": defeated_names[i]})
 	events.append({"type": "combat_rewards", "xp": xp, "gold": gold, "enemyNames": defeated_names, "enemyIds": defeated_ids})
+	events.append_array(level_events)
 	return {"state": next, "events": events}
 
 static func _reward_member(member: Dictionary, groups: Array, gold: int, defeated_names: Array, engine: Dictionary) -> Dictionary:
@@ -244,7 +252,7 @@ static func _reward_member(member: Dictionary, groups: Array, gold: int, defeate
 	mem["notableVictories"] = _unique_concat(mem.get("notableVictories", []), defeated_names)
 	m["memory"] = mem
 
-	return _apply_level_ups(m)
+	return Leveling.apply_level_ups(m)
 
 static func _reward_xp_for(base_xp: int, member_level: int, enemy: Dictionary) -> int:
 	if enemy.get("prizedXp", false):
@@ -301,15 +309,6 @@ static func _apply_mastery(state: Dictionary, points: int, engine: Dictionary) -
 	return out
 
 # applyLevelUps: the slice hero never crosses a threshold; port the guard and refuse to guess growth.
-static func _apply_level_ups(member: Dictionary) -> Dictionary:
-	if int(member.get("xp", 0)) >= _xp_for_level(int(member.get("level", 1)) + 1):
-		push_error("[combat_round] level-up growth not ported (no slice route triggers it)")
-	return member
-
-static func _xp_for_level(level: int) -> int:
-	if level <= 1:
-		return 0
-	return 4 * (level - 1) * level
 
 static func _record_defeats(record: Variant, ids: Array) -> Dictionary:
 	var out: Dictionary = (record.duplicate(true) if typeof(record) == TYPE_DICTIONARY else {})

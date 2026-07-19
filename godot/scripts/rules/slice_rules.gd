@@ -11,6 +11,7 @@ const RIGHT_OF := {"north": "east", "east": "south", "south": "west", "west": "n
 
 const CombatRound := preload("res://scripts/rules/combat_round.gd")
 const Economy := preload("res://scripts/rules/economy.gd")
+const Quests := preload("res://scripts/rules/quests.gd")
 
 static func resolve(state: Dictionary, command: Dictionary, world: Dictionary = {}, engine: Dictionary = {}) -> Dictionary:
 	match command.get("type", ""):
@@ -52,6 +53,10 @@ static func resolve(state: Dictionary, command: Dictionary, world: Dictionary = 
 			return Economy.discard(state, command.get("itemId", ""), command.get("plus", null), command.get("affix", null))
 		"recover_party":
 			return Economy.recover(state, world)
+		"accept_quest":
+			return Quests.accept(state, world, command.get("questId", ""))
+		"claim_quest":
+			return Quests.claim(state, world, command.get("questId", ""))
 		_:
 			# Not yet ported — a no-op keeps the replay honest (the harness will flag the hash mismatch).
 			return {"state": state, "events": []}

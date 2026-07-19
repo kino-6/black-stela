@@ -182,6 +182,25 @@ function recoveryBlockedRoute(): { initial: GameState; commands: Command[] } {
   return { initial, commands: [{ type: "recover_party" }] }; // too poor → recovery_blocked
 }
 
+// M3 quests: accept a fresh bounty, then claim a met bounty whose 55-XP reward crosses several level
+// thresholds — exercises accept_quest, claim_quest, the XP grant, and applyLevelUps (level growth).
+function questRoute(): { initial: GameState; commands: Command[] } {
+  const hero = createGuildCharacter({ name: "Rook", classId: "vanguard", seed: "quest" });
+  const base = createInitialGameState();
+  const initial: GameState = {
+    ...base,
+    phase: "town",
+    party: [hero],
+    partyGold: 0,
+    quests: [{ questId: "quest.glimmer-hunt", status: "active", killCount: 1, claims: 0 }]
+  };
+  const commands: Command[] = [
+    { type: "accept_quest", questId: "quest.cull-the-ash" },
+    { type: "claim_quest", questId: "quest.glimmer-hunt" }
+  ];
+  return { initial, commands };
+}
+
 // A short exploration route from a known B1F progress state: turn, search, listen, turn back. Exercises
 // dungeon movement + current-cell probes without minting characters.
 function dungeonRoute(world: ScenarioWorld): { initial: GameState; commands: Command[] } {
@@ -240,5 +259,6 @@ export const SLICE_ROUTES: TraceRoute[] = [
   { name: "economy", worldId: "default", build: economyRoute },
   { name: "recovery", worldId: "default", build: recoveryRoute },
   { name: "recovery-blocked", worldId: "default", build: recoveryBlockedRoute },
+  { name: "quests", worldId: "default", build: questRoute },
   { name: "b1f-exploration", worldId: "default", build: dungeonRoute }
 ];
