@@ -102,6 +102,13 @@ rooms:
       - enemy.verdant.g2.bramble-shield
       - enemy.verdant.g2.spore-caster
     treasureTable: treasure.verdant.g2.keep
+    # IMP-029 — a trapped chamber: clear the squad, then a snare-trapped chest bars the deeper way.
+    chest:
+      treasureTable: treasure.verdant.g2.keep
+      trap:
+        kind: snare
+        difficulty: 16
+        damage: 6
     locales:
       ja:
         name: 茨の番所

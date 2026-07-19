@@ -104,10 +104,10 @@ describe("rules engine", () => {
         tags: ["dungeon"]
       })
     );
-    expect(result.state.log.at(-1)).toMatchObject({
-      text: "Found Healing Draught x1.",
-      tags: ["item", "treasure"]
-    });
+    // IMP-029 — the landing's reward is no longer auto-collected on entry (a chest is left instead), so
+    // there is no "Found …" treasure line here; the chest_appeared event carries it to the UI.
+    expect(result.events).toContainEqual(expect.objectContaining({ type: "chest_appeared", roomId: "room.b1f.001" }));
+    expect(result.state.log.some((entry) => entry.text.startsWith("Found "))).toBe(false);
     expect(result.state.map).toMatchObject({
       floorId: "dungeon.b1f",
       currentRoomId: "room.b1f.001",

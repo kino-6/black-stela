@@ -253,6 +253,19 @@ const encounterTableSchema = z.object({
     .min(1)
 });
 
+// IMP-029 — an authored chest: a reward table + an optional trap. A bare `treasureTable` on a room
+// still loads (as a plain chest) for back-compat; `chest` is how a scenario adds a trap + difficulty.
+const chestTrapSchema = z.object({
+  kind: z.enum(["needle", "gas", "rune", "snare"]),
+  difficulty: z.number().int().positive(),
+  damage: z.number().int().nonnegative()
+});
+
+const chestSchema = z.object({
+  treasureTable: z.string().min(1),
+  trap: chestTrapSchema.optional()
+});
+
 const treasureTableSchema = z.object({
   id: z.string().min(1),
   tier: z.number().int().nonnegative(),
@@ -351,6 +364,7 @@ const roomSchema = z.object({
   encounterSquad: z.array(z.string().min(1)).min(2).optional(),
   encounterTable: z.string().min(1).optional(),
   treasureTable: z.string().min(1).optional(),
+  chest: chestSchema.optional(),
   gates: z.array(explorationGateSchema).default([]),
   zone: z.string().min(1).optional(),
   event: z.string().optional()

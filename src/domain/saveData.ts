@@ -342,6 +342,31 @@ export const GameStateSchema = z.object({
         claims: z.number().int().nonnegative().default(0)
       })
     )
+    .default([]),
+  // IMP-029 — treasure chests on the current floor. Optional so old saves load with none (they will
+  // simply spawn fresh chests as chambers are entered/cleared) — same pattern as `quests`.
+  chests: z
+    .array(
+      z.object({
+        cellId: z.string().min(1),
+        roomId: z.string().min(1),
+        treasureTable: z.string().min(1),
+        trap: z
+          .object({
+            kind: z.enum(["needle", "gas", "rune", "snare"]),
+            difficulty: z.number().int().positive(),
+            damage: z.number().int().nonnegative()
+          })
+          .nullable()
+          .default(null),
+        phase: z.enum(["closed", "opened"]).default("closed"),
+        investigated: z.boolean().default(false),
+        investigateResult: z.enum(["clear", "trapped", "uncertain"]).nullable().default(null),
+        disarmAttempted: z.boolean().default(false),
+        disarmed: z.boolean().default(false),
+        sprung: z.boolean().default(false)
+      })
+    )
     .default([])
 });
 

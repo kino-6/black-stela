@@ -247,6 +247,15 @@ export function projectEventToLog(event: GameEvent, locale: Locale = "en", world
       return { text: t("events.partyWiped", { gold: event.rescueFee }), tags: ["combat", "town"] };
     case "debug_started":
       return { text: event.text, tags: ["debug"] };
+    // IMP-029 — chest events. The loot line is already emitted via inventory_item_gained; these carry
+    // the interaction feel to the UI slice (its own presentation), so they do not add a log line here.
+    case "chest_appeared":
+    case "chest_investigated":
+    case "chest_disarmed":
+    case "chest_trap_sprung":
+    case "chest_opened":
+    case "command_blocked_chest":
+      return null;
   }
 }
 

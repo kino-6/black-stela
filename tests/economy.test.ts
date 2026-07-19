@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { defaultWorld } from "../src/data/defaultWorld";
 import { addCharacter, createCharacter, createInitialGameState } from "../src/domain/gameState";
 import { getEffectiveCharacterStats, isEquipmentUsableBy } from "../src/domain/economy";
-import { executeCommand } from "../src/domain/rulesEngine";
+import { executeCommand, resolveCommand } from "../src/domain/rulesEngine";
 
 function stateWithParty() {
   // Equip mechanics are tested from a clean slate; strip the class starting
@@ -11,16 +11,21 @@ function stateWithParty() {
 }
 
 describe("economy and equipment", () => {
-  it("starts with shared party gold and collects room treasure once", () => {
+  it("starts with shared party gold; the landing's reward is a chest, not auto-loot (IMP-029)", () => {
     const state = stateWithParty();
     const entered = executeCommand(state, defaultWorld, { type: "enter_dungeon" });
-    const enteredAgain = executeCommand(entered, defaultWorld, { type: "turn_right" });
 
     expect(state.partyGold).toBeGreaterThan(0);
-    expect(entered.inventory.find((item) => item.id === "item.healing-draught")?.quantity).toBe(2);
-    expect(entered.claimedTreasures).toContain("room.b1f.001");
-    expect(enteredAgain.inventory.find((item) => item.id === "item.healing-draught")?.quantity).toBe(2);
-    expect(entered.log.at(-1)?.text).toContain("Healing Draught");
+    // No auto-collect: entering leaves a closed chest on the landing, the room is not yet claimed.
+    expect(entered.claimedTreasures).not.toContain("room.b1f.001");
+    expect((entered.chests ?? []).some((chest) => chest.roomId === "room.b1f.001")).toBe(true);
+
+    // Opening it grants the reward exactly once — and it cannot be double-claimed.
+    const opened = resolveCommand(entered, defaultWorld, { type: "open_chest" });
+    expect(opened.events.some((event) => event.type === "inventory_item_gained")).toBe(true);
+    expect(opened.state.claimedTreasures).toContain("room.b1f.001");
+    const openedAgain = resolveCommand(opened.state, defaultWorld, { type: "open_chest" });
+    expect(openedAgain.events).toContainEqual({ type: "command_blocked_chest", reason: "already_open" });
   });
 
   it("buys equipment from town and equips it without changing base character identity", () => {

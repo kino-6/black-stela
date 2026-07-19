@@ -106,6 +106,13 @@ rooms:
       tags:
         - tutorial
     encounterTable: encounters.b1f.halls
+    # IMP-029 — a trapped chamber: clear the slime, then a needle-trapped strongbox remains on the cell.
+    chest:
+      treasureTable: treasure.b1f.safe
+      trap:
+        kind: needle
+        difficulty: 12
+        damage: 4
   - id: room.b1f.gate
     name: Sealed Passage
     description: A dead run of the gallery ends at a fitted west wall, its seam too straight for stone. Behind it, faintly, the fall of the deep stair sounds — but nothing here will shift it yet.

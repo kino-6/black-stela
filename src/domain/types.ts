@@ -26,6 +26,9 @@ export type Command =
   | { type: "search" }
   | { type: "open_door" }
   | { type: "disarm_trap" }
+  | { type: "investigate_chest" }
+  | { type: "disarm_chest" }
+  | { type: "open_chest" }
   | { type: "attack" }
   | { type: "defend" }
   | { type: "use_item"; itemId: string; targetCharacterId: string }
@@ -357,6 +360,12 @@ export type GameEvent =
   | { type: "map_secret_candidate_added"; floorId: string | null; roomId: string; direction: Direction }
   | { type: "room_entered"; roomId: string; roomName: string; motion?: RoomEntryMotion }
   | { type: "trap_triggered"; trapId: string; trapName: string; damage: number }
+  | { type: "chest_appeared"; cellId: string; roomId: string }
+  | { type: "chest_investigated"; result: "clear" | "trapped" | "uncertain"; handlerName?: string }
+  | { type: "chest_disarmed"; success: boolean; handlerName?: string }
+  | { type: "chest_trap_sprung"; trapKind: ChestTrapKind; damage: number }
+  | { type: "chest_opened" }
+  | { type: "command_blocked_chest"; reason: "no_chest" | "guarded" | "already_open" | "already_tried" | "no_trap" }
   | { type: "room_event_triggered"; roomId: string; text: string }
   | { type: "enemy_encountered"; enemyId: string; enemyName: string; roomId: string }
   | { type: "inspection_made"; mode: "inspect_wall" | "listen" | "open_door" }
@@ -611,6 +620,42 @@ export interface GameState {
    *  unaccepted. Optional in the save schema (defaults to []) so old saves load — same pattern
    *  as `expeditions`. */
   quests: QuestProgress[];
+  /** IMP-029 — treasure chests spawned on the current floor. A chamber's reward is NOT auto-taken
+   *  on room entry; a closed chest is left on the cell (after the fight, if the room has one) and the
+   *  party investigates/disarms/opens it. Floor-scoped like floorClaimedTreasures (re-arms on floor
+   *  re-entry). Optional in the save schema (defaults to []) so old saves load. */
+  chests?: ChestState[];
+}
+
+/** IMP-029 — a chest trap kind. Authored in scenario data; a plain (untrapped) chest has none. */
+export type ChestTrapKind = "needle" | "gas" | "rune" | "snare";
+
+/** IMP-029 — scenario-authored chest on a room: a reward table plus an optional trap. A room with a
+ *  bare `treasureTable` and no `chest` loads as a safe plain chest (back-compat). */
+export interface ScenarioChest {
+  treasureTable: string;
+  trap?: { kind: ChestTrapKind; difficulty: number; damage: number };
+}
+
+export type ChestPhase = "closed" | "opened";
+
+/** IMP-029 — a live chest instance in game state. One investigate and one disarm attempt each; the
+ *  result is fixed per chest (seeded on its identity) so a failure cannot be reloaded to success. */
+export interface ChestState {
+  cellId: string;
+  roomId: string;
+  treasureTable: string;
+  /** The authored trap, or null for a plain chest. `sprung`/`disarmed` track its resolution. */
+  trap: { kind: ChestTrapKind; difficulty: number; damage: number } | null;
+  phase: ChestPhase;
+  /** Whether an investigation has been spent, and what it concluded. "uncertain" never lies "clear". */
+  investigated: boolean;
+  investigateResult: "clear" | "trapped" | "uncertain" | null;
+  /** Whether a disarm attempt has been spent, and whether it removed the trap. */
+  disarmAttempted: boolean;
+  disarmed: boolean;
+  /** Set once the trap has fired (on a bad open) so it cannot bite twice. */
+  sprung: boolean;
 }
 
 export type QuestKind = "bounty" | "delivery";
@@ -769,6 +814,9 @@ export interface DungeonRoom {
   encounterSquad?: string[];
   encounterTable?: string;
   treasureTable?: string;
+  /** IMP-029 — an authored chest (reward table + optional trap). A bare `treasureTable` still works as
+   *  a plain chest; `chest` is how a scenario adds a trap and difficulty to a chamber's reward. */
+  chest?: ScenarioChest;
   gates?: ExplorationGate[];
   zone?: string;
   event?: string;

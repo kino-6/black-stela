@@ -66,6 +66,14 @@ actually in doubt). The damage-number / beat playback (数字感) already ships.
   return to the same expedition-result/preparation state as departure from the town hub.
 - [ ] **IMP-028 Character-focused creation** — replace class cards and aptitude form rows
   with bounded command/detail/status windows that keep the adventurer preview visible.
+- [ ] **IMP-029 Chamber fights, treasure chests, trap-handling vocations** — replace
+  enter-room auto-collect with a chamber-fight → closed-chest → investigate/disarm/open/leave
+  loop on the current cell; `cutpurse`/`seeker`/`scout` `trap_handling` drives the check
+  (rules pick the best handler, never class-locked); chests/traps/difficulty/rewards authored
+  in scenario data with `treasureTable`-only back-compat; Default+Verdant each get a trapped
+  chamber. Foundation = domain rules + data contract + fixed-seed unit tests; then React
+  first-person chest UI (delivered closed/open art, controller-only); then the Playwright
+  browser Gate (town→chamber→fight→investigate→disarm→open→resume, 0 pointer events).
 - [ ] **Recovery E2E Gate repair** — after a party wipe, stop the scripted dungeon path and
   assert the town/recovery state instead of retrying movement until the 180s timeout.
 

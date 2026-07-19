@@ -18,6 +18,7 @@ import { PARTY_SIZE_LIMIT, findClass, importAdventurer, reclassCharacter } from 
 import { SPELLS, knownSpells } from "./spells";
 import { getCriticalChance, getEvasionChance, getInitiativeScore, getSpellPowerBonus, getStatusSpellChance } from "./combatMath";
 import { FEAR_ACCURACY_PENALTY, POISON_DAMAGE, STATUS_WEAR_OFF, statusResistPct } from "./status";
+import { chestAt, disarmChest, investigateChest, makeChest, openChest, roomChest, selectTrapHandler } from "./chests";
 import {
   getExit,
   getFloorForRoom,
@@ -62,6 +63,7 @@ import type {
   CombatRow,
   CombatState,
   Command,
+  ChestState,
   Direction,
   DungeonFloor,
   DungeonRoom,
@@ -211,6 +213,12 @@ export function resolveCommand(state: GameState, world: ScenarioWorld, command: 
       return logOnly(state, { type: "inspection_made", mode: "open_door" });
     case "disarm_trap":
       return disarmTrap(state, world);
+    case "investigate_chest":
+      return investigateChestCommand(state);
+    case "disarm_chest":
+      return disarmChestCommand(state);
+    case "open_chest":
+      return openChestCommand(state, world);
     case "attack":
       return attack(state, world);
     case "defend":
@@ -496,13 +504,17 @@ function enterDungeon(state: GameState, world: ScenarioWorld): CommandResult {
     map: roomVisit.map,
     floorClearedEnemies: [],
     floorClaimedTreasures: [],
+    chests: [], // IMP-029 — chests are floor-scoped; a fresh descent re-arms the floor's chambers.
     // The town greets a party differently once it has been below. Count the descents.
     expeditions: state.expeditions + 1,
     turn: state.turn + 1
   };
   const startRoom = getRoom(world, world.startRoom);
-  const treasure = collectRoomTreasure(next, world, startRoom.id, startRoom.treasureTable);
-  next = treasure.state;
+  // IMP-029 — the entrance landing's reward (if any) becomes a chest, not auto-loot.
+  const chest = roomHasEncounter(startRoom)
+    ? { state: next, events: [] as GameEvent[] }
+    : ensureChestForRoom(next, world, startRoom.id, startCell?.id);
+  next = chest.state;
 
   return withEvents(next, [
     {
@@ -511,7 +523,7 @@ function enterDungeon(state: GameState, world: ScenarioWorld): CommandResult {
       facing: entranceFacing
     },
     ...roomVisit.events,
-    ...treasure.events
+    ...chest.events
   ]);
 }
 
@@ -554,6 +566,7 @@ function resumeAtCheckpoint(state: GameState, world: ScenarioWorld, roomId: stri
     map: roomVisit.map,
     floorClearedEnemies: [],
     floorClaimedTreasures: [],
+    chests: [], // IMP-029 — floor-scoped; re-arm on floor change.
     turn: state.turn + 1
   };
 
@@ -686,9 +699,13 @@ function moveForward(
     turn: state.turn + 1
   };
 
-  const treasure = collectRoomTreasure(next, world, room.id, room.treasureTable);
-  next = treasure.state;
-  events.push(...treasure.events);
+  // IMP-029 — no auto-collect. A plain reward room leaves a closed chest on entry; a CHAMBER (a room
+  // with a fixed encounter) leaves its chest only after the fight is won (see the declareRound victory).
+  if (!roomHasEncounter(room)) {
+    const chest = ensureChestForRoom(next, world, room.id, targetCell?.id);
+    next = chest.state;
+    events.push(...chest.events);
+  }
 
   if (room.trap && !state.resolvedTraps.includes(room.trap.id)) {
     next = {
@@ -858,12 +875,16 @@ function useStairs(state: GameState, world: ScenarioWorld): CommandResult {
     // resets, so its chambers (玄室) hold enemies and treasure again.
     floorClearedEnemies: [],
     floorClaimedTreasures: [],
+    chests: [], // IMP-029 — floor-scoped; re-arm on floor change.
     turn: state.turn + 1
   };
 
-  const treasure = collectRoomTreasure(next, world, targetRoom.id, targetRoom.treasureTable);
-  next = treasure.state;
-  events.push(...treasure.events);
+  // IMP-029 — a stair landing's reward (if any) becomes a chest, not auto-loot.
+  if (!roomHasEncounter(targetRoom)) {
+    const chest = ensureChestForRoom(next, world, targetRoom.id, getGridCellForRoom(world, targetRoom.id)?.id);
+    next = chest.state;
+    events.push(...chest.events);
+  }
 
   if (targetRoom.event) {
     events.push({ type: "room_event_triggered", roomId: targetRoom.id, text: targetRoom.event });
@@ -1164,7 +1185,7 @@ function declareRound(state: GameState, world: ScenarioWorld, actions: CombatAct
       levelEvents.push(...leveled.events);
       return leveled.character;
     });
-    const next: GameState = {
+    let next: GameState = {
       ...state,
       phase: "dungeon",
       combat: null,
@@ -1192,6 +1213,11 @@ function declareRound(state: GameState, world: ScenarioWorld, actions: CombatAct
       turn: state.turn + 1
     };
 
+    // IMP-029 — a CHAMBER's reward is claimable only now, as a closed chest on its cell, not on entry.
+    const chamberCellId = state.position?.cellId ?? getGridCellForRoom(world, combat.roomId)?.id;
+    const chamberChest = ensureChestForRoom(next, world, combat.roomId, chamberCellId);
+    next = chamberChest.state;
+
     return withEvents(next, [
       { type: "combat_round_resolved", round: combat.round, summaries, beats },
       ...defeatedNames.map((enemyName, index) => ({
@@ -1200,6 +1226,7 @@ function declareRound(state: GameState, world: ScenarioWorld, actions: CombatAct
         enemyName
       })),
       { type: "combat_rewards", xp, gold, enemyNames: defeatedNames, enemyIds: defeatedEnemyIds },
+      ...chamberChest.events,
       ...levelEvents
     ]);
   }
@@ -1925,26 +1952,23 @@ export function createSquadCombatState(roomId: string, enemies: Enemy[]): Combat
   };
 }
 
-function collectRoomTreasure(
-  state: GameState,
+// IMP-029 — roll ONE reward item from a treasure table (entry resolve + equipment instance roll),
+// deterministic on (room, turn). The old collectRoomTreasure auto-granted this on room entry; now the
+// item is only minted when a CHEST is opened. Returns null if the table/item does not resolve.
+function rollTreasureItem(
   world: ScenarioWorld,
   roomId: string,
-  treasureTableId: string | undefined
-): { state: GameState; events: GameEvent[] } {
-  if (!treasureTableId || state.floorClaimedTreasures.includes(roomId)) {
-    return { state, events: [] };
-  }
-
-  const entry = resolveTreasureTable(world, treasureTableId, `${roomId}:${state.turn}`);
+  treasureTableId: string,
+  turn: number
+): InventoryItem | null {
+  const entry = resolveTreasureTable(world, treasureTableId, `${roomId}:${turn}`);
   if (!entry) {
-    return { state, events: [] };
+    return null;
   }
-
   const item = createInventoryItemFromCatalog(world, entry.itemId, entry.quantity ?? 1);
   if (!item) {
-    return { state, events: [] };
+    return null;
   }
-
   // Dropped equipment rolls a numeric "+N" upgrade and a RARITY (IMP-022A): a common stacks and is
   // known, a rare/epic is a unique unidentified instance carrying an authored affix. Deterministic
   // on (room, turn) so replays match.
@@ -1952,37 +1976,126 @@ function collectRoomTreasure(
     const equipment = findEquipment(world, entry.itemId);
     if (equipment) {
       const floor = floorNumberForRoom(world, roomId);
-      const seed = `${roomId}:${state.turn}`;
+      const seed = `${roomId}:${turn}`;
       item.plus = rollEquipmentInstance(equipment.slot, floor, seed).plus;
       const drop = rollEquipmentDrop(world, entry.itemId, floor, seed);
       if (drop) {
         item.rarity = drop.rarity;
         item.identified = drop.identified;
         item.instanceId = drop.instanceId;
-        // A rare's rolled affix wins; a common keeps whatever the +N roll gave it (if any).
         if (drop.affix) item.affix = drop.affix;
       }
     }
   }
+  return item;
+}
 
+function roomHasEncounter(room: DungeonRoom): boolean {
+  return Boolean(room.encounter || room.encounterSquad || room.encounterTable);
+}
+
+function replaceChest(state: GameState, chest: ChestState): GameState {
+  return { ...state, chests: (state.chests ?? []).map((existing) => (existing.cellId === chest.cellId ? chest : existing)) };
+}
+
+// The chest on the party's CURRENT cell (chests are only operable where the party stands).
+function currentChest(state: GameState): ChestState | undefined {
+  const cellId = state.position?.cellId;
+  return cellId && state.phase === "dungeon" ? chestAt(state, cellId) : undefined;
+}
+
+// IMP-029 — investigate the current chest ONCE. Success learns the truth; failure is honestly
+// "uncertain" (never a false "safe"). The outcome is fixed per chest, so re-trying cannot reload it.
+function investigateChestCommand(state: GameState): CommandResult {
+  const chest = currentChest(state);
+  if (!chest) return withEvents(state, [{ type: "command_blocked_chest", reason: "no_chest" }]);
+  if (chest.phase === "opened") return withEvents(state, [{ type: "command_blocked_chest", reason: "already_open" }]);
+  if (chest.investigated) return withEvents(state, [{ type: "command_blocked_chest", reason: "already_tried" }]);
+  const handler = selectTrapHandler(state.party);
+  const updated = investigateChest(chest, handler, `${chest.cellId}:${chest.roomId}`);
+  return withEvents({ ...replaceChest(state, updated), turn: state.turn + 1 }, [
+    { type: "chest_investigated", result: updated.investigateResult ?? "uncertain", handlerName: handler?.name }
+  ]);
+}
+
+// IMP-029 — attempt to disarm the current chest ONCE. Success removes the trap; failure leaves it armed.
+function disarmChestCommand(state: GameState): CommandResult {
+  const chest = currentChest(state);
+  if (!chest) return withEvents(state, [{ type: "command_blocked_chest", reason: "no_chest" }]);
+  if (chest.phase === "opened") return withEvents(state, [{ type: "command_blocked_chest", reason: "already_open" }]);
+  if (!chest.trap || chest.disarmed) return withEvents(state, [{ type: "command_blocked_chest", reason: "no_trap" }]);
+  if (chest.disarmAttempted) return withEvents(state, [{ type: "command_blocked_chest", reason: "already_tried" }]);
+  const handler = selectTrapHandler(state.party);
+  const updated = disarmChest(chest, handler, `${chest.cellId}:${chest.roomId}`);
+  return withEvents({ ...replaceChest(state, updated), turn: state.turn + 1 }, [
+    { type: "chest_disarmed", success: updated.disarmed, handlerName: handler?.name }
+  ]);
+}
+
+// IMP-029 — open the current chest. An armed, undisarmed trap TRIPS (wounds the party toward 1 HP) but
+// the reward is NEVER destroyed; it is granted exactly once, then the chest cannot be claimed again.
+function openChestCommand(state: GameState, world: ScenarioWorld): CommandResult {
+  const chest = currentChest(state);
+  if (!chest) return withEvents(state, [{ type: "command_blocked_chest", reason: "no_chest" }]);
+  if (chest.phase === "opened") return withEvents(state, [{ type: "command_blocked_chest", reason: "already_open" }]);
+
+  const { chest: opened, trapSprung, damage } = openChest(chest);
+  let next = replaceChest(state, opened);
+  const events: GameEvent[] = [];
+  if (trapSprung) {
+    next = {
+      ...next,
+      party: next.party.map((member) => (member.injury ? member : { ...member, hp: Math.max(1, member.hp - damage) }))
+    };
+    events.push({ type: "chest_trap_sprung", trapKind: chest.trap!.kind, damage });
+  }
+  const item = state.floorClaimedTreasures.includes(chest.roomId)
+    ? null
+    : rollTreasureItem(world, chest.roomId, chest.treasureTable, state.turn);
+  if (item) {
+    next = {
+      ...next,
+      inventory: addInventoryItem(next.inventory, item),
+      claimedTreasures: Array.from(new Set([...next.claimedTreasures, chest.roomId])),
+      floorClaimedTreasures: [...next.floorClaimedTreasures, chest.roomId]
+    };
+    events.push({
+      type: "inventory_item_gained",
+      itemId: item.id,
+      itemName: item.name,
+      quantity: item.quantity,
+      source: "treasure",
+      plus: item.plus,
+      affix: item.affix
+    });
+  }
+  events.push({ type: "chest_opened" });
+  return withEvents({ ...next, turn: state.turn + 1 }, events);
+}
+
+// IMP-029 — leave a CLOSED chest on `cellId` for a room with an authored reward, unless one already
+// stands there or the room's chest was already looted this floor visit. Replaces the old
+// auto-collect: entering a room (or clearing its chamber) no longer grants loot — a chest is left.
+function ensureChestForRoom(
+  state: GameState,
+  world: ScenarioWorld,
+  roomId: string,
+  cellId: string | undefined
+): { state: GameState; events: GameEvent[] } {
+  // Safe lookup — a synthetic combat (e.g. the descent simulator's "sim" room) has no world room, so
+  // getRoom would throw; there is simply no chest to leave.
+  const room = world.dungeons.flatMap((dungeon) => dungeon.rooms).find((candidate) => candidate.id === roomId);
+  const authored = room ? roomChest(room) : null;
+  if (!authored || !cellId) {
+    return { state, events: [] };
+  }
+  const chests = state.chests ?? [];
+  if (chests.some((chest) => chest.cellId === cellId) || state.floorClaimedTreasures.includes(roomId)) {
+    return { state, events: [] };
+  }
   return {
-    state: {
-      ...state,
-      inventory: addInventoryItem(state.inventory, item),
-      claimedTreasures: Array.from(new Set([...state.claimedTreasures, roomId])),
-      floorClaimedTreasures: [...state.floorClaimedTreasures, roomId]
-    },
-    events: [
-      {
-        type: "inventory_item_gained",
-        itemId: item.id,
-        itemName: item.name,
-        quantity: item.quantity,
-        source: "treasure",
-        plus: item.plus,
-        affix: item.affix
-      }
-    ]
+    state: { ...state, chests: [...chests, makeChest(cellId, roomId, authored)] },
+    events: [{ type: "chest_appeared", cellId, roomId }]
   };
 }
 

@@ -290,6 +290,16 @@ export function validateScenarioGraph(world: ScenarioWorld, filePath = "world.md
         });
       }
 
+      // IMP-029 — an authored chest's reward table must resolve (trap kind/difficulty are enum/int
+      // validated by the schema; this is the cross-reference the schema cannot check).
+      if (room.chest && !treasureTableIds.has(room.chest.treasureTable)) {
+        errors.push({
+          filePath,
+          fieldPath: `${room.id}.chest.treasureTable`,
+          reason: `Unknown chest treasure table: ${room.chest.treasureTable}`
+        });
+      }
+
       for (const gate of room.gates ?? []) {
         if (gate.requiredKeyId && !purchasableIds.has(gate.requiredKeyId)) {
           errors.push({

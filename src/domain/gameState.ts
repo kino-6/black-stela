@@ -30,6 +30,7 @@ export function createInitialGameState(): GameState {
     partyGold: STARTING_PARTY_GOLD,
     claimedTreasures: [],
     floorClaimedTreasures: [],
+    chests: [],
     map: {
       floorId: null,
       currentRoomId: null,

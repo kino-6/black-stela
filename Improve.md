@@ -46,6 +46,7 @@ like a DRPG rather than a web service.
 | `IMP-026` | P2 | Reproduced | Exploration presents movement and utility as eleven web-toolbar buttons despite controller-first input. |
 | `IMP-027` | P1 | Reproduced | A direct guild departure can return from the dungeon to Adventurer Registration instead of the town return loop. |
 | `IMP-028` | P1 | Reproduced | Character creation remains a scrolling card catalog and stat-entry form rather than a focused adventurer-making flow. |
+| `IMP-029` | High | Approved capability | Entering a room auto-grabs its treasure; there is no chamber-fight → chest → investigate/disarm/open exploration loop, and thief-class trap handling is unused. |
 
 ## Archive
 
@@ -390,6 +391,70 @@ allocation/reroll -> name/profile -> register -> repeat six times.
 **Past trouble likely to recur:** character creation as data entry; scrolling
 card walls; web-form steppers; absent character art; Next/Back moving or leaving
 the viewport; controller support proven only by Enter on focused HTML controls.
+
+## IMP-029: Chamber Fights, Treasure Chests, And Trap-Handling Vocations
+
+**Category:** Dungeon exploration loop / loot / vocation payoff
+
+**Player outcome:** Step into a chamber → fight its fixed pack → after victory a
+closed chest remains on the current cell → investigate / disarm / open / leave →
+take the loot and return to exploration. Entering a room no longer auto-collects
+treasure.
+
+### Implementation Slices
+
+- [ ] **Chamber cells** — an authored cell with a fixed encounter + reward (not
+  just any named room). The chest is inoperable until the pack is defeated; on
+  victory a closed chest appears on the same cell. Do not surface the design term
+  "玄室/chamber" verbatim in normal UI.
+- [ ] **Chest state machine** — `treasureTable` reward is NOT auto-taken on room
+  entry or stair use. A chest is operable only on the current cell; plain chests
+  open simply, trapped chests demand a decision. Investigate / disarm / open each
+  resolve once per chest (no re-roll on the same chest), no duplicate claim from an
+  opened chest, state persists while on the floor (chamber may re-arm on floor
+  re-entry, as today).
+- [ ] **Trap handling via vocations** — `cutpurse` / `seeker` / `scout`
+  `trap_handling` drives the check; the rules pick the best handler from agility,
+  wit, luck, level, and aptitude. Usable without a specialist (higher risk), never
+  class-locked. A failed investigation says "cannot tell", never a false "safe".
+  Investigate and disarm are one attempt each; opening undisarmed/failed trips the
+  trap but never destroys the reward. Never show success rates or internal formulas.
+- [ ] **External scenario contract** — chests, trap kinds, difficulty, reward
+  tables authored in scenario data; existing `treasureTable`-only data loads as a
+  safe plain chest (back-compat); invalid trap kind / difficulty / reward-table
+  ref rejected by scenario validation. Seed Default AND Verdant with ≥1 trapped
+  chamber each.
+- [ ] **UI (React)** — use the delivered `treasure-chest-closed.png` /
+  `treasure-chest-open.png`, grounded on the floor in the first-person view; no
+  chest UI during combat; controller directional + confirm + cancel only; no web
+  forms, no clicking enemies/chests, no centered app popups; fixed command/message
+  regions (no reflow on result); after opening keep the open image + a short loot
+  line, confirm returns to exploration.
+
+### Acceptance / Required tests (fixed seed, headless)
+
+- [ ] Entering a room or using stairs alone collects NO treasure.
+- [ ] Chest is inoperable before the chamber fight is won.
+- [ ] A closed chest appears on the current cell after victory.
+- [ ] Investigate success/uncertain, disarm success/failure, and undisarmed-open
+  are deterministic under a fixed seed.
+- [ ] After a trap trips, the reward is still claimable and cannot be double-taken.
+- [ ] Leaving and returning preserves chest state (same floor visit).
+- [ ] Old saves and existing `treasureTable` migrate.
+- [ ] Default and Verdant data resolve under the same rules.
+
+**Browser Gate:** controller-only normal route — town → B1F chamber → fight →
+investigate → disarm → open → resume exploration. Assert: 0 pointer events; chest
+inoperable off-cell; correct closed/open display around the kill; focus/confirm/
+cancel consistent; chest, message, and command never overlap; no English IDs or
+one-character wrap tails in Japanese. 1280x720 is the no-scroll/no-overlap Gate;
+1920x1080 is the composition review. Headless proves judgement, reproducibility,
+and no-double-claim only; grounding, current-cell integrity, feel, and transitions
+require browser evidence.
+
+**Out of scope:** IMP-024..028 rework; Godot migration; new art; Appraiser/Forge
+redesign; any required class/key to open a chest; remote/auto operation or
+auto-collect on entry.
 
 ## Review Baseline
 
