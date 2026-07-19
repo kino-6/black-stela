@@ -27,6 +27,7 @@ static func declare_round(state: Dictionary, world: Dictionary, actions: Array, 
 	var rnd := int(combat.get("round", 1))
 	var enemy_groups: Array = (combat.get("enemyGroups", []) as Array).duplicate(true)
 	var party: Array = (state.get("party", []) as Array).duplicate(true)
+	var inventory: Array = (state.get("inventory", []) as Array).duplicate(true)
 
 	# Regen affix (round-start heal) is skipped — the slice hero has none. TODO for regen builds.
 
@@ -44,7 +45,55 @@ static func declare_round(state: Dictionary, world: Dictionary, actions: Array, 
 			continue
 		if _has_status(actor, "sleep"):
 			continue
-		if action.get("action", "") != "attack" or action.get("targetGroupId", null) == null:
+		var kind := String(action.get("action", ""))
+
+		# DEFEND: raise a ward until the round ends.
+		if kind == "defend":
+			party = _with_member_status(party, String(actor["id"]), "ward")
+			continue
+
+		# USE ITEM: a consumable spent on an ally (heal / restore MP / cure statuses).
+		if kind == "use_item" and typeof(action.get("itemId", null)) == TYPE_STRING and typeof(action.get("targetCharacterId", null)) == TYPE_STRING:
+			var used := _apply_healing_item(party, inventory, String(action["itemId"]), String(action["targetCharacterId"]), world)
+			party = used["party"]
+			inventory = used["inventory"]
+			continue
+
+		# CAST: a technique from the actor's bounded combat LOADOUT only.
+		if kind == "cast" and typeof(action.get("spellId", null)) == TYPE_STRING:
+			var spell_id := String(action["spellId"])
+			var spell: Variant = SPELLS.get(spell_id, null)
+			if typeof(spell) != TYPE_DICTIONARY or not _combat_loadout(actor, engine).has(spell_id):
+				continue
+			if _has_status(actor, "silence"):
+				continue
+			if int(actor.get("mp", 0)) < int(spell["mpCost"]):
+				continue
+			party = _spend_mp(party, String(actor["id"]), int(spell["mpCost"]))
+			var effect: Dictionary = spell["effect"]
+			var spell_power: int = CombatHelpers.get_spell_power_bonus(actor) if String(spell.get("kind", "")) == "spell" else 0
+
+			if String(effect["kind"]) == "heal" and typeof(action.get("targetCharacterId", null)) == TYPE_STRING:
+				var amount := int(effect["amount"]) + spell_power
+				party = _heal_member(party, String(action["targetCharacterId"]), amount, world)
+			elif String(effect["kind"]) == "damage" and typeof(action.get("targetGroupId", null)) == TYPE_STRING:
+				var target: Variant = _find_group(enemy_groups, action["targetGroupId"])
+				if typeof(target) == TYPE_DICTIONARY:
+					var spell_seed := "%d:%d:%s:%s:spell" % [turn, rnd, actor["id"], target["id"]]
+					var raw_spell := CombatRng.roll_damage(spell_seed, int(effect["min"]), int(effect["max"]), 0)
+					var weak := CombatRng.element_multiplier(target.get("weaknesses", {}), effect.get("element", "physical"))
+					var spell_damage := CombatRng.chip_through_resistance(roundi((raw_spell + spell_power) * weak), spell_seed)
+					enemy_groups = CombatHelpers.damage_group(enemy_groups, target["id"], spell_damage)
+			elif String(effect["kind"]) == "status" and typeof(action.get("targetGroupId", null)) == TYPE_STRING:
+				var ailment := String(effect["status"])
+				var target2: Variant = _find_group(enemy_groups, action["targetGroupId"])
+				var resist := _status_resist_pct(target2.get("resistances", {}) if typeof(target2) == TYPE_DICTIONARY else {}, ailment)
+				var roll := CombatRng.roll_percent("%d:%d:%s:%s:ailment" % [turn, rnd, actor["id"], target2.get("id", "") if typeof(target2) == TYPE_DICTIONARY else ""])
+				if roll < CombatHelpers.get_status_spell_chance(actor, resist):
+					enemy_groups = _with_group_status(enemy_groups, String(action["targetGroupId"]), ailment)
+			continue
+
+		if kind != "attack" or action.get("targetGroupId", null) == null:
 			continue
 		var group: Variant = _find_group(enemy_groups, action["targetGroupId"])
 		if typeof(group) != TYPE_DICTIONARY:
@@ -69,7 +118,7 @@ static func declare_round(state: Dictionary, world: Dictionary, actions: Array, 
 
 	var living := enemy_groups.filter(func(g): return int(g.get("count", 0)) > 0)
 	if living.is_empty():
-		return _victory(state, world, combat, party, engine)
+		return _victory(state, world, combat, party, inventory, engine)
 
 	# --- ENEMY TURN (ported from declareRound's post-victory branch) ---
 	# Each living GROUP acts once, fastest first: an authored ability (its own reach), else a basic
@@ -165,6 +214,7 @@ static func declare_round(state: Dictionary, world: Dictionary, actions: Array, 
 		wiped["position"] = null
 		wiped["combat"] = null
 		wiped["party"] = party
+		wiped["inventory"] = inventory
 		wiped["partyGold"] = int(state.get("partyGold", 0)) - rescue_fee
 		wiped["map"]["currentRoomId"] = null
 		wiped["map"]["currentCellId"] = null
@@ -178,6 +228,7 @@ static func declare_round(state: Dictionary, world: Dictionary, actions: Array, 
 	var cont: Dictionary = state.duplicate(true)
 	cont["combat"] = next_combat
 	cont["party"] = party
+	cont["inventory"] = inventory
 	cont["turn"] = int(state.get("turn", 0)) + 1
 	var cont_events := [{"type": "combat_round_resolved", "round": rnd}]
 	cont_events.append_array(injured_events)
@@ -185,7 +236,7 @@ static func declare_round(state: Dictionary, world: Dictionary, actions: Array, 
 
 # --- victory + rewards ------------------------------------------------------------------------------
 
-static func _victory(state: Dictionary, world: Dictionary, combat: Dictionary, party: Array, engine: Dictionary) -> Dictionary:
+static func _victory(state: Dictionary, world: Dictionary, combat: Dictionary, party: Array, inventory: Array, engine: Dictionary) -> Dictionary:
 	var groups: Array = combat.get("enemyGroups", [])
 	var xp := 0
 	var gold := 0
@@ -211,6 +262,7 @@ static func _victory(state: Dictionary, world: Dictionary, combat: Dictionary, p
 	next["phase"] = "dungeon"
 	next["combat"] = null
 	next["party"] = grown
+	next["inventory"] = inventory
 	next["partyGold"] = int(state.get("partyGold", 0)) + gold
 	next["combatConclusion"] = {
 		"enemyIds": defeated_ids,
@@ -480,3 +532,119 @@ static func _sync_combat_enemy(combat: Dictionary) -> Dictionary:
 	enemy["role"] = first_living.get("role", enemy.get("role", ""))
 	out["enemy"] = enemy
 	return out
+
+# --- party action helpers (defend / item / cast) ---------------------------------------------------
+const SPELLS := {
+	"heal": {"id": "heal", "kind": "spell", "mpCost": 3, "target": "ally", "effect": {"kind": "heal", "amount": 8}},
+	"firebolt": {"id": "firebolt", "kind": "spell", "mpCost": 4, "target": "enemyGroup", "effect": {"kind": "damage", "min": 4, "max": 9, "element": "fire"}},
+	"sleep": {"id": "sleep", "kind": "spell", "mpCost": 3, "target": "enemyGroup", "effect": {"kind": "status", "status": "sleep"}},
+	"power-strike": {"id": "power-strike", "kind": "skill", "mpCost": 3, "target": "enemyGroup", "effect": {"kind": "damage", "min": 6, "max": 12, "element": "physical"}}
+}
+
+# An actor may cast only a technique on its combat loadout (which defaults to the class's known spells
+# until a player edits it) — and only ones that are real spells.
+static func _combat_loadout(actor: Dictionary, engine: Dictionary) -> Array:
+	var state := _resolve_vocation_state(actor, engine)
+	var out := []
+	for technique in state.get("loadout", []):
+		if SPELLS.has(String(technique)):
+			out.append(String(technique))
+	return out
+
+static func _with_member_status(party: Array, member_id: String, status: String) -> Array:
+	var out := []
+	for member in party:
+		if String(member.get("id", "")) != member_id:
+			out.append(member)
+			continue
+		var m: Dictionary = member.duplicate(true)
+		var statuses: Array = (m.get("status", []) as Array).duplicate()
+		if not statuses.has(status):
+			statuses.append(status)
+		m["status"] = statuses
+		out.append(m)
+	return out
+
+static func _with_group_status(groups: Array, group_id: String, status: String) -> Array:
+	var out := []
+	for group in groups:
+		if String(group.get("id", "")) != group_id:
+			out.append(group)
+			continue
+		var g: Dictionary = group.duplicate(true)
+		var statuses: Array = (g.get("status", []) as Array).duplicate()
+		if not statuses.has(status):
+			statuses.append(status)
+		g["status"] = statuses
+		out.append(g)
+	return out
+
+static func _spend_mp(party: Array, member_id: String, cost: int) -> Array:
+	var out := []
+	for member in party:
+		if String(member.get("id", "")) != member_id:
+			out.append(member)
+			continue
+		var m: Dictionary = member.duplicate(true)
+		m["mp"] = int(m.get("mp", 0)) - cost
+		out.append(m)
+	return out
+
+static func _heal_member(party: Array, member_id: String, amount: int, world: Dictionary) -> Array:
+	var out := []
+	for member in party:
+		if String(member.get("id", "")) != member_id:
+			out.append(member)
+			continue
+		var m: Dictionary = member.duplicate(true)
+		var max_hp := int(CharacterStats.effective(m, world).get("maxHp", m.get("maxHp", 0)))
+		m["hp"] = mini(max_hp, int(m.get("hp", 0)) + amount)
+		out.append(m)
+	return out
+
+# A consumable spent on an ally: heal, restore MP, cure statuses. A non-consumable simply fails.
+static func _apply_healing_item(party: Array, inventory: Array, item_id: String, target_id: String, world: Dictionary) -> Dictionary:
+	var item: Variant = null
+	for candidate in inventory:
+		if candidate.get("id", "") == item_id and int(candidate.get("quantity", 0)) > 0:
+			item = candidate
+			break
+	var kind := String(item.get("kind", "")) if typeof(item) == TYPE_DICTIONARY else ""
+	var consumable := kind == "healing" or kind == "cure" or kind == "focus"
+	var has_target := false
+	for member in party:
+		if String(member.get("id", "")) == target_id:
+			has_target = true
+			break
+	if typeof(item) != TYPE_DICTIONARY or not has_target or not consumable:
+		return {"party": party, "inventory": inventory}
+
+	var next_party := []
+	for member in party:
+		if String(member.get("id", "")) != target_id:
+			next_party.append(member)
+			continue
+		var m: Dictionary = member.duplicate(true)
+		var stats := CharacterStats.effective(m, world)
+		if item.get("healAmount", null) != null:
+			m["hp"] = mini(int(stats.get("maxHp", m.get("maxHp", 0))), int(m.get("hp", 0)) + int(item["healAmount"]))
+		if item.get("restoreMp", null) != null:
+			m["mp"] = mini(int(stats.get("maxMp", m.get("maxMp", 0))), int(m.get("mp", 0)) + int(item["restoreMp"]))
+		var cures: Variant = item.get("curesStatuses", null)
+		if typeof(cures) == TYPE_ARRAY and not (cures as Array).is_empty():
+			var kept := []
+			for status in m.get("status", []):
+				if not (cures as Array).has(status):
+					kept.append(status)
+			m["status"] = kept
+		next_party.append(m)
+
+	var next_inventory := []
+	for candidate in inventory:
+		if candidate.get("id", "") == item_id:
+			var c: Dictionary = candidate.duplicate(true)
+			c["quantity"] = maxi(0, int(c.get("quantity", 0)) - 1)
+			next_inventory.append(c)
+		else:
+			next_inventory.append(candidate)
+	return {"party": next_party, "inventory": next_inventory}

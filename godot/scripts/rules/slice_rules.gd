@@ -76,6 +76,10 @@ static func resolve(state: Dictionary, command: Dictionary, world: Dictionary = 
 			return Chests.disarm(state)
 		"open_chest":
 			return Chests.open_chest(state, world, engine)
+		"retreat":
+			return _retreat(state)
+		"continue_after_combat":
+			return _continue_after_combat(state)
 		"declare_round":
 			return CombatRound.declare_round(state, world, command.get("actions", []), engine)
 		"set_member_row":
@@ -769,6 +773,44 @@ static func _disarm_trap(state: Dictionary, world: Dictionary) -> Dictionary:
 	(next["resolvedTraps"] as Array).append(trap.get("id", ""))
 	next["turn"] = int(next.get("turn", 0)) + 1
 	return {"state": next, "events": [{"type": "trap_disarmed", "trapId": trap.get("id", ""), "trapName": trap.get("name", "")}]}
+
+
+# --- combat exits -----------------------------------------------------------------------------------
+# Retreat: the fight is abandoned; every member remembers it (memory.retreats is part of who they are).
+static func _retreat(state: Dictionary) -> Dictionary:
+	if state.get("phase", "") != "combat":
+		return {"state": state, "events": []}
+	var next: Dictionary = state.duplicate(true)
+	next["phase"] = "dungeon"
+	next["combat"] = null
+	var party := []
+	for member in next.get("party", []):
+		var m: Dictionary = member.duplicate(true)
+		var memory: Dictionary = (m.get("memory", {}) as Dictionary).duplicate(true)
+		memory["retreats"] = int(memory.get("retreats", 0)) + 1
+		m["memory"] = memory
+		party.append(m)
+	next["party"] = party
+	next["turn"] = int(next.get("turn", 0)) + 1
+	return {"state": next, "events": [{"type": "party_retreated"}]}
+
+# The victory RESULT screen is a state: until it is dismissed, resolveCommand answers nothing else.
+# Continuing clears it and puts the party back where the fight interrupted them.
+static func _continue_after_combat(state: Dictionary) -> Dictionary:
+	var conclusion: Variant = state.get("combatConclusion", null)
+	if typeof(conclusion) != TYPE_DICTIONARY:
+		return {"state": state, "events": []}
+	var next: Dictionary = state.duplicate(true)
+	next["phase"] = "dungeon"
+	next["combatConclusion"] = null
+	var resume: Variant = conclusion.get("resumePosition", null)
+	if typeof(resume) == TYPE_DICTIONARY:
+		next["position"] = (resume as Dictionary).duplicate(true)
+		next["map"]["currentRoomId"] = resume.get("roomId", null)
+		var cell: Variant = resume.get("cellId", null)
+		next["map"]["currentCellId"] = cell if cell != null else next["map"].get("currentCellId", null)
+		next["map"]["currentFacing"] = resume.get("facing", null)
+	return {"state": next, "events": []}
 
 static func _find_by_id(list: Variant, id: String) -> Dictionary:
 	if typeof(list) == TYPE_ARRAY:

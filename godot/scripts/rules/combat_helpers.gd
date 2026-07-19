@@ -54,3 +54,12 @@ static func character_species_multiplier(character: Dictionary, world: Dictionar
 			if enemy_tags.has(species.get("tag", "")):
 				multiplier = maxf(multiplier, float(species.get("multiplier", 1)))
 	return multiplier
+
+
+# combatMath.getSpellPowerBonus — 術威力: half the caster's wit, floored.
+static func get_spell_power_bonus(character: Dictionary) -> int:
+	return maxi(0, int(floor(float(int((character.get("aptitude", {}) as Dictionary).get("wit", 0))) / 2.0)))
+
+# combatMath.getStatusSpellChance — 付与率: 55 + wit*4 - the target's resistance, clamped 5..95.
+static func get_status_spell_chance(character: Dictionary, resistance: int) -> int:
+	return maxi(5, mini(95, 55 + int((character.get("aptitude", {}) as Dictionary).get("wit", 0)) * 4 - resistance))

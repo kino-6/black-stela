@@ -123,6 +123,47 @@ function combatVsRoute(enemyId: string, count: number, rounds: number) {
   };
 }
 
+// M5: a party that DEFENDS, CASTS, and USES AN ITEM — the three declare_round branches beyond attack —
+// then the fight's exits (retreat / continue). A mender and an arcanist bring heal + firebolt on their
+// default loadouts; the vanguard's 特技 power-strike costs 気力.
+function combatActionsRoute(world: ScenarioWorld): { initial: GameState; commands: Command[] } {
+  const party = [
+    { ...createGuildCharacter({ name: "Rook", classId: "vanguard", seed: "acts" }), row: "front" as const },
+    { ...createGuildCharacter({ name: "Sella", classId: "mender", seed: "acts" }), row: "back" as const },
+    { ...createGuildCharacter({ name: "Mira", classId: "arcanist", seed: "acts" }), row: "back" as const }
+  ];
+  const enemy = world.enemies.find((candidate) => candidate.id === "enemy.b2f.ash-caller") ?? world.enemies[0];
+  const base = { ...createInitialGameState(), party };
+  const initial: GameState = {
+    ...base,
+    phase: "combat",
+    position: { roomId: "room.b1f.001", facing: "east" },
+    map: { ...base.map, floorId: "dungeon.b1f" },
+    inventory: [{ id: "item.healing-draught", name: "Healing Draught", kind: "healing", quantity: 2, healAmount: 6 }],
+    combat: createCombatState("room.b1f.001", enemy, 3)
+  };
+  const group = initial.combat!.enemyGroups[0];
+  const rounds: Command[] = [
+    { type: "declare_round", actions: [
+      { actorId: party[0].id, action: "defend" },
+      { actorId: party[1].id, action: "cast", spellId: "heal", targetCharacterId: party[0].id },
+      { actorId: party[2].id, action: "cast", spellId: "firebolt", targetGroupId: group.id }
+    ] },
+    { type: "declare_round", actions: [
+      { actorId: party[0].id, action: "cast", spellId: "power-strike", targetGroupId: group.id },
+      { actorId: party[1].id, action: "use_item", itemId: "item.healing-draught", targetCharacterId: party[0].id },
+      { actorId: party[2].id, action: "cast", spellId: "sleep", targetGroupId: group.id }
+    ] },
+    { type: "declare_round", actions: [
+      { actorId: party[0].id, action: "attack", targetGroupId: group.id },
+      { actorId: party[1].id, action: "defend" },
+      { actorId: party[2].id, action: "cast", spellId: "firebolt", targetGroupId: group.id }
+    ] },
+    { type: "retreat" }
+  ];
+  return { initial, commands: rounds };
+}
+
 // M2 roster commands: build a town party of four and reshuffle it — set-row, swap-rows, bench→recall,
 // retire→unretire, erase. Exercises every ported roster op (party/reserve/retired moves + events).
 function rosterRoute(): { initial: GameState; commands: Command[] } {
@@ -341,6 +382,7 @@ export const SLICE_ROUTES: TraceRoute[] = [
   { name: "loot", worldId: "default", build: lootRoute },
   { name: "vocation", worldId: "default", build: vocationRoute },
   { name: "b1f-exploration", worldId: "default", build: dungeonRoute },
+  { name: "combat-actions", worldId: "default", build: combatActionsRoute },
   // M4 floor features: a one-shot room TRAP, a Wizardry SPINNER, a TELEPORTER (transit only, no
   // encounter on arrival), and a gate that GRANTS a shortcut flag on entry.
   { name: "b1f-trap", worldId: "default", build: cellFeatureRoute("ready", "room.b1f.c13_4", "south", [{ type: "move_backward" }, { type: "strafe_left" }]) },
