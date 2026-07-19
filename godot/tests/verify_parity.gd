@@ -9,7 +9,7 @@ extends SceneTree
 const StateHash := preload("res://scripts/rules/state_hash.gd")
 const SliceRules := preload("res://scripts/rules/slice_rules.gd")
 
-const PARITY_TRACES := ["b1f-turns", "b1f-wall", "b1f-exploration", "b1f-combat-victory", "b1f-combat-rounds", "b2f-ability", "b3f-poison", "b4f-caster", "verdant-wipe", "roster", "economy", "recovery", "recovery-blocked", "quests", "loot", "vocation", "b1f-trap", "b2f-hazard", "b4f-spinner", "b4f-teleport", "b1f-shortcut", "b1f-stairs", "b1f-return", "b3f-gather", "b3f-disarm", "b2f-chest", "combat-actions"]
+const PARITY_TRACES := ["b1f-turns", "b1f-wall", "b1f-exploration", "b1f-combat-victory", "b1f-combat-rounds", "b2f-ability", "b3f-poison", "b4f-caster", "verdant-wipe", "roster", "economy", "recovery", "recovery-blocked", "quests", "loot", "vocation", "b1f-trap", "b2f-hazard", "b4f-spinner", "b4f-teleport", "b1f-shortcut", "b1f-stairs", "b1f-return", "b3f-gather", "b3f-disarm", "b2f-chest", "combat-actions", "expedition", "growth-items", "escape-resume", "legacy-combat"]
 
 func _load_world(world_id: String) -> Dictionary:
 	var pack: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/worlds/%s.json" % world_id))

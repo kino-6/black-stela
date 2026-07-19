@@ -182,3 +182,89 @@ static func reclass_character(character: Dictionary, new_class_id: String, world
 	result["mp"] = int(releveled.get("maxMp", 0))
 	result["equipment"] = equipment
 	return result
+
+
+## Port of importAdventurer (src/domain/characterCreation.ts): a PORTABLE adventurer from another run
+## joins this scenario, re-derived under the world's import policy. Every clamp the policy applies is
+## reported back as an `adjustment` so the player is told what changed rather than quietly losing it.
+## The caller supplies the id (this build mints ids outside the math).
+static func import_adventurer(portable: Dictionary, world: Dictionary, engine: Dictionary, minted_id: String = "") -> Dictionary:
+	var policy: Dictionary = world.get("importPolicy", {})
+	var build: Dictionary = portable.get("build", {})
+	var progress: Dictionary = portable.get("progress", {})
+	var identity: Dictionary = portable.get("identity", {})
+	var adjustments := []
+
+	var class_id := String(build.get("classId", "vanguard"))
+	var allowed: Variant = policy.get("allowedClasses", null)
+	if typeof(allowed) == TYPE_ARRAY and not (allowed as Array).is_empty() and not (allowed as Array).has(class_id):
+		class_id = String((allowed as Array)[0])
+		adjustments.append("class_remapped")
+
+	var level := maxi(1, int(progress.get("level", 1)))
+	if policy.get("levelCap", null) != null and level > int(policy["levelCap"]):
+		level = maxi(1, int(policy["levelCap"]))
+		adjustments.append("level_capped")
+	# Keep xp consistent with the (possibly capped) level: never above the next level's threshold.
+	var xp := mini(maxi(int(progress.get("xp", 0)), Leveling.xp_for_level(level)), Leveling.xp_for_level(level + 1) - 1)
+
+	var gold := maxi(0, int(progress.get("gold", 0)))
+	if policy.get("goldCap", null) != null and gold > int(policy["goldCap"]):
+		gold = maxi(0, int(policy["goldCap"]))
+		adjustments.append("gold_capped")
+
+	var class_def := _find(engine.get("classes", []), class_id)
+	if class_def.is_empty():
+		return {}
+	var aptitude: Dictionary = build.get("aptitude", {})
+	var stats := _derive_stats(class_def, aptitude)
+	var max_mp := _base_max_mp(class_id, aptitude, engine.get("mpModeByClass", {}))
+
+	var source_memory: Dictionary = progress.get("memory", {})
+	var memory: Dictionary = source_memory.duplicate(true)
+	memory.erase("firstExpeditionTurn")
+	var starting_floor: Variant = policy.get("startingFloorId", null)
+	if starting_floor != null:
+		memory["deepestFloorId"] = starting_floor
+	else:
+		memory.erase("deepestFloorId")
+	if source_memory.get("deepestFloorId", null) != starting_floor or source_memory.get("firstExpeditionTurn", null) != null:
+		adjustments.append("progress_reset")
+
+	var starting := []
+	for entry in class_def.get("equipment", []):
+		if typeof(entry) == TYPE_DICTIONARY and typeof(entry.get("id", null)) == TYPE_STRING:
+			starting.append(entry["id"])
+
+	var base := {
+		"id": minted_id,
+		"name": identity.get("name", ""),
+		"notes": identity.get("notes", ""),
+		"title": identity.get("title", ""),
+		"classId": class_def.get("id", class_id),
+		"roleTags": class_def.get("roleTags", []),
+		"rowPreference": class_def.get("rowPreference", "front"),
+		"backgroundId": build.get("backgroundId", "watch"),
+		"aptitude": aptitude,
+		"traitIds": build.get("traitIds", []),
+		"accentColor": identity.get("accentColor", "#c9a765"),
+		"startingEquipment": starting,
+		"equipment": {},
+		"creation": {"method": "import", "registeredAtTurn": 0},
+		"memory": memory,
+		"row": class_def.get("rowPreference", "front"),
+		"level": level,
+		"hp": int(stats["maxHp"]), "maxHp": int(stats["maxHp"]),
+		"mp": max_mp, "maxMp": max_mp,
+		"attack": int(stats["attack"]), "damageMin": int(stats["damageMin"]), "damageMax": int(stats["damageMax"]),
+		"accuracy": int(stats["accuracy"]), "armor": int(stats["armor"]), "speed": int(stats["speed"]),
+		"xp": xp, "gold": gold, "status": []
+	}
+	for key in ["portraitRef", "visualProfile"]:
+		if identity.get(key, null) != null:
+			base[key] = identity[key]
+
+	var character: Dictionary = Leveling.apply_level_ups(base)["character"]
+	character["hp"] = int(character.get("maxHp", 0))
+	character["mp"] = int(character.get("maxMp", 0))
+	return {"character": character, "adjustments": adjustments}

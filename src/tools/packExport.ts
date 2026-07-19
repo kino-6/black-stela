@@ -34,12 +34,34 @@ export function canonicalize<T>(value: T): T {
   return sorted as unknown as T;
 }
 
+// canonicalize SORTS object keys, but a grid cell's `edges` are read by the rules in their AUTHORED
+// insertion order (getKnownGridDirections / search use Object.keys), and that order is part of game
+// truth — it decides the order of map_exits_known and of secret discovery. Sorting destroyed it, so the
+// Godot port had no way to reproduce it. Record each cell's key order alongside the (sorted) edges.
+// Same class of fix as shipping class equipment as an ordered [slot,id] array.
+function withEdgeOrder(world: ScenarioWorld): ScenarioWorld {
+  const dungeons = world.dungeons.map((dungeon) => {
+    const grid = (dungeon as { grid?: { cells?: { edges?: Record<string, unknown> }[] } }).grid;
+    if (!grid?.cells) {
+      return dungeon;
+    }
+    return {
+      ...dungeon,
+      grid: {
+        ...grid,
+        cells: grid.cells.map((cell) => (cell.edges ? { ...cell, edgeOrder: Object.keys(cell.edges) } : cell))
+      }
+    };
+  });
+  return { ...world, dungeons } as ScenarioWorld;
+}
+
 // The normalized, versioned pack object for one world.
 export function exportWorldPack(worldId: string, world: ScenarioWorld): ExportedWorldPack {
   return {
     schemaVersion: WORLD_PACK_SCHEMA_VERSION,
     worldId,
-    world: canonicalize(world)
+    world: canonicalize(withEdgeOrder(world))
   };
 }
 

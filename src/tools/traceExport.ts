@@ -359,6 +359,71 @@ function cellFeatureRoute(
   };
 }
 
+// The remaining command set: entering the dungeon from town, resuming at a rest point, an escape charm
+// home, and GROWTH items (permanent aptitude/stat raises; a deed grants xp through the level curve).
+function expeditionRoute(world: ScenarioWorld): { initial: GameState; commands: Command[] } {
+  const seeded = createDebugStateFromProgress(world, "ready");
+  const initial: GameState = { ...seeded, phase: "town", position: null };
+  return { initial, commands: [{ type: "enter_dungeon" }, { type: "turn_left" }] };
+}
+
+function growthItemsRoute(world: ScenarioWorld): { initial: GameState; commands: Command[] } {
+  const seeded = createDebugStateFromProgress(world, "ready");
+  const target = seeded.party[0];
+  const initial: GameState = {
+    ...seeded,
+    phase: "town",
+    position: null,
+    inventory: [
+      { id: "item.ashroot-tonic", name: "Ashroot Tonic", kind: "growth", quantity: 1, grants: { maxHp: 6 } },
+      { id: "item.emberwit-ash", name: "Emberwit Ash", kind: "growth", quantity: 1, grants: { wit: 1 } },
+      { id: "item.deed-of-passage", name: "Deed of Passage", kind: "growth", quantity: 1, grants: { xp: 60 } },
+      { id: "item.healing-draught", name: "Healing Draught", kind: "healing", quantity: 1, healAmount: 6 }
+    ]
+  };
+  return {
+    initial,
+    commands: [
+      { type: "use_item", itemId: "item.ashroot-tonic", targetCharacterId: target.id },
+      { type: "use_item", itemId: "item.emberwit-ash", targetCharacterId: target.id },
+      { type: "use_item", itemId: "item.deed-of-passage", targetCharacterId: target.id }, // crosses levels
+      { type: "use_item", itemId: "item.deed-of-passage", targetCharacterId: target.id }  // spent — no-op
+    ]
+  };
+}
+
+// An escape charm from inside the dungeon, and a resume at a rest point already reached.
+function escapeAndResumeRoute(world: ScenarioWorld): { initial: GameState; commands: Command[] } {
+  const seeded = withDebugStartCell(createDebugStateFromProgress(world, "floor_3"), world, "room.b3f.003", "east");
+  const initial: GameState = {
+    ...seeded,
+    inventory: [{ id: "item.return-charm", name: "Return Charm", kind: "escape", quantity: 1 }]
+  };
+  return {
+    initial,
+    commands: [
+      { type: "use_item", itemId: "item.return-charm", targetCharacterId: seeded.party[0].id }, // home
+      { type: "resume_at_checkpoint", roomId: "room.b3f.003" }                                   // back
+    ]
+  };
+}
+
+// The legacy one-button combat verbs (attack / defend). import_member mints an id internally, so it
+// is proven by SAMPLE (export:character-samples + verify_character_creation), not a state-hash trace.
+function legacyCombatRoute(world: ScenarioWorld): { initial: GameState; commands: Command[] } {
+  const hero = { ...createGuildCharacter({ name: "Rook", classId: "vanguard", seed: "legacy" }), row: "front" as const };
+  const enemy = world.enemies.find((candidate) => candidate.id === "enemy.b1f.ash-slime") ?? world.enemies[0];
+  const base = { ...createInitialGameState(), party: [hero] };
+  const initial: GameState = {
+    ...base,
+    phase: "combat",
+    position: { roomId: "room.b1f.001", facing: "east" },
+    map: { ...base.map, floorId: "dungeon.b1f" },
+    combat: createCombatState("room.b1f.001", enemy, 3)
+  };
+  return { initial, commands: [{ type: "defend" }, { type: "attack" }, { type: "defend" }] };
+}
+
 // The slice's golden routes. More can be added as the vertical slice grows.
 export const SLICE_ROUTES: TraceRoute[] = [
   { name: "b1f-turns", worldId: "default", build: turnsRoute },
@@ -383,6 +448,10 @@ export const SLICE_ROUTES: TraceRoute[] = [
   { name: "vocation", worldId: "default", build: vocationRoute },
   { name: "b1f-exploration", worldId: "default", build: dungeonRoute },
   { name: "combat-actions", worldId: "default", build: combatActionsRoute },
+  { name: "expedition", worldId: "default", build: expeditionRoute },
+  { name: "legacy-combat", worldId: "default", build: legacyCombatRoute },
+  { name: "growth-items", worldId: "default", build: growthItemsRoute },
+  { name: "escape-resume", worldId: "default", build: escapeAndResumeRoute },
   // M4 floor features: a one-shot room TRAP, a Wizardry SPINNER, a TELEPORTER (transit only, no
   // encounter on arrival), and a gate that GRANTS a shortcut flag on entry.
   { name: "b1f-trap", worldId: "default", build: cellFeatureRoute("ready", "room.b1f.c13_4", "south", [{ type: "move_backward" }, { type: "strafe_left" }]) },

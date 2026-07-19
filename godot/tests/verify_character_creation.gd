@@ -35,7 +35,33 @@ func _initialize() -> void:
 		else:
 			print("[charcreate] %s (%s) OK" % [input.get("name", "?"), input.get("classId", "?")])
 
-	print("[charcreate] %s (%d/%d)" % ["PASS" if failures == 0 else "FAIL", samples.size() - failures, samples.size()])
+	# importAdventurer samples: a portable adventurer re-derived under the world's import policy. Like
+	# creation this mints an id internally, so it is proven by SAMPLE rather than a state-hash trace.
+	var world: Variant = (JSON.parse_string(FileAccess.get_file_as_string("res://data/worlds/default.json")) as Dictionary).get("world", {})
+	var engine: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/engine-data.json"))
+	var imports: Array = doc.get("imports", [])
+	for sample in imports:
+		var portable: Dictionary = sample.get("portable", {})
+		var expected_character: Dictionary = sample.get("character", {})
+		var want_adjustments: Array = sample.get("adjustments", [])
+		var result := CharacterCreation.import_adventurer(portable, world, engine)
+		if result.is_empty():
+			failures += 1
+			push_error("[charcreate] import %s: build failed" % (portable.get("identity", {}) as Dictionary).get("name", "?"))
+			continue
+		var got_i := _slice(result["character"])
+		var want_i := _slice(expected_character)
+		if StateHash.canonical_json(got_i) != StateHash.canonical_json(want_i):
+			failures += 1
+			push_error("[charcreate] import %s mismatch:\n got=%s\nwant=%s" % [(portable.get("identity", {}) as Dictionary).get("name", "?"), StateHash.canonical_json(got_i), StateHash.canonical_json(want_i)])
+		elif StateHash.canonical_json(result["adjustments"]) != StateHash.canonical_json(want_adjustments):
+			failures += 1
+			push_error("[charcreate] import %s adjustments %s != %s (the player must be told what the policy clamped)" % [(portable.get("identity", {}) as Dictionary).get("name", "?"), result["adjustments"], want_adjustments])
+		else:
+			print("[charcreate] import %s OK (adjustments %s)" % [(portable.get("identity", {}) as Dictionary).get("name", "?"), result["adjustments"]])
+
+	var total: int = samples.size() + imports.size()
+	print("[charcreate] %s (%d/%d)" % ["PASS" if failures == 0 else "FAIL", total - failures, total])
 	quit(failures)
 
 func _slice(character: Dictionary) -> Dictionary:

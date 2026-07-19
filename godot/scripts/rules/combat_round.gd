@@ -234,6 +234,13 @@ static func declare_round(state: Dictionary, world: Dictionary, actions: Array, 
 	cont_events.append_array(injured_events)
 	return {"state": cont, "events": cont_events}
 
+## DEBUG ONLY — never surfaced in normal play (AGENTS.md); ported so the command set is complete.
+## Resolves the current fight as an immediate win through the SAME victory path a real one takes.
+static func debug_force_victory(state: Dictionary, world: Dictionary, engine: Dictionary) -> Dictionary:
+	if state.get("phase", "") != "combat" or typeof(state.get("combat", null)) != TYPE_DICTIONARY:
+		return {"state": state, "events": []}
+	return _victory(state, world, state["combat"], (state.get("party", []) as Array).duplicate(true), (state.get("inventory", []) as Array).duplicate(true), engine)
+
 # --- victory + rewards ------------------------------------------------------------------------------
 
 static func _victory(state: Dictionary, world: Dictionary, combat: Dictionary, party: Array, inventory: Array, engine: Dictionary) -> Dictionary:
