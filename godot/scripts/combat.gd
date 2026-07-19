@@ -1,58 +1,129 @@
 extends Control
-## S4 vertical-slice COMBAT stage, built procedurally so the layout is one readable place. Demonstrates
-## the composition the React version fought over (IMP-024): a full-frame enemy stage on top, a compact
-## 3+3 formation band, and a command window overlay — controller-first, no pointer. Uses the real
-## delivered art (res://assets). Data would come from the ported rules; here it is the slice's known
-## b1f fight (Rook the vanguard vs. the Ash Slime).
+## S4b vertical-slice COMBAT — now DRIVEN BY THE PORTED RULES, not a static mock. The scene loads the
+## b1f-combat-victory fixture (Rook the vanguard vs. the Ash Slime — the parity-proven one-round route),
+## renders the stage from that live state, and on the player's command runs the SAME GDScript combat
+## rules that pass verify_parity (`CombatRound.declare_round`). The rules own game truth (the returned
+## state hashes identically to the TS oracle); THIS UI owns presentation — it rebuilds the beat feel
+## (damage numbers, condition bar, log) from the resolved-state delta, exactly the split the parity
+## harness assumes ("beats are presentation the target UI rebuilds"). Controller-first, no pointer.
+##
+## Scope note: this route wins in round 1, before any enemy turn — which is all that is ported so far
+## (enemy turn / multi-round / room-entry encounters are the next port). The fixture is chosen to stay
+## strictly inside proven-ported territory.
+
+const CombatRound := preload("res://scripts/rules/combat_round.gd")
+const Encounter := preload("res://scripts/encounter.gd")
 
 const BG := Color("0b0d09")
-const PANEL := Color("14171055", 0.0) # unused; panels styled inline
 const GOLD := Color("c9a765")
 const INK := Color("e6e2d4")
+const HURT := Color("d98a5a")
+const OK := Color("9db06a")
 
-const FRONT := [
-	{"name": "Rook", "cls": "vanguard", "hp": 22, "max": 22, "row": "front"},
-	{"name": "Sella", "cls": "mender", "hp": 10, "max": 10, "row": "front"},
-	{"name": "Vex", "cls": "arcanist", "hp": 9, "max": 9, "row": "back"},
-]
+var _state: Dictionary = {}
+var _world: Dictionary = {}
+var _engine: Dictionary = {}
+
+# Live UI handles updated during playback.
+var _enemy_cond: ProgressBar
+var _enemy_name: Label
+var _damage_layer: Control
+var _log_label: Label
+var _cmd_panel: PanelContainer
+var _party_slots: Dictionary = {}   # member id -> { "bar": ProgressBar, "label": Label }
+var _enemy_stage_rect: Rect2 = Rect2()
+var _busy: bool = false
+var _resolved: bool = false
+var _run: Node = null   # the shared-state autoload when in continuous play; null under capture
+var _world_id: String = "default"
 
 func _ready() -> void:
 	# Wait one frame so full-rect layout has run and `size` is the real 1920x1080 viewport.
 	await get_tree().process_frame
+	_load_data()
 	_build()
 
+# --- data (read directly, so the scene also renders under the headless capture SceneTree where the
+#     autoloads are not started; mirrors verify_parity's loader) ------------------------------------
+func _load_data() -> void:
+	_run = get_node_or_null("/root/Run")
+	if _run:
+		_run.ensure_loaded()
+		_world_id = _run.world_id
+		_world = _run.world
+		_engine = _run.engine
+		_state = _run.state
+		# Launched into combat without a live fight (or straight to combat.tscn) — synthesize the slice
+		# encounter so the party the dungeon carried in has something to fight.
+		if typeof(_state.get("combat", null)) != TYPE_DICTIONARY:
+			Encounter.begin(_state, _world, _party_room_id(), Encounter.first_enemy_id(_world_id))
+	else:
+		# Capture fallback: the 6-member exploration party + the injected slice encounter, no autoload.
+		_world = _read_json("res://data/worlds/default.json").get("world", {})
+		_engine = _read_json("res://data/engine-data.json")
+		_state = (_read_json("res://data/traces/b1f-exploration.json").get("initialState", {}) as Dictionary).duplicate(true)
+		Encounter.begin(_state, _world, _party_room_id(), Encounter.first_enemy_id(_world_id))
+
+func _party_room_id() -> String:
+	var pos: Variant = _state.get("position", null)
+	return pos.get("roomId", "room.b1f.002") if typeof(pos) == TYPE_DICTIONARY else "room.b1f.002"
+
+func _read_json(path: String) -> Dictionary:
+	if not FileAccess.file_exists(path):
+		push_error("[combat] missing data file: %s" % path)
+		return {}
+	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(path))
+	return parsed if typeof(parsed) == TYPE_DICTIONARY else {}
+
+# --- build ----------------------------------------------------------------------------------------
 func _build() -> void:
 	var bg := ColorRect.new()
 	bg.color = BG
 	bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(bg)
 
+	var combat: Dictionary = _state.get("combat", {})
+	var groups: Array = combat.get("enemyGroups", [])
+	var group: Dictionary = groups[0] if groups.size() > 0 else {}
+
 	# --- Enemy stage (owns the upper frame) ---
-	var enemy_name := _label("灰泥  ·  Ash Slime", 34, GOLD)
-	enemy_name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	enemy_name.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE)
-	enemy_name.offset_top = 40
-	add_child(enemy_name)
+	_enemy_name = _label("%s  ·  %s" % [_enemy_ja(group), group.get("name", "Enemy")], 34, GOLD)
+	_enemy_name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_enemy_name.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE)
+	_enemy_name.offset_top = 40
+	add_child(_enemy_name)
 
-	var cond := ProgressBar.new()
-	cond.max_value = 4
-	cond.value = 4
-	cond.show_percentage = false
-	cond.custom_minimum_size = Vector2(280, 10)
-	cond.position = Vector2(size.x / 2 - 140, 92)
-	cond.add_theme_color_override("font_color", INK)
-	add_child(cond)
+	_enemy_cond = ProgressBar.new()
+	_enemy_cond.max_value = maxf(1.0, float(_group_max_hp(group)))
+	_enemy_cond.value = float(_group_hp(group))
+	_enemy_cond.show_percentage = false
+	_enemy_cond.custom_minimum_size = Vector2(280, 10)
+	_enemy_cond.position = Vector2(size.x / 2 - 140, 92)
+	add_child(_enemy_cond)
 
+	_enemy_stage_rect = Rect2(size.x / 2 - 230, 150, 460, 460)
 	var slime := TextureRect.new()
-	slime.texture = _texture("res://assets/enemies/ash-slime.png")
+	slime.texture = _texture(_asset("enemies/%s.png" % _short_id(group.get("enemyId", ""))))
 	slime.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	slime.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	slime.custom_minimum_size = Vector2(460, 460)
-	slime.size = Vector2(460, 460)
-	slime.position = Vector2(size.x / 2 - 230, 150)
+	slime.position = _enemy_stage_rect.position
+	slime.size = _enemy_stage_rect.size
 	add_child(slime)
 
-	# --- 3+3 formation band ---
+	# A layer above the stage for floating damage / defeat flourishes.
+	_damage_layer = Control.new()
+	_damage_layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_damage_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_damage_layer)
+
+	# --- Log ticker (one line, above the formation band) ---
+	_log_label = _label("%s がこちらを見ている。" % _enemy_ja(group), 18, INK)
+	_log_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_log_label.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE)
+	_log_label.offset_top = 578
+	add_child(_log_label)
+
+	# --- 3+3 formation band (rendered from the live party) ---
 	var strip := PanelContainer.new()
 	strip.position = Vector2(0, 620)
 	strip.custom_minimum_size = Vector2(size.x, 170)
@@ -61,43 +132,218 @@ func _build() -> void:
 	var strip_box := VBoxContainer.new()
 	strip.add_child(strip_box)
 	strip_box.add_child(_row_label("前衛  FRONT"))
-	strip_box.add_child(_party_row(["front"]))
+	strip_box.add_child(_party_row("front"))
 	strip_box.add_child(_row_label("後衛  BACK"))
-	strip_box.add_child(_party_row(["back"]))
+	strip_box.add_child(_party_row("back"))
 
 	# --- Command window overlay (controller-first) ---
-	var cmd := PanelContainer.new()
-	cmd.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
-	cmd.offset_top = -240
-	cmd.offset_left = size.x - 520
-	cmd.offset_right = -40
-	cmd.offset_bottom = -40
-	cmd.add_theme_stylebox_override("panel", _panel_style(Color("1b1e14f2"), GOLD))
-	add_child(cmd)
+	_cmd_panel = PanelContainer.new()
+	_cmd_panel.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
+	_cmd_panel.offset_top = -260
+	_cmd_panel.offset_left = size.x - 520
+	_cmd_panel.offset_right = -40
+	_cmd_panel.offset_bottom = -40
+	_cmd_panel.add_theme_stylebox_override("panel", _panel_style(Color("1b1e14f2"), GOLD))
+	add_child(_cmd_panel)
 	var cmd_box := VBoxContainer.new()
 	cmd_box.add_theme_constant_override("separation", 8)
-	cmd.add_child(cmd_box)
-	cmd_box.add_child(_label("Rook の行動", 22, GOLD))
-	var first: Button = null
-	for entry in [["攻撃", "Attack"], ["防御", "Defend"], ["特技", "Skill"], ["道具", "Item"]]:
-		var b := _command_button("%s   %s" % [entry[0], entry[1]])
-		cmd_box.add_child(b)
-		if first == null:
-			first = b
-	if first:
-		first.grab_focus()
+	_cmd_panel.add_child(cmd_box)
+	cmd_box.add_child(_label("パーティの行動", 22, GOLD))
 
-func _party_row(rows: Array) -> HBoxContainer:
+	var attack := _command_button("攻撃   全員でかかる")
+	attack.pressed.connect(_on_attack_pressed)
+	cmd_box.add_child(attack)
+	for pair in [["防御", "Defend"], ["特技", "Skill"], ["道具", "Item"]]:
+		var b := _command_button("%s   %s" % [pair[0], pair[1]])
+		b.disabled = true  # out of this slice's route (enemy turn / MP not ported yet)
+		cmd_box.add_child(b)
+	cmd_box.add_child(_label("F  全員でかかる / All-out", 14, OK))
+	attack.grab_focus()
+
+# F = 全員でかかる / All-out (matches the React All-out key). "confirm" needs no handling here — a
+# focused Button fires its own `pressed` on ui_accept.
+func _unhandled_input(event: InputEvent) -> void:
+	if _busy or _resolved:
+		return
+	if event.is_action_pressed("auto"):
+		_on_attack_pressed()
+
+func _on_attack_pressed() -> void:
+	if _busy or _resolved:
+		return
+	_resolve_round(true)
+
+# --- the round: ONE call into the ported rules, then presentation rebuilt from the state delta -----
+func _resolve_round(animated: bool) -> void:
+	_busy = true
+	if _cmd_panel:
+		_cmd_panel.hide()
+
+	var before := _enemy_snapshot()
+	var actions := _all_out_actions()
+	if actions.is_empty():
+		_busy = false
+		return
+
+	var result := CombatRound.declare_round(_state, _world, actions, _engine)
+	var events: Array = result.get("events", [])
+	_state = result.get("state", _state)
+	if _run:
+		_run.state = _state   # persist the resolved state back to the shared run
+
+	await _playback(before, events, animated)
+	_busy = false
+
+# Build one attack per living member at the first living enemy group (the slice's all-out round).
+func _all_out_actions() -> Array:
+	var group_id := _first_living_group_id()
+	if group_id == "":
+		return []
+	var actions := []
+	for member in _state.get("party", []):
+		if int(member.get("hp", 0)) > 0:
+			actions.append({
+				"action": "attack",
+				"actorId": member.get("id", ""),
+				"targetGroupId": group_id,
+			})
+	return actions
+
+# Rebuild the beat feel from before/after: HP removed per group, defeats, then the rewards event.
+func _playback(before: Dictionary, events: Array, animated: bool) -> void:
+	var group := _first_group()
+	var enemy_name: String = before.get("name", "Enemy")
+	var removed := int(before.get("hp", 0)) - _group_hp(group)
+	var remaining := _group_hp(group)
+
+	if animated:
+		_spawn_damage_number(removed)
+
+	_enemy_cond.value = float(remaining)
+	_set_log("%s が %s に %d ダメージ。" % [_acting_name(), enemy_name, maxi(removed, 0)])
+	if animated:
+		await get_tree().create_timer(0.55).timeout
+
+	if remaining <= 0:
+		_enemy_name.modulate = Color(1, 1, 1, 0.35)
+		_set_log("%s を撃破！" % enemy_name)
+		if animated:
+			_spawn_defeat_flourish()
+			await get_tree().create_timer(0.5).timeout
+
+	var rewards := _find_event(events, "combat_rewards")
+	var wiped := _find_event(events, "party_wiped")
+
+	# The enemy turn already ran inside declare_round; reflect its damage on the party strip. If the
+	# fight goes on, call it out so the counter-attack reads.
+	if rewards.is_empty() and not _party_all_full():
+		if animated:
+			_set_log("敵の反撃！")
+			await get_tree().create_timer(0.4).timeout
+	for member in _state.get("party", []):
+		_refresh_member(member)
+
+	if not rewards.is_empty():
+		_show_victory(rewards)
+	elif not wiped.is_empty():
+		_show_wipe(wiped)
+	else:
+		# Round survived on both sides — hand the command back for the next round.
+		_enemy_cond.value = float(_group_hp(_first_group()))
+		if _cmd_panel:
+			_cmd_panel.show()
+			var b := _first_command_button()
+			if b:
+				b.grab_focus()
+
+func _party_all_full() -> bool:
+	for member in _state.get("party", []):
+		if int(member.get("hp", 0)) < int(member.get("maxHp", 0)):
+			return false
+	return true
+
+func _first_command_button() -> Button:
+	if _cmd_panel == null:
+		return null
+	for box in _cmd_panel.get_children():
+		for child in box.get_children():
+			if child is Button and not (child as Button).disabled:
+				return child
+	return null
+
+# --- defeat / wipe (controller-first) -------------------------------------------------------------
+func _show_wipe(wiped: Dictionary) -> void:
+	# The rules already set phase=town + docked the rescue fee on _state (persisted to the run); just show it.
+	_resolved = true
+	var panel := PanelContainer.new()
+	panel.custom_minimum_size = Vector2(560, 240)
+	panel.size = Vector2(560, 240)
+	panel.position = Vector2(size.x / 2 - 280, size.y / 2 - 120)
+	panel.add_theme_stylebox_override("panel", _panel_style(Color("1a1010f7"), HURT))
+	add_child(panel)
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 12)
+	panel.add_child(box)
+	box.add_child(_centered(_label("全滅した…", 32, HURT)))
+	box.add_child(_centered(_label("拠点へ運ばれた。救助料 %d G を失った。" % int(wiped.get("rescueFee", 0)), 18, INK)))
+	var cont := _command_button("拠点へ戻る  ▶")
+	cont.custom_minimum_size = Vector2(280, 44)
+	cont.alignment = HORIZONTAL_ALIGNMENT_CENTER
+	cont.pressed.connect(_on_wipe_continue)
+	box.add_child(_centered(cont))
+	cont.grab_focus()
+
+func _on_wipe_continue() -> void:
+	get_tree().change_scene_to_file("res://scenes/town.tscn")
+
+# --- victory overlay (controller-first) -----------------------------------------------------------
+func _show_victory(rewards: Dictionary) -> void:
+	_resolved = true
+	if _run:
+		_run.last_rewards = rewards
+	var panel := PanelContainer.new()
+	panel.custom_minimum_size = Vector2(560, 260)
+	panel.size = Vector2(560, 260)
+	panel.position = Vector2(size.x / 2 - 280, size.y / 2 - 130)
+	panel.add_theme_stylebox_override("panel", _panel_style(Color("14180ff7"), GOLD))
+	add_child(panel)
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 12)
+	box.alignment = BoxContainer.ALIGNMENT_CENTER
+	panel.add_child(box)
+	box.add_child(_centered(_label("戦闘に勝利した", 32, GOLD)))
+	var names: Array = rewards.get("enemyNames", [])
+	box.add_child(_centered(_label("撃破: %s" % ", ".join(_stringify(names)), 18, INK)))
+	box.add_child(_centered(_label("獲得 経験値 %d ・ %d G" % [int(rewards.get("xp", 0)), int(rewards.get("gold", 0))], 22, OK)))
+	var cont := _command_button("続ける  ▶")
+	cont.custom_minimum_size = Vector2(240, 44)
+	cont.alignment = HORIZONTAL_ALIGNMENT_CENTER
+	cont.pressed.connect(_on_continue)
+	box.add_child(_centered(cont))
+	cont.grab_focus()
+
+func _on_continue() -> void:
+	if _run:
+		_run.return_to_town()
+	get_tree().change_scene_to_file("res://scenes/result.tscn")
+
+# Public entry for the headless capture harness: resolve the round instantly (no timers), so a
+# screenshot taken a few frames later shows the victory state. Keeps the rules path identical.
+func force_resolve() -> void:
+	if _busy or _resolved:
+		return
+	_resolve_round(false)
+
+# --- party rendering ------------------------------------------------------------------------------
+func _party_row(row: String) -> HBoxContainer:
 	var box := HBoxContainer.new()
 	box.add_theme_constant_override("separation", 12)
-	for member in FRONT:
-		if not rows.has(member["row"]):
-			continue
-		box.add_child(_party_slot(member))
-	# pad to three slots so 3+3 reads as a formation grid
+	for member in _state.get("party", []):
+		if member.get("row", "front") == row:
+			box.add_child(_party_slot(member))
 	while box.get_child_count() < 3:
 		var pad := Control.new()
-		pad.custom_minimum_size = Vector2(150, 64)
+		pad.custom_minimum_size = Vector2(196, 68)
 		box.add_child(pad)
 	return box
 
@@ -110,14 +356,12 @@ func _party_slot(member: Dictionary) -> Control:
 	var h := HBoxContainer.new()
 	h.add_theme_constant_override("separation", 8)
 	slot.add_child(h)
-	# A fixed portrait box that crops the full-body sprite to a bust (EXPAND_IGNORE_SIZE lets the
-	# container size it; COVERED fills+crops; clip keeps it inside).
 	var frame := Control.new()
 	frame.custom_minimum_size = Vector2(52, 60)
 	frame.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	frame.clip_contents = true
 	var portrait := TextureRect.new()
-	portrait.texture = _texture("res://assets/characters/adventurer-%s-base.png" % member["cls"])
+	portrait.texture = _texture("res://assets/characters/adventurer-%s-base.png" % _portrait_class(member))
 	portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 	portrait.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -125,15 +369,119 @@ func _party_slot(member: Dictionary) -> Control:
 	h.add_child(frame)
 	var v := VBoxContainer.new()
 	h.add_child(v)
-	v.add_child(_label(member["name"], 18, INK))
+	v.add_child(_label(member.get("name", "?"), 18, INK))
 	var hp := ProgressBar.new()
-	hp.max_value = member["max"]
-	hp.value = member["hp"]
+	hp.max_value = maxf(1.0, float(member.get("maxHp", 1)))
+	hp.value = float(member.get("hp", 0))
 	hp.show_percentage = false
 	hp.custom_minimum_size = Vector2(84, 8)
 	v.add_child(hp)
-	v.add_child(_label("HP %d/%d" % [member["hp"], member["max"]], 13, Color("9db06a")))
+	var hp_label := _label(_hp_text(member), 13, OK)
+	v.add_child(hp_label)
+	_party_slots[member.get("id", "")] = {"bar": hp, "label": hp_label}
 	return slot
+
+func _refresh_member(member: Dictionary) -> void:
+	var refs: Variant = _party_slots.get(member.get("id", ""), null)
+	if typeof(refs) != TYPE_DICTIONARY:
+		return
+	(refs["bar"] as ProgressBar).value = float(member.get("hp", 0))
+	(refs["label"] as Label).text = _hp_text(member)
+
+# --- floating presentation ------------------------------------------------------------------------
+func _spawn_damage_number(amount: int) -> void:
+	if amount <= 0:
+		return
+	var dmg := _label(str(amount), 56, HURT)
+	dmg.position = _enemy_stage_rect.position + Vector2(_enemy_stage_rect.size.x / 2 - 20, 120)
+	_damage_layer.add_child(dmg)
+	var tw := create_tween()
+	tw.set_parallel(true)
+	tw.tween_property(dmg, "position:y", dmg.position.y - 80, 0.6)
+	tw.tween_property(dmg, "modulate:a", 0.0, 0.6).set_delay(0.2)
+	tw.chain().tween_callback(dmg.queue_free)
+
+func _spawn_defeat_flourish() -> void:
+	var mark := _label("撃破", 44, GOLD)
+	mark.position = _enemy_stage_rect.position + Vector2(_enemy_stage_rect.size.x / 2 - 44, 200)
+	_damage_layer.add_child(mark)
+	var tw := create_tween()
+	tw.tween_property(mark, "modulate:a", 0.0, 0.9).set_delay(0.4)
+	tw.tween_callback(mark.queue_free)
+
+# --- enemy snapshot / lookup helpers --------------------------------------------------------------
+func _enemy_snapshot() -> Dictionary:
+	var g := _first_group()
+	return {"hp": _group_hp(g), "name": _short_name(g)}
+
+# combat is cleared to null on victory — read it null-safe everywhere.
+func _combat() -> Dictionary:
+	var c: Variant = _state.get("combat", null)
+	return c if typeof(c) == TYPE_DICTIONARY else {}
+
+func _first_group() -> Dictionary:
+	var groups: Array = _combat().get("enemyGroups", [])
+	return groups[0] if groups.size() > 0 else {}
+
+func _first_living_group_id() -> String:
+	for g in _combat().get("enemyGroups", []):
+		if int(g.get("count", 0)) > 0:
+			return g.get("id", "")
+	return ""
+
+func _group_hp(group: Dictionary) -> int:
+	return int(group.get("count", 0)) * int(group.get("hpEach", 0))
+
+func _group_max_hp(group: Dictionary) -> int:
+	return int(group.get("initialCount", group.get("count", 0))) * int(group.get("maxHpEach", group.get("hpEach", 1)))
+
+func _enemy_ja(group: Dictionary) -> String:
+	var locales: Dictionary = group.get("locales", {})
+	var ja: Dictionary = locales.get("ja", {}) if typeof(locales) == TYPE_DICTIONARY else {}
+	return ja.get("name", "灰泥")
+
+func _short_name(group: Dictionary) -> String:
+	return group.get("name", "Enemy")
+
+func _find_event(events: Array, type_name: String) -> Dictionary:
+	for e in events:
+		if typeof(e) == TYPE_DICTIONARY and e.get("type", "") == type_name:
+			return e
+	return {}
+
+func _acting_name() -> String:
+	for member in _state.get("party", []):
+		if int(member.get("hp", 0)) > 0:
+			return member.get("name", "?")
+	return "?"
+
+func _portrait_class(member: Dictionary) -> String:
+	var cls: String = member.get("classId", "vanguard")
+	# The slice ships three base portraits; map anything else to the nearest archetype.
+	if cls in ["vanguard", "mender", "arcanist"]:
+		return cls
+	if cls in ["occultist", "sage", "cleric"]:
+		return "arcanist"
+	return "vanguard"
+
+func _hp_text(member: Dictionary) -> String:
+	return "HP %d/%d" % [int(member.get("hp", 0)), int(member.get("maxHp", 0))]
+
+func _short_id(full_id: String) -> String:
+	var parts := full_id.split(".")
+	return parts[parts.size() - 1] if parts.size() > 0 else full_id
+
+func _stringify(arr: Array) -> Array:
+	var out := []
+	for v in arr:
+		out.append(str(v))
+	return out
+
+# --- widget factories -----------------------------------------------------------------------------
+func _centered(control: Control) -> Control:
+	var c := CenterContainer.new()
+	c.add_child(control)
+	return c
 
 func _command_button(text: String) -> Button:
 	var b := Button.new()
@@ -143,7 +491,9 @@ func _command_button(text: String) -> Button:
 	b.add_theme_font_size_override("font_size", 22)
 	return b
 
-# Load an image at runtime (no editor .import needed) — the art is copied in from content/ at build.
+func _asset(sub: String) -> String:
+	return _run.asset_path(sub) if _run else "res://assets/worlds/%s/%s" % [_world_id, sub]
+
 func _texture(path: String) -> Texture2D:
 	var img := Image.load_from_file(path)
 	if img == null:
@@ -159,6 +509,10 @@ func _label(text: String, sz: int, col: Color) -> Label:
 
 func _row_label(text: String) -> Label:
 	return _label(text, 14, GOLD)
+
+func _set_log(text: String) -> void:
+	if _log_label:
+		_log_label.text = text
 
 func _panel_style(bg: Color, border: Color = Color(0, 0, 0, 0)) -> StyleBoxFlat:
 	var s := StyleBoxFlat.new()

@@ -140,8 +140,86 @@ static func _move_forward(state: Dictionary, world: Dictionary) -> Dictionary:
 			{"type": "map_exit_blocked", "floorId": floor_id, "roomId": room_id, "direction": move_dir}
 		]}
 
-	push_error("[slice_rules] move_forward room entry + encounter not yet ported")
-	return {"state": state, "events": []}
+	# ROOM ENTRY (ported): move into `exit`, update position + the automap via visitRoom, +1 turn, and
+	# fire the room's AUTHORED encounter if the party can still fight. Faithful to moveForward's core;
+	# treasure / trap / room-event / cell-effects (spinner/teleport) and the wandering-RNG encounter
+	# branch are the Phase-3 remainder (the slice's b1f entry path steps into plain corridors + the
+	# authored room.002 ash-slime, so none of the deferred branches change its outcome).
+	var target_room_id: String = exit
+	var facing: String = state["position"]["facing"]
+	var target_cell: Variant = _grid_cell(world, target_room_id)
+	var visit := _visit_room(state, world, target_room_id, facing)
+
+	var next: Dictionary = state.duplicate(true)
+	next["position"]["roomId"] = target_room_id
+	next["position"]["cellId"] = target_cell.get("id", null) if typeof(target_cell) == TYPE_DICTIONARY else null
+	next["map"] = visit["map"]
+	next["stepsSinceEncounter"] = int(next.get("stepsSinceEncounter", 0)) + 1
+	next["turn"] = int(next["turn"]) + 1
+
+	var target_room: Variant = _room(world, target_room_id)
+	var room_name: String = target_room.get("name", target_room_id) if typeof(target_room) == TYPE_DICTIONARY else target_room_id
+	var events: Array = [{"type": "room_entered", "roomId": target_room_id, "roomName": room_name}]
+	events.append_array(visit["events"])
+
+	var enc_enemy_id: String = Encounter.room_encounter_enemy_id(target_room) if typeof(target_room) == TYPE_DICTIONARY else ""
+	if enc_enemy_id != "" and _party_can_fight(next):
+		Encounter.begin(next, world, target_room_id, enc_enemy_id)
+		next["stepsSinceEncounter"] = 0
+		events.append({"type": "encounter_started", "roomId": target_room_id, "enemyId": enc_enemy_id})
+
+	return {"state": next, "events": events}
+
+const Encounter := preload("res://scripts/encounter.gd")
+
+# Port of visitRoom: append the room/cell to the automap, record known exits, set current + facing.
+static func _visit_room(state: Dictionary, world: Dictionary, room_id: String, facing: String) -> Dictionary:
+	var cell: Variant = _grid_cell(world, room_id)
+	var map: Dictionary = (state.get("map", {}) as Dictionary).duplicate(true)
+	var floor_id: Variant = map.get("floorId", world.get("startDungeon", null))
+	var exits := _known_grid_directions(world, room_id)
+
+	map["floorId"] = floor_id
+	map["currentRoomId"] = room_id
+	map["currentCellId"] = cell.get("id", null) if typeof(cell) == TYPE_DICTIONARY else null
+	map["currentFacing"] = facing
+	map["visitedRooms"] = _append_unique(map.get("visitedRooms", []), room_id)
+	if typeof(cell) == TYPE_DICTIONARY:
+		map["visitedCells"] = _append_unique(map.get("visitedCells", []), cell["id"])
+	var known: Dictionary = (map.get("knownExits", {}) as Dictionary).duplicate(true)
+	known[room_id] = exits
+	map["knownExits"] = known
+
+	return {"map": map, "events": [
+		{"type": "map_room_visited", "floorId": floor_id, "roomId": room_id},
+		{"type": "map_exits_known", "floorId": floor_id, "roomId": room_id, "exits": exits},
+	]}
+
+# Port of getKnownGridDirections: the room's non-wall edge directions (else its room.exits keys).
+static func _known_grid_directions(world: Dictionary, room_id: String) -> Array:
+	var cell: Variant = _grid_cell(world, room_id)
+	if typeof(cell) != TYPE_DICTIONARY:
+		var room: Variant = _room(world, room_id)
+		return (room.get("exits", {}) as Dictionary).keys() if typeof(room) == TYPE_DICTIONARY else []
+	var out := []
+	var edges: Dictionary = cell.get("edges", {})
+	for dir in edges:
+		var edge: Variant = edges[dir]
+		if typeof(edge) == TYPE_DICTIONARY and edge.get("kind", "") != "wall":
+			out.append(dir)
+	return out
+
+static func _append_unique(items: Array, item: Variant) -> Array:
+	var out: Array = items.duplicate()
+	if not out.has(item):
+		out.append(item)
+	return out
+
+static func _party_can_fight(state: Dictionary) -> bool:
+	for member in state.get("party", []):
+		if int(member.get("hp", 0)) > 0 and member.get("injury", null) == null:
+			return true
+	return false
 
 static func _grid_edge(world: Dictionary, room_id: String, direction: String) -> Variant:
 	var cell: Variant = _grid_cell(world, room_id)
