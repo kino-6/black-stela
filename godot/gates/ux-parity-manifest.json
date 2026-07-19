@@ -1,0 +1,159 @@
+{
+  "$comment": [
+    "THE UX-PARITY GATE CONTRACT. A Godot screen that replaces a React screen must show the SAME",
+    "INFORMATION IN THE SAME WORDS (migration decision: option A — faithful reproduction).",
+    "",
+    "Each entry names the React panel being replaced and lists the i18n keys that panel RENDERS.",
+    "The gate resolves each key against godot/data/i18n-ja.json (the same ja.ts React reads), then",
+    "asserts the text actually appears in the built Godot screen. Interpolated keys ({gold}) are",
+    "matched on their literal segments.",
+    "",
+    "requiredKeys were derived by reading each React panel's t(\"...\") call sites — they are not a",
+    "wish list, they are what the shipped React screen puts on screen.",
+    "",
+    "`evidence` is the comparison screenshot the milestone cannot be declared done without.",
+    "",
+    "AGENTS.md is the authority this encodes: 'Do not call town services done if they are just",
+    "lists. Shops must show who can use equipment and what changes. Recovery must show cost,",
+    "wounds, before/after, and insufficient-funds states.'"
+  ],
+  "screens": [
+    {
+      "id": "town-infirmary",
+      "milestone": "M3",
+      "reactPanel": "src/components/RecoveryPanel.tsx",
+      "scene": "res://scenes/town.tscn",
+      "service": "infirmary",
+      "evidence": "tests/_ux_town-infirmary.png",
+      "requiredKeys": [
+        "town.recoveryHeading",
+        "town.gold",
+        "town.recoveryCost",
+        "town.afterRecovery",
+        "town.recoverParty",
+        "town.serviceCancel"
+      ],
+      "notes": "Per-wounded row must show hp/maxHp -> maxHp (before/after) and that member's cost; healthy members are NOT listed. town.cannotAffordRecovery must appear when the purse is short."
+    },
+    {
+      "id": "town-market",
+      "milestone": "M3",
+      "reactPanel": "src/components/ShopPanel.tsx",
+      "scene": "res://scenes/town.tscn",
+      "service": "market",
+      "evidence": "tests/_ux_town-market.png",
+      "requiredKeys": [
+        "town.shopStock",
+        "town.price",
+        "town.buy",
+        "town.sell",
+        "town.equip",
+        "town.inventory",
+        "town.selectedAdventurer",
+        "town.canEquip",
+        "town.equipmentSummary",
+        "town.remainingGold"
+      ],
+      "notes": "AGENTS.md: a shop MUST show who can use the equipment (town.canEquip/cannotEquip against the selected adventurer) and what changes (town.equipmentSummary stat deltas). A name+price list is a gate failure."
+    },
+    {
+      "id": "town-loot",
+      "milestone": "M3",
+      "reactPanel": "src/components/LootPanel.tsx",
+      "scene": "res://scenes/town.tscn",
+      "service": "loot",
+      "evidence": "tests/_ux_town-loot.png",
+      "requiredKeys": [
+        "loot.title",
+        "loot.intro",
+        "loot.appraiseCost",
+        "loot.unidentified",
+        "loot.lock",
+        "loot.favorite",
+        "loot.bulkHeading",
+        "loot.dismantleAll",
+        "loot.sellAll",
+        "loot.confirm",
+        "loot.cancel",
+        "loot.compareFor",
+        "loot.equipOn"
+      ],
+      "notes": "Appraisal is PAID (loot.appraiseCost badge, loot.appraiseCantAfford when broke). Bulk convert has a CONFIRM/CANCEL stage (loot.confirmDismantle/confirmSell). An appraised piece shows a fit comparison vs the selected member and an equip-on-them action."
+    },
+    {
+      "id": "town-workshop",
+      "milestone": "M3",
+      "reactPanel": "src/components/WorkshopPanel.tsx",
+      "scene": "res://scenes/town.tscn",
+      "service": "workshop",
+      "evidence": "tests/_ux_town-workshop.png",
+      "requiredKeys": [
+        "workshop.title",
+        "workshop.intro",
+        "workshop.member",
+        "workshop.materials",
+        "workshop.reinforce",
+        "workshop.boosts"
+      ],
+      "notes": "Must name the stat each reinforce boosts (workshop.boosts), the materials cost, and the at-cap / cant-afford states (workshop.atCap, workshop.cantAfford)."
+    },
+    {
+      "id": "town-quests",
+      "milestone": "M3",
+      "reactPanel": "src/components/QuestBoardPanel.tsx",
+      "scene": "res://scenes/town.tscn",
+      "service": "quests",
+      "evidence": "tests/_ux_town-quests.png",
+      "requiredKeys": [
+        "questBoard.title",
+        "questBoard.intro",
+        "questBoard.progress",
+        "questBoard.reward",
+        "questBoard.accept",
+        "questBoard.claim"
+      ],
+      "notes": "Each quest must show its objective PROGRESS (questBoard.progress) and reward breakdown (rewardGold/rewardXp), plus repeatable / claimedTimes state."
+    },
+    {
+      "id": "town-career",
+      "milestone": "M3",
+      "reactPanel": "src/components/CareerPanel.tsx",
+      "scene": "res://scenes/town.tscn",
+      "service": "career",
+      "evidence": "tests/_ux_town-career.png",
+      "requiredKeys": [
+        "career.title",
+        "career.intro",
+        "career.member",
+        "career.current",
+        "career.destinations",
+        "career.mastery",
+        "career.requires",
+        "career.shifts",
+        "career.equips",
+        "career.grants",
+        "career.changeTo",
+        "career.loadout"
+      ],
+      "notes": "Two-pane: pinned selected adventurer (career.overview/current/mastery) beside the scrolling destination list grouped advanced|foundations. EVERY destination renders its signature, stat shifts, equip slots and granted techniques — this was the exact remediation that fixed 'too thin to decide in'."
+    },
+    {
+      "id": "town-records",
+      "milestone": "M3",
+      "reactPanel": "src/components/RecordsPanel.tsx",
+      "scene": "res://scenes/town.tscn",
+      "service": "records",
+      "evidence": "tests/_ux_town-records.png",
+      "requiredKeys": [
+        "town.recordsHeading",
+        "bestiary.heading",
+        "bestiary.threat",
+        "bestiary.weaknesses",
+        "bestiary.drops",
+        "bestiary.defeated",
+        "bestiary.logHeading"
+      ],
+      "notes": "The bestiary is the decision surface for preparation: threat, weaknesses and drops per known enemy, not a name list."
+    }
+  ]
+}

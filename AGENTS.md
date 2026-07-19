@@ -1,5 +1,12 @@
 # Black Stela Agent Instructions
 
+Before Godot migration work, read `docs/architecture.md` and
+`docs/design/godot-full-migration-plan.md`. If the change touches scenario AI,
+narration, canonical events, records, or saves, also read
+`docs/design/ai-godot-migration-contract.md`. TypeScript remains the rules and
+content-schema oracle; Godot consumes normalized exports and must not parse
+scenario source or call an AI provider from scene scripts.
+
 Before any player-facing UI, gameplay, dungeon, prose, asset, character,
 combat, automation, or save/debug change, read:
 
@@ -98,6 +105,29 @@ to keep restating them.
   implementation. "Wiz-like" means structural lessons from classic DRPGs
   (grid maze, party order, attrition, town prep, command windows), not surface
   flavor or copied proprietary content.
+
+## Migration UX-Parity Gate (blocking, mechanical)
+
+A migrated screen replaces a React screen that was already argued over and fixed. The port must
+therefore reproduce it faithfully: **the same information, in the same words.** Restating that as
+prose did not hold — M3's town services were declared done as bare button lists while the rule above
+("do not call town services done if they are just lists") was already written. So it is mechanical now.
+
+```sh
+npm run gate:migration      # UX parity + evidence, then rules parity. Exit 1 blocks.
+npm run ux:evidence         # capture the comparison screenshots (NO --headless, or shots come out null)
+```
+
+- `godot/gates/ux-parity-manifest.json` is the contract: per migrated screen, the React panel it
+  replaces and the i18n keys that panel renders. Those keys are resolved against the same `ja.ts`
+  React reads (`npm run export:i18n`) and must appear in the built Godot screen.
+- **A milestone is not done, and the next milestone may not be started, while
+  `npm run gate:migration` is red.** Comparison evidence (the screenshot per screen, put beside its
+  React panel) is part of that gate, not a courtesy.
+- Adding a screen to the port means adding it to the manifest. A screen absent from the manifest is
+  not "passing" — it is unmeasured, and claiming it done is the failure this gate exists to stop.
+- Do not weaken an entry to make the gate green. If a key genuinely should not port, say so and get
+  it decided; deleting the requirement silently is the same defect as shipping the thin screen.
 
 ## Dungeon Design Rules
 

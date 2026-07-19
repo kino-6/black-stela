@@ -98,15 +98,25 @@ shell, input map, and the 9-trace baseline. Keep as the spine.
 - **Exit:** build a 3+3 party from scratch, controller-only, JA, and have it persist in `Run`.
 - **Risk:** creation is the most stateful non-combat flow; portraits are presentation (stay simple).
 
-### M3 — Town hub & the preparation services — DONE (2026-07-20)
-All service RULES ported + parity-clean (16/16 golden traces), and all six services rebuilt as
-FUNCTIONAL controller-first level-2 screens wired through `Run.dispatch` (the same rules the parity
-gate proves). Traces added: `economy`, `recovery`, `recovery-blocked`, `quests`, `loot`, `vocation`,
-and the `roster` route gained a `reclass_member` step. The class catalog + per-class MP mode now ride
-on `engine-data.json` so the reclass path (`reclass_character`) re-derives a class identically to TS.
-Caveats: `import_member` (portable-adventurer vault) is deferred to the save/load work — it is not a
-town prep service; and the Records screen uses a lightweight in-engine bestiary/roster projection
-rather than a full `bestiary.ts` / `replayLog.ts` port (pure UI, no state-hash impact).
+### M3 — Town hub & the preparation services — **RULES DONE / UX NOT DONE** (2026-07-20)
+**M3 is NOT complete.** It was briefly declared done; that was wrong and is retracted here.
+
+- **Rules: done and parity-clean (16/16 golden traces).** Traces added: `economy`, `recovery`,
+  `recovery-blocked`, `quests`, `loot`, `vocation`; the `roster` route gained a `reclass_member` step.
+  The class catalog + per-class MP mode now ride on `engine-data.json` so the reclass path
+  (`reclass_character`) re-derives a class identically to TS. `import_member` (portable-adventurer
+  vault) is deferred to save/load — it is not a town prep service.
+- **UX: NOT done.** The six services shipped as bare button lists — the exact thing AGENTS.md already
+  forbade ("do not call town services done if they are just lists"), and a regression of the earlier
+  remediation that fixed these same routes for being "too thin to decide in". `npm run gate:migration`
+  is RED: 14 problems across 7 screens (missing cost/before-after in the infirmary, missing
+  who-can-equip and stat deltas in the shop, no appraiser or forge service at all, career missing its
+  two-pane destination detail, records missing threat/weaknesses/drops).
+- **Decision (user):** port faithfully — same layout composition, same information, same Japanese copy
+  as the React panels (option A). The rebuild is scheduled AFTER the remaining M* milestones; until it
+  lands, M3 stays open and its debt is visible in the gate rather than hidden in a status line.
+- **The gate that now enforces this:** `godot/gates/ux-parity-manifest.json` +
+  `npm run gate:migration`. See AGENTS.md "Migration UX-Parity Gate".
 
 M3 is also the preparation seam for the future bounded GM, but not its
 implementation milestone. Service commands must retain parity-clean

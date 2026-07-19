@@ -22,7 +22,11 @@
     "export:stats": "node scripts/run-vite-module.mjs scripts/export-stat-samples.ts",
     "export:combat-helpers": "node scripts/run-vite-module.mjs scripts/export-combat-helper-samples.ts",
     "export:engine": "node scripts/run-vite-module.mjs scripts/export-engine-data.ts",
-    "export:godot": "npm run export:packs && npm run export:traces && npm run export:rng && npm run export:stats && npm run export:combat-helpers && npm run export:engine && npm run export:character-data && npm run export:character-samples",
+    "export:i18n": "node scripts/run-vite-module.mjs scripts/export-i18n.ts",
+    "ux:evidence": "godot --path godot/ --script res://tests/capture_ux_evidence.gd",
+    "gate:ux-parity": "npm run export:i18n && godot --headless --path godot/ --script res://tests/verify_ux_parity.gd",
+    "gate:migration": "npm run gate:ux-parity && godot --headless --path godot/ --script res://tests/verify_parity.gd",
+    "export:godot": "npm run export:packs && npm run export:traces && npm run export:rng && npm run export:stats && npm run export:combat-helpers && npm run export:engine && npm run export:character-data && npm run export:character-samples && npm run export:i18n",
     "tauri": "tauri",
     "export:character-data": "node scripts/run-vite-module.mjs scripts/export-character-data.ts",
     "export:character-samples": "node scripts/run-vite-module.mjs scripts/export-character-samples.ts"

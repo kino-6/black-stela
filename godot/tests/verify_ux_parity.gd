@@ -1,0 +1,140 @@
+extends SceneTree
+## THE UX-PARITY GATE — a migrated screen may not be called done, and its milestone may not be closed,
+## without COMPARISON EVIDENCE against the React screen it replaces.
+##
+## Why this exists: M3's town services were declared done while they were bare button lists. AGENTS.md
+## already forbade that ("Do not call town services done if they are just lists. Shops must show who can
+## use equipment and what changes. Recovery must show cost, wounds, before/after, and insufficient-funds
+## states.") — a written rule was not enough, so it is now mechanical.
+##
+## For every screen in gates/ux-parity-manifest.json this asserts BOTH:
+##   1. INFORMATION PARITY — every i18n key the React panel renders also appears in the built Godot
+##      screen, in the same words (resolved from data/i18n-ja.json, the same ja.ts React reads).
+##   2. COMPARISON EVIDENCE — the screenshot artifact for the screen exists.
+## A screen that fails either is reported; the run exits non-zero.
+##
+## Usage: godot --path godot/ --script res://tests/verify_ux_parity.gd
+## (render is NOT required — this walks the Control tree, so it works with or without --headless.)
+
+const MANIFEST := "res://gates/ux-parity-manifest.json"
+const COPY := "res://data/i18n-ja.json"
+
+func _initialize() -> void:
+	var manifest: Variant = JSON.parse_string(FileAccess.get_file_as_string(MANIFEST))
+	var copy: Variant = JSON.parse_string(FileAccess.get_file_as_string(COPY))
+	if typeof(manifest) != TYPE_DICTIONARY or typeof(copy) != TYPE_DICTIONARY:
+		push_error("[ux-parity] cannot load manifest or copy (run `npm run export:i18n`)")
+		quit(1)
+		return
+
+	var failures := 0
+	var screens: Array = manifest.get("screens", [])
+	for entry in screens:
+		failures += await _check_screen(entry, copy)
+
+	print("")
+	if failures == 0:
+		print("[ux-parity] PASS — every migrated screen matches its React counterpart and has evidence")
+		quit(0)
+	else:
+		print("[ux-parity] FAIL — %d problem(s). A milestone with UX-parity failures is NOT done." % failures)
+		quit(1)
+
+func _check_screen(entry: Dictionary, copy: Dictionary) -> int:
+	var id: String = entry.get("id", "?")
+	var failures := 0
+	var missing: Array = []
+
+	var scene_path: String = entry.get("scene", "")
+	var packed: Variant = load(scene_path)
+	if packed == null:
+		print("[ux-parity] %s: MISSING SCENE %s" % [id, scene_path])
+		return 1
+	var root: Node = (packed as PackedScene).instantiate()
+	get_root().add_child(root)
+	for i in 8:
+		await process_frame
+
+	var service: String = entry.get("service", "")
+	if service != "":
+		if not root.has_method("_open_service"):
+			print("[ux-parity] %s: scene cannot open services (no _open_service)" % id)
+			root.queue_free()
+			return 1
+		root.call("_open_service", service)
+		for i in 4:
+			await process_frame
+
+	var shown := _collect_text(root)
+	for key in entry.get("requiredKeys", []):
+		var template: Variant = copy.get(key, null)
+		if typeof(template) != TYPE_STRING:
+			print("[ux-parity] %s: manifest key not in ja.ts: %s" % [id, key])
+			failures += 1
+			continue
+		if not _shows(shown, String(template)):
+			missing.append("%s (\"%s\")" % [key, template])
+
+	root.queue_free()
+	for i in 2:
+		await process_frame
+
+	# 2. comparison evidence must exist
+	var evidence: String = entry.get("evidence", "")
+	var has_evidence := evidence != "" and FileAccess.file_exists("res://" + evidence)
+
+	if missing.is_empty() and has_evidence:
+		print("[ux-parity] %s: OK (%d keys, evidence present)" % [id, entry.get("requiredKeys", []).size()])
+		return failures
+
+	print("[ux-parity] %s: FAIL  [React: %s]" % [id, entry.get("reactPanel", "?")])
+	if not missing.is_empty():
+		print("    missing information (%d of %d required):" % [missing.size(), entry.get("requiredKeys", []).size()])
+		for m in missing:
+			print("      - %s" % m)
+		failures += 1
+	if not has_evidence:
+		print("    missing comparison evidence: godot/%s (capture it, then compare against %s)" % [evidence, entry.get("reactPanel", "?")])
+		failures += 1
+	if entry.get("notes", "") != "":
+		print("    contract: %s" % entry["notes"])
+	return failures
+
+# A key is "shown" when every literal segment of its template (split on {vars}) appears on screen.
+func _shows(shown: String, template: String) -> bool:
+	for segment in _literal_segments(template):
+		if not shown.contains(segment):
+			return false
+	return true
+
+func _literal_segments(template: String) -> Array:
+	var segments := []
+	var current := ""
+	var depth := 0
+	for i in template.length():
+		var ch := template[i]
+		if ch == "{":
+			depth += 1
+			if current.strip_edges() != "":
+				segments.append(current.strip_edges())
+			current = ""
+		elif ch == "}":
+			depth = maxi(0, depth - 1)
+		elif depth == 0:
+			current += ch
+	if current.strip_edges() != "":
+		segments.append(current.strip_edges())
+	return segments
+
+# Every piece of text the player can actually read on this screen.
+func _collect_text(node: Node) -> String:
+	var out := ""
+	if node is Label:
+		out += (node as Label).text + "\n"
+	elif node is Button:
+		out += (node as Button).text + "\n"
+	elif node is RichTextLabel:
+		out += (node as RichTextLabel).get_parsed_text() + "\n"
+	for child in node.get_children():
+		out += _collect_text(child)
+	return out
