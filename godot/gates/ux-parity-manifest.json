@@ -314,6 +314,55 @@
         "partyMenu.close"
       ],
       "notes": "Six-person formation: condition, combat stats, resistances, aptitudes and the six equipment slots for the selected adventurer, plus front/back row and bench/recall. The 所持品/貴重品 tabs await use_item."
+    },
+    {
+      "id": "dungeon-dock",
+      "milestone": "M4",
+      "reactPanel": "src/components/DungeonCommandDock.tsx",
+      "scene": "res://scenes/dungeon.tscn",
+      "evidence": "tests/_ux_dungeon-dock.png",
+      "requiredKeys": [
+        "play.dungeonCommands",
+        "play.search",
+        "play.listen",
+        "play.fullMap",
+        "play.moveHint",
+        "partyMenu.title"
+      ],
+      "notes": "The command region is FIXED and contextual: 階段を使う / 階段で町へ戻る / 罠を外す appear only where they actually answer. Logs must never push the commands around."
+    },
+    {
+      "id": "dungeon-chest",
+      "milestone": "M4",
+      "reactPanel": "src/components/ChestPanel.tsx",
+      "scene": "res://scenes/dungeon.tscn",
+      "evidence": "tests/_ux_dungeon-chest.png",
+      "uiState": {
+        "chest": true
+      },
+      "requiredKeys": [
+        "play.chestHeading",
+        "play.chestClosedNote",
+        "play.chestInvestigate",
+        "play.chestOpen",
+        "play.chestLeave"
+      ],
+      "notes": "IMP-029: a chest HOLDS the cell and OWNS the command region (arrows drive its actions, they never walk the party off it). It shows only what the party can SEE — closed / trapped / uncertain / opened — never a success rate, and 罠を外す surfaces only after an investigation detected a trap."
+    },
+    {
+      "id": "dungeon-map",
+      "milestone": "M4",
+      "reactPanel": "src/components/MapPanel.tsx",
+      "scene": "res://scenes/dungeon.tscn",
+      "evidence": "tests/_ux_dungeon-map.png",
+      "uiState": {
+        "fullMap": true
+      },
+      "requiredKeys": [
+        "play.fullMapTitle",
+        "map.coverage"
+      ],
+      "notes": "The full-floor overlay is the party's RECORD (visited cells only), never the floor's truth. Cancel closes it."
     }
   ]
 }

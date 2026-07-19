@@ -136,21 +136,27 @@ The two-level hub (IMP-025) + each service, one at a time (each its own sub-slic
 - **Exit:** a full prepare loop — recover, buy+equip, read records, take a quest, adopt a vocation,
   appraise+forge — all controller-only, all parity-clean.
 
-### M4 — Dungeon (the real crawl)
-- **Commands:** complete `move_forward` (room entry + `collectRoomTreasure`→chest / `applyCellEffects`:
-  spinner / teleporter / damage-tile / gather / trap-trigger / room-event / grantsFlag-shortcut), plus
-  `move_backward`, `strafe_left/right`, `open_door`, `disarm_trap`, `use_stairs`, `return_to_town`,
-  full `search` (secrets + gather + trap-detect), `inspect_wall`, and the **wandering-encounter RNG**
-  (`beginWanderingEncounter`: per-step 4% past an 8-step cooldown, `resolveEncounterTable` +
-  `scaledEncounterCount` + `createCombatState`/`createMultiGroupCombatState`). Port `floorGraph`,
-  `floorMap`, and the movement/encounter helpers.
-- **Parity:** golden walks that hit a wandering fight, a trap, a spinner/teleporter, a shortcut, and a
-  chamber (authored). Extend `verify_parity`. This is the largest single rules port.
-- **Screens:** the first-person 3D crawl (built), a proper Wizardry automap + full-map overlay, the
-  current-cell dock (search/listen/party/map + contextual), chest interaction (IMP-029 port), and the
-  dungeon→town return loop.
-- **Exit:** walk both worlds' first floors, take random + authored fights + a trap + a chest, descend a
-  stair, return to town — controller-only, parity-clean. (Verdant now has per-floor keep chambers.)
+### M4 — Dungeon (the real crawl) — DONE (2026-07-20)
+Every M4 command is ported and parity-gated, and the crawl's screens are faithful ports.
+
+- **Commands:** move_forward completed (room entry, chest, one-shot trap, room event, gate grantsFlag →
+  shortcut, and cell effects: spinner / damage tile / teleporter), move_backward, strafe_left/right,
+  open_door, inspect_wall, disarm_trap, use_stairs, return_to_town, full search (secrets + gather +
+  trap-detect), the **wandering-encounter RNG**, and the IMP-029 chest commands
+  (investigate / disarm / open) with the treasure roll.
+- **New rules modules:** `encounters.gd` (enemy groups, encounter tables, underpower scaling, room and
+  wandering encounters, bestiary records) and `chests.gd` (the one-attempt-each chest machine + loot).
+  The built-in equipment affixes now ride on `engine-data.json` (they live in TS code, not world packs).
+- **Parity 16/16 → 26/26.** New routes: b1f-trap (trap + a real wandering ambush), b2f-hazard,
+  b4f-spinner, b4f-teleport, b1f-shortcut, b1f-stairs, b1f-return, b3f-gather, b3f-disarm, b2f-chest.
+- **Two latent parity bugs found and fixed:** a cell's `edges` were walked in the canonicalized pack's
+  alphabetical key order instead of the oracle's authored north/east/south/west; and `visitRoom` carried
+  the floorId over from the map we came FROM instead of resolving it from the room being entered
+  (every event after a stair crossing named the previous floor).
+- **Screens:** a FIXED, contextual command dock (stairs / return / disarm appear only where they
+  answer), the IMP-029 chest panel that owns the command region while a chest holds the cell, and the
+  full-floor map overlay (the party's record, visited cells only). All three are in the UX-parity
+  manifest with comparison screenshots.
 
 ### M5 — Combat (the full command screen)
 - **Commands:** complete `declare_round` (party `defend` / `use_item` / `cast` spell — enemy turn +

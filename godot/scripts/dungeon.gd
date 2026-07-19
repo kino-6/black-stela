@@ -8,6 +8,10 @@ extends Control
 ## with the SAME party. Reads the Run autoload in play, or the exploration fixture under capture.
 
 const SliceRules := preload("res://scripts/rules/slice_rules.gd")
+const I18n := preload("res://scripts/i18n.gd")
+const UIKit := preload("res://scripts/town/ui_kit.gd")
+const ChestPanel := preload("res://scripts/dungeon/chest_panel.gd")
+const Chests := preload("res://scripts/rules/chests.gd")
 
 const CELL := 3.0
 const WALL_H := 3.2
@@ -26,6 +30,9 @@ var _minimap: Control
 var _log_label: Label
 var _header: Label
 var _busy: bool = false
+var _engine: Dictionary = {}
+var _dock_host: PanelContainer = null
+var _full_map: Control = null
 
 func _ready() -> void:
 	await get_tree().process_frame
@@ -40,9 +47,11 @@ func _acquire_state() -> void:
 	if _run:
 		_run.ensure_loaded()
 		_world = _run.world
+		_engine = _run.engine
 		_state = _run.state
 	else:
 		_world = _read_json("res://data/worlds/default.json").get("world", {})
+		_engine = _read_json("res://data/engine-data.json")
 		_state = (_read_json("res://data/traces/b1f-exploration.json").get("initialState", {}) as Dictionary).duplicate(true)
 
 # Place the party at the floor's stair landing (world.startRoom) facing its first open way — data-driven,
@@ -200,30 +209,21 @@ func _build_overlays() -> void:
 
 	# log ticker
 	_log_label = _label("地下に踏み入った。松明の灯が石を照らす。", 20, INK)
-	_log_label.position = Vector2(48, size.y - 210)
+	_log_label.position = Vector2(48, size.y - 268)   # message band, ABOVE the fixed command dock
 	add_child(_log_label)
 
-	# command dock (bottom-left) + movement legend
-	var dock := PanelContainer.new()
-	dock.position = Vector2(48, size.y - 168)
-	dock.add_theme_stylebox_override("panel", _panel_style(Color("11140deb"), GOLD))
-	add_child(dock)
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 10)
-	dock.add_child(row)
-	var first: Button = null
-	for entry in [["search", "探索"], ["listen", "耳をすます"], ["return", "帰還する"]]:
-		var b := _command_button(entry[1])
-		b.pressed.connect(_on_command.bind(entry[0]))
-		row.add_child(b)
-		if first == null:
-			first = b
+	# The command region is a FIXED area (AGENTS.md: logs and messages must never push commands around).
+	# It is rebuilt in place, because a chest on this cell takes the region over.
+	_dock_host = PanelContainer.new()
+	_dock_host.position = Vector2(48, size.y - 228)
+	_dock_host.custom_minimum_size = Vector2(900, 160)
+	_dock_host.add_theme_stylebox_override("panel", _panel_style(Color("11140deb"), GOLD))
+	add_child(_dock_host)
 
-	var legend := _label("↑ 前進     ← → 旋回", 16, DIM)
-	legend.position = Vector2(48, size.y - 56)
+	var legend := _label(I18n.t("play.moveHint"), 16, DIM)
+	legend.position = Vector2(48, size.y - 44)
 	add_child(legend)
-	if first:
-		first.grab_focus()
+	_rebuild_dock()
 
 # --- input: arrows OWN movement (consume them so they don't move dock focus); dock owns confirm ----
 func _input(event: InputEvent) -> void:
@@ -245,6 +245,104 @@ func step_forward() -> void:
 	if not _busy:
 		await _apply(SliceRules.resolve(_state, {"type": "move_forward"}, _world))
 
+## Test seam for the UX-parity gate: force a surface (a chest on this cell, the full-floor map) so the
+## conditional screens are actually asserted rather than only the empty corridor.
+func set_ui_state(ui: Dictionary) -> void:
+	if bool(ui.get("chest", false)) and _state.get("position", null) != null:
+		var cell_id: Variant = (_state["position"] as Dictionary).get("cellId", null)
+		if typeof(cell_id) == TYPE_STRING:
+			_state["chests"] = [{
+				"cellId": cell_id, "roomId": _state["position"]["roomId"], "treasureTable": null,
+				"trap": {"kind": "needle", "difficulty": 12, "damage": 4}, "phase": "closed",
+				"investigated": false, "investigateResult": null, "disarmAttempted": false,
+				"disarmed": false, "sprung": false
+			}]
+			_left_chest_cell = ""
+			_rebuild_dock()
+	if bool(ui.get("fullMap", false)):
+		_toggle_full_map()
+
+# The chest sitting on the party's cell, or {} — while one is here it OWNS the command region.
+func current_chest() -> Dictionary:
+	var chest: Variant = Chests.current_chest(_state)
+	return chest if typeof(chest) == TYPE_DICTIONARY else {}
+
+func _rebuild_dock() -> void:
+	if _dock_host == null:
+		return
+	for child in _dock_host.get_children():
+		child.queue_free()
+
+	var chest: Dictionary = current_chest()
+	if not chest.is_empty():
+		# IMP-029: a chest HOLDS the cell — its actions replace the walk commands rather than sitting
+		# beside them, so Confirm can never walk the party off the chest by accident.
+		var built: Dictionary = ChestPanel.build(chest, func(cmd): _apply(SliceRules.resolve(_state, cmd, _world, _engine)), func(): _leave_chest())
+		_dock_host.add_child(built["control"])
+		if built["focus"] != null:
+			(built["focus"] as Control).call_deferred("grab_focus")
+		return
+
+	var root: VBoxContainer = UIKit.col(6)
+	root.add_child(UIKit.label(I18n.t("play.dungeonCommands"), 16, GOLD))
+	var row: HBoxContainer = UIKit.row()
+	var first: Button = null
+	for entry in _dock_commands():
+		var b: Button = _command_button(String(entry["label"]))
+		var kind: String = String(entry["kind"])
+		b.pressed.connect(func(): _on_command(kind))
+		row.add_child(b)
+		if first == null:
+			first = b
+	root.add_child(row)
+	_dock_host.add_child(root)
+	if first:
+		first.call_deferred("grab_focus")
+
+# The dock is CONTEXTUAL: stairs and the way home only appear where they actually answer.
+func _dock_commands() -> Array:
+	var out: Array = [{"kind": "search", "label": I18n.t("play.search")}, {"kind": "listen", "label": I18n.t("play.listen")}]
+	var room: Variant = _current_room()
+	if _has_stairs_here():
+		out.append({"kind": "stairs", "label": I18n.t("play.useStairs")})
+	if typeof(room) == TYPE_DICTIONARY and (bool(room.get("stairsToTown", false)) or bool(room.get("restPoint", false))):
+		out.append({"kind": "return", "label": I18n.t("play.useReturnStairs")})
+	if typeof(room) == TYPE_DICTIONARY and typeof(room.get("trap", null)) == TYPE_DICTIONARY and not (_state.get("resolvedTraps", []) as Array).has(room["trap"].get("id", "")):
+		out.append({"kind": "disarm", "label": I18n.t("play.chestDisarm")})
+	out.append({"kind": "map", "label": I18n.t("play.fullMap")})
+	out.append({"kind": "party", "label": I18n.t("partyMenu.title")})
+	return out
+
+func _current_room() -> Variant:
+	if _state.get("position", null) == null:
+		return null
+	var room_id: String = _state["position"]["roomId"]
+	for dungeon in _world.get("dungeons", []):
+		for room in dungeon.get("rooms", []):
+			if room.get("id", "") == room_id:
+				return room
+	return null
+
+func _has_stairs_here() -> bool:
+	if _state.get("position", null) == null:
+		return false
+	var room_id: String = _state["position"]["roomId"]
+	for dungeon in _world.get("dungeons", []):
+		for cell in dungeon.get("cells", []):
+			if cell.get("roomId", "") == room_id:
+				for dir in (cell.get("edges", {}) as Dictionary):
+					var edge: Variant = (cell["edges"] as Dictionary)[dir]
+					if typeof(edge) == TYPE_DICTIONARY and edge.get("kind", "") == "stairs":
+						return true
+	return false
+
+# Leaving a chest does NOT consume it — the party simply stops standing on the prompt.
+func _leave_chest() -> void:
+	_left_chest_cell = String(_state["position"].get("cellId", "")) if _state.get("position", null) != null else ""
+	_rebuild_dock()
+
+var _left_chest_cell: String = ""
+
 func _on_command(kind: String) -> void:
 	if _busy:
 		return
@@ -253,8 +351,18 @@ func _on_command(kind: String) -> void:
 			_apply(SliceRules.resolve(_state, {"type": "search"}, _world))
 		"listen":
 			_apply(SliceRules.resolve(_state, {"type": "listen"}, _world))
-		"return":
+		"stairs":
+			_apply(SliceRules.resolve(_state, {"type": "use_stairs"}, _world, _engine))
+		"disarm":
+			_apply(SliceRules.resolve(_state, {"type": "disarm_trap"}, _world, _engine))
+		"map":
+			_toggle_full_map()
+		"party":
 			get_tree().change_scene_to_file("res://scenes/town.tscn")
+		"return":
+			_apply(SliceRules.resolve(_state, {"type": "return_to_town"}, _world, _engine))
+			if _state.get("phase", "") == "town":
+				get_tree().change_scene_to_file("res://scenes/town.tscn")
 
 # Apply a rules result: persist to the run, log it, and either descend into combat or refresh the view.
 func _apply(result: Dictionary) -> void:
@@ -270,6 +378,91 @@ func _apply(result: Dictionary) -> void:
 		get_tree().change_scene_to_file("res://scenes/combat.tscn")
 		return
 	_update_view(true)
+	_rebuild_dock()
+
+# The full-floor map (play.fullMap) — a Wizardry overlay, Cancel closes it.
+func _toggle_full_map() -> void:
+	if _full_map and is_instance_valid(_full_map):
+		_full_map.queue_free()
+		_full_map = null
+		_rebuild_dock()
+		return
+	var layer := Control.new()
+	layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	var scrim := ColorRect.new()
+	scrim.color = Color(0, 0, 0, 0.82)
+	scrim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	layer.add_child(scrim)
+	var panel := PanelContainer.new()
+	panel.position = Vector2(160, 90)
+	panel.custom_minimum_size = Vector2(1600, 900)
+	panel.add_theme_stylebox_override("panel", _panel_style(Color("11140df7"), GOLD))
+	layer.add_child(panel)
+	var body: VBoxContainer = UIKit.col(8)
+	panel.add_child(body)
+	body.add_child(UIKit.label(I18n.t("play.fullMapTitle"), 26, GOLD))
+	var floor_id: Variant = (_state.get("map", {}) as Dictionary).get("floorId", null)
+	body.add_child(UIKit.label(I18n.t("map.coverage", {"percent": _coverage_percent()}), 17, INK))
+	body.add_child(UIKit.label(String(floor_id) if floor_id != null else I18n.t("map.noFloor"), 15, DIM))
+	var grid: Control = _full_map_grid()
+	body.add_child(grid)
+	var close: Button = UIKit.button(I18n.t("play.chestLeave"), func(): _toggle_full_map(), Vector2(180, 44), 17)
+	var foot: HBoxContainer = UIKit.row()
+	foot.add_child(close)
+	body.add_child(foot)
+	add_child(layer)
+	_full_map = layer
+	close.call_deferred("grab_focus")
+
+# Visited cells only — the map is the party's RECORD, never the floor's truth.
+func _full_map_grid() -> Control:
+	var visited: Array = (_state.get("map", {}) as Dictionary).get("visitedCells", [])
+	var current: Variant = (_state.get("map", {}) as Dictionary).get("currentCellId", null)
+	var text: Label = UIKit.label("", 14, INK)
+	var lines: Array = []
+	var floor_id: Variant = (_state.get("map", {}) as Dictionary).get("floorId", null)
+	for dungeon in _world.get("dungeons", []):
+		if dungeon.get("id", "") != floor_id:
+			continue
+		var rows: Dictionary = {}
+		for cell in dungeon.get("cells", []):
+			if not visited.has(cell.get("id", "")):
+				continue
+			var y: int = int(cell.get("y", 0))
+			if not rows.has(y):
+				rows[y] = {}
+			rows[y][int(cell.get("x", 0))] = "@" if cell.get("id", "") == current else "."
+		var keys: Array = rows.keys()
+		keys.sort()
+		for y in keys:
+			var xs: Array = rows[y].keys()
+			xs.sort()
+			var line: String = ""
+			var prev: int = -1
+			for x in xs:
+				if prev >= 0:
+					line += " ".repeat(maxi(0, x - prev - 1))
+				line += String(rows[y][x])
+				prev = x
+			lines.append(line)
+	text.text = "\n".join(PackedStringArray(lines)) if not lines.is_empty() else I18n.t("map.unseen")
+	text.add_theme_font_size_override("font_size", 18)
+	return text
+
+func _coverage_percent() -> int:
+	var floor_id: Variant = (_state.get("map", {}) as Dictionary).get("floorId", null)
+	var visited: Array = (_state.get("map", {}) as Dictionary).get("visitedCells", [])
+	for dungeon in _world.get("dungeons", []):
+		if dungeon.get("id", "") == floor_id:
+			var total: int = (dungeon.get("cells", []) as Array).size()
+			if total <= 0:
+				return 0
+			var seen: int = 0
+			for cell in dungeon.get("cells", []):
+				if visited.has(cell.get("id", "")):
+					seen += 1
+			return int(round(float(seen) * 100.0 / float(total)))
+	return 0
 
 func _update_view(animate: bool) -> void:
 	var cell := _current_cell()
