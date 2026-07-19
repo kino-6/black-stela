@@ -144,6 +144,23 @@ function rosterRoute(): { initial: GameState; commands: Command[] } {
   return { initial, commands };
 }
 
+// M3 economy: a town shopping trip — buy consumables + gear, equip a clean slot, sell one, discard one.
+// Exercises buy_item (item + equipment), equip_item, sell_item, discard_item + the inventory helpers.
+function economyRoute(): { initial: GameState; commands: Command[] } {
+  const hero = createGuildCharacter({ name: "Rook", classId: "vanguard", seed: "econ" });
+  const base = createInitialGameState();
+  const initial: GameState = { ...base, phase: "town", party: [hero], partyGold: 300 };
+  const commands: Command[] = [
+    { type: "buy_item", shopId: "shop.stela-general", itemId: "item.healing-draught" },
+    { type: "buy_item", shopId: "shop.stela-general", itemId: "item.healing-draught" },
+    { type: "buy_item", shopId: "shop.stela-general", itemId: "equip.iron-cap" },
+    { type: "equip_item", characterId: hero.id, equipmentId: "equip.iron-cap" },
+    { type: "sell_item", itemId: "item.healing-draught" },
+    { type: "discard_item", itemId: "item.healing-draught" }
+  ];
+  return { initial, commands };
+}
+
 // A short exploration route from a known B1F progress state: turn, search, listen, turn back. Exercises
 // dungeon movement + current-cell probes without minting characters.
 function dungeonRoute(world: ScenarioWorld): { initial: GameState; commands: Command[] } {
@@ -199,5 +216,6 @@ export const SLICE_ROUTES: TraceRoute[] = [
   { name: "b4f-caster", worldId: "default", build: combatVsRoute("enemy.b4f.lantern-ward", 1, 8) },
   { name: "verdant-wipe", worldId: "verdant", build: combatVsRoute("enemy.verdant.g8.rootheart", 1, 14) },
   { name: "roster", worldId: "default", build: rosterRoute },
+  { name: "economy", worldId: "default", build: economyRoute },
   { name: "b1f-exploration", worldId: "default", build: dungeonRoute }
 ];

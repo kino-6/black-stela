@@ -10,6 +10,7 @@ const LEFT_OF := {"north": "west", "west": "south", "south": "east", "east": "no
 const RIGHT_OF := {"north": "east", "east": "south", "south": "west", "west": "north"}
 
 const CombatRound := preload("res://scripts/rules/combat_round.gd")
+const Economy := preload("res://scripts/rules/economy.gd")
 
 static func resolve(state: Dictionary, command: Dictionary, world: Dictionary = {}, engine: Dictionary = {}) -> Dictionary:
 	match command.get("type", ""):
@@ -41,6 +42,14 @@ static func resolve(state: Dictionary, command: Dictionary, world: Dictionary = 
 			return _erase_member(state, command.get("characterId", ""))
 		"edit_member_identity":
 			return _edit_member_identity(state, command)
+		"buy_item":
+			return Economy.buy(state, world, command.get("shopId", ""), command.get("itemId", ""))
+		"sell_item":
+			return Economy.sell(state, world, command.get("itemId", ""), command.get("plus", null), command.get("affix", null))
+		"equip_item":
+			return Economy.equip(state, world, command.get("characterId", ""), command.get("equipmentId", ""), command.get("plus", null), command.get("affix", null))
+		"discard_item":
+			return Economy.discard(state, command.get("itemId", ""), command.get("plus", null), command.get("affix", null))
 		_:
 			# Not yet ported — a no-op keeps the replay honest (the harness will flag the hash mismatch).
 			return {"state": state, "events": []}
