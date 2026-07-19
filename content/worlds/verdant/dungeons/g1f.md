@@ -94,6 +94,15 @@ rooms:
   - id: room.verdant.g1f.keep
     name: Deep Grove
     description: A quiet grove deep in the gallery.
+    encounter:
+      id: enemy.verdant.g1.moss-mite
+      name: Moss Mite
+      hp: 5
+      attack: 4
+      role: attrition
+      dangerTier: 1
+      tags:
+        - grove
     encounterTable: encounters.verdant.g1.pack
     treasureTable: treasure.verdant.g1.keep
     locales:
