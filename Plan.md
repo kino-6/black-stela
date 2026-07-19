@@ -120,6 +120,20 @@ with the user before implementing.
 3. Gated follow-ups (unchanged, none blocked on unknowns): desktop bundle verification, the
    guild-stepper reducer refactor, live-LLM narration.
 
+## Proposed Runtime Migration Lane
+
+The installed engine is Godot `4.7.1.stable`, not Godot 5. Compare a
+controller-first Godot/GDScript slice with a non-React Babylon.js/TypeScript
+slice before committing to a rewrite. Godot leads on integrated game UI, 2D/3D,
+transitions, and assets; Babylon is the lower-cost control because it can retain
+the TS rules and Web toolchain. Preserve external packs, save DTOs, simulations,
+and TS state traces as the shared oracle. Phaser is conditional on abandoning
+the current 3D dungeon; PixiJS, Defold, Unity, Bevy, and Unreal are not primary
+candidates for this comparison.
+
+Plan and Go/No-Go criteria:
+[Godot Migration and Runtime Comparison Plan](docs/design/godot-migration-plan.md).
+
 ## Planning Rule
 
 Before adding new work to `Tasks.md`, write a small milestone goal with outcome,
