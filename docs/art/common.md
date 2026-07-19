@@ -53,7 +53,7 @@ variables. Treat these as drop-in assets too.
 | NPC character/bust | PNG RGBA | 1024x1536 preferred | yes | neutral pose; service role readable without a backdrop |
 | Icon | PNG RGBA | 256x256 | yes | single object, centered, generous padding |
 | Title still | JPG | 1920x1080 | none | no baked UI text unless the brief asks |
-| UI still | JPG | usually 1600x900 | none | town, guild, combat, or pack-specific scene |
+| UI still | PNG or JPG | usually 1600x900 | none | keep line-rich illustrated masters as PNG; JPG is acceptable for opaque runtime delivery when compression artifacts are not visible |
 
 Keep replacement sprites at the same aspect ratio as the asset they replace
 unless the renderer scale is changed deliberately.

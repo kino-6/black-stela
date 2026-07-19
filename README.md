@@ -11,6 +11,23 @@ review canonical records from town.
 Local AI narration is enabled internally by default, stays local-only, and never
 controls player characters.
 
+## Product Direction
+
+Black Stela aims to combine a mechanically real, controller-first DRPG with the
+reactivity of a tabletop game master. Players bring authored adventurers into
+external scenario packs prepared and validated with AI before play. A hidden
+local AI then acts as a bounded realtime game master: it frames
+situations, notices established character history, and reacts to confirmed
+choices. Deterministic rules remain the only authority over movement, checks,
+combat, rewards, and saves. Authored fallback content keeps the game playable
+when the local provider is unavailable; it does not replace the realtime GM as
+a product goal.
+
+The current MVP has the DRPG and policy foundations, but its AI subsystem is
+still an advisory service contract rather than a consequential GM loop. The
+bounded concept slice and authority model are defined in
+[Black Stela AI Scenario + GM Plan](AIPlan.md).
+
 ## Current MVP
 
 - Town screen with guild registration
@@ -299,7 +316,9 @@ AI must not:
 
 AI output is treated as a narration proposal only. It is not canon unless a
 future explicit approval flow promotes it, and the current MVP never applies AI
-output to `GameState`.
+output to `GameState`. The proposed GM lane keeps that safety boundary: AI may
+offer only scenario-authorized intents, and deterministic rules apply a
+player-confirmed choice.
 
 ## Testing
 

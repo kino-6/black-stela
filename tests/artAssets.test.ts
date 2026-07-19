@@ -112,6 +112,13 @@ const defaultSupportIcons = [
   "equip-cinder-warded-jack"
 ] as const;
 
+const facilityBackgrounds = [
+  "market-workshop",
+  "infirmary",
+  "archive-lodge",
+  "dungeon-entrance"
+] as const;
+
 const adventurerClasses = [
   "vanguard",
   "sellsword",
@@ -317,6 +324,25 @@ describe("art resolver", () => {
     for (const { basename, id, pack } of entries) {
       expect(catalogIconUrl(id, pack), `${pack}:${id}`).toBe(asset(basename, pack));
     }
+  });
+
+  it("ships distinct lossless P19 facility backgrounds for both worlds", () => {
+    const hashes: string[] = [];
+
+    for (const pack of ["default", "verdant"] as const) {
+      for (const name of facilityBackgrounds) {
+        const path = new URL(`../content/worlds/${pack}/assets/ui/${name}.png`, import.meta.url);
+        const png = readFileSync(path);
+
+        expect(pngSize(path), `${pack}:${name}`).toEqual({ width: 1600, height: 900 });
+        expect(png[25], `${pack}:${name} must be an opaque RGB PNG`).toBe(2);
+        expect(asset(name, pack), `${pack}:${name}`).toBeDefined();
+        hashes.push(createHash("sha256").update(png).digest("hex"));
+      }
+    }
+
+    expect(hashes).toHaveLength(8);
+    expect(new Set(hashes).size).toBe(hashes.length);
   });
 });
 

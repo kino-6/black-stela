@@ -132,6 +132,11 @@ delivered under their own basenames.
 - `ui/combat-vignette.jpg` (1600×900) — green drowned-light combat backdrop. ✅ generated
 - `ui/guild-hall.jpg` / `ui/town-hub.jpg` (1600×900) — the grove-town: a settlement *in* the
   wood (stilts, rope, lantern-moss), not the ash town. ✅ generated
+- `ui/market-workshop.png`, `ui/infirmary.png`, `ui/archive-lodge.png`, and
+  `ui/dungeon-entrance.png` (1600×900 lossless PNG) — living-root facilities
+  corresponding to the town's market, recovery, records/quests, and departure
+  locations. These are structural Verdant redraws, not green-tinted Default
+  interiors. ✅ 4/4 generated; runtime wiring pending
 - `minimap/marker-*.png` (32×32) — optional green retint; falls back to default if omitted.
 
 ## Character portraits — `assets/portraits/`, 512×512 PNG
@@ -178,7 +183,7 @@ resolution alone do not prove the portraits are usable.
 
 ## Delivery audit (2026-07-19)
 
-Required asset files in this order: **54**. Delivered: **54**. Undelivered: **0**.
+Required asset files in this order: **58**. Delivered: **58**. Undelivered: **0**.
 Optional Verdant minimap-marker overrides are excluded from this count.
 
 | Area | Ordered | Delivered | Missing |
@@ -187,7 +192,7 @@ Optional Verdant minimap-marker overrides are excluded from this count.
 | Door, stairs, return marker | 4 | 4 | 0 |
 | Enemy sprites | 15 | 15 | 0 |
 | Verdant item/equipment icons | 13 | 13 | 0 |
-| Title and UI stills | 4 | 4 | 0 |
+| Title and UI stills | 8 | 8 | 0 |
 | Character portraits | 12 | 12 | 0 |
 
 The required Verdant file order is delivered. The 2026-07-13 follow-up browser

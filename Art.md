@@ -9,14 +9,16 @@ scenario pack brief for the asset you are generating or reviewing.
 
 ## Delivery Status
 
-- Default / Ash: P14 and P16 delivered. All fourteen authored enemies now have
+- Default / Ash: P14, P16, P18, and P19 delivered. All fourteen authored enemies now have
   dedicated 768×768 clean-alpha art; the three P16 additions also include hurt
   frames. P18 adds five town NPCs, seven dungeon objects, and eight own-basename
-  catalog icons. P6/P9/P12/P13/P18 runtime integration remains.
-- Verdant: **54/54 required files delivered**. Act I's wall structural retake is
+  catalog icons. P19 adds four lossless town-facility backgrounds.
+  P6/P9/P12/P13/P18/P19 runtime integration remains.
+- Verdant: **58/58 required files delivered**. Act I's wall structural retake is
   browser-verified; Act II/III textures, fifteen scenario-specific enemies,
   thirteen item/equipment icons, and the 2026-07-14 Japanese 2D RPG portrait retake
-  now ship in the pack.
+  now ship in the pack. Four P19 facility backgrounds replace Default fallback
+  architecture with living-root grove-town locations.
 - Shared character-library pilot: P15 delivered **9/9** for three reusable NPCs
   and three adventurer base/action pairs under Default fallback basenames.
   Runtime wiring remains separate.
@@ -26,6 +28,9 @@ scenario pack brief for the asset you are generating or reviewing.
 - Support art extension: P18 delivered **24/24** files: five service NPCs,
   seven first-person dungeon objects, eight Default catalog icons, and four
   Verdant catalog icons.
+- Town facility extension: P19 delivered **8/8** lossless 1600×900 PNG
+  backgrounds: market/workshop, infirmary, archive lodge, and dungeon entrance
+  for both Default and Verdant.
 - Optional Verdant minimap marker overrides are not included in the required
   count.
 

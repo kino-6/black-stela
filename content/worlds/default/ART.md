@@ -156,10 +156,10 @@ only ash-world direction and asset-specific lists below.
 
 ## 3. Current inventory (what already exists)
 
-`content/worlds/default/assets/` — **137 assets total** (49 `dungeon/` incl. 14
+`content/worlds/default/assets/` — **141 assets total** (49 `dungeon/` incl. 14
 enemy sprites + 14 hurt frames + return/stair props + block/fallback textures +
 door + trap/stela/support props, 46 `icons/`, 12 `portraits/`, 14 `characters/`, 9
-`minimap/`, 1 `title/`, 6 `ui/`):
+`minimap/`, 1 `title/`, 10 `ui/`):
 
 | File | Size | Use | Gap it leaves |
 |------|------|-----|---------------|
@@ -180,14 +180,16 @@ door + trap/stela/support props, 46 `icons/`, 12 `portraits/`, 14 `characters/`,
 | `minimap/marker-*.png` ×9 | 32×32 | minimap markers | wired through marker CSS classes |
 | `ui/combat-vignette.jpg` | 1600×900 | combat UI backdrop | wired in combat frame CSS |
 | `ui/guild-hall.jpg` / `ui/town-hub.jpg` | 1600×900 | town/guild backdrops | wired as the town/guild scenes |
+| P19 facility backgrounds ×4 | 1600×900 PNG | market, infirmary, archive, dungeon entrance | generated; town-service wiring pending |
 | `ui/fx-slash.png` / `ui/fx-spark.png` | 480×96 | combat FX sheets | generated; FX wiring pending |
 | `ui/party-hit-reaction.png` | 1600×900 | party damage overlay | generated; FX wiring pending |
 | `title/black-stela-title.jpg` | 1920×1080 | title background | wired in title screen CSS |
 
-Delivery audit (2026-07-19): P14/P16/P18 are delivered. All fourteen authored
+Delivery audit (2026-07-19): P14/P16/P18/P19 are delivered. All fourteen authored
 Default enemies now have dedicated 768×768 clean-alpha art; all fourteen also
 have matching hurt frames. P18 adds five service NPCs, seven dungeon objects,
-and eight own-basename catalog icons. P6/P9/P12/P13/P18 still need wiring
+and eight own-basename catalog icons. P19 adds four lossless facility
+backgrounds. P6/P9/P12/P13/P18/P19 still need wiring
 passes before every delivered asset appears in normal play. Player-imported
 portraits still override generated origin portraits.
 
@@ -674,10 +676,27 @@ distinct hash. Review sheets:
 - `docs/evidence/art-support-library-p18/dungeon-object-contact.png`
 - `docs/evidence/art-support-library-p18/icon-contact.png`
 
+### P19 — Town facility backgrounds  ✅ 4/4 delivered
+
+These 1600x900 lossless PNG masters give the town hierarchy authored locations
+without baking NPCs, UI frames, readable signs, or global torch grading into the
+scene:
+
+- `ui/market-workshop.png` — shop, appraisal, and Forge location
+- `ui/infirmary.png` — recovery and treatment
+- `ui/archive-lodge.png` — records, bestiary, and quest notices
+- `ui/dungeon-entrance.png` — practical departure and return checkpoint
+
+The files are compositionally compatible with transparent NPC overlays and
+fixed controller command windows. They are not wired by this art-only delivery.
+Review sheet:
+
+- `docs/evidence/art-facilities-p19/facility-contact.png`
+
 ## 8. Retake queue (post-integration review)
 
-The pack art order through P18 is delivered.
-P6/P9/P12/P13/P15/P17/P18 still contain unwired presentation work.
+The pack art order through P19 is delivered.
+P6/P9/P12/P13/P15/P17/P18/P19 still contain unwired presentation work.
 Keep this section for post-integration art-tone corrections that should not be
 forgotten.
 
