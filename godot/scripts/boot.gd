@@ -17,4 +17,6 @@ func _ready() -> void:
 	if DisplayServer.get_name() == "headless":
 		get_tree().quit(0)
 	else:
-		SceneManager.goto("res://scenes/title.tscn")
+		# Deferred: changing scene DURING _ready (while the tree is still adding Boot) trips
+		# "Parent node is busy adding/removing children". Defer it to the end of the frame.
+		SceneManager.goto.call_deferred("res://scenes/title.tscn")

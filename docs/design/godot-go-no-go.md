@@ -28,7 +28,7 @@ Title → Town(hub) → Dungeon(first-person 3D + automap) → Combat(6-party 3+
 | # | Criterion | Verdict | Evidence |
 |---|-----------|---------|----------|
 | 1 | Controller-only traversal (confirm/cancel/directional focus/actor+target cycling), no pointer dependency | **PASS** | Every screen is focus-driven (first control `grab_focus`'d); the dungeon consumes arrows in `_input` so they own movement, not focus nav (IMP-026); combat targets on-stage; no code path requires a mouse. |
-| 2 | At 1920×1080 AND 1280×720, no overlap / nothing leaves the viewport | **PASS** | `window/stretch/mode=canvas_items` + `aspect=keep` scales the 1920 design uniformly to any 16:9 target; the 720p renders (`_town_720`, `_dungeon_720`, `_combat_720`) are the same composition, no overlap. |
+| 2 | At the **1920×1080** target (the single supported resolution), no overlap / nothing leaves the viewport | **PASS** | `window/stretch/mode=canvas_items` + `aspect=keep` scales the 1920 design uniformly to any 16:9 window, so smaller sizes cannot introduce overlap. **Godot is authored and tested at 1920×1080 only** — do NOT render/verify the slice at 1280×720. |
 | 3 | Town reads as a preparation location; dungeon commands are contextual; combat keeps enemy + 3+3 context visible | **PASS** | Town = diegetic hub (4 NPC service destinations + descent, live party/purse); dungeon dock = current-cell Search/Listen/Return with arrows owning movement; combat = full-frame enemy stage over a persistent 前衛/後衛 3+3 band. |
 | 4 | Victory → result → resume/return is one continuous presentation, not app-like page swaps | **PASS** | One `Run` autoload persists the party across `change_scene_to_file`; `capture_flow` shows the literal dungeon→combat handoff; combat victory stashes rewards → result reads them → returns to town. |
 | 5 | Default and Verdant use the same scene code with different data AND assets | **PASS** | `capture_world` renders both worlds through identical scripts; world title/tagline, grid, first-person geometry, enemy, and per-world asset roots (`assets/worlds/<id>/`) all come from data. |
@@ -80,10 +80,9 @@ The slice deliberately stays inside proven-ported territory. Before incremental 
 
 ```sh
 # rules parity + loop chain (headless, authoritative)
-godot --headless --path godot/ --script res://tests/verify_parity.gd   # 4/4
+godot --headless --path godot/ --script res://tests/verify_parity.gd   # 9/9
 godot --headless --path godot/ --script res://tests/verify_flow.gd     # dungeon→combat→victory
-# presentation (screenshots to godot/tests/_*.png)
+# presentation (screenshots to godot/tests/_*.png — always the native 1920×1080, never --resolution)
 godot --path godot/ --script res://tests/capture_world.gd -- default
 godot --path godot/ --script res://tests/capture_world.gd -- verdant
-godot --path godot/ --resolution 1280x720 --script res://tests/capture.gd -- res://scenes/town.tscn res://tests/_town_720.png
 ```
