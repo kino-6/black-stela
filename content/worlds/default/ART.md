@@ -156,10 +156,10 @@ only ash-world direction and asset-specific lists below.
 
 ## 3. Current inventory (what already exists)
 
-`content/worlds/default/assets/` — **102 assets total** (36 `dungeon/` incl. 11
-enemy sprites + 11 hurt frames + return/stair props + block/fallback textures +
-door + trap/stela props, 38 `icons/`, 12 `portraits/`, 9 `minimap/`, 1 `title/`,
-6 `ui/`):
+`content/worlds/default/assets/` — **117 assets total** (42 `dungeon/` incl. 14
+enemy sprites + 14 hurt frames + return/stair props + block/fallback textures +
+door + trap/stela props, 38 `icons/`, 12 `portraits/`, 9 `characters/`, 9
+`minimap/`, 1 `title/`, 6 `ui/`):
 
 | File | Size | Use | Gap it leaves |
 |------|------|-----|---------------|
@@ -167,13 +167,14 @@ door + trap/stela props, 38 `icons/`, 12 `portraits/`, 9 `minimap/`, 1 `title/`,
 | `stone-floor-block1..3.jpg` | 1024² | per-block dungeon floors | wired by floor id |
 | `stone-wall.jpg` / `stone-floor.jpg` | 1024² | fallback wall/floor | legacy fallback only |
 | `wood-door.jpg` | 1024² | every door | fine as a single door |
-| enemy sprites ×11 | 768×768 | combat sprites | P14 delivered; wired per enemy id |
-| enemy hurt frames ×11 | 768×768 | combat hit/defeat frames | P14 delivered; FX wiring pending |
+| enemy sprites ×14 | 768×768 | combat sprites | P14/P16 delivered; wired per enemy id |
+| enemy hurt frames ×14 | 768×768 | combat hit/defeat frames | P14/P16 delivered; FX wiring pending |
 | `return-marker.png` | 576×768 | town-return waystone | ok |
 | `stair-down.png` / `stair-up.png` | 768² | descent/ascent stair props | generated; stair sprite wiring pending |
 | `trap-hazard.png` | 512×512 | floor trap decal | generated; trap decal wiring pending |
 | `stela-root.png` | 1024×1536 | finale black-stela root prop | generated; finale prop wiring pending |
 | `portraits/*.png` ×12 | 512×512 | origin portraits | wired in character UI |
+| `characters/*.png` ×9 | 1024×1536 | NPCs and adventurer base/action pairs | P15 delivered; runtime wiring pending |
 | `icons/*.png` ×38 | 256×256 | item/equipment icons | wired in shop/inventory/equip UI |
 | `minimap/marker-*.png` ×9 | 32×32 | minimap markers | wired through marker CSS classes |
 | `ui/combat-vignette.jpg` | 1600×900 | combat UI backdrop | wired in combat frame CSS |
@@ -182,11 +183,11 @@ door + trap/stela props, 38 `icons/`, 12 `portraits/`, 9 `minimap/`, 1 `title/`,
 | `ui/party-hit-reaction.png` | 1600×900 | party damage overlay | generated; FX wiring pending |
 | `title/black-stela-title.jpg` | 1920×1080 | title background | wired in title screen CSS |
 
-Delivery audit (2026-07-13): P14 is delivered. The 22 enemy base / hurt sprites
-use a 768×768 clean-alpha canvas while preserving the approved designs and
-matching base/hurt footprints. P6/P9/P12/P13 still need wiring passes before
-every delivered asset appears in normal play. Player-imported portraits still
-override generated origin portraits.
+Delivery audit (2026-07-18): P14/P16 are delivered. All fourteen authored
+Default enemies now have dedicated 768×768 clean-alpha art; all fourteen also
+have matching hurt frames. P6/P9/P12/P13 still need wiring passes before every
+delivered asset appears in normal play. Player-imported portraits still override
+generated origin portraits.
 
 ---
 
@@ -513,6 +514,131 @@ re-order art for it.
 
 **Verdant** (`content/worlds/verdant/ART.md`) is delivered against the same
 square-canvas and clean-alpha rules.
+
+### P15 — Character library pilot  ✅ 9/9 delivered / ⬜ wiring pending
+
+Create a small engine-neutral character library under
+`content/worlds/default/assets/characters/`. These files are Default/Ash art,
+but their basenames form the fallback contract for future scenario overrides
+and the Godot/Babylon runtime comparison.
+
+**Style:** an original Japanese 2D dungeon-RPG ensemble: clear inked contours,
+expressive faces, readable costume silhouettes, cel-like shadow groups with
+restrained painterly texture. Adult low-fantasy adventurers, not photorealistic
+concept portraits, modern fashion, generic mobile-game glamour, or a demographic
+checklist. Give each role a distinct body shape, posture, equipment silhouette,
+and controlled local colors. Do not copy a proprietary character or a living
+artist's style.
+
+**Format:** 1024x1536 PNG RGBA, clean alpha, one figure, neutral studio lighting,
+no backdrop, floor, cast shadow, frame, text, torch wash, fog, particles, or
+global color grade.
+
+Pilot delivery:
+
+| Basename | Subject | Required read |
+| --- | --- | --- |
+| `npc-guild-master` | seasoned guild master with ledger and keys | judges candidates; not a clerk in modern uniform |
+| `npc-merchant` | practical arms-and-supplies merchant | worn apron, scales, wrapped goods; not comic relief |
+| `npc-healer` | field-trained town healer | bandages, medicine case, calm authority; not a glowing saint |
+| `adventurer-vanguard-base` | spear-and-shield front-liner | planted stance, ash-blue coat, dull brass and iron |
+| `adventurer-vanguard-attack` | same vanguard driving the spear forward | same identity and gear; decisive diagonal action |
+| `adventurer-mender-base` | back-row healer with staff and satchel | practical medic, pale cloth and muted red bindings |
+| `adventurer-mender-attack` | same mender striking or invoking a compact ward | same identity; restrained contained focus only |
+| `adventurer-arcanist-base` | ash scholar with short staff and black-glass focus | alert caster, blue-violet cloth and tarnished fittings |
+| `adventurer-arcanist-attack` | same arcanist releasing a compact spell gesture | same identity; no full-screen spell or scene light |
+
+Acceptance:
+
+- Base/action pairs remain the same person at portrait and combat-lane sizes.
+- Every silhouette and role reads at 160px high without labels.
+- Alpha corners are transparent and no chroma-key fringe remains.
+- A contact sheet passes alongside the existing Verdant portrait direction
+  before the library expands to the remaining starter roles and service NPCs.
+- Delivery alone does not wire attack switching. Runtime integration is a
+  separate task and should target the selected Godot/Babylon presentation API.
+
+Delivery audit (2026-07-18): all nine files are 1024x1536 PNG RGBA with
+transparent corners. Base/action pairs preserve their face, hair, costume,
+equipment, and dominant colors. Review contact sheet:
+`docs/evidence/art-character-library-p15/contact-sheet.png`.
+
+Packaging note: the current Vite eager asset glob includes all nine source
+masters in the web build before runtime wiring (about 11 MB total). Preserve
+these 1024x1536 masters, but generate and load runtime derivatives selectively
+when the Godot/Babylon presentation layer is chosen.
+
+### P16 — Missing authored-enemy coverage  ✅ 7/7 delivered
+
+Four enemies already present in scenario data were falling through to another
+enemy's fallback art. Deliver dedicated own-basename sprites without changing
+enemy stats, encounter weights, or combat behavior.
+
+| File | Subject | Delivery |
+| --- | --- | --- |
+| `enemy-b2f-ash-warden.png` | broad ash-stone blocker with shield-body and crimson bindings | base + hurt |
+| `enemy-b2f-ash-caller.png` | hovering masked caster with black-stone tablets and contained cinder core | base + hurt |
+| `enemy-rare-ashsilver-glimmer.png` | small mirrored reliquary-moth rare enemy | base + hurt |
+| Verdant `enemy-verdant-rare-gilded-sporecloud.png` | compact gilded seedpod colony; no loose particle cloud | base |
+
+All seven files use the shared 768×768 clean-alpha contract. Their exact
+enemy-id basenames win through the existing own-basename-first resolver, so no
+renderer or balance code changed. Review sheet:
+`docs/evidence/art-enemy-coverage-p16/contact-sheet.png`.
+
+### P17 — Full adventurer source library  ✅ 144/144 delivered
+
+Produce the full built-in class catalog as engine-neutral source masters under
+`content/worlds/default/source-art/adventurers/`. These are not included by the
+current Vite runtime glob; selected characters are exported into
+`assets/characters/` when runtime integration lands.
+
+Coverage: 12 classes × `human` / `sylvan` / `beastkin` × `male` / `female` ×
+`base` / `attack` = **144 PNG RGBA files**.
+
+Identity rules:
+
+- A base/attack pair is the same person, clothing, weapon, proportions, and
+  dominant colors.
+- Human, sylvan, and beastkin versions are distinct people with species-specific
+  anatomy and material culture, not palette swaps.
+- Male/female versions receive equal visual authority and practical protection.
+- Class silhouette wins over decoration at combat-lane size.
+- Attack stills contain the decisive pose only; impact, enemies, floor, camera
+  shake, particles, and full-screen magic remain runtime effects.
+
+Class reads:
+
+| Class | Base silhouette | Attack read |
+| --- | --- | --- |
+| vanguard | spear, round shield, planted coat | shield-led spear drive |
+| sellsword | practical sabre, worn half-coat | economical diagonal cut |
+| bulwark | tower shield, heavy layered armor | shield brace / crushing shove |
+| duelist | slim blade, light asymmetric coat | precise forward lunge |
+| seeker | dirk, chalk cord, inspection tools | low opportunistic strike |
+| scout | short bow, trail markers, light pack | fast aimed shot |
+| cutpurse | dirk, lock tools, close jacket | quick concealed-hand slash |
+| mender | staff, medical satchel, candle ward | compact healing/ward gesture |
+| chanter | staff, prayer slips, layered stole | warding chant with raised seals |
+| occultist | grimoire, black thread, ritual focus | contained binding hex |
+| arcanist | ash staff, black-glass focus | compact destructive casting pose |
+| wayfinder | short bow, map case, chalk marks | covering shot while directing route |
+
+Delivery audit (2026-07-18): all 144 masters are delivered as distinct
+1024x1536 PNG RGBA files with clean alpha. The set covers all twelve classes,
+both genders, all three species, and matching base/attack poses. Pair review
+confirmed persistent identity, practical equipment, species-specific anatomy,
+and readable class silhouettes without scenery or baked combat effects.
+
+Review sheets:
+
+- `docs/evidence/art-adventurer-library-p17/all-base-contact.png`
+- `docs/evidence/art-adventurer-library-p17/all-attack-contact.png`
+- `docs/evidence/art-adventurer-library-p17/all-pairs-contact.png`
+
+Runtime selection, portrait cropping, and per-character export remain a separate
+integration pass. Keep the complete 1024x1536 library outside `assets/` so Vite
+does not eagerly bundle 178 MB of unused source masters.
 
 ## 8. Retake queue (post-integration review)
 

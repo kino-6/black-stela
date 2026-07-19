@@ -71,7 +71,7 @@ Basename = enemy id, dots→dashes. Chroma-key on **MagentaBack** (subjects are 
 Each must read as a *forest* creature with a tactical silhouette; use the shared
 readability and alpha rules in `../../../docs/art/common.md`.
 
-**Delivery status: 14/14.** All enemy sprites below use scenario-specific
+**Delivery status: 15/15.** All enemy sprites below use scenario-specific
 768×768 clean-alpha art; Default/Ash enemy fallback is no longer used for the
 authored Verdant roster.
 
@@ -110,6 +110,7 @@ reads at the right weight.
 | `enemy-verdant-g6-strangler-warden` | large | strangling-vine warden (mini-boss) |
 | `enemy-verdant-g7-heartwood-husk` | large | heavy heartwood husk; wide, walling |
 | `enemy-verdant-g8-rootheart` | **huge** | **the Rootheart** — the living heartwood core. The boss; the most detailed piece in the pack. It towers: draw it to fill its frame. |
+| `enemy-verdant-rare-gilded-sporecloud` | small | prized gilded seedpod colony; compact silhouette, no loose particle cloud |
 
 ## Icons — `assets/icons/`, 256×256 PNG RGBA
 `item-verdant-sap-draught` (amber sap vial) · `item-verdant-pollen-salve` (pale salve jar) ·
