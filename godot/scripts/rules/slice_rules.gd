@@ -39,6 +39,8 @@ static func resolve(state: Dictionary, command: Dictionary, world: Dictionary = 
 			return _unretire_member(state, command.get("characterId", ""))
 		"erase_member":
 			return _erase_member(state, command.get("characterId", ""))
+		"edit_member_identity":
+			return _edit_member_identity(state, command)
 		_:
 			# Not yet ported — a no-op keeps the replay honest (the harness will flag the hash mismatch).
 			return {"state": state, "events": []}
@@ -333,6 +335,28 @@ static func _erase_member(state: Dictionary, char_id: String) -> Dictionary:
 	next["reserve"] = _without_id(next.get("reserve", []), char_id)
 	next["retired"] = _without_id(next.get("retired", []), char_id)
 	return {"state": next, "events": [{"type": "party_member_erased", "characterName": member.get("name", "")}]}
+
+# Revise name/title/notes/accent across every roster (town-only; name required).
+static func _edit_member_identity(state: Dictionary, cmd: Dictionary) -> Dictionary:
+	if state.get("phase", "") != "town":
+		return {"state": state, "events": []}
+	var char_id: String = cmd.get("characterId", "")
+	var name: String = String(cmd.get("name", "")).strip_edges()
+	if name == "":
+		return {"state": state, "events": []}
+	var edited := false
+	var next: Dictionary = state.duplicate(true)
+	for roster in ["party", "reserve", "retired"]:
+		for m in next.get(roster, []):
+			if String(m.get("id", "")) == char_id:
+				m["name"] = name
+				m["title"] = String(cmd.get("title", "")).strip_edges()
+				m["notes"] = String(cmd.get("notes", "")).strip_edges()
+				m["accentColor"] = cmd.get("accentColor", "")
+				edited = true
+	if not edited:
+		return {"state": state, "events": []}
+	return {"state": next, "events": [{"type": "party_member_edited", "characterName": name}]}
 
 static func _find_by_id(list: Variant, id: String) -> Dictionary:
 	if typeof(list) == TYPE_ARRAY:

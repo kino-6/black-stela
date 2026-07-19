@@ -138,6 +138,7 @@ function rosterRoute(): { initial: GameState; commands: Command[] } {
     { type: "recall_member", characterId: party[3].id },
     { type: "retire_member", characterId: party[2].id },
     { type: "unretire_member", characterId: party[2].id },
+    { type: "edit_member_identity", characterId: party[1].id, name: "Renamed", title: "Hero", notes: "revised", accentColor: "#ff3366" },
     { type: "erase_member", characterId: party[3].id }
   ];
   return { initial, commands };
