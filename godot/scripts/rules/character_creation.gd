@@ -126,3 +126,59 @@ static func _find(items: Array, id: String) -> Dictionary:
 		if typeof(item) == TYPE_DICTIONARY and item.get("id", "") == id:
 			return item
 	return {}
+
+const Leveling := preload("res://scripts/rules/leveling.gd")
+const Economy := preload("res://scripts/rules/economy.gd")
+
+# Port of reclassCharacter (src/domain/characterCreation.ts): re-derive a class base at the character's
+# LEVEL (kept via applyLevelUps re-levelling from the retained xp) and drop equipment the new class
+# can't wear. Reads the class catalog + MP mode from the engine bag. `character` keeps xp/gold/aptitude/
+# id/name/memory/vocation; only class-derived stats + equipment usability change.
+static func reclass_character(character: Dictionary, new_class_id: String, world: Dictionary, engine: Dictionary) -> Dictionary:
+	var class_def := _find(engine.get("classes", []), new_class_id)
+	if class_def.is_empty():
+		return character
+	var stats := _derive_stats(class_def, character.get("aptitude", {}))
+	var max_mp := _base_max_mp(new_class_id, character.get("aptitude", {}), engine.get("mpModeByClass", {}))
+
+	var starting := []
+	for entry in class_def.get("equipment", []):
+		if typeof(entry) == TYPE_DICTIONARY and typeof(entry.get("id", null)) == TYPE_STRING and entry["id"] != "":
+			starting.append(entry["id"])
+
+	var base: Dictionary = character.duplicate(true)
+	base["classId"] = class_def.get("id", new_class_id)
+	base["roleTags"] = class_def.get("roleTags", [])
+	base["rowPreference"] = class_def.get("rowPreference", "front")
+	base["row"] = class_def.get("rowPreference", "front")
+	base["startingEquipment"] = starting
+	base["level"] = 1
+	base["hp"] = int(stats["maxHp"])
+	base["maxHp"] = int(stats["maxHp"])
+	base["mp"] = max_mp
+	base["maxMp"] = max_mp
+	base["attack"] = int(stats["attack"])
+	base["damageMin"] = int(stats["damageMin"])
+	base["damageMax"] = int(stats["damageMax"])
+	base["accuracy"] = int(stats["accuracy"])
+	base["armor"] = int(stats["armor"])
+	base["speed"] = int(stats["speed"])
+	base["status"] = []
+	base.erase("injury")
+
+	var releveled: Dictionary = Leveling.apply_level_ups(base)["character"]
+
+	var equipment := {}
+	for slot in (releveled.get("equipment", {}) as Dictionary):
+		var equipped: Variant = releveled["equipment"][slot]
+		if typeof(equipped) != TYPE_DICTIONARY:
+			continue
+		var equip: Variant = Economy.find_equipment(world, equipped.get("id", ""))
+		if typeof(equip) == TYPE_DICTIONARY and Economy.is_equipment_usable_by(equip, releveled):
+			equipment[slot] = equipped
+
+	var result: Dictionary = releveled.duplicate(true)
+	result["hp"] = int(releveled.get("maxHp", 0))
+	result["mp"] = int(releveled.get("maxMp", 0))
+	result["equipment"] = equipment
+	return result

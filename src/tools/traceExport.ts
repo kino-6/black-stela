@@ -139,6 +139,7 @@ function rosterRoute(): { initial: GameState; commands: Command[] } {
     { type: "retire_member", characterId: party[2].id },
     { type: "unretire_member", characterId: party[2].id },
     { type: "edit_member_identity", characterId: party[1].id, name: "Renamed", title: "Hero", notes: "revised", accentColor: "#ff3366" },
+    { type: "reclass_member", characterId: party[0].id, classId: "scout" }, // re-derive the base at the retained level
     { type: "erase_member", characterId: party[3].id }
   ];
   return { initial, commands };
@@ -235,6 +236,33 @@ function lootRoute(): { initial: GameState; commands: Command[] } {
   return { initial, commands };
 }
 
+// M3 career (vocation board): a level-6 vanguard who has mastered vanguard + sellsword reclasses to the
+// basic Sellsword (re-derives the class base at level 6 via reclassCharacter), edits its bounded loadout,
+// then adopts the advanced ash-reaver (prereqs met → layers modifiers + grants power-strike). Exercises
+// change_vocation's basic-reclass AND advanced-adopt paths, the prereq gate, and set_loadout.
+function vocationRoute(): { initial: GameState; commands: Command[] } {
+  const hero = {
+    ...createGuildCharacter({ name: "Rook", classId: "vanguard", seed: "voc" }),
+    level: 6,
+    xp: 120, // xpForLevel(6) = 4*5*6 — enough for level 6, short of 7 (168), so reclass re-levels to 6
+    vocation: {
+      current: "vanguard",
+      mastery: { vanguard: 5, sellsword: 5 },
+      progress: {},
+      learned: ["power-strike"],
+      loadout: ["power-strike"]
+    }
+  };
+  const base = createInitialGameState();
+  const initial: GameState = { ...base, phase: "town", party: [hero] };
+  const commands: Command[] = [
+    { type: "change_vocation", characterId: hero.id, vocationId: "sellsword" },
+    { type: "set_loadout", characterId: hero.id, loadout: ["power-strike", "spell.not-learned"] },
+    { type: "change_vocation", characterId: hero.id, vocationId: "vocation.ash-reaver" }
+  ];
+  return { initial, commands };
+}
+
 // A short exploration route from a known B1F progress state: turn, search, listen, turn back. Exercises
 // dungeon movement + current-cell probes without minting characters.
 function dungeonRoute(world: ScenarioWorld): { initial: GameState; commands: Command[] } {
@@ -295,5 +323,6 @@ export const SLICE_ROUTES: TraceRoute[] = [
   { name: "recovery-blocked", worldId: "default", build: recoveryBlockedRoute },
   { name: "quests", worldId: "default", build: questRoute },
   { name: "loot", worldId: "default", build: lootRoute },
+  { name: "vocation", worldId: "default", build: vocationRoute },
   { name: "b1f-exploration", worldId: "default", build: dungeonRoute }
 ];

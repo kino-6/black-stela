@@ -13,6 +13,8 @@ const CombatRound := preload("res://scripts/rules/combat_round.gd")
 const Economy := preload("res://scripts/rules/economy.gd")
 const Quests := preload("res://scripts/rules/quests.gd")
 const Loot := preload("res://scripts/rules/loot.gd")
+const Vocations := preload("res://scripts/rules/vocations.gd")
+const CharacterCreation := preload("res://scripts/rules/character_creation.gd")
 
 static func resolve(state: Dictionary, command: Dictionary, world: Dictionary = {}, engine: Dictionary = {}) -> Dictionary:
 	match command.get("type", ""):
@@ -44,6 +46,8 @@ static func resolve(state: Dictionary, command: Dictionary, world: Dictionary = 
 			return _erase_member(state, command.get("characterId", ""))
 		"edit_member_identity":
 			return _edit_member_identity(state, command)
+		"reclass_member":
+			return _reclass_member(state, world, engine, command.get("characterId", ""), command.get("classId", ""))
 		"buy_item":
 			return Economy.buy(state, world, command.get("shopId", ""), command.get("itemId", ""))
 		"sell_item":
@@ -68,6 +72,10 @@ static func resolve(state: Dictionary, command: Dictionary, world: Dictionary = 
 			return Loot.reinforce(state, world, command.get("characterId", ""), command.get("slot", ""))
 		"bulk_convert":
 			return Loot.bulk_convert(state, command.get("mode", ""), command.get("rarities", null))
+		"change_vocation":
+			return Vocations.change_vocation(state, world, engine, command.get("characterId", ""), command.get("vocationId", ""))
+		"set_loadout":
+			return Vocations.set_loadout_command(state, engine, command.get("characterId", ""), command.get("loadout", []))
 		_:
 			# Not yet ported — a no-op keeps the replay honest (the harness will flag the hash mismatch).
 			return {"state": state, "events": []}
@@ -384,6 +392,33 @@ static func _edit_member_identity(state: Dictionary, cmd: Dictionary) -> Diction
 	if not edited:
 		return {"state": state, "events": []}
 	return {"state": next, "events": [{"type": "party_member_edited", "characterName": name}]}
+
+# Reclass an active or benched adventurer to a basic class (reclassCharacter re-derives the base at the
+# retained level). Town-only; no-op if already that class. No turn cost (a roster edit, not an action).
+static func _reclass_member(state: Dictionary, world: Dictionary, engine: Dictionary, char_id: String, class_id: String) -> Dictionary:
+	if state.get("phase", "") != "town":
+		return {"state": state, "events": []}
+	var member := _find_by_id(state.get("party", []), char_id)
+	if member.is_empty():
+		member = _find_by_id(state.get("reserve", []), char_id)
+	if member.is_empty() or String(member.get("classId", "")) == class_id:
+		return {"state": state, "events": []}
+	var reclassed := CharacterCreation.reclass_character(member, class_id, world, engine)
+	var next: Dictionary = state.duplicate(true)
+	var party := []
+	for c in next.get("party", []):
+		party.append(reclassed if String(c.get("id", "")) == char_id else c)
+	next["party"] = party
+	var reserve := []
+	for c in next.get("reserve", []):
+		reserve.append(reclassed if String(c.get("id", "")) == char_id else c)
+	next["reserve"] = reserve
+	var cls_name := char_id
+	for def in engine.get("classes", []):
+		if def.get("id", "") == class_id:
+			cls_name = String((def.get("label", {}) as Dictionary).get("en", class_id))
+			break
+	return {"state": next, "events": [{"type": "party_member_reclassed", "characterName": reclassed.get("name", ""), "className": cls_name}]}
 
 static func _find_by_id(list: Variant, id: String) -> Dictionary:
 	if typeof(list) == TYPE_ARRAY:
