@@ -17,6 +17,17 @@ var character_data: Dictionary = {} # class/background/trait catalogs (character
 var _loaded: bool = false
 var _id_counter: int = 0
 
+const SliceRules := preload("res://scripts/rules/slice_rules.gd")
+
+# Run one command through the ported rules and commit the result to the shared state. Returns the
+# emitted events (so a service screen can narrate what happened). This is the single mutation path town
+# services use — the same rules the parity gate proves against, so town play stays oracle-faithful.
+func dispatch(command: Dictionary) -> Array:
+	ensure_loaded()
+	var result: Dictionary = SliceRules.resolve(state, command, world, engine)
+	state = result.get("state", state)
+	return result.get("events", [])
+
 # A unique-within-the-run character id (production ids need only in-run uniqueness for the slice).
 func mint_id() -> String:
 	_id_counter += 1
