@@ -40,6 +40,7 @@ const Loot := preload("res://scripts/rules/loot.gd")
 const Vocations := preload("res://scripts/rules/vocations.gd")
 const CharacterCreation := preload("res://scripts/rules/character_creation.gd")
 const Encounters := preload("res://scripts/rules/encounters.gd")
+const Chests := preload("res://scripts/rules/chests.gd")
 
 static func resolve(state: Dictionary, command: Dictionary, world: Dictionary = {}, engine: Dictionary = {}) -> Dictionary:
 	match command.get("type", ""):
@@ -69,6 +70,12 @@ static func resolve(state: Dictionary, command: Dictionary, world: Dictionary = 
 			return _return_to_town(state, world)
 		"disarm_trap":
 			return _disarm_trap(state, world)
+		"investigate_chest":
+			return Chests.investigate(state)
+		"disarm_chest":
+			return Chests.disarm(state)
+		"open_chest":
+			return Chests.open_chest(state, world, engine)
 		"declare_round":
 			return CombatRound.declare_round(state, world, command.get("actions", []), engine)
 		"set_member_row":

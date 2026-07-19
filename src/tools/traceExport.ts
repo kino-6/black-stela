@@ -375,6 +375,23 @@ export const SLICE_ROUTES: TraceRoute[] = [
       commands: [{ type: "search" }, { type: "search" }]
     })
   },
+  // IMP-029 chests: walk onto a chamber's reward cell, investigate, disarm, open — one attempt each,
+  // and an undisarmed trap springs on open without destroying the reward.
+  {
+    name: "b2f-chest",
+    worldId: "default",
+    build: (world: ScenarioWorld) => ({
+      initial: withDebugStartCell(createDebugStateFromProgress(world, "floor_2"), world, "room.b2f.c1_2", "south"),
+      commands: [
+        { type: "move_forward" },        // leaves a closed chest on the cell
+        { type: "investigate_chest" },
+        { type: "investigate_chest" },   // spent — already_tried
+        { type: "disarm_chest" },
+        { type: "open_chest" },
+        { type: "open_chest" }           // spent — already_open
+      ]
+    })
+  },
   {
     name: "b3f-disarm",
     worldId: "default",

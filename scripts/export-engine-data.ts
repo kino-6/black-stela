@@ -1,6 +1,7 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { EQUIPMENT_AFFIXES } from "../src/domain/affixes";
 import { classCatalog } from "../src/domain/characterCreation";
 import { CLASS_ABILITIES, isCasterClass, isMartialSkillClass } from "../src/domain/spells";
 import { LOADOUT_LIMIT, MASTERED_RANK, MASTERY_POINTS_PER_RANK } from "../src/domain/vocations";
@@ -30,6 +31,9 @@ const classes = classCatalog.map((def) => ({
   base: def.base,
   equipment: Object.entries(def.equipment).map(([slot, id]) => ({ slot, id }))
 }));
-const data = { schemaVersion: 1, classAbilities: canonicalize(CLASS_ABILITIES), loadoutLimit: LOADOUT_LIMIT, masteryPointsPerRank: MASTERY_POINTS_PER_RANK, masteredRank: MASTERED_RANK, classes, mpModeByClass };
+// The BUILT-IN equipment affixes live in code, not in any world pack, so a Godot loot roll cannot
+// resolve them from the world alone. Ship them here and merge with world.affixes exactly as
+// resolveAffixCatalog does (authored wins on a shared id).
+const data = { schemaVersion: 1, equipmentAffixes: canonicalize(EQUIPMENT_AFFIXES), classAbilities: canonicalize(CLASS_ABILITIES), loadoutLimit: LOADOUT_LIMIT, masteryPointsPerRank: MASTERY_POINTS_PER_RANK, masteredRank: MASTERED_RANK, classes, mpModeByClass };
 writeFileSync(join(outDir, "engine-data.json"), `${JSON.stringify(data, null, 2)}\n`);
 console.log("exported engine data → godot/data/engine-data.json");
