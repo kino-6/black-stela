@@ -1,4 +1,7 @@
 extends Control
+
+const I18n := preload("res://scripts/i18n.gd")
+const SaveGame := preload("res://scripts/rules/save_game.gd")
 ## S4 TITLE — the loop's front door. The delivered key art fills the frame; one focused prompt starts
 ## a run into the town hub. Controller-first (confirm starts; the button is focused on load).
 
@@ -44,14 +47,40 @@ func _build() -> void:
 	add_child(box)
 	box.add_child(_center(_label(_world_title, 22, DIM)))
 	var start := Button.new()
-	start.text = "はじめる  ▶"
+	start.text = I18n.t("title.newGame")
 	start.custom_minimum_size = Vector2(360, 60)
 	start.add_theme_font_size_override("font_size", 28)
-	start.add_theme_color_override("font_color", GOLD)
 	start.pressed.connect(_on_start)
 	box.add_child(_center(start))
-	box.add_child(_center(_label("Enter / A で始める", 15, DIM)))
+
+	# M6 — 続きから: every non-empty slot, described by what it holds (never a raw id or file name).
+	for slot in [1, 2, 3]:
+		var summary: Dictionary = SaveGame.slot_summary(slot)
+		if bool(summary.get("empty", true)):
+			continue
+		var b := Button.new()
+		b.text = "%s %d — %s ・ %s ・ %s" % [
+			I18n.t("save.slot"), slot, String(summary.get("title", "")),
+			I18n.t("town.partyReady", {"count": int(summary.get("party", 0))}),
+			I18n.t("town.gold", {"gold": int(summary.get("gold", 0))})]
+		b.custom_minimum_size = Vector2(520, 48)
+		b.add_theme_font_size_override("font_size", 18)
+		b.pressed.connect(_on_continue.bind(slot))
+		box.add_child(_center(b))
+	box.add_child(_center(_label(I18n.t("play.menuHint"), 15, DIM)))
 	start.grab_focus()
+
+# Continue: load the slot into the shared run and drop the party back where they stood.
+func _on_continue(slot: int) -> void:
+	var loaded: Dictionary = SaveGame.read_slot(slot)
+	if not bool(loaded.get("ok", false)):
+		return
+	var run := get_node_or_null("/root/Run")
+	if run:
+		run.ensure_loaded()
+		run.state = loaded["state"]
+	var phase := String((loaded["state"] as Dictionary).get("phase", "town"))
+	get_tree().change_scene_to_file("res://scenes/dungeon.tscn" if phase == "dungeon" else "res://scenes/town.tscn")
 
 func _on_start() -> void:
 	var run := get_node_or_null("/root/Run")

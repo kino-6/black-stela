@@ -158,26 +158,29 @@ Every M4 command is ported and parity-gated, and the crawl's screens are faithfu
   full-floor map overlay (the party's record, visited cells only). All three are in the UX-parity
   manifest with comparison screenshots.
 
-### M5 — Combat (the full command screen)
-- **Commands:** complete `declare_round` (party `defend` / `use_item` / `cast` spell — enemy turn +
-  round-end + wipe already ported), `retreat`, `continue_after_combat`, `resume_at_checkpoint`, camp.
-  Port `spells.ts`, `status.ts` (full), `tempo.ts` (auto/repeat), `combatBeatText`/`combatLog`.
-- **Parity:** multi-round golden traces exercising spells, items, defend, retreat, status inflict/tick,
-  squad shielding, and party wipe (some already: b1f-combat-rounds/b2f-ability/b3f-poison/b4f-caster/
-  verdant-wipe). Beats stay presentation (target UI rebuilds them from state).
-- **Screens:** the full combat cockpit — per-actor command menu (attack/defend/skill/item + on-stage
-  target select), 全員でかかる / Auto / Repeat, beat-by-beat playback synced to the log, 3+3 party strip
-  with status pips, enemy stage with damage numbers, victory/result + level-up, camp.
-- **Exit:** a real multi-round fight driven controller-only — cast a spell, use an item, defend, watch
-  the enemy turn, win with a level-up (or wipe → dragged to town), parity-clean.
+### M5 — Combat (the full command screen) — DONE (2026-07-20)
+- **Commands:** declare_round now runs the whole party turn — defend, cast (loadout-bounded, silence and
+  MP gated; heal / damage / status-inflict), use_item (heal, restore MP, cure) — plus retreat and
+  continue_after_combat. A consumable spent mid-fight persists on every exit path.
+- **Parity 27/27**, incl. the new `combat-actions` route (defend + heal + firebolt, power-strike +
+  potion + sleep, attack + defend + firebolt, retreat).
+- **Screens:** the per-actor command menu — orders one adventurer at a time, front row first, offered
+  from that actor's own loadout, with a second STAGE for target selection and Esc backing out exactly
+  one stage. 全員でかかる remains the one-press round; 退却 leaves the fight.
+- **Not ported:** auto/repeat tempo and the beat-by-beat log pacing (presentation polish; the stage
+  already rebuilds damage from the state delta).
 
-### M6 — Save / load & migrations
-- **Rules:** port the save DTO (`saveData.ts`) — serialize/deserialize the full `GameState` incl.
-  party (equipment/vocation/memory/aptitude), inventory, map, quests, chests, records — and the
-  versioned migrations. GDScript load must accept a TS-written save and vice-versa.
-- **Parity:** round-trip fixtures (TS save → Godot load → Godot save → TS load) with identical state hash.
-- **Screens:** save-slot select / continue on the title.
-- **Exit:** a run started in React loads in Godot and continues, and back — no data loss.
+### M6 — Save / load & migrations — DONE (2026-07-20)
+- **Rules:** `save_game.gd` ports the versioned envelope (schemaVersion / savedAt / scenario / settings
+  / state), the forward-migration chain, and the REFUSAL of a save newer than this build supports.
+  Only fields the Zod schema actually `.default()`s are materialised on load — `enemyRecord`,
+  `materials` and `combatConclusion` are `.optional()` and must stay ABSENT.
+- **Parity:** `verify_save.gd` + `npm run export:saves` — three TS-written saves load in Godot to the
+  hash the oracle recorded, survive a Godot re-save unchanged, keep their scenario envelope, and the
+  version guard refuses a future save. Wired into `gate:migration`.
+- **Screens:** the title's 続きから list — one row per non-empty slot, described by what it HOLDS
+  (scenario, party size, purse), never a raw id or file name. Continuing resumes in town or the dungeon
+  according to the saved phase.
 
 ### M7 — Cutover
 1. Run save-migration + Default/Verdant content-parity suites on both runtimes.
