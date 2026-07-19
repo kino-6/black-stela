@@ -50,6 +50,8 @@ static func resolve(state: Dictionary, command: Dictionary, world: Dictionary = 
 			return Economy.equip(state, world, command.get("characterId", ""), command.get("equipmentId", ""), command.get("plus", null), command.get("affix", null))
 		"discard_item":
 			return Economy.discard(state, command.get("itemId", ""), command.get("plus", null), command.get("affix", null))
+		"recover_party":
+			return Economy.recover(state, world)
 		_:
 			# Not yet ported — a no-op keeps the replay honest (the harness will flag the hash mismatch).
 			return {"state": state, "events": []}

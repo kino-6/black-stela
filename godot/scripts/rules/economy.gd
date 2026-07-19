@@ -4,6 +4,11 @@ extends RefCounted
 ## built item dict to carry EXACTLY the fields TS emits — undefined catalog fields are omitted in JSON,
 ## so create_inventory_item copies an optional field only when the catalog entry has it.
 
+const CharacterStats := preload("res://scripts/rules/character_stats.gd")
+
+const RECOVERY_HP_COST := 1
+const RECOVERY_INJURY_COST := 8
+
 const ITEM_OPTIONAL := ["healAmount", "restoreMp", "curesStatuses", "grants", "sellValue"]
 const EQUIP_OPTIONAL := ["attackBonus", "defenseBonus", "accuracyBonus", "speedBonus", "sellValue"]
 const PROTECTED_KINDS := ["key", "treasure", "escape"]
@@ -90,6 +95,33 @@ static func is_stock_available(stock: Dictionary, state: Dictionary) -> bool:
 	if stock.get("availability", "") == "unlocked" and stock.get("unlockFlag", null) != null:
 		return (state.get("discoveredSecrets", []) as Array).has(stock["unlockFlag"])
 	return stock.get("availability", "") != "unlocked"
+
+# --- recovery (infirmary) -------------------------------------------------------------------------
+static func recovery_cost(party: Array, world: Dictionary) -> int:
+	var total := 0
+	for member in party:
+		total += maxi(0, int(member.get("maxHp", 0)) - int(member.get("hp", 0))) * RECOVERY_HP_COST
+		if member.get("injury", null) != null:
+			total += RECOVERY_INJURY_COST
+	return total
+
+static func recover(state: Dictionary, world: Dictionary) -> Dictionary:
+	if state.get("phase", "") != "town":
+		return {"state": state, "events": []}
+	var cost := recovery_cost(state.get("party", []), world)
+	if int(state.get("partyGold", 0)) < cost:
+		var blocked: Dictionary = state.duplicate(true)
+		blocked["turn"] = int(blocked.get("turn", 0)) + 1
+		return {"state": blocked, "events": [{"type": "recovery_blocked", "goldRequired": cost, "goldAvailable": int(state.get("partyGold", 0))}]}
+	var next: Dictionary = state.duplicate(true)
+	for member in next["party"]:
+		var stats := CharacterStats.effective(member, world)
+		member["hp"] = int(stats.get("maxHp", member.get("maxHp", 0)))
+		member["mp"] = int(stats.get("maxMp", member.get("maxMp", 0)))
+		member.erase("injury")
+	next["partyGold"] = int(next.get("partyGold", 0)) - cost
+	next["turn"] = int(next.get("turn", 0)) + 1
+	return {"state": next, "events": [{"type": "party_recovered", "gold": cost}]}
 
 # --- commands -------------------------------------------------------------------------------------
 static func buy(state: Dictionary, world: Dictionary, shop_id: String, item_id: String) -> Dictionary:

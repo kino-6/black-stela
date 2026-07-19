@@ -161,6 +161,27 @@ function economyRoute(): { initial: GameState; commands: Command[] } {
   return { initial, commands };
 }
 
+// M3 recovery (infirmary): a wounded party is healed for gold, then a no-cost re-heal, then a blocked
+// heal when the purse is empty. Exercises recover_party (cost, injury clear, block).
+function recoveryRoute(): { initial: GameState; commands: Command[] } {
+  const hurt = { ...createGuildCharacter({ name: "Rook", classId: "vanguard", seed: "rec" }), hp: 5, injury: "wounded" as const };
+  const mender = { ...createGuildCharacter({ name: "Sella", classId: "mender", seed: "rec" }), hp: 4 };
+  const base = createInitialGameState();
+  const initial: GameState = { ...base, phase: "town", party: [hurt, mender], partyGold: 100 };
+  const commands: Command[] = [
+    { type: "recover_party" }, // heals both, docks cost
+    { type: "recover_party" } // already full → cost 0, party_recovered gold 0
+  ];
+  return { initial, commands };
+}
+
+function recoveryBlockedRoute(): { initial: GameState; commands: Command[] } {
+  const hurt = { ...createGuildCharacter({ name: "Rook", classId: "vanguard", seed: "recb" }), hp: 3, injury: "wounded" as const };
+  const base = createInitialGameState();
+  const initial: GameState = { ...base, phase: "town", party: [hurt], partyGold: 2 };
+  return { initial, commands: [{ type: "recover_party" }] }; // too poor → recovery_blocked
+}
+
 // A short exploration route from a known B1F progress state: turn, search, listen, turn back. Exercises
 // dungeon movement + current-cell probes without minting characters.
 function dungeonRoute(world: ScenarioWorld): { initial: GameState; commands: Command[] } {
@@ -217,5 +238,7 @@ export const SLICE_ROUTES: TraceRoute[] = [
   { name: "verdant-wipe", worldId: "verdant", build: combatVsRoute("enemy.verdant.g8.rootheart", 1, 14) },
   { name: "roster", worldId: "default", build: rosterRoute },
   { name: "economy", worldId: "default", build: economyRoute },
+  { name: "recovery", worldId: "default", build: recoveryRoute },
+  { name: "recovery-blocked", worldId: "default", build: recoveryBlockedRoute },
   { name: "b1f-exploration", worldId: "default", build: dungeonRoute }
 ];
