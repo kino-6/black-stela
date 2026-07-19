@@ -123,6 +123,26 @@ function combatVsRoute(enemyId: string, count: number, rounds: number) {
   };
 }
 
+// M2 roster commands: build a town party of four and reshuffle it — set-row, swap-rows, bench→recall,
+// retire→unretire, erase. Exercises every ported roster op (party/reserve/retired moves + events).
+function rosterRoute(): { initial: GameState; commands: Command[] } {
+  const party = ["vanguard", "mender", "arcanist", "seeker"].map((classId, index) =>
+    createGuildCharacter({ name: `M${index}`, classId: classId as never, seed: "roster" })
+  );
+  const base = createInitialGameState();
+  const initial: GameState = { ...base, phase: "town", party, reserve: [], retired: [] };
+  const commands: Command[] = [
+    { type: "set_member_row", characterId: party[0].id, row: "back" },
+    { type: "swap_member_rows", characterId: party[0].id, targetCharacterId: party[1].id },
+    { type: "bench_member", characterId: party[3].id },
+    { type: "recall_member", characterId: party[3].id },
+    { type: "retire_member", characterId: party[2].id },
+    { type: "unretire_member", characterId: party[2].id },
+    { type: "erase_member", characterId: party[3].id }
+  ];
+  return { initial, commands };
+}
+
 // A short exploration route from a known B1F progress state: turn, search, listen, turn back. Exercises
 // dungeon movement + current-cell probes without minting characters.
 function dungeonRoute(world: ScenarioWorld): { initial: GameState; commands: Command[] } {
@@ -177,5 +197,6 @@ export const SLICE_ROUTES: TraceRoute[] = [
   // (every member wounded → dragged back to town minus a rescue fee).
   { name: "b4f-caster", worldId: "default", build: combatVsRoute("enemy.b4f.lantern-ward", 1, 8) },
   { name: "verdant-wipe", worldId: "verdant", build: combatVsRoute("enemy.verdant.g8.rootheart", 1, 14) },
+  { name: "roster", worldId: "default", build: rosterRoute },
   { name: "b1f-exploration", worldId: "default", build: dungeonRoute }
 ];
