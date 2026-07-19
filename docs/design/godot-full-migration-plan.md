@@ -37,6 +37,10 @@ shipping product until a Godot milestone actually replaces its surface.
 5. **Save compatibility.** One versioned save DTO; a Godot save round-trips through the TS schema and
    vice-versa until cutover; migrations preserved.
 6. **Headless proves reachability + parity; a real browser/desktop run proves feel.** Both required.
+7. **AI remains behind an engine-neutral contract.** M3 does not add live AI.
+   Preserve typed command events and the normalized world export according to
+   [`ai-godot-migration-contract.md`](ai-godot-migration-contract.md), so later
+   scenario/GM work does not fork into Godot scene scripts.
 
 ## 2. Target architecture
 
@@ -94,7 +98,23 @@ shell, input map, and the 9-trace baseline. Keep as the spine.
 - **Exit:** build a 3+3 party from scratch, controller-only, JA, and have it persist in `Run`.
 - **Risk:** creation is the most stateful non-combat flow; portraits are presentation (stay simple).
 
-### M3 — Town hub & the preparation services
+### M3 — Town hub & the preparation services — DONE (2026-07-20)
+All service RULES ported + parity-clean (16/16 golden traces), and all six services rebuilt as
+FUNCTIONAL controller-first level-2 screens wired through `Run.dispatch` (the same rules the parity
+gate proves). Traces added: `economy`, `recovery`, `recovery-blocked`, `quests`, `loot`, `vocation`,
+and the `roster` route gained a `reclass_member` step. The class catalog + per-class MP mode now ride
+on `engine-data.json` so the reclass path (`reclass_character`) re-derives a class identically to TS.
+Caveats: `import_member` (portable-adventurer vault) is deferred to the save/load work — it is not a
+town prep service; and the Records screen uses a lightweight in-engine bestiary/roster projection
+rather than a full `bestiary.ts` / `replayLog.ts` port (pure UI, no state-hash impact).
+
+M3 is also the preparation seam for the future bounded GM, but not its
+implementation milestone. Service commands must retain parity-clean
+`{ state, events }` results; records and feedback project from those events;
+provider configuration and generated prose do not enter scenes, `Run.state`, or
+the save contract. See
+[`ai-godot-migration-contract.md`](ai-godot-migration-contract.md).
+
 The two-level hub (IMP-025) + each service, one at a time (each its own sub-slice):
 - **Recovery / infirmary:** `recover_party`. (Small — start here.)
 - **Market / shop:** `buy_item`, `sell_item`, `equip_item`, `discard_item`. Port `economy.ts` (equip
