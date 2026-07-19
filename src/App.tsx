@@ -188,6 +188,9 @@ export function App() {
   const [instantCombatLog, setInstantCombatLog] = useState<boolean>(() => loadInstantCombatLog());
   const [confirmRound, setConfirmRound] = useState<boolean>(() => loadConfirmRound());
   const [revealedBeats, setRevealedBeats] = useState(0);
+  // IMP-029 — a cell the player chose to walk away from without acting on its chest, so the chest panel
+  // stays hidden until they leave and return. Keyed by cell id (cleared implicitly when position moves).
+  const [dismissedChestCellId, setDismissedChestCellId] = useState<string | null>(null);
   const t = useMemo(() => createTranslator(locale), [locale]);
   // Player-facing copy the SCENARIO owns (AGENTS.md: service copy belongs in scenario data, not
   // hardcoded in components). Falls through to `t` for anything the world does not say itself,
@@ -269,6 +272,16 @@ export function App() {
     return getLocalizedRoomText(activeWorld, state.position.roomId, locale);
   }, [locale, state.position]);
   const currentRoom = useMemo(() => (state.position ? getRoom(activeWorld, state.position.roomId) : null), [state.position]);
+  // IMP-029 — the chest on the party's current cell (dungeon only), unless they walked away from it.
+  const currentChest = useMemo(() => {
+    // The victory RESULT screen (combatConclusion) owns the screen first; the chamber's chest surfaces
+    // only once the party dismisses the result and is back to exploring.
+    if (state.phase !== "dungeon" || state.combatConclusion || !state.position?.cellId) {
+      return null;
+    }
+    return state.chests?.find((chest) => chest.cellId === state.position!.cellId) ?? null;
+  }, [state.phase, state.combatConclusion, state.position?.cellId, state.chests]);
+  const activeChest = currentChest && currentChest.cellId !== dismissedChestCellId ? currentChest : null;
   const canReturnToTown = Boolean(currentRoom?.stairsToTown || currentRoom?.restPoint);
   const escapeItem = state.inventory.find((item) => item.kind === "escape" && item.quantity > 0);
   const canUseEscapeItem =
@@ -1213,11 +1226,16 @@ export function App() {
         return;
       }
 
+      // IMP-029 — while a chest sits on the current cell it OWNS the command region: arrows navigate
+      // its actions and Confirm/Space act on them, instead of the party walking off the chest.
+      const chestActive = Boolean(activeChest);
+
       // In the dungeon the arrow keys drive the party (up = forward, down =
       // step back, left/right = turn) rather than moving button focus.
       if (
         state.phase === "dungeon" &&
         !partyMenuOpen &&
+        !chestActive &&
         (key === "arrowup" || key === "arrowdown" || key === "arrowleft" || key === "arrowright")
       ) {
         event.preventDefault();
@@ -1237,7 +1255,7 @@ export function App() {
       // holds focus. Movement owns the arrows, so a command button (Search, Map, …) is
       // usually the focused element; without this, Space would confirm that button
       // instead of starting auto. Enter still confirms the focused command.
-      if (state.phase === "dungeon" && !partyMenuOpen && (key === " " || key === "r")) {
+      if (state.phase === "dungeon" && !partyMenuOpen && !chestActive && (key === " " || key === "r")) {
         event.preventDefault();
         toggleTempoMode();
         return;
@@ -1286,22 +1304,22 @@ export function App() {
         // 全員でかかる — one press commits the whole round with the smart attack default.
         event.preventDefault();
         commitAllOutAttack();
-      } else if (state.phase === "dungeon" && (key === "w" || key === "enter")) {
+      } else if (state.phase === "dungeon" && !chestActive && (key === "w" || key === "enter")) {
         event.preventDefault();
         run({ type: "move_forward" });
-      } else if (state.phase === "dungeon" && key === "a") {
+      } else if (state.phase === "dungeon" && !chestActive && key === "a") {
         event.preventDefault();
         run({ type: "turn_left" });
-      } else if (state.phase === "dungeon" && key === "d") {
+      } else if (state.phase === "dungeon" && !chestActive && key === "d") {
         event.preventDefault();
         run({ type: "turn_right" });
-      } else if (state.phase === "dungeon" && key === "s") {
+      } else if (state.phase === "dungeon" && !chestActive && key === "s") {
         event.preventDefault();
         run({ type: "move_backward" });
-      } else if (state.phase === "dungeon" && key === "q") {
+      } else if (state.phase === "dungeon" && !chestActive && key === "q") {
         event.preventDefault();
         run({ type: "strafe_left" });
-      } else if (state.phase === "dungeon" && key === "e") {
+      } else if (state.phase === "dungeon" && !chestActive && key === "e") {
         event.preventDefault();
         run({ type: "strafe_right" });
       } else if (state.phase === "dungeon" && key === "f") {
@@ -1321,7 +1339,7 @@ export function App() {
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [combatOrdersReady, fullMapOpen, isTempoRunning, partyMenuOpen, selectedActor, selectedTarget, state, t, tempoMode, townMode]);
+  }, [activeChest, combatOrdersReady, fullMapOpen, isTempoRunning, partyMenuOpen, selectedActor, selectedTarget, state, t, tempoMode, townMode]);
 
   // The floor map is exploration-only. The party menu works in town and the
   // dungeon, but never interrupts combat.
@@ -1351,7 +1369,8 @@ export function App() {
     });
 
     return () => window.cancelAnimationFrame(frame);
-  }, [guildCreationStep, guildOfferState, partyMenuOpen, screen, state.combat?.round, state.party.length, state.phase, townMode]);
+    // IMP-029 — also rescue the cursor when a chest appears/opens (it swaps the command surface).
+  }, [guildCreationStep, guildOfferState, partyMenuOpen, screen, state.combat?.round, state.party.length, state.phase, townMode, activeChest?.cellId, activeChest?.phase]);
 
   function cycleSelectedTarget(step: number) {
     if (livingEnemyGroups.length === 0) {
@@ -2633,6 +2652,8 @@ export function App() {
                     escapeItem &&
                     run({ type: "use_item", itemId: escapeItem.id, targetCharacterId: state.party[0]?.id ?? "" })
                   }
+                  chest={activeChest}
+                  onLeaveChest={() => setDismissedChestCellId(activeChest?.cellId ?? null)}
                 />
               ) : (
                 <CombatCockpit

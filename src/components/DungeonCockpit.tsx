@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import type { Command, GameState, ScenarioWorld } from "../domain/types";
+import type { ChestState, Command, GameState, ScenarioWorld } from "../domain/types";
 import type { Locale, Translator } from "../i18n";
 import { getEffectiveCharacterStats } from "../domain/economy";
 import { formatCharacterSummary } from "../ui/catalog";
@@ -7,6 +7,7 @@ import { renderPortraitContent } from "../ui/portrait";
 import { DungeonView } from "./DungeonView";
 import { MapPanel } from "./MapPanel";
 import { DungeonCommandDock } from "./DungeonCommandDock";
+import { ChestPanel } from "./ChestPanel";
 import { CharacterPresence } from "./CharacterPresence";
 import { getRoom } from "../domain/scenario";
 import { selectNarrationSubject } from "../services/narrationSubject";
@@ -35,6 +36,9 @@ interface DungeonCockpitProps {
   onReturnToTown: () => void;
   showEscapeItem: boolean;
   onUseEscapeItem: () => void;
+  /** IMP-029 — the closed/opened chest on the party's current cell (null = none, or dismissed). */
+  chest: ChestState | null;
+  onLeaveChest: () => void;
 }
 
 // The dungeon half of the adventure cockpit: first-person view + map/party rail, the
@@ -63,7 +67,9 @@ export function DungeonCockpit({
   returnViaStairs,
   onReturnToTown,
   showEscapeItem,
-  onUseEscapeItem
+  onUseEscapeItem,
+  chest,
+  onLeaveChest
 }: DungeonCockpitProps) {
   const currentRoom = state.position ? getRoom(world, state.position.roomId) : undefined;
   const eventSubject = currentRoom?.event
@@ -194,6 +200,11 @@ export function DungeonCockpit({
         )}
       </div>
       {tempo}
+      {chest ? (
+        // IMP-029 — the chest owns the command region while it sits on this cell (same footprint as the
+        // dock, so nothing reflows). Leaving hands the region back to movement/utility commands.
+        <ChestPanel chest={chest} t={t} onCommand={run} onLeave={onLeaveChest} />
+      ) : (
       <DungeonCommandDock
         t={t}
         onCommand={run}
@@ -213,6 +224,7 @@ export function DungeonCockpit({
         showEscapeItem={showEscapeItem}
         onUseEscapeItem={onUseEscapeItem}
       />
+      )}
     </>
   );
 }

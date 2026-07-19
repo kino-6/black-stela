@@ -289,6 +289,9 @@ export async function clearAnyCombat(page: Page) {
       (await page.getByTestId("combat-command-menu").count()) > 0 ||
       (await page.getByLabel("Battle screen").isVisible().catch(() => false));
     if (!inCombat) {
+      // IMP-029 — a cleared chamber leaves a chest that holds the cell; walk past it (Leave) so the
+      // caller's next turn/move works.
+      await dismissChestIfPresent(page);
       return;
     }
     await resolveVisibleCombat(page);
@@ -311,13 +314,26 @@ async function pressDungeon(page: Page, press: () => Promise<void>) {
   throw new Error("dungeon control stayed blocked (combat/result overlay never cleared)");
 }
 
+// IMP-029 — a chamber the party just cleared leaves a chest that OWNS the cell's command region
+// (movement keys navigate it, not the party). A scripted walk models a player who walks past it:
+// Leave hands the cell back so the next step can turn/move again.
+async function dismissChestIfPresent(page: Page) {
+  if ((await page.getByTestId("chest-leave").count()) > 0) {
+    await page.getByTestId("chest-leave").focus();
+    await page.keyboard.press("Enter");
+    await page.waitForTimeout(40);
+  }
+}
+
 async function walkB1fPath(page: Page, dirs: Dir[]) {
   for (const dir of dirs) {
+    await dismissChestIfPresent(page);
     await pressDungeon(page, () => faceDirection(page, dir));
     await pressDungeon(page, async () => {
       await page.keyboard.press("w");
     });
     await clearAnyCombat(page);
+    await dismissChestIfPresent(page);
   }
 }
 
@@ -351,6 +367,8 @@ async function currentFacing(page: Page): Promise<string> {
 }
 
 export async function faceDirection(page: Page, dir: "north" | "south" | "east" | "west") {
+  // IMP-029 — a chest on the cell captures the turn/move keys; Leave it first so facing works.
+  await dismissChestIfPresent(page);
   for (let i = 0; i < 4; i += 1) {
     if ((await currentFacing(page)) === dir) {
       return;
@@ -420,6 +438,8 @@ export async function walkUntilCombat(page: Page, maxSteps = 220) {
       await page.waitForTimeout(400); // let the scene report its anchors
       return true;
     }
+    // IMP-029 — a treasure/chamber chest holds the cell (arrows navigate it); Leave it so the walk moves on.
+    await dismissChestIfPresent(page);
     await page.keyboard.press(step % 5 === 4 ? "ArrowLeft" : "ArrowUp");
     await page.waitForTimeout(90);
   }

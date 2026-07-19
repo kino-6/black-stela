@@ -104,6 +104,14 @@ export function DungeonView({ state, world, label, onEnemyAnchors }: DungeonView
           : [],
       onEnemyAnchors,
       showTrap: Boolean(room.trap) && !state.resolvedTraps.includes(room.trap!.id),
+      chest: (() => {
+        // IMP-029 — ground the chest sitting on the party's current cell (dungeon phase only).
+        const onCell =
+          state.phase === "dungeon"
+            ? state.chests?.find((entry) => entry.cellId === state.position!.cellId)
+            : undefined;
+        return onCell ? { open: onCell.phase === "opened" } : null;
+      })(),
       returnMarker: room.stairsToTown ? (room.returnStyle === "stairs" ? "stairs" : "marker") : null,
       stairDescends,
       frontWallIndex: corridor.findIndex((segment) => segment.frontCap)
@@ -115,6 +123,8 @@ export function DungeonView({ state, world, label, onEnemyAnchors }: DungeonView
     // a group of N draws N figures and must lose one as each falls.
     state.combat?.enemyGroups.map((group) => `${group.enemyId}:${group.count}`).join(","),
     state.resolvedTraps,
+    // IMP-029 — re-render when the current cell's chest appears / is opened.
+    state.chests?.map((chest) => `${chest.cellId}:${chest.phase}`).join(","),
     renderSize.width,
     renderSize.height,
     corridor,

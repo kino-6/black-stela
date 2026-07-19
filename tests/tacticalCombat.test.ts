@@ -133,7 +133,8 @@ describe("tactical combat", () => {
     expect(next.defeatedEnemies).toContain("enemy.b1f.ash-slime");
     expect(next.party[0]).toMatchObject({ xp: 5, gold: 3 });
     expect(next.partyGold).toBe(state.partyGold + 3);
-    expect(next.log.at(-1)?.text).toMatch(/Victory/i);
+    // A chamber victory may append a "chest waits" line after the victory, so match anywhere.
+    expect(next.log.some((entry) => /Victory/i.test(entry.text))).toBe(true);
     expect(next.combatConclusion).toMatchObject({
       enemyIds: ["enemy.b1f.ash-slime"],
       xp: 5,

@@ -247,13 +247,32 @@ export function projectEventToLog(event: GameEvent, locale: Locale = "en", world
       return { text: t("events.partyWiped", { gold: event.rescueFee }), tags: ["combat", "town"] };
     case "debug_started":
       return { text: event.text, tags: ["debug"] };
-    // IMP-029 — chest events. The loot line is already emitted via inventory_item_gained; these carry
-    // the interaction feel to the UI slice (its own presentation), so they do not add a log line here.
+    // IMP-029 — chest interaction lines. The loot itself is logged via inventory_item_gained. The chest
+    // APPEARING adds no log line (it would bury the victory summary in the ticker); the chest panel's own
+    // note + the grounded sprite announce it.
     case "chest_appeared":
-    case "chest_investigated":
-    case "chest_disarmed":
+      return null;
+    case "chest_investigated": {
+      const name = event.handlerName ?? (locale === "ja" ? "隊列" : "The party");
+      const key =
+        event.result === "trapped"
+          ? "events.chestInvestigatedTrapped"
+          : event.result === "clear"
+            ? "events.chestInvestigatedClear"
+            : "events.chestInvestigatedUncertain";
+      return { text: t(key, { name }), tags: ["dungeon", "chest"] };
+    }
+    case "chest_disarmed": {
+      const name = event.handlerName ?? (locale === "ja" ? "隊列" : "The party");
+      return {
+        text: t(event.success ? "events.chestDisarmedSuccess" : "events.chestDisarmedFail", { name }),
+        tags: ["dungeon", "chest"]
+      };
+    }
     case "chest_trap_sprung":
+      return { text: t("events.chestTrapSprung"), tags: ["dungeon", "chest", "trap"] };
     case "chest_opened":
+      return { text: t("events.chestOpened"), tags: ["dungeon", "chest"] };
     case "command_blocked_chest":
       return null;
   }

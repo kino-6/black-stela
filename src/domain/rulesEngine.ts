@@ -2085,7 +2085,9 @@ function ensureChestForRoom(
   // Safe lookup — a synthetic combat (e.g. the descent simulator's "sim" room) has no world room, so
   // getRoom would throw; there is simply no chest to leave.
   const room = world.dungeons.flatMap((dungeon) => dungeon.rooms).find((candidate) => candidate.id === roomId);
-  const authored = room ? roomChest(room) : null;
+  // Safe transit rooms — the town-stair landing and rest points — never gate the way with a chest, so
+  // descending or resting stays a clean walk-through (the chamber loot lives behind fights, not doors).
+  const authored = room && !room.stairsToTown && !room.restPoint ? roomChest(room) : null;
   if (!authored || !cellId) {
     return { state, events: [] };
   }

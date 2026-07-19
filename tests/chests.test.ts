@@ -113,13 +113,13 @@ describe("IMP-029 chest state machine (pure)", () => {
 });
 
 describe("IMP-029 integration (default world)", () => {
-  it("entering the dungeon collects NO treasure — a chest is left instead", () => {
+  it("entering the dungeon collects NO treasure, and the safe stair landing leaves no chest", () => {
     const base = { ...createInitialGameState(), party: [createGuildCharacter({ name: "Rook", classId: "vanguard", seed: "e" })] };
     const entered = executeCommand(base, defaultWorld, { type: "enter_dungeon" });
     expect(entered.inventory.length).toBe(base.inventory.length); // no auto-loot on descent
-    const landingChest = (entered.chests ?? []).find((chest) => chest.roomId === defaultWorld.startRoom);
-    expect(landingChest?.phase).toBe("closed");
     expect(entered.floorClaimedTreasures).not.toContain(defaultWorld.startRoom);
+    // The town-stair landing is safe transit — no chest gates the entrance.
+    expect((entered.chests ?? []).some((chest) => chest.roomId === defaultWorld.startRoom)).toBe(false);
   });
 
   it("a chest is inoperable before the chamber fight is won", () => {

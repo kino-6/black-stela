@@ -140,6 +140,11 @@ test("a win shows a result screen with XP/gold, dismissed to continue (#81)", as
   // Dismissing it returns to exploring.
   await page.getByTestId("combat-result-continue").click();
   await expect(result).toHaveCount(0);
+  // IMP-029 — the cleared chamber leaves a chest holding the cell; walk past it (Leave) to the dock.
+  if ((await page.getByTestId("chest-leave").count()) > 0) {
+    await page.getByTestId("chest-leave").focus();
+    await page.keyboard.press("Enter");
+  }
   await expect(page.getByTestId("dungeon-command-window")).toBeVisible();
 });
 

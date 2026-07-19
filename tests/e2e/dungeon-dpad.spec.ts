@@ -65,6 +65,11 @@ test.describe("dungeon exploration is a d-pad, not a toolbar", () => {
     if (await page.getByLabel("Battle screen").isVisible().catch(() => false)) {
       await resolveVisibleCombat(page);
     }
+    // IMP-029 — the tutorial chamber now leaves a chest; walk away from it (Leave) to restore the dock.
+    if ((await page.getByTestId("chest-leave").count()) > 0) {
+      await page.getByTestId("chest-leave").focus();
+      await page.keyboard.press("Enter");
+    }
     await expect(page.getByTestId("dungeon-command-window")).toBeVisible();
 
     const tempo = page.getByTestId("dungeon-tempo");

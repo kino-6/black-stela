@@ -11,21 +11,16 @@ function stateWithParty() {
 }
 
 describe("economy and equipment", () => {
-  it("starts with shared party gold; the landing's reward is a chest, not auto-loot (IMP-029)", () => {
+  it("starts with shared party gold and does not auto-collect treasure on descent (IMP-029)", () => {
     const state = stateWithParty();
     const entered = executeCommand(state, defaultWorld, { type: "enter_dungeon" });
 
     expect(state.partyGold).toBeGreaterThan(0);
-    // No auto-collect: entering leaves a closed chest on the landing, the room is not yet claimed.
+    // No auto-collect: descending grants no loot and claims no room (chamber loot is a chest, not auto).
+    expect(entered.inventory.length).toBe(state.inventory.length);
     expect(entered.claimedTreasures).not.toContain("room.b1f.001");
-    expect((entered.chests ?? []).some((chest) => chest.roomId === "room.b1f.001")).toBe(true);
-
-    // Opening it grants the reward exactly once — and it cannot be double-claimed.
-    const opened = resolveCommand(entered, defaultWorld, { type: "open_chest" });
-    expect(opened.events.some((event) => event.type === "inventory_item_gained")).toBe(true);
-    expect(opened.state.claimedTreasures).toContain("room.b1f.001");
-    const openedAgain = resolveCommand(opened.state, defaultWorld, { type: "open_chest" });
-    expect(openedAgain.events).toContainEqual({ type: "command_blocked_chest", reason: "already_open" });
+    // The safe town-stair landing is a clean walk-through — no chest gates the entrance.
+    expect((entered.chests ?? []).some((chest) => chest.roomId === "room.b1f.001")).toBe(false);
   });
 
   it("buys equipment from town and equips it without changing base character identity", () => {

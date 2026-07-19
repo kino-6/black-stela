@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { addCharacter, createCharacter, createInitialGameState } from "../src/domain/gameState";
+import { withDeterministicIds } from "../src/domain/ids";
 import { executeCommand, listUnlockedCheckpoints, resolveCommand } from "../src/domain/rulesEngine";
 import { defaultWorld } from "../src/data/defaultWorld";
 import { analyzeFloorGraph } from "../src/domain/floorGraph";
@@ -18,7 +19,7 @@ function faceTo(state: GameState, dir: Direction): GameState {
   return state;
 }
 
-function walkLeg(state: GameState, toRoomId: string): GameState {
+function walkLeg(state: GameState, toRoomId: string, revive = false): GameState {
   const cells = b1fGraph.shortestPathCells(state.position!.roomId, toRoomId);
   for (let i = 1; i < cells.length; i += 1) {
     const a = b1fCellById.get(cells[i - 1])!;
@@ -29,27 +30,38 @@ function walkLeg(state: GameState, toRoomId: string): GameState {
     if (state.phase === "combat") {
       state = resolveCombat(state);
     }
+    // A LONG walk (revive=true) keeps a lone adventurer standing so it reaches its destination — enemy
+    // turns are now ported, so a whole-floor solo trek would otherwise wipe. Short walks stay untouched
+    // (they assert the party takes damage), so revive is opt-in per caller.
+    if (revive && state.phase === "dungeon") {
+      state = executeCommand(state, defaultWorld, { type: "debug_revive_party" });
+    }
   }
   return state;
 }
 
 // Walk to a room, optionally via a waypoint (used to route across the needle trap).
-function walkTo(state: GameState, toRoomId: string, via?: string): GameState {
+function walkTo(state: GameState, toRoomId: string, via?: string, revive = false): GameState {
   if (via) {
-    state = walkLeg(state, via);
+    state = walkLeg(state, via, revive);
   }
-  return walkLeg(state, toRoomId);
+  return walkLeg(state, toRoomId, revive);
 }
 
 function stateWithParty(size = 1) {
-  let state = createInitialGameState();
-  for (let index = 0; index < size; index += 1) {
-    state = addCharacter(
-      state,
-      createCharacter({ name: `Mira${index}`, notes: "Mapper", portraitRef: "data:image/png;base64,AAA" })
-    );
-  }
-  return state;
+  // Deterministic ids → deterministic combat seeds. With enemy turns ported, a LONE adventurer walking
+  // the whole floor takes seed-dependent damage; a random character id made the walk tests flaky (a rare
+  // wipe → null position). Fixing the ids pins the walk to a single, reproducible outcome.
+  return withDeterministicIds("rules-test-party", () => {
+    let state = createInitialGameState();
+    for (let index = 0; index < size; index += 1) {
+      state = addCharacter(
+        state,
+        createCharacter({ name: `Mira${index}`, notes: "Mapper", portraitRef: "data:image/png;base64,AAA" })
+      );
+    }
+    return state;
+  });
 }
 
 function resolveCombat(state: GameState) {
@@ -69,12 +81,15 @@ function resolveCombat(state: GameState) {
 // Smoke-Bent needle chamber so the trap resolves, and ending faced at the stair
 // (its edge is to the west — the way you arrive). The slime fight is resolved too.
 function advanceToB1fStair(state: GameState) {
+  // No revive here — this walk routes across the needle trap on purpose so the party arrives DAMAGED
+  // (a caller asserts it). The deterministic party id keeps that solo trek survivable-but-hurt.
   return faceTo(walkTo(state, "room.b1f.012", "room.b1f.east"), "west");
 }
 
-// Walk through the maze to the Warden's Hall (the return marker, deep to the south).
+// Walk through the maze to the Warden's Hall (the return marker, deep to the south). A long solo trek —
+// revive between fights so it reaches the marker instead of wiping en route.
 function advanceToB1fMarker(state: GameState) {
-  return walkTo(state, "room.b1f.warden");
+  return walkTo(state, "room.b1f.warden", undefined, true);
 }
 
 describe("rules engine", () => {
@@ -104,9 +119,8 @@ describe("rules engine", () => {
         tags: ["dungeon"]
       })
     );
-    // IMP-029 — the landing's reward is no longer auto-collected on entry (a chest is left instead), so
-    // there is no "Found …" treasure line here; the chest_appeared event carries it to the UI.
-    expect(result.events).toContainEqual(expect.objectContaining({ type: "chest_appeared", roomId: "room.b1f.001" }));
+    // IMP-029 — the landing's reward is no longer auto-collected on entry, so there is no "Found …"
+    // treasure line here (the safe town-stair landing leaves no chest; chamber loot is a chest post-fight).
     expect(result.state.log.some((entry) => entry.text.startsWith("Found "))).toBe(false);
     expect(result.state.map).toMatchObject({
       floorId: "dungeon.b1f",

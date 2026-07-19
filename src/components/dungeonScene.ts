@@ -48,6 +48,8 @@ export interface DungeonSceneInput {
   onEnemyAnchors?: (anchors: EnemyAnchor[]) => void;
   /** Draw the hazard marker on the floor (armed trap in this room). */
   showTrap: boolean;
+  /** IMP-029 — a chest grounded on the current cell's floor (null = none); `open` swaps the sprite. */
+  chest: { open: boolean } | null;
   /** Draw the town-return feature: the entrance stairway or the waystone. */
   returnMarker: "stairs" | "marker" | null;
   /** When the faced edge is a stair: true = descends (down to a deeper floor),
@@ -394,6 +396,22 @@ export function buildDungeonScene(mount: HTMLDivElement, input: DungeonSceneInpu
     scene.add(trap);
   }
 
+  // IMP-029 — a treasure chest grounded on the current cell's floor, just ahead of the camera. The
+  // sprite's bottom sits on y=0 (feet on the floor, never floating), and swaps closed→open on opening.
+  if (input.chest) {
+    const chestUrl = assetOrNull(input.chest.open ? "treasure-chest-open" : "treasure-chest-closed", pack);
+    if (chestUrl) {
+      const CHEST_H = 1.1;
+      const chestTexture = loadTexture(chestUrl);
+      const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: chestTexture, transparent: true }));
+      sprite.center.set(0.5, 0); // anchor the bottom edge to the sprite's position
+      sprite.scale.set(CHEST_H, CHEST_H, 1);
+      sprite.position.set(0, 0.0, -1.4);
+      mount.dataset.chestVisual = input.chest.open ? "open" : "closed";
+      scene.add(sprite);
+    }
+  }
+
   if (input.returnMarker) {
     // The floor-1 entrance is a literal stairway up to town; other return points
     // are the mystical waystone sprite.
@@ -415,6 +433,7 @@ export function buildDungeonScene(mount: HTMLDivElement, input: DungeonSceneInpu
     delete mount.dataset.returnVisual;
     delete mount.dataset.frontStairVisual;
     delete mount.dataset.frontStairPlacement;
+    delete mount.dataset.chestVisual;
     delete mount.dataset.combatFormationWidth;
     delete mount.dataset.combatMinimumSilhouette;
     delete mount.dataset.combatMaximumBodyEdge;

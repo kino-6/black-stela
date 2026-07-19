@@ -49,6 +49,13 @@ test.describe("verify: the shielded-squad fight no longer hangs", () => {
         }
         continue;
       }
+      // IMP-029 — a chest on the cell holds the command region (no auto-explore button); Leave it.
+      if ((await page.getByTestId("chest-leave").count()) > 0) {
+        await page.getByTestId("chest-leave").focus();
+        await page.keyboard.press("Enter");
+        await page.waitForTimeout(60);
+        continue;
+      }
       // In the dungeon: auto-explore walks until the next fight (or the down-stair).
       const explore = page.getByTestId("debug-auto-explore");
       if (await explore.count()) {

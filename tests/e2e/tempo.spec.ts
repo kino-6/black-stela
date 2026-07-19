@@ -17,6 +17,11 @@ test("repeat and keyboard commands keep the dungeon loop fast", async ({ page })
   // and stops at the next interesting tile — the loop stays fast and interruptible.
   await resolveVisibleCombat(page);
   await expect(page.getByRole("heading", { name: "Hall of Old Dust" })).toBeVisible();
+  // IMP-029 — the cleared chamber leaves a chest holding the cell; Leave it to get the dock (Auto) back.
+  if ((await page.getByTestId("chest-leave").count()) > 0) {
+    await page.getByTestId("chest-leave").focus();
+    await page.keyboard.press("Enter");
+  }
 
   await page.getByRole("button", { name: "Auto", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Hall of Old Dust" })).toBeVisible();
