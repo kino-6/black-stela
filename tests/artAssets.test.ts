@@ -1,7 +1,16 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { createHash } from "node:crypto";
-import { asset, catalogIconUrl, cssArtVariables, ICON_PLACEHOLDER, portraitUrl } from "../src/ui/artAssets";
+import {
+  asset,
+  catalogIconUrl,
+  cssArtVariables,
+  getEnemySpriteTextureUrl,
+  hasEnemySpriteTexture,
+  ICON_PLACEHOLDER,
+  portraitUrl
+} from "../src/ui/artAssets";
+import { worldRegistry } from "../src/data/worldRegistry";
 import { scenarioWorldSchema } from "../src/domain/scenario";
 
 const verdantEnemies = [
@@ -18,7 +27,8 @@ const verdantEnemies = [
   "enemy-verdant-g5-sap-keeper",
   "enemy-verdant-g6-strangler-warden",
   "enemy-verdant-g7-heartwood-husk",
-  "enemy-verdant-g8-rootheart"
+  "enemy-verdant-g8-rootheart",
+  "enemy-verdant-rare-gilded-sporecloud"
 ] as const;
 
 const verdantIcons = [
@@ -29,7 +39,8 @@ const verdantIcons = [
   "item-verdant-heartseed",
   "equip-verdant-thorn-lash",
   "equip-verdant-bark-plate",
-  "equip-verdant-living-charm"
+  "equip-verdant-living-charm",
+  "equip-verdant-heartwood-ward"
 ] as const;
 
 const defaultEnemies = [
@@ -46,10 +57,46 @@ const defaultEnemies = [
   "ash-votary"
 ] as const;
 
+const defaultOwnBasenameEnemies = [
+  "enemy-b2f-ash-warden",
+  "enemy-b2f-ash-caller",
+  "enemy-rare-ashsilver-glimmer"
+] as const;
+
+const completedEnemyCoverage = [
+  { pack: "default", id: "enemy.b2f.ash-warden", basename: "enemy-b2f-ash-warden" },
+  { pack: "default", id: "enemy.b2f.ash-caller", basename: "enemy-b2f-ash-caller" },
+  { pack: "default", id: "enemy.rare.ashsilver-glimmer", basename: "enemy-rare-ashsilver-glimmer" },
+  {
+    pack: "verdant",
+    id: "enemy.verdant.rare.gilded-sporecloud",
+    basename: "enemy-verdant-rare-gilded-sporecloud"
+  }
+] as const;
+
 const portraitKeys = [
   "gate", "ruin", "vial", "coin", "map", "ward",
   "road", "pit", "ink", "grave", "dock", "cloak"
 ] as const;
+
+const adventurerClasses = [
+  "vanguard",
+  "sellsword",
+  "bulwark",
+  "duelist",
+  "seeker",
+  "scout",
+  "cutpurse",
+  "mender",
+  "chanter",
+  "occultist",
+  "arcanist",
+  "wayfinder"
+] as const;
+
+const adventurerSpecies = ["human", "sylvan", "beastkin"] as const;
+const adventurerGenders = ["male", "female"] as const;
+const adventurerPoses = ["base", "attack"] as const;
 
 function pngSize(path: URL): { width: number; height: number } {
   const png = readFileSync(path);
@@ -148,6 +195,21 @@ describe("art resolver", () => {
     }
   });
 
+  it("resolves the completed enemy-coverage sprites instead of fallback art", () => {
+    for (const { pack, id, basename } of completedEnemyCoverage) {
+      expect(hasEnemySpriteTexture(id, pack), id).toBe(true);
+      expect(getEnemySpriteTextureUrl(id, pack), id).toBe(asset(basename, pack));
+    }
+  });
+
+  it("keeps every authored enemy in every built-in world on a declared sprite path", () => {
+    for (const [pack, world] of Object.entries(worldRegistry)) {
+      for (const enemy of world.enemies) {
+        expect(hasEnemySpriteTexture(enemy.id, pack), `${pack}: ${enemy.id}`).toBe(true);
+      }
+    }
+  });
+
   it("keeps every Verdant block texture at the authored resolution", () => {
     for (const surface of ["wall", "floor"] as const) {
       for (const block of [1, 2, 3] as const) {
@@ -169,7 +231,7 @@ describe("art resolver", () => {
   });
 
   it("keeps Default enemy and hurt sprites on the P14 square canvas", () => {
-    for (const name of defaultEnemies) {
+    for (const name of [...defaultEnemies, ...defaultOwnBasenameEnemies]) {
       for (const suffix of ["", "-hurt"]) {
         expect(pngSize(new URL(`../content/worlds/default/assets/dungeon/${name}${suffix}.png`, import.meta.url))).toEqual({
           width: 768,
@@ -177,6 +239,33 @@ describe("art resolver", () => {
         });
       }
     }
+  });
+});
+
+describe("adventurer source-art contract", () => {
+  it("ships every class, species, gender, and pose as a distinct 1024x1536 RGBA master", () => {
+    const hashes: string[] = [];
+
+    for (const characterClass of adventurerClasses) {
+      for (const species of adventurerSpecies) {
+        for (const gender of adventurerGenders) {
+          for (const pose of adventurerPoses) {
+            const path = new URL(
+              `../content/worlds/default/source-art/adventurers/adventurer-${characterClass}-${species}-${gender}-${pose}.png`,
+              import.meta.url
+            );
+            const png = readFileSync(path);
+
+            expect(pngSize(path), path.pathname).toEqual({ width: 1024, height: 1536 });
+            expect(png[25], `${path.pathname} must use PNG color type 6 (RGBA)`).toBe(6);
+            hashes.push(createHash("sha256").update(png).digest("hex"));
+          }
+        }
+      }
+    }
+
+    expect(hashes).toHaveLength(144);
+    expect(new Set(hashes).size).toBe(144);
   });
 });
 

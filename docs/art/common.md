@@ -8,6 +8,13 @@ and retake notes.
 
 All art lives under `content/worlds/<pack>/assets/`, not `src/`.
 
+Large source libraries that are not loaded directly by the current web runtime
+live under `content/worlds/<pack>/source-art/`. Keep editable/high-resolution
+masters there, then export only selected runtime derivatives into `assets/`.
+This prevents Vite's eager asset glob from bundling every unused character
+variant. Source-art files still follow the same alpha, lighting, identity, and
+review rules.
+
 Use these subfolders:
 
 - `dungeon/` for wall/floor textures, doors, stairs, markers, traps, enemies.
@@ -42,6 +49,8 @@ variables. Treat these as drop-in assets too.
 | Prop sprite (stairs, markers) | PNG RGBA | per brief | yes | centered, bottom-weighted, clean alpha |
 | Portrait | PNG or JPG | 512x512 | optional | bust framing; must read in party UI |
 | Character battle/bust | PNG RGBA | 1024x1536 preferred | yes | optional progressive enhancement; no baked scene lighting |
+| Character action still | PNG RGBA | 1024x1536 preferred | yes | same identity and costume as battle art; one readable action |
+| NPC character/bust | PNG RGBA | 1024x1536 preferred | yes | neutral pose; service role readable without a backdrop |
 | Icon | PNG RGBA | 256x256 | yes | single object, centered, generous padding |
 | Title still | JPG | 1920x1080 | none | no baked UI text unless the brief asks |
 | UI still | JPG | usually 1600x900 | none | town, guild, combat, or pack-specific scene |
@@ -66,6 +75,41 @@ missing extra art must never produce a blank slot or block registration.
   player-authored art with a machine-local path that breaks after transfer.
 - Expression, hurt, and growth variants are progressive enhancement. Their
   absence uses the restrained base/battle fallback rather than placeholder art.
+
+### Character And Action Libraries
+
+Scenario packs may provide engine-neutral character libraries under
+`assets/characters/`. Default-pack files act as shared fallbacks; another pack
+may override the same basename with a genuinely redesigned cast.
+
+- Use `adventurer-<role>-base.png` for the neutral battle/profile figure and
+  `adventurer-<role>-attack.png` for its action still.
+- Use `npc-<service>.png` for a reusable service character such as a guild
+  master, merchant, healer, appraiser, or quest keeper.
+- Base and action files for an adventurer must be recognizably the same person:
+  same face, hair, costume, weapon, proportions, and dominant colors.
+- The action still shows anticipation or the decisive action, not a complete
+  battlefield. Keep the full silhouette readable and leave effects, impact,
+  camera shake, light spill, enemies, floor, and background to the runtime.
+- A caster may show a contained focus at the hand, staff, book, or talisman when
+  it belongs to the character. Do not paint a full-screen spell effect.
+- NPC identity comes from posture, age, clothing, tools, and expression. Do not
+  turn service roles into anonymous mobile-game headshots or modern uniforms.
+- Review character pairs at full height, combat-lane size, and portrait crop.
+  Reject identity drift between base and action variants.
+
+For a full adventurer library, use:
+
+`source-art/adventurers/adventurer-<class>-<species>-<gender>-<pose>.png`
+
+- `<species>` is `human`, `sylvan`, or `beastkin`.
+- `<gender>` is `male` or `female`.
+- `<pose>` is `base` or `attack`.
+- A complete built-in class set is 12 classes × 3 species × 2 genders × 2 poses
+  = 144 source masters.
+- Species variants are redesigned bodies and faces, not recolors or pasted
+  ears. Gender variants use equally practical equipment and avoid sexualized
+  armor substitutions.
 
 ## Enemy Sprite Framing
 
