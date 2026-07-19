@@ -8,6 +8,30 @@ class_name SliceRules
 
 const LEFT_OF := {"north": "west", "west": "south", "south": "east", "east": "north"}
 const RIGHT_OF := {"north": "east", "east": "south", "south": "west", "west": "north"}
+const OPPOSITE_OF := {"north": "south", "south": "north", "east": "west", "west": "east"}
+const SPIN_ORDER := ["north", "east", "south", "west"]
+# floorMap.ts builds every cell's `edges` in THIS order, and TS reads them with Object.keys (insertion
+# order). The exported pack is canonicalized, which re-sorts object keys alphabetically — so iterating a
+# cell's edges as a plain Dictionary yields east/north/south/west and diverges from the oracle. Always
+# walk edges in this order. (Same class of bug as the class-equipment ordering.)
+const EDGE_ORDER := ["north", "east", "south", "west"]
+
+# The cell's edge directions in the oracle's order, skipping any the cell does not have.
+static func _ordered_edge_dirs(edges: Dictionary) -> Array:
+	var out := []
+	for dir in EDGE_ORDER:
+		if edges.has(dir):
+			out.append(dir)
+	for dir in edges:
+		if not out.has(dir):
+			out.append(dir)
+	return out
+
+# The direction a backward/strafe step actually travels, relative to the party's facing.
+static func _facing_of(state: Dictionary, table: Dictionary) -> Variant:
+	if state.get("position", null) == null:
+		return null
+	return table.get(state["position"]["facing"], null)
 
 const CombatRound := preload("res://scripts/rules/combat_round.gd")
 const Economy := preload("res://scripts/rules/economy.gd")
@@ -15,6 +39,7 @@ const Quests := preload("res://scripts/rules/quests.gd")
 const Loot := preload("res://scripts/rules/loot.gd")
 const Vocations := preload("res://scripts/rules/vocations.gd")
 const CharacterCreation := preload("res://scripts/rules/character_creation.gd")
+const Encounters := preload("res://scripts/rules/encounters.gd")
 
 static func resolve(state: Dictionary, command: Dictionary, world: Dictionary = {}, engine: Dictionary = {}) -> Dictionary:
 	match command.get("type", ""):
@@ -28,6 +53,16 @@ static func resolve(state: Dictionary, command: Dictionary, world: Dictionary = 
 			return _search(state, world)
 		"move_forward":
 			return _move_forward(state, world)
+		"move_backward":
+			return _move_forward(state, world, _facing_of(state, OPPOSITE_OF), "backward")
+		"strafe_left":
+			return _move_forward(state, world, _facing_of(state, LEFT_OF), "left")
+		"strafe_right":
+			return _move_forward(state, world, _facing_of(state, RIGHT_OF), "right")
+		"inspect_wall":
+			return _log_only(state, {"type": "inspection_made", "mode": "inspect_wall"})
+		"open_door":
+			return _log_only(state, {"type": "inspection_made", "mode": "open_door"})
 		"declare_round":
 			return CombatRound.declare_round(state, world, command.get("actions", []), engine)
 		"set_member_row":
@@ -112,7 +147,7 @@ static func _search(state: Dictionary, world: Dictionary) -> Dictionary:
 	var secret_dirs := []
 	if typeof(cell) == TYPE_DICTIONARY:
 		var edges: Dictionary = cell.get("edges", {})
-		for dir in edges:
+		for dir in _ordered_edge_dirs(edges):
 			var edge: Variant = edges[dir]
 			if typeof(edge) == TYPE_DICTIONARY and edge.get("kind", "") == "secret" and not discovered.has("secret:%s:%s" % [room_id, dir]):
 				secret_dirs.append(dir)
@@ -147,11 +182,11 @@ static func _search(state: Dictionary, world: Dictionary) -> Dictionary:
 # remaining move_forward work — a valid exit currently errors rather than guessing.
 const TRAVERSABLE_EDGE_KINDS := ["open", "door", "one_way", "shortcut", "stairs"]
 
-static func _move_forward(state: Dictionary, world: Dictionary) -> Dictionary:
+static func _move_forward(state: Dictionary, world: Dictionary, requested_direction: Variant = null, motion: Variant = null) -> Dictionary:
 	if state.get("position", null) == null or state.get("phase", "") != "dungeon":
 		return {"state": state, "events": []}
 	var room_id: String = state["position"]["roomId"]
-	var move_dir: String = state["position"]["facing"]
+	var move_dir: String = String(requested_direction) if requested_direction != null else String(state["position"]["facing"])
 
 	var forward_edge: Variant = _grid_edge(world, room_id, move_dir)
 
@@ -210,14 +245,81 @@ static func _move_forward(state: Dictionary, world: Dictionary) -> Dictionary:
 
 	var target_room: Variant = _room(world, target_room_id)
 	var room_name: String = target_room.get("name", target_room_id) if typeof(target_room) == TYPE_DICTIONARY else target_room_id
-	var events: Array = [{"type": "room_entered", "roomId": target_room_id, "roomName": room_name}]
+	var room_entered := {"type": "room_entered", "roomId": target_room_id, "roomName": room_name}
+	if motion != null:
+		room_entered["motion"] = motion
+	var events: Array = [room_entered]
 	events.append_array(visit["events"])
 
-	var enc_enemy_id: String = Encounter.room_encounter_enemy_id(target_room) if typeof(target_room) == TYPE_DICTIONARY else ""
-	if enc_enemy_id != "" and _party_can_fight(next):
-		Encounter.begin(next, world, target_room_id, enc_enemy_id)
+	# IMP-029 — no auto-collect. A plain reward room leaves a CLOSED chest on entry; a CHAMBER (a room
+	# with a fixed encounter) leaves its chest only after the fight is won.
+	if typeof(target_room) == TYPE_DICTIONARY and not _room_has_encounter(target_room):
+		var chest_result := _ensure_chest_for_room(next, target_room, next["position"].get("cellId", null))
+		next = chest_result["state"]
+		events.append_array(chest_result["events"])
+
+	# markDeepestFloor: every member remembers the deepest floor they have stood on.
+	next["party"] = _mark_deepest_floor(next.get("party", []), visit["map"].get("floorId", state.get("map", {}).get("floorId", null)))
+
+	# A one-shot room TRAP bleeds the party (never kills — floor at 1 HP) and is then spent.
+	if typeof(target_room) == TYPE_DICTIONARY and typeof(target_room.get("trap", null)) == TYPE_DICTIONARY and not (state.get("resolvedTraps", []) as Array).has(target_room["trap"].get("id", "")):
+		var trap: Dictionary = target_room["trap"]
+		var damage := int(trap.get("damage", 0))
+		var hurt := []
+		for member in next.get("party", []):
+			var m: Dictionary = member.duplicate(true)
+			m["hp"] = maxi(1, int(m.get("hp", 0)) - damage)
+			hurt.append(m)
+		next["party"] = hurt
+		(next["resolvedTraps"] as Array).append(trap.get("id", ""))
+		events.append({"type": "trap_triggered", "trapId": trap.get("id", ""), "trapName": trap.get("name", ""), "damage": damage})
+
+	if typeof(target_room) == TYPE_DICTIONARY and typeof(target_room.get("event", null)) == TYPE_STRING:
+		events.append({"type": "room_event_triggered", "roomId": target_room_id, "text": target_room["event"]})
+
+	# A gate can GRANT a flag on entry — that is how a shortcut opens permanently.
+	if typeof(target_room) == TYPE_DICTIONARY:
+		var granted := []
+		for gate2 in target_room.get("gates", []):
+			var flag: Variant = gate2.get("grantsFlag", null)
+			if typeof(flag) == TYPE_STRING and not (next.get("discoveredSecrets", []) as Array).has(flag) and not granted.has(flag):
+				granted.append(flag)
+		if not granted.is_empty():
+			for flag2 in granted:
+				(next["discoveredSecrets"] as Array).append(flag2)
+			for gate3 in target_room.get("gates", []):
+				if gate3.get("kind", "") == "shortcut" and typeof(gate3.get("grantsFlag", null)) == TYPE_STRING and granted.has(gate3["grantsFlag"]):
+					events.append({"type": "shortcut_opened"})
+					break
+
+	var effects := _apply_cell_effects(next, world, target_room, events)
+	next = effects["state"]
+
+	# A room with an AUTHORED encounter fires it; otherwise the corridor itself can ambush you (the
+	# WANDERING roll). A party with nobody left standing must NOT be dragged into a fight it cannot act
+	# in — that combat can never reach a round-end, so the wipe check never fires and the run soft-locks.
+	# A teleport is transit only: the destination does not also ambush on arrival.
+	var can_fight := false
+	for member in next.get("party", []):
+		if int(member.get("hp", 0)) > 0 and member.get("injury", null) == null:
+			can_fight = true
+			break
+	var started: Variant = null
+	if not bool(effects.get("teleported", false)) and can_fight:
+		started = Encounters.begin_room_encounter(world, target_room, next)
+		if started == null:
+			started = Encounters.begin_wandering_encounter(world, target_room, next)
+	if typeof(started) == TYPE_DICTIONARY:
+		var encountered_ids := []
+		for group in (started["combat"] as Dictionary).get("enemyGroups", []):
+			var gid: Variant = group.get("enemyId", "")
+			if not encountered_ids.has(gid):
+				encountered_ids.append(gid)
+		next["phase"] = "combat"
+		next["combat"] = started["combat"]
 		next["stepsSinceEncounter"] = 0
-		events.append({"type": "encounter_started", "roomId": target_room_id, "enemyId": enc_enemy_id})
+		next["enemyRecord"] = Encounters.record_encounters(next.get("enemyRecord", null), encountered_ids)
+		events.append(started["event"])
 
 	return {"state": next, "events": events}
 
@@ -254,7 +356,7 @@ static func _known_grid_directions(world: Dictionary, room_id: String) -> Array:
 		return (room.get("exits", {}) as Dictionary).keys() if typeof(room) == TYPE_DICTIONARY else []
 	var out := []
 	var edges: Dictionary = cell.get("edges", {})
-	for dir in edges:
+	for dir in _ordered_edge_dirs(edges):
 		var edge: Variant = edges[dir]
 		if typeof(edge) == TYPE_DICTIONARY and edge.get("kind", "") != "wall":
 			out.append(dir)
@@ -419,6 +521,127 @@ static func _reclass_member(state: Dictionary, world: Dictionary, engine: Dictio
 			cls_name = String((def.get("label", {}) as Dictionary).get("en", class_id))
 			break
 	return {"state": next, "events": [{"type": "party_member_reclassed", "characterName": reclassed.get("name", ""), "className": cls_name}]}
+
+
+# --- on-cell floor effects (one fixed order from every call site: spinner -> hazard -> teleport) -----
+static func _apply_cell_effects(state: Dictionary, world: Dictionary, room: Variant, events: Array) -> Dictionary:
+	var next := _apply_spinner(state, room, events)
+	next = _apply_hazard(next, room, events)
+	return _apply_teleport(next, world, room, events)
+
+# Wizardry-style spinner floor: standing on it turns the party. Deterministic on the turn counter, so
+# it is disorienting but replayable.
+static func _apply_spinner(state: Dictionary, room: Variant, events: Array) -> Dictionary:
+	if typeof(room) != TYPE_DICTIONARY or not bool(room.get("spinner", false)) or state.get("position", null) == null:
+		return state
+	var facing: String = SPIN_ORDER[int(state.get("turn", 0)) % SPIN_ORDER.size()]
+	events.append({"type": "spinner_triggered", "facing": facing})
+	var next: Dictionary = state.duplicate(true)
+	next["position"]["facing"] = facing
+	next["map"]["currentFacing"] = facing
+	return next
+
+# Etrian-style damage floor: bleeds every member each time it is crossed (repeatable attrition, unlike
+# a one-shot trap). Never kills.
+static func _apply_hazard(state: Dictionary, room: Variant, events: Array) -> Dictionary:
+	if typeof(room) != TYPE_DICTIONARY or room.get("damageTile", null) == null or (state.get("party", []) as Array).is_empty():
+		return state
+	var damage := int(room["damageTile"])
+	events.append({"type": "hazard_damage", "damage": damage})
+	var next: Dictionary = state.duplicate(true)
+	var hurt := []
+	for member in next.get("party", []):
+		var m: Dictionary = member.duplicate(true)
+		m["hp"] = maxi(1, int(m.get("hp", 0)) - damage)
+		hurt.append(m)
+	next["party"] = hurt
+	return next
+
+# Wizardry-style teleporter: transit only — the source room's content is skipped, and the caller must
+# not then start an encounter here (that is why `teleported` is reported back).
+static func _apply_teleport(state: Dictionary, world: Dictionary, room: Variant, events: Array) -> Dictionary:
+	if typeof(room) != TYPE_DICTIONARY or typeof(room.get("teleportTo", null)) != TYPE_STRING or state.get("position", null) == null:
+		return {"state": state, "teleported": false}
+	var target_id: String = room["teleportTo"]
+	var target_room: Variant = _room(world, target_id)
+	var visit := _visit_room(state, world, target_id, String(state["position"]["facing"]))
+	var target_cell: Variant = _grid_cell(world, target_id)
+	events.append({"type": "teleported", "toRoomId": target_id, "toRoomName": target_room.get("name", target_id) if typeof(target_room) == TYPE_DICTIONARY else target_id})
+	events.append_array(visit["events"])
+	var next: Dictionary = state.duplicate(true)
+	next["position"]["roomId"] = target_id
+	next["position"]["cellId"] = target_cell.get("id", null) if typeof(target_cell) == TYPE_DICTIONARY else null
+	next["map"] = visit["map"]
+	return {"state": next, "teleported": true}
+
+# b3f ranks deeper than b1f; a floor id with no rank never overwrites one that has it.
+static func _floor_rank(floor_id: String) -> int:
+	var re := RegEx.new()
+	re.compile("[a-zA-Z](\\d+)f")
+	var m := re.search(floor_id)
+	return int(m.get_string(1)) if m else 0
+
+static func _mark_deepest_floor(party: Array, floor_id: Variant) -> Array:
+	if typeof(floor_id) != TYPE_STRING or floor_id == "":
+		return party
+	var out := []
+	for member in party:
+		var m: Dictionary = member.duplicate(true)
+		var memory: Dictionary = (m.get("memory", {}) as Dictionary).duplicate(true)
+		var current: Variant = memory.get("deepestFloorId", null)
+		if typeof(current) != TYPE_STRING or current == "" or _floor_rank(String(floor_id)) > _floor_rank(String(current)):
+			memory["deepestFloorId"] = floor_id
+		m["memory"] = memory
+		out.append(m)
+	return out
+
+
+# --- IMP-029 chests -------------------------------------------------------------------------------
+static func _room_has_encounter(room: Dictionary) -> bool:
+	return room.get("encounter", null) != null or room.get("encounterSquad", null) != null or room.get("encounterTable", null) != null
+
+# The chest a room authors: an explicit `chest`, else a bare `treasureTable` (back-compat) as an
+# untrapped one. Null when the room holds no reward.
+static func _room_chest(room: Dictionary) -> Variant:
+	if typeof(room.get("chest", null)) == TYPE_DICTIONARY:
+		return room["chest"]
+	if typeof(room.get("treasureTable", null)) == TYPE_STRING:
+		return {"treasureTable": room["treasureTable"]}
+	return null
+
+# Leave a closed chest on the cell. Safe transit rooms — the town-stair landing and rest points — never
+# gate the way with a chest, so descending or resting stays a clean walk-through.
+static func _ensure_chest_for_room(state: Dictionary, room: Dictionary, cell_id: Variant) -> Dictionary:
+	if bool(room.get("stairsToTown", false)) or bool(room.get("restPoint", false)):
+		return {"state": state, "events": []}
+	var authored: Variant = _room_chest(room)
+	if typeof(authored) != TYPE_DICTIONARY or typeof(cell_id) != TYPE_STRING:
+		return {"state": state, "events": []}
+	var room_id := String(room.get("id", ""))
+	var chests: Array = state.get("chests", [])
+	for chest in chests:
+		if chest.get("cellId", "") == cell_id:
+			return {"state": state, "events": []}
+	if (state.get("floorClaimedTreasures", []) as Array).has(room_id):
+		return {"state": state, "events": []}
+
+	var made := {
+		"cellId": cell_id,
+		"roomId": room_id,
+		"treasureTable": authored.get("treasureTable", null),
+		"trap": (authored["trap"] as Dictionary).duplicate(true) if typeof(authored.get("trap", null)) == TYPE_DICTIONARY else null,
+		"phase": "closed",
+		"investigated": false,
+		"investigateResult": null,
+		"disarmAttempted": false,
+		"disarmed": false,
+		"sprung": false
+	}
+	var next: Dictionary = state.duplicate(true)
+	var list: Array = (next.get("chests", []) as Array).duplicate(true)
+	list.append(made)
+	next["chests"] = list
+	return {"state": next, "events": [{"type": "chest_appeared", "cellId": cell_id, "roomId": room_id}]}
 
 static func _find_by_id(list: Variant, id: String) -> Dictionary:
 	if typeof(list) == TYPE_ARRAY:

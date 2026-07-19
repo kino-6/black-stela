@@ -1,7 +1,7 @@
 import { createInitialGameState } from "../domain/gameState";
 import { createGuildCharacter } from "../domain/characterCreation";
 import { createCombatState } from "../domain/rulesEngine";
-import { createDebugStateFromProgress } from "../debug/debugStart";
+import { createDebugStateFromProgress, withDebugStartCell } from "../debug/debugStart";
 import { withDeterministicIds } from "../domain/ids";
 import { runTrace, hashState } from "../headless/traceFixture";
 import { canonicalize } from "./packExport";
@@ -302,6 +302,22 @@ function wallRoute(world: ScenarioWorld): { initial: GameState; commands: Comman
   return { initial, commands };
 }
 
+// M4: place the party ON the cell before a floor feature and step into it, so the branch under test is
+// guaranteed to fire (walking a maze path to it is what made these fixtures brittle). Each route also
+// strafes/backs up, exercising moveForward's requestedDirection + motion.
+function cellFeatureRoute(
+  progress: Parameters<typeof createDebugStateFromProgress>[1],
+  fromRoomId: string,
+  facing: "north" | "south" | "east" | "west",
+  extra: Command[] = []
+) {
+  return (world: ScenarioWorld): { initial: GameState; commands: Command[] } => {
+    const seeded = createDebugStateFromProgress(world, progress);
+    const initial = withDebugStartCell(seeded, world, fromRoomId, facing);
+    return { initial, commands: [{ type: "move_forward" }, ...extra] };
+  };
+}
+
 // The slice's golden routes. More can be added as the vertical slice grows.
 export const SLICE_ROUTES: TraceRoute[] = [
   { name: "b1f-turns", worldId: "default", build: turnsRoute },
@@ -324,5 +340,12 @@ export const SLICE_ROUTES: TraceRoute[] = [
   { name: "quests", worldId: "default", build: questRoute },
   { name: "loot", worldId: "default", build: lootRoute },
   { name: "vocation", worldId: "default", build: vocationRoute },
-  { name: "b1f-exploration", worldId: "default", build: dungeonRoute }
+  { name: "b1f-exploration", worldId: "default", build: dungeonRoute },
+  // M4 floor features: a one-shot room TRAP, a Wizardry SPINNER, a TELEPORTER (transit only, no
+  // encounter on arrival), and a gate that GRANTS a shortcut flag on entry.
+  { name: "b1f-trap", worldId: "default", build: cellFeatureRoute("ready", "room.b1f.c13_4", "south", [{ type: "move_backward" }, { type: "strafe_left" }]) },
+  { name: "b2f-hazard", worldId: "default", build: cellFeatureRoute("floor_2", "room.b2f.c1_2", "south", [{ type: "strafe_right" }]) },
+  { name: "b4f-spinner", worldId: "default", build: cellFeatureRoute("floor_4", "room.b4f.c2_1", "west", [{ type: "inspect_wall" }, { type: "move_forward" }]) },
+  { name: "b4f-teleport", worldId: "default", build: cellFeatureRoute("floor_4", "room.b4f.c16_11", "west", [{ type: "open_door" }]) },
+  { name: "b1f-shortcut", worldId: "default", build: cellFeatureRoute("ready", "room.b1f.c9_12", "south", [{ type: "move_backward" }]) }
 ];
