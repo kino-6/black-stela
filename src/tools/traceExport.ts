@@ -201,6 +201,40 @@ function questRoute(): { initial: GameState; commands: Command[] } {
   return { initial, commands };
 }
 
+// M3 loot / workshop: appraise an unidentified rare, lock + favorite two instances, reinforce a worn
+// slot with materials, then bulk-dismantle every unprotected equipment (the appraised rare now sweeps,
+// the locked/favorited ones are spared). Exercises appraise_item, toggle_item_lock/favorite,
+// reinforce_equipment, and bulk_convert + the rarity fee/yield tables.
+function lootRoute(): { initial: GameState; commands: Command[] } {
+  const hero = {
+    ...createGuildCharacter({ name: "Rook", classId: "vanguard", seed: "loot" }),
+    equipment: { head: { id: "equip.iron-cap", plus: 0 } }
+  };
+  const base = createInitialGameState();
+  const initial: GameState = {
+    ...base,
+    phase: "town",
+    party: [hero],
+    partyGold: 100,
+    materials: 10,
+    inventory: [
+      { id: "equip.iron-cap", name: "Iron Cap", kind: "equipment", quantity: 1, slot: "head", sellValue: 10, rarity: "rare", identified: false, affix: "warding", instanceId: "loot.rare-1" },
+      { id: "equip.oak-buckler", name: "Oak Buckler", kind: "equipment", quantity: 1, slot: "offhand", sellValue: 8, instanceId: "loot.lock-1" },
+      { id: "equip.leather-vest", name: "Leather Vest", kind: "equipment", quantity: 1, slot: "body", sellValue: 6, instanceId: "loot.fav-1" },
+      { id: "equip.rusty-dagger", name: "Rusty Dagger", kind: "equipment", quantity: 2, slot: "weapon", sellValue: 3 },
+      { id: "equip.worn-gloves", name: "Worn Gloves", kind: "equipment", quantity: 1, slot: "hands", sellValue: 4, rarity: "common" }
+    ]
+  };
+  const commands: Command[] = [
+    { type: "appraise_item", instanceId: "loot.rare-1" },
+    { type: "toggle_item_lock", instanceId: "loot.lock-1" },
+    { type: "toggle_item_favorite", instanceId: "loot.fav-1" },
+    { type: "reinforce_equipment", characterId: hero.id, slot: "head" },
+    { type: "bulk_convert", mode: "dismantle" }
+  ];
+  return { initial, commands };
+}
+
 // A short exploration route from a known B1F progress state: turn, search, listen, turn back. Exercises
 // dungeon movement + current-cell probes without minting characters.
 function dungeonRoute(world: ScenarioWorld): { initial: GameState; commands: Command[] } {
@@ -260,5 +294,6 @@ export const SLICE_ROUTES: TraceRoute[] = [
   { name: "recovery", worldId: "default", build: recoveryRoute },
   { name: "recovery-blocked", worldId: "default", build: recoveryBlockedRoute },
   { name: "quests", worldId: "default", build: questRoute },
+  { name: "loot", worldId: "default", build: lootRoute },
   { name: "b1f-exploration", worldId: "default", build: dungeonRoute }
 ];
