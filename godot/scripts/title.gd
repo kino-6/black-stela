@@ -67,6 +67,12 @@ func _build() -> void:
 		b.add_theme_font_size_override("font_size", 18)
 		b.pressed.connect(_on_continue.bind(slot))
 		box.add_child(_center(b))
+	var config := Button.new()
+	config.text = I18n.t("title.config")
+	config.custom_minimum_size = Vector2(360, 48)
+	config.add_theme_font_size_override("font_size", 20)
+	config.pressed.connect(func(): get_tree().change_scene_to_file("res://scenes/config.tscn"))
+	box.add_child(_center(config))
 	box.add_child(_center(_label(I18n.t("play.menuHint"), 15, DIM)))
 	start.grab_focus()
 
@@ -83,11 +89,8 @@ func _on_continue(slot: int) -> void:
 	get_tree().change_scene_to_file("res://scenes/dungeon.tscn" if phase == "dungeon" else "res://scenes/town.tscn")
 
 func _on_start() -> void:
-	var run := get_node_or_null("/root/Run")
-	if run:
-		run.reset()   # fresh run each time from the title
-	# M2 — build your own party at the guild before descending.
-	get_tree().change_scene_to_file("res://scenes/guild.tscn")
+	# M1 — a new run starts by choosing WHICH WORLD to enter; the guild then builds a party for it.
+	get_tree().change_scene_to_file("res://scenes/scenario_picker.tscn")
 
 func _center(control: Control) -> Control:
 	var c := CenterContainer.new()

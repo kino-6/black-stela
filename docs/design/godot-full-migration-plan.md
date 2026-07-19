@@ -81,11 +81,14 @@ port (with parity) and the **screens** to build.
 Export pipeline (`export:godot`), parity harness (`verify_parity` + state-hash oracle), `Run`/scene
 shell, input map, and the 9-trace baseline. Keep as the spine.
 
-### M1 — Front door: Boot → Title → Scenario picker → Config
-- **Rules:** world registry / `setActiveWorld` (data only, no combat). Trivial.
-- **Screens:** Title (done, polish), Scenario picker (worlds from `index.json` + tagline/art),
-  Config (locale, tempo, safety toggles). Controller-first list navigation.
-- **Exit:** pick Default or Verdant, adjust config, reach Town — all by controller.
+### M1 — Front door: Boot → Title → Scenario picker → Config — DONE (2026-07-20)
+- **Title:** 新たな探索 → the scenario picker; 続きから lists every non-empty save slot by what it holds;
+  設定 opens config.
+- **Scenario picker:** every world from `index.json`, each card carrying that world's OWN authored title
+  and tagline so the list reads as places, not a dropdown. Picking one sets `Run.world_id`.
+- **Config:** the play-affecting toggles only (auto-battle safety, confirm-round, instant combat log),
+  each stating what it does to PLAY. AI provider settings and arbitrary save/load stay out of normal
+  play (AGENTS.md) — they are developer tooling.
 
 ### M2 — Guild & character creation (the roster spine)
 - **Commands (~11):** the create/roster set — `import_member`, `reclass_member`, `bench_member`,

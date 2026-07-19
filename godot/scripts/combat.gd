@@ -42,6 +42,8 @@ var _actor_index: int = 0            # which adventurer is being given orders (f
 var _stage: String = "command"       # command | skill | spell | item | target-group | target-ally
 var _pending: Dictionary = {}        # the order being assembled for the current actor
 var _declared: Array = []            # orders collected so far this round
+var _last_round: Array = []          # the last declared round, for リピート
+var _auto: bool = false              # オート: keep resolving until the fight ends or danger appears
 var _run: Node = null   # the shared-state autoload when in continuous play; null under capture
 var _world_id: String = "default"
 
@@ -228,6 +230,16 @@ func _rebuild_command_menu() -> void:
 	var allout := _command_button(I18n.t("tempo.allOut"))
 	allout.pressed.connect(_on_attack_pressed)
 	_cmd_box.add_child(allout)
+	# リピート — repeat the LAST declared round. Unavailable until one has been given, and it says so
+	# rather than sitting dead (tempo.repeatRoundUnavailable).
+	var repeat := _command_button(I18n.t("tempo.repeatRound") if not _last_round.is_empty() else I18n.t("tempo.repeatRoundUnavailable"))
+	repeat.disabled = _last_round.is_empty()
+	repeat.pressed.connect(_on_repeat)
+	_cmd_box.add_child(repeat)
+	# オート — keep resolving rounds until the fight ends or the party is in danger.
+	var auto := _command_button(I18n.t("tempo.stop") if _auto else I18n.t("tempo.auto"))
+	auto.pressed.connect(_on_toggle_auto)
+	_cmd_box.add_child(auto)
 	var retreat := _command_button(I18n.t("play.retreat"))
 	retreat.pressed.connect(_on_retreat)
 	_cmd_box.add_child(retreat)
@@ -311,6 +323,57 @@ func _menu_back() -> void:
 		_declared.pop_back()
 		_rebuild_command_menu()
 
+func _log_line(text: String) -> void:
+	if _log_label:
+		_log_label.text = text
+
+# リピート: re-issue the last round, dropping orders whose actor can no longer act.
+func _on_repeat() -> void:
+	if _busy or _resolved or _last_round.is_empty():
+		return
+	var still_able := {}
+	for member in _actors():
+		still_able[String(member.get("id", ""))] = true
+	var orders := []
+	for order in _last_round:
+		if still_able.has(String(order.get("actorId", ""))):
+			orders.append(order)
+	if orders.is_empty():
+		return
+	_resolve_round_with(orders, true)
+
+# オート stops itself on the conditions the React tempo guards use: the fight ending, or the party
+# taking real damage (tempo.autoStoppedDanger) — it never plays a losing fight out on the player.
+func _on_toggle_auto() -> void:
+	_auto = not _auto
+	_rebuild_command_menu()
+	if _auto:
+		_run_auto()
+
+func _run_auto() -> void:
+	while _auto and not _busy and not _resolved and _state.get("phase", "") == "combat":
+		var orders := _all_out_actions()
+		if orders.is_empty():
+			break
+		await _resolve_round_with(orders, false)
+		if _party_in_danger():
+			_auto = false
+			_log_line(I18n.t("tempo.autoStoppedDanger"))
+			break
+	if _state.get("phase", "") != "combat":
+		_auto = false
+	_rebuild_command_menu()
+
+# "Danger" = anyone below a third of their HP, or already wounded.
+func _party_in_danger() -> bool:
+	for member in _state.get("party", []):
+		if member.get("injury", null) != null:
+			return true
+		var max_hp := int(member.get("maxHp", 1))
+		if max_hp > 0 and float(member.get("hp", 0)) / float(max_hp) < 0.34:
+			return true
+	return false
+
 func _on_retreat() -> void:
 	if _busy or _resolved:
 		return
@@ -334,6 +397,7 @@ func _resolve_round_with(orders: Array, animated: bool) -> void:
 	if _cmd_panel:
 		_cmd_panel.hide()
 	var before := _enemy_snapshot()
+	_last_round = orders.duplicate(true)
 	var result := CombatRound.declare_round(_state, _world, orders, _engine)
 	var events: Array = result.get("events", [])
 	_state = result.get("state", _state)

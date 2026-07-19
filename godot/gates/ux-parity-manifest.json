@@ -395,6 +395,46 @@
         "play.commandFor"
       ],
       "notes": "The target stage lists the standing enemy GROUPS with their remaining counts."
+    },
+    {
+      "id": "scenario-picker",
+      "milestone": "M1",
+      "reactPanel": "src/components/ScenarioPicker.tsx",
+      "scene": "res://scenes/scenario_picker.tscn",
+      "evidence": "tests/_ux_scenario-picker.png",
+      "requiredKeys": [
+        "scenario.pick.title",
+        "scenario.pick.subtitle",
+        "scenario.pick.back"
+      ],
+      "notes": "Each scenario is its own WORLD — every card carries that world's authored title and tagline, so the list reads as places rather than a config dropdown."
+    },
+    {
+      "id": "config",
+      "milestone": "M1",
+      "reactPanel": "src/i18n (config.*)",
+      "scene": "res://scenes/config.tscn",
+      "evidence": "tests/_ux_config.png",
+      "requiredKeys": [
+        "title.config",
+        "config.autoBattleSafety",
+        "config.confirmRound",
+        "config.instantCombatLog"
+      ],
+      "notes": "Only play-affecting toggles, each stating what it DOES to play. AI provider settings and arbitrary save/load are developer tooling and must not appear in normal play (AGENTS.md)."
+    },
+    {
+      "id": "combat-tempo",
+      "milestone": "M5",
+      "reactPanel": "src/components/CombatCommandDock.tsx",
+      "scene": "res://scenes/combat.tscn",
+      "evidence": "tests/_ux_combat-tempo.png",
+      "requiredKeys": [
+        "tempo.allOut",
+        "tempo.auto",
+        "play.retreat"
+      ],
+      "notes": "全員でかかる / リピート / オート sit beside the per-actor menu. リピート is unavailable until a round has been declared and SAYS so; オート stops itself when the fight ends or the party is in danger."
     }
   ]
 }
