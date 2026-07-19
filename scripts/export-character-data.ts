@@ -24,6 +24,8 @@ const data = {
   defaultAptitude,
   classes: classCatalog.map((def) => ({
     id: def.id,
+    label: def.label,
+    description: def.description,
     roleTags: def.roleTags,
     rowPreference: def.rowPreference,
     aptitude: def.aptitude,

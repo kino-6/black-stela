@@ -57,7 +57,8 @@ func _on_start() -> void:
 	var run := get_node_or_null("/root/Run")
 	if run:
 		run.reset()   # fresh run each time from the title
-	get_tree().change_scene_to_file("res://scenes/town.tscn")
+	# M2 — build your own party at the guild before descending.
+	get_tree().change_scene_to_file("res://scenes/guild.tscn")
 
 func _center(control: Control) -> Control:
 	var c := CenterContainer.new()

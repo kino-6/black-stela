@@ -13,7 +13,21 @@ var state: Dictionary = {}
 var world: Dictionary = {}
 var engine: Dictionary = {}
 var last_rewards: Dictionary = {}   # set by combat victory, read by the result screen
+var character_data: Dictionary = {} # class/background/trait catalogs (character-data.json)
 var _loaded: bool = false
+var _id_counter: int = 0
+
+# A unique-within-the-run character id (production ids need only in-run uniqueness for the slice).
+func mint_id() -> String:
+	_id_counter += 1
+	return "char.%d" % _id_counter
+
+# Start a fresh guild: keep the run's structure (world/map) but clear the party so it is built by hand.
+func start_guild() -> void:
+	ensure_loaded()
+	state["party"] = []
+	state["reserve"] = []
+	state["phase"] = "town"
 
 func ensure_loaded() -> void:
 	if _loaded:
@@ -23,6 +37,7 @@ func ensure_loaded() -> void:
 func reset() -> void:
 	world = read_json("res://data/worlds/%s.json" % world_id).get("world", {})
 	engine = read_json("res://data/engine-data.json")
+	character_data = read_json("res://data/character-data.json")
 	# The adventurer party is world-agnostic (generic classes) — reuse the exploration fixture's six.
 	state = (read_json("res://data/traces/b1f-exploration.json").get("initialState", {}) as Dictionary).duplicate(true)
 	last_rewards = {}
