@@ -83,11 +83,13 @@ export function chestAt(state: GameState, cellId: string): ChestState | undefine
 
 /** Investigate ONCE. A successful check learns the truth (clear/trapped); a failed check is honestly
  *  "uncertain" — it never reports a trapped chest as clear. Re-calling is a no-op (attempt is spent). */
-export function investigateChest(chest: ChestState, handler: Character | null, seed: string): ChestState {
+export function investigateChest(chest: ChestState, handler: Character | null, seed: string, aidBonus = 0): ChestState {
   if (chest.investigated || chest.phase === "opened") {
     return chest;
   }
-  const skill = handler ? trapSkill(handler) : 0;
+  // The aid an item bought for this attempt (§8.2 / §4). Zero unless one was spent, so every existing
+  // call resolves to exactly the number it always did.
+  const skill = (handler ? trapSkill(handler) : 0) + aidBonus;
   const success = rollPercent(`${seed}:investigate`) < successChance(skill, chest.trap?.difficulty ?? 0, 55);
   const result: ChestState["investigateResult"] = !success ? "uncertain" : chest.trap ? "trapped" : "clear";
   return { ...chest, investigated: true, investigateResult: result };
@@ -95,11 +97,11 @@ export function investigateChest(chest: ChestState, handler: Character | null, s
 
 /** Disarm ONCE. Success removes the trap; failure leaves it armed (it will trip on open). A plain chest
  *  or an already-disarmed one is a no-op. Re-calling is a no-op (attempt is spent). */
-export function disarmChest(chest: ChestState, handler: Character | null, seed: string): ChestState {
+export function disarmChest(chest: ChestState, handler: Character | null, seed: string, aidBonus = 0): ChestState {
   if (chest.disarmAttempted || chest.phase === "opened" || !chest.trap || chest.disarmed) {
     return chest;
   }
-  const skill = handler ? trapSkill(handler) : 0;
+  const skill = (handler ? trapSkill(handler) : 0) + aidBonus;
   const success = rollPercent(`${seed}:disarm`) < successChance(skill, chest.trap.difficulty, 45);
   return { ...chest, disarmAttempted: true, disarmed: success };
 }

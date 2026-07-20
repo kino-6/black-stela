@@ -9,6 +9,7 @@ extends RefCounted
 
 const CombatRng := preload("res://scripts/rules/combat_rng.gd")
 const Economy := preload("res://scripts/rules/economy.gd")
+const Exploration := preload("res://scripts/rules/exploration.gd")
 
 # chests.ts keeps its own leaf RNG (same FNV-1a shape as the combat one) to avoid an import cycle; the
 # seeds must therefore match that function, not the combat roller's.
@@ -74,7 +75,7 @@ static func _blocked(state: Dictionary, reason: String) -> Dictionary:
 
 # --- commands --------------------------------------------------------------------------------------
 
-static func investigate(state: Dictionary) -> Dictionary:
+static func investigate(state: Dictionary, world: Dictionary = {}, engine: Dictionary = {}, character_id: String = "", item_id: String = "") -> Dictionary:
 	var chest: Variant = current_chest(state)
 	if typeof(chest) != TYPE_DICTIONARY:
 		return _blocked(state, "no_chest")
@@ -83,10 +84,15 @@ static func investigate(state: Dictionary) -> Dictionary:
 	if bool(chest.get("investigated", false)):
 		return _blocked(state, "already_tried")
 
-	var handler: Variant = select_trap_handler(state.get("party", []))
-	var skill := trap_skill(handler) if typeof(handler) == TYPE_DICTIONARY else 0
-	var seed_text := "%s:%s" % [String(chest.get("cellId", "")), String(chest.get("roomId", ""))]
 	var difficulty := int((chest.get("trap", null) as Dictionary).get("difficulty", 0)) if typeof(chest.get("trap", null)) == TYPE_DICTIONARY else 0
+	var attempt := Exploration.resolve_attempt(state, world, engine, "investigate", difficulty, character_id, item_id)
+	# Naming someone who cannot act is refused outright — silently handing the job to somebody else is
+	# the hidden-handler behaviour the class-system remediation removes.
+	if String(attempt.get("refused", "")) != "":
+		return _blocked(state, String(attempt["refused"]))
+	var handler: Variant = attempt.get("actor", null)
+	var skill := int(attempt.get("skill", 0))
+	var seed_text := "%s:%s" % [String(chest.get("cellId", "")), String(chest.get("roomId", ""))]
 	var success := _roll_percent("%s:investigate" % seed_text) < _success_chance(skill, difficulty, 55)
 	# A failed check is honestly uncertain — it must never report a trapped chest as clear.
 	var result := "uncertain"
@@ -98,12 +104,14 @@ static func investigate(state: Dictionary) -> Dictionary:
 	updated["investigateResult"] = result
 	var next := _replace_chest(state, updated)
 	next["turn"] = int(next.get("turn", 0)) + 1
+	next["inventory"] = attempt.get("inventory", next.get("inventory", []))
 	var event := {"type": "chest_investigated", "result": result}
 	if typeof(handler) == TYPE_DICTIONARY:
 		event["handlerName"] = handler.get("name", "")
+	Exploration.stamp_event(event, attempt)
 	return {"state": next, "events": [event]}
 
-static func disarm(state: Dictionary) -> Dictionary:
+static func disarm(state: Dictionary, world: Dictionary = {}, engine: Dictionary = {}, character_id: String = "", item_id: String = "") -> Dictionary:
 	var chest: Variant = current_chest(state)
 	if typeof(chest) != TYPE_DICTIONARY:
 		return _blocked(state, "no_chest")
@@ -114,19 +122,25 @@ static func disarm(state: Dictionary) -> Dictionary:
 	if bool(chest.get("disarmAttempted", false)):
 		return _blocked(state, "already_tried")
 
-	var handler: Variant = select_trap_handler(state.get("party", []))
-	var skill := trap_skill(handler) if typeof(handler) == TYPE_DICTIONARY else 0
+	var difficulty := int((chest["trap"] as Dictionary).get("difficulty", 0))
+	var attempt := Exploration.resolve_attempt(state, world, engine, "disarm", difficulty, character_id, item_id)
+	if String(attempt.get("refused", "")) != "":
+		return _blocked(state, String(attempt["refused"]))
+	var handler: Variant = attempt.get("actor", null)
+	var skill := int(attempt.get("skill", 0))
 	var seed_text := "%s:%s" % [String(chest.get("cellId", "")), String(chest.get("roomId", ""))]
-	var success := _roll_percent("%s:disarm" % seed_text) < _success_chance(skill, int((chest["trap"] as Dictionary).get("difficulty", 0)), 45)
+	var success := _roll_percent("%s:disarm" % seed_text) < _success_chance(skill, difficulty, 45)
 
 	var updated: Dictionary = chest.duplicate(true)
 	updated["disarmAttempted"] = true
 	updated["disarmed"] = success
 	var next := _replace_chest(state, updated)
 	next["turn"] = int(next.get("turn", 0)) + 1
+	next["inventory"] = attempt.get("inventory", next.get("inventory", []))
 	var event := {"type": "chest_disarmed", "success": success}
 	if typeof(handler) == TYPE_DICTIONARY:
 		event["handlerName"] = handler.get("name", "")
+	Exploration.stamp_event(event, attempt)
 	return {"state": next, "events": [event]}
 
 static func open_chest(state: Dictionary, world: Dictionary, engine: Dictionary) -> Dictionary:

@@ -25,10 +25,13 @@ export type Command =
   | { type: "listen" }
   | { type: "search" }
   | { type: "open_door" }
-  | { type: "disarm_trap" }
-  | { type: "investigate_chest" }
-  | { type: "disarm_chest" }
-  | { type: "open_chest" }
+  | { type: "disarm_trap"; characterId?: string; itemId?: string }
+  // §8.2: an exploration attempt NAMES who makes it (and what they spend on it). Both fields are
+  // optional so every existing route, save and trace still resolves — an omitted actor falls back to
+  // the automatic pick, which the event then reports AS automatic rather than as the player's choice.
+  | { type: "investigate_chest"; characterId?: string; itemId?: string }
+  | { type: "disarm_chest"; characterId?: string; itemId?: string }
+  | { type: "open_chest"; characterId?: string }
   | { type: "attack" }
   | { type: "defend" }
   | { type: "use_item"; itemId: string; targetCharacterId: string }
@@ -361,11 +364,34 @@ export type GameEvent =
   | { type: "room_entered"; roomId: string; roomName: string; motion?: RoomEntryMotion }
   | { type: "trap_triggered"; trapId: string; trapName: string; damage: number }
   | { type: "chest_appeared"; cellId: string; roomId: string }
-  | { type: "chest_investigated"; result: "clear" | "trapped" | "uncertain"; handlerName?: string }
-  | { type: "chest_disarmed"; success: boolean; handlerName?: string }
+  // The attempt record rides on the event: WHO took the risk, at what proficiency, against which band,
+  // and what it cost. `handlerName` is kept so existing log projections and the ported Godot rules keep
+  // reading what they read.
+  | {
+      type: "chest_investigated";
+      result: "clear" | "trapped" | "uncertain";
+      handlerName?: string;
+      actorId?: string;
+      action?: ExplorationActionName;
+      selection?: "declared" | "automatic";
+      proficiency?: ProficiencyName;
+      difficultyBand?: DifficultyBandName;
+      itemConsumed?: string;
+    }
+  | {
+      type: "chest_disarmed";
+      success: boolean;
+      handlerName?: string;
+      actorId?: string;
+      action?: ExplorationActionName;
+      selection?: "declared" | "automatic";
+      proficiency?: ProficiencyName;
+      difficultyBand?: DifficultyBandName;
+      itemConsumed?: string;
+    }
   | { type: "chest_trap_sprung"; trapKind: ChestTrapKind; damage: number }
   | { type: "chest_opened" }
-  | { type: "command_blocked_chest"; reason: "no_chest" | "guarded" | "already_open" | "already_tried" | "no_trap" }
+  | { type: "command_blocked_chest"; reason: "no_chest" | "guarded" | "already_open" | "already_tried" | "no_trap" | "actor_unavailable" }
   | { type: "room_event_triggered"; roomId: string; text: string }
   | { type: "enemy_encountered"; enemyId: string; enemyName: string; roomId: string }
   | { type: "inspection_made"; mode: "inspect_wall" | "listen" | "open_door" }
@@ -471,6 +497,13 @@ export interface CombatState {
 }
 
 export type CombatStatus = "poison" | "fear" | "silence" | "sleep" | "ward";
+
+// Mirrors of the exploration vocabulary (classCapabilities.ts / exploration.ts). Declared here so the
+// event union does not import from a module that imports the engine — the same leaf discipline chests.ts
+// keeps.
+export type ExplorationActionName = "investigate" | "disarm" | "unlock" | "detectSecret" | "escape" | "map";
+export type ProficiencyName = "untrained" | "trained" | "specialist";
+export type DifficultyBandName = "routine" | "tricky" | "severe" | "deadly";
 
 // An element is now a WORLD's own cosmology, not a fixed engine union — the ash pit fights
 // with fire / salt / star, the drowned wood with fire / wood / metal, and a future scenario
@@ -844,6 +877,12 @@ export interface ScenarioItem {
   healAmount?: number;
   restoreMp?: number;
   curesStatuses?: CombatStatus[];
+  /**
+   * §8.2 / §4 — a tool that buys a better exploration attempt (lock picks, trap shims, a detection
+   * charm). Spent by the attempt, win or lose. No world authors one yet; the RULE exists so that "an
+   * item is a valid answer to a missing class" is a route rather than a promise, and §8.4 authors them.
+   */
+  explorationAid?: { actions: ExplorationActionName[]; bonus: number };
   locales?: LocalizedNameDescription;
 }
 

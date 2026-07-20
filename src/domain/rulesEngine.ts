@@ -18,7 +18,8 @@ import { PARTY_SIZE_LIMIT, findClass, importAdventurer, reclassCharacter } from 
 import { SPELLS, knownSpells } from "./spells";
 import { getCriticalChance, getEvasionChance, getInitiativeScore, getSpellPowerBonus, getStatusSpellChance } from "./combatMath";
 import { FEAR_ACCURACY_PENALTY, POISON_DAMAGE, STATUS_WEAR_OFF, statusResistPct } from "./status";
-import { chestAt, disarmChest, investigateChest, makeChest, openChest, roomChest, selectTrapHandler } from "./chests";
+import { chestAt, disarmChest, investigateChest, makeChest, openChest, roomChest } from "./chests";
+import { consumeAid, resolveAttempt, type AttemptRecord, type ExplorationAid } from "./exploration";
 import {
   getExit,
   getFloorForRoom,
@@ -214,9 +215,9 @@ export function resolveCommand(state: GameState, world: ScenarioWorld, command: 
     case "disarm_trap":
       return disarmTrap(state, world);
     case "investigate_chest":
-      return investigateChestCommand(state);
+      return investigateChestCommand(state, world, command.characterId, command.itemId);
     case "disarm_chest":
-      return disarmChestCommand(state);
+      return disarmChestCommand(state, world, command.characterId, command.itemId);
     case "open_chest":
       return openChestCommand(state, world);
     case "attack":
@@ -2006,29 +2007,78 @@ function currentChest(state: GameState): ChestState | undefined {
 
 // IMP-029 — investigate the current chest ONCE. Success learns the truth; failure is honestly
 // "uncertain" (never a false "safe"). The outcome is fixed per chest, so re-trying cannot reload it.
-function investigateChestCommand(state: GameState): CommandResult {
+function investigateChestCommand(state: GameState, world: ScenarioWorld, characterId?: string, itemId?: string): CommandResult {
   const chest = currentChest(state);
   if (!chest) return withEvents(state, [{ type: "command_blocked_chest", reason: "no_chest" }]);
   if (chest.phase === "opened") return withEvents(state, [{ type: "command_blocked_chest", reason: "already_open" }]);
   if (chest.investigated) return withEvents(state, [{ type: "command_blocked_chest", reason: "already_tried" }]);
-  const handler = selectTrapHandler(state.party);
-  const updated = investigateChest(chest, handler, `${chest.cellId}:${chest.roomId}`);
-  return withEvents({ ...replaceChest(state, updated), turn: state.turn + 1 }, [
-    { type: "chest_investigated", result: updated.investigateResult ?? "uncertain", handlerName: handler?.name }
+
+  const attempt = resolveAttempt(
+    state,
+    { action: "investigate", difficulty: chest.trap?.difficulty ?? 0, declaredActorId: characterId, itemId },
+    explorationAids(world)
+  );
+  // Naming someone who cannot act is refused outright — silently handing the job to somebody else is
+  // exactly the hidden-handler behaviour §8.2 removes.
+  if (attempt.refused) return withEvents(state, [{ type: "command_blocked_chest", reason: attempt.refused }]);
+
+  const actor = state.party.find((member) => member.id === attempt.record.actorId) ?? null;
+  const updated = investigateChest(chest, actor, `${chest.cellId}:${chest.roomId}`, attempt.aid?.bonus ?? 0);
+  const inventory = attempt.aid ? consumeAid(state.inventory, attempt.aid.itemId) : state.inventory;
+  return withEvents({ ...replaceChest({ ...state, inventory }, updated), turn: state.turn + 1 }, [
+    {
+      type: "chest_investigated",
+      result: updated.investigateResult ?? "uncertain",
+      handlerName: actor?.name,
+      ...attemptFields(attempt.record)
+    }
   ]);
 }
 
+// The aids a world offers for exploration attempts. Authoring the actual tools is §8.4; the rules for
+// spending one are here so that "an item is a valid answer" is a route, not a promise.
+function explorationAids(world: ScenarioWorld): ExplorationAid[] {
+  return (world.items ?? [])
+    .filter((item) => Array.isArray(item.explorationAid?.actions) && item.explorationAid.actions.length > 0)
+    .map((item) => ({
+      itemId: item.id,
+      actions: item.explorationAid!.actions,
+      bonus: item.explorationAid!.bonus
+    }));
+}
+
+/** The attempt record, as event fields — who acted, how they were chosen, and against what. */
+function attemptFields(record: AttemptRecord) {
+  return {
+    actorId: record.actorId ?? undefined,
+    action: record.action,
+    selection: record.selection,
+    proficiency: record.proficiency,
+    difficultyBand: record.band,
+    ...(record.itemConsumed ? { itemConsumed: record.itemConsumed } : {})
+  } as const;
+}
+
 // IMP-029 — attempt to disarm the current chest ONCE. Success removes the trap; failure leaves it armed.
-function disarmChestCommand(state: GameState): CommandResult {
+function disarmChestCommand(state: GameState, world: ScenarioWorld, characterId?: string, itemId?: string): CommandResult {
   const chest = currentChest(state);
   if (!chest) return withEvents(state, [{ type: "command_blocked_chest", reason: "no_chest" }]);
   if (chest.phase === "opened") return withEvents(state, [{ type: "command_blocked_chest", reason: "already_open" }]);
   if (!chest.trap || chest.disarmed) return withEvents(state, [{ type: "command_blocked_chest", reason: "no_trap" }]);
   if (chest.disarmAttempted) return withEvents(state, [{ type: "command_blocked_chest", reason: "already_tried" }]);
-  const handler = selectTrapHandler(state.party);
-  const updated = disarmChest(chest, handler, `${chest.cellId}:${chest.roomId}`);
-  return withEvents({ ...replaceChest(state, updated), turn: state.turn + 1 }, [
-    { type: "chest_disarmed", success: updated.disarmed, handlerName: handler?.name }
+
+  const attempt = resolveAttempt(
+    state,
+    { action: "disarm", difficulty: chest.trap.difficulty, declaredActorId: characterId, itemId },
+    explorationAids(world)
+  );
+  if (attempt.refused) return withEvents(state, [{ type: "command_blocked_chest", reason: attempt.refused }]);
+
+  const actor = state.party.find((member) => member.id === attempt.record.actorId) ?? null;
+  const updated = disarmChest(chest, actor, `${chest.cellId}:${chest.roomId}`, attempt.aid?.bonus ?? 0);
+  const inventory = attempt.aid ? consumeAid(state.inventory, attempt.aid.itemId) : state.inventory;
+  return withEvents({ ...replaceChest({ ...state, inventory }, updated), turn: state.turn + 1 }, [
+    { type: "chest_disarmed", success: updated.disarmed, handlerName: actor?.name, ...attemptFields(attempt.record) }
   ]);
 }
 
