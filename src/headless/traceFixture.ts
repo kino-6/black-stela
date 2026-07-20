@@ -7,7 +7,7 @@ import type { Command, GameEvent, GameState, ScenarioWorld } from "../domain/typ
 export { withDeterministicIds } from "../domain/ids";
 
 // Deterministic trace fixtures — the parity oracle for the Godot / Babylon migration comparison
-// (docs/design/godot-migration-plan.md, Phase 0). A trace is an initial state, a command sequence,
+// (docs/archive/godot-migration-plan.runtime-comparison.md, Phase 0). A trace is an initial state, a command sequence,
 // and — after each command — the emitted events plus a hash of the resulting state. Because the rules
 // engine is deterministic (seeded RNG, no wall-clock), a candidate runtime replaying the same commands
 // against the same start MUST reproduce the same events and hashes, or it has drifted.
@@ -50,7 +50,7 @@ export function traceHash(input: string): string {
 // Migration note: a runtime port must reproduce the same EVENTS per command, not the same log ids. If
 // a trace ever needs full-state reproducibility (e.g. commands that mint character ids via
 // crypto.randomUUID), id generation should be made injectable/seedable first — see
-// docs/design/godot-migration-plan.md.
+// docs/archive/godot-migration-plan.runtime-comparison.md.
 export function hashState(state: GameState): string {
   const { log: _log, ...gameTruth } = state;
   return traceHash(stableStringify(gameTruth));

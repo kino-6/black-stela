@@ -128,3 +128,21 @@ next preparation step.
   missing shop deltas, or missing recovery plan.
 - [x] Done slice: browser self-play screenshots show town return, shop, and
   recovery as one-screen DRPG preparation surfaces.
+
+## 2026-07-20 — React-era plans and superseded migration documents
+
+Archived when `Plan.md` became the single "where are we" surface. Nothing here is live; each is kept
+because it records a decision or a shipped lane.
+
+| File | Was | Why archived |
+| --- | --- | --- |
+| `Tasks.react-era-combat-feel.md` | root `Tasks.md` | Its active milestone ("Combat FEEL") is React-era; the current state lives in `Plan.md`. |
+| `CombatPlan.react-era.md` / `DungeonPlan.react-era.md` | root | Design intent for the React build; shipped. |
+| `DevLoop.react-browser-playtest.md` | root `DevLoop.md` | A browser playtest loop for the React runtime, which is no longer the game. |
+| `Pointing.react-era.md` | root `Pointing.md` | The user's numbered React findings; all resolved except an unreproducible warp-zone map registration, carried into `Plan.md` if it recurs. |
+| `combat-command-ui-plan.react-era.md` | `docs/` | Superseded by the shipped three-zone combat screen. |
+| `combat-ui-redesign.react-era.md` / `combat-stage-plan.react-era.md` | `docs/design/` | The React combat redesign; delivered, and re-derived in Godot by the UX-parity gate. |
+| `migration-execution-plan.s1-s5-spike.md` | `docs/design/` | The S1–S5 spike plan, explicitly superseded by `godot-full-migration-plan.md`. |
+| `godot-migration-plan.runtime-comparison.md` | `docs/design/` | The Godot-vs-Babylon comparison; the question is decided (ADR 0001). |
+| `godot-go-no-go.decided.md` | `docs/design/` | The Go/No-Go gate evaluation; verdict GO, recorded in ADR 0001. |
+| `branch-close-plan.md`, `tactical-combat-vertical-slice.md` | `docs/design/` | Completed one-off plans with no remaining references. |

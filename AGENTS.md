@@ -161,6 +161,27 @@ fun" — a floor either meets these or the Gate fails.
    (hub-and-spoke, loops, figure-eight, loop-back shortcut, secret vault, gauntlet,
    …) and note which a floor uses in its `authorNotes`.
 
+## Class, Ability, and Party-Coverage Rules
+
+Before changing a class, technique, exploration check, guild registration,
+starter party, class equipment, or vocation prerequisite, read
+`docs/design/class-system.md`. Its requirements are blocking:
+
+- A class must have a real combat and exploration identity (or a documented
+  reason it is combat-only), not only stats, tags, starting gear, or unusual
+  terminology.
+- Never hard-lock ordinary progression to a class. Specialists are safer and
+  solve harder problems; trained characters and consumable items offer costly,
+  lower-ceiling alternatives.
+- Do not display party coverage grades or raw class tags in normal play.
+- TypeScript changes the deterministic class contract first; Godot only consumes
+  exported data and parity-ports the same rules.
+- Treat vocation change as accumulated training: it expands learned techniques
+  and earned access, while the bounded active loadout and current positive
+  signature define focus. Do not reset a developed adventurer into an inferior
+  build or silently invalidate legitimate equipment.
+- Do not start a guild UI rewrite to conceal an unresolved class-system design.
+
 ## Controller-First Player UI Contract
 
 All normal-play UI is designed for controller and keyboard first, then mouse.

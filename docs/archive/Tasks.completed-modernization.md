@@ -1,7 +1,7 @@
 # Archived: Black Stela Modernization Tasks
 
 This archive captures completed tasks BS-001 through BS-040. The active task
-list now lives at [../../Tasks.md](../../Tasks.md).
+list now lives at [../../Plan.md](../../Plan.md).
 
 This task list breaks down
 [Plan.completed-modernization.md](./Plan.completed-modernization.md) into

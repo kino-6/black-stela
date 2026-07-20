@@ -2,7 +2,7 @@
 
 Archived: 2026-07-05
 
-Active tasks: [../../Tasks.md](../../Tasks.md)
+Active state: [../../Plan.md](../../Plan.md) (Tasks.md was archived 2026-07-20 as Tasks.react-era-combat-feel.md)
 
 ## Completed Task Archives
 

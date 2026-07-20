@@ -125,7 +125,7 @@ Release and packaging references:
 - [Browser self-play gate](docs/gates/browser-selfplay-gate.md)
 - [Screenshot review protocol](docs/gates/screenshot-review.md)
 - [Current plan](Plan.md)
-- [Current tasks](Tasks.md)
+- [Where we are, and what is next](Plan.md)
 - [Completed modernization task archive](docs/archive/Tasks.completed-modernization.md)
 
 If Playwright browsers are missing, install Chromium once:

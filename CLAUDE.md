@@ -1,7 +1,7 @@
 # Claude Code — entry point & orientation
 
 Black Stela is a first-person grid DRPG (TypeScript / React / Three.js / Tauri). This file gets a
-fresh session oriented fast. Read it, then the two links under "Start here" — you do not need to
+fresh session oriented fast. Read it, then the links under "Start here" — you do not need to
 re-read conversation history.
 
 ## Start here (in order)
@@ -11,6 +11,10 @@ re-read conversation history.
    the rest. This is the single source of "where are we."
 2. **`AGENTS.md`** — the canonical product / controller / gameplay / Japanese / Gate / external-
    action rules for both agents. Non-negotiable. Do not weaken or duplicate them elsewhere.
+3. **For Godot migration work:** read `docs/architecture.md`, then
+   `docs/design/godot-full-migration-plan.md`. If the slice touches scenario AI, narration,
+   canonical events, records, or saves, continue to
+   `docs/design/ai-godot-migration-contract.md`. M3 preserves this seam; it does not add live AI.
 
 ## The one command that tells the truth
 
@@ -32,7 +36,7 @@ Also: `npm run build` (tsc -b) is the real typecheck; `npm run test` is the unit
   `controller-first-ui` (keyboard/gamepad UI + gates that can fail),
   `combat-ui-drpg` (the combat screen), `drpg-scenario` (building a world; world-owned copy).
 - **Design docs** (`docs/design/`) — `dungeon-areas.md` / `verdant-areas.md` (the 3-act curve),
-  `growth-and-quests.md` (Q1 growth items + Q2 quest board both done), `combat-stage-plan.md`.
+  `growth-and-quests.md` (Q1 growth items + Q2 quest board both done), `class-system.md` (active).
 - **Gates** (`docs/gates/`) — `past-trouble-regression-gate.md` is the record of every bug that
   shipped and the assertion that now blocks it. Read it before player-facing work.
 - **Content is data** (`content/worlds/<id>/`) — dungeons, enemies, gear, items, and per-world

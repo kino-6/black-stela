@@ -194,7 +194,7 @@ to an independent production combat loop (IMP-023V). See
 ### Deterministic trace fixtures (the migration parity oracle)
 
 `headless/traceFixture.ts` is the cross-runtime parity primitive the Godot /
-Babylon comparison rests on (`docs/design/godot-migration-plan.md`, Phase 0). A
+Babylon comparison rests on (`docs/archive/godot-migration-plan.runtime-comparison.md`, Phase 0). A
 **trace** is an initial state, a command sequence, and — after each command — the
 emitted events plus a **hash of the resulting state**. `runTrace(world, initial,
 commands)` folds the production `resolveCommand` and records each step; the hash
@@ -349,7 +349,7 @@ docs/                    Design docs, gates, decisions, skills, handoffs, archiv
 - **Difficulty model & the two world knobs:** `.claude/skills/drpg-balance`,
   `docs/design/dungeon-areas.md`, `docs/design/verdant-areas.md`.
 - **Combat screen:** `.claude/skills/combat-ui-drpg`,
-  `docs/design/combat-stage-plan.md`, `docs/design/combat-ui-redesign.md`.
+  `docs/archive/combat-stage-plan.react-era.md`, `docs/archive/combat-ui-redesign.react-era.md`.
 - **Controller-first UI + writing gates that can fail:**
   `.claude/skills/controller-first-ui`.
 - **Authoring a world:** `.claude/skills/drpg-scenario`,
@@ -358,5 +358,5 @@ docs/                    Design docs, gates, decisions, skills, handoffs, archiv
   `docs/decisions/ADR-001-game-events-and-persistence.md`.
 - **Rare loot / vocations / quests / sim parity:** `docs/design/rare-loot.md`,
   `vocation-mastery.md`, `growth-and-quests.md`, `sim-parity.md`.
-- **The migration question:** `docs/design/godot-migration-plan.md`.
+- **The migration question:** decided — `docs/adr/0001-godot-gdscript-as-the-player-runtime.md`; the record is `docs/design/godot-full-migration-plan.md`.
 ```

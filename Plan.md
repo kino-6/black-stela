@@ -1,141 +1,125 @@
-# Black Stela Plan
+# Black Stela — where we are, and what is next
 
-## Completed Archive
+**This file is the single answer to "where are we".** If something matters to the current state of the
+project it is written here or linked from here in one hop. Anything not reachable from this page is
+either an authority document (below) or archived.
 
-Completed plan lanes and task slices are archived in:
+Last updated: 2026-07-20.
 
-- [docs/archive/Plan.completed-index.md](docs/archive/Plan.completed-index.md)
-- [docs/archive/Tasks.completed-index.md](docs/archive/Tasks.completed-index.md)
+---
 
-## Current Baseline (2026-07-16)
+## 1. What the game is right now
 
-Black Stela has deterministic rules, save/load, debug starts, headless probes,
-English/Japanese UI, scenario validation, tactical combat, guild character
-authorship and roster management, economy, first-person rendering, minimap,
-party menu, browser Self-Play, and responsive combat staging. All eight floors
-(B1F-B8F) are dense continuous-grid mazes with safe stair landings, rewards,
-hazards, and authored return routes.
+A first-person grid DRPG. **Godot 4.7.1 / GDScript is the player runtime**; TypeScript is the rules
+ORACLE and the authoring/simulation toolchain. The React app still exists in `src/` as the UX reference
+the port is measured against — it is not the game any more.
 
-Shipped since `IMP-011`: the **5-slice elemental balance** (per-world cosmology,
-gear counterplay, XP falloff, two `world.md` `balance:` knobs — a naive party
-wipes, a prepared one clears ~10 levels lower); **Q1 growth items + Q2 the quest
-board** (authored data in `content/worlds/<id>/`); **character presence
-IMP-018..020** (portable visual identity, in-combat presence lane, GM-aware
-framing); and the **combat enemy-stage overlay** (translucent HUD over a
-full-frame stage, stage share 36%→71% at 720p). Headless runs are never proof of
-UX, fun, fairness, visual legibility, or grid-maze honesty; browser evidence and
-human visual review remain required.
+The full loop runs in Godot: Title → scenario picker → guild (five registration steps) → town (nine
+counters) → first-person dungeon → combat → result → town, with saves, quests, loot, the forge, vocations
+and records.
 
-## UI Reference Findings
+## 2. The commands that tell the truth
 
-- Wizardry-style play is a town/prep/labyrinth/return/heal loop.
-- Etrian Odyssey-style exploration pairs first-person view and readable mapping.
-- Classic console RPG input uses fixed command windows, cursor movement,
-  confirm/cancel, message advance, and stable command positions.
-- Normal play avoids debug copy, oversized cards, duplicate logs, free escape,
-  and web-app/admin-panel residue.
+```sh
+npm run gate:migration   # UX parity + assets + controller gates + rules parity   ← the migration gate
+npm run test             # 512 TypeScript unit tests (the rules oracle)
+npm run build            # tsc -b — the real typecheck
+npm run export:godot     # re-export packs/traces/engine data after ANY rules change
+```
 
-## Product Guardrails
+`gate:migration` runs, in order: `gate:ux-parity` (contracts DERIVED from the React panels, not
+hand-written) → `verify_assets` → `verify_town_controller` → `verify_guild_controller` →
+`verify_front_controller` → `verify_character_creation` → `verify_save` → `verify_parity`.
 
-- Player-authored characters keep their portraits, profiles, traits, stats,
-  classes, notes, and memories. New recruits start with role-appropriate gear.
-- Japanese copy and line breaks must read naturally; externalize scenario text
-  where practical and reject stray English, orphan characters, and translated
-  sentence shapes.
-- Normal play hides AI, save/debug, provider, route-id, and admin controls. Local
-  narration is non-canonical and cannot mutate `GameState`.
-- Controller-first is blocking: stable focus, confirm/cancel, fixed command and
-  message regions, six-person formation, and browser proof are required.
-- The dungeon is a continuous grid whose minimap, view, movement, doors, stairs,
-  returns, traps, and enemies share one truth.
-- Combat queues every active member in formation order, keeps vitals visible,
-  resolves explicit rounds, and owns victory/result/resume as distinct phases.
-- Town, shop, recovery, equipment, Repeat, and Auto must preserve DRPG attrition
-  and preparation while showing costs, comparisons, state, speed, and interrupts.
-- Apply [Past Trouble Regression Gate](docs/gates/past-trouble-regression-gate.md)
-  before completion. Classic DRPGs are structure references, not copy sources.
+Evidence screenshots: `godot --path godot/ --script res://tests/capture_ux_evidence.gd`
+(**never with `--headless`** — headless has no render viewport and every shot comes out null).
 
-## Active Lanes
+## 3. Status — honest
 
-- [x] V/W/Y: Japanese text layout, starting gear/shop previews, and full guild
-  roster lifecycle. See the completed Plan/Task indexes above.
-- [x] Z + dungeon rollout: B1F-B8F continuous-grid mazes, authored stairs and
-  returns, checkpoints, secrets, rewards, hazards, and dungeon gimmicks.
-- [x] Combat overhaul + #58 tuning: growth, MP/spells, status/elements, enemy AI,
-  bounded balance Gate, full-party command entry, Repeat, and Auto.
-- [x] R/X/G/H: separable panel extraction, tempo feedback, save migration seam,
-  and hidden local-narration operations. Environment follow-ups remain below.
-- [x] `IMP-001` to `IMP-011`: controller/browser UX, Verdant art, combat result
-  flow, and responsive enemy framing. See [Improve.md](Improve.md).
+| Gate | State |
+| --- | --- |
+| Rules parity (TS ↔ Godot) | **33/33 routes**, byte-for-byte |
+| UX parity | **26 of 27 screens** — one red, see below |
+| Controller gates (town / guild / front door) | pass |
+| Assets, save round-trip, character creation | pass |
+| TypeScript unit | 512 pass |
 
-## Deferred Lanes
+**The one red screen: the title's language switch** (`locale.label` / `locale.ja` / `locale.en`). React
+offers Japanese/English; Godot exports `ja` only and ~33 UI strings are still hardcoded Japanese, so a
+toggle would half-translate the game. Deferred by decision as its own slice — see §5.
 
-All previously-deferred lanes (G, H) have now had their completable scope shipped
-(see Active Lanes). The only remaining items are environment- or refactor-gated, not
-deferred by choice:
+## 4. Active work — the class system
 
-- **Desktop bundle verification** (Lane G) — needs a desktop toolchain on macOS +
-  Windows; steps + ready seams in
-  [docs/desktop-productization.md](docs/desktop-productization.md).
-- **Guild registration stepper decomposition** (Lane R) — needs a `useReducer`/
-  context refactor of the draft state (feature-shaped, not a verbatim move).
-- **Live-LLM narration generation** (Lane H) — needs a real local provider endpoint;
-  the whole ops layer around it is done and mock-tested.
+Authority: **[`docs/design/class-system.md`](docs/design/class-system.md)** (its Section 8 sets the
+order; do not reorder it). Supporting: [`docs/design/vocation-mastery.md`](docs/design/vocation-mastery.md),
+`AGENTS.md` "Class, Ability, and Party-Coverage Rules".
 
-## Standing Guardrails
+The finding it exists to fix: twelve class labels standing on **four** abilities and a list of
+`roleTags`, exactly one of which any rule ever read.
 
-- Use [Grid Labyrinth Skill](docs/skills/grid-labyrinth-skill.md) for movement,
-  minimap, stairs, return, and first-person render changes.
-- Use [DRPG UX Review Skill](docs/skills/drpg-ux-review-skill.md) before UI,
-  party, combat, town, dungeon, command, or automation changes.
-- Use [Scenario Prose Skill](docs/skills/scenario-prose-skill.md) before prose
-  and localization changes.
-- Use [Japanese Line-Layout Gate](docs/gates/japanese-line-layout-gate.md) when
-  Japanese message-box copy, width, or font changes.
-- Use [Black Stela Gate Review Skill](docs/skills/black-stela-gate-review-skill.md)
-  before any player-facing implementation or completion claim.
-- Keep command windows stable, party rows visible, and Japanese/mobile checks
-  active for any changed player-facing surface.
+| Section 8 item | State |
+| --- | --- |
+| 1. TypeScript rules and data | **done** — `src/domain/techniques.ts` (a model that can hold heal / cure / ward / buff / debuff / scope / duration / non-MP cost), `src/domain/classCapabilities.ts` (the class contract: techniques, exploration proficiency, equipment shape, row, stated weakness), `spells.ts` reduced to a derived legacy view. Behaviour unchanged, pinned by `tests/classCapabilities.test.ts`. |
+| 2. Deterministic commands | **done** — `src/domain/exploration.ts` + `godot/scripts/rules/exploration.gd`. An attempt names its actor; a declared actor is obeyed, an automatic pick is reported AS automatic, and the event carries actor / action / proficiency / difficulty band / item spent. Items can buy an attempt (`ScenarioItem.explorationAid`). `tests/explorationAttempts.test.ts`. |
+| **3. Class consolidation & vocation semantics** | **NEXT.** Target classes, deliberate id migration, and the split of permanent starting discipline / mastered history / active focus — with a versioned save migration and a documented mapping. Nothing may be silently remapped. |
+| 4. Content and balance | not started — author the item alternatives and technique families, then simulate specialist / secondary / item-only / no-coverage parties. |
+| 5. Godot parity | partly ahead of schedule: item 2 was ported in its own slice to keep the golden traces honest. The rest follows item 3. |
+| 6. Player surface (the guild) | last, and only once the above is green. |
 
-## Current Milestone Recommendation
+Also open in the rules, deliberately deferred to item 4: **room traps, locks and secrets have no skill
+check at all today.** Wiring proficiency into them changes difficulty, so it belongs with the balance
+pass, not with the plumbing.
 
-The latest acceptance is green on the production build, **380+ unit tests**, and the
-full `gate:final` suite passing **114 Playwright tests** (`main` @ `5fb01a4`, pushed).
+## 5. Known gaps (each with a reason, not a shrug)
 
-**Active milestone: Combat FEEL** — the last pre-balance item. The command-RPG rebuild
-and the three-zone / enemy-overlay screen are shipped, so a round reads well and plays on
-a controller; what remains is making a round FEEL worth playing (per-round friction, hit
-weight, earned outcomes). It is design-first — see `Tasks.md` and
-[docs/design/combat-ui-redesign.md](docs/design/combat-ui-redesign.md); align the lever set
-with the user before implementing.
+- **Localization slice** — the language switch above. Needs: export `en` alongside `ja`, a runtime locale
+  in `scripts/i18n.gd`, ~33 hardcoded Japanese strings turned into keys, and catalog-name resolution
+  taking a locale. Until then the title stays honestly 3 keys red.
+- **Floor names render in English** ("B1F - Silent Approach") because no dungeon in either world authors
+  `locales.ja`. React does the same — a content gap, not a port regression. Wants authoring.
+- **`godot/tests/verify_flow.gd` fails** (expects an `encounter_started` that the route no longer
+  produces) and has since before the ①–⑤ fix series. It is NOT in `gate:migration`. **Decide: repair or
+  retire.**
+- **Desktop bundle verification** — needs a desktop toolchain on macOS + Windows;
+  [`docs/desktop-productization.md`](docs/desktop-productization.md).
+- **Live-LLM narration** — the whole ops layer is built and mock-tested; needs a real local provider.
+  [`AIPlan.md`](AIPlan.md) + [`docs/design/ai-godot-migration-contract.md`](docs/design/ai-godot-migration-contract.md).
 
-### NextAction (recommended order)
+## 6. Where the durable knowledge lives (the whole list)
 
-1. **Combat FEEL** (active) — align the plan, then ship one browser-verified slice at a time.
-2. **Approved capability backlog** ([Improve.md](Improve.md)) in dependency order:
-   **IMP-021** (vocation mastery) → **IMP-022** (rare equipment / appraisal / bulk conversion)
-   → **IMP-023** (deterministic content & economy simulation Gate). Claude Code owns each
-   `*A` data/rules contract and the controller-first player routes; Codex owns content, art,
-   and the simulator; a `*A` contract freezes before its content/route work starts.
-3. Gated follow-ups (unchanged, none blocked on unknowns): desktop bundle verification, the
-   guild-stepper reducer refactor, live-LLM narration.
+Read these; everything else is archived.
 
-## Proposed Runtime Migration Lane
+| Document | What it decides |
+| --- | --- |
+| [`AGENTS.md`](AGENTS.md) | The non-negotiable product / controller / Japanese / gate rules for both agents. |
+| [`CLAUDE.md`](CLAUDE.md) | Session orientation: what to read first. |
+| [`docs/architecture.md`](docs/architecture.md) | Layer boundaries, the command loop, the durable-core-vs-UI line. |
+| [`docs/design/class-system.md`](docs/design/class-system.md) | **Active** — the class/ability/coverage authority (§4 above). |
+| [`docs/design/godot-full-migration-plan.md`](docs/design/godot-full-migration-plan.md) | The migration record: M0–M7, all done, plus the verification strategy still in use. |
+| [`docs/design/ai-godot-migration-contract.md`](docs/design/ai-godot-migration-contract.md) | The AI/narration seam the runtime must keep. |
+| [`docs/gates/past-trouble-regression-gate.md`](docs/gates/past-trouble-regression-gate.md) | Every bug that shipped, and the assertion that now blocks it. Read before player-facing work. |
+| [`Improve.md`](Improve.md) | Codex-owned capability backlog. Claude does not edit it. |
+| [`AIPlan.md`](AIPlan.md) / [`Art.md`](Art.md) | Codex-owned: AI product direction, art direction and asset contracts. |
+| `content/worlds/<id>/` | Dungeons, enemies, gear, items, quests, cosmology, balance knobs and voice — **all authored data**. A new scenario should need no code change. |
+| `.claude/skills/` | Deep how-to: `drpg-balance`, `controller-first-ui`, `combat-ui-drpg`, `drpg-scenario`. |
+| `docs/design/` (rest) | Per-subsystem references: dungeon/verdant areas, growth-and-quests, rare-loot, scenario-switching, sim-parity, content-gate, vocation-mastery. |
+| [`docs/archive/`](docs/archive/) | Everything completed or superseded, including the React-era plans. |
 
-The installed engine is Godot `4.7.1.stable`, not Godot 5. Compare a
-controller-first Godot/GDScript slice with a non-React Babylon.js/TypeScript
-slice before committing to a rewrite. Godot leads on integrated game UI, 2D/3D,
-transitions, and assets; Babylon is the lower-cost control because it can retain
-the TS rules and Web toolchain. Preserve external packs, save DTOs, simulations,
-and TS state traces as the shared oracle. Phaser is conditional on abandoning
-the current 3D dungeon; PixiJS, Defold, Unity, Bevy, and Unreal are not primary
-candidates for this comparison.
+## 7. How the two agents split work
 
-Plan and Go/No-Go criteria:
-[Godot Migration and Runtime Comparison Plan](docs/design/godot-migration-plan.md).
+- **Claude Code** — rules, state, screens, controller focus, localization data flow, content authoring,
+  balance, and the gates.
+- **Codex** — art direction, image generation, asset contracts, pack placement, and independent
+  browser-visible review. The implementer does not self-approve player-facing visual completion.
 
-## Planning Rule
+## 8. Standing rules (learned the hard way)
 
-Before adding new work to `Tasks.md`, write a small milestone goal with outcome,
-scope, verification, save/schema impact, Japanese/UI impact, content validation,
-headless/browser parity, and human expectation/red-flag impact.
+- **Check the branch before committing** (`git branch --show-current`), and verify a push against the
+  remote itself (`git ls-remote origin main`), never the possibly-stale local ref.
+- **Verifying a player-facing change is the implementer's job, as they work** — never a task queued for
+  the user, and never "headless proved it".
+- **Commit / push / merge only when asked.** Messages end with the Co-Authored-By trailer.
+- **A rules change is not finished until `npm run export:godot` has run and parity is green again** — the
+  oracle and the runtime must not tell different stories, even for one commit.
+- **Do not hand-write a gate's pass condition.** Derive it from the thing being replaced; a contract
+  authored by the same understanding that wrote the screen certifies its own blind spots.

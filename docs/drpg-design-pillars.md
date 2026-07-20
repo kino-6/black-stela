@@ -5,7 +5,7 @@ researched from primary developer interviews (Etrian's Niinou "Director's Diary"
 Frontline JP translations of Komori/Himukai) and the best analytical treatments
 (CRPG Addict retrospectives, Felipe Pepe, alldeadgenerations) plus combat-feel design
 essays. Each pillar: the principle, the player-psychology reason, and concrete
-do/avoid. This grounds [combat-command-ui-plan.md](combat-command-ui-plan.md) and
+do/avoid. This grounds [combat-command-ui-plan.md](archive/combat-command-ui-plan.react-era.md) and
 future design work — build toward these, and audit against the anti-patterns.
 
 ## The pillars

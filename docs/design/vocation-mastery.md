@@ -1,5 +1,13 @@
 # IMP-021 — Career / vocation mastery (contract: IMP-021A)
 
+> **Supersession note (2026-07-20):** the mastery/loadout mechanics in this
+> document remain the contract. Its former assumption that the existing twelve
+> basic classes are a fixed player-facing roster is superseded by
+> [`class-system.md`](class-system.md). Do not use this document to justify a
+> Godot-only class UI or to retain a basic class that has no distinct rules
+> identity. Class-id, prerequisite, and save changes must be made together in
+> the TypeScript oracle and then ported through parity.
+
 A build is the history of vocations an adventurer has mastered (DQ6/7-style, original data). Character
 LEVEL persists; vocation MASTERY advances separately; mastered techniques stay learned; authored
 prerequisites gate stronger advanced vocations. This file is the **frozen contract** IMP-021A owns —
@@ -8,17 +16,28 @@ the runtime types in parallel.
 
 ## Decisions taken with the user (2026-07-16)
 
-- **Basic vocations = the existing 12 classes, kept as built-in for now.** They aren't the appeal —
-  the authored ADVANCED vocations are — so the base stays code while everything new is data.
+- **Historical baseline:** the implementation used the existing twelve classes as built-in basics.
+  That player-facing taxonomy is now under revision; see `class-system.md`. The
+  vocation graph remains data-extensible, and the final basic ids must remain
+  stable and save-migrated once the new roster is accepted.
 - **Vocation id is a `string`, data-extensible** (the same move that made `Element` a string for
-  world-authored cosmology). Built-in basics use the 12 class ids; advanced vocations are authored
-  and merged in. Nothing hard-codes "a vocation is one of 12".
+  world-authored cosmology). The current built-in basics use the former 12 class
+  ids; advanced vocations are authored and merged in. Nothing hard-codes "a
+  vocation is one of 12".
 - **Externalize incrementally:** advanced vocations, mastery rules knobs, unlock prerequisites, and
-  granted techniques are authored in `content/worlds/<id>/vocations.md`. The base 12 stay in code.
-- **Save compatibility is NOT a concern at this stage** — the Character/save schema may change freely
-  (no migration path required yet).
+  granted techniques are authored in `content/worlds/<id>/vocations.md`. The
+  current base catalog is code, but it is not a permanent player-facing roster.
+- **Historical baseline:** this slice originally treated save compatibility as
+  out of scope. That is no longer valid for a class-id or capability revision:
+  the versioned save DTO needs an explicit, tested migration before old ids or
+  learned techniques change.
 - **Changing vocation keeps LEVEL and learned techniques** (today's `reclassCharacter` wrongly resets
   to level 1 and re-derives everything — that is corrected here).
+- **Changing vocation widens a build, not weakens it.** Starting discipline,
+  previously earned exploration access, learned techniques, and legitimately
+  equipped gear persist. The active vocation changes a positive signature and
+  the recommended bounded loadout; it must not impose a crippling stat or
+  equipment reset. See `class-system.md` for the full player-facing rule.
 - **Mastery gain runs through the same out-levelling FALLOFF** as XP, so farming weak early floors is
   not the optimal mastery route (an IMP-021 acceptance check).
 
@@ -68,15 +87,20 @@ interface CharacterVocationState {
 - `resolveVocationCatalog(world)` — merge built-in basics with authored vocations (authored wins on id).
 - `masteryGain(enemyLevel, memberLevel)` — reuse `leveling.rewardXpFor`'s falloff so weak farming decays.
 - `canAdoptVocation(character, vocationId, catalog)` — prerequisites met (mastered ranks + level).
-- `adoptVocation(character, vocationId, world)` — swap stat modifiers / equipment permissions /
-  signature; **keep level, hp/mp ratios, and `learned`**; union in the new vocation's `grantsTechniques`.
+- `adoptVocation(character, vocationId, world)` — retain starting discipline,
+  acquired proficiencies, usable gear, level, hp/mp ratios, and `learned`;
+  union in the new vocation's `grantsTechniques`. Change only the active
+  vocation's positive signature and bounded recommended loadout. Do not model a
+  basic vocation change as a destructive reclass.
 - `applyMastery(character, points)` — advance `progress`/`mastery` of `current`, capping at mastered.
 
 ## Acceptance the contract must satisfy (from IMP-021)
 
 - Advanced vocations are intentional destinations; every unlock route is visible before committing.
-- Changing vocation does not reset level or erase mastered techniques; the current vocation still owns
-  stat modifiers, equipment permissions, and its signature.
+- Changing vocation does not reset level, erase mastered techniques, revoke
+  earned exploration access, or invalidate legitimately equipped gear. The
+  active vocation adds its positive signature and recommends the bounded
+  loadout; it does not replace the developed adventurer beneath it.
 - Learned techniques persist; a bounded, reorderable combat loadout keeps the command list sane.
 - Weak early-floor encounters cannot be the optimal mastery strategy (falloff).
 - Japanese labels/descriptions come from localization/scenario data.

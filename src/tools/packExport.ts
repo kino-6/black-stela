@@ -1,6 +1,6 @@
 import type { ScenarioWorld } from "../domain/types";
 
-// S1 of the Godot migration (docs/design/migration-execution-plan.md): compile a validated,
+// S1 of the Godot migration (docs/archive/migration-execution-plan.s1-s5-spike.md): compile a validated,
 // balance-applied ScenarioWorld into versioned, normalized JSON that the Godot runtime loads directly.
 // Godot never re-parses Markdown/YAML — this is the single build-time bridge, so both runtimes read the
 // exact same normalized world truth.

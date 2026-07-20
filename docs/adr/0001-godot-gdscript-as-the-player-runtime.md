@@ -1,7 +1,7 @@
 # ADR 0001 — Godot 4.7.1 / GDScript is the player runtime; TypeScript stays the oracle and toolchain
 
 - **Status:** Accepted (2026-07-20)
-- **Supersedes:** the S1–S5 spike plan's open engine question (`docs/design/godot-go-no-go.md` = GO)
+- **Supersedes:** the S1–S5 spike plan's open engine question (`docs/archive/godot-go-no-go.decided.md` = GO)
 - **Context doc:** `docs/design/godot-full-migration-plan.md` (M0–M7)
 
 ## Decision

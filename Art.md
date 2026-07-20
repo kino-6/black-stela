@@ -9,6 +9,12 @@ scenario pack brief for the asset you are generating or reviewing.
 
 ## Delivery Status
 
+- Physical-file re-audit (2026-07-20): **no missing required art**. All 59
+  authored catalog ids have own-basename 256x256 RGBA icons (Default 46,
+  Verdant 13); the 144-file adventurer source matrix is complete; all audited
+  character, enemy/hurt, facility, and support deliverables match their required
+  dimensions and alpha contracts. Remaining items called "pending" below are
+  runtime wiring or optional enhancements, not ungenerated assets.
 - Default / Ash: P14, P16, P18, and P19 delivered. All fourteen authored enemies now have
   dedicated 768×768 clean-alpha art; the three P16 additions also include hurt
   frames. P18 adds five town NPCs, seven dungeon objects, and eight own-basename

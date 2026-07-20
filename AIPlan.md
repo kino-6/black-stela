@@ -2,6 +2,14 @@
 
 Status: Proposed
 
+> **Godot migration handoff:** This document owns the product promise and
+> authority model. During the active migration, implementation boundaries,
+> M3 requirements, target modules, parity rules, and a concrete JSON exchange
+> are defined in
+> [`docs/design/ai-godot-migration-contract.md`](docs/design/ai-godot-migration-contract.md).
+> M3 does not implement live AI; it preserves the event and export seams that
+> the later concept slice requires.
+
 ## Product promise
 
 Black Stela is a controller-first grid DRPG in which the player brings authored

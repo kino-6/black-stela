@@ -1,7 +1,7 @@
 extends Node
 ## Loads the versioned world-pack JSON exported by `npm run export:packs`. Godot never re-parses the
 ## authored Markdown/YAML — it reads the single normalized bridge under res://data/worlds
-## (docs/design/migration-execution-plan.md, S1). Both runtimes therefore read the exact same world.
+## (docs/archive/migration-execution-plan.s1-s5-spike.md, S1). Both runtimes therefore read the exact same world.
 
 const WORLDS_DIR := "res://data/worlds/"
 

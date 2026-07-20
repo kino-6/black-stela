@@ -2,7 +2,7 @@
 // `withDeterministicIds` they become a reproducible seeded sequence. This is the migration
 // prerequisite that lets full-play golden traces reproduce byte-for-byte across runtimes — a candidate
 // runtime replaying the same commands mints the same ids, so state hashes match (see
-// docs/architecture.md §4 and docs/design/godot-migration-plan.md).
+// docs/architecture.md §4 and docs/archive/godot-migration-plan.runtime-comparison.md).
 //
 // Only domain state ids route through here (log entries, character ids). Presentation/service ids
 // (portraits, vault deposits) stay on crypto.randomUUID — they are not part of deterministic game truth.

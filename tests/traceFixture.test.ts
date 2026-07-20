@@ -7,7 +7,7 @@ import type { Command, GameState } from "../src/domain/types";
 import { hashState, runTrace, stableStringify, traceHash, withDeterministicIds } from "../src/headless/traceFixture";
 
 // The deterministic trace fixture is the parity oracle for the Godot / Babylon migration comparison
-// (docs/design/godot-migration-plan.md, Phase 0). These tests lock the two properties the whole
+// (docs/archive/godot-migration-plan.runtime-comparison.md, Phase 0). These tests lock the two properties the whole
 // approach depends on: the engine is DETERMINISTIC (same start + commands → same events + hashes), and
 // the state hash is CANONICAL (structurally equal states hash identically, whatever the key order).
 

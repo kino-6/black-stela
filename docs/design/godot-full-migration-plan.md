@@ -1,7 +1,7 @@
 # Black Stela — Full Godot Migration Plan
 
 Status: **Proposed** (supersedes the S1–S5 spike plan for the *production* migration).
-Date: 2026-07-19. Decision input: S5 Go/No-Go = **GO** (`godot-go-no-go.md`).
+Date: 2026-07-19. Decision input: S5 Go/No-Go = **GO** (`../archive/godot-go-no-go.decided.md`).
 
 ## 0. Honest current state
 
@@ -91,6 +91,10 @@ shell, input map, and the 9-trace baseline. Keep as the spine.
   play (AGENTS.md) — they are developer tooling.
 
 ### M2 — Guild & character creation (the roster spine)
+- **Class-system prerequisite:** do not polish or expand the Godot guild against
+  the former label/stat/tag catalog. First implement the TypeScript-authoritative
+  class, technique, proficiency, item-coverage, trace, and save changes in
+  [`class-system.md`](class-system.md); only then export and parity-port them.
 - **Commands (~11):** the create/roster set — `import_member`, `reclass_member`, `bench_member`,
   `recall_member`, `retire_member`, `unretire_member`, `erase_member`, `edit_member_identity`,
   `set_member_row`, `swap_member_rows`, plus the `createGuildCharacter` path (class/origin/aptitude/
