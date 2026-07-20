@@ -1,4 +1,5 @@
 import type { Character, ChestState, ChestTrapKind, GameState, ScenarioChest } from "./types";
+import { classProficiency, proficiencyBonus } from "./classCapabilities";
 
 // IMP-029 — the treasure-chest state machine + trap handling, kept a LEAF module (no rulesEngine
 // import) so the rules engine can wire it without a cycle. Reward payout stays in rulesEngine (it owns
@@ -30,13 +31,20 @@ function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
 }
 
-/** A member's aptitude for handling traps. The trap-handling vocations (cutpurse/seeker/scout carry the
- *  `trap_handling` role tag) get a real bonus, but ANYONE may try — a non-specialist just runs a worse
- *  check (higher risk). Never class-locked. Agility/wit/luck/level/role all feed it. */
+/** A member's aptitude for handling traps. A specialist gets a real bonus, but ANYONE may try — a
+ *  non-specialist just runs a worse check (higher risk). Never class-locked. Agility/wit/luck/level and
+ *  the class's declared proficiency all feed it.
+ *
+ *  The proficiency now comes from the CLASS CONTRACT (classCapabilities.ts) rather than from a
+ *  `trap_handling` string on the character: the tag was the one and only rules meaning any roleTag ever
+ *  had, and leaving it here would keep the contract in two places. The numbers are unchanged — the same
+ *  three classes are specialists, worth the same +8 — and a character carrying the old tag from a save
+ *  still gets it, so nothing already in a save file loses a skill it had. */
 export function trapSkill(member: Character): number {
   const apt = member.aptitude;
-  const specialist = member.roleTags?.includes("trap_handling") ? 8 : 0;
-  return member.level + (apt.agility ?? 0) * 2 + (apt.wit ?? 0) + (apt.luck ?? 0) + specialist;
+  const declared = proficiencyBonus(classProficiency(member.classId, "disarm"));
+  const legacyTag = member.roleTags?.includes("trap_handling") ? proficiencyBonus("specialist") : 0;
+  return member.level + (apt.agility ?? 0) * 2 + (apt.wit ?? 0) + (apt.luck ?? 0) + Math.max(declared, legacyTag);
 }
 
 /** The best standing (un-injured) handler the rules pick automatically, or null if nobody can act. */
