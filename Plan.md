@@ -29,7 +29,9 @@ npm run export:godot     # re-export packs/traces/engine data after ANY rules ch
 
 `gate:migration` runs, in order: `gate:ux-parity` (contracts DERIVED from the React panels, not
 hand-written) → `verify_assets` → `verify_town_controller` → `verify_guild_controller` →
-`verify_front_controller` → `verify_character_creation` → `verify_save` → `verify_parity`.
+`verify_front_controller` → `verify_character_creation` → `verify_save` → `verify_parity` →
+`verify_flow` (the loop connects on ONE shared state: a step into a room becomes a fight the combat
+rules resolve to victory — the one thing no single golden trace covers).
 
 Evidence screenshots: `godot --path godot/ --script res://tests/capture_ux_evidence.gd`
 (**never with `--headless`** — headless has no render viewport and every shot comes out null).
@@ -77,9 +79,6 @@ pass, not with the plumbing.
   taking a locale. Until then the title stays honestly 3 keys red.
 - **Floor names render in English** ("B1F - Silent Approach") because no dungeon in either world authors
   `locales.ja`. React does the same — a content gap, not a port regression. Wants authoring.
-- **`godot/tests/verify_flow.gd` fails** (expects an `encounter_started` that the route no longer
-  produces) and has since before the ①–⑤ fix series. It is NOT in `gate:migration`. **Decide: repair or
-  retire.**
 - **Desktop bundle verification** — needs a desktop toolchain on macOS + Windows;
   [`docs/desktop-productization.md`](docs/desktop-productization.md).
 - **Live-LLM narration** — the whole ops layer is built and mock-tested; needs a real local provider.

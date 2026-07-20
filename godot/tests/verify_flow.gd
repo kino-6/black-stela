@@ -29,8 +29,12 @@ func _initialize() -> void:
 	if groups.is_empty() or groups[0].get("enemyId", "") != "enemy.b1f.ash-slime":
 		push_error("[flow] expected an ash-slime encounter, got %s" % str(groups))
 		failures += 1
-	if not _has_event(moved["events"], "encounter_started"):
-		push_error("[flow] expected an encounter_started event")
+	# The encounter event is `enemy_encountered` — the name the PORTED rules emit (encounters.gd, from
+	# rulesEngine). This assertion said `encounter_started`, a name that only ever existed in the S4 slice's
+	# hand-written encounter code; when M4 replaced that with the real port the check went stale and this
+	# script has failed ever since. It was not in any gate, so nothing said so.
+	if not _has_event(moved["events"], "enemy_encountered"):
+		push_error("[flow] expected an enemy_encountered event")
 		failures += 1
 
 	# 2) The SAME 6-member party fights an all-out round → CombatRound resolves to victory.
