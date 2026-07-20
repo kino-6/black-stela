@@ -138,7 +138,88 @@ Cross-trained low-tier techniques and item use are valid ways to form unusual
 parties. A specialist still wins through stronger techniques, deeper
 proficiency, better efficiency, and high-difficulty access.
 
-## 7. Proficiency and item model
+## 7. Advanced vocations: authored synthesis, not stat upgrades
+
+Advanced vocations are the reward for accumulated training. They must be more
+tempting than an ordinary lateral vocation change because they open a play
+pattern, not because they add a larger number to the stat sheet.
+
+Every advanced vocation needs all of the following:
+
+- one active **signature mechanism** that changes a meaningful decision;
+- two to four exclusive techniques or spells that use that mechanism;
+- a clear bridge between two or three mastered basic disciplines;
+- a positive equipment, resource, or formation expression; and
+- a bounded loadout trade-off so mastering it never means equipping every
+  technique learned in the campaign.
+
+Basic classes remain viable. An advanced vocation is a focused destination, not
+a mandatory replacement, and no normal route may require one.
+
+### Two-discipline advanced vocations
+
+Two-discipline vocations are the first major synthesis. They normally require
+meaningful mastery in two basics and offer a new interaction between them.
+Candidate families include:
+
+| Foundations | Advanced direction | Signature play pattern |
+| --- | --- | --- |
+| Warrior + Knight | fortress guard | intercept attacks, then answer with a shielded counter |
+| Warrior + Swordmaster | war master | convert stance changes into chained weapon skills |
+| Warrior + Thief | raider | opening ambush followed by a controlled withdrawal |
+| Warrior + Priest | holy warrior | spend offence to protect or restore a threatened ally |
+| Warrior + Chanter | banner captain | turn successful attacks into short party-wide momentum buffs |
+| Warrior + Mage | spellblade | mark a foe with steel, then discharge an elemental technique |
+| Warrior + Occultist | ash berserker | trade safety for controlled fear, pressure, or life-drain effects |
+| Knight + Priest | paladin | cover an ally and carry their ward or ailment away |
+| Knight + Chanter | warder | maintain a defensive field over a row or the whole party |
+| Knight + Mage | rune knight | prepare defensive runes that answer a named threat or element |
+| Knight + Occultist | dark knight | convert a ward or received hit into a controlled curse |
+| Swordmaster + Thief | ninja | evade, exploit an opening, and handle ordinary locks/traps |
+| Swordmaster + Mage | magic swordsman | choose a weapon stance that alters the next spell or strike |
+| Swordmaster + Occultist | hexblade | turn precision hits into debuffs instead of raw damage alone |
+| Thief + Priest | relic hunter | identify cursed treasure and convert danger into limited aid |
+| Thief + Chanter | trickster | disrupt enemy intent and create safe escape windows |
+| Thief + Mage | arcane thief | open magical seals and use prepared one-shot spell tools efficiently |
+| Thief + Occultist | assassin | exploit sleeping, feared, or weakened targets |
+| Priest + Chanter | hierophant | chain cure, ward, and recovery across the party |
+| Priest + Mage | sage | analyse enemies and turn elemental knowledge into healing or resistance |
+| Priest + Occultist | exorcist | purge curses and punish afflicted enemies |
+| Chanter + Mage | elementalist | reshape party buffs into elemental protection or bursts |
+| Chanter + Occultist | curse singer | apply debuffs that spread or change when a chant is maintained |
+| Mage + Occultist | hexer | prepare control effects, then detonate or extend them with magic |
+
+The labels above are directions, not mandatory final Japanese names. No entry
+ships until its signature mechanism exists in deterministic rules and has a
+distinct combat or exploration proof.
+
+### Three-discipline high vocations
+
+Three-discipline vocations are rare, authored capstones. They should require
+one fully mastered foundation plus meaningful progress in two others, rather
+than demanding complete mastery of three jobs. Their purpose is synthesis, not
+another layer of passive stat inflation.
+
+| Foundations | High-vocation direction | New decision it creates |
+| --- | --- | --- |
+| Warrior + Knight + Priest | sacred sentinel | decide whether a limited holy guard saves a member now or preserves the party later |
+| Warrior + Swordmaster + Thief | battlefield shadow | choose between a lethal opening and preserving an escape route |
+| Warrior + Mage + Occultist | ash reaver | layer elemental pressure and fear, then choose when to consume the setup |
+| Knight + Priest + Chanter | grand guardian | allocate a finite sanctuary between rows, ailments, and an emergency recovery |
+| Knight + Mage + Occultist | rune warden | predict an enemy pattern, inscribe a counter, and accept the risk of choosing wrong |
+| Thief + Mage + Occultist | night weaver | trade scarce preparation for control of seals, secrets, and enemy actions |
+| Thief + Priest + Chanter | reliquary keeper | decide whether a relic's limited blessing solves exploration danger or protects the next battle |
+| Priest + Chanter + Mage | oracle | convert observation into party protection or a costly, precise magical answer |
+| Priest + Chanter + Occultist | spirit guide | redirect fear and curses between allies, enemies, and expendable wards |
+| Mage + Chanter + Occultist | astral cantor | sustain a field that can become damage, control, or resistance, but not all three |
+
+These are a deliberately authored catalog, not all 28 pairs and 56 triples.
+The target is enough tempting, different destinations to reward experimentation
+without flooding the player with empty class names. A world may author its own
+advanced vocations through the normalized vocation data only after the
+underlying technique ids and rules exist.
+
+## 8. Proficiency and item model
 
 Rules should model the action, not ask whether a class id has permission.
 
@@ -163,7 +244,7 @@ Items provide lower-tier or one-shot access: recovery/antidote items, ward
 charms, elemental throwables, scrolls, lock tools, and trap protection. Their
 limits preserve class value without turning an absent class into a dead end.
 
-## 8. Required remediation of the existing implementation
+## 9. Required remediation of the existing implementation
 
 Do this in the stated order. Do not begin by rebuilding `godot/scripts/guild.gd`.
 
@@ -202,7 +283,7 @@ Do this in the stated order. Do not begin by rebuilding `godot/scripts/guild.gd`
    choose background, temperament, identity, and registration. Do not expose
    English aliases, raw tags, coverage scores, or a data-entry grid.
 
-## 9. Completion proof
+## 10. Completion proof
 
 The class revision is not done until all of the following are true:
 
