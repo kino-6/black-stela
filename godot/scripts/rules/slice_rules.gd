@@ -42,6 +42,9 @@ const Vocations := preload("res://scripts/rules/vocations.gd")
 const CharacterCreation := preload("res://scripts/rules/character_creation.gd")
 const Encounters := preload("res://scripts/rules/encounters.gd")
 const Chests := preload("res://scripts/rules/chests.gd")
+const Exploration := preload("res://scripts/rules/exploration.gd")
+## How hard a hidden passage is to find (mirrors SECRET_DETECT_DC in src/domain/rulesEngine.ts).
+const SECRET_DETECT_DC := 10
 const Leveling := preload("res://scripts/rules/leveling.gd")
 
 static func resolve(state: Dictionary, command: Dictionary, world: Dictionary = {}, engine: Dictionary = {}) -> Dictionary:
@@ -53,15 +56,15 @@ static func resolve(state: Dictionary, command: Dictionary, world: Dictionary = 
 		"listen":
 			return _log_only(state, {"type": "inspection_made", "mode": "listen"})
 		"search":
-			return _search(state, world)
+			return _search(state, world, engine, String(command.get("characterId", "")), String(command.get("itemId", "")))
 		"move_forward":
-			return _move_forward(state, world)
+			return _move_forward(state, world, engine)
 		"move_backward":
-			return _move_forward(state, world, _facing_of(state, OPPOSITE_OF), "backward")
+			return _move_forward(state, world, engine, _facing_of(state, OPPOSITE_OF), "backward")
 		"strafe_left":
-			return _move_forward(state, world, _facing_of(state, LEFT_OF), "left")
+			return _move_forward(state, world, engine, _facing_of(state, LEFT_OF), "left")
 		"strafe_right":
-			return _move_forward(state, world, _facing_of(state, RIGHT_OF), "right")
+			return _move_forward(state, world, engine, _facing_of(state, RIGHT_OF), "right")
 		"inspect_wall":
 			return _log_only(state, {"type": "inspection_made", "mode": "inspect_wall"})
 		"open_door":
@@ -71,7 +74,8 @@ static func resolve(state: Dictionary, command: Dictionary, world: Dictionary = 
 		"return_to_town":
 			return _return_to_town(state, world)
 		"disarm_trap":
-			return _disarm_trap(state, world)
+			# §9.4d: the command has carried characterId / itemId all along and this ignored both.
+			return _disarm_trap(state, world, engine, String(command.get("characterId", "")), String(command.get("itemId", "")))
 		"investigate_chest":
 			return Chests.investigate(state, world, engine, String(command.get("characterId", "")), String(command.get("itemId", "")))
 		"disarm_chest":
@@ -171,7 +175,7 @@ static func _log_only(state: Dictionary, event: Dictionary) -> Dictionary:
 
 # search(state, world): reveal secret grid edges of this cell, else gather, else detect a trap, else
 # nothing. Mirrors the TS search() branch order exactly.
-static func _search(state: Dictionary, world: Dictionary) -> Dictionary:
+static func _search(state: Dictionary, world: Dictionary, engine: Dictionary = {}, character_id: String = "", item_id: String = "") -> Dictionary:
 	if state.get("position", null) == null:
 		return {"state": state, "events": []}
 	var room_id: String = state["position"]["roomId"]
@@ -186,12 +190,27 @@ static func _search(state: Dictionary, world: Dictionary) -> Dictionary:
 			var edge: Variant = edges[dir]
 			if typeof(edge) == TYPE_DICTIONARY and edge.get("kind", "") == "secret" and not discovered.has("secret:%s:%s" % [room_id, dir]):
 				secret_dirs.append(dir)
+	# §9.4d: finding a hidden passage was AUTOMATIC — the Thief's detectSecret specialism was dead code.
+	# It is an attempt now, and a RETRYABLE one seeded on the turn: a one-shot roll would lock a party
+	# out of authored content forever, so the specialist's reward is finding it SOONER.
 	if secret_dirs.size() > 0:
-		var next: Dictionary = state.duplicate(true)
-		for dir in secret_dirs:
-			(next["discoveredSecrets"] as Array).append("secret:%s:%s" % [room_id, dir])
-		next["turn"] = int(next["turn"]) + 1
-		return {"state": next, "events": [{"type": "secret_found"}]}
+		var secret_attempt: Dictionary = Exploration.resolve_attempt(state, world, engine, "detectSecret", SECRET_DETECT_DC, character_id, item_id)
+		if String(secret_attempt.get("refused", "")) == "":
+			var next: Dictionary = state.duplicate(true)
+			next["inventory"] = secret_attempt.get("inventory", next.get("inventory", []))
+			next["turn"] = int(next["turn"]) + 1
+			var found := 0
+			for dir in secret_dirs:
+				if Chests.roll_percent("%s:%s:%d:secret" % [room_id, dir, int(state.get("turn", 0))]) < Chests.success_chance(int(secret_attempt.get("skill", 0)), SECRET_DETECT_DC, 45):
+					(next["discoveredSecrets"] as Array).append("secret:%s:%s" % [room_id, dir])
+					found += 1
+			if found > 0:
+				var secret_event := {"type": "secret_found"}
+				Exploration.stamp_event(secret_event, secret_attempt)
+				return {"state": next, "events": [secret_event]}
+			var nothing := {"type": "search_completed", "result": "none"}
+			Exploration.stamp_event(nothing, secret_attempt)
+			return {"state": next, "events": [nothing]}
 
 	var room: Variant = _room(world, room_id)
 
@@ -212,17 +231,32 @@ static func _search(state: Dictionary, world: Dictionary) -> Dictionary:
 	if typeof(trap) != TYPE_DICTIONARY or resolved.has(trap.get("id", "")):
 		return _log_only(state, {"type": "search_completed", "result": "none"})
 
+	# Spotting the trap was automatic too — the authored detectDc was read by nothing.
+	var detect_dc := int(trap.get("detectDc", 0))
+	var trap_attempt: Dictionary = Exploration.resolve_attempt(state, world, engine, "investigate", detect_dc, character_id, item_id)
+	if String(trap_attempt.get("refused", "")) != "":
+		return _log_only(state, {"type": "search_completed", "result": "none"})
+
 	var trapped: Dictionary = state.duplicate(true)
-	(trapped["discoveredSecrets"] as Array).append(trap["id"])
+	trapped["inventory"] = trap_attempt.get("inventory", trapped.get("inventory", []))
 	trapped["turn"] = int(trapped["turn"]) + 1
-	return {"state": trapped, "events": [{"type": "trap_detected", "trapId": trap["id"], "trapName": trap.get("name", "")}]}
+	var spotted := Chests.roll_percent("%s:%d:detect" % [String(trap["id"]), int(state.get("turn", 0))]) < Chests.success_chance(int(trap_attempt.get("skill", 0)), detect_dc, 55)
+	if not spotted:
+		var missed := {"type": "search_completed", "result": "none"}
+		Exploration.stamp_event(missed, trap_attempt)
+		return {"state": trapped, "events": [missed]}
+
+	(trapped["discoveredSecrets"] as Array).append(trap["id"])
+	var detected := {"type": "trap_detected", "trapId": trap["id"], "trapName": trap.get("name", "")}
+	Exploration.stamp_event(detected, trap_attempt)
+	return {"state": trapped, "events": [detected]}
 
 # move_forward: the BLOCKED branches (stairs / locked gate / wall) are ported here. Entering a room and
 # triggering an encounter (visitRoom, treasure, beginRoomEncounter, createCombatState) is the larger
 # remaining move_forward work — a valid exit currently errors rather than guessing.
 const TRAVERSABLE_EDGE_KINDS := ["open", "door", "one_way", "shortcut", "stairs"]
 
-static func _move_forward(state: Dictionary, world: Dictionary, requested_direction: Variant = null, motion: Variant = null) -> Dictionary:
+static func _move_forward(state: Dictionary, world: Dictionary, engine: Dictionary = {}, requested_direction: Variant = null, motion: Variant = null) -> Dictionary:
 	if state.get("position", null) == null or state.get("phase", "") != "dungeon":
 		return {"state": state, "events": []}
 	var room_id: String = state["position"]["roomId"]
@@ -302,17 +336,38 @@ static func _move_forward(state: Dictionary, world: Dictionary, requested_direct
 	next["party"] = _mark_deepest_floor(next.get("party", []), visit["map"].get("floorId", state.get("map", {}).get("floorId", null)))
 
 	# A one-shot room TRAP bleeds the party (never kills — floor at 1 HP) and is then spent.
+	# §9.4d, mirroring src/domain/rulesEngine.ts: a room trap is an ATTEMPT now. It used to fire
+	# unconditionally, so searching a room and disarming a trap bought nothing — it sprang either way.
+	# Two things save the party, and both are things they DID: they already spotted it (Search), or
+	# somebody notices in time (a passive investigate check against the authored detectDc).
 	if typeof(target_room) == TYPE_DICTIONARY and typeof(target_room.get("trap", null)) == TYPE_DICTIONARY and not (state.get("resolvedTraps", []) as Array).has(target_room["trap"].get("id", "")):
 		var trap: Dictionary = target_room["trap"]
-		var damage := int(trap.get("damage", 0))
-		var hurt := []
-		for member in next.get("party", []):
-			var m: Dictionary = member.duplicate(true)
-			m["hp"] = maxi(1, int(m.get("hp", 0)) - damage)
-			hurt.append(m)
-		next["party"] = hurt
-		(next["resolvedTraps"] as Array).append(trap.get("id", ""))
-		events.append({"type": "trap_triggered", "trapId": trap.get("id", ""), "trapName": trap.get("name", ""), "damage": damage})
+		var trap_id := String(trap.get("id", ""))
+		var detect_dc := int(trap.get("detectDc", 0))
+		var already_spotted: bool = (state.get("discoveredSecrets", []) as Array).has(trap_id)
+		var reflex: Dictionary = Exploration.resolve_attempt(next, world, engine, "investigate", detect_dc)
+		var noticed := already_spotted
+		if not already_spotted and String(reflex.get("refused", "")) == "":
+			noticed = Chests.roll_percent("%s:%d:reflex" % [trap_id, int(state.get("turn", 0))]) < Chests.success_chance(int(reflex.get("skill", 0)), detect_dc, 35)
+
+		if noticed:
+			(next["resolvedTraps"] as Array).append(trap_id)
+			var avoided := {"type": "trap_avoided", "trapId": trap_id, "trapName": trap.get("name", ""), "known": already_spotted}
+			if not already_spotted:
+				Exploration.stamp_event(avoided, reflex)
+			events.append(avoided)
+		else:
+			var damage := int(trap.get("damage", 0))
+			var hurt := []
+			for member in next.get("party", []):
+				var m: Dictionary = member.duplicate(true)
+				m["hp"] = maxi(1, int(m.get("hp", 0)) - damage)
+				hurt.append(m)
+			next["party"] = hurt
+			(next["resolvedTraps"] as Array).append(trap_id)
+			var sprung := {"type": "trap_triggered", "trapId": trap_id, "trapName": trap.get("name", ""), "damage": damage}
+			Exploration.stamp_event(sprung, reflex)
+			events.append(sprung)
 
 	if typeof(target_room) == TYPE_DICTIONARY and typeof(target_room.get("event", null)) == TYPE_STRING:
 		events.append({"type": "room_event_triggered", "roomId": target_room_id, "text": target_room["event"]})
@@ -780,17 +835,38 @@ static func _return_to_town(state: Dictionary, world: Dictionary) -> Dictionary:
 	next["turn"] = int(next.get("turn", 0)) + 1
 	return {"state": next, "events": [{"type": "returned_to_town"}]}
 
-static func _disarm_trap(state: Dictionary, world: Dictionary) -> Dictionary:
+## §9.4d — disarm the ROOM trap. This used to ALWAYS SUCCEED, while the identical job on a CHEST ran a
+## real proficiency check. Failure leaves the trap ARMED rather than springing it: springing would make
+## attempting it strictly worse than ignoring it, and nobody would press the command.
+static func _disarm_trap(state: Dictionary, world: Dictionary, engine: Dictionary, character_id: String = "", item_id: String = "") -> Dictionary:
 	if state.get("position", null) == null:
 		return {"state": state, "events": []}
 	var room: Variant = _room(world, String(state["position"]["roomId"]))
 	var trap: Variant = room.get("trap", null) if typeof(room) == TYPE_DICTIONARY else null
 	if typeof(trap) != TYPE_DICTIONARY or (state.get("resolvedTraps", []) as Array).has(trap.get("id", "")):
 		return _log_only(state, {"type": "trap_disarm_failed", "reason": "none_active"})
+
+	var detect_dc := int(trap.get("detectDc", 0))
+	var attempt := Exploration.resolve_attempt(state, world, engine, "disarm", detect_dc, character_id, item_id)
+	if String(attempt.get("refused", "")) != "":
+		return _log_only(state, {"type": "trap_disarm_failed", "reason": "none_active"})
+
 	var next: Dictionary = state.duplicate(true)
-	(next["resolvedTraps"] as Array).append(trap.get("id", ""))
+	next["inventory"] = attempt.get("inventory", next.get("inventory", []))
 	next["turn"] = int(next.get("turn", 0)) + 1
-	return {"state": next, "events": [{"type": "trap_disarmed", "trapId": trap.get("id", ""), "trapName": trap.get("name", "")}]}
+
+	var actor: Variant = attempt.get("actor", null)
+	var actor_id := String(actor.get("id", "")) if typeof(actor) == TYPE_DICTIONARY else "nobody"
+	var success := Chests.roll_percent("%s:%s:room-disarm" % [String(trap.get("id", "")), actor_id]) < Chests.success_chance(int(attempt.get("skill", 0)), detect_dc, 45)
+	if not success:
+		var failed := {"type": "trap_disarm_failed", "reason": "none_active"}
+		Exploration.stamp_event(failed, attempt)
+		return {"state": next, "events": [failed]}
+
+	(next["resolvedTraps"] as Array).append(trap.get("id", ""))
+	var done := {"type": "trap_disarmed", "trapId": trap.get("id", ""), "trapName": trap.get("name", "")}
+	Exploration.stamp_event(done, attempt)
+	return {"state": next, "events": [done]}
 
 
 # --- combat exits -----------------------------------------------------------------------------------

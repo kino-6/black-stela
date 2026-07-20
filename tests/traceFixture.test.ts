@@ -12,16 +12,25 @@ import { hashState, runTrace, stableStringify, traceHash, withDeterministicIds }
 // the state hash is CANONICAL (structurally equal states hash identically, whatever the key order).
 
 function combatStart(): GameState {
-  const hero = { ...createGuildCharacter({ name: "Rook", classId: "warrior", seed: "trace" }), row: "front" as const };
-  const enemy = defaultWorld.enemies.find((candidate) => candidate.id === "enemy.b1f.ash-slime") ?? defaultWorld.enemies[0];
-  const base = { ...createInitialGameState(), party: [hero] };
-  return {
-    ...base,
-    phase: "combat",
-    position: { roomId: "room.b1f.001", facing: "east" },
-    map: { ...base.map, floorId: "dungeon.b1f" },
-    combat: createCombatState("room.b1f.001", enemy, 1)
-  };
+  // Built under withDeterministicIds, and it MATTERS. The hero's id otherwise comes from
+  // crypto.randomUUID — different every run — and the combat RNG seeds its rolls on that id
+  // (`${turn}:${round}:${actor.id}:…`). So the hero's damage rolls silently varied run to run, and
+  // whether the slime fell inside three rounds was a coin flip: this suite failed roughly 5 times in 60
+  // on an unmodified tree. A PARITY ORACLE that is itself nondeterministic cannot prove a port matches,
+  // and an intermittent red is worse than a red — it trains everyone to re-run until green.
+  // The seed differs from runTrace's ("trace") so the two id sequences cannot collide.
+  return withDeterministicIds("trace-start", () => {
+    const hero = { ...createGuildCharacter({ name: "Rook", classId: "warrior", seed: "trace" }), row: "front" as const };
+    const enemy = defaultWorld.enemies.find((candidate) => candidate.id === "enemy.b1f.ash-slime") ?? defaultWorld.enemies[0];
+    const base = { ...createInitialGameState(), party: [hero] };
+    return {
+      ...base,
+      phase: "combat",
+      position: { roomId: "room.b1f.001", facing: "east" },
+      map: { ...base.map, floorId: "dungeon.b1f" },
+      combat: createCombatState("room.b1f.001", enemy, 1)
+    };
+  });
 }
 
 // Three rounds of "the front line attacks the front group" — exercises the seeded combat RNG, which

@@ -9,7 +9,7 @@ items:
     tier: 1
     price: 30
     sellValue: 10
-    healAmount: 9
+    healAmount: 14
     locales:
       ja:
         name: 樹液の水薬
@@ -20,7 +20,7 @@ items:
     tier: 1
     price: 22
     sellValue: 7
-    healAmount: 5
+    healAmount: 10
     locales:
       ja:
         name: 花粉の軟膏
@@ -41,7 +41,7 @@ items:
     tier: 2
     price: 75
     sellValue: 24
-    healAmount: 16
+    healAmount: 26
     locales:
       ja:
         name: 濃い樹液の水薬
@@ -76,6 +76,108 @@ items:
       ja:
         name: 芽吹きの種
         description: 噛めば脈打つ緑が身の内で芽吹く。潜った日々が糧になる。
+  # ---- §9.4c: Verdant had NO cure and NO focus item at all, so a party here could be poisoned or
+  # silenced with no answer whatsoever, and an exhausted caster had no way back. Plus the five item
+  # answers to a missing class (class-system.md §8), in this world's own voice. ----
+  - id: item.verdant.leachwort
+    name: Leachwort
+    kind: cure
+    tier: 1
+    price: 20
+    sellValue: 7
+    curesStatuses: [poison]
+    locales:
+      ja:
+        name: 吸毒草
+        description: 噛み潰せば毒を吸い出す苦い草。沼の縁ならどこにでも生える。
+  - id: item.verdant.stillbloom
+    name: Stillbloom
+    kind: cure
+    tier: 2
+    price: 35
+    sellValue: 12
+    curesStatuses: [fear, sleep]
+    locales:
+      ja:
+        name: 凪ぎ花
+        description: 香を嗅げば胸の波が凪ぐ白い花。夢と怯えの両方を解く。
+  - id: item.verdant.mossdew
+    name: Mossdew
+    kind: focus
+    tier: 2
+    price: 45
+    sellValue: 15
+    restoreMp: 8
+    locales:
+      ja:
+        name: 苔露
+        description: 夜の苔から集めた露。舐めれば涸れた気が戻る。
+  - id: item.verdant.vine-hooks
+    name: Vine Hooks
+    kind: utility
+    tier: 2
+    price: 55
+    sellValue: 18
+    explorationAid: { actions: [unlock, investigate], bonus: 6 }
+    locales:
+      ja:
+        name: 蔓の鉤
+        description: 硬く撚った蔓の鉤束。木の錠にも根の絡みにも噛む。
+  - id: item.verdant.bark-wedge
+    name: Bark Wedge
+    kind: utility
+    tier: 2
+    price: 45
+    sellValue: 15
+    explorationAid: { actions: [disarm], bonus: 6 }
+    locales:
+      ja:
+        name: 樹皮の楔
+        description: 撓る樹皮を重ねた楔。跳ねる仕掛けの下へ差し込む。
+  - id: item.verdant.spore-lens
+    name: Spore Lens
+    kind: utility
+    tier: 3
+    price: 70
+    sellValue: 23
+    explorationAid: { actions: [detectSecret, investigate], bonus: 5 }
+    locales:
+      ja:
+        name: 胞子見の膜
+        description: 胞子の流れで空洞を読む薄膜。壁の向こうの風が見える。
+  - id: item.verdant.warding-knot
+    name: Warding Knot
+    kind: ward
+    tier: 3
+    price: 80
+    sellValue: 26
+    useTechnique: ward-hymn
+    locales:
+      ja:
+        name: 守りの結び
+        description: 解けば一度だけ隊列を覆う蔓の結び。詠唱者の代わりに立つ。
+  - id: item.verdant.ember-pod
+    name: Ember Pod
+    kind: throwable
+    tier: 2
+    price: 40
+    sellValue: 13
+    useTechnique: firebolt
+    locales:
+      ja:
+        name: 燠の莢
+        description: 投げれば爆ぜて火を撒く乾いた莢。濡れた森で火を持つ数少ない手。
+  - id: item.verdant.bark-scroll
+    name: Bark Scroll
+    kind: scroll
+    tier: 4
+    price: 150
+    sellValue: 50
+    useTechnique: flame-wave
+    locales:
+      ja:
+        name: 樹皮の巻物
+        description: 一度だけ読み解ける焼き付けの樹皮。読めば灰になる。
 equipment:
   - id: equip.verdant.thorn-lash
     name: Thorn Lash
@@ -185,6 +287,16 @@ shops:
       - { itemId: item.verdant.homing-spore, price: 90, availability: always }
       - { itemId: equip.verdant.thorn-lash, price: 80, availability: always }
       - { itemId: equip.verdant.living-charm, price: 70, availability: always }
+      # §9.4c — the cure/focus this world simply did not have, plus the item answers to a missing class.
+      - { itemId: item.verdant.leachwort, price: 20, availability: always }
+      - { itemId: item.verdant.stillbloom, price: 35, availability: always }
+      - { itemId: item.verdant.mossdew, price: 45, availability: always }
+      - { itemId: item.verdant.vine-hooks, price: 55, availability: always }
+      - { itemId: item.verdant.bark-wedge, price: 45, availability: always }
+      - { itemId: item.verdant.ember-pod, price: 40, availability: always }
+      - { itemId: item.verdant.spore-lens, price: 70, availability: unlocked, unlockFlag: flag.verdant.g3f.shortcut }
+      - { itemId: item.verdant.warding-knot, price: 80, availability: unlocked, unlockFlag: flag.verdant.g3f.shortcut }
+      - { itemId: item.verdant.bark-scroll, price: 150, availability: unlocked, unlockFlag: flag.verdant.g3f.shortcut }
       - { itemId: item.verdant.greater-sap, price: 75, availability: unlocked, unlockFlag: flag.verdant.g3f.shortcut }
       - { itemId: equip.verdant.bark-plate, price: 95, availability: unlocked, unlockFlag: flag.verdant.g3f.shortcut }
       - { itemId: equip.verdant.iron-edge, price: 150, availability: unlocked, unlockFlag: flag.verdant.g3f.shortcut }

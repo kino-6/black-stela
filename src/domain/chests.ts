@@ -56,8 +56,17 @@ export function selectTrapHandler(party: Character[]): Character | null {
   return able.reduce((best, member) => (trapSkill(member) > trapSkill(best) ? member : best), able[0]);
 }
 
-function successChance(skill: number, difficulty: number, base: number): number {
-  return clamp(base + skill * 3 - difficulty, 5, 95);
+/**
+ * Shared with the ROOM-trap checks (§9.4d) so a chest lock and a floor trap read the same curve.
+ *
+ * §9.4e TUNING: difficulty was weighted 1 against skill's 3, which made the authored number nearly
+ * inert — a trap of DC 12 cost 12 points against a skill worth 30-50, so the coverage sim measured an
+ * UNTRAINED party disarming 4 of 4 room traps and the Thief's specialism buying nothing visible.
+ * Difficulty and skill are both "levels" and now weigh the same, which is what makes an authored DC a
+ * design decision rather than decoration.
+ */
+export function successChance(skill: number, difficulty: number, base: number): number {
+  return clamp(base + skill * 3 - difficulty * 3, 5, 95);
 }
 
 /** A fresh closed chest from an authored (or back-compat plain) scenario chest. */

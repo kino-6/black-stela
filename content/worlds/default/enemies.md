@@ -106,12 +106,19 @@ enemies:
     elevation: air
     abilities:
       - name: Cinder Lash
-        chance: 80
+        chance: 55
         effect:
           kind: damage
           min: 3
           max: 5
           element: fire
+      # §9.4e: the caller SILENCES. A caster whose only trick was damage gave the party's own casters
+      # nothing to fear and left `silence` unused by the entire world.
+      - name: Ash-Choke
+        chance: 25
+        effect:
+          kind: status
+          status: silence
   - id: enemy.b3f.bitter-mote
     weaknesses: { fire: 0.5, salt: 2.0 }
     name: Bitter Mote
@@ -170,6 +177,13 @@ enemies:
         effect:
           kind: status
           status: fear
+      # §9.4e: `sleep` was inflicted by NOTHING in the game, so every ward and cure that names it was
+      # dead content. A slow, droning lantern is where it belongs.
+      - name: Dimming Drone
+        chance: 25
+        effect:
+          kind: status
+          status: sleep
   - id: enemy.b5f.cinder-keeper
     weaknesses: { fire: 0.5, salt: 1.75 }
     name: Cinder Keeper
@@ -233,6 +247,8 @@ enemies:
     dangerTier: 4
     isBoss: true
     tags: [block-cap, boss]
+  # §9.4e: a late ambusher that opens with FEAR — the ward line has to be worth a slot deep in the run,
+  # where a party can afford both a Chanter and the gear to back one.
   - id: enemy.b6f.oath-cutter
     weaknesses: { fire: 1.25, salt: 1.25 }
     name: Oath Cutter
@@ -251,6 +267,12 @@ enemies:
     gold: 8
     role: ambusher
     size: medium
+    # §9.4e: a late ambusher that opens with FEAR. The world presented poison and silence in quantity —
+    # both answered by CURES — and almost no fear or sleep, which are what WARDS answer, so the Chanter's
+    # whole line had nothing to stop. The threat mix is what was wrong, not the ward.
+    inflicts:
+      status: fear
+      chance: 35
     dangerTier: 4
     tags: [blade]
   - id: enemy.b7f.vault-husk

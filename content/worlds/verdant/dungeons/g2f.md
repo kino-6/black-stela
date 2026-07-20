@@ -73,6 +73,16 @@ rooms:
     description: A chamber where the canopy-light pools green on standing water.
     encounterTable: encounters.verdant.g2.pack
     treasureTable: treasure.verdant.g2.side
+    trap:
+      id: trap.verdant.g2.snare-root
+      name: Snare Root
+      damage: 3
+      detectDc: 11
+      warning: A root lies too straight across the path, and its bark is worn pale.
+      locales:
+        ja:
+          name: 締め根
+          warning: 一本の根が道を横切って不自然に真っ直ぐ伸び、樹皮が白く擦れている。
     locales:
       ja:
         name: 翠の間 1

@@ -28,6 +28,7 @@ const UI := preload("res://scripts/town/ui_kit.gd")
 const Fmt := preload("res://scripts/town_format.gd")
 const Draft := preload("res://scripts/guild_draft.gd")
 const CharacterCreation := preload("res://scripts/rules/character_creation.gd")
+const Techniques := preload("res://scripts/rules/techniques.gd")
 
 const STEPS := ["briefing", "class", "appearance", "bonus", "name"]
 const APTITUDE_KEYS := ["might", "agility", "spirit", "wit", "luck"]
@@ -49,6 +50,7 @@ var _pending_focus: Control = null   # where this step lands the cursor when it 
 var _claimed_focus: Control = null   # the control the LAST action wants the cursor back on
 var _focus_key: String = ""
 var _host: Control = null
+var _engine_cache: Dictionary = {}
 
 func _ready() -> void:
 	await get_tree().process_frame
@@ -280,6 +282,21 @@ func _class_step() -> Control:
 	detail.add_child(UI.label(_class_label(String(selected.get("id", ""))), 22, UI.INK))
 	detail.add_child(UI.prose(String(selected.get("description", {}).get("ja", "")), 16, UI.DIM, 640))
 	detail.add_child(_fact(I18n.t("party.formation"), _row_label(String(selected.get("rowPreference", "front")))))
+
+	# §9.6 — THE CLASS PROMISE. The step used to say what a class WAS (row, aptitudes, starting gear) and
+	# never what it could DO, which after §9.4 is the whole of a class's contract: its techniques now, the
+	# ones it grows into, the exploration it is trusted with, and the thing it cannot answer. Choosing
+	# blind from a stat line is the "data-entry grid" §9.6 forbids in another shape.
+	var class_id := String(selected.get("id", ""))
+	detail.add_child(_fact(I18n.t("party.classPromiseNow"), _techniques_at_creation(class_id)))
+	detail.add_child(_fact(I18n.t("party.classPromiseLater"), _techniques_later(class_id)))
+	var exploration := _exploration_line(class_id)
+	if exploration != "":
+		detail.add_child(_fact(I18n.t("party.classPromiseExploration"), exploration))
+	# The stated weakness, in the class's own words. A promise without a cost is a advertisement.
+	var weakness := String(((_capabilities(class_id).get("weakness", {}) as Dictionary).get("ja", "")))
+	if weakness != "":
+		detail.add_child(_fact(I18n.t("party.classPromiseWeakness"), weakness))
 	detail.add_child(_fact(I18n.t("party.aptitudeLabel"), _aptitude_line(selected.get("aptitude", {}))))
 	# NAMED from the catalog — a raw id ("militia-sabre") in normal play is a gate failure.
 	var gear := []
@@ -290,6 +307,72 @@ func _class_step() -> Control:
 
 	col.add_child(_flow_actions("briefing", "appearance"))
 	return UI.card(col)
+
+
+# --- §9.6 class promise -----------------------------------------------------------------------------
+# All of this is READ FROM THE EXPORTED CATALOG (classCapabilities + techniques + techniqueLabelKeys),
+# never restated here: §9.5 deleted five GDScript literals that had each quietly fallen behind the rules,
+# and a guild screen listing techniques from memory would be the sixth.
+
+func _capabilities(class_id: String) -> Dictionary:
+	var caps: Dictionary = _engine().get("classCapabilities", {})
+	var entry: Variant = caps.get(class_id, null)
+	return entry if typeof(entry) == TYPE_DICTIONARY else {}
+
+func _technique_name(id: String) -> String:
+	return Techniques.label(id, _engine())
+
+## What the adventurer walks in able to do — the level-1 grants. §5 wants two or three of these.
+func _techniques_at_creation(class_id: String) -> String:
+	var names := []
+	for grant in _capabilities(class_id).get("combatTechniques", []):
+		if int((grant as Dictionary).get("level", 1)) <= 1:
+			names.append(_technique_name(String((grant as Dictionary).get("techniqueId", ""))))
+	return " ・ ".join(PackedStringArray(names)) if not names.is_empty() else I18n.t("party.classPromiseNone")
+
+## What it grows into, each with the level it arrives — the "future promise" half of §9.6.
+func _techniques_later(class_id: String) -> String:
+	var names := []
+	for grant in _capabilities(class_id).get("combatTechniques", []):
+		var level := int((grant as Dictionary).get("level", 1))
+		if level <= 1:
+			continue
+		names.append("%s（%s）" % [_technique_name(String((grant as Dictionary).get("techniqueId", ""))), I18n.t("party.classLevelShort", {"level": str(level)})])
+	return " ・ ".join(PackedStringArray(names)) if not names.is_empty() else I18n.t("party.classPromiseNone")
+
+## The exploration this class is trusted with, named rather than scored. Empty for the seven classes
+## §4 gives no exploration proficiency at all — they simply do not show the line.
+func _exploration_line(class_id: String) -> String:
+	const ACTION_KEYS := {
+		"investigate": "party.explorationInvestigate", "disarm": "party.explorationDisarm",
+		"unlock": "party.explorationUnlock", "detectSecret": "party.explorationDetectSecret",
+		"escape": "party.explorationEscape", "map": "party.explorationMap"
+	}
+	var specialist := []
+	var trained := []
+	var exploration: Dictionary = _capabilities(class_id).get("exploration", {})
+	for action in ACTION_KEYS.keys():
+		if not exploration.has(action):
+			continue
+		var label := I18n.t(String(ACTION_KEYS[action]))
+		if String(exploration[action]) == "specialist":
+			specialist.append(label)
+		elif String(exploration[action]) == "trained":
+			trained.append(label)
+	var parts := []
+	if not specialist.is_empty():
+		parts.append("%s：%s" % [I18n.t("party.proficiencySpecialist"), "・".join(PackedStringArray(specialist))])
+	if not trained.is_empty():
+		parts.append("%s：%s" % [I18n.t("party.proficiencyTrained"), "・".join(PackedStringArray(trained))])
+	return "　".join(PackedStringArray(parts))
+
+func _engine() -> Dictionary:
+	if _engine_cache.is_empty():
+		if _run != null and _run.get("engine") != null:
+			_engine_cache = _run.engine
+		else:
+			_engine_cache = _read_json("res://data/engine-data.json")
+	return _engine_cache
 
 func _appearance_step() -> Control:
 	var col := UI.col(10)

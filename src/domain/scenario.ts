@@ -2,6 +2,7 @@ import yaml from "js-yaml";
 import { expandFloorMap, isMapFloor } from "./floorMap";
 import { z } from "zod";
 import type { Direction, DungeonFloor, DungeonGridCell, DungeonGridEdge, ScenarioAffix, ScenarioQuest, ScenarioVocation, ScenarioWorld } from "./types";
+import { TECHNIQUES, type TechniqueId } from "./techniques";
 
 const directionSchema = z.enum(["north", "east", "south", "west"]);
 const floorRoleSchema = z.enum([
@@ -155,7 +156,20 @@ const scenarioVocationSchema = z.object({
 const scenarioItemSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
-  kind: z.enum(["healing", "utility", "key", "treasure", "escape", "cure", "focus", "growth"]),
+  kind: z.enum(["healing", "utility", "key", "treasure", "escape", "cure", "focus", "growth", "ward", "throwable", "scroll"]),
+  // §9.4c — the technique a ward charm / thrown flask / scroll performs. Validated against the engine
+  // catalog by the loader, so a world naming a technique that does not exist is rejected at load rather
+  // than silently doing nothing in the middle of a fight.
+  useTechnique: z.enum(Object.keys(TECHNIQUES) as [TechniqueId, ...TechniqueId[]]).optional(),
+  // §9.4c — a tool that buys a better exploration attempt (lock picks, trap shims, a detection lens).
+  // The TYPE and the spending rule existed since §9.2, but this schema field did not, so an authored
+  // `explorationAid` was silently STRIPPED by the loader and the tool did nothing at all.
+  explorationAid: z
+    .object({
+      actions: z.array(z.enum(["investigate", "disarm", "unlock", "detectSecret", "escape", "map"])).min(1),
+      bonus: z.number().int()
+    })
+    .optional(),
   tier: z.number().int().nonnegative(),
   price: z.number().int().nonnegative().optional(),
   sellValue: z.number().int().nonnegative().optional(),

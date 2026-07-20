@@ -6,11 +6,11 @@ import { baseMaxMpForClass, isCasterClass, knownSpells } from "../src/domain/spe
 import { defaultWorld } from "../src/data/defaultWorld";
 import type { CombatStatus, GameState } from "../src/domain/types";
 
-function caster(classId: "occultist" | "priest"): GameState {
+function caster(classId: "occultist" | "priest" | "mage"): GameState {
   return addCharacter(createInitialGameState(), createGuildCharacter({ name: "Cael", classId, seed: "spell-test" }));
 }
 
-function slimeFight(classId: "occultist" | "priest"): GameState {
+function slimeFight(classId: "occultist" | "priest" | "mage"): GameState {
   const entered = executeCommand(caster(classId), defaultWorld, { type: "enter_dungeon" });
   return executeCommand(entered, defaultWorld, { type: "move_forward" });
 }
@@ -18,13 +18,18 @@ function slimeFight(classId: "occultist" | "priest"): GameState {
 describe("spells", () => {
   it("teaches abilities on a per-class level schedule", () => {
     expect(knownSpells("priest", 1)).toContain("heal");
-    expect(knownSpells("occultist", 1)).toContain("firebolt");
+    // §9.4b: the Occultist no longer opens with the MAGE's firebolt — §5 forbids duplicating mage
+    // damage with occult control — so it opens on control plus its own drain.
+    expect(knownSpells("occultist", 1)).toContain("dread");
+    expect(knownSpells("occultist", 1)).not.toContain("firebolt");
     expect(knownSpells("occultist", 1)).not.toContain("sleep");
     expect(knownSpells("occultist", 3)).toContain("sleep");
     // Front-row martial classes learn a 特技, not a spell.
     expect(knownSpells("warrior", 1)).toContain("power-strike");
-    // A class with neither spell nor 特技 has nothing to command.
-    expect(knownSpells("knight", 99)).toHaveLength(0);
+    // §9.4b: the Knight has a line now. It used to know nothing at any level — a selectable class whose
+    // only move was Attack.
+    expect(knownSpells("knight", 1)).toContain("shield-wall");
+    expect(knownSpells("knight", 3)).toContain("cover");
   });
 
   it("gives casters an MP pool, 特技 classes a smaller 気力 pool, and others none", () => {
@@ -35,12 +40,13 @@ describe("spells", () => {
     // A front-row 特技 class has a pool, but a smaller one than a caster.
     expect(baseMaxMpForClass("warrior", stats)).toBeGreaterThan(0);
     expect(baseMaxMpForClass("warrior", stats)).toBeLessThan(baseMaxMpForClass("occultist", stats));
-    // A plain martial class (no abilities) still has no pool.
-    expect(baseMaxMpForClass("knight", stats)).toBe(0);
+    // §9.4b: the Knight became a 特技 class, so it now has the martial pool its techniques spend. A
+    // class with NO technique at all would still have none — that is what the zero branch is for.
+    expect(baseMaxMpForClass("knight", stats)).toBe(baseMaxMpForClass("warrior", stats));
   });
 
   it("casts an attack spell, spending MP and damaging the enemy", () => {
-    const combat = slimeFight("occultist");
+    const combat = slimeFight("mage");
     expect(combat.phase).toBe("combat");
     const actor = combat.party[0];
     const group = combat.combat!.enemyGroups[0];
@@ -55,7 +61,7 @@ describe("spells", () => {
   });
 
   it("silence blocks casting and spends no MP", () => {
-    const combat = slimeFight("occultist");
+    const combat = slimeFight("mage");
     const actor = combat.party[0];
     const group = combat.combat!.enemyGroups[0];
     const silenced: GameState = {

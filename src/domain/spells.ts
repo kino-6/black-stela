@@ -1,55 +1,45 @@
 import type { AnyClassId, CharacterAptitudes, CharacterClassId } from "./types";
 import { CLASS_CAPABILITIES } from "./classCapabilities";
 import { resolveClassId } from "./classIds";
-import { TECHNIQUES, type Technique, type TechniqueEffect, type TechniqueId } from "./techniques";
+import { TECHNIQUES, type Technique, type TechniqueEffect, type TechniqueId, type TechniqueTarget } from "./techniques";
 
 /**
- * The LEGACY VIEW of the technique catalog.
+ * THE CASTABLE VIEW of the technique catalog.
  *
- * The ability system now lives in techniques.ts (what a technique can be) and classCapabilities.ts (who
- * knows it). This module keeps the old `Spell` shape alive on top of them, unchanged, so the combat
- * resolver, the command menu and the career counter carry on reading exactly what they always read while
- * the class system is rebuilt underneath (docs/design/class-system.md §8.1).
+ * The ability system lives in techniques.ts (what a technique can be) and classCapabilities.ts (who
+ * knows it). This module projects the small slice the UI and the engine-data export need — id, kind,
+ * MP cost, target scope — so those consumers never carry the full effect model around.
  *
- * It is a VIEW, not a second source: `SPELLS` and `CLASS_ABILITIES` are derived from the catalog, so the
- * two cannot drift. The narrowing it performs — one effect, MP-only cost, ally-or-enemyGroup target — is
- * the exact shape the current resolver understands, and a technique that does not fit it is refused
- * loudly rather than silently half-applied. Teaching the resolver the wider model is §8.2's work.
+ * It is a VIEW, not a second source: `SPELLS` and `CLASS_ABILITIES` are derived, so the two cannot drift.
+ *
+ * §9.4 CHANGED WHAT IT FILTERS. It used to narrow to "one effect, MP-only cost, ally-or-enemyGroup
+ * target" because that was all the resolver could carry out; anything wider was dropped, and a class
+ * granted such a technique silently learned nothing. The resolver now handles cure, ward, buff, debuff,
+ * multi-effect techniques and every target scope, so the only thing still held back is a technique that
+ * costs something combat cannot yet SPEND — a scroll's item, an HP price, a per-expedition charge.
+ * Those arrive with the item routes in the same slice; until then they are refused here, loudly and in
+ * one place, rather than half-applied in the middle of a fight.
  */
 
 export type SpellId = TechniqueId;
 
 export type SpellKind = "spell" | "skill";
 
-export type SpellTarget = "ally" | "enemyGroup";
-
-export type SpellEffect = Extract<TechniqueEffect, { kind: "heal" } | { kind: "damage" } | { kind: "status" }>;
+export type SpellTarget = TechniqueTarget;
 
 export interface Spell {
   id: SpellId;
   kind: SpellKind;
   mpCost: number;
   target: SpellTarget;
-  effect: SpellEffect;
+  /** Every effect the technique carries, in authored order — the resolver applies them all. */
+  effects: TechniqueEffect[];
 }
 
 /**
- * Narrow one technique to the shape the current resolver understands. A technique the resolver cannot
- * yet carry out (multiple effects, a party-wide ward, a scroll's item cost) is left OUT of this view
- * instead of being flattened into something it is not — a half-applied technique in combat is worse
- * than a technique that has not shipped.
+ * Project one technique into the castable view, or `null` if combat cannot pay for it yet.
  */
 export function toLegacySpell(technique: Technique): Spell | null {
-  if (technique.effects.length !== 1) {
-    return null;
-  }
-  const [effect] = technique.effects;
-  if (effect.kind !== "heal" && effect.kind !== "damage" && effect.kind !== "status") {
-    return null;
-  }
-  if (technique.target !== "ally" && technique.target !== "enemyGroup") {
-    return null;
-  }
   if (technique.cost.itemId || technique.cost.hp || technique.cost.usesPerExpedition) {
     return null;
   }
@@ -58,8 +48,25 @@ export function toLegacySpell(technique: Technique): Spell | null {
     kind: technique.kind,
     mpCost: technique.cost.mp ?? 0,
     target: technique.target,
-    effect
+    effects: technique.effects
   };
+}
+
+/**
+ * What the PLAYER must choose before a technique can be queued — the one place that decision is made,
+ * so the command menu and the keyboard shortcut cannot disagree about it.
+ *
+ * `self`, `party` and `allEnemies` need no choice at all: the resolver derives the subjects from the
+ * scope. Before §9.4 those scopes were unreachable, and the UI's "ally, else pick a group" branch
+ * quietly dropped any technique that was neither — a party ward would have been selectable, asked for
+ * nothing, and queued nothing.
+ */
+export type SpellTargeting = "none" | "ally" | "group";
+
+export function spellTargeting(target: SpellTarget): SpellTargeting {
+  if (target === "ally") return "ally";
+  if (target === "enemyGroup") return "group";
+  return "none";
 }
 
 export const SPELLS: Record<SpellId, Spell> = Object.fromEntries(

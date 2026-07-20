@@ -7,7 +7,11 @@ class_name CharacterStats
 ## Affixes are resolved against world.affixes (authored). Built-in common enchants live in TS code, not
 ## the world pack — resolving those needs the merged catalog exported, which no sample/route needs yet.
 
-static func effective(character: Dictionary, world: Dictionary) -> Dictionary:
+## §9.4 parity: the same stat block, with any wards/buffs/debuffs currently running folded in
+## (combat_effects.gd). Optional and defaulting to none, so every out-of-combat caller keeps reading the
+## character's own numbers while combat passes the fight's effect list. One stat pipeline, not two.
+const CombatEffects := preload("res://scripts/rules/combat_effects.gd")
+static func effective(character: Dictionary, world: Dictionary, effects: Array = []) -> Dictionary:
 	var attack_bonus := 0
 	var defense_bonus := 0
 	var accuracy_bonus := 0
@@ -66,13 +70,40 @@ static func effective(character: Dictionary, world: Dictionary) -> Dictionary:
 		current_voc = voc_state["current"]
 	var voc: Dictionary = _vocation_modifiers(world, current_voc)
 
+	# Transient wards/buffs/debuffs, last, so they read as a change TO the equipped character. `damage`
+	# moves both ends of the damage roll; `attack` moves the to-hit stat alone. Evasion is NOT folded in
+	# — it is spent as a penalty to the accuracy an attacker rolls, so the resolver reads it directly.
+	var member_id := String(character.get("id", ""))
+	var buff_attack := CombatEffects.stat_modifier(effects, member_id, "attack")
+	var buff_damage := CombatEffects.stat_modifier(effects, member_id, "damage")
+	var buff_armor := CombatEffects.stat_modifier(effects, member_id, "armor")
+	var buff_accuracy := CombatEffects.stat_modifier(effects, member_id, "accuracy")
+	var buff_speed := CombatEffects.stat_modifier(effects, member_id, "speed")
+
+	# A ward covers whatever it names, whether or not gear already resisted it, so the keys come from the
+	# wards themselves and each is totalled ONCE across every ward running.
+	var warded_statuses := {}
+	var warded_elements := {}
+	for active in CombatEffects.effects_on(effects, member_id):
+		var effect: Dictionary = active.get("effect", {})
+		if String(effect.get("kind", "")) != "ward":
+			continue
+		for status in (effect.get("statusResist", {}) as Dictionary).keys():
+			warded_statuses[status] = true
+		for element in (effect.get("elementResist", {}) as Dictionary).keys():
+			warded_elements[element] = true
+	for status in warded_statuses.keys():
+		resistance[status] = int(resistance.get(status, 0)) + CombatEffects.ward_status_resist(effects, member_id, String(status))
+	for element in warded_elements.keys():
+		element_resist[element] = float(element_resist.get(element, 1.0)) * CombatEffects.ward_element_resist(effects, member_id, String(element))
+
 	return {
-		"attack": int(character.get("attack", 0)) + attack_bonus + _voc(voc, "attack"),
-		"damageMin": int(character.get("damageMin", 0)) + attack_bonus + _voc_or(voc, "damageMin", "attack"),
-		"damageMax": int(character.get("damageMax", 0)) + attack_bonus + _voc_or(voc, "damageMax", "attack"),
-		"accuracy": clampi(int(character.get("accuracy", 0)) + accuracy_bonus + _voc(voc, "accuracy"), 0, 100),
-		"armor": int(character.get("armor", 0)) + defense_bonus + _voc(voc, "armor"),
-		"speed": maxi(0, int(character.get("speed", 0)) + speed_bonus + _voc(voc, "speed")),
+		"attack": int(character.get("attack", 0)) + attack_bonus + _voc(voc, "attack") + buff_attack,
+		"damageMin": int(character.get("damageMin", 0)) + attack_bonus + _voc_or(voc, "damageMin", "attack") + buff_damage,
+		"damageMax": int(character.get("damageMax", 0)) + attack_bonus + _voc_or(voc, "damageMax", "attack") + buff_damage,
+		"accuracy": clampi(int(character.get("accuracy", 0)) + accuracy_bonus + _voc(voc, "accuracy") + buff_accuracy, 0, 100),
+		"armor": int(character.get("armor", 0)) + defense_bonus + _voc(voc, "armor") + buff_armor,
+		"speed": maxi(0, int(character.get("speed", 0)) + speed_bonus + _voc(voc, "speed") + buff_speed),
 		"maxHp": maxi(1, int(character.get("maxHp", 0)) + hp_bonus + _voc(voc, "maxHp")),
 		"maxMp": maxi(0, int(character.get("maxMp", 0)) + mp_bonus + _voc(voc, "maxMp")),
 		"resistance": resistance,

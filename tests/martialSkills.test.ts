@@ -12,8 +12,10 @@ describe("front-row 特技", () => {
     expect(isMartialSkillClass("warrior")).toBe(true);
     expect(isCasterClass("warrior")).toBe(false);
     expect(isMartialSkillClass("occultist")).toBe(false);
-    expect(isMartialSkillClass("knight")).toBe(false);
-    expect(knownSpells("knight", 1)).toHaveLength(0);
+    // §9.4b: the Knight is a 特技 class now. It carried NO technique before, so it was neither caster
+    // nor martial — a selectable class with an MP pool of zero and no move but Attack.
+    expect(isMartialSkillClass("knight")).toBe(true);
+    expect(knownSpells("knight", 1)).toContain("shield-wall");
     // 盗賊 carries the same 特技 the front line does — the consolidation gave the merged trap classes a line.
     expect(knownSpells("thief", 1)).toContain("power-strike");
   });

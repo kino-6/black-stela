@@ -3,6 +3,7 @@ import type { Character, CombatStatus, Element, EquipmentSlot, InventoryItem, Sc
 import { PHYSICAL } from "./types";
 import { equipmentInstanceKey, plusPrimaryStat } from "./affixes";
 import { findResolvedAffix } from "./loot";
+import { effectsOn, statModifier, wardElementResist, wardStatusResist, type ActiveEffect } from "./combatEffects";
 
 export const STARTING_PARTY_GOLD = 75;
 const RECOVERY_HP_COST = 1;
@@ -35,6 +36,7 @@ export function createInventoryItemFromCatalog(world: ScenarioWorld, itemId: str
       healAmount: item.healAmount,
       restoreMp: item.restoreMp,
       curesStatuses: item.curesStatuses,
+      useTechnique: item.useTechnique,
       grants: item.grants,
       sellValue: item.sellValue
     };
@@ -111,7 +113,17 @@ export function weaponReaches(character: Character, world: ScenarioWorld): boole
   return catalog?.tags?.includes("reach") ?? false;
 }
 
-export function getEffectiveCharacterStats(character: Character, world: ScenarioWorld): EffectiveCharacterStats {
+/**
+ * §9.4: the same stat block, with any wards/buffs/debuffs currently running on this character folded in
+ * (combatEffects.ts). Optional and defaulting to none, so every out-of-combat caller — the guild, the
+ * shop, the party menu — keeps reading the character's own numbers, while combat passes the fight's
+ * effect list and sees the buffed ones. There is one stat pipeline, not two.
+ */
+export function getEffectiveCharacterStats(
+  character: Character,
+  world: ScenarioWorld,
+  effects: readonly ActiveEffect[] = []
+): EffectiveCharacterStats {
   let attackBonus = 0;
   let defenseBonus = 0;
   let accuracyBonus = 0;
@@ -187,13 +199,39 @@ export function getEffectiveCharacterStats(character: Character, world: Scenario
   const currentVocation = character.vocation?.current ?? character.classId;
   const voc = world.vocations.find((vocation) => vocation.id === currentVocation)?.statModifiers ?? {};
 
+  // §9.4: transient wards/buffs/debuffs, last so they read as a change TO the equipped character.
+  // `damage` moves both ends of the damage roll — a technique that says "hit harder" should not have to
+  // name damageMin and damageMax separately — while `attack` moves the to-hit stat alone.
+  const buffAttack = statModifier(effects, character.id, "attack");
+  const buffDamage = statModifier(effects, character.id, "damage");
+  const buffArmor = statModifier(effects, character.id, "armor");
+  const buffAccuracy = statModifier(effects, character.id, "accuracy");
+  const buffSpeed = statModifier(effects, character.id, "speed");
+  // Evasion is not a character stat; it is spent as a penalty to the accuracy an attacker rolls
+  // against, so it is read straight off the effect list by the resolver rather than folded in here.
+  // A ward covers whatever it names, whether or not the character already had gear resisting it, so the
+  // keys come from the wards themselves and each is totalled ONCE across every ward running.
+  const wardedStatuses = new Set<CombatStatus>();
+  const wardedElements = new Set<string>();
+  for (const active of effectsOn(effects, character.id)) {
+    if (active.effect.kind !== "ward") continue;
+    for (const status of Object.keys(active.effect.statusResist ?? {})) wardedStatuses.add(status as CombatStatus);
+    for (const element of Object.keys(active.effect.elementResist ?? {})) wardedElements.add(element);
+  }
+  for (const status of wardedStatuses) {
+    resistance[status] = (resistance[status] ?? 0) + wardStatusResist(effects, character.id, status);
+  }
+  for (const element of wardedElements) {
+    elementResist[element] = (elementResist[element] ?? 1) * wardElementResist(effects, character.id, element);
+  }
+
   return {
-    attack: character.attack + attackBonus + (voc.attack ?? 0),
-    damageMin: character.damageMin + attackBonus + (voc.damageMin ?? voc.attack ?? 0),
-    damageMax: character.damageMax + attackBonus + (voc.damageMax ?? voc.attack ?? 0),
-    accuracy: Math.max(0, Math.min(100, character.accuracy + accuracyBonus + (voc.accuracy ?? 0))),
-    armor: character.armor + defenseBonus + (voc.armor ?? 0),
-    speed: Math.max(0, character.speed + speedBonus + (voc.speed ?? 0)),
+    attack: character.attack + attackBonus + (voc.attack ?? 0) + buffAttack,
+    damageMin: character.damageMin + attackBonus + (voc.damageMin ?? voc.attack ?? 0) + buffDamage,
+    damageMax: character.damageMax + attackBonus + (voc.damageMax ?? voc.attack ?? 0) + buffDamage,
+    accuracy: Math.max(0, Math.min(100, character.accuracy + accuracyBonus + (voc.accuracy ?? 0) + buffAccuracy)),
+    armor: character.armor + defenseBonus + (voc.armor ?? 0) + buffArmor,
+    speed: Math.max(0, character.speed + speedBonus + (voc.speed ?? 0) + buffSpeed),
     maxHp: Math.max(1, character.maxHp + hpBonus + (voc.maxHp ?? 0)),
     maxMp: Math.max(0, character.maxMp + mpBonus + (voc.maxMp ?? 0)),
     resistance,

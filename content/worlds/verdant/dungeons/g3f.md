@@ -82,6 +82,16 @@ rooms:
     description: A chamber where the canopy-light pools green on standing water.
     encounterTable: encounters.verdant.g3.pack
     treasureTable: treasure.verdant.g3.side
+    trap:
+      id: trap.verdant.g3.spore-vent
+      name: Spore Vent
+      damage: 4
+      detectDc: 13
+      warning: The standing water is dimpled from below, in a slow and regular rhythm.
+      locales:
+        ja:
+          name: 胞子の噴き
+          warning: 溜まり水が下から一定の間合いで小さく波打っている。
     locales:
       ja:
         name: 翠の間 2

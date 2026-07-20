@@ -11,8 +11,23 @@ extends SceneTree
 ## Usage: godot --headless --path godot/ --script res://tests/verify_guild_controller.gd
 
 const STEPS := ["briefing", "class", "appearance", "bonus", "name"]
+const I18n := preload("res://scripts/i18n.gd")
 
 var _failures := 0
+
+## Every string the built screen is currently rendering — the gate reads what a PLAYER sees, rather
+## than trusting the data it was built from.
+func _all_text(node: Node) -> String:
+	var out := ""
+	if node is Label:
+		out += (node as Label).text + "\n"
+	elif node is Button:
+		out += (node as Button).text + "\n"
+	elif node is RichTextLabel:
+		out += (node as RichTextLabel).get_parsed_text() + "\n"
+	for child in node.get_children():
+		out += _all_text(child)
+	return out
 
 func _initialize() -> void:
 	var guild := (load("res://scenes/guild.tscn") as PackedScene).instantiate()
@@ -32,6 +47,61 @@ func _initialize() -> void:
 			_fail("%s: cursor landed on a DISABLED control" % step)
 		else:
 			print("[guild-controller] %s: cursor on %s" % [step, (focused as Button).text if focused is Button else focused.name])
+
+	# 1b. §9.6 — THE CLASS PROMISE IS ON SCREEN. The step used to state what a calling WAS (row,
+	#     aptitudes, starting gear) and never what it could DO. §10 asks for browser/screen evidence of a
+	#     "visible class promise", not merely that a class id was stored — so this reads the rendered
+	#     text and fails if the promise is missing, empty, or shows a raw technique id.
+	guild.call("set_ui_state", {"step": "class"})
+	for i in 4:
+		await process_frame
+	for class_id in ["warrior", "thief", "chanter"]:
+		var draft: Dictionary = guild.get("_draft")
+		draft["classId"] = class_id
+		guild.set("_draft", draft)
+		guild.call("_rebuild")
+		for i in 3:
+			await process_frame
+		var shown := _all_text(guild)
+		for label in [I18n.t("party.classPromiseNow"), I18n.t("party.classPromiseLater"), I18n.t("party.classPromiseWeakness")]:
+			if not shown.contains(label):
+				_fail("%s: the class step never shows %s" % [class_id, label])
+		# A technique the player can read, not an id. `power-strike` on screen means the label map broke.
+		if shown.contains("power-strike") or shown.contains("shield-splitter"):
+			_fail("%s: a raw technique id reached the screen" % class_id)
+		if shown.contains(I18n.t("party.classPromiseNone")):
+			_fail("%s: a promise line rendered as empty — every class has a line since §9.4b" % class_id)
+	# The Thief is the only class §4 trusts with exploration; it must SAY so.
+	var thief_draft: Dictionary = guild.get("_draft")
+	thief_draft["classId"] = "thief"
+	guild.set("_draft", thief_draft)
+	guild.call("_rebuild")
+	for i in 3:
+		await process_frame
+	if not _all_text(guild).contains(I18n.t("party.classPromiseExploration")):
+		_fail("the Thief's exploration specialism is not shown")
+	print("[guild-controller] the class promise is legible: now / later / exploration / weakness")
+
+	# 1c. §9.6's PROHIBITIONS, asserted rather than trusted: "Do not expose English aliases, raw tags,
+	#     coverage scores, or a data-entry grid." A screenshot proves it on the day it is taken; this
+	#     proves it every run, across every step of the ceremony.
+	for step in STEPS:
+		guild.call("set_ui_state", {"step": step})
+		for i in 3:
+			await process_frame
+		var text := _all_text(guild)
+		for alias in ["warrior", "knight", "swordmaster", "thief", "priest", "chanter", "mage", "occultist"]:
+			if text.contains(alias):
+				_fail("%s: the English class alias \"%s\" is on screen" % [step, alias])
+		# Raw capability tags (equipmentProfile.tags) are authoring vocabulary, never player copy.
+		for tag in ["front_line", "back_row", "blade", "focus", "mail", "tools"]:
+			if text.contains(tag):
+				_fail("%s: the raw tag \"%s\" is on screen" % [step, tag])
+		# "Coverage" scoring — the roster grading §9.6 removed — must not come back in any form.
+		for score in ["coverage", "カバー率", "編成スコア"]:
+			if text.contains(score):
+				_fail("%s: a coverage score is on screen (%s)" % [step, score])
+	print("[guild-controller] no English aliases, raw tags or coverage scores on any step")
 
 	# 2. Cancel walks back one step at a time and STOPS at the briefing (there is nothing behind the
 	#    guild but the title — a Cancel that fell through would drop the player out of the game).

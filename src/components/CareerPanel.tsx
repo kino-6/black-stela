@@ -14,13 +14,8 @@ import {
   resolveVocationState
 } from "../domain/vocations";
 import type { Locale, Translator } from "../i18n";
+import { SPELL_LABEL as SPELL_LABEL_KEY } from "../domain/combatBeatText";
 
-const SPELL_LABEL_KEY: Record<SpellId, "play.spellHeal" | "play.spellFirebolt" | "play.spellSleep" | "play.skillPowerStrike"> = {
-  heal: "play.spellHeal",
-  firebolt: "play.spellFirebolt",
-  sleep: "play.spellSleep",
-  "power-strike": "play.skillPowerStrike"
-};
 
 function techniqueName(id: string, t: Translator): string {
   return id in SPELLS ? t(SPELL_LABEL_KEY[id as SpellId]) : id;

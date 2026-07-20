@@ -64,6 +64,16 @@ rooms:
   - id: room.verdant.g5f.001
     name: Root Landing
     description: A vine-wrapped ladder climbs from the knotted-root landing.
+    trap:
+      id: trap.verdant.g5.barb-net
+      name: Barb Net
+      damage: 6
+      detectDc: 15
+      warning: Fine thorned filament crosses the gap, strung too high to be growth.
+      locales:
+        ja:
+          name: 棘の網
+          warning: 細い棘糸が空隙を横切っている。自生にしては張られた位置が高すぎる。
     locales:
       ja:
         name: 根の踊り場

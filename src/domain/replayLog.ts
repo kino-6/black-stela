@@ -113,6 +113,13 @@ export function projectEventToLog(event: GameEvent, locale: Locale = "en", world
       };
     case "trap_triggered":
       return { text: t("events.trapTriggered", { trap: event.trapName }), tags: ["trap"] };
+    // §9.4d — the party stepped around it. `known` separates "we found this earlier and walked around
+    // it" from "someone caught it just in time", because those read as different kinds of luck.
+    case "trap_avoided":
+      return {
+        text: t(event.known ? "events.trapAvoidedKnown" : "events.trapAvoided", { trap: event.trapName }),
+        tags: ["trap"]
+      };
     case "room_event_triggered":
       return { text: resolveRoomEventText(event.roomId, event.text, world, locale), tags: ["event"] };
     case "enemy_encountered":

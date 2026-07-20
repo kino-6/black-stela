@@ -5,7 +5,7 @@ import { createCombatState, executeCommand } from "../src/domain/rulesEngine";
 import { defaultWorld } from "../src/data/defaultWorld";
 import type { GameState } from "../src/domain/types";
 
-function fightAgainst(enemyId: string, classId: "occultist" | "warrior" = "occultist"): GameState {
+function fightAgainst(enemyId: string, classId: "mage" | "warrior" = "mage"): GameState {
   const enemy = defaultWorld.enemies.find((candidate) => candidate.id === enemyId)!;
   const base = addCharacter(createInitialGameState(), createGuildCharacter({ name: "Cael", classId, seed: "e" }));
   return {

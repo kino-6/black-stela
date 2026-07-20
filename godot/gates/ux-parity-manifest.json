@@ -1619,13 +1619,13 @@
         "career.grants",
         "career.intro",
         "career.loadout",
+        "career.loadoutFull",
         "career.locked",
         "career.mastered",
         "career.mastery",
         "career.masteryRank",
         "career.member",
         "career.noShifts",
-        "career.noTechniques",
         "career.overview",
         "career.removeFromLoadout",
         "career.reqLevel",
@@ -1647,7 +1647,7 @@
         "career.title",
         "town.serviceCancel"
       ],
-      "notes": "Two-pane: pinned selected adventurer (career.overview/current/mastery) beside the scrolling destination list grouped advanced|foundations. EVERY destination renders its signature, stat shifts, equip slots and granted techniques — this was the exact remediation that fixed 'too thin to decide in'. Driven across a member with NOTHING learned yet and one holding a technique that is not in the combat set, so both the empty case and the 'set this' case are proven.",
+      "notes": "Two-pane: pinned selected adventurer (career.overview/current/mastery) beside the scrolling destination list grouped advanced|foundations. EVERY destination renders its signature, stat shifts, equip slots and granted techniques — this was the exact remediation that fixed 'too thin to decide in'. Driven across a FULL combat set with arts outside it and a set with room to spare, so both 'the set is full' and 'set this' are proven. The 'nothing learned' case is gone: since §9.4b every class grants two techniques at creation, so no adventurer can hold none.",
       "states": [
         {
           "fixture": {}
@@ -1655,8 +1655,62 @@
         {
           "fixture": {
             "__vocation": {
-              "learned": [],
-              "loadout": [],
+              "learned": [
+                "backstab",
+                "battle-hymn",
+                "blessing",
+                "blinding-dust",
+                "bulwark-blow",
+                "challenge",
+                "clarion-hymn",
+                "conflagration",
+                "cover",
+                "crescent-cut",
+                "dread",
+                "ember-chant",
+                "enfeeble",
+                "executioner",
+                "finishing-cut",
+                "firebolt",
+                "flame-wave",
+                "flowing-stance",
+                "force-lance",
+                "greater-heal",
+                "hamstring",
+                "heal",
+                "immolation",
+                "iron-oath",
+                "lesser-heal",
+                "life-siphon",
+                "power-strike",
+                "precise-thrust",
+                "purge",
+                "purification",
+                "riposte",
+                "sanctuary",
+                "second-wind",
+                "shadow-step",
+                "shield-splitter",
+                "shield-wall",
+                "silence-hex",
+                "sleep",
+                "smoke-veil",
+                "still-water",
+                "sunder",
+                "sweeping-blow",
+                "unbroken",
+                "war-cry",
+                "ward-hymn",
+                "wither"
+              ],
+              "loadout": [
+                "backstab",
+                "battle-hymn",
+                "blessing",
+                "blinding-dust",
+                "bulwark-blow",
+                "challenge"
+              ],
               "mastery": {},
               "progress": {}
             }
@@ -1666,10 +1720,57 @@
           "fixture": {
             "__vocation": {
               "learned": [
+                "backstab",
+                "battle-hymn",
+                "blessing",
+                "blinding-dust",
+                "bulwark-blow",
+                "challenge",
+                "clarion-hymn",
+                "conflagration",
+                "cover",
+                "crescent-cut",
+                "dread",
+                "ember-chant",
+                "enfeeble",
+                "executioner",
+                "finishing-cut",
+                "firebolt",
+                "flame-wave",
+                "flowing-stance",
+                "force-lance",
+                "greater-heal",
+                "hamstring",
+                "heal",
+                "immolation",
+                "iron-oath",
+                "lesser-heal",
+                "life-siphon",
                 "power-strike",
-                "heal"
+                "precise-thrust",
+                "purge",
+                "purification",
+                "riposte",
+                "sanctuary",
+                "second-wind",
+                "shadow-step",
+                "shield-splitter",
+                "shield-wall",
+                "silence-hex",
+                "sleep",
+                "smoke-veil",
+                "still-water",
+                "sunder",
+                "sweeping-blow",
+                "unbroken",
+                "war-cry",
+                "ward-hymn",
+                "wither"
               ],
-              "loadout": [],
+              "loadout": [
+                "backstab",
+                "battle-hymn"
+              ],
               "mastery": {},
               "progress": {}
             }
@@ -1678,8 +1779,8 @@
       ],
       "derivedExclusions": [
         {
-          "key": "career.loadoutFull",
-          "reason": "Unreachable with authored content: the game ships FOUR techniques (heal / firebolt / sleep / power-strike) against a loadout limit of 6, so a set can never fill. Restore this requirement the moment a fifth-plus technique or a smaller limit is authored."
+          "key": "career.noTechniques",
+          "reason": "Unreachable since §9.4b: every class grants TWO techniques at level 1 (class-system.md §5, 'two or three usable choices at creation'), and resolveVocationState folds the class line into any stored vocation on read, so `learned` is never empty. React still renders the branch defensively. Restore this requirement if a class is ever authored with no level-1 grant."
         },
         {
           "key": "career.stat.damageMin",

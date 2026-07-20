@@ -22,7 +22,7 @@ const caller = defaultWorld.enemies.find((enemy) => enemy.id === "enemy.b2f.ash-
 function squadFight(): GameState {
   let state = createInitialGameState();
   state = addCharacter(state, createGuildCharacter({ name: "Bran", classId: "warrior", seed: "sq-front" }));
-  state = addCharacter(state, createGuildCharacter({ name: "Cael", classId: "occultist", seed: "sq-cast" }));
+  state = addCharacter(state, createGuildCharacter({ name: "Cael", classId: "mage", seed: "sq-cast" }));
   const party = state.party.map((member, index) => ({ ...member, row: index === 0 ? "front" as const : "back" as const }));
   return { ...state, party, phase: "combat", combat: createSquadCombatState("room.b2f.005", [warden, caller]) } as GameState;
 }

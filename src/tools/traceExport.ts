@@ -126,6 +126,85 @@ function combatVsRoute(enemyId: string, count: number, rounds: number) {
 // M5: a party that DEFENDS, CASTS, and USES AN ITEM — the three declare_round branches beyond attack —
 // then the fight's exits (retreat / continue). A mender and an arcanist bring heal + firebolt on their
 // default loadouts; the vanguard's 特技 power-strike costs 気力.
+
+/**
+ * §9.5 — the trace the parity gate was MISSING.
+ *
+ * Every other combat trace casts only the four techniques the game shipped with (firebolt, heal,
+ * power-strike, sleep), so Godot's combat resolver stayed on the pre-§9.4 narrow shape — one `effect`,
+ * ally-or-enemyGroup — right through §9.4a..e and parity never noticed. A gate is only as strong as the
+ * paths it walks.
+ *
+ * This walks the ones it did not: a party-scope WARD, a party BUFF, an enemy DEBUFF, a CURE, the
+ * Knight's COVER, a multi-effect strike, a DRAIN (enemy-scope technique whose heal returns to the
+ * caster), an allEnemies group spell, and an ITEM that performs a technique.
+ */
+function techniqueFamiliesRoute(world: ScenarioWorld): { initial: GameState; commands: Command[] } {
+  const at = (classId: Parameters<typeof createGuildCharacter>[0]["classId"], name: string, row: "front" | "back", level: number) => ({
+    ...createGuildCharacter({ name, classId, seed: "families" }),
+    row,
+    level,
+    mp: 60,
+    maxMp: 60
+  });
+  // Level 9: high enough that every class has its whole six-technique line available.
+  const party = [
+    at("knight", "Bran", "front", 9),
+    at("chanter", "Lio", "back", 9),
+    at("occultist", "Mira", "back", 9),
+    at("priest", "Sei", "back", 9)
+  ];
+  const enemy = world.enemies.find((candidate) => candidate.id === "enemy.b2f.ash-caller") ?? world.enemies[0];
+  const base = { ...createInitialGameState(), party };
+  const initial: GameState = {
+    ...base,
+    phase: "combat",
+    position: { roomId: "room.b1f.001", facing: "east" },
+    map: { ...base.map, floorId: "dungeon.b1f" },
+    inventory: [
+      { id: "item.ember-flask", name: "Ember Flask", kind: "throwable", quantity: 2, useTechnique: "firebolt" },
+      { id: "item.warding-charm", name: "Warding Charm", kind: "ward", quantity: 1, useTechnique: "ward-hymn" }
+    ],
+    combat: createCombatState("room.b1f.001", enemy, 4)
+  };
+  const group = initial.combat!.enemyGroups[0];
+  const [knight, chanter, occultist, priest] = party;
+
+  return {
+    initial,
+    commands: [
+      // Lasting effects on both sides at once: cover (self), a party ward, an enemy armour debuff.
+      { type: "declare_round", actions: [
+        { actorId: knight.id, action: "cast", spellId: "cover" },
+        { actorId: chanter.id, action: "cast", spellId: "ward-hymn" },
+        { actorId: occultist.id, action: "cast", spellId: "sunder", targetGroupId: group.id },
+        { actorId: priest.id, action: "cast", spellId: "purge", targetCharacterId: knight.id }
+      ] },
+      // A party buff on a timer, a drain (heal returns to the caster), and an item that casts.
+      { type: "declare_round", actions: [
+        { actorId: knight.id, action: "cast", spellId: "shield-wall" },
+        { actorId: chanter.id, action: "cast", spellId: "battle-hymn" },
+        { actorId: occultist.id, action: "cast", spellId: "life-siphon", targetGroupId: group.id },
+        { actorId: priest.id, action: "use_item", itemId: "item.ember-flask", targetGroupId: group.id }
+      ] },
+      // A multi-effect strike (damage + debuff), a group-scope heal, an enemy accuracy debuff, and a
+      // charm performing a party ward with no target field at all.
+      { type: "declare_round", actions: [
+        { actorId: knight.id, action: "cast", spellId: "challenge", targetGroupId: group.id },
+        { actorId: chanter.id, action: "cast", spellId: "lesser-heal", targetCharacterId: knight.id },
+        { actorId: occultist.id, action: "cast", spellId: "wither", targetGroupId: group.id },
+        { actorId: priest.id, action: "use_item", itemId: "item.warding-charm" }
+      ] },
+      { type: "declare_round", actions: [
+        { actorId: knight.id, action: "cast", spellId: "bulwark-blow", targetGroupId: group.id },
+        { actorId: chanter.id, action: "cast", spellId: "sleep", targetGroupId: group.id },
+        { actorId: occultist.id, action: "cast", spellId: "dread", targetGroupId: group.id },
+        { actorId: priest.id, action: "cast", spellId: "greater-heal", targetCharacterId: knight.id }
+      ] }
+    ]
+  };
+}
+
 function combatActionsRoute(world: ScenarioWorld): { initial: GameState; commands: Command[] } {
   const party = [
     { ...createGuildCharacter({ name: "Rook", classId: "warrior", seed: "acts" }), row: "front" as const },
@@ -474,6 +553,8 @@ export const SLICE_ROUTES: TraceRoute[] = [
   { name: "verdant-expedition", worldId: "verdant", build: verdantExpeditionRoute },
   { name: "verdant-walk", worldId: "verdant", build: verdantWalkRoute },
   { name: "combat-actions", worldId: "default", build: combatActionsRoute },
+  // §9.5 — the families the other traces never cast (see techniqueFamiliesRoute).
+  { name: "technique-families", worldId: "default", build: techniqueFamiliesRoute },
   { name: "expedition", worldId: "default", build: expeditionRoute },
   { name: "legacy-combat", worldId: "default", build: legacyCombatRoute },
   { name: "growth-items", worldId: "default", build: growthItemsRoute },

@@ -4,11 +4,59 @@ import type { CombatBeat } from "./types";
 // Localize a combat beat for display. The domain stores an English `text` fallback
 // plus structured fields; this rebuilds the line in the active language, localizing
 // enemy names via the passed resolver (party names are player-entered, shown as-is).
-const SPELL_LABEL: Record<NonNullable<CombatBeat["spellId"]>, TranslationKey> = {
+/**
+ * The one place a technique id becomes a player-visible name. It was copied into three files (this one,
+ * the command menu and the career panel), so adding a technique meant remembering three edits or
+ * shipping a raw id on screen; §9.4 made it exported and shared. `Record<TechniqueId, …>` is what forces
+ * a new technique to be NAMED before it can ship.
+ */
+export const SPELL_LABEL: Record<NonNullable<CombatBeat["spellId"]>, TranslationKey> = {
   heal: "play.spellHeal",
   firebolt: "play.spellFirebolt",
   sleep: "play.spellSleep",
-  "power-strike": "play.skillPowerStrike"
+  "power-strike": "play.skillPowerStrike",
+  purge: "play.spellPurge",
+  "ward-hymn": "play.spellWardHymn",
+  "battle-hymn": "play.spellBattleHymn",
+  sunder: "play.spellSunder",
+  "lesser-heal": "play.spellLesserHeal",
+  "greater-heal": "play.spellGreaterHeal",
+  "sanctuary": "play.spellSanctuary",
+  "purification": "play.spellPurification",
+  "blessing": "play.spellBlessing",
+  "ember-chant": "play.spellEmberChant",
+  "clarion-hymn": "play.spellClarionHymn",
+  "force-lance": "play.spellForceLance",
+  "flame-wave": "play.spellFlameWave",
+  "conflagration": "play.spellConflagration",
+  "immolation": "play.spellImmolation",
+  "enfeeble": "play.spellEnfeeble",
+  "dread": "play.spellDread",
+  "silence-hex": "play.spellSilenceHex",
+  "wither": "play.spellWither",
+  "life-siphon": "play.spellLifeSiphon",
+  "shield-splitter": "play.spellShieldSplitter",
+  "war-cry": "play.spellWarCry",
+  "sweeping-blow": "play.spellSweepingBlow",
+  "second-wind": "play.spellSecondWind",
+  "executioner": "play.spellExecutioner",
+  "bulwark-blow": "play.spellBulwarkBlow",
+  "shield-wall": "play.spellShieldWall",
+  "cover": "play.spellCover",
+  "challenge": "play.spellChallenge",
+  "iron-oath": "play.spellIronOath",
+  "unbroken": "play.spellUnbroken",
+  "precise-thrust": "play.spellPreciseThrust",
+  "flowing-stance": "play.spellFlowingStance",
+  "riposte": "play.spellRiposte",
+  "crescent-cut": "play.spellCrescentCut",
+  "still-water": "play.spellStillWater",
+  "finishing-cut": "play.spellFinishingCut",
+  "hamstring": "play.spellHamstring",
+  "smoke-veil": "play.spellSmokeVeil",
+  "shadow-step": "play.spellShadowStep",
+  "blinding-dust": "play.spellBlindingDust",
+  "backstab": "play.spellBackstab"
 };
 
 const STATUS_LABEL: Record<string, TranslationKey> = {

@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import type { Character, CombatBeat, CombatEnemyGroup, GameState, ScenarioWorld } from "../domain/types";
 import type { Locale, Translator } from "../i18n";
 import type { SpellId } from "../domain/spells";
-import { isCasterClass } from "../domain/spells";
+import { isCasterClass, type SpellTargeting } from "../domain/spells";
 import { combatLoadout } from "../domain/vocations";
 import { getEffectiveCharacterStats, weaponReaches } from "../domain/economy";
 import { localizedEnemyGroupName } from "../ui/catalog";
@@ -51,11 +51,11 @@ interface CombatCockpitProps {
   tempo: ReactNode;
 
   // Command menu
-  consumables: { id: string; label: string }[];
+  consumables: { id: string; label: string; targeting: SpellTargeting }[];
   onQueueAttack: (groupId: string) => void;
   onQueueSpell: (spellId: SpellId, groupId: string | null) => void;
   onQueueDefend: () => void;
-  onQueueItem: (itemId: string, targetCharacterId: string) => void;
+  onQueueItem: (itemId: string, target: { characterId?: string; groupId?: string }) => void;
   onUndo: () => void;
 
   // Round confirm

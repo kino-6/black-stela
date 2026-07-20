@@ -62,6 +62,27 @@ const idToBasename = (id: string) => id.replace(/\./g, "-");
 // Placeholders point new ids at an existing icon until real art is dropped in; the
 // own-basename file always wins over the placeholder.
 export const ICON_PLACEHOLDER: Record<string, string> = {
+  // §9.4c item alternatives — own icons pending from Codex (Art.md). Each points at the closest
+  // existing shape so every catalog id resolves today; the own-basename file wins the moment the real
+  // icon lands, so nothing here has to be removed by hand.
+  "item.lock-picks": "item-ashen-key",
+  "item.trap-shim": "item-ashen-key",
+  "item.dust-lens": "item-lantern-oil",
+  "item.warding-charm": "item-return-charm",
+  "item.ember-flask": "item-clarity-draught",
+  "item.scroll-of-cinders": "item-deed-of-passage",
+  // Verdant's own items point at DEFAULT-pack shapes, not verdant ones: `resolveOrNull` falls back
+  // from a pack to `default` and nowhere else, so a verdant basename cannot serve as a placeholder.
+  // The verdant pack overrides each of these the moment `item-verdant-<id>.png` is delivered.
+  "item.verdant.leachwort": "item-antidote",
+  "item.verdant.stillbloom": "item-calm-draught",
+  "item.verdant.mossdew": "item-spirit-tonic",
+  "item.verdant.vine-hooks": "item-ashen-key",
+  "item.verdant.bark-wedge": "item-ashen-key",
+  "item.verdant.spore-lens": "item-lantern-oil",
+  "item.verdant.warding-knot": "item-return-charm",
+  "item.verdant.ember-pod": "item-clarity-draught",
+  "item.verdant.bark-scroll": "item-deed-of-passage",
   "equip.short-bow": "equip-rusted-dirk",
   "equip.long-spear": "equip-militia-sabre",
   "equip.steel-sabre": "equip-militia-sabre",

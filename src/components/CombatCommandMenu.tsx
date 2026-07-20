@@ -1,14 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { SPELLS, type SpellId } from "../domain/spells";
+import { SPELLS, spellTargeting, type SpellId, type SpellTargeting } from "../domain/spells";
 import type { Character, CombatEnemyGroup } from "../domain/types";
 import type { Translator } from "../i18n";
+import { SPELL_LABEL as SPELL_LABEL_KEY } from "../domain/combatBeatText";
 
-const SPELL_LABEL_KEY: Record<SpellId, "play.spellHeal" | "play.spellFirebolt" | "play.spellSleep" | "play.skillPowerStrike"> = {
-  heal: "play.spellHeal",
-  firebolt: "play.spellFirebolt",
-  sleep: "play.spellSleep",
-  "power-strike": "play.skillPowerStrike"
-};
 
 interface CombatCommandMenuProps {
   actor: Character;
@@ -19,20 +14,25 @@ interface CombatCommandMenuProps {
   abilityKind: "spell" | "skill";
   localizeGroup: (group: CombatEnemyGroup) => string;
   canAttack: boolean;
-  consumables: { id: string; label: string }[];
+  /**
+   * §9.4c — `targeting` is the item's own scope, derived from the technique it performs, so a thrown
+   * flask asks for an ENEMY and a party ward asks for nobody. Without it every item was assumed to be
+   * a potion poured onto an ally, and the new kinds were unusable even once they reached the list.
+   */
+  consumables: { id: string; label: string; targeting: SpellTargeting }[];
   partyTargets: { id: string; name: string }[];
   t: Translator;
   onQueueAttack: (groupId: string) => void;
   onQueueSpell: (spellId: SpellId, groupId: string | null) => void;
   onQueueDefend: () => void;
-  onQueueItem: (itemId: string, targetCharacterId: string) => void;
+  onQueueItem: (itemId: string, target: { characterId?: string; groupId?: string }) => void;
   onUndo: () => void;
   /** While a target submenu is open, reports the group under the cursor so the STAGE reticle tracks
    *  it — you pick the enemy by watching it light up on the battlefield, not by reading a list. */
   onTargetPreview?: (groupId: string | null) => void;
 }
 
-type MenuView = "command" | "attackTarget" | "spell" | "spellTarget" | "itemSelect" | "itemTarget";
+type MenuView = "command" | "attackTarget" | "spell" | "spellTarget" | "itemSelect" | "itemTarget" | "itemEnemyTarget";
 type CommandKind = "attack" | "spell" | "item" | "defend";
 
 // A nested, cursor-first combat command menu (コマンドRPG). The front-to-back actor
@@ -60,6 +60,7 @@ export function CombatCommandMenu({
   const [view, setView] = useState<MenuView>("command");
   const [cursor, setCursor] = useState(0);
   const [pendingSpell, setPendingSpell] = useState<SpellId | null>(null);
+  const [, setPendingItemTargeting] = useState<SpellTargeting>("ally");
   const [pendingItem, setPendingItem] = useState<string | null>(null);
   const selectedButtonRef = useRef<HTMLButtonElement | null>(null);
 
@@ -135,10 +136,24 @@ export function CombatCommandMenu({
         label: consumable.label,
         enabled: true,
         onSelect: () => {
+          if (consumable.targeting === "none") {
+            // A party ward or a group scroll: the scope IS the target, so queue it and ask nothing.
+            onQueueItem(consumable.id, {});
+            return;
+          }
           setPendingItem(consumable.id);
-          setView("itemTarget");
+          setPendingItemTargeting(consumable.targeting);
+          setView(consumable.targeting === "group" ? "itemEnemyTarget" : "itemTarget");
           setCursor(0);
         }
+      }));
+    }
+    if (view === "itemEnemyTarget") {
+      return livingGroups.map((group) => ({
+        key: group.id,
+        label: `${localizeGroup(group)} ×${group.count}`,
+        enabled: true,
+        onSelect: () => pendingItem && onQueueItem(pendingItem, { groupId: group.id })
       }));
     }
     // itemTarget — choose which ally to use the selected item on
@@ -146,13 +161,14 @@ export function CombatCommandMenu({
       key: ally.id,
       label: ally.name,
       enabled: true,
-      onSelect: () => pendingItem && onQueueItem(pendingItem, ally.id)
+      onSelect: () => pendingItem && onQueueItem(pendingItem, { characterId: ally.id })
     }));
   })();
 
   // Drive the stage reticle from the target cursor: while an enemy-target submenu is open, the group
   // under the cursor is the one highlighted on the battlefield (null clears it back to none).
-  const previewGroupId = view === "attackTarget" || view === "spellTarget" ? rows[cursor]?.key ?? null : null;
+  const previewGroupId =
+    view === "attackTarget" || view === "spellTarget" || view === "itemEnemyTarget" ? rows[cursor]?.key ?? null : null;
   useEffect(() => {
     onTargetPreview?.(previewGroupId);
   }, [previewGroupId, onTargetPreview]);
@@ -177,7 +193,7 @@ export function CombatCommandMenu({
     if (actor.mp < spell.mpCost) {
       return;
     }
-    if (spell.target === "enemyGroup") {
+    if (spellTargeting(spell.target) === "group") {
       setPendingSpell(spellId);
       setView("spellTarget");
       setCursor(0);
@@ -193,7 +209,7 @@ export function CombatCommandMenu({
     }
     if (view === "spellTarget") {
       setView("spell");
-    } else if (view === "itemTarget") {
+    } else if (view === "itemTarget" || view === "itemEnemyTarget") {
       setView("itemSelect");
     } else {
       setView("command");

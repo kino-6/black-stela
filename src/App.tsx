@@ -52,7 +52,8 @@ import { getGridEdge, getLocalizedRoomText, getRoom, isBossFloor } from "./domai
 import { createIdentitySuggestion } from "./domain/identitySuggestion";
 import { executeCommand, listUnlockedCheckpoints, remapRepeatOrders, roomStairsEdge, stairGateAhead } from "./domain/rulesEngine";
 import { autoCombatStopStatus, chooseAutoRoundActions, getTempoModeForPhase, runTempoStep, type TempoMode } from "./domain/tempo";
-import { SPELLS, isCasterClass, knownSpells, type SpellId } from "./domain/spells";
+import { SPELLS, isCasterClass, knownSpells, spellTargeting, type SpellId } from "./domain/spells";
+import { TECHNIQUES } from "./domain/techniques";
 import {
   activateControllerCancel,
   focusFirstControllerChoice,
@@ -86,7 +87,7 @@ import { equipmentInstanceKey } from "./domain/affixes";
 import { collectCombatBeats } from "./domain/combatLog";
 import { formatCombatBeat } from "./domain/combatBeatText";
 import { projectEventToLog } from "./domain/replayLog";
-import { calculateRecoveryCost, getEffectiveCharacterStats, isEquipmentUsableBy, weaponReaches } from "./domain/economy";
+import { addInventoryItem, calculateRecoveryCost, createInventoryItemFromCatalog, getEffectiveCharacterStats, isEquipmentUsableBy, weaponReaches } from "./domain/economy";
 import type {
   CharacterAptitudes,
   CharacterBackgroundId,
@@ -357,11 +358,27 @@ export function App() {
   const combatOrdersReady = state.phase === "combat" && activeParty.length > 0 && activeParty.every((member) => orderedActorIds.has(member.id));
   const combatHealingItem = state.inventory.find((item) => item.kind === "healing" && item.quantity > 0);
   // Every usable combat consumable (heal / cure / 気力 restore), for the item submenu.
+  // §9.4c: ward charms, thrown flasks and scrolls belong here too. The kind list was healing/cure/focus
+  // only, so an item carrying a technique would never have appeared in the menu at all — bought, held,
+  // and unusable. Each carries its own targeting, derived from the technique it performs.
   const combatConsumables = useMemo(
     () =>
       state.inventory
-        .filter((item) => (item.kind === "healing" || item.kind === "cure" || item.kind === "focus") && item.quantity > 0)
-        .map((item) => ({ id: item.id, label: `${item.name} ×${item.quantity}` })),
+        .filter(
+          (item) =>
+            item.quantity > 0 &&
+            (item.kind === "healing" ||
+              item.kind === "cure" ||
+              item.kind === "focus" ||
+              item.kind === "ward" ||
+              item.kind === "throwable" ||
+              item.kind === "scroll")
+        )
+        .map((item) => ({
+          id: item.id,
+          label: `${item.name} ×${item.quantity}`,
+          targeting: item.useTechnique ? spellTargeting(TECHNIQUES[item.useTechnique].target) : ("ally" as const)
+        })),
     [state.inventory]
   );
   const showGuildPanel = false;
@@ -640,16 +657,20 @@ export function App() {
     }
 
     let order: CombatActionDeclaration;
-    if (spell.target === "ally") {
+    const targeting = spellTargeting(spell.target);
+    if (targeting === "ally") {
       const wounded = [...state.party]
         .filter((member) => member.hp > 0)
         .sort((left, right) => left.hp / left.maxHp - right.hp / right.maxHp)[0];
       order = { actorId: selectedActor.id, action: "cast", spellId, targetCharacterId: (wounded ?? selectedActor).id };
-    } else {
+    } else if (targeting === "group") {
       if (!selectedTarget) {
         return;
       }
       order = { actorId: selectedActor.id, action: "cast", spellId, targetGroupId: selectedTarget.id };
+    } else {
+      // self / party / allEnemies — the scope IS the target; queue it with no target field.
+      order = { actorId: selectedActor.id, action: "cast", spellId };
     }
 
     setCombatOrders([...combatOrders.filter((queued) => queued.actorId !== selectedActor.id), order]);
@@ -758,13 +779,20 @@ export function App() {
     if (!selectedActor || selectedActor.mp < SPELLS[spellId].mpCost) {
       return;
     }
-    if (SPELLS[spellId].target === "ally") {
+    const targeting = spellTargeting(SPELLS[spellId].target);
+    if (targeting === "ally") {
       const wounded = [...state.party]
         .filter((member) => member.hp > 0)
         .sort((left, right) => left.hp / left.maxHp - right.hp / right.maxHp)[0];
       queueCombatOrder({ actorId: selectedActor.id, action: "cast", spellId, targetCharacterId: (wounded ?? selectedActor).id });
-    } else if (groupId) {
-      queueCombatOrder({ actorId: selectedActor.id, action: "cast", spellId, targetGroupId: groupId });
+    } else if (targeting === "group") {
+      if (groupId) {
+        queueCombatOrder({ actorId: selectedActor.id, action: "cast", spellId, targetGroupId: groupId });
+      }
+    } else {
+      // A party ward or a party buff: no choice to make, so queue it directly rather than waiting for a
+      // group id that the menu correctly never asks for.
+      queueCombatOrder({ actorId: selectedActor.id, action: "cast", spellId });
     }
   }
 
@@ -774,9 +802,17 @@ export function App() {
     }
   }
 
-  function menuQueueItem(itemId: string, targetCharacterId: string) {
+  function menuQueueItem(itemId: string, target: { characterId?: string; groupId?: string }) {
     if (selectedActor) {
-      queueCombatOrder({ actorId: selectedActor.id, action: "use_item", itemId, targetCharacterId });
+      // §9.4c: an item may now reach an enemy group (a thrown flask) or nobody at all (a party ward),
+      // not only an ally. The order carries whichever target the item's own scope asked for.
+      queueCombatOrder({
+        actorId: selectedActor.id,
+        action: "use_item",
+        itemId,
+        ...(target.characterId ? { targetCharacterId: target.characterId } : {}),
+        ...(target.groupId ? { targetGroupId: target.groupId } : {})
+      });
     }
   }
 
@@ -2755,12 +2791,40 @@ function createDebugStateFromLocation(world: ScenarioWorld): GameState {
     return state;
   }
   const params = new URLSearchParams(window.location.search);
+
+  // §9.4: `level=N` raises the debug party. Every `progress` preset starts the party at level 1 — even
+  // floor_8 — so any technique learned above level 1 was simply unreachable in the browser, and a
+  // player-facing check of one could not be written at all. Additive and opt-in: without the parameter
+  // the debug start is byte-identical, so the specs that pin combat outcomes on floor_2 are untouched.
+  const requestedLevel = Number(params.get("level"));
+  const levelled =
+    Number.isFinite(requestedLevel) && requestedLevel > 1
+      ? { ...state, party: state.party.map((member) => ({ ...member, level: Math.floor(requestedLevel) })) }
+      : state;
+
+  // §9.4c: `items=a,b` puts named catalog items in the debug party's pack. The item routes are shop
+  // stock, so without this a browser check of one would have to walk a whole shopping trip first, and
+  // the check that matters — does the COMBAT MENU offer it — would never get written.
+  const requestedItems = (params.get("items") ?? "").split(",").map((id) => id.trim()).filter(Boolean);
+  const stocked = requestedItems.length
+    ? {
+        ...levelled,
+        inventory: requestedItems.reduce(
+          (inventory, id) => {
+            const item = createInventoryItemFromCatalog(world, id, 3);
+            return item ? addInventoryItem(inventory, item) : inventory;
+          },
+          levelled.inventory
+        )
+      }
+    : levelled;
+
   const at = params.get("at");
   if (!at) {
-    return state;
+    return stocked;
   }
   const facing = params.get("facing") as Direction | null;
-  return withDebugStartCell(state, world, at, facing ?? undefined);
+  return withDebugStartCell(stocked, world, at, facing ?? undefined);
 }
 
 function getTotalRoomCount() {

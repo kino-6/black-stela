@@ -6,7 +6,7 @@ items:
     tier: 1
     price: 25
     sellValue: 8
-    healAmount: 6
+    healAmount: 11
     locales:
       ja:
         name: 治癒の水薬
@@ -55,7 +55,7 @@ items:
     tier: 2
     price: 70
     sellValue: 23
-    healAmount: 14
+    healAmount: 24
     locales:
       ja:
         name: 上等な水薬
@@ -104,6 +104,78 @@ items:
       ja:
         name: 気付けの霊薬
         description: 涸れた気力を汲み戻す澄んだ霊薬。
+  # ---- §9.4c: the item answers to a missing class (class-system.md §8). Each is weaker, one-shot, or
+  # both, so it never replaces the specialist — it keeps an absent class from being a dead end. ----
+  # Exploration tools: DATA only. `explorationAid` was a rule with nothing using it since §9.2.
+  - id: item.lock-picks
+    name: Ashwire Picks
+    kind: utility
+    tier: 2
+    price: 55
+    sellValue: 18
+    explorationAid: { actions: [unlock, investigate], bonus: 6 }
+    locales:
+      ja:
+        name: 灰線の合鍵
+        description: 錠の噛み合いを探る細い灰線の束。盗賊でなくとも錠と向き合える。
+  - id: item.trap-shim
+    name: Trap Shim
+    kind: utility
+    tier: 2
+    price: 45
+    sellValue: 15
+    explorationAid: { actions: [disarm], bonus: 6 }
+    locales:
+      ja:
+        name: 罠留めの楔
+        description: 撃鉄の下へ差し込む薄い楔。手が震えても一度は止まる。
+  - id: item.dust-lens
+    name: Dust Lens
+    kind: utility
+    tier: 3
+    price: 70
+    sellValue: 23
+    explorationAid: { actions: [detectSecret, investigate], bonus: 5 }
+    locales:
+      ja:
+        name: 塵見の硝子
+        description: 埃の流れで隙間を読む磨き硝子。壁の向こうの空気が見える。
+  # Ward charm: the Chanter's prevention, one-shot and narrower.
+  - id: item.warding-charm
+    name: Warding Charm
+    kind: ward
+    tier: 3
+    price: 80
+    sellValue: 26
+    useTechnique: ward-hymn
+    locales:
+      ja:
+        name: 守りの護符
+        description: 砕けば一度だけ隊列を覆う護符。詠唱者の代わりにはならないが、代わりに立てる。
+  # Elemental throwable: the Mage's bolt, in a flask, for a party without one.
+  - id: item.ember-flask
+    name: Ember Flask
+    kind: throwable
+    tier: 2
+    price: 40
+    sellValue: 13
+    useTechnique: firebolt
+    locales:
+      ja:
+        name: 燠の小瓶
+        description: 投げれば割れて燃え広がる小瓶。術士のいない隊が火を持つ唯一の手。
+  # Scroll: a technique nobody in the party learned, once.
+  - id: item.scroll-of-cinders
+    name: Scroll of Cinders
+    kind: scroll
+    tier: 4
+    price: 150
+    sellValue: 50
+    useTechnique: flame-wave
+    locales:
+      ja:
+        name: 燼の巻物
+        description: 一度だけ読み解ける群焼の巻物。読めば燃え尽きる。
   # ---- Growth items (the player's earned edge; XP grants bypass the out-levelling falloff) ----
   - id: item.ashroot-tonic
     name: Ashroot Tonic
@@ -639,6 +711,30 @@ shops:
         unlockFlag: flag.b2f.descent
       - itemId: item.spirit-tonic
         price: 45
+        availability: unlocked
+        unlockFlag: flag.b2f.descent
+      # §9.4c — the item answers to a missing class. Authored but unstocked would be authored but
+      # UNREACHABLE, which is the same as not existing. Tools from the start (a party may lack a Thief
+      # on day one); the technique-bearing items unlock with the descent, as the other tier-2+ stock does.
+      - itemId: item.lock-picks
+        price: 55
+        availability: always
+      - itemId: item.trap-shim
+        price: 45
+        availability: always
+      - itemId: item.dust-lens
+        price: 70
+        availability: unlocked
+        unlockFlag: flag.b2f.descent
+      - itemId: item.ember-flask
+        price: 40
+        availability: always
+      - itemId: item.warding-charm
+        price: 80
+        availability: unlocked
+        unlockFlag: flag.b2f.descent
+      - itemId: item.scroll-of-cinders
+        price: 150
         availability: unlocked
         unlockFlag: flag.b2f.descent
       - itemId: equip.rusted-dirk

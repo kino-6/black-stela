@@ -16,7 +16,8 @@ const Exploration := preload("res://scripts/rules/exploration.gd")
 static func _hash_seed(seed_text: String) -> int:
 	return CombatRng.hash_seed(seed_text)
 
-static func _roll_percent(seed_text: String) -> int:
+## Shared with the ROOM-trap checks (§9.4d) so a chest lock and a floor trap read the same curve.
+static func roll_percent(seed_text: String) -> int:
 	return (_hash_seed(seed_text) % 100) + 1
 
 static func _clamp_int(value: int, low: int, high: int) -> int:
@@ -43,7 +44,7 @@ static func select_trap_handler(party: Array) -> Variant:
 			best = member
 	return best
 
-static func _success_chance(skill: int, difficulty: int, base: int) -> int:
+static func success_chance(skill: int, difficulty: int, base: int) -> int:
 	return _clamp_int(base + skill * 3 - difficulty, 5, 95)
 
 static func chest_at(state: Dictionary, cell_id: Variant) -> Variant:
@@ -93,7 +94,7 @@ static func investigate(state: Dictionary, world: Dictionary = {}, engine: Dicti
 	var handler: Variant = attempt.get("actor", null)
 	var skill := int(attempt.get("skill", 0))
 	var seed_text := "%s:%s" % [String(chest.get("cellId", "")), String(chest.get("roomId", ""))]
-	var success := _roll_percent("%s:investigate" % seed_text) < _success_chance(skill, difficulty, 55)
+	var success := roll_percent("%s:investigate" % seed_text) < success_chance(skill, difficulty, 55)
 	# A failed check is honestly uncertain — it must never report a trapped chest as clear.
 	var result := "uncertain"
 	if success:
@@ -129,7 +130,7 @@ static func disarm(state: Dictionary, world: Dictionary = {}, engine: Dictionary
 	var handler: Variant = attempt.get("actor", null)
 	var skill := int(attempt.get("skill", 0))
 	var seed_text := "%s:%s" % [String(chest.get("cellId", "")), String(chest.get("roomId", ""))]
-	var success := _roll_percent("%s:disarm" % seed_text) < _success_chance(skill, difficulty, 45)
+	var success := roll_percent("%s:disarm" % seed_text) < success_chance(skill, difficulty, 45)
 
 	var updated: Dictionary = chest.duplicate(true)
 	updated["disarmAttempted"] = true

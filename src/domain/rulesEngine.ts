@@ -16,9 +16,11 @@ import { acceptQuest, claimQuest } from "./commands/questCommands";
 import { applyLevelUps, rewardXpFor } from "./leveling";
 import { PARTY_SIZE_LIMIT, findClass, importAdventurer, reclassCharacter } from "./characterCreation";
 import { SPELLS, knownSpells } from "./spells";
+import { TECHNIQUES, type Technique } from "./techniques";
+import { applyLastingEffects, coveringMemberId, statModifier, tickEffects, type ActiveEffect } from "./combatEffects";
 import { getCriticalChance, getEvasionChance, getInitiativeScore, getSpellPowerBonus, getStatusSpellChance } from "./combatMath";
 import { FEAR_ACCURACY_PENALTY, POISON_DAMAGE, STATUS_WEAR_OFF, statusResistPct } from "./status";
-import { chestAt, disarmChest, investigateChest, makeChest, openChest, roomChest } from "./chests";
+import { chestAt, disarmChest, investigateChest, makeChest, openChest, roomChest, successChance } from "./chests";
 import { resolveClassId } from "./characterCreation";
 import { consumeAid, resolveAttempt, type AttemptRecord, type ExplorationAid } from "./exploration";
 import {
@@ -210,11 +212,12 @@ export function resolveCommand(state: GameState, world: ScenarioWorld, command: 
     case "listen":
       return logOnly(state, { type: "inspection_made", mode: "listen" });
     case "search":
-      return search(state, world);
+      return search(state, world, command.characterId, command.itemId);
     case "open_door":
       return logOnly(state, { type: "inspection_made", mode: "open_door" });
     case "disarm_trap":
-      return disarmTrap(state, world);
+      // §9.4d: the command has carried `characterId` / `itemId` since §9.2 and the handler IGNORED both.
+      return disarmTrap(state, world, command.characterId, command.itemId);
     case "investigate_chest":
       return investigateChestCommand(state, world, command.characterId, command.itemId);
     case "disarm_chest":
@@ -710,20 +713,47 @@ function moveForward(
   }
 
   if (room.trap && !state.resolvedTraps.includes(room.trap.id)) {
-    next = {
-      ...next,
-      party: next.party.map((member) => ({
-        ...member,
-        hp: Math.max(1, member.hp - room.trap!.damage)
-      })),
-      resolvedTraps: [...next.resolvedTraps, room.trap.id]
-    };
-    events.push({
-      type: "trap_triggered",
-      trapId: room.trap.id,
-      trapName: room.trap.name,
-      damage: room.trap.damage
-    });
+    // §9.4d: walking onto a trap used to be UNCONDITIONAL — full damage to everyone, every time, with
+    // no roll, no actor and nothing the party could have done about it. Searching a room and disarming
+    // a trap therefore bought nothing at all, because the trap sprang the moment you stepped in either
+    // way. Two things can now save the party, and both are things they DID:
+    //   1. They already spotted it (Search) — they step around it, and it is resolved for good.
+    //   2. Somebody notices in time — a passive `investigate` check against the authored detectDc.
+    // The check is passive, so nobody declares an actor: `resolveAttempt` picks the ablest hand and
+    // records `selection: "automatic"` honestly, rather than pretending a player chose.
+    const alreadySpotted = state.discoveredSecrets.includes(room.trap.id);
+    const reflex = resolveAttempt(next, { action: "investigate", difficulty: room.trap.detectDc });
+    const noticed =
+      alreadySpotted ||
+      (!reflex.refused &&
+        rollPercent(`${room.trap.id}:${state.turn}:reflex`) < successChance(reflex.record.skill, room.trap.detectDc, 35));
+
+    if (noticed) {
+      next = { ...next, resolvedTraps: [...next.resolvedTraps, room.trap.id] };
+      events.push({
+        type: "trap_avoided",
+        trapId: room.trap.id,
+        trapName: room.trap.name,
+        known: alreadySpotted,
+        ...(alreadySpotted ? {} : attemptFields(reflex.record))
+      });
+    } else {
+      next = {
+        ...next,
+        party: next.party.map((member) => ({
+          ...member,
+          hp: Math.max(1, member.hp - room.trap!.damage)
+        })),
+        resolvedTraps: [...next.resolvedTraps, room.trap.id]
+      };
+      events.push({
+        type: "trap_triggered",
+        trapId: room.trap.id,
+        trapName: room.trap.name,
+        damage: room.trap.damage,
+        ...attemptFields(reflex.record)
+      });
+    }
   }
 
   if (room.event) {
@@ -901,7 +931,18 @@ function useStairs(state: GameState, world: ScenarioWorld): CommandResult {
   return withEvents(next, events);
 }
 
-function search(state: GameState, world: ScenarioWorld): CommandResult {
+/**
+ * §9.4d — a hidden passage and an unsprung floor trap are now ATTEMPTS, not automatic reveals.
+ * `characterId` / `itemId` name who looks and with what, exactly as the chest commands do.
+ */
+/**
+ * How hard a hidden passage is to find. A single constant because the grid-edge schema carries no
+ * per-edge difficulty yet; authoring one per secret is a content slice, and this is the honest default
+ * until then — named and exported so it is a decision rather than a literal buried in a roll.
+ */
+export const SECRET_DETECT_DC = 10;
+
+function search(state: GameState, world: ScenarioWorld, characterId?: string, itemId?: string): CommandResult {
   if (!state.position) {
     return noChange(state);
   }
@@ -916,12 +957,38 @@ function search(state: GameState, world: ScenarioWorld): CommandResult {
       )
     : [];
   if (secretDirections.length > 0) {
-    const next: GameState = {
-      ...state,
-      discoveredSecrets: [...state.discoveredSecrets, ...secretDirections.map((direction) => secretKey(room.id, direction))],
-      turn: state.turn + 1
-    };
-    return withEvents(next, [{ type: "secret_found" }]);
+    // §9.4d: finding a hidden passage used to be AUTOMATIC — stand in the cell, press Search, and every
+    // secret edge revealed itself. The Thief's `detectSecret` specialism was dead code, and so was the
+    // whole reason to bring one.
+    //
+    // It is an attempt now, and a RETRYABLE one, seeded on the turn. A one-shot-per-party roll would be
+    // the stricter rule, but a failed roll would then lock a party out of AUTHORED CONTENT forever —
+    // the b7f ash-vault cache sits behind exactly such a wall. So the specialist's reward is finding it
+    // SOONER (each search costs a turn, and turns are what wandering encounters feed on) rather than
+    // being the only one who ever can. This is the Wizardry/Etrian rule, and it cannot soft-lock a run.
+    const attempt = resolveAttempt(
+      state,
+      { action: "detectSecret", difficulty: SECRET_DETECT_DC, declaredActorId: characterId, itemId },
+      explorationAids(world)
+    );
+    if (!attempt.refused) {
+      const inventory = attempt.aid ? consumeAid(state.inventory, attempt.aid.itemId) : state.inventory;
+      const found = secretDirections.filter(
+        (direction) =>
+          rollPercent(`${room.id}:${direction}:${state.turn}:secret`) <
+          successChance(attempt.record.skill, SECRET_DETECT_DC, 45)
+      );
+      const next: GameState = {
+        ...state,
+        inventory,
+        discoveredSecrets: [...state.discoveredSecrets, ...found.map((direction) => secretKey(room.id, direction))],
+        turn: state.turn + 1
+      };
+      if (found.length > 0) {
+        return withEvents(next, [{ type: "secret_found", ...attemptFields(attempt.record) }]);
+      }
+      return withEvents(next, [{ type: "search_completed", result: "none", ...attemptFields(attempt.record) }]);
+    }
   }
 
   // Gather point: a searchable resource node that yields its item once.
@@ -945,16 +1012,46 @@ function search(state: GameState, world: ScenarioWorld): CommandResult {
     return logOnly(state, { type: "search_completed", result: "none" });
   }
 
+  // Spotting the trap was automatic too — the authored `detectDc` on every trap in every floor was
+  // read by nothing. Same retryable, turn-seeded rule as the secret wall above.
+  const trapAttempt = resolveAttempt(
+    state,
+    { action: "investigate", difficulty: room.trap.detectDc, declaredActorId: characterId, itemId },
+    explorationAids(world)
+  );
+  if (trapAttempt.refused) {
+    return logOnly(state, { type: "search_completed", result: "none" });
+  }
+  const inventory = trapAttempt.aid ? consumeAid(state.inventory, trapAttempt.aid.itemId) : state.inventory;
+  const spotted =
+    rollPercent(`${room.trap.id}:${state.turn}:detect`) <
+    successChance(trapAttempt.record.skill, room.trap.detectDc, 55);
   const next: GameState = {
     ...state,
-    discoveredSecrets: [...state.discoveredSecrets, room.trap.id],
+    inventory,
+    discoveredSecrets: spotted ? [...state.discoveredSecrets, room.trap.id] : state.discoveredSecrets,
     turn: state.turn + 1
   };
 
-  return withEvents(next, [{ type: "trap_detected", trapId: room.trap.id, trapName: room.trap.name }]);
+  if (!spotted) {
+    return withEvents(next, [{ type: "search_completed", result: "none", ...attemptFields(trapAttempt.record) }]);
+  }
+  return withEvents(next, [
+    { type: "trap_detected", trapId: room.trap.id, trapName: room.trap.name, ...attemptFields(trapAttempt.record) }
+  ]);
 }
 
-function disarmTrap(state: GameState, world: ScenarioWorld): CommandResult {
+/**
+ * §9.4d — disarm the ROOM trap. This used to ALWAYS SUCCEED: it appended to `resolvedTraps` and
+ * announced success, with no roll, no actor and no failure branch, while the identical job on a CHEST
+ * ran a real proficiency check. The Thief's `disarm` specialism therefore meant nothing outside chests,
+ * and the authored `detectDc` on every trap in every floor was read by nothing at all.
+ *
+ * Failure LEAVES THE TRAP ARMED rather than springing it — the party may search, tool up and try again,
+ * or walk another way. Springing on a failed disarm would make attempting it strictly worse than
+ * ignoring it, and nobody would ever press the command.
+ */
+function disarmTrap(state: GameState, world: ScenarioWorld, characterId?: string, itemId?: string): CommandResult {
   if (!state.position) {
     return noChange(state);
   }
@@ -964,13 +1061,35 @@ function disarmTrap(state: GameState, world: ScenarioWorld): CommandResult {
     return logOnly(state, { type: "trap_disarm_failed", reason: "none_active" });
   }
 
-  const next: GameState = {
-    ...state,
-    resolvedTraps: [...state.resolvedTraps, room.trap.id],
-    turn: state.turn + 1
-  };
+  const attempt = resolveAttempt(
+    state,
+    { action: "disarm", difficulty: room.trap.detectDc, declaredActorId: characterId, itemId },
+    explorationAids(world)
+  );
+  if (attempt.refused) {
+    return logOnly(state, { type: "trap_disarm_failed", reason: "none_active" });
+  }
 
-  return withEvents(next, [{ type: "trap_disarmed", trapId: room.trap.id, trapName: room.trap.name }]);
+  const inventory = attempt.aid ? consumeAid(state.inventory, attempt.aid.itemId) : state.inventory;
+  // Seeded on the trap AND THE ACTOR. On the trap alone, every trap would carry one fixed roll for the
+  // rest of the game, so the outcome could not depend on who tried it — a hopeless hand and a master
+  // thief would get the same answer, and the check would be decoration. Including the actor keeps the
+  // chest rule intact (the same person cannot re-press a failure into a success) while making WHO
+  // attempts it the thing that decides.
+  const success =
+    rollPercent(`${room.trap.id}:${attempt.record.actorId ?? "nobody"}:room-disarm`) <
+    successChance(attempt.record.skill, room.trap.detectDc, 45);
+  const base: GameState = { ...state, inventory, turn: state.turn + 1 };
+
+  if (!success) {
+    return withEvents(base, [
+      { type: "trap_disarm_failed", reason: "none_active", ...attemptFields(attempt.record) }
+    ]);
+  }
+
+  return withEvents({ ...base, resolvedTraps: [...state.resolvedTraps, room.trap.id] }, [
+    { type: "trap_disarmed", trapId: room.trap.id, trapName: room.trap.name, ...attemptFields(attempt.record) }
+  ]);
 }
 
 function attack(state: GameState, world: ScenarioWorld): CommandResult {
@@ -1008,6 +1127,9 @@ function declareRound(state: GameState, world: ScenarioWorld, actions: CombatAct
   let party = state.party;
   let inventory = state.inventory;
   let enemyGroups = combat.enemyGroups;
+  // §9.4: wards/buffs/debuffs carried over from earlier rounds. Rebound as techniques land, ticked
+  // down at the end of the round, and stored back on the fight.
+  let effects = combat.effects ?? [];
 
   // Record a beat: the text line plus a snapshot of the battlefield right AFTER it
   // resolved, so the UI can play the round forward one blow at a time. Reads the
@@ -1020,6 +1142,127 @@ function declareRound(state: GameState, world: ScenarioWorld, actions: CombatAct
       party: party.map((member) => ({ id: member.id, hp: member.hp })),
       ...meta
     });
+  };
+
+  /**
+   * §9.4c — resolve one technique's effects. Lifted out of the `cast` branch UNCHANGED so that an ITEM
+   * can carry a technique too: a thrown flask, a ward charm and a scroll are all "a technique someone
+   * without the class can still use" (§8), and writing a second, parallel effect applier for items is
+   * how the two quietly drift apart. Still a closure over the live `party` / `enemyGroups` / `effects`
+   * bindings and `beat`, so extraction changed no behaviour and no signatures.
+   */
+  const applyTechnique = (technique: Technique, actor: Character, action: CombatActionDeclaration): void => {
+    // §9.4: WHO the technique reaches, derived from its declared scope rather than from which target
+    // field the UI happened to fill in. `self`/`party`/`allEnemies` need no player choice at all, which
+    // is why they were unreachable while the resolver keyed off `targetCharacterId`/`targetGroupId`.
+    const allyIds: string[] =
+      technique.target === "self"
+        ? [actor.id]
+        : technique.target === "party"
+          ? party.filter((member) => member.hp > 0 && !member.injury).map((member) => member.id)
+          : technique.target === "ally" && action.targetCharacterId
+            ? [action.targetCharacterId]
+            : [];
+    const groupIds: string[] =
+      technique.target === "allEnemies"
+        ? enemyGroups.filter((group) => group.count > 0).map((group) => group.id)
+        : technique.target === "enemyGroup" && action.targetGroupId
+          ? [action.targetGroupId]
+          : [];
+
+    // §9.4b: a DRAIN — an enemy-scope technique carrying a heal — restores the CASTER. Without this
+    // rule the heal half would resolve against an empty ally set and silently do nothing, which is
+    // exactly the no-op §9.4a existed to stamp out. It is also what makes a drain a drain: the life
+    // comes back to whoever took it.
+    const healIds = allyIds.length > 0 ? allyIds : [actor.id];
+
+    // A technique may carry several effects (a strike that also weakens); each resolves against the
+    // same target set, in authored order.
+    for (const effect of technique.effects) {
+      if (effect.kind === "heal") {
+        const amount = effect.amount + (technique.kind === "spell" ? getSpellPowerBonus(actor) : 0);
+        for (const targetId of healIds) {
+          let healedName = "";
+          party = party.map((member) => {
+            if (member.id !== targetId) return member;
+            healedName = member.name;
+            return { ...member, hp: Math.min(effectiveMaxHp(member, world), member.hp + amount) };
+          });
+          beat(`${actor.name} heals ${healedName}.`, { kind: "heal", actorId: actor.id, actorName: actor.name, targetCharacterId: targetId, targetName: healedName, spellId: technique.id });
+        }
+      } else if (effect.kind === "cure") {
+        // The priest's half of the status system: lift named afflictions, and say which ones lifted
+        // so a wasted cure reads as a wasted turn rather than as silence.
+        for (const targetId of allyIds) {
+          let lifted: CombatStatus[] = [];
+          let curedName = "";
+          party = party.map((member) => {
+            if (member.id !== targetId) return member;
+            curedName = member.name;
+            lifted = (member.status ?? []).filter((status) => effect.statuses.includes(status));
+            return { ...member, status: (member.status ?? []).filter((status) => !effect.statuses.includes(status)) };
+          });
+          beat(
+            lifted.length > 0 ? `${actor.name} lifts ${lifted.join(", ")} from ${curedName}.` : `${actor.name} finds nothing to lift from ${curedName}.`,
+            { kind: "cure", actorId: actor.id, actorName: actor.name, targetCharacterId: targetId, targetName: curedName, spellId: technique.id, statusName: lifted[0] }
+          );
+        }
+      } else if (effect.kind === "damage") {
+        for (const targetId of groupIds) {
+          const group = enemyGroups.find((candidate) => candidate.id === targetId && candidate.count > 0);
+          if (!group) continue;
+          const spellSeed = `${state.turn}:${combat.round}:${actor.id}:${group.id}:spell`;
+          const raw = rollDamage(spellSeed, effect.min, effect.max, 0);
+          const weakness = elementMultiplier(group.weaknesses, effect.element);
+          const spellPower = technique.kind === "spell" ? getSpellPowerBonus(actor) : 0;
+          const damage = chipThroughResistance(Math.round((raw + spellPower) * weakness), spellSeed);
+          enemyGroups = damageGroup(enemyGroups, group.id, damage);
+          const updated = enemyGroups.find((candidate) => candidate.id === group.id);
+          // Martial 特技 land as strikes; arcane bolts scorch.
+          const verb = technique.kind === "skill" ? "strikes" : "scorches";
+          beat(
+            `${actor.name} ${verb} ${group.name} for ${damage}${weakness > 1 ? " (weak!)" : ""}. ${updated?.count ?? 0} remain.`,
+            { kind: technique.kind === "skill" ? "hit" : "cast", actorId: actor.id, actorName: actor.name, targetGroupId: group.id, targetEnemyId: group.enemyId, damage, remaining: updated?.count ?? 0, weak: weakness > 1, spellId: technique.id }
+          );
+        }
+      } else if (effect.kind === "status") {
+        for (const targetId of groupIds) {
+          const ailment = effect.status;
+          const targetGroup = enemyGroups.find((group) => group.id === targetId);
+          const resist = statusResistPct(targetGroup?.resistances, ailment);
+          const roll = rollPercent(`${state.turn}:${combat.round}:${actor.id}:${targetId}:ailment`);
+          if (roll >= getStatusSpellChance(actor, resist)) {
+            beat(`${findGroupName(enemyGroups, targetId)} resists ${technique.id}.`, { kind: "cast", actorId: actor.id, actorName: actor.name, targetGroupId: targetId, targetEnemyId: targetGroup?.enemyId, spellId: technique.id, statusName: ailment });
+          } else {
+            enemyGroups = enemyGroups.map((group) =>
+              group.id === targetId ? { ...group, status: uniqueStatuses([...(group.status ?? []), ailment]) } : group
+            );
+            beat(`${actor.name} casts ${technique.id} on ${findGroupName(enemyGroups, targetId)}.`, { kind: "cast", actorId: actor.id, actorName: actor.name, targetGroupId: targetId, targetEnemyId: targetGroup?.enemyId, spellId: technique.id, statusName: ailment });
+          }
+        }
+      } else {
+        // ward / buff / debuff — the LASTING half. Recorded on the fight, not on the character, and
+        // read back by getEffectiveCharacterStats and the enemy-side stat lookups (combatEffects.ts).
+        const subjects = effect.kind === "debuff" ? groupIds : allyIds.length > 0 ? allyIds : groupIds;
+        for (const subjectId of subjects) {
+          effects = applyLastingEffects(effects, subjectId, { ...technique, effects: [effect] });
+          const isGroup = groupIds.includes(subjectId);
+          const targetName = isGroup ? findGroupName(enemyGroups, subjectId) : party.find((member) => member.id === subjectId)?.name ?? "";
+          const targetGroup = isGroup ? enemyGroups.find((group) => group.id === subjectId) : undefined;
+          const verb =
+            effect.kind === "ward" ? "wards" : effect.kind === "buff" ? "steadies" : effect.kind === "cover" ? "shields" : "weakens";
+          beat(`${actor.name} ${verb} ${targetName}.`, {
+            kind: effect.kind,
+            actorId: actor.id,
+            actorName: actor.name,
+            spellId: technique.id,
+            ...(isGroup
+              ? { targetGroupId: subjectId, targetEnemyId: targetGroup?.enemyId }
+              : { targetCharacterId: subjectId, targetName })
+          });
+        }
+      }
+    }
   };
 
   // IMP-022: a regen affix restores HP to its standing wearer at the top of the round (capped at
@@ -1060,7 +1303,25 @@ function declareRound(state: GameState, world: ScenarioWorld, actions: CombatAct
       continue;
     }
 
-    if (action.action === "use_item" && action.itemId && action.targetCharacterId) {
+    if (action.action === "use_item" && action.itemId) {
+      // §9.4c: an item that names a TECHNIQUE performs it — a thrown flask, a ward charm, a scroll.
+      // It goes through the same applier a class's cast uses, so an item route can never drift from
+      // the class route, and it costs no MP, no class and no loadout slot: that is the whole point of
+      // "an item is a valid answer to a missing class" (§8). It is weaker or one-shot instead.
+      const held = inventory.find((candidate) => candidate.id === action.itemId && candidate.quantity > 0);
+      const itemTechnique = held?.useTechnique ? TECHNIQUES[held.useTechnique] : undefined;
+      if (held && itemTechnique) {
+        inventory = inventory
+          .map((candidate) => (candidate.id === held.id ? { ...candidate, quantity: candidate.quantity - 1 } : candidate))
+          .filter((candidate) => candidate.quantity > 0);
+        beat(`${actor.name} uses ${held.name}.`, { kind: "cast", actorId: actor.id, actorName: actor.name, spellId: itemTechnique.id });
+        applyTechnique(itemTechnique, actor, action);
+        continue;
+      }
+
+      if (!action.targetCharacterId) {
+        continue;
+      }
       const used = applyHealingItemToParty(party, inventory, action.itemId, action.targetCharacterId, world);
       party = used.party;
       inventory = used.inventory;
@@ -1070,64 +1331,24 @@ function declareRound(state: GameState, world: ScenarioWorld, actions: CombatAct
     }
 
     if (action.action === "cast" && action.spellId) {
-      const spell = SPELLS[action.spellId];
+      const technique = TECHNIQUES[action.spellId];
       // IMP-021C: an actor may cast only a technique on its combat loadout (which defaults to the
       // class's known spells until a player edits it).
-      if (!spell || !combatLoadout(actor).includes(spell.id)) {
+      if (!technique || !combatLoadout(actor).includes(technique.id)) {
         continue;
       }
-      if (actor.status?.includes("silence")) {
-        beat(`${actor.name} is silenced and cannot cast.`, { kind: "cast", actorId: actor.id, actorName: actor.name, spellId: spell.id });
+      if (technique.kind === "spell" && actor.status?.includes("silence")) {
+        beat(`${actor.name} is silenced and cannot cast.`, { kind: "cast", actorId: actor.id, actorName: actor.name, spellId: technique.id });
         continue;
       }
-      if (actor.mp < spell.mpCost) {
-        beat(`${actor.name} lacks the focus to cast ${spell.id}.`, { kind: "cast", actorId: actor.id, actorName: actor.name, spellId: spell.id });
+      const mpCost = technique.cost.mp ?? 0;
+      if (actor.mp < mpCost) {
+        beat(`${actor.name} lacks the focus to cast ${technique.id}.`, { kind: "cast", actorId: actor.id, actorName: actor.name, spellId: technique.id });
         continue;
       }
-      party = party.map((member) => (member.id === actor.id ? { ...member, mp: member.mp - spell.mpCost } : member));
+      party = party.map((member) => (member.id === actor.id ? { ...member, mp: member.mp - mpCost } : member));
 
-      if (spell.effect.kind === "heal" && action.targetCharacterId) {
-        const amount = spell.effect.amount + (spell.kind === "spell" ? getSpellPowerBonus(actor) : 0);
-        let healedName = "";
-        party = party.map((member) => {
-          if (member.id !== action.targetCharacterId) {
-            return member;
-          }
-          healedName = member.name;
-          return { ...member, hp: Math.min(effectiveMaxHp(member, world), member.hp + amount) };
-        });
-        beat(`${actor.name} heals ${healedName}.`, { kind: "heal", actorId: actor.id, actorName: actor.name, targetCharacterId: action.targetCharacterId, targetName: healedName, spellId: spell.id });
-      } else if (spell.effect.kind === "damage" && action.targetGroupId) {
-        const group = enemyGroups.find((candidate) => candidate.id === action.targetGroupId && candidate.count > 0);
-        if (group) {
-          const spellSeed = `${state.turn}:${combat.round}:${actor.id}:${group.id}:spell`;
-          const raw = rollDamage(spellSeed, spell.effect.min, spell.effect.max, 0);
-          const weakness = elementMultiplier(group.weaknesses, spell.effect.element);
-          const spellPower = spell.kind === "spell" ? getSpellPowerBonus(actor) : 0;
-          const damage = chipThroughResistance(Math.round((raw + spellPower) * weakness), spellSeed);
-          enemyGroups = damageGroup(enemyGroups, group.id, damage);
-          const updated = enemyGroups.find((candidate) => candidate.id === group.id);
-          // Martial 特技 land as strikes; arcane bolts scorch.
-          const verb = spell.kind === "skill" ? "strikes" : "scorches";
-          beat(
-            `${actor.name} ${verb} ${group.name} for ${damage}${weakness > 1 ? " (weak!)" : ""}. ${updated?.count ?? 0} remain.`,
-            { kind: spell.kind === "skill" ? "hit" : "cast", actorId: actor.id, actorName: actor.name, targetGroupId: group.id, targetEnemyId: group.enemyId, damage, remaining: updated?.count ?? 0, weak: weakness > 1, spellId: spell.id }
-          );
-        }
-      } else if (spell.effect.kind === "status" && action.targetGroupId) {
-        const ailment = spell.effect.status;
-        const targetGroup = enemyGroups.find((group) => group.id === action.targetGroupId);
-        const resist = statusResistPct(targetGroup?.resistances, ailment);
-        const roll = rollPercent(`${state.turn}:${combat.round}:${actor.id}:${targetGroup?.id}:ailment`);
-        if (roll >= getStatusSpellChance(actor, resist)) {
-          beat(`${findGroupName(enemyGroups, action.targetGroupId)} resists ${spell.id}.`, { kind: "cast", actorId: actor.id, actorName: actor.name, targetGroupId: action.targetGroupId, targetEnemyId: targetGroup?.enemyId, spellId: spell.id, statusName: ailment });
-        } else {
-          enemyGroups = enemyGroups.map((group) =>
-            group.id === action.targetGroupId ? { ...group, status: uniqueStatuses([...(group.status ?? []), ailment]) } : group
-          );
-          beat(`${actor.name} casts ${spell.id} on ${findGroupName(enemyGroups, action.targetGroupId)}.`, { kind: "cast", actorId: actor.id, actorName: actor.name, targetGroupId: action.targetGroupId, targetEnemyId: targetGroup?.enemyId, spellId: spell.id, statusName: ailment });
-        }
-      }
+      applyTechnique(technique, actor, action);
       continue;
     }
 
@@ -1140,9 +1361,12 @@ function declareRound(state: GameState, world: ScenarioWorld, actions: CombatAct
       continue;
     }
 
-    const actorStats = getEffectiveCharacterStats(actor, world);
+    const actorStats = getEffectiveCharacterStats(actor, world, effects);
     const feared = actor.status?.includes("fear");
-    const effectiveAccuracy = actorStats.accuracy - (feared ? FEAR_ACCURACY_PENALTY : 0);
+    // §9.4: the attacker's own accuracy is already buffed inside actorStats; what the TARGET contributes
+    // is evasion. A group's `accuracy` debuff belongs to the rolls that group itself makes, not to this one.
+    const effectiveAccuracy =
+      actorStats.accuracy - (feared ? FEAR_ACCURACY_PENALTY : 0) - statModifier(effects, group.id, "evasion");
     const hitRoll = rollPercent(`${state.turn}:${combat.round}:${actor.id}:${group.id}:hit`);
     if (hitRoll > effectiveAccuracy) {
       beat(`${actor.name} ${feared ? "flinches and misses" : "misses"} ${group.name}.`, { kind: "miss", actorId: actor.id, actorName: actor.name, targetGroupId: group.id, targetEnemyId: group.enemyId });
@@ -1150,7 +1374,9 @@ function declareRound(state: GameState, world: ScenarioWorld, actions: CombatAct
     }
 
     const attackSeed = `${state.turn}:${combat.round}:${actor.id}:${group.id}:damage`;
-    const rawDamage = rollDamage(attackSeed, actorStats.damageMin, actorStats.damageMax, group.armor);
+    // A sundered pack (armor debuff) takes more from every weapon in the party, not just the caster's.
+    const groupArmor = Math.max(0, group.armor + statModifier(effects, group.id, "armor"));
+    const rawDamage = rollDamage(attackSeed, actorStats.damageMin, actorStats.damageMax, groupArmor);
     // IMP-022: a species-bane affix multiplies damage against the matching enemy family.
     const speciesMult = characterSpeciesMultiplier(actor, world, world.enemies.find((candidate) => candidate.id === group.enemyId)?.tags);
     const weakened = chipThroughResistance(Math.round(rawDamage * elementMultiplier(group.weaknesses, actorStats.attackElement) * speciesMult), attackSeed);
@@ -1239,18 +1465,22 @@ function declareRound(state: GameState, world: ScenarioWorld, actions: CombatAct
       continue;
     }
 
-    const ability = selectEnemyAbility(group.abilities, `${state.turn}:${combat.round}:${group.id}`);
+    // §9.4b: a SILENCED pack is cut down to its basic swing. Enemy abilities are the dangerous half of
+    // most fights, so this is what makes the Occultist's silence worth a turn — the mirror of silence
+    // stopping a party caster, and the reason silence on an enemy is no longer an inert flag.
+    const silenced = group.status?.includes("silence");
+    const ability = silenced ? null : selectEnemyAbility(group.abilities, `${state.turn}:${combat.round}:${group.id}`);
     // A basic swing stays front-first; an ability honours its own reach (back row / most wounded).
     const target = ability?.target
       ? chooseEnemyTargetFor(party, ability.target, `${state.turn}:${combat.round}:${group.id}:ability-target`)
-      : chooseEnemyTarget(party, `${state.turn}:${combat.round}:${group.id}:target`);
+      : chooseEnemyTarget(party, `${state.turn}:${combat.round}:${group.id}:target`, effects);
     if (!target) {
       continue;
     }
 
     if (ability) {
       if (ability.effect.kind === "damage") {
-        const targetStats = getEffectiveCharacterStats(target, world);
+        const targetStats = getEffectiveCharacterStats(target, world, effects);
         const guarded = target.status?.includes("ward");
         const armor = targetStats.armor + (guarded ? 2 : 0);
         const rawAbilityDamage = rollDamage(
@@ -1264,7 +1494,7 @@ function declareRound(state: GameState, world: ScenarioWorld, actions: CombatAct
         party = damagePartyMember(party, target.id, damage, injuredEvents);
         beat(`${group.name} looses ${ability.name} at ${target.name} for ${damage}.`, { kind: "enemyHit", actorEnemyId: group.enemyId, targetCharacterId: target.id, targetName: target.name, damage, abilityName: ability.name });
       } else {
-        const resist = statusResistPct(getEffectiveCharacterStats(target, world).resistance, ability.effect.status);
+        const resist = statusResistPct(getEffectiveCharacterStats(target, world, effects).resistance, ability.effect.status);
         const roll = rollPercent(`${state.turn}:${combat.round}:${group.id}:${target.id}:ability-resist`);
         if (roll >= resist) {
           const ailment = ability.effect.status;
@@ -1282,21 +1512,33 @@ function declareRound(state: GameState, world: ScenarioWorld, actions: CombatAct
     }
 
     const hitRoll = rollPercent(`${state.turn}:${combat.round}:${group.id}:${target.id}:hit`);
-    if (hitRoll > Math.max(5, group.accuracy - getEvasionChance(target, world))) {
+    // §9.4: this is where an occultist's accuracy debuff is spent — the blinded pack swings and misses.
+    // §9.4b: a FEARED pack flinches too, by the same penalty fear costs a party member, so the status
+    // finally means something on the enemy side rather than sitting unread in the group's status list.
+    const groupAccuracy =
+      group.accuracy + statModifier(effects, group.id, "accuracy") - (group.status?.includes("fear") ? FEAR_ACCURACY_PENALTY : 0);
+    if (hitRoll > Math.max(5, groupAccuracy - getEvasionChance(target, world) - statModifier(effects, target.id, "evasion"))) {
       beat(`${group.name} misses ${target.name}.`, { kind: "miss", actorEnemyId: group.enemyId, targetCharacterId: target.id, targetName: target.name });
       continue;
     }
 
-    const targetStats = getEffectiveCharacterStats(target, world);
+    const targetStats = getEffectiveCharacterStats(target, world, effects);
     const guarded = target.status?.includes("ward");
     const armor = targetStats.armor + (guarded ? 2 : 0);
-    const damage = rollDamage(`${state.turn}:${combat.round}:${group.id}:${target.id}:damage`, group.damageMin, group.damageMax, armor);
+    // A weakened pack hits softer; floored at 1 so a debuff cannot make a fight literally harmless.
+    const groupDamage = statModifier(effects, group.id, "damage");
+    const damage = rollDamage(
+      `${state.turn}:${combat.round}:${group.id}:${target.id}:damage`,
+      Math.max(1, group.damageMin + groupDamage),
+      Math.max(1, group.damageMax + groupDamage),
+      armor
+    );
     party = damagePartyMember(party, target.id, damage, injuredEvents);
     beat(`${group.name} wounds ${target.name} for ${damage}.`, { kind: "enemyHit", actorEnemyId: group.enemyId, targetCharacterId: target.id, targetName: target.name, damage });
 
     if (group.inflicts) {
       const ailment = group.inflicts;
-      const resist = statusResistPct(getEffectiveCharacterStats(target, world).resistance, ailment.status);
+      const resist = statusResistPct(getEffectiveCharacterStats(target, world, effects).resistance, ailment.status);
       const inflictRoll = rollPercent(`${state.turn}:${combat.round}:${group.id}:${target.id}:inflict`);
       const resistRoll = rollPercent(`${state.turn}:${combat.round}:${group.id}:${target.id}:resist`);
       if (inflictRoll < ailment.chance && resistRoll >= resist) {
@@ -1319,17 +1561,40 @@ function declareRound(state: GameState, world: ScenarioWorld, actions: CombatAct
     const hp = member.injury ? member.hp : Math.max(1, member.hp - tick.poisonDamage);
     return { ...member, hp, status: tick.statuses };
   });
-  const tickedGroups = livingGroups.map((group) => {
+  const groupPoison: { id: string; name: string; damage: number }[] = [];
+  let tickedGroups: CombatEnemyGroup[] = livingGroups.map((group) => {
     const tick = tickStatusList(group.status, `${state.turn}:${combat.round}:${group.id}`);
     tick.wornOff
       .filter((status) => status !== "ward")
       .forEach((status) => summaries.push(`${group.name} shakes off ${status}.`));
+    if (tick.poisonDamage > 0) {
+      groupPoison.push({ id: group.id, name: group.name, damage: tick.poisonDamage });
+    }
     return { ...group, status: tick.statuses };
   });
+  // §9.4b: poison bites a PACK too. Only `sleep` used to do anything to an enemy group — poison, fear
+  // and silence were inert on that side, so half the Occultist's promise in §5 ("sleep, fear, silence")
+  // could not be written as a technique that did anything. Poison is spent here, where the party's is.
+  for (const poisoned of groupPoison) {
+    summaries.push(`Poison gnaws ${poisoned.name} for ${poisoned.damage}.`);
+    tickedGroups = damageGroup(tickedGroups, poisoned.id, poisoned.damage);
+  }
+  // §9.4: fixed-round wards and buffs lose a round here, alongside the ailment tick, so both kinds of
+  // "it wears off" happen at the same moment. Effects on a wiped-out group are dropped so a later group
+  // reusing the id cannot inherit a debuff it never received.
+  const survivingIds = new Set([...party.map((member) => member.id), ...tickedGroups.map((group) => group.id)]);
+  const nextEffects = tickEffects(effects).filter((active) => survivingIds.has(active.subjectId));
   const nextCombat = syncCombatEnemy({
     ...combat,
     round: combat.round + 1,
     enemyGroups: tickedGroups,
+    // OMITTED when empty, deliberately. The state hash is the Godot parity oracle, and canonical JSON
+    // drops `undefined` but not `[]` — writing an empty array would have re-hashed every fight in the
+    // game and broken all 10 combat parity steps for a field that says nothing. A fight with no wards
+    // running must serialize exactly as it did before §9.4.
+    // Assigned unconditionally so a list that has just emptied CLEARS rather than being inherited from
+    // the spread above; canonical JSON drops `undefined`, so the field vanishes from the hash entirely.
+    effects: nextEffects.length > 0 ? nextEffects : undefined,
     pendingActions: []
   });
 
@@ -2365,10 +2630,17 @@ export function damageGroup(groups: CombatEnemyGroup[], groupId: string, damage:
 // seeded, so it is deterministic yet no longer hammers the same front-left body every time (the
 // "enemies only ever hit the front character" complaint). Falls back to any standing member if the
 // front row has fallen. Only ever targets a standing, un-injured member (null ⇒ the enemy skips).
-function chooseEnemyTarget(party: Character[], seed: string): Character | null {
+function chooseEnemyTarget(party: Character[], seed: string, effects: readonly ActiveEffect[] = []): Character | null {
   const standing = party.filter((member) => member.hp > 0 && !member.injury);
   if (standing.length === 0) {
     return null;
+  }
+  // §9.4b: a Knight holding cover takes the blow instead, whatever the swing would otherwise have found.
+  // Only BASIC attacks route here — enemy abilities keep their own row-aware picker, so a back-row-seeking
+  // ability still reaches the casters. Cover is formation stability, not immunity.
+  const coverer = coveringMemberId(effects, standing.map((member) => member.id));
+  if (coverer) {
+    return standing.find((member) => member.id === coverer) ?? null;
   }
   const front = standing.filter((member) => member.row === "front");
   const pool = front.length > 0 ? front : standing;

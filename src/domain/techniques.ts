@@ -18,8 +18,75 @@ import type { CombatStatus, Element } from "./types";
  * every consumer (the combat resolver, the command menu, the career counter) sees what it always saw.
  */
 
-/** The techniques the game currently ships. Widens as families are authored (§5). */
-export type TechniqueId = "heal" | "firebolt" | "sleep" | "power-strike";
+/**
+ * The techniques the game ships. §9.4a added the first member of each family the resolver could not
+ * previously carry out; §9.4b authored the rest of the growth lines §5 asks for.
+ *
+ * SIX PER CLASS, deliberately. §5 says "roughly six to ten", and `LOADOUT_LIMIT` is 6 — a class with
+ * seven would have its SEVENTH silently dropped from the default loadout, because that loadout is the
+ * first six learned, i.e. the lowest levels. A capstone the player never sees unless they hand-edit the
+ * loadout is worse than one that does not exist. If a class ever grows past six, the default-loadout
+ * rule has to be fixed first.
+ *
+ * Elements are `physical` or `fire` ONLY. An element is a WORLD's cosmology (`world.md` `elements:`),
+ * and these techniques are ENGINE code shared by every scenario; `fire` is the one element both the ash
+ * pit and the drowned wood declare. A technique naming `salt` would be uncastable in Verdant.
+ */
+export type TechniqueId =
+  // Recovery and cures
+  | "heal"
+  | "lesser-heal"
+  | "greater-heal"
+  | "sanctuary"
+  | "purge"
+  | "purification"
+  // Wards and party song
+  | "ward-hymn"
+  | "battle-hymn"
+  | "ember-chant"
+  | "clarion-hymn"
+  | "blessing"
+  // Arcane damage
+  | "firebolt"
+  | "force-lance"
+  | "flame-wave"
+  | "conflagration"
+  | "immolation"
+  | "enfeeble"
+  // Occult control
+  | "sleep"
+  | "dread"
+  | "silence-hex"
+  | "sunder"
+  | "wither"
+  | "life-siphon"
+  // Warrior
+  | "power-strike"
+  | "shield-splitter"
+  | "war-cry"
+  | "sweeping-blow"
+  | "second-wind"
+  | "executioner"
+  // Knight
+  | "bulwark-blow"
+  | "shield-wall"
+  | "cover"
+  | "challenge"
+  | "iron-oath"
+  | "unbroken"
+  // Swordmaster
+  | "precise-thrust"
+  | "flowing-stance"
+  | "riposte"
+  | "crescent-cut"
+  | "still-water"
+  | "finishing-cut"
+  // Thief
+  | "hamstring"
+  | "smoke-veil"
+  | "shadow-step"
+  | "blinding-dust"
+  | "backstab";
 
 /** 呪文 (arcane, scales with spell power, stopped by silence) vs 特技 (martial, spends 気力). */
 export type TechniqueKind = "spell" | "skill";
@@ -68,7 +135,14 @@ export type TechniqueEffect =
   /** Raises resistance rather than removing a condition: the chanter's prevention half. */
   | { kind: "ward"; statusResist?: Partial<Record<CombatStatus, number>>; elementResist?: Record<string, number>; duration?: TechniqueDuration }
   | { kind: "buff"; stat: TechniqueStat; amount: number; duration?: TechniqueDuration }
-  | { kind: "debuff"; stat: TechniqueStat; amount: number; duration?: TechniqueDuration };
+  | { kind: "debuff"; stat: TechniqueStat; amount: number; duration?: TechniqueDuration }
+  /**
+   * §9.4b — the Knight's signature, and the only reason a Knight is a distinct class rather than a
+   * warrior with more armour. While it runs, an enemy's BASIC attack lands on the coverer instead of
+   * whoever it would have picked. Enemy ABILITIES deliberately ignore it: a back-row-seeking ability is
+   * the counterplay, so cover is formation stability, not immunity.
+   */
+  | { kind: "cover"; duration?: TechniqueDuration };
 
 export interface Technique {
   id: TechniqueId;
@@ -130,6 +204,470 @@ export const TECHNIQUES: Record<TechniqueId, Technique> = {
     effects: [{ kind: "damage", min: 6, max: 12, element: "physical" }],
     duration: { kind: "instant" },
     tags: ["martial"]
+  },
+
+  // ——— §9.4: the first member of each family the resolver learned to carry out ———
+
+  // Priest. The cure half of the status system: poison and silence both had inflictors and no answer
+  // but an item, which is what made the priest's promise ("healing, cures, purification") half-true.
+  purge: {
+    id: "purge",
+    kind: "spell",
+    target: "ally",
+    cost: { mp: 4 },
+    effects: [{ kind: "cure", statuses: ["poison", "silence"] }],
+    duration: { kind: "instant" },
+    tags: ["recovery", "cure"]
+  },
+  // Chanter. PREVENTION rather than removal — the other half of the priest/chanter split in §4. Party
+  // scope and a whole-fight duration are exactly the two things the old resolver could not express, so
+  // this technique is also the honest proof that it now can.
+  "ward-hymn": {
+    id: "ward-hymn",
+    kind: "spell",
+    target: "party",
+    cost: { mp: 6 },
+    // §9.4e TUNING: 25/25 left the Chanter only narrowly ahead of a one-shot charm. The ward line is
+    // this class's whole reason to hold a back-row slot, so the specialist's own ward is the one that
+    // clearly works: 35 on the two conditions it owns, and nothing on poison (that is the Priest's).
+    effects: [{ kind: "ward", statusResist: { fear: 35, sleep: 35 } }],
+    duration: { kind: "combat" },
+    tags: ["ward"]
+  },
+  // Chanter. A party buff on a fixed timer: strong while it runs, and it must be re-sung. Rounds rather
+  // than `combat` so the chanter keeps spending turns on it instead of buying a permanent bonus once.
+  "battle-hymn": {
+    id: "battle-hymn",
+    kind: "spell",
+    target: "party",
+    cost: { mp: 5 },
+    effects: [{ kind: "buff", stat: "damage", amount: 2 }],
+    duration: { kind: "rounds", rounds: 3 },
+    tags: ["buff"]
+  },
+  // Occultist. Defence weakening — control that helps the WHOLE party's weapons rather than duplicating
+  // the mage's damage, which is the line §5 draws between the two.
+  sunder: {
+    id: "sunder",
+    kind: "spell",
+    target: "enemyGroup",
+    cost: { mp: 4 },
+    effects: [{ kind: "debuff", stat: "armor", amount: 3 }],
+    duration: { kind: "rounds", rounds: 3 },
+    tags: ["control", "debuff"]
+  },
+
+  // ——————————————— §9.4b: the rest of the growth lines (§5) ———————————————
+
+  // ——— Priest: recovery, cures, purification, later larger recovery (§5) ———
+  "greater-heal": {
+    id: "greater-heal",
+    kind: "spell",
+    target: "ally",
+    cost: { mp: 6 },
+    effects: [{ kind: "heal", amount: 18, scalesWithSpellPower: true }],
+    duration: { kind: "instant" },
+    tags: ["recovery"]
+  },
+  // The priest's "simple wards" (§4 secondary): prevention, but narrower and later than the chanter's,
+  // so it supports the chanter rather than replacing them.
+  blessing: {
+    id: "blessing",
+    kind: "spell",
+    target: "party",
+    cost: { mp: 6 },
+    // §9.4e TUNING: fear/sleep were 15 each, and the coverage sim measured this ward as WORSE THAN
+    // BRINGING NOTHING — it cost a turn to cast and prevented too little to pay for it (18 afflicted
+    // member-rounds against 13 for a party with no ward at all). A "simple ward" (§4) that loses to no
+    // ward is not a lesser answer, it is a trap. Raised to 20, still clearly under the Chanter's line.
+    effects: [{ kind: "ward", statusResist: { poison: 25, fear: 20, sleep: 20 } }],
+    duration: { kind: "combat" },
+    tags: ["ward"]
+  },
+  // Purification: the whole party, every ailment. Expensive and late — the answer to a fight that has
+  // gone wrong, not a routine cleanup.
+  purification: {
+    id: "purification",
+    kind: "spell",
+    target: "party",
+    cost: { mp: 8 },
+    effects: [{ kind: "cure", statuses: ["poison", "silence", "fear", "sleep"] }],
+    duration: { kind: "instant" },
+    tags: ["recovery", "cure"]
+  },
+  sanctuary: {
+    id: "sanctuary",
+    kind: "spell",
+    target: "party",
+    cost: { mp: 10 },
+    effects: [{ kind: "heal", amount: 12, scalesWithSpellPower: true }],
+    duration: { kind: "instant" },
+    tags: ["recovery"]
+  },
+
+  // ——— Chanter: wards, buffs, resistance, "a deliberately weaker emergency heal" (§5) ———
+  // THE POINT of this one: the chanter used to share the priest's `heal` outright, which flatly
+  // contradicts §5 and left "everything it does, a specialist does better" untrue for healing — it did
+  // it exactly as well. 5 against the priest's 8, so the chanter can save someone but never replace the
+  // priest.
+  "lesser-heal": {
+    id: "lesser-heal",
+    kind: "spell",
+    target: "ally",
+    cost: { mp: 3 },
+    effects: [{ kind: "heal", amount: 5, scalesWithSpellPower: true }],
+    duration: { kind: "instant" },
+    tags: ["recovery"]
+  },
+  // Elemental resistance as a MULTIPLIER, the same currency gear uses, so a warded party can commit to
+  // shrugging off the one element a floor leans on.
+  "ember-chant": {
+    id: "ember-chant",
+    kind: "spell",
+    target: "party",
+    cost: { mp: 6 },
+    effects: [{ kind: "ward", elementResist: { fire: 0.6 } }],
+    duration: { kind: "combat" },
+    tags: ["ward"]
+  },
+  "clarion-hymn": {
+    id: "clarion-hymn",
+    kind: "spell",
+    target: "party",
+    cost: { mp: 7 },
+    effects: [
+      { kind: "buff", stat: "accuracy", amount: 8 },
+      { kind: "buff", stat: "speed", amount: 2 }
+    ],
+    duration: { kind: "rounds", rounds: 3 },
+    tags: ["buff"]
+  },
+
+  // ——— Mage: single-target and group elemental attacks plus utility (§5) ———
+  // A physical bolt so the mage is not helpless against a fire-resistant floor — the "utility" half,
+  // and the second choice §5 wants available at creation.
+  "force-lance": {
+    id: "force-lance",
+    kind: "spell",
+    target: "enemyGroup",
+    cost: { mp: 3 },
+    effects: [{ kind: "damage", min: 5, max: 9, element: "physical", scalesWithSpellPower: true }],
+    duration: { kind: "instant" },
+    tags: ["elemental"]
+  },
+  // GROUP damage — every pack at once. This is the mage's real signature and the reason the class is
+  // worth a back-row slot: `allEnemies` was unreachable before §9.4a.
+  "flame-wave": {
+    id: "flame-wave",
+    kind: "spell",
+    target: "allEnemies",
+    cost: { mp: 8 },
+    effects: [{ kind: "damage", min: 4, max: 8, element: "fire", scalesWithSpellPower: true }],
+    duration: { kind: "instant" },
+    tags: ["elemental"]
+  },
+  enfeeble: {
+    id: "enfeeble",
+    kind: "spell",
+    target: "enemyGroup",
+    cost: { mp: 5 },
+    effects: [{ kind: "debuff", stat: "damage", amount: 3 }],
+    duration: { kind: "rounds", rounds: 3 },
+    tags: ["debuff"]
+  },
+  conflagration: {
+    id: "conflagration",
+    kind: "spell",
+    target: "enemyGroup",
+    cost: { mp: 9 },
+    effects: [{ kind: "damage", min: 12, max: 20, element: "fire", scalesWithSpellPower: true }],
+    duration: { kind: "instant" },
+    tags: ["elemental"]
+  },
+  immolation: {
+    id: "immolation",
+    kind: "spell",
+    target: "allEnemies",
+    cost: { mp: 12 },
+    effects: [{ kind: "damage", min: 9, max: 15, element: "fire", scalesWithSpellPower: true }],
+    duration: { kind: "instant" },
+    tags: ["elemental"]
+  },
+
+  // ——— Occultist: sleep, fear, silence, accuracy/defence weakening, a limited survival tool (§5) ———
+  // Fear and silence did NOTHING to an enemy group before §9.4b — only sleep was read. Both are wired
+  // now (fear costs the pack accuracy; silence cuts it down to its basic swing), which is what lets the
+  // Occultist be written as control rather than as a second mage.
+  dread: {
+    id: "dread",
+    kind: "spell",
+    target: "enemyGroup",
+    cost: { mp: 3 },
+    effects: [{ kind: "status", status: "fear" }],
+    duration: { kind: "combat" },
+    tags: ["control"]
+  },
+  "silence-hex": {
+    id: "silence-hex",
+    kind: "spell",
+    target: "enemyGroup",
+    cost: { mp: 5 },
+    effects: [{ kind: "status", status: "silence" }],
+    duration: { kind: "combat" },
+    tags: ["control"]
+  },
+  wither: {
+    id: "wither",
+    kind: "spell",
+    target: "enemyGroup",
+    cost: { mp: 6 },
+    effects: [{ kind: "debuff", stat: "damage", amount: 4 }],
+    duration: { kind: "rounds", rounds: 3 },
+    tags: ["control", "debuff"]
+  },
+  // The "limited survival tool" (§5) / "drains" (§4). An enemy-scope technique carrying a heal restores
+  // the CASTER — see the drain rule in the resolver. Modest numbers: it keeps an occultist standing, it
+  // does not make them a healer.
+  "life-siphon": {
+    id: "life-siphon",
+    kind: "spell",
+    target: "enemyGroup",
+    cost: { mp: 4 },
+    effects: [
+      { kind: "damage", min: 4, max: 7, element: "physical", scalesWithSpellPower: true },
+      { kind: "heal", amount: 4 }
+    ],
+    duration: { kind: "instant" },
+    tags: ["control", "recovery"]
+  },
+
+  // ——— Warrior: heavy pressure (§5). 特技 spend the small 気力 pool, so costs stay low. ———
+  "shield-splitter": {
+    id: "shield-splitter",
+    kind: "skill",
+    target: "enemyGroup",
+    cost: { mp: 4 },
+    effects: [
+      { kind: "damage", min: 4, max: 8, element: "physical" },
+      { kind: "debuff", stat: "armor", amount: 2, duration: { kind: "rounds", rounds: 2 } }
+    ],
+    duration: { kind: "instant" },
+    tags: ["martial", "debuff"]
+  },
+  "war-cry": {
+    id: "war-cry",
+    kind: "skill",
+    target: "self",
+    cost: { mp: 3 },
+    effects: [{ kind: "buff", stat: "damage", amount: 3 }],
+    duration: { kind: "rounds", rounds: 3 },
+    tags: ["martial", "buff"]
+  },
+  "sweeping-blow": {
+    id: "sweeping-blow",
+    kind: "skill",
+    target: "allEnemies",
+    cost: { mp: 5 },
+    effects: [{ kind: "damage", min: 3, max: 6, element: "physical" }],
+    duration: { kind: "instant" },
+    tags: ["martial"]
+  },
+  "second-wind": {
+    id: "second-wind",
+    kind: "skill",
+    target: "self",
+    cost: { mp: 4 },
+    // No spell-power scaling: a 特技 is not arcane, so this is a flat, reliable patch rather than a heal.
+    effects: [{ kind: "heal", amount: 10 }],
+    duration: { kind: "instant" },
+    tags: ["martial", "recovery"]
+  },
+  executioner: {
+    id: "executioner",
+    kind: "skill",
+    target: "enemyGroup",
+    cost: { mp: 6 },
+    effects: [{ kind: "damage", min: 12, max: 20, element: "physical" }],
+    duration: { kind: "instant" },
+    tags: ["martial"]
+  },
+
+  // ——— Knight: cover, defence, formation stability (§4) ———
+  "bulwark-blow": {
+    id: "bulwark-blow",
+    kind: "skill",
+    target: "enemyGroup",
+    cost: { mp: 3 },
+    effects: [{ kind: "damage", min: 4, max: 8, element: "physical" }],
+    duration: { kind: "instant" },
+    tags: ["martial"]
+  },
+  "shield-wall": {
+    id: "shield-wall",
+    kind: "skill",
+    target: "self",
+    cost: { mp: 3 },
+    effects: [{ kind: "buff", stat: "armor", amount: 4 }],
+    duration: { kind: "rounds", rounds: 3 },
+    tags: ["martial", "buff"]
+  },
+  // THE Knight. Without it the class is a warrior with more armour and no reason to exist (§3's finding
+  // in miniature). Three rounds, so holding the line is a rhythm the player keeps paying for.
+  cover: {
+    id: "cover",
+    kind: "skill",
+    target: "self",
+    cost: { mp: 4 },
+    effects: [{ kind: "cover" }],
+    duration: { kind: "rounds", rounds: 3 },
+    tags: ["martial", "cover"]
+  },
+  challenge: {
+    id: "challenge",
+    kind: "skill",
+    target: "enemyGroup",
+    cost: { mp: 4 },
+    effects: [{ kind: "debuff", stat: "accuracy", amount: 12 }],
+    duration: { kind: "rounds", rounds: 3 },
+    tags: ["martial", "debuff"]
+  },
+  "iron-oath": {
+    id: "iron-oath",
+    kind: "skill",
+    target: "party",
+    cost: { mp: 5 },
+    effects: [{ kind: "buff", stat: "armor", amount: 2 }],
+    duration: { kind: "rounds", rounds: 3 },
+    tags: ["martial", "buff"]
+  },
+  unbroken: {
+    id: "unbroken",
+    kind: "skill",
+    target: "self",
+    cost: { mp: 5 },
+    effects: [
+      { kind: "heal", amount: 12 },
+      { kind: "ward", statusResist: { fear: 30 } }
+    ],
+    duration: { kind: "combat" },
+    tags: ["martial", "recovery"]
+  },
+
+  // ——— Swordmaster: precision, stance, single-target finish; evasive self-protection (§4) ———
+  // A TIGHT damage band is what "precision" means in rules: less than power-strike at its luckiest,
+  // far more than it at its worst.
+  "precise-thrust": {
+    id: "precise-thrust",
+    kind: "skill",
+    target: "enemyGroup",
+    cost: { mp: 3 },
+    effects: [{ kind: "damage", min: 7, max: 10, element: "physical" }],
+    duration: { kind: "instant" },
+    tags: ["martial"]
+  },
+  "flowing-stance": {
+    id: "flowing-stance",
+    kind: "skill",
+    target: "self",
+    cost: { mp: 3 },
+    effects: [{ kind: "buff", stat: "evasion", amount: 12 }],
+    duration: { kind: "rounds", rounds: 3 },
+    tags: ["martial", "buff"]
+  },
+  riposte: {
+    id: "riposte",
+    kind: "skill",
+    target: "self",
+    cost: { mp: 4 },
+    effects: [
+      { kind: "buff", stat: "accuracy", amount: 10 },
+      { kind: "buff", stat: "damage", amount: 2 }
+    ],
+    duration: { kind: "rounds", rounds: 3 },
+    tags: ["martial", "buff"]
+  },
+  "crescent-cut": {
+    id: "crescent-cut",
+    kind: "skill",
+    target: "enemyGroup",
+    cost: { mp: 4 },
+    effects: [
+      { kind: "damage", min: 6, max: 11, element: "physical" },
+      { kind: "debuff", stat: "accuracy", amount: 8, duration: { kind: "rounds", rounds: 2 } }
+    ],
+    duration: { kind: "instant" },
+    tags: ["martial", "debuff"]
+  },
+  "still-water": {
+    id: "still-water",
+    kind: "skill",
+    target: "self",
+    cost: { mp: 4 },
+    effects: [{ kind: "ward", statusResist: { fear: 30, sleep: 30 } }],
+    duration: { kind: "combat" },
+    tags: ["martial", "ward"]
+  },
+  "finishing-cut": {
+    id: "finishing-cut",
+    kind: "skill",
+    target: "enemyGroup",
+    cost: { mp: 5 },
+    effects: [{ kind: "damage", min: 14, max: 22, element: "physical" }],
+    duration: { kind: "instant" },
+    tags: ["martial"]
+  },
+
+  // ——— Thief: skirmish damage supporting the exploration identity (§4/§5) ———
+  hamstring: {
+    id: "hamstring",
+    kind: "skill",
+    target: "enemyGroup",
+    cost: { mp: 3 },
+    effects: [
+      { kind: "damage", min: 4, max: 7, element: "physical" },
+      { kind: "debuff", stat: "speed", amount: 3, duration: { kind: "rounds", rounds: 3 } }
+    ],
+    duration: { kind: "instant" },
+    tags: ["martial", "debuff"]
+  },
+  "smoke-veil": {
+    id: "smoke-veil",
+    kind: "skill",
+    target: "party",
+    cost: { mp: 4 },
+    effects: [{ kind: "buff", stat: "evasion", amount: 8 }],
+    duration: { kind: "rounds", rounds: 3 },
+    tags: ["martial", "buff"]
+  },
+  "shadow-step": {
+    id: "shadow-step",
+    kind: "skill",
+    target: "self",
+    cost: { mp: 4 },
+    effects: [
+      { kind: "buff", stat: "evasion", amount: 15 },
+      { kind: "buff", stat: "speed", amount: 3 }
+    ],
+    duration: { kind: "rounds", rounds: 3 },
+    tags: ["martial", "buff"]
+  },
+  "blinding-dust": {
+    id: "blinding-dust",
+    kind: "skill",
+    target: "enemyGroup",
+    cost: { mp: 4 },
+    effects: [{ kind: "debuff", stat: "accuracy", amount: 12 }],
+    duration: { kind: "rounds", rounds: 3 },
+    tags: ["martial", "debuff"]
+  },
+  backstab: {
+    id: "backstab",
+    kind: "skill",
+    target: "enemyGroup",
+    cost: { mp: 5 },
+    effects: [{ kind: "damage", min: 10, max: 18, element: "physical" }],
+    duration: { kind: "instant" },
+    tags: ["martial"]
   }
 };
 
@@ -173,7 +711,8 @@ export function validateTechnique(technique: Technique): string[] {
     // A lasting effect needs a lifetime: an "instant ward" is a mistake the author cannot see at the
     // call site. An effect may carry its own duration, so one technique can strike NOW and leave the
     // target weakened for two rounds.
-    const persists = effect.kind === "ward" || effect.kind === "buff" || effect.kind === "debuff" || effect.kind === "status";
+    const persists =
+      effect.kind === "ward" || effect.kind === "buff" || effect.kind === "debuff" || effect.kind === "status" || effect.kind === "cover";
     if (persists) {
       anyPersists = true;
       const lifetime = ("duration" in effect && effect.duration) || technique.duration;

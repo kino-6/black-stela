@@ -15,17 +15,22 @@ describe("reclass (転職)", () => {
     expect(asVanguard.name).toBe("Cael");
     expect(asVanguard.maxMp).toBeGreaterThan(0); // vanguard now carries a 特技 気力 pool
 
-    // 盾騎士 carries no technique at all, so no pool. (盗賊 does carry one since the consolidation.)
+    // §9.4b: 盾騎士 carries a 特技 line now, so it too has a 気力 pool — but a MARTIAL one, which is
+    // smaller than the caster pool it just gave up. Retraining out of a caster is a real cost.
     const asKnight = reclassCharacter(mender, "knight", defaultWorld);
-    expect(asKnight.maxMp).toBe(0);
+    expect(asKnight.maxMp).toBeGreaterThan(0);
+    expect(asKnight.maxMp).toBeLessThan(mender.maxMp);
   });
 
-  it("grants a pool when retraining a plain martial into a caster", () => {
+  it("widens the pool when retraining a martial into a caster", () => {
+    // Before §9.4b the Knight had NO pool at all and this test read `toBe(0)`. Every selectable class
+    // now carries a line, so the zero branch of baseMaxMpForClass is no longer reachable from the
+    // roster — it survives only for a class that declares no techniques.
     const knight = createGuildCharacter({ name: "Rook", classId: "knight", seed: "r" });
-    expect(knight.maxMp).toBe(0);
+    expect(knight.maxMp).toBeGreaterThan(0);
 
     const asMender = reclassCharacter(knight, "priest", defaultWorld);
-    expect(asMender.maxMp).toBeGreaterThan(0);
+    expect(asMender.maxMp).toBeGreaterThan(knight.maxMp);
   });
 
   it("re-levels from carried XP under the new class", () => {

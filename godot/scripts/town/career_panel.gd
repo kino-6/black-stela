@@ -12,17 +12,14 @@ const I18n := preload("res://scripts/i18n.gd")
 const Fmt := preload("res://scripts/town_format.gd")
 const UI := preload("res://scripts/town/ui_kit.gd")
 const Vocations := preload("res://scripts/rules/vocations.gd")
+const Techniques := preload("res://scripts/rules/techniques.gd")
 
 const STAT_ORDER := ["maxHp", "maxMp", "attack", "damageMin", "damageMax", "accuracy", "armor", "speed"]
-const SPELL_LABEL_KEY := {
-	"heal": "play.spellHeal",
-	"firebolt": "play.spellFirebolt",
-	"sleep": "play.spellSleep",
-	"power-strike": "play.skillPowerStrike"
-}
 
-static func _technique_name(id: String) -> String:
-	return I18n.t(String(SPELL_LABEL_KEY[id])) if SPELL_LABEL_KEY.has(id) else id
+# The technique name comes from the one shared reader (rules/techniques.gd), not a fourth copy of the
+# label map — the drift §9.5 spent five deletions cleaning up.
+static func _technique_name(id: String, engine: Dictionary = {}) -> String:
+	return Techniques.label(id, engine)
 
 static func build(ctx: Dictionary) -> Control:
 	var state: Dictionary = ctx["state"]
@@ -92,7 +89,7 @@ static func build(ctx: Dictionary) -> Control:
 			var in_loadout := loadout.has(tid)
 			var full := loadout.size() >= loadout_limit
 			var line := UI.row()
-			line.add_child(UI.grow(UI.label(_technique_name(tid), 15, UI.INK if in_loadout else UI.DIM)))
+			line.add_child(UI.grow(UI.label(_technique_name(tid, ctx.get("engine", {})), 15, UI.INK if in_loadout else UI.DIM)))
 			var next_loadout := []
 			if in_loadout:
 				for t2 in loadout:
@@ -206,7 +203,7 @@ static func _vocation_card(ctx: Dictionary, world: Dictionary, engine: Dictionar
 		var grow_row := UI.row()
 		grow_row.add_child(UI.label(I18n.t("career.grants"), 14, UI.DIM))
 		for technique in grants:
-			grow_row.add_child(UI.label(_technique_name(String(technique)), 14, UI.INK))
+			grow_row.add_child(UI.label(_technique_name(String(technique), ctx.get("engine", {})), 14, UI.INK))
 		body.add_child(grow_row)
 
 	# 条件

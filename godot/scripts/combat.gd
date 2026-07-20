@@ -229,6 +229,7 @@ func _rebuild_command_menu() -> void:
 		"party": _state.get("party", []),
 		"groups": _combat().get("enemyGroups", []),
 		"inventory": _state.get("inventory", []),
+		"engine": _engine,
 		"choose": func(kind, payload): _on_menu_choice(kind, payload),
 		"back": func(): _menu_back(),
 		"target_group_id": _target_group_id(),
@@ -264,6 +265,13 @@ func _rebuild_command_menu() -> void:
 	else:
 		allout.call_deferred("grab_focus")
 
+## The technique an item performs, or "" for a plain consumable (§9.4c).
+func _item_technique_id(item_id: String) -> String:
+	for item in _state.get("inventory", []):
+		if String((item as Dictionary).get("id", "")) == item_id:
+			return String((item as Dictionary).get("useTechnique", ""))
+	return ""
+
 func _loadout_for(actor: Dictionary) -> Array:
 	var vocation: Variant = actor.get("vocation", null)
 	var learned: Array = (vocation as Dictionary).get("loadout", []) if typeof(vocation) == TYPE_DICTIONARY else []
@@ -273,9 +281,12 @@ func _loadout_for(actor: Dictionary) -> Array:
 			for entry in abilities:
 				if int(actor.get("level", 1)) >= int(entry.get("level", 0)):
 					learned.append(entry.get("spellId", ""))
+	# §9.5: filtered against the exported CATALOG, not a four-entry cost literal. That literal silently
+	# removed every technique §9.4 authored from the menu — a Knight had a full line and an empty 特技 list.
+	var catalog: Dictionary = _engine.get("techniques", {})
 	var out := []
 	for id in learned:
-		if CommandMenu.SPELL_COST.has(String(id)):
+		if catalog.has(String(id)):
 			out.append(String(id))
 	return out
 
@@ -298,10 +309,25 @@ func _on_menu_choice(kind: String, payload: Dictionary) -> void:
 		"technique":
 			var spell_id := String(payload["spellId"])
 			_pending = {"actorId": actor.get("id", ""), "action": "cast", "spellId": spell_id}
-			_stage = "target-ally" if spell_id == "heal" else "target-group"
+			# §9.5: derived from the technique's declared SCOPE, not from `id == "heal"`. That literal
+			# meant every ally-target technique except heal asked for an ENEMY and then healed nobody,
+			# and a self/party technique asked a question it never needed.
+			var targeting := CommandMenu.technique_targeting(spell_id, _engine)
+			if targeting == "none":
+				_commit(_pending)
+				return
+			_stage = "target-ally" if targeting == "ally" else "target-group"
 		"item":
-			_pending = {"actorId": actor.get("id", ""), "action": "use_item", "itemId": String(payload["itemId"])}
-			_stage = "target-ally"
+			var item_id := String(payload["itemId"])
+			_pending = {"actorId": actor.get("id", ""), "action": "use_item", "itemId": item_id}
+			# §9.4c: an item may perform a technique, so it follows that technique's scope — a thrown
+			# flask asks for an enemy, a charm asks for nobody. Plain consumables stay ally-targeted.
+			var item_technique := _item_technique_id(item_id)
+			var item_targeting := CommandMenu.technique_targeting(item_technique, _engine) if item_technique != "" else "ally"
+			if item_targeting == "none":
+				_commit(_pending)
+				return
+			_stage = "target-ally" if item_targeting == "ally" else "target-group"
 		"target-group":
 			_pending["targetGroupId"] = String(payload["targetGroupId"])
 			_commit(_pending)

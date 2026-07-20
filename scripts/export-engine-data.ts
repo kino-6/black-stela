@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 import { EQUIPMENT_AFFIXES } from "../src/domain/affixes";
 import { classCatalog } from "../src/domain/characterCreation";
 import { CLASS_ABILITIES, isCasterClass, isMartialSkillClass } from "../src/domain/spells";
+import { SPELL_LABEL } from "../src/domain/combatBeatText";
 import { CLASS_CAPABILITIES } from "../src/domain/classCapabilities";
 import { LEGACY_CLASS_MAPPING } from "../src/domain/classIds";
 import { TECHNIQUES } from "../src/domain/techniques";
@@ -41,6 +42,9 @@ const classes = classCatalog.map((def) => ({
 // ALONGSIDE the legacy classAbilities/mpModeByClass rather than instead of them: the Godot port and the
 // parity traces read those today, and this slice is the TypeScript rules and data only (§8.5 ports the
 // rules that consume the contract). Additive here means the parity gate stays green while the shape lands.
-const data = { schemaVersion: 1, legacyClassMapping: canonicalize(LEGACY_CLASS_MAPPING), classCapabilities: canonicalize(CLASS_CAPABILITIES), techniques: canonicalize(TECHNIQUES), equipmentAffixes: canonicalize(EQUIPMENT_AFFIXES), classAbilities: canonicalize(CLASS_ABILITIES), loadoutLimit: LOADOUT_LIMIT, masteryPointsPerRank: MASTERY_POINTS_PER_RANK, masteredRank: MASTERED_RANK, classes, mpModeByClass };
+const data = { schemaVersion: 1, legacyClassMapping: canonicalize(LEGACY_CLASS_MAPPING), classCapabilities: canonicalize(CLASS_CAPABILITIES), techniques: canonicalize(TECHNIQUES), equipmentAffixes: canonicalize(EQUIPMENT_AFFIXES), classAbilities: canonicalize(CLASS_ABILITIES), loadoutLimit: LOADOUT_LIMIT, masteryPointsPerRank: MASTERY_POINTS_PER_RANK, masteredRank: MASTERED_RANK, classes, mpModeByClass,
+  // §9.5: the id -> translation-key map, exported rather than copied into GDScript. The Godot command
+  // menu kept its own four-entry literal, so every technique authored after it showed a raw id.
+  techniqueLabelKeys: canonicalize(SPELL_LABEL) };
 writeFileSync(join(outDir, "engine-data.json"), `${JSON.stringify(data, null, 2)}\n`);
 console.log("exported engine data → godot/data/engine-data.json");

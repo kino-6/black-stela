@@ -92,6 +92,23 @@ function advanceToB1fMarker(state: GameState) {
   return walkTo(state, "room.b1f.warden", undefined, true);
 }
 
+/**
+ * §9.4d — searching for a hidden passage is a proficiency ATTEMPT now, not an automatic reveal, so a
+ * single press is no longer guaranteed to find it. Search until it turns up, and fail loudly if it
+ * never does: the retryable rule exists precisely so a party can never be locked out of authored
+ * content, and a wall that stayed shut after many turns would mean that guarantee had broken.
+ */
+function searchUntilFound(start: GameState, key: string, roomId: string, facing: Direction): GameState {
+  let state = start;
+  for (let attempt = 0; attempt < 60; attempt += 1) {
+    state = executeCommand({ ...state, position: { roomId, facing } }, defaultWorld, { type: "search" });
+    if (state.discoveredSecrets.includes(key)) {
+      return state;
+    }
+  }
+  throw new Error(`searched 60 turns without finding ${key} — the secret is unreachable`);
+}
+
 describe("rules engine", () => {
   it("requires a party before entering the dungeon", () => {
     const state = executeCommand(createInitialGameState(), defaultWorld, { type: "enter_dungeon" });
@@ -462,7 +479,7 @@ describe("runtime gates and shortcuts", () => {
     expect(blocked.position?.roomId).toBe("room.b7f.c11_6");
     expect(blocked.log.at(-1)?.tags).toContain("blocked");
 
-    const searched = executeCommand(facingSecret, defaultWorld, { type: "search" });
+    const searched = searchUntilFound(facingSecret, "secret:room.b7f.c11_6:south", "room.b7f.c11_6", "south");
     expect(searched.discoveredSecrets).toContain("secret:room.b7f.c11_6:south");
     expect(searched.log.some((entry) => entry.tags.includes("secret"))).toBe(true);
 
@@ -506,7 +523,7 @@ describe("runtime gates and shortcuts", () => {
     const blocked = executeCommand(facing, defaultWorld, { type: "move_forward" });
     expect(blocked.position?.roomId).toBe("room.b1f.c6_17");
 
-    const searched = executeCommand(facing, defaultWorld, { type: "search" });
+    const searched = searchUntilFound(facing, "secret:room.b1f.c6_17:east", "room.b1f.c6_17", "east");
     expect(searched.discoveredSecrets).toContain("secret:room.b1f.c6_17:east");
 
     const revealed = executeCommand(

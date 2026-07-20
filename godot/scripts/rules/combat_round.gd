@@ -9,6 +9,7 @@ const CombatRng := preload("res://scripts/rules/combat_rng.gd")
 const CombatHelpers := preload("res://scripts/rules/combat_helpers.gd")
 const CharacterStats := preload("res://scripts/rules/character_stats.gd")
 const Leveling := preload("res://scripts/rules/leveling.gd")
+const CombatEffects := preload("res://scripts/rules/combat_effects.gd")
 
 const CRIT_MULTIPLIER := 1.5
 const FEAR_ACCURACY_PENALTY := 20   # matches src/domain/status.ts (was 15 — a latent parity bug)
@@ -28,6 +29,9 @@ static func declare_round(state: Dictionary, world: Dictionary, actions: Array, 
 	var enemy_groups: Array = (combat.get("enemyGroups", []) as Array).duplicate(true)
 	var party: Array = (state.get("party", []) as Array).duplicate(true)
 	var inventory: Array = (state.get("inventory", []) as Array).duplicate(true)
+	# §9.5: wards/buffs/debuffs still running. Rebound as techniques land, ticked at round end, and
+	# stored back on the fight — OMITTED when empty so an untouched fight hashes exactly as before.
+	var effects: Array = (combat.get("effects", []) as Array).duplicate(true)
 
 	# Regen affix (round-start heal) is skipped — the slice hero has none. TODO for regen builds.
 
@@ -52,45 +56,53 @@ static func declare_round(state: Dictionary, world: Dictionary, actions: Array, 
 			party = _with_member_status(party, String(actor["id"]), "ward")
 			continue
 
-		# USE ITEM: a consumable spent on an ally (heal / restore MP / cure statuses).
-		if kind == "use_item" and typeof(action.get("itemId", null)) == TYPE_STRING and typeof(action.get("targetCharacterId", null)) == TYPE_STRING:
-			var used := _apply_healing_item(party, inventory, String(action["itemId"]), String(action["targetCharacterId"]), world)
+		# USE ITEM: a consumable spent on an ally, OR — §9.4c — an item that performs a TECHNIQUE.
+		if kind == "use_item" and typeof(action.get("itemId", null)) == TYPE_STRING:
+			var item_id := String(action["itemId"])
+			# An item that names a technique goes through the same applier a class's cast uses, so the
+			# item route can never drift from the class route. It costs no MP, class or loadout slot.
+			var held: Variant = _find_by_item_id(inventory, item_id)
+			var item_technique: Variant = null
+			if typeof(held) == TYPE_DICTIONARY and typeof(held.get("useTechnique", null)) == TYPE_STRING:
+				item_technique = (engine.get("techniques", {}) as Dictionary).get(String(held["useTechnique"]), null)
+			if typeof(item_technique) == TYPE_DICTIONARY:
+				inventory = _consume_item(inventory, item_id)
+				var item_result := _apply_technique(item_technique, actor, action, party, enemy_groups, effects, world, turn, rnd)
+				party = item_result["party"]
+				enemy_groups = item_result["enemyGroups"]
+				effects = item_result["effects"]
+				continue
+			if typeof(action.get("targetCharacterId", null)) != TYPE_STRING:
+				continue
+			var used := _apply_healing_item(party, inventory, item_id, String(action["targetCharacterId"]), world)
 			party = used["party"]
 			inventory = used["inventory"]
 			continue
 
 		# CAST: a technique from the actor's bounded combat LOADOUT only.
+		#
+		# §9.5: this reads the TECHNIQUE CATALOG, not the narrow legacy `SPELLS` view it used to. That
+		# view carried one `effect` and an ally/enemyGroup target, so cure, ward, buff, debuff, cover,
+		# multi-effect techniques and party scope were all unrepresentable here — Godot would have
+		# silently mis-resolved every family §9.4 added. Parity did not catch it because no trace cast
+		# one; that is why §9.5 also adds traces that do.
 		if kind == "cast" and typeof(action.get("spellId", null)) == TYPE_STRING:
 			var spell_id := String(action["spellId"])
-			var spell: Variant = SPELLS.get(spell_id, null)
-			if typeof(spell) != TYPE_DICTIONARY or not _combat_loadout(actor, engine).has(spell_id):
+			var technique: Variant = (engine.get("techniques", {}) as Dictionary).get(spell_id, null)
+			if typeof(technique) != TYPE_DICTIONARY or not _combat_loadout(actor, engine).has(spell_id):
 				continue
-			if _has_status(actor, "silence"):
+			# §9.4a parity: silence stops 呪文 ONLY. A 特技 is martial, not arcane, so a silenced
+			# front-liner can still strike.
+			if String(technique.get("kind", "")) == "spell" and _has_status(actor, "silence"):
 				continue
-			if int(actor.get("mp", 0)) < int(spell["mpCost"]):
+			var mp_cost := int((technique.get("cost", {}) as Dictionary).get("mp", 0))
+			if int(actor.get("mp", 0)) < mp_cost:
 				continue
-			party = _spend_mp(party, String(actor["id"]), int(spell["mpCost"]))
-			var effect: Dictionary = spell["effect"]
-			var spell_power: int = CombatHelpers.get_spell_power_bonus(actor) if String(spell.get("kind", "")) == "spell" else 0
-
-			if String(effect["kind"]) == "heal" and typeof(action.get("targetCharacterId", null)) == TYPE_STRING:
-				var amount := int(effect["amount"]) + spell_power
-				party = _heal_member(party, String(action["targetCharacterId"]), amount, world)
-			elif String(effect["kind"]) == "damage" and typeof(action.get("targetGroupId", null)) == TYPE_STRING:
-				var target: Variant = _find_group(enemy_groups, action["targetGroupId"])
-				if typeof(target) == TYPE_DICTIONARY:
-					var spell_seed := "%d:%d:%s:%s:spell" % [turn, rnd, actor["id"], target["id"]]
-					var raw_spell := CombatRng.roll_damage(spell_seed, int(effect["min"]), int(effect["max"]), 0)
-					var weak := CombatRng.element_multiplier(target.get("weaknesses", {}), effect.get("element", "physical"))
-					var spell_damage := CombatRng.chip_through_resistance(roundi((raw_spell + spell_power) * weak), spell_seed)
-					enemy_groups = CombatHelpers.damage_group(enemy_groups, target["id"], spell_damage)
-			elif String(effect["kind"]) == "status" and typeof(action.get("targetGroupId", null)) == TYPE_STRING:
-				var ailment := String(effect["status"])
-				var target2: Variant = _find_group(enemy_groups, action["targetGroupId"])
-				var resist := _status_resist_pct(target2.get("resistances", {}) if typeof(target2) == TYPE_DICTIONARY else {}, ailment)
-				var roll := CombatRng.roll_percent("%d:%d:%s:%s:ailment" % [turn, rnd, actor["id"], target2.get("id", "") if typeof(target2) == TYPE_DICTIONARY else ""])
-				if roll < CombatHelpers.get_status_spell_chance(actor, resist):
-					enemy_groups = _with_group_status(enemy_groups, String(action["targetGroupId"]), ailment)
+			party = _spend_mp(party, String(actor["id"]), mp_cost)
+			var result := _apply_technique(technique, actor, action, party, enemy_groups, effects, world, turn, rnd)
+			party = result["party"]
+			enemy_groups = result["enemyGroups"]
+			effects = result["effects"]
 			continue
 
 		if kind != "attack" or action.get("targetGroupId", null) == null:
@@ -99,14 +111,18 @@ static func declare_round(state: Dictionary, world: Dictionary, actions: Array, 
 		if typeof(group) != TYPE_DICTIONARY:
 			continue
 
-		var stats := CharacterStats.effective(actor, world)
-		var eff_acc := int(stats["accuracy"]) - (FEAR_ACCURACY_PENALTY if _has_status(actor, "fear") else 0)
+		var stats := CharacterStats.effective(actor, world, effects)
+		# The attacker's own accuracy is already buffed inside stats; what the TARGET contributes is
+		# evasion. A group's `accuracy` debuff belongs to the rolls that group itself makes.
+		var eff_acc := int(stats["accuracy"]) - (FEAR_ACCURACY_PENALTY if _has_status(actor, "fear") else 0) - CombatEffects.stat_modifier(effects, String(group["id"]), "evasion")
 		var hit_seed := "%d:%d:%s:%s:hit" % [turn, rnd, actor["id"], group["id"]]
 		if CombatRng.roll_percent(hit_seed) > eff_acc:
 			continue
 
 		var attack_seed := "%d:%d:%s:%s:damage" % [turn, rnd, actor["id"], group["id"]]
-		var raw := CombatRng.roll_damage(attack_seed, int(stats["damageMin"]), int(stats["damageMax"]), int(group.get("armor", 0)))
+		# A sundered pack takes more from EVERY weapon in the party, not just the caster's.
+		var group_armor := maxi(0, int(group.get("armor", 0)) + CombatEffects.stat_modifier(effects, String(group["id"]), "armor"))
+		var raw := CombatRng.roll_damage(attack_seed, int(stats["damageMin"]), int(stats["damageMax"]), group_armor)
 		var enemy_def: Variant = CharacterStats._find_by_id(world.get("enemies", []), group.get("enemyId", ""))
 		var tags: Variant = enemy_def.get("tags", []) if typeof(enemy_def) == TYPE_DICTIONARY else []
 		var species := CombatHelpers.character_species_multiplier(actor, world, tags)
@@ -131,19 +147,22 @@ static func declare_round(state: Dictionary, world: Dictionary, actions: Array, 
 		if _group_has_status(group, "sleep"):
 			continue
 		var group_id: String = group["id"]
-		var ability: Variant = _select_enemy_ability(group.get("abilities", []), "%d:%d:%s" % [turn, rnd, group_id])
+		# §9.4b: a SILENCED pack is cut down to its basic swing — enemy abilities are the dangerous half
+		# of most fights, which is what makes the Occultist's silence worth a turn.
+		var silenced := _group_has_status(group, "silence")
+		var ability: Variant = null if silenced else _select_enemy_ability(group.get("abilities", []), "%d:%d:%s" % [turn, rnd, group_id])
 		var target: Variant
 		if typeof(ability) == TYPE_DICTIONARY:
 			target = _choose_enemy_target_for(party, ability.get("target", "front"), "%d:%d:%s:ability-target" % [turn, rnd, group_id])
 		else:
-			target = _choose_enemy_target(party, "%d:%d:%s:target" % [turn, rnd, group_id])
+			target = _choose_enemy_target(party, "%d:%d:%s:target" % [turn, rnd, group_id], effects)
 		if typeof(target) != TYPE_DICTIONARY:
 			continue
 		var target_id: String = target["id"]
 
 		if typeof(ability) == TYPE_DICTIONARY:
 			var effect: Dictionary = ability.get("effect", {})
-			var tstats := CharacterStats.effective(target, world)
+			var tstats := CharacterStats.effective(target, world, effects)
 			if effect.get("kind", "") == "damage":
 				var guarded_a: bool = _has_status(target, "ward")
 				var armor_a: int = int(tstats.get("armor", 0)) + (2 if guarded_a else 0)
@@ -162,18 +181,23 @@ static func declare_round(state: Dictionary, world: Dictionary, actions: Array, 
 
 		# Basic swing.
 		var hit := CombatRng.roll_percent("%d:%d:%s:%s:hit" % [turn, rnd, group_id, target_id])
-		if hit > maxi(5, int(group.get("accuracy", 0)) - _get_evasion_chance(target, world)):
+		# §9.4b: a FEARED pack flinches, by the same penalty fear costs a party member; a blinded one
+		# (accuracy debuff) swings and misses; an evasive target is harder to reach.
+		var group_accuracy := int(group.get("accuracy", 0)) + CombatEffects.stat_modifier(effects, group_id, "accuracy") - (FEAR_ACCURACY_PENALTY if _group_has_status(group, "fear") else 0)
+		if hit > maxi(5, group_accuracy - _get_evasion_chance(target, world) - CombatEffects.stat_modifier(effects, target_id, "evasion")):
 			continue
-		var tstats2 := CharacterStats.effective(target, world)
+		var tstats2 := CharacterStats.effective(target, world, effects)
 		var guarded: bool = _has_status(target, "ward")
 		var armor: int = int(tstats2.get("armor", 0)) + (2 if guarded else 0)
-		var dmg := CombatRng.roll_damage("%d:%d:%s:%s:damage" % [turn, rnd, group_id, target_id], int(group.get("damageMin", 0)), int(group.get("damageMax", 0)), armor)
+		# A weakened pack hits softer; floored at 1 so a debuff cannot make a fight literally harmless.
+		var group_damage := CombatEffects.stat_modifier(effects, group_id, "damage")
+		var dmg := CombatRng.roll_damage("%d:%d:%s:%s:damage" % [turn, rnd, group_id, target_id], maxi(1, int(group.get("damageMin", 0)) + group_damage), maxi(1, int(group.get("damageMax", 0)) + group_damage), armor)
 		party = _damage_party_member(party, target_id, dmg, injured_events)
 
 		var inflicts: Variant = group.get("inflicts", null)
 		if typeof(inflicts) == TYPE_DICTIONARY:
 			var ail: String = inflicts.get("status", "")
-			var resist_i := _status_resist_pct(CharacterStats.effective(target, world).get("resistance", {}), ail)
+			var resist_i := _status_resist_pct(CharacterStats.effective(target, world, effects).get("resistance", {}), ail)
 			var inflict_roll := CombatRng.roll_percent("%d:%d:%s:%s:inflict" % [turn, rnd, group_id, target_id])
 			var resist_roll := CombatRng.roll_percent("%d:%d:%s:%s:resist" % [turn, rnd, group_id, target_id])
 			if inflict_roll < int(inflicts.get("chance", 0)) and resist_roll >= resist_i:
@@ -188,15 +212,38 @@ static func declare_round(state: Dictionary, world: Dictionary, actions: Array, 
 		m["status"] = tick["statuses"]
 		return m
 	)
+	var group_poison := []
 	var ticked_groups: Array = living.map(func(group):
 		var tick := _tick_status_list(group.get("status", []), "%d:%d:%s" % [turn, rnd, group.get("id", "")])
 		var g: Dictionary = (group as Dictionary).duplicate(true)
 		g["status"] = tick["statuses"]
+		if int(tick["poisonDamage"]) > 0:
+			group_poison.append({"id": String(g.get("id", "")), "damage": int(tick["poisonDamage"])})
 		return g
 	)
+	# §9.4b: poison bites a PACK too. Only `sleep` used to do anything to an enemy group — poison, fear
+	# and silence were inert on that side, so half the Occultist's promise could not be written.
+	for poisoned in group_poison:
+		ticked_groups = CombatHelpers.damage_group(ticked_groups, String(poisoned["id"]), int(poisoned["damage"]))
+
+	# §9.4: fixed-round wards and buffs lose a round here, alongside the ailment tick. Effects on a
+	# wiped-out group are dropped so a later group reusing the id cannot inherit a debuff.
+	var surviving := {}
+	for member in party:
+		surviving[String(member.get("id", ""))] = true
+	for group in ticked_groups:
+		surviving[String(group.get("id", ""))] = true
+	var next_effects: Array = CombatEffects.tick(effects).filter(func(active): return surviving.has(String(active.get("subjectId", ""))))
+
 	var next_combat: Dictionary = combat.duplicate(true)
 	next_combat["round"] = rnd + 1
 	next_combat["enemyGroups"] = ticked_groups
+	# OMITTED when empty, deliberately: canonical JSON drops absent keys but not `[]`, so writing an
+	# empty array would re-hash every fight in the game for a field that says nothing.
+	if next_effects.is_empty():
+		next_combat.erase("effects")
+	else:
+		next_combat["effects"] = next_effects
 	next_combat["pendingActions"] = []
 	next_combat = _sync_combat_enemy(next_combat)
 
@@ -240,6 +287,115 @@ static func debug_force_victory(state: Dictionary, world: Dictionary, engine: Di
 	if state.get("phase", "") != "combat" or typeof(state.get("combat", null)) != TYPE_DICTIONARY:
 		return {"state": state, "events": []}
 	return _victory(state, world, state["combat"], (state.get("party", []) as Array).duplicate(true), (state.get("inventory", []) as Array).duplicate(true), engine)
+
+
+## §9.5 — the GDScript mirror of `applyTechnique` in src/domain/rulesEngine.ts. One place resolves a
+## technique's effects, whether a class cast it or an item performed it.
+static func _apply_technique(technique: Dictionary, actor: Dictionary, action: Dictionary, party: Array, enemy_groups: Array, effects: Array, world: Dictionary, turn: int, rnd: int) -> Dictionary:
+	var scope := String(technique.get("target", ""))
+	var spell_power: int = CombatHelpers.get_spell_power_bonus(actor) if String(technique.get("kind", "")) == "spell" else 0
+
+	# WHO the technique reaches, derived from its declared scope rather than from which target field the
+	# UI happened to fill in. self / party / allEnemies need no player choice at all.
+	var ally_ids := []
+	if scope == "self":
+		ally_ids.append(String(actor.get("id", "")))
+	elif scope == "party":
+		for member in party:
+			if int(member.get("hp", 0)) > 0 and member.get("injury", null) == null:
+				ally_ids.append(String(member.get("id", "")))
+	elif scope == "ally" and typeof(action.get("targetCharacterId", null)) == TYPE_STRING:
+		ally_ids.append(String(action["targetCharacterId"]))
+
+	var group_ids := []
+	if scope == "allEnemies":
+		for group in enemy_groups:
+			if int(group.get("count", 0)) > 0:
+				group_ids.append(String(group.get("id", "")))
+	elif scope == "enemyGroup" and typeof(action.get("targetGroupId", null)) == TYPE_STRING:
+		group_ids.append(String(action["targetGroupId"]))
+
+	# A DRAIN — an enemy-scope technique carrying a heal — restores the CASTER. Without this the heal
+	# half would resolve against an empty ally set and silently do nothing.
+	var heal_ids: Array = ally_ids if not ally_ids.is_empty() else [String(actor.get("id", ""))]
+
+	for effect_v in technique.get("effects", []):
+		var effect: Dictionary = effect_v
+		var effect_kind := String(effect.get("kind", ""))
+
+		if effect_kind == "heal":
+			var amount := int(effect.get("amount", 0)) + spell_power
+			for target_id in heal_ids:
+				party = _heal_member(party, String(target_id), amount, world)
+
+		elif effect_kind == "cure":
+			var lifted: Array = effect.get("statuses", [])
+			for target_id in ally_ids:
+				var cured := []
+				for member_v in party:
+					var member: Dictionary = member_v
+					if String(member.get("id", "")) != String(target_id):
+						cured.append(member)
+						continue
+					var next_member: Dictionary = member.duplicate(true)
+					var kept := []
+					for status in member.get("status", []):
+						if not lifted.has(status):
+							kept.append(status)
+					next_member["status"] = kept
+					cured.append(next_member)
+				party = cured
+
+		elif effect_kind == "damage":
+			for target_id in group_ids:
+				var target: Variant = _find_group(enemy_groups, target_id)
+				if typeof(target) != TYPE_DICTIONARY or int(target.get("count", 0)) <= 0:
+					continue
+				var spell_seed := "%d:%d:%s:%s:spell" % [turn, rnd, actor["id"], target["id"]]
+				var raw := CombatRng.roll_damage(spell_seed, int(effect.get("min", 0)), int(effect.get("max", 0)), 0)
+				var weak := CombatRng.element_multiplier(target.get("weaknesses", {}), effect.get("element", "physical"))
+				var damage := CombatRng.chip_through_resistance(roundi((raw + spell_power) * weak), spell_seed)
+				enemy_groups = CombatHelpers.damage_group(enemy_groups, String(target["id"]), damage)
+
+		elif effect_kind == "status":
+			for target_id in group_ids:
+				var ailment := String(effect.get("status", ""))
+				var target2: Variant = _find_group(enemy_groups, target_id)
+				var resist := _status_resist_pct(target2.get("resistances", {}) if typeof(target2) == TYPE_DICTIONARY else {}, ailment)
+				var roll := CombatRng.roll_percent("%d:%d:%s:%s:ailment" % [turn, rnd, actor["id"], target_id])
+				if roll < CombatHelpers.get_status_spell_chance(actor, resist):
+					enemy_groups = _with_group_status(enemy_groups, String(target_id), ailment)
+
+		else:
+			# ward / buff / debuff / cover — the LASTING half, recorded on the fight rather than on the
+			# character (combat_effects.gd).
+			var subjects: Array = group_ids if effect_kind == "debuff" else (ally_ids if not ally_ids.is_empty() else group_ids)
+			var single: Dictionary = technique.duplicate(true)
+			single["effects"] = [effect]
+			for subject_id in subjects:
+				effects = CombatEffects.apply_lasting(effects, String(subject_id), single)
+
+	return {"party": party, "enemyGroups": enemy_groups, "effects": effects}
+
+static func _find_by_item_id(inventory: Array, item_id: String) -> Variant:
+	for item in inventory:
+		if typeof(item) == TYPE_DICTIONARY and String(item.get("id", "")) == item_id and int(item.get("quantity", 0)) > 0:
+			return item
+	return null
+
+static func _consume_item(inventory: Array, item_id: String) -> Array:
+	var next := []
+	for item_v in inventory:
+		var item: Dictionary = item_v
+		if String(item.get("id", "")) != item_id:
+			next.append(item)
+			continue
+		var left := int(item.get("quantity", 0)) - 1
+		if left > 0:
+			var kept: Dictionary = item.duplicate(true)
+			kept["quantity"] = left
+			next.append(kept)
+	return next
 
 # --- victory + rewards ------------------------------------------------------------------------------
 
@@ -416,10 +572,17 @@ static func _select_enemy_ability(abilities: Variant, seed: String) -> Variant:
 	return null
 
 # Basic melee: front-first, spread across the row by the seed. Only standing, un-injured members.
-static func _choose_enemy_target(party: Array, seed: String) -> Variant:
+static func _choose_enemy_target(party: Array, seed: String, effects: Array = []) -> Variant:
 	var standing := party.filter(func(m): return int(m.get("hp", 0)) > 0 and m.get("injury", null) == null)
 	if standing.is_empty():
 		return null
+	# §9.4b: a Knight holding cover takes the blow instead. Only BASIC attacks route here — enemy
+	# abilities keep their own row-aware picker, so cover is formation stability, not immunity.
+	var coverer := CombatEffects.covering_member_id(effects, standing.map(func(m): return String(m.get("id", ""))))
+	if coverer != "":
+		for member in standing:
+			if String(member.get("id", "")) == coverer:
+				return member
 	var front := standing.filter(func(m): return m.get("row", "front") == "front")
 	var pool: Array = front if not front.is_empty() else standing
 	return pool[CombatRng.hash_seed(seed) % pool.size()]
@@ -541,20 +704,21 @@ static func _sync_combat_enemy(combat: Dictionary) -> Dictionary:
 	return out
 
 # --- party action helpers (defend / item / cast) ---------------------------------------------------
-const SPELLS := {
-	"heal": {"id": "heal", "kind": "spell", "mpCost": 3, "target": "ally", "effect": {"kind": "heal", "amount": 8}},
-	"firebolt": {"id": "firebolt", "kind": "spell", "mpCost": 4, "target": "enemyGroup", "effect": {"kind": "damage", "min": 4, "max": 9, "element": "fire"}},
-	"sleep": {"id": "sleep", "kind": "spell", "mpCost": 3, "target": "enemyGroup", "effect": {"kind": "status", "status": "sleep"}},
-	"power-strike": {"id": "power-strike", "kind": "skill", "mpCost": 3, "target": "enemyGroup", "effect": {"kind": "damage", "min": 6, "max": 12, "element": "physical"}}
-}
+#
+# §9.5 DELETED a hardcoded `SPELLS` dictionary here — the four techniques the game shipped with, copied
+# into GDScript as a literal. `_combat_loadout` filtered against it, so every technique §9.4 authored was
+# silently dropped from every loadout: the Knight could not use `cover`, the Chanter could not sing, and
+# the cast simply did nothing. This is exactly the "class-specific hard-coded list" §9.5 exists to
+# remove; the exported catalog is the only source now, so the port cannot fall behind the rules again.
 
-# An actor may cast only a technique on its combat loadout (which defaults to the class's known spells
-# until a player edits it) — and only ones that are real spells.
+## An actor may cast only a technique on its combat loadout (which defaults to the class's known
+## techniques until a player edits one) — and only ones the exported catalog actually defines.
 static func _combat_loadout(actor: Dictionary, engine: Dictionary) -> Array:
 	var state := _resolve_vocation_state(actor, engine)
+	var catalog: Dictionary = engine.get("techniques", {})
 	var out := []
 	for technique in state.get("loadout", []):
-		if SPELLS.has(String(technique)):
+		if catalog.has(String(technique)):
 			out.append(String(technique))
 	return out
 

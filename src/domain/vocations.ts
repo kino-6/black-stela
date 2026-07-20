@@ -59,16 +59,35 @@ export function findVocation(world: ScenarioWorld, id: VocationId): ResolvedVoca
 // class so every rule can assume one. The class is the current (basic) vocation, its spells are the
 // learned techniques, and the loadout is the first LOADOUT_LIMIT of them.
 export function resolveVocationState(character: Character): CharacterVocationState {
+  const classLine = knownSpells(character.classId, character.level) as string[];
+
   if (character.vocation) {
-    return character.vocation;
+    // LEVELLING MUST STILL TEACH. The stored state is only ever written by a vocation CHANGE, so a
+    // character who had touched the career UI once had their `learned` set frozen at that moment and
+    // never learned anything again — a level 9 Knight would never receive `cover`. The bug was nearly
+    // invisible while a class knew one or two techniques; §9.4b's six-per-class lines make it glaring.
+    // The class's line at the CURRENT level is therefore folded in on every read. It is a union, never
+    // a replacement: §6 says learned techniques always persist, so training from other vocations stays.
+    const learned = Array.from(new Set([...character.vocation.learned, ...classLine]));
+    if (learned.length === character.vocation.learned.length) {
+      return character.vocation;
+    }
+    // A newly learned technique fills a free loadout slot rather than sitting unusable behind the
+    // career screen — but the player's own picks and their order are never disturbed.
+    const loadout = [...character.vocation.loadout];
+    for (const technique of learned) {
+      if (loadout.length >= LOADOUT_LIMIT) break;
+      if (!loadout.includes(technique)) loadout.push(technique);
+    }
+    return { ...character.vocation, learned, loadout };
   }
-  const learned = knownSpells(character.classId, character.level) as string[];
+
   return {
     current: character.classId,
     mastery: {},
     progress: {},
-    learned: [...learned],
-    loadout: learned.slice(0, LOADOUT_LIMIT)
+    learned: [...classLine],
+    loadout: classLine.slice(0, LOADOUT_LIMIT)
   };
 }
 

@@ -1,3 +1,11 @@
+// Type-only, and only from LEAF modules — combatEffects imports techniques, which imports this file
+// back. That cycle is erased at build time; the discipline this file keeps is that it never imports a
+// module which imports the ENGINE (see the exploration mirrors below for the same reasoning).
+import type { ActiveEffect } from "./combatEffects";
+import type { TechniqueId } from "./techniques";
+
+export type { ActiveEffect, TechniqueId };
+
 export type Direction = "north" | "east" | "south" | "west";
 
 // How the party entered a room, for narration. Forward is the default (omitted).
@@ -23,7 +31,7 @@ export type Command =
   | { type: "turn_right" }
   | { type: "inspect_wall" }
   | { type: "listen" }
-  | { type: "search" }
+  | { type: "search"; characterId?: string; itemId?: string }
   | { type: "open_door" }
   | { type: "disarm_trap"; characterId?: string; itemId?: string }
   // §8.2: an exploration attempt NAMES who makes it (and what they spend on it). Both fields are
@@ -293,7 +301,14 @@ export interface EquippedItem {
 export interface InventoryItem {
   id: string;
   name: string;
-  kind: "healing" | "utility" | "key" | "treasure" | "equipment" | "escape" | "cure" | "focus" | "growth";
+  /**
+   * §9.4c added `ward`, `throwable` and `scroll` — the item answers to a missing class (§8). All three
+   * work the same way: the item names a TECHNIQUE in `useTechnique`, and combat resolves it through the
+   * very same applier a class uses. The kind is what the SHOP and the UI sort by, not a second rulebook.
+   */
+  kind: "healing" | "utility" | "key" | "treasure" | "equipment" | "escape" | "cure" | "focus" | "growth" | "ward" | "throwable" | "scroll";
+  /** The technique this item performs when used. Spent by using it — no MP, no class, no loadout. */
+  useTechnique?: TechniqueId;
   /** Permanent growth this item grants on use (outside combat). Aptitudes and core stats raise the
    *  member; `xp` is a DIRECT grant that bypasses the out-levelling falloff by construction (it never
    *  touches the combat-reward path). This is the player's "工夫" the design keeps rewarding. */
@@ -339,7 +354,9 @@ export interface EnemyRecordEntry {
 // animation and floating number.
 export interface CombatBeat {
   text: string; // English fallback (tests, log history); UI localizes from the fields below
-  kind: "hit" | "miss" | "cast" | "heal" | "defend" | "enemyHit" | "status" | "poison" | "asleep";
+  // §9.4 added the four lasting/restorative families the resolver could not previously carry out, so a
+  // ward or a cure reads as its own beat rather than being flattened into a generic "cast".
+  kind: "hit" | "miss" | "cast" | "heal" | "defend" | "enemyHit" | "status" | "poison" | "asleep" | "cure" | "ward" | "buff" | "debuff" | "cover";
   actorId?: string;
   actorName?: string; // party actor display name
   actorEnemyId?: string; // enemy-group actor → localize via world enemy locale
@@ -351,7 +368,7 @@ export interface CombatBeat {
   remaining?: number; // enemies left in the target group after this blow
   crit?: boolean;
   weak?: boolean;
-  spellId?: "heal" | "firebolt" | "sleep" | "power-strike"; // localize ability name
+  spellId?: TechniqueId; // localize ability name — widens with the catalog, no longer hand-listed here
   abilityName?: string; // enemy ability raw name (fallback)
   statusName?: string; // status/ailment name
   groups: { id: string; count: number; hpEach: number }[];
@@ -392,7 +409,25 @@ export type GameEvent =
   | { type: "map_exit_blocked"; floorId: string | null; roomId: string; direction: Direction }
   | { type: "map_secret_candidate_added"; floorId: string | null; roomId: string; direction: Direction }
   | { type: "room_entered"; roomId: string; roomName: string; motion?: RoomEntryMotion }
-  | { type: "trap_triggered"; trapId: string; trapName: string; damage: number }
+  // §9.4d — a room trap is an ATTEMPT now, so both outcomes carry the attempt record: who was watching,
+  // at what proficiency, against which band. `trap_avoided` with `known: true` is the party walking
+  // around a trap they had already found, which is what makes searching a room worth the turn.
+  | ({ type: "trap_triggered"; trapId: string; trapName: string; damage: number } & {
+      actorId?: string;
+      action?: ExplorationActionName;
+      selection?: "declared" | "automatic";
+      proficiency?: ProficiencyName;
+      difficultyBand?: DifficultyBandName;
+      itemConsumed?: string;
+    })
+  | ({ type: "trap_avoided"; trapId: string; trapName: string; known: boolean } & {
+      actorId?: string;
+      action?: ExplorationActionName;
+      selection?: "declared" | "automatic";
+      proficiency?: ProficiencyName;
+      difficultyBand?: DifficultyBandName;
+      itemConsumed?: string;
+    })
   | { type: "chest_appeared"; cellId: string; roomId: string }
   // The attempt record rides on the event: WHO took the risk, at what proficiency, against which band,
   // and what it cost. `handlerName` is kept so existing log projections and the ported Godot rules keep
@@ -426,7 +461,14 @@ export type GameEvent =
   | { type: "enemy_encountered"; enemyId: string; enemyName: string; roomId: string }
   | { type: "inspection_made"; mode: "inspect_wall" | "listen" | "open_door" }
   | { type: "search_completed"; result: "none" }
-  | { type: "trap_detected"; trapId: string; trapName: string }
+  | ({ type: "trap_detected"; trapId: string; trapName: string } & {
+      actorId?: string;
+      action?: ExplorationActionName;
+      selection?: "declared" | "automatic";
+      proficiency?: ProficiencyName;
+      difficultyBand?: DifficultyBandName;
+      itemConsumed?: string;
+    })
   | { type: "trap_disarm_failed"; reason: "none_active" }
   | { type: "trap_disarmed"; trapId: string; trapName: string }
   | { type: "enemy_damaged"; enemyId: string; enemyName: string; remainingHp: number }
@@ -524,6 +566,11 @@ export interface CombatState {
   selectedActorId?: string;
   selectedTargetId?: string;
   surprise?: "party" | "enemy";
+  /**
+   * Wards, buffs and debuffs still running, on adventurers and enemy groups alike (combatEffects.ts).
+   * Per-fight by design: it lives here rather than on Character so a ward cannot ride home in a save.
+   */
+  effects?: ActiveEffect[];
 }
 
 export type CombatStatus = "poison" | "fear" | "silence" | "sleep" | "ward";
@@ -611,7 +658,7 @@ export interface CombatActionDeclaration {
   targetGroupId?: string;
   targetCharacterId?: string;
   itemId?: string;
-  spellId?: "heal" | "firebolt" | "sleep" | "power-strike";
+  spellId?: TechniqueId; // widens with the catalog rather than being hand-listed here
 }
 
 export interface DungeonPosition {
@@ -899,8 +946,10 @@ export type EnemyRole = "attrition" | "blocker" | "status" | "ambusher" | "caste
 export interface ScenarioItem {
   id: string;
   name: string;
-  kind: "healing" | "utility" | "key" | "treasure" | "escape" | "cure" | "focus" | "growth";
+  kind: "healing" | "utility" | "key" | "treasure" | "escape" | "cure" | "focus" | "growth" | "ward" | "throwable" | "scroll";
   grants?: ItemGrants;
+  /** §9.4c — the technique this item performs, resolved by the same applier a class's cast uses. */
+  useTechnique?: TechniqueId;
   tier: number;
   price?: number;
   sellValue?: number;
@@ -909,8 +958,9 @@ export interface ScenarioItem {
   curesStatuses?: CombatStatus[];
   /**
    * §8.2 / §4 — a tool that buys a better exploration attempt (lock picks, trap shims, a detection
-   * charm). Spent by the attempt, win or lose. No world authors one yet; the RULE exists so that "an
-   * item is a valid answer to a missing class" is a route rather than a promise, and §8.4 authors them.
+   * charm). Spent by the attempt, win or lose. §9.4c authored the first ones; before that the rule
+   * existed with nothing using it, which made "an item is a valid answer to a missing class" a promise
+   * rather than a route.
    */
   explorationAid?: { actions: ExplorationActionName[]; bonus: number };
   locales?: LocalizedNameDescription;

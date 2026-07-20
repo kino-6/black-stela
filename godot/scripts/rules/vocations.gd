@@ -45,12 +45,37 @@ static func find_vocation(world: Dictionary, engine: Dictionary, id: String) -> 
 
 # Materialise a default vocation state from the class when the character has none.
 static func resolve_vocation_state(character: Dictionary, engine: Dictionary) -> Dictionary:
-	if typeof(character.get("vocation", null)) == TYPE_DICTIONARY:
-		return character["vocation"]
 	var class_id: String = character.get("classId", "")
-	var learned := _known_spells(class_id, int(character.get("level", 1)), engine)
+	var class_line := _known_spells(class_id, int(character.get("level", 1)), engine)
 	var limit := _loadout_limit(engine)
-	return {"current": class_id, "mastery": {}, "progress": {}, "learned": learned.duplicate(), "loadout": learned.slice(0, limit)}
+
+	if typeof(character.get("vocation", null)) == TYPE_DICTIONARY:
+		# §9.4b, mirroring src/domain/vocations.ts: LEVELLING MUST STILL TEACH. Stored vocation state is
+		# only ever written by a vocation CHANGE, so a character who had touched the career screen once
+		# had `learned` frozen at that moment and never learned anything again — a level 9 Knight would
+		# never receive `cover`. Fold the class's line at the CURRENT level in on every read. It is a
+		# union, never a replacement: training from other vocations must persist (§6).
+		var stored: Dictionary = character["vocation"]
+		var learned: Array = (stored.get("learned", []) as Array).duplicate()
+		for technique in class_line:
+			if not learned.has(technique):
+				learned.append(technique)
+		if learned.size() == (stored.get("learned", []) as Array).size():
+			return stored
+		# A newly learned technique fills a free loadout slot rather than sitting unusable behind the
+		# career screen — the player's own picks and their order are never disturbed.
+		var loadout: Array = (stored.get("loadout", []) as Array).duplicate()
+		for technique in learned:
+			if loadout.size() >= limit:
+				break
+			if not loadout.has(technique):
+				loadout.append(technique)
+		var refreshed := stored.duplicate()
+		refreshed["learned"] = learned
+		refreshed["loadout"] = loadout
+		return refreshed
+
+	return {"current": class_id, "mastery": {}, "progress": {}, "learned": class_line.duplicate(), "loadout": class_line.slice(0, limit)}
 
 static func mastery_rank(state: Dictionary, vocation_id: String) -> int:
 	return int((state.get("mastery", {}) as Dictionary).get(vocation_id, 0))
