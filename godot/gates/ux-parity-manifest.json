@@ -51,7 +51,6 @@
         "town.nextShop",
         "town.noLoot",
         "town.noParty",
-        "town.noShop",
         "town.noSupplies",
         "town.noWounds",
         "town.party",
@@ -69,7 +68,106 @@
         "town.workshop",
         "town.wounds"
       ],
-      "notes": "IMP-025 two-level hub: a STATUS LEDGER (expedition result, wounds, loot, next preparation) over a few DESTINATIONS, not ten equal systems. Cursor starts on 迷宮に入る; gold means focus only."
+      "notes": "The two-level hub: the square carries the status ledger (first departure vs what came back), the earned checkpoints, and the destinations; each destination holds its services one step in, with Cancel resolving exactly one level. Driven at the square, in all three destinations, with an empty roster, after a wounded return, and with a rest point already reached.",
+      "states": [
+        {
+          "uiState": {
+            "location": ""
+          }
+        },
+        {
+          "uiState": {
+            "location": "hall"
+          }
+        },
+        {
+          "uiState": {
+            "location": "market"
+          }
+        },
+        {
+          "uiState": {
+            "location": "archive"
+          }
+        },
+        {
+          "fixture": {
+            "party": [],
+            "expeditions": 0
+          },
+          "uiState": {
+            "location": ""
+          }
+        },
+        {
+          "fixture": {
+            "expeditions": 0,
+            "inventory": []
+          },
+          "uiState": {
+            "location": ""
+          }
+        },
+        {
+          "fixture": {
+            "expeditions": 3,
+            "__woundParty": 6
+          },
+          "uiState": {
+            "location": ""
+          }
+        },
+        {
+          "fixture": {
+            "expeditions": 3,
+            "inventory": []
+          },
+          "uiState": {
+            "location": ""
+          }
+        },
+        {
+          "fixture": {
+            "expeditions": 3,
+            "inventory": [
+              {
+                "id": "equip.iron-cap",
+                "name": "Iron Cap",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "head"
+              }
+            ]
+          },
+          "uiState": {
+            "location": ""
+          }
+        },
+        {
+          "fixture": {
+            "map": {
+              "floorId": "dungeon.b3f",
+              "visitedRooms": [
+                "room.b3f.003"
+              ],
+              "visitedCells": [],
+              "knownExits": {},
+              "currentRoomId": null,
+              "currentCellId": null,
+              "currentFacing": null
+            }
+          },
+          "uiState": {
+            "location": ""
+          }
+        }
+      ],
+      "derivedExclusions": [
+        {
+          "key": "town.noShop",
+          "reason": "React renders this only as the TITLE (hover tooltip) of the disabled 商店 button, never as visible copy. A controller player has no pointer; the port disables the button the same way, and both shipped worlds stock a shop."
+        }
+      ]
     },
     {
       "id": "town-infirmary",
@@ -1454,7 +1552,6 @@
         "questBoard.accept",
         "questBoard.claim",
         "questBoard.claimedTimes",
-        "questBoard.empty",
         "questBoard.intro",
         "questBoard.kindBounty",
         "questBoard.kindDelivery",
@@ -1468,7 +1565,7 @@
         "questBoard.turnIn",
         "town.serviceCancel"
       ],
-      "notes": "Each quest must show its objective PROGRESS (questBoard.progress) and reward breakdown (rewardGold/rewardXp), plus repeatable / claimedTimes state.",
+      "notes": "Each quest must show its objective PROGRESS (questBoard.progress) and reward breakdown (rewardGold/rewardXp), plus repeatable / claimedTimes state. An EMPTY board is a real state of this counter (a world may ship no quests, and none are posted before any are authored), so it is driven rather than assumed.",
       "fixture": {
         "partyGold": 50,
         "quests": [
@@ -1479,7 +1576,28 @@
             "claims": 1
           }
         ]
-      }
+      },
+      "states": [
+        {
+          "fixture": {
+            "partyGold": 50,
+            "quests": [
+              {
+                "questId": "quest.glimmer-hunt",
+                "status": "active",
+                "killCount": 5,
+                "claims": 1
+              }
+            ]
+          }
+        }
+      ],
+      "derivedExclusions": [
+        {
+          "key": "questBoard.empty",
+          "reason": "Unreachable: the town DISABLES 依頼掲示板 when a world ships no quests (TownEntryPanel), so an empty board cannot be opened, and both shipped worlds author quests. The guard stays in the panel; restore this requirement if a quest-less world ever ships with the counter reachable."
+        }
+      ]
     },
     {
       "id": "town-career",
@@ -1501,7 +1619,6 @@
         "career.grants",
         "career.intro",
         "career.loadout",
-        "career.loadoutFull",
         "career.locked",
         "career.mastered",
         "career.mastery",
@@ -1524,15 +1641,55 @@
         "career.stat.accuracy",
         "career.stat.armor",
         "career.stat.attack",
-        "career.stat.damageMax",
-        "career.stat.damageMin",
         "career.stat.maxHp",
         "career.stat.maxMp",
         "career.stat.speed",
         "career.title",
         "town.serviceCancel"
       ],
-      "notes": "Two-pane: pinned selected adventurer (career.overview/current/mastery) beside the scrolling destination list grouped advanced|foundations. EVERY destination renders its signature, stat shifts, equip slots and granted techniques — this was the exact remediation that fixed 'too thin to decide in'."
+      "notes": "Two-pane: pinned selected adventurer (career.overview/current/mastery) beside the scrolling destination list grouped advanced|foundations. EVERY destination renders its signature, stat shifts, equip slots and granted techniques — this was the exact remediation that fixed 'too thin to decide in'. Driven across a member with NOTHING learned yet and one holding a technique that is not in the combat set, so both the empty case and the 'set this' case are proven.",
+      "states": [
+        {
+          "fixture": {}
+        },
+        {
+          "fixture": {
+            "__vocation": {
+              "learned": [],
+              "loadout": [],
+              "mastery": {},
+              "progress": {}
+            }
+          }
+        },
+        {
+          "fixture": {
+            "__vocation": {
+              "learned": [
+                "power-strike",
+                "heal"
+              ],
+              "loadout": [],
+              "mastery": {},
+              "progress": {}
+            }
+          }
+        }
+      ],
+      "derivedExclusions": [
+        {
+          "key": "career.loadoutFull",
+          "reason": "Unreachable with authored content: the game ships FOUR techniques (heal / firebolt / sleep / power-strike) against a loadout limit of 6, so a set can never fill. Restore this requirement the moment a fifth-plus technique or a smaller limit is authored."
+        },
+        {
+          "key": "career.stat.damageMin",
+          "reason": "No authored vocation shifts damageMin (engine data: every statModifiers block covers maxHp/maxMp/attack/accuracy/armor/speed only). The row renders whatever the data carries; there is nothing to carry."
+        },
+        {
+          "key": "career.stat.damageMax",
+          "reason": "Same as career.stat.damageMin — no authored vocation shifts it."
+        }
+      ]
     },
     {
       "id": "town-records",
@@ -1555,7 +1712,7 @@
         "town.logCount",
         "town.recordsHeading"
       ],
-      "notes": "The bestiary is the decision surface for preparation: threat, weaknesses and drops per known enemy, not a name list.",
+      "notes": "The bestiary is the decision surface for preparation: threat, weaknesses and drops per known enemy, not a name list. Three states: a creature KNOWN (weaknesses and drops recorded), one only MET (the entry says what defeating it would reveal), and an empty bestiary before the first fight.",
       "fixture": {
         "enemyRecord": {
           "enemy.b1f.ash-slime": {
@@ -1563,7 +1720,34 @@
             "defeated": 3
           }
         }
-      }
+      },
+      "states": [
+        {
+          "fixture": {
+            "enemyRecord": {
+              "enemy.b1f.ash-slime": {
+                "encountered": 4,
+                "defeated": 3
+              }
+            }
+          }
+        },
+        {
+          "fixture": {
+            "enemyRecord": {
+              "enemy.b1f.ash-slime": {
+                "encountered": 2,
+                "defeated": 0
+              }
+            }
+          }
+        },
+        {
+          "fixture": {
+            "enemyRecord": {}
+          }
+        }
+      ]
     },
     {
       "id": "town-party",
@@ -1596,7 +1780,6 @@
         "partyMenu.condition",
         "partyMenu.confirmDiscard",
         "partyMenu.critical",
-        "partyMenu.cures",
         "partyMenu.discard",
         "partyMenu.equipOn",
         "partyMenu.equipmentDungeon",
@@ -1608,12 +1791,8 @@
         "partyMenu.inventoryEmpty",
         "partyMenu.level",
         "partyMenu.members",
-        "partyMenu.noDescription",
-        "partyMenu.pages",
         "partyMenu.protectedItem",
         "partyMenu.resistances",
-        "partyMenu.restoreHp",
-        "partyMenu.restoreMp",
         "partyMenu.spellPower",
         "partyMenu.status.fear",
         "partyMenu.status.poison",
@@ -1634,7 +1813,576 @@
         "play.backRow",
         "play.frontRow"
       ],
-      "notes": "Six-person formation across four tabs (能力 / 装備 / 所持品 / 貴重品): condition, combat stats, resistances, aptitudes, the six equipment slots, plus front/back row and bench/recall."
+      "notes": "The party menu across its four pages and every state a decision needs: the derived combat numbers and resistances, an afflicted party, the equipment slots, an item that heals / restores 気力 / cures, a piece this adventurer cannot wear, the discard CONFIRM stage, a protected valuable, both empty lists, and the dungeon context where equipment can be read but not changed.",
+      "states": [
+        {
+          "fixture": {
+            "partyGold": 200,
+            "inventory": [
+              {
+                "id": "item.healing-draught",
+                "name": "Healing Draught",
+                "kind": "healing",
+                "quantity": 3,
+                "healAmount": 6
+              },
+              {
+                "id": "item.antidote",
+                "name": "Antidote",
+                "kind": "cure",
+                "quantity": 1,
+                "curesStatuses": [
+                  "poison"
+                ]
+              },
+              {
+                "id": "equip.iron-cap",
+                "name": "Iron Cap",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "head",
+                "sellValue": 6
+              },
+              {
+                "id": "equip.ashwood-staff",
+                "name": "Ashwood Staff",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "weapon",
+                "sellValue": 9
+              },
+              {
+                "id": "equip.vitality-charm",
+                "name": "Vitality Charm",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "accessory",
+                "sellValue": 8
+              }
+            ]
+          },
+          "uiState": {
+            "party_page": "status"
+          }
+        },
+        {
+          "fixture": {
+            "partyGold": 200,
+            "inventory": [
+              {
+                "id": "item.healing-draught",
+                "name": "Healing Draught",
+                "kind": "healing",
+                "quantity": 3,
+                "healAmount": 6
+              },
+              {
+                "id": "item.antidote",
+                "name": "Antidote",
+                "kind": "cure",
+                "quantity": 1,
+                "curesStatuses": [
+                  "poison"
+                ]
+              },
+              {
+                "id": "equip.iron-cap",
+                "name": "Iron Cap",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "head",
+                "sellValue": 6
+              },
+              {
+                "id": "equip.ashwood-staff",
+                "name": "Ashwood Staff",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "weapon",
+                "sellValue": 9
+              },
+              {
+                "id": "equip.vitality-charm",
+                "name": "Vitality Charm",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "accessory",
+                "sellValue": 8
+              }
+            ],
+            "__afflictParty": true
+          },
+          "uiState": {
+            "party_page": "status"
+          }
+        },
+        {
+          "fixture": {
+            "partyGold": 200,
+            "inventory": [
+              {
+                "id": "item.healing-draught",
+                "name": "Healing Draught",
+                "kind": "healing",
+                "quantity": 3,
+                "healAmount": 6
+              },
+              {
+                "id": "item.antidote",
+                "name": "Antidote",
+                "kind": "cure",
+                "quantity": 1,
+                "curesStatuses": [
+                  "poison"
+                ]
+              },
+              {
+                "id": "equip.iron-cap",
+                "name": "Iron Cap",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "head",
+                "sellValue": 6
+              },
+              {
+                "id": "equip.ashwood-staff",
+                "name": "Ashwood Staff",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "weapon",
+                "sellValue": 9
+              },
+              {
+                "id": "equip.vitality-charm",
+                "name": "Vitality Charm",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "accessory",
+                "sellValue": 8
+              }
+            ]
+          },
+          "uiState": {
+            "party_page": "equipment"
+          }
+        },
+        {
+          "fixture": {
+            "partyGold": 200,
+            "inventory": [
+              {
+                "id": "item.healing-draught",
+                "name": "Healing Draught",
+                "kind": "healing",
+                "quantity": 3,
+                "healAmount": 6
+              },
+              {
+                "id": "item.antidote",
+                "name": "Antidote",
+                "kind": "cure",
+                "quantity": 1,
+                "curesStatuses": [
+                  "poison"
+                ]
+              },
+              {
+                "id": "equip.iron-cap",
+                "name": "Iron Cap",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "head",
+                "sellValue": 6
+              },
+              {
+                "id": "equip.ashwood-staff",
+                "name": "Ashwood Staff",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "weapon",
+                "sellValue": 9
+              },
+              {
+                "id": "equip.vitality-charm",
+                "name": "Vitality Charm",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "accessory",
+                "sellValue": 8
+              }
+            ]
+          },
+          "uiState": {
+            "party_page": "items",
+            "party_item": "equip.iron-cap||"
+          }
+        },
+        {
+          "fixture": {
+            "partyGold": 200,
+            "inventory": [
+              {
+                "id": "item.healing-draught",
+                "name": "Healing Draught",
+                "kind": "healing",
+                "quantity": 3,
+                "healAmount": 6
+              },
+              {
+                "id": "item.antidote",
+                "name": "Antidote",
+                "kind": "cure",
+                "quantity": 1,
+                "curesStatuses": [
+                  "poison"
+                ]
+              },
+              {
+                "id": "equip.iron-cap",
+                "name": "Iron Cap",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "head",
+                "sellValue": 6
+              },
+              {
+                "id": "equip.ashwood-staff",
+                "name": "Ashwood Staff",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "weapon",
+                "sellValue": 9
+              },
+              {
+                "id": "equip.vitality-charm",
+                "name": "Vitality Charm",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "accessory",
+                "sellValue": 8
+              }
+            ]
+          },
+          "uiState": {
+            "party_page": "items",
+            "party_item": "equip.ashwood-staff||"
+          }
+        },
+        {
+          "fixture": {
+            "partyGold": 200,
+            "inventory": [
+              {
+                "id": "item.healing-draught",
+                "name": "Healing Draught",
+                "kind": "healing",
+                "quantity": 3,
+                "healAmount": 6
+              },
+              {
+                "id": "item.antidote",
+                "name": "Antidote",
+                "kind": "cure",
+                "quantity": 1,
+                "curesStatuses": [
+                  "poison"
+                ]
+              },
+              {
+                "id": "equip.iron-cap",
+                "name": "Iron Cap",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "head",
+                "sellValue": 6
+              },
+              {
+                "id": "equip.ashwood-staff",
+                "name": "Ashwood Staff",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "weapon",
+                "sellValue": 9
+              },
+              {
+                "id": "equip.vitality-charm",
+                "name": "Vitality Charm",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "accessory",
+                "sellValue": 8
+              }
+            ]
+          },
+          "uiState": {
+            "party_page": "items",
+            "party_item": "equip.vitality-charm||"
+          }
+        },
+        {
+          "fixture": {
+            "partyGold": 200,
+            "inventory": [
+              {
+                "id": "item.healing-draught",
+                "name": "Healing Draught",
+                "kind": "healing",
+                "quantity": 3,
+                "healAmount": 6
+              },
+              {
+                "id": "item.antidote",
+                "name": "Antidote",
+                "kind": "cure",
+                "quantity": 1,
+                "curesStatuses": [
+                  "poison"
+                ]
+              },
+              {
+                "id": "equip.iron-cap",
+                "name": "Iron Cap",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "head",
+                "sellValue": 6
+              },
+              {
+                "id": "equip.ashwood-staff",
+                "name": "Ashwood Staff",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "weapon",
+                "sellValue": 9
+              },
+              {
+                "id": "equip.vitality-charm",
+                "name": "Vitality Charm",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "accessory",
+                "sellValue": 8
+              }
+            ]
+          },
+          "uiState": {
+            "party_page": "items",
+            "party_item": "equip.iron-cap||",
+            "party_discard": true
+          }
+        },
+        {
+          "fixture": {
+            "partyGold": 200,
+            "inventory": [
+              {
+                "id": "item.gate-key",
+                "name": "Gate Key",
+                "kind": "key",
+                "quantity": 1
+              }
+            ]
+          },
+          "uiState": {
+            "party_page": "valuables",
+            "party_item": "item.gate-key||"
+          }
+        },
+        {
+          "fixture": {
+            "partyGold": 200,
+            "inventory": []
+          },
+          "uiState": {
+            "party_page": "items"
+          }
+        },
+        {
+          "fixture": {
+            "partyGold": 200,
+            "inventory": []
+          },
+          "uiState": {
+            "party_page": "valuables"
+          }
+        },
+        {
+          "fixture": {
+            "partyGold": 200,
+            "inventory": [
+              {
+                "id": "item.healing-draught",
+                "name": "Healing Draught",
+                "kind": "healing",
+                "quantity": 3,
+                "healAmount": 6
+              },
+              {
+                "id": "item.antidote",
+                "name": "Antidote",
+                "kind": "cure",
+                "quantity": 1,
+                "curesStatuses": [
+                  "poison"
+                ]
+              },
+              {
+                "id": "equip.iron-cap",
+                "name": "Iron Cap",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "head",
+                "sellValue": 6
+              },
+              {
+                "id": "equip.ashwood-staff",
+                "name": "Ashwood Staff",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "weapon",
+                "sellValue": 9
+              },
+              {
+                "id": "equip.vitality-charm",
+                "name": "Vitality Charm",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "accessory",
+                "sellValue": 8
+              }
+            ],
+            "phase": "dungeon"
+          },
+          "uiState": {
+            "party_page": "items",
+            "party_item": "equip.iron-cap||"
+          }
+        },
+        {
+          "fixture": {
+            "partyGold": 200,
+            "inventory": [
+              {
+                "id": "item.healing-draught",
+                "name": "Healing Draught",
+                "kind": "healing",
+                "quantity": 3,
+                "healAmount": 6
+              },
+              {
+                "id": "item.antidote",
+                "name": "Antidote",
+                "kind": "cure",
+                "quantity": 1,
+                "curesStatuses": [
+                  "poison"
+                ]
+              },
+              {
+                "id": "equip.iron-cap",
+                "name": "Iron Cap",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "head",
+                "sellValue": 6
+              },
+              {
+                "id": "equip.ashwood-staff",
+                "name": "Ashwood Staff",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "weapon",
+                "sellValue": 9
+              },
+              {
+                "id": "equip.vitality-charm",
+                "name": "Vitality Charm",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "accessory",
+                "sellValue": 8
+              }
+            ],
+            "phase": "dungeon"
+          },
+          "uiState": {
+            "party_page": "equipment"
+          }
+        },
+        {
+          "fixture": {
+            "partyGold": 200,
+            "inventory": [
+              {
+                "id": "item.healing-draught",
+                "name": "Healing Draught",
+                "kind": "healing",
+                "quantity": 3,
+                "healAmount": 6
+              },
+              {
+                "id": "item.antidote",
+                "name": "Antidote",
+                "kind": "cure",
+                "quantity": 1,
+                "curesStatuses": [
+                  "poison"
+                ]
+              },
+              {
+                "id": "equip.iron-cap",
+                "name": "Iron Cap",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "head",
+                "sellValue": 6
+              },
+              {
+                "id": "equip.ashwood-staff",
+                "name": "Ashwood Staff",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "weapon",
+                "sellValue": 9
+              },
+              {
+                "id": "equip.vitality-charm",
+                "name": "Vitality Charm",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "accessory",
+                "sellValue": 8
+              }
+            ]
+          },
+          "uiState": {
+            "party_page": "items",
+            "party_item": "item.healing-draught||"
+          }
+        }
+      ],
+      "derivedExclusions": [
+        {
+          "key": "partyMenu.restoreHp",
+          "reason": "React shows an item's EFFECT line only when the catalog has no description for it (localizedCatalogDescription ?? describeConsumable). Every authored item in both worlds ships a ja description, so this fallback cannot render. The port keeps the same fallback."
+        },
+        {
+          "key": "partyMenu.restoreMp",
+          "reason": "Same fallback as partyMenu.restoreHp — unreachable while every authored item carries a description."
+        },
+        {
+          "key": "partyMenu.cures",
+          "reason": "Same fallback as partyMenu.restoreHp — unreachable while every authored cure carries a description."
+        },
+        {
+          "key": "partyMenu.noDescription",
+          "reason": "The last-resort line for an item with neither description nor effects; no authored item is missing both."
+        },
+        {
+          "key": "partyMenu.pages",
+          "reason": "React's aria-label for the tab strip, which is visible and labelled by its own four tabs. Godot has no accessibility tree; a fifth label naming the strip would be noise."
+        }
+      ]
     },
     {
       "id": "dungeon-dock",
@@ -1649,10 +2397,8 @@
         "party.speed",
         "partyMenu.title",
         "play.backRow",
-        "play.descentLocked",
         "play.descentLockedShort",
         "play.dungeonCommands",
-        "play.dungeonView",
         "play.frontRow",
         "play.fullMap",
         "play.listen",
@@ -1668,7 +2414,59 @@
         "tempo.auto",
         "tempo.stop"
       ],
-      "notes": "The command region is FIXED and contextual: 階段を使う / 階段で町へ戻る / 罠を外す appear only where they actually answer. Logs must never push the commands around. The cockpit also carries the PARTY STATUS (play.partyStatus:每member row, HP/MP, condition) and the 周辺 minimap — a crawl where the player cannot see their party's state is not the React screen. 全体図 needs a shortcut key (M), not only the dock button."
+      "notes": "The contextual dock: 探索/耳をすます always, the stair only where one is (and a DISABLED 階段封鎖 with its clue where the way down will not open yet), the way home as stairs or the planted marker, a charm when one is carried, and the auto-explore STATUS at the end. Each is driven, because 'contextual' means the screen is different in each place.",
+      "states": [
+        {
+          "uiState": {}
+        },
+        {
+          "uiState": {
+            "at_stairs": true
+          }
+        },
+        {
+          "uiState": {
+            "at_return": true
+          }
+        },
+        {
+          "uiState": {
+            "at_rest": true
+          }
+        },
+        {
+          "uiState": {
+            "stair_locked": true
+          }
+        },
+        {
+          "fixture": {
+            "inventory": [
+              {
+                "id": "item.return-charm",
+                "name": "Return Charm",
+                "kind": "escape",
+                "quantity": 1
+              }
+            ]
+          }
+        },
+        {
+          "uiState": {
+            "auto": true
+          }
+        }
+      ],
+      "derivedExclusions": [
+        {
+          "key": "play.dungeonView",
+          "reason": "React uses this only as the aria-label of the 3D view element (DungeonCockpit). Godot has no accessibility tree, and painting '一人称迷宮ビュー' onto the play screen would be implementation wording of the kind AGENTS.md bars from normal play. The view itself is ported; the label has no player-facing home."
+        },
+        {
+          "key": "play.descentLocked",
+          "reason": "The generic line is React's FALLBACK for a gate with no authored clue (stairGateClue ?? t(...)); all 14 authored gates ship a ja clue, so the fallback cannot render. The port keeps the same fallback — restore this requirement if a clue-less gate is ever authored."
+        }
+      ]
     },
     {
       "id": "dungeon-chest",
@@ -1692,7 +2490,38 @@
         "play.chestTrappedNote",
         "play.chestUncertainNote"
       ],
-      "notes": "IMP-029: a chest HOLDS the cell and OWNS the command region (arrows drive its actions, they never walk the party off it). It shows only what the party can SEE — closed / trapped / uncertain / opened — never a success rate, and 罠を外す surfaces only after an investigation detected a trap."
+      "notes": "A chest HOLDS the cell (Wizardry prompt model): while it is here the panel owns the command region. It shows only what the party can SEE — closed, a trap found, 'cannot tell', no trap, opened — never a success rate, and 罠を外す appears ONLY once an investigation detected a trap. Every stage is driven, because the whole point of the panel is that the stages read differently.",
+      "states": [
+        {
+          "uiState": {
+            "chest": true
+          }
+        },
+        {
+          "uiState": {
+            "chest": true,
+            "chest_result": "trapped"
+          }
+        },
+        {
+          "uiState": {
+            "chest": true,
+            "chest_result": "uncertain"
+          }
+        },
+        {
+          "uiState": {
+            "chest": true,
+            "chest_result": "clear"
+          }
+        },
+        {
+          "uiState": {
+            "chest": true,
+            "chest_opened": true
+          }
+        }
+      ]
     },
     {
       "id": "dungeon-map",
@@ -1721,17 +2550,41 @@
         "map.marker.teleporter",
         "map.marker.trap",
         "map.marker.treasure",
-        "map.miniMap",
-        "map.noFloor",
         "map.open",
         "map.paths",
-        "map.town",
         "map.unknown",
         "map.unseen",
         "map.visited",
         "map.wall"
       ],
-      "notes": "The full-floor overlay is the party's RECORD (visited cells only), never the floor's truth. Cancel closes it."
+      "notes": "The party's RECORD of the floor, not the floor's truth: visited cells with their walls, the mark of what is on each (stair, rest, spinner, teleporter, blade floor, gathering point, event, cleared trap, treasure), a compass, and a LEGEND naming every mark — React names them in aria-labels, which a Godot screen has no equivalent for. Driven in the open floor and inside a dark zone.",
+      "states": [
+        {
+          "uiState": {
+            "fullMap": true
+          }
+        },
+        {
+          "uiState": {
+            "at_dark": true,
+            "fullMap": true
+          }
+        }
+      ],
+      "derivedExclusions": [
+        {
+          "key": "map.miniMap",
+          "reason": "React's aria-label for the minimap grid, beside the visible 周辺 heading it already carries. Godot has no accessibility tree; painting a second name on the same widget would be noise, not information."
+        },
+        {
+          "key": "map.noFloor",
+          "reason": "React's defensive branch for state.map.floorId being null — reachable only in TOWN, where the map surface is not rendered at all. The port keeps the same fallback."
+        },
+        {
+          "key": "map.town",
+          "reason": "Same defensive branch: the cell readout says 街 when the party is in no room, which cannot happen while the dungeon map is open."
+        }
+      ]
     },
     {
       "id": "combat-command",
@@ -1961,7 +2814,6 @@
         "partyMenu.condition",
         "partyMenu.confirmDiscard",
         "partyMenu.critical",
-        "partyMenu.cures",
         "partyMenu.discard",
         "partyMenu.equipOn",
         "partyMenu.equipmentDungeon",
@@ -1973,12 +2825,8 @@
         "partyMenu.inventoryEmpty",
         "partyMenu.level",
         "partyMenu.members",
-        "partyMenu.noDescription",
-        "partyMenu.pages",
         "partyMenu.protectedItem",
         "partyMenu.resistances",
-        "partyMenu.restoreHp",
-        "partyMenu.restoreMp",
         "partyMenu.spellPower",
         "partyMenu.status.fear",
         "partyMenu.status.poison",
@@ -1999,7 +2847,576 @@
         "play.backRow",
         "play.frontRow"
       ],
-      "notes": "An item's detail says what it DOES before any action is offered; discarding is a TWO-PRESS confirm so one press can never destroy a carried item; a valuable that may not be discarded says so instead of showing a dead button."
+      "notes": "The party menu across its four pages and every state a decision needs: the derived combat numbers and resistances, an afflicted party, the equipment slots, an item that heals / restores 気力 / cures, a piece this adventurer cannot wear, the discard CONFIRM stage, a protected valuable, both empty lists, and the dungeon context where equipment can be read but not changed.",
+      "states": [
+        {
+          "fixture": {
+            "partyGold": 200,
+            "inventory": [
+              {
+                "id": "item.healing-draught",
+                "name": "Healing Draught",
+                "kind": "healing",
+                "quantity": 3,
+                "healAmount": 6
+              },
+              {
+                "id": "item.antidote",
+                "name": "Antidote",
+                "kind": "cure",
+                "quantity": 1,
+                "curesStatuses": [
+                  "poison"
+                ]
+              },
+              {
+                "id": "equip.iron-cap",
+                "name": "Iron Cap",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "head",
+                "sellValue": 6
+              },
+              {
+                "id": "equip.ashwood-staff",
+                "name": "Ashwood Staff",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "weapon",
+                "sellValue": 9
+              },
+              {
+                "id": "equip.vitality-charm",
+                "name": "Vitality Charm",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "accessory",
+                "sellValue": 8
+              }
+            ]
+          },
+          "uiState": {
+            "party_page": "status"
+          }
+        },
+        {
+          "fixture": {
+            "partyGold": 200,
+            "inventory": [
+              {
+                "id": "item.healing-draught",
+                "name": "Healing Draught",
+                "kind": "healing",
+                "quantity": 3,
+                "healAmount": 6
+              },
+              {
+                "id": "item.antidote",
+                "name": "Antidote",
+                "kind": "cure",
+                "quantity": 1,
+                "curesStatuses": [
+                  "poison"
+                ]
+              },
+              {
+                "id": "equip.iron-cap",
+                "name": "Iron Cap",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "head",
+                "sellValue": 6
+              },
+              {
+                "id": "equip.ashwood-staff",
+                "name": "Ashwood Staff",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "weapon",
+                "sellValue": 9
+              },
+              {
+                "id": "equip.vitality-charm",
+                "name": "Vitality Charm",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "accessory",
+                "sellValue": 8
+              }
+            ],
+            "__afflictParty": true
+          },
+          "uiState": {
+            "party_page": "status"
+          }
+        },
+        {
+          "fixture": {
+            "partyGold": 200,
+            "inventory": [
+              {
+                "id": "item.healing-draught",
+                "name": "Healing Draught",
+                "kind": "healing",
+                "quantity": 3,
+                "healAmount": 6
+              },
+              {
+                "id": "item.antidote",
+                "name": "Antidote",
+                "kind": "cure",
+                "quantity": 1,
+                "curesStatuses": [
+                  "poison"
+                ]
+              },
+              {
+                "id": "equip.iron-cap",
+                "name": "Iron Cap",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "head",
+                "sellValue": 6
+              },
+              {
+                "id": "equip.ashwood-staff",
+                "name": "Ashwood Staff",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "weapon",
+                "sellValue": 9
+              },
+              {
+                "id": "equip.vitality-charm",
+                "name": "Vitality Charm",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "accessory",
+                "sellValue": 8
+              }
+            ]
+          },
+          "uiState": {
+            "party_page": "equipment"
+          }
+        },
+        {
+          "fixture": {
+            "partyGold": 200,
+            "inventory": [
+              {
+                "id": "item.healing-draught",
+                "name": "Healing Draught",
+                "kind": "healing",
+                "quantity": 3,
+                "healAmount": 6
+              },
+              {
+                "id": "item.antidote",
+                "name": "Antidote",
+                "kind": "cure",
+                "quantity": 1,
+                "curesStatuses": [
+                  "poison"
+                ]
+              },
+              {
+                "id": "equip.iron-cap",
+                "name": "Iron Cap",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "head",
+                "sellValue": 6
+              },
+              {
+                "id": "equip.ashwood-staff",
+                "name": "Ashwood Staff",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "weapon",
+                "sellValue": 9
+              },
+              {
+                "id": "equip.vitality-charm",
+                "name": "Vitality Charm",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "accessory",
+                "sellValue": 8
+              }
+            ]
+          },
+          "uiState": {
+            "party_page": "items",
+            "party_item": "equip.iron-cap||"
+          }
+        },
+        {
+          "fixture": {
+            "partyGold": 200,
+            "inventory": [
+              {
+                "id": "item.healing-draught",
+                "name": "Healing Draught",
+                "kind": "healing",
+                "quantity": 3,
+                "healAmount": 6
+              },
+              {
+                "id": "item.antidote",
+                "name": "Antidote",
+                "kind": "cure",
+                "quantity": 1,
+                "curesStatuses": [
+                  "poison"
+                ]
+              },
+              {
+                "id": "equip.iron-cap",
+                "name": "Iron Cap",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "head",
+                "sellValue": 6
+              },
+              {
+                "id": "equip.ashwood-staff",
+                "name": "Ashwood Staff",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "weapon",
+                "sellValue": 9
+              },
+              {
+                "id": "equip.vitality-charm",
+                "name": "Vitality Charm",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "accessory",
+                "sellValue": 8
+              }
+            ]
+          },
+          "uiState": {
+            "party_page": "items",
+            "party_item": "equip.ashwood-staff||"
+          }
+        },
+        {
+          "fixture": {
+            "partyGold": 200,
+            "inventory": [
+              {
+                "id": "item.healing-draught",
+                "name": "Healing Draught",
+                "kind": "healing",
+                "quantity": 3,
+                "healAmount": 6
+              },
+              {
+                "id": "item.antidote",
+                "name": "Antidote",
+                "kind": "cure",
+                "quantity": 1,
+                "curesStatuses": [
+                  "poison"
+                ]
+              },
+              {
+                "id": "equip.iron-cap",
+                "name": "Iron Cap",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "head",
+                "sellValue": 6
+              },
+              {
+                "id": "equip.ashwood-staff",
+                "name": "Ashwood Staff",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "weapon",
+                "sellValue": 9
+              },
+              {
+                "id": "equip.vitality-charm",
+                "name": "Vitality Charm",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "accessory",
+                "sellValue": 8
+              }
+            ]
+          },
+          "uiState": {
+            "party_page": "items",
+            "party_item": "equip.vitality-charm||"
+          }
+        },
+        {
+          "fixture": {
+            "partyGold": 200,
+            "inventory": [
+              {
+                "id": "item.healing-draught",
+                "name": "Healing Draught",
+                "kind": "healing",
+                "quantity": 3,
+                "healAmount": 6
+              },
+              {
+                "id": "item.antidote",
+                "name": "Antidote",
+                "kind": "cure",
+                "quantity": 1,
+                "curesStatuses": [
+                  "poison"
+                ]
+              },
+              {
+                "id": "equip.iron-cap",
+                "name": "Iron Cap",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "head",
+                "sellValue": 6
+              },
+              {
+                "id": "equip.ashwood-staff",
+                "name": "Ashwood Staff",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "weapon",
+                "sellValue": 9
+              },
+              {
+                "id": "equip.vitality-charm",
+                "name": "Vitality Charm",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "accessory",
+                "sellValue": 8
+              }
+            ]
+          },
+          "uiState": {
+            "party_page": "items",
+            "party_item": "equip.iron-cap||",
+            "party_discard": true
+          }
+        },
+        {
+          "fixture": {
+            "partyGold": 200,
+            "inventory": [
+              {
+                "id": "item.gate-key",
+                "name": "Gate Key",
+                "kind": "key",
+                "quantity": 1
+              }
+            ]
+          },
+          "uiState": {
+            "party_page": "valuables",
+            "party_item": "item.gate-key||"
+          }
+        },
+        {
+          "fixture": {
+            "partyGold": 200,
+            "inventory": []
+          },
+          "uiState": {
+            "party_page": "items"
+          }
+        },
+        {
+          "fixture": {
+            "partyGold": 200,
+            "inventory": []
+          },
+          "uiState": {
+            "party_page": "valuables"
+          }
+        },
+        {
+          "fixture": {
+            "partyGold": 200,
+            "inventory": [
+              {
+                "id": "item.healing-draught",
+                "name": "Healing Draught",
+                "kind": "healing",
+                "quantity": 3,
+                "healAmount": 6
+              },
+              {
+                "id": "item.antidote",
+                "name": "Antidote",
+                "kind": "cure",
+                "quantity": 1,
+                "curesStatuses": [
+                  "poison"
+                ]
+              },
+              {
+                "id": "equip.iron-cap",
+                "name": "Iron Cap",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "head",
+                "sellValue": 6
+              },
+              {
+                "id": "equip.ashwood-staff",
+                "name": "Ashwood Staff",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "weapon",
+                "sellValue": 9
+              },
+              {
+                "id": "equip.vitality-charm",
+                "name": "Vitality Charm",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "accessory",
+                "sellValue": 8
+              }
+            ],
+            "phase": "dungeon"
+          },
+          "uiState": {
+            "party_page": "items",
+            "party_item": "equip.iron-cap||"
+          }
+        },
+        {
+          "fixture": {
+            "partyGold": 200,
+            "inventory": [
+              {
+                "id": "item.healing-draught",
+                "name": "Healing Draught",
+                "kind": "healing",
+                "quantity": 3,
+                "healAmount": 6
+              },
+              {
+                "id": "item.antidote",
+                "name": "Antidote",
+                "kind": "cure",
+                "quantity": 1,
+                "curesStatuses": [
+                  "poison"
+                ]
+              },
+              {
+                "id": "equip.iron-cap",
+                "name": "Iron Cap",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "head",
+                "sellValue": 6
+              },
+              {
+                "id": "equip.ashwood-staff",
+                "name": "Ashwood Staff",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "weapon",
+                "sellValue": 9
+              },
+              {
+                "id": "equip.vitality-charm",
+                "name": "Vitality Charm",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "accessory",
+                "sellValue": 8
+              }
+            ],
+            "phase": "dungeon"
+          },
+          "uiState": {
+            "party_page": "equipment"
+          }
+        },
+        {
+          "fixture": {
+            "partyGold": 200,
+            "inventory": [
+              {
+                "id": "item.healing-draught",
+                "name": "Healing Draught",
+                "kind": "healing",
+                "quantity": 3,
+                "healAmount": 6
+              },
+              {
+                "id": "item.antidote",
+                "name": "Antidote",
+                "kind": "cure",
+                "quantity": 1,
+                "curesStatuses": [
+                  "poison"
+                ]
+              },
+              {
+                "id": "equip.iron-cap",
+                "name": "Iron Cap",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "head",
+                "sellValue": 6
+              },
+              {
+                "id": "equip.ashwood-staff",
+                "name": "Ashwood Staff",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "weapon",
+                "sellValue": 9
+              },
+              {
+                "id": "equip.vitality-charm",
+                "name": "Vitality Charm",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "accessory",
+                "sellValue": 8
+              }
+            ]
+          },
+          "uiState": {
+            "party_page": "items",
+            "party_item": "item.healing-draught||"
+          }
+        }
+      ],
+      "derivedExclusions": [
+        {
+          "key": "partyMenu.restoreHp",
+          "reason": "React shows an item's EFFECT line only when the catalog has no description for it (localizedCatalogDescription ?? describeConsumable). Every authored item in both worlds ships a ja description, so this fallback cannot render. The port keeps the same fallback."
+        },
+        {
+          "key": "partyMenu.restoreMp",
+          "reason": "Same fallback as partyMenu.restoreHp — unreachable while every authored item carries a description."
+        },
+        {
+          "key": "partyMenu.cures",
+          "reason": "Same fallback as partyMenu.restoreHp — unreachable while every authored cure carries a description."
+        },
+        {
+          "key": "partyMenu.noDescription",
+          "reason": "The last-resort line for an item with neither description nor effects; no authored item is missing both."
+        },
+        {
+          "key": "partyMenu.pages",
+          "reason": "React's aria-label for the tab strip, which is visible and labelled by its own four tabs. Godot has no accessibility tree; a fifth label naming the strip would be noise."
+        }
+      ]
     },
     {
       "id": "town-square-verdant",
@@ -2031,7 +3448,6 @@
         "town.nextShop",
         "town.noLoot",
         "town.noParty",
-        "town.noShop",
         "town.noSupplies",
         "town.noWounds",
         "town.party",
@@ -2049,7 +3465,106 @@
         "town.workshop",
         "town.wounds"
       ],
-      "notes": "THE SAME town scene code, driven by Verdant's pack. Proves the hub is world-parameterized (its own title, tagline and assets) rather than written against the default scenario."
+      "notes": "The two-level hub: the square carries the status ledger (first departure vs what came back), the earned checkpoints, and the destinations; each destination holds its services one step in, with Cancel resolving exactly one level. Driven at the square, in all three destinations, with an empty roster, after a wounded return, and with a rest point already reached.",
+      "states": [
+        {
+          "uiState": {
+            "location": ""
+          }
+        },
+        {
+          "uiState": {
+            "location": "hall"
+          }
+        },
+        {
+          "uiState": {
+            "location": "market"
+          }
+        },
+        {
+          "uiState": {
+            "location": "archive"
+          }
+        },
+        {
+          "fixture": {
+            "party": [],
+            "expeditions": 0
+          },
+          "uiState": {
+            "location": ""
+          }
+        },
+        {
+          "fixture": {
+            "expeditions": 0,
+            "inventory": []
+          },
+          "uiState": {
+            "location": ""
+          }
+        },
+        {
+          "fixture": {
+            "expeditions": 3,
+            "__woundParty": 6
+          },
+          "uiState": {
+            "location": ""
+          }
+        },
+        {
+          "fixture": {
+            "expeditions": 3,
+            "inventory": []
+          },
+          "uiState": {
+            "location": ""
+          }
+        },
+        {
+          "fixture": {
+            "expeditions": 3,
+            "inventory": [
+              {
+                "id": "equip.iron-cap",
+                "name": "Iron Cap",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "head"
+              }
+            ]
+          },
+          "uiState": {
+            "location": ""
+          }
+        },
+        {
+          "fixture": {
+            "map": {
+              "floorId": "dungeon.verdant.g4f",
+              "visitedRooms": [
+                "room.verdant.g4f.001"
+              ],
+              "visitedCells": [],
+              "knownExits": {},
+              "currentRoomId": null,
+              "currentCellId": null,
+              "currentFacing": null
+            }
+          },
+          "uiState": {
+            "location": ""
+          }
+        }
+      ],
+      "derivedExclusions": [
+        {
+          "key": "town.noShop",
+          "reason": "React renders this only as the TITLE (hover tooltip) of the disabled 商店 button, never as visible copy. A controller player has no pointer; the port disables the button the same way, and both shipped worlds stock a shop."
+        }
+      ]
     },
     {
       "id": "guild-briefing",

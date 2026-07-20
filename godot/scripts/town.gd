@@ -95,6 +95,8 @@ func set_ui_state(ui: Dictionary) -> void:
 	if ui.has("loot_filter"): _loot_filter = String(ui["loot_filter"])
 	if ui.has("shop_category"): _shop_category = String(ui["shop_category"])
 	if ui.has("party_page"): _party_page = String(ui["party_page"])
+	if ui.has("party_item"): _party_item = String(ui["party_item"])
+	if ui.has("party_discard"): _party_discard = bool(ui["party_discard"])
 	_rebuild()
 
 ## Test seam: drive the town from ANOTHER world's pack, proving the same scene code renders both.
@@ -219,7 +221,7 @@ func _build_square() -> void:
 	var ledger := UI.col(4)
 	if first_departure:
 		_ledger_row(ledger, I18n.t("town.party"), I18n.t("town.noParty") if party_empty else I18n.t("town.partyReady", {"count": party.size()}))
-		_ledger_row(ledger, I18n.t("town.supplies"), _loot_summary(s))
+		_ledger_row(ledger, I18n.t("town.supplies"), _loot_summary(s, "town.noSupplies"))
 		_ledger_row(ledger, I18n.t("town.nextPreparation"), I18n.t("town.firstNeedParty") if party_empty else I18n.t("town.firstDescend"))
 	else:
 		_ledger_row(ledger, I18n.t("town.expeditionResult"), _latest_log_text(s))
@@ -228,7 +230,23 @@ func _build_square() -> void:
 		_ledger_row(ledger, I18n.t("town.nextPreparation"), _next_preparation(s, party))
 	_menu_host.add_child(UI.card(ledger))
 
+	# --- the way back down to a rest point already reached ---
+	# A checkpoint is earned progress: once a rest point has been walked to, the party never has to walk
+	# the whole floor again. The rules command exists (resume_at_checkpoint) and the square had no way to
+	# give it, so the progress was unreachable from the screen that is supposed to offer it.
+	var checkpoints := _unlocked_checkpoints(s)
+	if not checkpoints.is_empty():
+		var resume := UI.col(4)
+		resume.add_child(UI.label(I18n.t("play.checkpointsHeading"), 18, UI.GOLD))
+		for checkpoint in checkpoints:
+			var room_id := String(checkpoint["roomId"])
+			var b := UI.button(I18n.t("play.resumeAt", {"place": String(checkpoint["name"])}), func(): _dispatch_resume(room_id), Vector2(320, 44), 16)
+			b.disabled = party_empty
+			resume.add_child(b)
+		_menu_host.add_child(UI.card(resume))
+
 	# --- the destinations ---
+	_menu_host.add_child(UI.label(I18n.t("town.servicesHeading"), 16, UI.DIM))
 	var menu := UI.row()
 	var focus_target: Button = null
 	if _location == "":
@@ -297,7 +315,9 @@ func _wounds_summary(party: Array) -> String:
 			parts.append("%s %d/%d" % [String(member.get("name", "?")), int(member.get("hp", 0)), int(member.get("maxHp", 0))])
 	return " / ".join(PackedStringArray(parts)) if not parts.is_empty() else I18n.t("town.noWounds")
 
-func _loot_summary(s: Dictionary) -> String:
+## Before the first descent the party is looking at SUPPLIES they carry down; afterwards it is LOOT they
+## carried back. Same emptiness, different sentence — React says both, and the port said only one.
+func _loot_summary(s: Dictionary, empty_key: String = "town.noLoot") -> String:
 	var parts := []
 	var count := 0
 	for item in s.get("inventory", []):
@@ -305,7 +325,7 @@ func _loot_summary(s: Dictionary) -> String:
 		if parts.size() < 3:
 			parts.append(Fmt.localized_catalog_name(_world, item.get("id", "")))
 	if count == 0:
-		return I18n.t("town.noLoot")
+		return I18n.t(empty_key)
 	return " / ".join(PackedStringArray(parts))
 
 func _next_preparation(s: Dictionary, party: Array) -> String:
@@ -405,6 +425,26 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _on_descend() -> void:
 	get_tree().change_scene_to_file("res://scenes/dungeon.tscn")
+
+## Rest points the party has actually WALKED to (port of listUnlockedCheckpoints) — never a floor they
+## have only heard of.
+func _unlocked_checkpoints(s: Dictionary) -> Array:
+	var visited: Array = (s.get("map", {}) as Dictionary).get("visitedRooms", [])
+	var out := []
+	for dungeon in _world.get("dungeons", []):
+		for room in dungeon.get("rooms", []):
+			if not bool(room.get("restPoint", false)) or not visited.has(room.get("id", "")):
+				continue
+			var locales: Variant = room.get("locales", {})
+			var ja: Dictionary = (locales as Dictionary).get("ja", {}) if typeof(locales) == TYPE_DICTIONARY else {}
+			out.append({"roomId": String(room.get("id", "")), "name": String(ja.get("name", room.get("name", "")))})
+	return out
+
+func _dispatch_resume(room_id: String) -> void:
+	if _run:
+		_run.dispatch({"type": "resume_at_checkpoint", "roomId": room_id})
+	if state().get("phase", "") == "dungeon":
+		get_tree().change_scene_to_file("res://scenes/dungeon.tscn")
 
 func _texture(path: String) -> Texture2D:
 	var img := Image.load_from_file(path)

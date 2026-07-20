@@ -56,6 +56,14 @@ static func character_species_multiplier(character: Dictionary, world: Dictionar
 	return multiplier
 
 
+# combatMath.getEvasionChance — 回避: clamp(agility*3 + floor(speed/4), 0, 30). Agility is folded into
+# speed at creation; this is its DEFENSIVE payoff. (combat_round.gd carries a private copy for the enemy
+# turn; this is the one the screens read.)
+static func get_evasion_chance(character: Dictionary, world: Dictionary) -> int:
+	var speed := int(CharacterStats.effective(character, world).get("speed", 0))
+	var agility := int((character.get("aptitude", {}) as Dictionary).get("agility", 0))
+	return clampi(agility * 3 + int(floor(speed / 4.0)), 0, 30)
+
 # combatMath.getSpellPowerBonus — 術威力: half the caster's wit, floored.
 static func get_spell_power_bonus(character: Dictionary) -> int:
 	return maxi(0, int(floor(float(int((character.get("aptitude", {}) as Dictionary).get("wit", 0))) / 2.0)))

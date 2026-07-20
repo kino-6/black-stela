@@ -14,6 +14,7 @@ const ChestPanel := preload("res://scripts/dungeon/chest_panel.gd")
 const PartyPanel := preload("res://scripts/town/party_panel.gd")
 const CharacterStats := preload("res://scripts/rules/character_stats.gd")
 const Chests := preload("res://scripts/rules/chests.gd")
+const FloorMap := preload("res://scripts/dungeon/floor_map.gd")
 
 const CELL := 3.0
 const WALL_H := 3.2
@@ -263,7 +264,11 @@ func _build_overlays() -> void:
 	_header.position = Vector2(48, 36)
 	add_child(_header)
 
-	# minimap (top-right)
+	# minimap (top-right), under the heading React's navigation board carries — a map with no name is a
+	# decoration; the player has to know they are looking at 周辺.
+	var map_heading := _label(I18n.t("map.heading"), 16, GOLD)
+	map_heading.position = Vector2(size.x - 292, 8)
+	add_child(map_heading)
 	_minimap = preload("res://scripts/minimap.gd").new()
 	_minimap.custom_minimum_size = Vector2(260, 260)
 	_minimap.size = Vector2(260, 260)
@@ -331,22 +336,115 @@ func step_forward() -> void:
 	if not _busy:
 		await _apply(SliceRules.resolve(_state, {"type": "move_forward"}, _world))
 
+## Test seam: drive the crawl from a specific state, so what the party CARRIES (a way-out charm, a key)
+## reaches the contextual dock.
+func set_state_override(patched: Dictionary) -> void:
+	var position: Variant = _state.get("position", null)
+	var map: Variant = _state.get("map", null)
+	_state = patched.duplicate(true)
+	_state["phase"] = "dungeon"
+	# Keep where the party is standing: the fixture describes what they HAVE, not where they are.
+	if typeof(position) == TYPE_DICTIONARY:
+		_state["position"] = position
+	if typeof(map) == TYPE_DICTIONARY:
+		_state["map"] = map
+	_rebuild_dock()
+	_rebuild_party_hud()
+
 ## Test seam for the UX-parity gate: force a surface (a chest on this cell, the full-floor map) so the
 ## conditional screens are actually asserted rather than only the empty corridor.
 func set_ui_state(ui: Dictionary) -> void:
 	if bool(ui.get("chest", false)) and _state.get("position", null) != null:
 		var cell_id: Variant = (_state["position"] as Dictionary).get("cellId", null)
 		if typeof(cell_id) == TYPE_STRING:
+			# A chest is only ever ONE of its stages on screen, and each stage says something different to
+			# the player: closed, "a trap is set", "cannot tell", "no trap found", opened. Driving the
+			# stage is how the gate proves the panel HAS them rather than assuming the closed one covers it.
+			var result: Variant = ui.get("chest_result", null)
+			var opened := bool(ui.get("chest_opened", false))
 			_state["chests"] = [{
 				"cellId": cell_id, "roomId": _state["position"]["roomId"], "treasureTable": null,
-				"trap": {"kind": "needle", "difficulty": 12, "damage": 4}, "phase": "closed",
-				"investigated": false, "investigateResult": null, "disarmAttempted": false,
+				"trap": {"kind": "needle", "difficulty": 12, "damage": 4},
+				"phase": "opened" if opened else "closed",
+				"investigated": result != null, "investigateResult": result, "disarmAttempted": false,
 				"disarmed": false, "sprung": false
 			}]
 			_left_chest_cell = ""
 			_rebuild_dock()
+	# The dock is contextual, so its states are PLACES. Each of these stands the party in a real room of
+	# the authored floor — a stair, a gated stair, a way home — rather than faking a button into the row.
+	if bool(ui.get("at_stairs", false)):
+		_stand_at(func(room, _cells): return _room_has_stairs(room) and _gate_blocking(room) == null)
+	if bool(ui.get("stair_locked", false)):
+		_stand_at(func(room, _cells): return _room_has_stairs(room) and _gate_blocking(room) != null)
+	if bool(ui.get("at_return", false)):
+		_stand_at(func(room, _cells): return bool(room.get("stairsToTown", false)))
+	if bool(ui.get("at_rest", false)):
+		# A rest point is left by the PARTY, not built into the floor — the way home there is the marker
+		# they planted, and it says so.
+		_stand_at(func(room, _cells): return bool(room.get("restPoint", false)) and not bool(room.get("stairsToTown", false)))
+	if ui.has("auto"):
+		_auto_running = bool(ui["auto"])
+		_rebuild_dock()
+	if bool(ui.get("at_dark", false)):
+		# The one place the map cannot help: a dark zone, where the floor is walked by counting steps.
+		_stand_at(func(room, _cells):
+			for gate in room.get("gates", []):
+				if typeof(gate) == TYPE_DICTIONARY and String(gate.get("kind", "")) == "dark_zone":
+					return true
+			return false)
 	if bool(ui.get("fullMap", false)):
 		_toggle_full_map()
+
+## Move the party to the first room the predicate accepts, and rebuild what depends on where they stand.
+func _stand_at(accepts: Callable) -> void:
+	for dungeon in _world.get("dungeons", []):
+		for room in dungeon.get("rooms", []):
+			if not accepts.call(room, dungeon):
+				continue
+			for cell in (dungeon.get("grid", {}) as Dictionary).get("cells", []):
+				if String(cell.get("roomId", "")) != String(room.get("id", "")):
+					continue
+				var facing := _stairs_facing(cell)
+				_state["position"] = {"roomId": room["id"], "cellId": cell["id"], "facing": facing}
+				# Standing somewhere means the MAP knows it: the automap is what the party has walked, so
+				# a seam that moved the body without the record would leave the two disagreeing.
+				var map: Dictionary = _state.get("map", {})
+				map["floorId"] = dungeon.get("id", map.get("floorId", null))
+				map["currentRoomId"] = room["id"]
+				map["currentCellId"] = cell["id"]
+				map["currentFacing"] = facing
+				map["visitedCells"] = [cell["id"]]
+				map["visitedRooms"] = [room["id"]]
+				_state["map"] = map
+				_rebuild_dock()
+				_update_view(false)
+				return
+	push_error("[dungeon] no room in this world matches the requested state")
+
+func _stairs_facing(cell: Dictionary) -> String:
+	for dir in (cell.get("edges", {}) as Dictionary):
+		var edge: Variant = (cell["edges"] as Dictionary)[dir]
+		if typeof(edge) == TYPE_DICTIONARY and String(edge.get("kind", "")) == "stairs":
+			return String(dir)
+	return String(_state.get("position", {}).get("facing", "north"))
+
+func _room_has_stairs(room: Dictionary) -> bool:
+	for dungeon in _world.get("dungeons", []):
+		for cell in (dungeon.get("grid", {}) as Dictionary).get("cells", []):
+			if String(cell.get("roomId", "")) != String(room.get("id", "")):
+				continue
+			for dir in (cell.get("edges", {}) as Dictionary):
+				var edge: Variant = (cell["edges"] as Dictionary)[dir]
+				if typeof(edge) == TYPE_DICTIONARY and String(edge.get("kind", "")) == "stairs":
+					return true
+	return false
+
+func _gate_blocking(room: Dictionary) -> Variant:
+	for gate in room.get("gates", []):
+		if typeof(gate) == TYPE_DICTIONARY and not _is_gate_open(gate):
+			return gate
+	return null
 
 # The chest sitting on the party's cell, or {} — while one is here it OWNS the command region.
 func current_chest() -> Dictionary:
@@ -401,7 +499,10 @@ func _party_token(member: Dictionary) -> Control:
 	if max_mp > 0:
 		body.add_child(_gauge(float(int(member.get("mp", 0))) / float(max_mp), Color("6a86b0")))
 
+	# React names this block for the player (play.memberStatus): the numbers underneath are what an
+	# encounter is judged by, and an unlabelled row of figures is a readout, not information.
 	var numbers := UIKit.row()
+	numbers.add_child(UIKit.label(I18n.t("play.memberStatus"), 11, DIM))
 	numbers.add_child(UIKit.label("%s %d-%d" % [I18n.t("party.damage"), int(stats.get("damageMin", 0)), int(stats.get("damageMax", 0))], 12, DIM))
 	numbers.add_child(UIKit.label("%s %d" % [I18n.t("party.armor"), int(stats.get("armor", 0))], 12, DIM))
 	numbers.add_child(UIKit.label("%s %d" % [I18n.t("party.speed"), int(stats.get("speed", 0))], 12, DIM))
@@ -473,28 +574,106 @@ func _rebuild_dock() -> void:
 	for entry in _dock_commands():
 		var b: Button = _command_button(String(entry["label"]))
 		var kind: String = String(entry["kind"])
-		b.pressed.connect(func(): _on_command(kind))
+		b.disabled = bool(entry.get("disabled", false))
+		if not b.disabled:
+			b.pressed.connect(func(): _on_command(kind))
 		row.add_child(b)
-		if first == null:
+		if first == null and not b.disabled:
 			first = b
+
+	# IMP-026: auto-explore is a compact exploration STATUS with an immediate interrupt — it rides at the
+	# END of the dock, distinct from the current-cell decisions, and never becomes the first command in
+	# every room.
+	var tempo: Button = _command_button(I18n.t("tempo.stop") if _auto_running else I18n.t("tempo.auto"))
+	tempo.custom_minimum_size = Vector2(150, 40)
+	tempo.add_theme_color_override("font_color", UIKit.OK if _auto_running else UIKit.DIM)
+	tempo.pressed.connect(func(): _toggle_auto())
+	row.add_child(tempo)
 	root.add_child(row)
+
+	# The reason a way down will not open, in the player's own language. React hides it in a tooltip; a
+	# controller player has no pointer to hover with.
+	var clue := _stair_gate_clue()
+	if clue != "":
+		root.add_child(UIKit.label(clue, 15, DIM))
+
 	_dock_host.add_child(root)
 	if first:
 		first.call_deferred("grab_focus")
+	elif _auto_running:
+		tempo.call_deferred("grab_focus")
 
 # The dock is CONTEXTUAL: stairs and the way home only appear where they actually answer.
 func _dock_commands() -> Array:
 	var out: Array = [{"kind": "search", "label": I18n.t("play.search")}, {"kind": "listen", "label": I18n.t("play.listen")}]
 	var room: Variant = _current_room()
-	if _has_stairs_here():
+	var gate: Variant = _blocking_stair_gate()
+	if _has_stairs_here() and typeof(gate) != TYPE_DICTIONARY:
 		out.append({"kind": "stairs", "label": I18n.t("play.useStairs")})
+	elif typeof(gate) == TYPE_DICTIONARY:
+		# #68: a DISABLED command with the same footprint, never a variable-width clue tile — the dock
+		# must not reflow. React hides the reason in a tooltip; a controller player never hovers, so the
+		# clue is shown as its own line under the commands instead.
+		out.append({"kind": "locked", "label": I18n.t("play.descentLockedShort"), "disabled": true})
 	if typeof(room) == TYPE_DICTIONARY and (bool(room.get("stairsToTown", false)) or bool(room.get("restPoint", false))):
-		out.append({"kind": "return", "label": I18n.t("play.useReturnStairs")})
+		# The way home reads differently depending on what it IS: a staircase back up, or the marker the
+		# party planted at a rest point.
+		var via_stairs := bool(room.get("stairsToTown", false))
+		out.append({"kind": "return", "label": I18n.t("play.useReturnStairs" if via_stairs else "play.useReturnMarker")})
+	if _escape_item() != "":
+		out.append({"kind": "charm", "label": I18n.t("play.useReturnCharm")})
 	if typeof(room) == TYPE_DICTIONARY and typeof(room.get("trap", null)) == TYPE_DICTIONARY and not (_state.get("resolvedTraps", []) as Array).has(room["trap"].get("id", "")):
 		out.append({"kind": "disarm", "label": I18n.t("play.chestDisarm")})
 	out.append({"kind": "map", "label": I18n.t("play.fullMap")})
 	out.append({"kind": "party", "label": I18n.t("partyMenu.title")})
 	return out
+
+## The gate on the stair the party is facing, when it will not open yet (port of stairGateAhead) — the
+## crank not turned, the floor not mapped. Returns {} when the way down is clear.
+func _blocking_stair_gate() -> Variant:
+	var room: Variant = _current_room()
+	if typeof(room) != TYPE_DICTIONARY or not _has_stairs_here():
+		return null
+	for gate in room.get("gates", []):
+		if typeof(gate) != TYPE_DICTIONARY:
+			continue
+		if _is_gate_open(gate):
+			continue
+		return gate
+	return null
+
+func _is_gate_open(gate: Dictionary) -> bool:
+	var key_id: Variant = gate.get("requiredKeyId", null)
+	if typeof(key_id) == TYPE_STRING and key_id != "":
+		var held := false
+		for item in _state.get("inventory", []):
+			if String(item.get("id", "")) == key_id and int(item.get("quantity", 0)) > 0:
+				held = true
+				break
+		if not held:
+			return false
+	var flag: Variant = gate.get("requiredFlag", null)
+	if typeof(flag) == TYPE_STRING and flag != "" and not (_state.get("discoveredSecrets", []) as Array).has(flag):
+		return false
+	return true
+
+## The clue the gate carries, in the player's language — shown as a line rather than a tooltip.
+func _stair_gate_clue() -> String:
+	var gate: Variant = _blocking_stair_gate()
+	if typeof(gate) != TYPE_DICTIONARY:
+		return ""
+	var locales: Variant = gate.get("locales", {})
+	var ja: Dictionary = (locales as Dictionary).get("ja", {}) if typeof(locales) == TYPE_DICTIONARY else {}
+	var clue: String = String(ja.get("clue", gate.get("clue", "")))
+	return clue if clue != "" else I18n.t("play.descentLocked")
+
+## A charm that carries the party out — only while in the dungeon, and never on a boss floor (React's
+## canUseEscapeItem). Returns the item id, or "".
+func _escape_item() -> String:
+	for item in _state.get("inventory", []):
+		if String(item.get("kind", "")) == "escape" and int(item.get("quantity", 0)) > 0:
+			return String(item.get("id", ""))
+	return ""
 
 func _current_room() -> Variant:
 	if _state.get("position", null) == null:
@@ -546,6 +725,40 @@ func _on_command(kind: String) -> void:
 			_apply(SliceRules.resolve(_state, {"type": "return_to_town"}, _world, _engine))
 			if _state.get("phase", "") == "town":
 				get_tree().change_scene_to_file("res://scenes/town.tscn")
+		"charm":
+			var charm := _escape_item()
+			if charm != "":
+				var target: String = String((_state.get("party", []) as Array)[0].get("id", "")) if not (_state.get("party", []) as Array).is_empty() else ""
+				_apply(SliceRules.resolve(_state, {"type": "use_item", "itemId": charm, "targetCharacterId": target}, _world, _engine))
+				if _state.get("phase", "") == "town":
+					get_tree().change_scene_to_file("res://scenes/town.tscn")
+
+# --- auto-explore ---------------------------------------------------------------------------------
+## Walk the party forward on a timer until something asks for a decision — an encounter, a chest, or a
+## wall. It is a STATUS with an interrupt, not an autopilot: the same button stops it, and anything that
+## takes the command region (combat, a chest) stops it too, so the player is never carried past a choice.
+func _toggle_auto() -> void:
+	_auto_running = not _auto_running
+	_rebuild_dock()
+	if _auto_running:
+		_auto_loop()
+
+func _auto_loop() -> void:
+	while _auto_running and is_inside_tree():
+		if _busy or not current_chest().is_empty() or String(_state.get("phase", "")) != "dungeon":
+			break
+		var before := String((_state.get("position", {}) as Dictionary).get("cellId", ""))
+		await step_forward()
+		if String(_state.get("phase", "")) != "dungeon" or not current_chest().is_empty():
+			break   # a fight or a chest owns the screen now
+		if String((_state.get("position", {}) as Dictionary).get("cellId", "")) == before:
+			break   # a wall: walking again would just repeat the same refusal
+		await get_tree().create_timer(0.35).timeout
+	_auto_running = false
+	if is_inside_tree():
+		_rebuild_dock()
+
+var _auto_running: bool = false
 
 # Apply a rules result: persist to the run, log it, and either descend into combat or refresh the view.
 func _apply(result: Dictionary) -> void:
@@ -649,12 +862,8 @@ func _toggle_full_map() -> void:
 	layer.add_child(panel)
 	var body: VBoxContainer = UIKit.col(8)
 	panel.add_child(body)
-	body.add_child(UIKit.label(I18n.t("play.fullMapTitle"), 26, GOLD))
-	var floor_id: Variant = (_state.get("map", {}) as Dictionary).get("floorId", null)
+	body.add_child(FloorMap.build(_state, _world))
 	body.add_child(UIKit.label(I18n.t("map.coverage", {"percent": _coverage_percent()}), 17, INK))
-	body.add_child(UIKit.label(_floor_name(floor_id), 15, DIM))
-	var grid: Control = _full_map_grid()
-	body.add_child(grid)
 	var close: Button = UIKit.button(I18n.t("play.chestLeave"), func(): _toggle_full_map(), Vector2(180, 44), 17)
 	var foot: HBoxContainer = UIKit.row()
 	foot.add_child(close)

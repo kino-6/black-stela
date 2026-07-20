@@ -16,6 +16,7 @@ extends SceneTree
 ## Usage: godot --path godot/ --script res://tests/verify_ux_parity.gd
 ## (render is NOT required — this walks the Control tree, so it works with or without --headless.)
 
+const UxFixture := preload("res://tests/ux_fixture.gd")
 const MANIFEST := "res://gates/ux-parity-manifest.json"
 const COPY := "res://data/i18n-ja.json"
 
@@ -113,58 +114,7 @@ func _text_for_state(entry: Dictionary, state: Dictionary) -> Variant:
 
 	var fixture: Dictionary = state.get("fixture", {})
 	if not fixture.is_empty() and root.has_method("set_state_override"):
-		var base: Dictionary = (JSON.parse_string(FileAccess.get_file_as_string("res://data/traces/b1f-exploration.json")) as Dictionary).get("initialState", {})
-		var patched: Dictionary = base.duplicate(true)
-		patched["phase"] = "town"
-		for key in fixture:
-			patched[key] = fixture[key]
-		if fixture.has("__afflictParty"):
-			# Statuses and a wound, so the strip's pips are PROVEN to render rather than assumed.
-			var afflicted := []
-			var ailments := ["poison", "sleep", "fear", "silence", "ward"]
-			var index := 0
-			for member in patched.get("party", []):
-				var m: Dictionary = member.duplicate(true)
-				m["status"] = [ailments[index % ailments.size()]]
-				if index == 0:
-					m["injury"] = "wounded"
-				afflicted.append(m)
-				index += 1
-			patched["party"] = afflicted
-		if fixture.has("__wearNone"):
-			var stripped := []
-			for member in patched.get("party", []):
-				var m: Dictionary = member.duplicate(true)
-				m["equipment"] = {}
-				stripped.append(m)
-			patched["party"] = stripped
-		if fixture.has("__wearMaxed"):
-			# A piece already at the reinforce cap, so 鍛え切った is proven rather than assumed.
-			var maxed := []
-			for member in patched.get("party", []):
-				var m: Dictionary = member.duplicate(true)
-				m["equipment"] = {"weapon": {"id": "equip.militia-sabre", "plus": 5}}
-				maxed.append(m)
-			patched["party"] = maxed
-		if fixture.has("__wearAll"):
-			# The forge lists only the slots a member WEARS; kit one out so every slot label is proven.
-			var kitted := []
-			for member in patched.get("party", []):
-				var m: Dictionary = member.duplicate(true)
-				m["equipment"] = {
-					"weapon": {"id": "equip.militia-sabre"}, "offhand": {"id": "equip.split-buckler"},
-					"body": {"id": "equip.padded-jack"}, "head": {"id": "equip.iron-cap"},
-					"hands": {"id": "equip.grip-gloves"}, "accessory": {"id": "equip.chalk-cord"}
-				}
-				kitted.append(m)
-			patched["party"] = kitted
-		if fixture.has("__woundParty"):
-			var hurt := []
-			for member in patched.get("party", []):
-				var m: Dictionary = member.duplicate(true)
-				m["hp"] = maxi(1, int(m.get("maxHp", 10)) - int(fixture["__woundParty"]))
-				hurt.append(m)
-			patched["party"] = hurt
+		var patched := UxFixture.build(fixture)
 		root.call("set_state_override", patched)
 		for i in 4:
 			await process_frame

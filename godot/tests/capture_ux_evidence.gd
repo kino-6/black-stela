@@ -7,6 +7,7 @@ extends SceneTree
 ## mistake is why an earlier M3 pass claimed screenshots were impossible):
 ##   godot --path godot/ --script res://tests/capture_ux_evidence.gd
 
+const UxFixture := preload("res://tests/ux_fixture.gd")
 const MANIFEST := "res://gates/ux-parity-manifest.json"
 
 func _initialize() -> void:
@@ -36,22 +37,12 @@ func _initialize() -> void:
 			for i in 3:
 				await process_frame
 
-		# same fixture + ui state the gate asserts against, so the shot IS the asserted screen
+		# same fixture + ui state the gate asserts against, so the shot IS the asserted screen (both build
+		# it through tests/ux_fixture.gd — this file used to know only __woundParty, so the evidence for an
+		# afflicted party showed a healthy one).
 		var fixture: Dictionary = entry.get("fixture", {})
 		if not fixture.is_empty() and root.has_method("set_state_override"):
-			var base: Dictionary = (JSON.parse_string(FileAccess.get_file_as_string("res://data/traces/b1f-exploration.json")) as Dictionary).get("initialState", {})
-			var patched: Dictionary = base.duplicate(true)
-			patched["phase"] = "town"
-			for k in fixture:
-				patched[k] = fixture[k]
-			if fixture.has("__woundParty"):
-				var hurt := []
-				for member in patched.get("party", []):
-					var m: Dictionary = member.duplicate(true)
-					m["hp"] = maxi(1, int(m.get("maxHp", 10)) - int(fixture["__woundParty"]))
-					hurt.append(m)
-				patched["party"] = hurt
-			root.call("set_state_override", patched)
+			root.call("set_state_override", UxFixture.build(fixture))
 			for i in 4:
 				await process_frame
 

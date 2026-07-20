@@ -1,10 +1,26 @@
-# Black Stela — Godot vertical-slice project
+# Black Stela — Godot migration runtime
 
-The Godot 4.7.1 (GDScript) runtime spike for the migration. **TypeScript remains
-the oracle**: this project consumes the world packs and golden traces exported
-from the TS side and (from S3) replays those traces for byte-for-byte parity. See
-`../docs/design/migration-execution-plan.md` for the plan and
-`../docs/architecture.md` §2 for the durable-core-vs-UI boundary.
+The Godot 4.7.1 (GDScript) runtime for the active full migration. **TypeScript
+remains the oracle and authoring toolchain**: this project consumes normalized
+world packs, engine data, and golden traces exported from the TS side, then
+replays those traces for byte-for-byte rules parity.
+
+## Migration References
+
+Read these in order before adding a migrated subsystem:
+
+1. [`../docs/architecture.md`](../docs/architecture.md) for the durable
+   core/presentation boundary and command loop.
+2. [`../docs/design/godot-full-migration-plan.md`](../docs/design/godot-full-migration-plan.md)
+   for the active milestone, exit criteria, and parity process.
+3. [`../docs/design/ai-godot-migration-contract.md`](../docs/design/ai-godot-migration-contract.md)
+   before touching scenario AI, narration, canonical events, records, or saves.
+4. [`../AIPlan.md`](../AIPlan.md) for the AI scenario and realtime GM product
+   direction.
+
+M3 does not implement live AI. Town service rules keep returning canonical
+typed events; Godot scenes render those results but do not call providers or
+store generated prose in `Run.state`.
 
 ## Prerequisites
 
@@ -13,7 +29,7 @@ from the TS side and (from S3) replays those traces for byte-for-byte parity. Se
   from the repo root:
 
   ```sh
-  npm run export:godot     # = export:packs + export:traces
+  npm run export:godot     # packs + traces + shared engine/character data
   ```
 
   This writes `godot/data/worlds/<id>.json` and `godot/data/traces/<route>.json`,
@@ -55,7 +71,7 @@ data/                    GENERATED (gitignored): world packs + golden traces
 
 ## Status
 
-- **S2 (this):** project shell — boots, loads a world pack, scene roots compile
-  and navigate. No rules yet.
-- **Next (S3):** port the slice's minimum rules to GDScript and replay the golden
-  traces for state-hash parity against the TS oracle.
+The validated spike has moved into the full migration and M3 town-service work
+is active. This README is an entry point rather than a milestone tracker; use
+[`godot-full-migration-plan.md`](../docs/design/godot-full-migration-plan.md)
+for current scope and exit criteria.

@@ -11,6 +11,7 @@ const Fmt := preload("res://scripts/town_format.gd")
 const UI := preload("res://scripts/town/ui_kit.gd")
 const CharacterStats := preload("res://scripts/rules/character_stats.gd")
 const Leveling := preload("res://scripts/rules/leveling.gd")
+const Helpers := preload("res://scripts/rules/combat_helpers.gd")
 
 const APTITUDES := ["might", "agility", "spirit", "wit", "luck"]
 
@@ -22,7 +23,10 @@ static func build(ctx: Dictionary) -> Control:
 
 	var root := UI.col(10)
 	root.add_child(UI.service_heading(I18n.t("partyMenu.title"), I18n.t("town.gold", {"gold": int(state.get("partyGold", 0))})))
-	root.add_child(UI.prose(I18n.t("partyMenu.subtitleTown"), 16, UI.DIM, 900))
+	# The same panel opens in town and in the dungeon, and it says which one you are in — because what it
+	# lets you DO differs: gear is changed at the guild, never in a corridor.
+	var in_town: bool = String(state.get("phase", "town")) == "town"
+	root.add_child(UI.prose(I18n.t("partyMenu.subtitleTown" if in_town else "partyMenu.subtitleDungeon"), 16, UI.DIM, 900))
 	var last_event: String = ctx.get("event_text", "")
 	if last_event != "":
 		root.add_child(UI.event_window(last_event))
@@ -91,6 +95,12 @@ static func build(ctx: Dictionary) -> Control:
 	vitals.add_child(UI.label("%s: %s" % [I18n.t("partyMenu.condition"), _condition(member)], 16, UI.BAD if member.get("injury", null) != null else UI.OK))
 	detail.add_child(vitals)
 
+	# Trading places with the adventurer standing opposite: React's one-press swap, which is how a party
+	# is actually re-formed (moving one member alone leaves a hole in the line).
+	var counterpart := _counterpart(party, member)
+	if not counterpart.is_empty():
+		detail.add_child(UI.button(I18n.t("partyMenu.swapWith", {"name": String(counterpart.get("name", ""))}), func(): ctx["dispatch"].call({"type": "swap_member_rows", "characterId": member.get("id", ""), "targetCharacterId": counterpart.get("id", "")}), Vector2(260, 38), 15))
+
 	# XP to the next level — the reason to keep descending.
 	var next_level := int(member.get("level", 1)) + 1
 	var to_next := maxi(0, Leveling.xp_for_level(next_level) - int(member.get("xp", 0)))
@@ -103,16 +113,23 @@ static func build(ctx: Dictionary) -> Control:
 	_stat_row(combat, I18n.t("party.accuracy"), str(int(stats.get("accuracy", 0))))
 	_stat_row(combat, I18n.t("party.armor"), str(int(stats.get("armor", 0))))
 	_stat_row(combat, I18n.t("party.speed"), str(int(stats.get("speed", 0))))
+	# The four DERIVED numbers React shows beside the raw stats: they are where aptitude actually pays
+	# off, and without them a player cannot tell why a nimble adventurer survives or a witty one lands
+	# afflictions. All four come from the ported combat math, never from a second formula written here.
+	_stat_row(combat, I18n.t("partyMenu.evasion"), "%d%%" % Helpers.get_evasion_chance(member, world))
+	_stat_row(combat, I18n.t("partyMenu.spellPower"), "+%d" % Helpers.get_spell_power_bonus(member))
+	_stat_row(combat, I18n.t("partyMenu.statusPower"), "%d%%" % Helpers.get_status_spell_chance(member, 0))
+	_stat_row(combat, I18n.t("partyMenu.critical"), "%d%%" % Helpers.get_critical_chance(member))
 	detail.add_child(combat)
 
-	# Resistances — what this adventurer can stand in the dark.
+	# Resistances — what this adventurer can stand in the dark. React lists the four afflictions ALWAYS,
+	# 0% included: "no resistance" is the answer the player came for as much as a number is.
 	var resist: Dictionary = stats.get("resistance", {})
-	if not resist.is_empty():
-		var rrow := UI.row()
-		rrow.add_child(UI.label(I18n.t("partyMenu.resistances"), 15, UI.DIM))
-		for key in resist:
-			rrow.add_child(UI.label("%s %d" % [I18n.t("partyMenu.status.%s" % String(key)) if I18n.has("partyMenu.status.%s" % String(key)) else String(key), int(resist[key])], 14, UI.INK))
-		detail.add_child(rrow)
+	var rrow := UI.row()
+	rrow.add_child(UI.label(I18n.t("partyMenu.resistances"), 15, UI.DIM))
+	for key in ["poison", "fear", "silence", "sleep"]:
+		rrow.add_child(UI.label("%s %d%%" % [I18n.t("partyMenu.status.%s" % key), int(resist.get(key, 0))], 14, UI.INK))
+	detail.add_child(rrow)
 
 	# Aptitudes, with what each one actually governs.
 	detail.add_child(UI.label(I18n.t("party.aptitude"), 18, UI.GOLD))
@@ -127,7 +144,7 @@ static func build(ctx: Dictionary) -> Control:
 
 	# Equipment — the six slots and what fills them.
 	detail.add_child(UI.label(I18n.t("partyMenu.equipped"), 18, UI.GOLD))
-	detail.add_child(UI.label(I18n.t("partyMenu.equipmentTown"), 14, UI.DIM))
+	detail.add_child(UI.label(I18n.t("partyMenu.equipmentTown" if in_town else "partyMenu.equipmentDungeon"), 14, UI.DIM))
 	for slot in Fmt.EQUIPMENT_SLOT_ORDER:
 		var line2 := UI.row()
 		line2.add_child(UI.label(Fmt.format_equipment_slot(String(slot)), 15, UI.DIM))
@@ -194,6 +211,7 @@ const USABLE_KINDS := ["healing", "cure", "focus", "growth"]
 
 # 所持品 / 貴重品: the carried list on the left, and what the SELECTED item does on the right.
 static func _item_page(ctx: Dictionary, world: Dictionary, member: Dictionary, page: String) -> Dictionary:
+	var in_town: bool = String((ctx["state"] as Dictionary).get("phase", "town")) == "town"
 	var state: Dictionary = ctx["state"]
 	var visible := []
 	for item in state.get("inventory", []):
@@ -249,8 +267,15 @@ static func _item_page(ctx: Dictionary, world: Dictionary, member: Dictionary, p
 		if is_equipment:
 			var equip: Variant = Fmt.find_equipment(world, selected.get("id", ""))
 			var usable: bool = typeof(equip) == TYPE_DICTIONARY and Fmt.is_usable_by(equip, member)
-			var eb := UI.button(I18n.t("partyMenu.equipOn", {"name": String(member.get("name", ""))}) if usable else I18n.t("partyMenu.cannotEquip"), func(): ctx["dispatch"].call({"type": "equip_item", "characterId": member.get("id", ""), "equipmentId": selected.get("id", ""), "plus": selected.get("plus", null), "affix": selected.get("affix", null)}), Vector2(220, 40), 16)
-			eb.disabled = not usable
+			# Three answers, never one dead button: change it here, this adventurer cannot wear it, or
+			# gear is changed in town — a player refused an action is owed the reason.
+			var label := I18n.t("partyMenu.equipOn", {"name": String(member.get("name", ""))})
+			if not in_town:
+				label = I18n.t("partyMenu.equipmentDungeonShort")
+			elif not usable:
+				label = I18n.t("partyMenu.cannotEquip")
+			var eb := UI.button(label, func(): ctx["dispatch"].call({"type": "equip_item", "characterId": member.get("id", ""), "equipmentId": selected.get("id", ""), "plus": selected.get("plus", null), "affix": selected.get("affix", null)}), Vector2(220, 40), 16)
+			eb.disabled = not usable or not in_town
 			actions.add_child(eb)
 		# Discarding is a TWO-PRESS confirm — one press can never destroy a carried item.
 		if not VALUABLE_KINDS.has(String(selected.get("kind", ""))):
@@ -269,6 +294,22 @@ static func _item_page(ctx: Dictionary, world: Dictionary, member: Dictionary, p
 		detail.add_child(actions)
 	cols.add_child(detail)
 	return {"control": cols, "focus": focus}
+
+## The adventurer standing opposite this one — the same index in the other row, clamped, exactly as
+## React picks the swap partner.
+static func _counterpart(party: Array, member: Dictionary) -> Dictionary:
+	var row := String(member.get("row", "front"))
+	var own := []
+	var other := []
+	for candidate in party:
+		if String(candidate.get("row", "front")) == row:
+			own.append(candidate)
+		else:
+			other.append(candidate)
+	if other.is_empty():
+		return {}
+	var index := maxi(0, own.find(member))
+	return other[clampi(index, 0, other.size() - 1)]
 
 static func _item_key(item: Dictionary) -> String:
 	if item.is_empty():
