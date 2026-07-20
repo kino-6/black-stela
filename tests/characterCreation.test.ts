@@ -15,13 +15,16 @@ import { defaultWorld } from "../src/data/defaultWorld";
 
 describe("character creation", () => {
   it("offers enough class variety for a six-member DRPG party", () => {
-    expect(classCatalog).toHaveLength(12);
-    expect(new Set(classCatalog.map((classDef) => classDef.id)).size).toBe(12);
+    // Eight after the consolidation (docs/design/class-system.md §4) — legible archetypes, each with a
+    // rules identity, instead of twelve labels standing on four abilities.
+    expect(classCatalog).toHaveLength(8);
+    expect(new Set(classCatalog.map((classDef) => classDef.id)).size).toBe(8);
     expect(classCatalog.every((classDef) => classDef.description.en.length > 20)).toBe(true);
     expect(classCatalog.every((classDef) => classDef.description.ja.length > 10)).toBe(true);
     expect(classCatalog.every((classDef) => Object.values(classDef.aptitude).some((value) => (value ?? 0) > 0))).toBe(true);
-    expect(classCatalog.filter((classDef) => classDef.rowPreference === "front").length).toBeGreaterThanOrEqual(6);
-    expect(classCatalog.filter((classDef) => classDef.rowPreference === "back").length).toBeGreaterThanOrEqual(5);
+    // Four and four: enough to fill a 3+3 formation from either row without repeating a class.
+    expect(classCatalog.filter((classDef) => classDef.rowPreference === "front").length).toBeGreaterThanOrEqual(4);
+    expect(classCatalog.filter((classDef) => classDef.rowPreference === "back").length).toBeGreaterThanOrEqual(4);
   });
 
   it("offers enough origins and temperaments for roster authorship", () => {
@@ -40,7 +43,7 @@ describe("character creation", () => {
       name: "Mira",
       notes: "Maps by candlelight.",
       title: "Candle Mapper",
-      classId: "seeker",
+      classId: "thief",
       backgroundId: "cartographer",
       traitIds: ["curious"],
       aptitudeFocus: "wit",
@@ -52,7 +55,7 @@ describe("character creation", () => {
     expect(character).toMatchObject({
       name: "Mira",
       title: "Candle Mapper",
-      classId: "seeker",
+      classId: "thief",
       backgroundId: "cartographer",
       traitIds: ["curious"],
       row: "front",
@@ -69,7 +72,7 @@ describe("character creation", () => {
   });
 
   it("equips the class starting loadout so adventurers are not empty-handed", () => {
-    const vanguard = createGuildCharacter({ name: "Mira", classId: "vanguard" });
+    const vanguard = createGuildCharacter({ name: "Mira", classId: "warrior" });
     expect(vanguard.equipment.weapon?.id).toBe("equip.militia-sabre");
     expect(vanguard.equipment.body?.id).toBe("equip.padded-jack");
     const effective = getEffectiveCharacterStats(vanguard, defaultWorld);
@@ -86,7 +89,7 @@ describe("character creation", () => {
   it("uses the origin as the default visual accent when no manual color is provided", () => {
     const character = createGuildCharacter({
       name: "Orn",
-      classId: "mender",
+      classId: "priest",
       backgroundId: "grave_tender",
       traitIds: ["soft_spoken"]
     });
@@ -107,10 +110,10 @@ describe("character creation", () => {
   });
 
   it("applies manually allocated bonus aptitude during detailed creation", () => {
-    const base = createGuildCharacter({ name: "Rill", classId: "seeker", backgroundId: "watch", traitIds: ["steady"] });
+    const base = createGuildCharacter({ name: "Rill", classId: "thief", backgroundId: "watch", traitIds: ["steady"] });
     const boosted = createGuildCharacter({
       name: "Rill",
-      classId: "seeker",
+      classId: "thief",
       backgroundId: "watch",
       traitIds: ["steady"],
       bonusAptitude: { agility: 3 }
@@ -121,8 +124,8 @@ describe("character creation", () => {
   });
 
   it("starts from class aptitude instead of zeroed ability rows", () => {
-    const vanguard = createGuildCharacter({ name: "Rook", classId: "vanguard", backgroundId: "watch", traitIds: ["steady"] });
-    const arcanist = createGuildCharacter({ name: "Mira", classId: "arcanist", backgroundId: "scriptorium", traitIds: ["curious"] });
+    const vanguard = createGuildCharacter({ name: "Rook", classId: "warrior", backgroundId: "watch", traitIds: ["steady"] });
+    const arcanist = createGuildCharacter({ name: "Mira", classId: "mage", backgroundId: "scriptorium", traitIds: ["curious"] });
 
     expect(vanguard.aptitude.might).toBeGreaterThan(2);
     expect(vanguard.aptitude.spirit).toBeGreaterThan(2);
@@ -133,14 +136,14 @@ describe("character creation", () => {
     const suggestion = createIdentitySuggestion({
       seed: 4,
       locale: "ja",
-      classId: "seeker",
+      classId: "thief",
       backgroundId: "cartographer",
       traitId: "curious"
     });
     const nextSuggestion = createIdentitySuggestion({
       seed: 5,
       locale: "ja",
-      classId: "seeker",
+      classId: "thief",
       backgroundId: "cartographer",
       traitId: "curious"
     });
@@ -148,7 +151,7 @@ describe("character creation", () => {
     expect(suggestion.name.length).toBeGreaterThan(0);
     expect(suggestion.title.length).toBeGreaterThan(0);
     expect(suggestion.notes).toContain("地図師");
-    expect(suggestion.notes).toContain("探索者");
+    expect(suggestion.notes).toContain("盗賊");
     expect(nextSuggestion.name).not.toBe(suggestion.name);
   });
 

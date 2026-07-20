@@ -8,7 +8,7 @@ import { worldRegistry } from "../src/data/worldRegistry";
 import type { Character, GameState } from "../src/domain/types";
 
 function frontliner(equipment: Character["equipment"]): Character {
-  const base = createGuildCharacter({ name: "Rook", classId: "vanguard", seed: "elem" });
+  const base = createGuildCharacter({ name: "Rook", classId: "warrior", seed: "elem" });
   return { ...base, row: "front", equipment };
 }
 

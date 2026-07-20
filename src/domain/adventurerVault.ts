@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { resolveClassId } from "./classIds";
 import type { PortableAdventurer } from "./types";
 
 // The adventurer vault is a scenario-independent storage boundary: adventurers
@@ -15,20 +16,9 @@ const AptitudeSchema = z.object({
   luck: z.number().int()
 });
 
-const ClassIdSchema = z.enum([
-  "vanguard",
-  "sellsword",
-  "bulwark",
-  "duelist",
-  "seeker",
-  "scout",
-  "cutpurse",
-  "mender",
-  "chanter",
-  "occultist",
-  "arcanist",
-  "wayfinder"
-]);
+// Legacy class ids are accepted and normalized (characterCreation.LEGACY_CLASS_MAPPING) — a vault
+// adventurer written by an older build is still that adventurer.
+const ClassIdSchema = z.string().min(1).transform((id) => resolveClassId(id));
 
 const BackgroundIdSchema = z.enum([
   "watch",

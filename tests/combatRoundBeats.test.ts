@@ -9,7 +9,7 @@ import type { GameState } from "../src/domain/types";
 // state AFTER that blow — so the UI can play the round forward instead of snapping to
 // the final state. These lock that the domain emits them with usable snapshots.
 function slimeFight(): GameState {
-  const vanguard = addCharacter(createInitialGameState(), createGuildCharacter({ name: "Rook", classId: "vanguard", seed: "beats" }));
+  const vanguard = addCharacter(createInitialGameState(), createGuildCharacter({ name: "Rook", classId: "warrior", seed: "beats" }));
   const entered = executeCommand(vanguard, defaultWorld, { type: "enter_dungeon" });
   return executeCommand(entered, defaultWorld, { type: "move_forward" });
 }

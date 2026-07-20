@@ -292,7 +292,7 @@ function createExpectedParty(): Character[] {
       ...createGuildCharacter({
         name: "Sei",
         notes: "Lamp bearer. Keeps the party calm in fixed events.",
-        classId: "mender",
+        classId: "priest",
         backgroundId: "apothecary",
         traitIds: ["steady"],
         portraitRef: "debug://portrait/sei",
@@ -313,7 +313,7 @@ function createExpectedParty(): Character[] {
       ...createGuildCharacter({
         name: "Rook",
         notes: "Front line. Tests recovery instead of irreversible loss.",
-        classId: "vanguard",
+        classId: "warrior",
         backgroundId: "watch",
         traitIds: ["scarred"],
         portraitRef: "debug://portrait/rook",
@@ -334,7 +334,7 @@ function createExpectedParty(): Character[] {
       ...createGuildCharacter({
         name: "Vale",
         notes: "Scout. Represents search and trap progress.",
-        classId: "seeker",
+        classId: "thief",
         backgroundId: "ruinborn",
         traitIds: ["lucky"],
         portraitRef: "debug://portrait/vale",
@@ -355,7 +355,7 @@ function createExpectedParty(): Character[] {
       ...createGuildCharacter({
         name: "Bran",
         notes: "Second front line. Keeps six-member formation visible in debug starts.",
-        classId: "bulwark",
+        classId: "knight",
         backgroundId: "debtor",
         traitIds: ["steady"],
         portraitRef: "debug://portrait/bran",

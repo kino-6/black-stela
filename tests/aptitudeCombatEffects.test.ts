@@ -12,7 +12,7 @@ describe("aptitude combat effects", () => {
   it("turns agility into a visible evasion chance", () => {
     const slow = createGuildCharacter({
       name: "Slow",
-      classId: "vanguard",
+      classId: "warrior",
       bonusAptitude: { might: 0, agility: 0, spirit: 0, wit: 0, luck: 0 }
     });
     const agile = {

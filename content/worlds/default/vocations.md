@@ -8,7 +8,7 @@ vocations:
     name: Ash Reaver
     signature: A front-line breaker who turns mastered aggression into a single crushing swing.
     requires:
-      mastered: [vanguard, sellsword]
+      mastered: [warrior, swordmaster]
       minLevel: 6
     statModifiers: { attack: 3, maxHp: 8, speed: -1 }
     allowedSlots: [weapon, offhand, body, head, hands, accessory]
@@ -22,7 +22,7 @@ vocations:
     name: Salt Warden
     signature: A bulwark who learned to mend — holds the line and keeps the wounded standing.
     requires:
-      mastered: [bulwark, mender]
+      mastered: [knight, priest]
       minLevel: 6
     statModifiers: { armor: 3, maxHp: 12, maxMp: 4 }
     allowedSlots: [offhand, body, head, hands, accessory]
@@ -36,7 +36,7 @@ vocations:
     name: Star Votary
     signature: An occultist who read the late star-script — its fire answers only to the devoted.
     requires:
-      mastered: [occultist, arcanist]
+      mastered: [occultist, mage]
       minLevel: 8
     statModifiers: { maxMp: 8, attack: -1 }
     allowedSlots: [weapon, head, hands, accessory]
@@ -50,7 +50,7 @@ vocations:
     name: Needle Dancer
     signature: A knife-hand who turns a stolen opening into a precise, vanishing strike.
     requires:
-      mastered: [duelist, cutpurse]
+      mastered: [swordmaster, thief]
       minLevel: 6
     statModifiers: { attack: 2, accuracy: 5, speed: 2, maxHp: -2 }
     allowedSlots: [weapon, body, hands, accessory]
@@ -64,7 +64,7 @@ vocations:
     name: Dust Ranger
     signature: A route-reader who marks danger, keeps distance, and strikes before the trail closes.
     requires:
-      mastered: [seeker, scout]
+      mastered: [thief, mage]
       minLevel: 6
     statModifiers: { maxHp: 4, accuracy: 6, speed: 2 }
     allowedSlots: [weapon, body, head, hands, accessory]
@@ -78,7 +78,7 @@ vocations:
     name: Candle Pilgrim
     signature: A ward-bearer who remembers the road home and keeps a small light alive through panic.
     requires:
-      mastered: [chanter, wayfinder]
+      mastered: [chanter, thief]
       minLevel: 8
     statModifiers: { maxHp: 4, maxMp: 6, armor: 2, speed: 1 }
     allowedSlots: [weapon, offhand, body, head, accessory]

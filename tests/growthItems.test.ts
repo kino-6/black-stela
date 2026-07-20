@@ -7,7 +7,7 @@ import { defaultWorld } from "../src/data/defaultWorld";
 import type { GameState } from "../src/domain/types";
 
 function townWithItem(itemId: string): GameState {
-  const base = addCharacter(createInitialGameState(), createGuildCharacter({ name: "Rook", classId: "vanguard", seed: "grow" }));
+  const base = addCharacter(createInitialGameState(), createGuildCharacter({ name: "Rook", classId: "warrior", seed: "grow" }));
   const item = createInventoryItemFromCatalog(defaultWorld, itemId, 1)!;
   return { ...base, phase: "town", inventory: [item] };
 }

@@ -9,15 +9,17 @@ import { defaultWorld } from "../src/domain/../data/defaultWorld";
 // cast path as spells but flavored as strikes and spending the 気力 pool.
 describe("front-row 特技", () => {
   it("classifies a 特技 class as martial, not a caster", () => {
-    expect(isMartialSkillClass("vanguard")).toBe(true);
-    expect(isCasterClass("vanguard")).toBe(false);
+    expect(isMartialSkillClass("warrior")).toBe(true);
+    expect(isCasterClass("warrior")).toBe(false);
     expect(isMartialSkillClass("occultist")).toBe(false);
-    expect(isMartialSkillClass("scout")).toBe(false);
-    expect(knownSpells("seeker", 1)).toContain("power-strike");
+    expect(isMartialSkillClass("knight")).toBe(false);
+    expect(knownSpells("knight", 1)).toHaveLength(0);
+    // 盗賊 carries the same 特技 the front line does — the consolidation gave the merged trap classes a line.
+    expect(knownSpells("thief", 1)).toContain("power-strike");
   });
 
   it("power-strike lands as a physical strike, spending 気力, and can fell the slime", () => {
-    const vanguard = addCharacter(createInitialGameState(), createGuildCharacter({ name: "Rook", classId: "vanguard", seed: "ms" }));
+    const vanguard = addCharacter(createInitialGameState(), createGuildCharacter({ name: "Rook", classId: "warrior", seed: "ms" }));
     const entered = executeCommand(vanguard, defaultWorld, { type: "enter_dungeon" });
     const combat = executeCommand(entered, defaultWorld, { type: "move_forward" });
     expect(combat.phase).toBe("combat");
@@ -39,7 +41,7 @@ describe("front-row 特技", () => {
   });
 
   it("refuses power-strike when 気力 is exhausted, spending none", () => {
-    const vanguard = addCharacter(createInitialGameState(), createGuildCharacter({ name: "Rook", classId: "vanguard", seed: "ms" }));
+    const vanguard = addCharacter(createInitialGameState(), createGuildCharacter({ name: "Rook", classId: "warrior", seed: "ms" }));
     const entered = executeCommand(vanguard, defaultWorld, { type: "enter_dungeon" });
     const combat = executeCommand(entered, defaultWorld, { type: "move_forward" });
     const actor = combat.party[0];

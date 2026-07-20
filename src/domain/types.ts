@@ -7,7 +7,7 @@ export type Command =
   | { type: "enter_dungeon" }
   | { type: "bench_member"; characterId: string }
   | { type: "recall_member"; characterId: string }
-  | { type: "reclass_member"; characterId: string; classId: CharacterClassId }
+  | { type: "reclass_member"; characterId: string; classId: AnyClassId }
   | { type: "retire_member"; characterId: string }
   | { type: "unretire_member"; characterId: string }
   | { type: "erase_member"; characterId: string }
@@ -61,7 +61,28 @@ export type Command =
 export type CombatRow = "front" | "back";
 export type CombatActionKind = "attack" | "defend" | "use_item" | "cast";
 export type EquipmentSlot = "weapon" | "offhand" | "body" | "head" | "hands" | "accessory";
+/**
+ * The SELECTABLE classes (docs/design/class-system.md §4). Legible archetypes first: a player forms an
+ * expectation from the name, and Black Stela's voice lives in the Japanese description, the portrait, the
+ * gear and the techniques — not in an invented word.
+ */
 export type CharacterClassId =
+  | "warrior"
+  | "knight"
+  | "swordmaster"
+  | "thief"
+  | "priest"
+  | "chanter"
+  | "mage"
+  | "occultist";
+
+/**
+ * The twelve labels the game shipped before the consolidation. They are NOT offered at the guild any
+ * more, but they still resolve — content, saves, traces and authored vocation prerequisites all name
+ * them, and rewriting those in place is a beta-time migration, not a rules change. See
+ * LEGACY_CLASS_MAPPING in characterCreation.ts for what each one became, and why.
+ */
+export type LegacyClassId =
   | "vanguard"
   | "sellsword"
   | "bulwark"
@@ -74,6 +95,9 @@ export type CharacterClassId =
   | "occultist"
   | "arcanist"
   | "wayfinder";
+
+/** Anything that may appear as a class id in data: current or legacy. */
+export type AnyClassId = CharacterClassId | LegacyClassId;
 export type CharacterBackgroundId =
   | "watch"
   | "ruinborn"
@@ -166,7 +190,7 @@ export interface PortableAdventurer {
     visualProfile?: CharacterVisualProfile;
   };
   build: {
-    classId: CharacterClassId;
+    classId: AnyClassId;
     backgroundId: CharacterBackgroundId;
     roleTags: string[];
     rowPreference: CombatRow;
@@ -185,7 +209,7 @@ export interface PortableAdventurer {
 export interface ScenarioImportPolicy {
   levelCap?: number;
   goldCap?: number;
-  allowedClasses?: CharacterClassId[];
+  allowedClasses?: AnyClassId[];
   startingFloorId?: string;
 }
 
@@ -218,6 +242,12 @@ export interface Character {
   notes: string;
   title: string;
   classId: CharacterClassId;
+  /**
+   * The discipline this adventurer was REGISTERED as — permanent (docs/design/class-system.md §6). It is
+   * their baseline, their starting gear and half their biography; `classId` is what they practise NOW.
+   * Optional only so a character stored before the split still loads: it defaults to their class.
+   */
+  startingDiscipline?: CharacterClassId;
   /** IMP-021A vocation/mastery state. Optional so existing characters/tests need no change;
    *  resolveVocationState fills a default from `classId`. */
   vocation?: CharacterVocationState;
@@ -947,7 +977,7 @@ export interface ScenarioEquipment {
   /** Incoming-damage multipliers per element (<1 = resistant). Armour/charms carry these so a
    *  prepared party is not hurt by the threat it expected. Multiplied across worn gear. */
   elementResist?: Partial<Record<string, number>>;
-  allowedClasses?: CharacterClassId[];
+  allowedClasses?: AnyClassId[];
   tags?: string[];
   price?: number;
   sellValue?: number;

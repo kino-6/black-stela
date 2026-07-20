@@ -8,7 +8,7 @@ vocations:
     name: Briar Reaver
     signature: A front-line hewer who reads the bend of living thorns before cutting through.
     requires:
-      mastered: [vanguard, sellsword]
+      mastered: [warrior, knight]
       minLevel: 6
     statModifiers: { maxHp: 7, attack: 3, speed: 1 }
     allowedSlots: [weapon, offhand, body, head, hands, accessory]
@@ -22,7 +22,7 @@ vocations:
     name: Bark Keeper
     signature: A patient guard who layers bark and wards until the company can breathe again.
     requires:
-      mastered: [bulwark, chanter]
+      mastered: [knight, chanter]
       minLevel: 6
     statModifiers: { maxHp: 10, maxMp: 3, armor: 4, speed: -1 }
     allowedSlots: [offhand, body, head, hands, accessory]
@@ -36,7 +36,7 @@ vocations:
     name: Dewblade
     signature: A light-footed cutter whose blade appears only when the wet leaves part.
     requires:
-      mastered: [duelist, cutpurse]
+      mastered: [swordmaster, thief]
       minLevel: 6
     statModifiers: { attack: 2, accuracy: 5, speed: 3, maxHp: -2 }
     allowedSlots: [weapon, body, hands, accessory]
@@ -50,7 +50,7 @@ vocations:
     name: Canopy Reader
     signature: A path-reader who follows dripping echoes and finds the one dry step ahead.
     requires:
-      mastered: [seeker, scout]
+      mastered: [thief, chanter]
       minLevel: 6
     statModifiers: { maxHp: 3, accuracy: 6, speed: 2 }
     allowedSlots: [weapon, body, head, hands, accessory]
@@ -64,7 +64,7 @@ vocations:
     name: Sap Binder
     signature: A healer who seals wounds with living sap, then burns the growth that will not stop.
     requires:
-      mastered: [mender, arcanist]
+      mastered: [priest, mage]
       minLevel: 8
     statModifiers: { maxHp: 4, maxMp: 8, attack: 1 }
     allowedSlots: [weapon, offhand, body, head, accessory]
@@ -78,7 +78,7 @@ vocations:
     name: Spore Seer
     signature: A watcher who reads drifting spores as signs and turns their drowsing haze back on the grove.
     requires:
-      mastered: [occultist, wayfinder]
+      mastered: [occultist, thief]
       minLevel: 8
     statModifiers: { maxMp: 7, accuracy: 3, speed: 2 }
     allowedSlots: [weapon, body, head, hands, accessory]

@@ -43,7 +43,7 @@ export const defaultDraft: CharacterDraft = {
   name: "",
   notes: "",
   title: "",
-  classId: "vanguard",
+  classId: "warrior",
   backgroundId: "watch",
   traitId: "steady",
   aptitudeFocus: "balanced",
@@ -109,34 +109,32 @@ export function createSuggestedRecruitForParty(party: Character[], turn: number,
 }
 
 export function chooseSuggestedClassId(party: Character[]): CharacterClassId {
+  // What the guild master would REACH FOR next, given who is already standing there. Never a coverage
+  // score shown to the player (§2.6) — it only picks whom to offer when the player asks for a suggestion.
   const roleCount = (role: string) => party.filter((member) => member.roleTags.includes(role)).length;
   const frontCount = party.filter((member) => member.row === "front").length;
   const backCount = party.filter((member) => member.row === "back").length;
   const partyIndex = party.length % 3;
 
   if (frontCount < 2) {
-    return ["vanguard", "bulwark", "sellsword"][partyIndex] as CharacterClassId;
+    return (["warrior", "knight", "swordmaster"] as CharacterClassId[])[partyIndex];
   }
 
   if (roleCount("healing") < 1) {
-    return party.some((member) => member.classId === "mender") ? "chanter" : "mender";
+    return party.some((member) => member.classId === "priest") ? "chanter" : "priest";
   }
 
   if (roleCount("trap_handling") < 1) {
-    return party.some((member) => member.classId === "cutpurse") ? "seeker" : "cutpurse";
-  }
-
-  if (roleCount("mapping") < 1) {
-    return backCount <= frontCount ? "wayfinder" : "scout";
+    return "thief";
   }
 
   if (roleCount("damage") < 2) {
-    return frontCount < 3 ? "duelist" : "arcanist";
+    return frontCount < 3 ? "swordmaster" : "mage";
   }
 
   if (roleCount("status_safety") < 1) {
     return "occultist";
   }
 
-  return backCount < 3 ? "arcanist" : "sellsword";
+  return backCount < 3 ? "mage" : "warrior";
 }

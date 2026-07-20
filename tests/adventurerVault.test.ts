@@ -4,6 +4,7 @@ import { executeCommand } from "../src/domain/rulesEngine";
 import { toPortableAdventurer, importAdventurer } from "../src/domain/characterCreation";
 import { readVault, writeVault, depositToVault, removeFromVault, PortableAdventurerSchema } from "../src/domain/adventurerVault";
 import { defaultWorld } from "../src/data/defaultWorld";
+import { resolveClassId } from "../src/domain/classIds";
 import type { GameState, PortableAdventurer, ScenarioWorld } from "../src/domain/types";
 
 function partyOf(count: number): GameState {
@@ -14,9 +15,9 @@ function partyOf(count: number): GameState {
   return state;
 }
 
-function samplePortable(over: Partial<PortableAdventurer["progress"]> = {}, classId: PortableAdventurer["build"]["classId"] = "arcanist"): PortableAdventurer {
+function samplePortable(over: Partial<PortableAdventurer["progress"]> = {}, classId: PortableAdventurer["build"]["classId"] = "mage"): PortableAdventurer {
   const state = partyOf(1);
-  const base = toPortableAdventurer({ ...state.party[0], classId }, defaultWorld, { exportedAt: "2026-01-01T00:00:00.000Z" });
+  const base = toPortableAdventurer({ ...state.party[0], classId: resolveClassId(classId) }, defaultWorld, { exportedAt: "2026-01-01T00:00:00.000Z" });
   return { ...base, progress: { ...base.progress, level: 5, xp: 500, gold: 900, ...over } };
 }
 
@@ -59,9 +60,9 @@ describe("importAdventurer clamps to scenario policy", () => {
   });
 
   it("remaps a class the scenario disallows to the first allowed class", () => {
-    const world: ScenarioWorld = { ...defaultWorld, importPolicy: { allowedClasses: ["vanguard", "mender"] } };
-    const { character, adjustments } = importAdventurer(samplePortable({}, "arcanist"), world);
-    expect(character.classId).toBe("vanguard");
+    const world: ScenarioWorld = { ...defaultWorld, importPolicy: { allowedClasses: ["warrior", "priest"] } };
+    const { character, adjustments } = importAdventurer(samplePortable({}, "mage"), world);
+    expect(character.classId).toBe("warrior");
     expect(adjustments).toContain("class_remapped");
   });
 

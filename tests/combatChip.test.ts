@@ -18,7 +18,7 @@ describe("resisted-hit chip damage", () => {
 
     let state = createInitialGameState();
     for (const name of ["Rook", "Vale", "Bran", "Mira", "Sei", "Lio"]) {
-      state = addCharacter(state, createGuildCharacter({ name, classId: "vanguard", seed: name }));
+      state = addCharacter(state, createGuildCharacter({ name, classId: "warrior", seed: name }));
     }
     const party: Character[] = state.party.map((m, i) => ({ ...m, row: i < 3 ? "front" : "back", level: 3 }));
     state = { ...state, party, phase: "combat", combat: createCombatState("room.x", slime, 1) } as GameState;

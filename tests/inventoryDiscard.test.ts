@@ -32,7 +32,7 @@ describe("party-menu discard", () => {
   it("discards only equipment copies not currently worn", () => {
     const base = createDebugStateFromProgress(defaultWorld, "ready");
     const equipmentId = "equip.focus-band";
-    const owner = base.party.find((member) => ["mender", "occultist"].includes(member.classId))!;
+    const owner = base.party.find((member) => ["priest", "occultist"].includes(member.classId))!;
     const state = {
       ...base,
       inventory: [...base.inventory, { id: equipmentId, name: "Focus Band", kind: "equipment" as const, quantity: 2 }]
@@ -65,7 +65,7 @@ describe("party-menu discard", () => {
   it("moves a unique equipment instance instead of letting two members share it", () => {
     const base = createDebugStateFromProgress(defaultWorld, "ready");
     const equipmentId = "equip.focus-band";
-    const owners = base.party.filter((member) => ["mender", "occultist"].includes(member.classId));
+    const owners = base.party.filter((member) => ["priest", "occultist"].includes(member.classId));
     const state = {
       ...base,
       inventory: [...base.inventory, { id: equipmentId, name: "Focus Band", kind: "equipment" as const, quantity: 1 }]
@@ -89,7 +89,7 @@ describe("party-menu discard", () => {
   it("allows two members to equip an equipment stack that actually contains two copies", () => {
     const base = createDebugStateFromProgress(defaultWorld, "ready");
     const equipmentId = "equip.focus-band";
-    const owners = base.party.filter((member) => ["mender", "occultist"].includes(member.classId));
+    const owners = base.party.filter((member) => ["priest", "occultist"].includes(member.classId));
     const state = {
       ...base,
       inventory: [...base.inventory, { id: equipmentId, name: "Focus Band", kind: "equipment" as const, quantity: 2 }]

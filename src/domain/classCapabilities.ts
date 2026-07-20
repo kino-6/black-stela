@@ -1,4 +1,5 @@
-import type { CharacterClassId, CombatRow, EquipmentSlot } from "./types";
+import type { AnyClassId, CharacterClassId, CombatRow, EquipmentSlot } from "./types";
+import { resolveClassId } from "./classIds";
 import type { TechniqueId } from "./techniques";
 
 /**
@@ -69,56 +70,37 @@ const TRAP_SPECIALIST: Partial<Record<ExplorationAction, Proficiency>> = {
 };
 
 export const CLASS_CAPABILITIES: Record<CharacterClassId, ClassCapabilities> = {
-  vanguard: {
+  warrior: {
     combatTechniques: [{ level: 1, techniqueId: "power-strike" }],
     exploration: {},
     equipmentProfile: { slots: ["weapon", "body"], tags: ["blade", "front_line"] },
     rowPreference: "front",
     weakness: { en: "No answer to anything the front line cannot reach.", ja: "前列の届かないものには手が出ない。" }
   },
-  sellsword: {
-    combatTechniques: [],
-    exploration: {},
-    equipmentProfile: { slots: ["weapon", "body"], tags: ["blade", "front_line"] },
-    rowPreference: "front",
-    weakness: { en: "Carries no technique at all — steady, and only that.", ja: "技を持たない。堅実さだけが取り柄。" }
-  },
-  bulwark: {
+  knight: {
     combatTechniques: [],
     exploration: {},
     equipmentProfile: { slots: ["offhand", "body"], tags: ["shield", "mail", "front_line"] },
     rowPreference: "front",
     weakness: { en: "Slow, and cannot press an advantage.", ja: "鈍く、好機を押し切れない。" }
   },
-  duelist: {
+  swordmaster: {
     combatTechniques: [],
     exploration: {},
     equipmentProfile: { slots: ["weapon", "hands"], tags: ["blade", "accuracy"] },
     rowPreference: "front",
     weakness: { en: "Thin armour: a round that goes wrong goes very wrong.", ja: "装甲が薄い。崩れた一手が致命になる。" }
   },
-  seeker: {
+  thief: {
+    // The consolidation's clearest win: 探索者 / 斥候 / 鍵師 all carried the SAME trap bonus, so the
+    // exploration family that was split three ways is one identity now.
     combatTechniques: [{ level: 1, techniqueId: "power-strike" }],
-    exploration: { ...TRAP_SPECIALIST, map: "specialist" },
+    exploration: { ...TRAP_SPECIALIST, map: "specialist", escape: "trained" },
     equipmentProfile: { slots: ["weapon", "hands"], tags: ["tools", "reach"] },
     rowPreference: "front",
     weakness: { en: "Reads the room better than it fights in it.", ja: "読むことに長け、戦うことには長けない。" }
   },
-  scout: {
-    combatTechniques: [],
-    exploration: { ...TRAP_SPECIALIST, map: "specialist", escape: "trained" },
-    equipmentProfile: { slots: ["weapon", "hands"], tags: ["ranged", "tools"] },
-    rowPreference: "front",
-    weakness: { en: "Little weight behind any single blow.", ja: "一撃の重みがない。" }
-  },
-  cutpurse: {
-    combatTechniques: [],
-    exploration: { ...TRAP_SPECIALIST },
-    equipmentProfile: { slots: ["weapon", "hands"], tags: ["blade", "tools"] },
-    rowPreference: "front",
-    weakness: { en: "Fragile, and no help to anyone else in a bad round.", ja: "脆く、崩れた局面で誰も助けられない。" }
-  },
-  mender: {
+  priest: {
     combatTechniques: [{ level: 1, techniqueId: "heal" }],
     exploration: {},
     equipmentProfile: { slots: ["weapon", "body"], tags: ["focus", "back_row"] },
@@ -135,6 +117,13 @@ export const CLASS_CAPABILITIES: Record<CharacterClassId, ClassCapabilities> = {
     rowPreference: "back",
     weakness: { en: "Everything it does, a specialist does better.", ja: "何でもこなすが、何も専門家には及ばない。" }
   },
+  mage: {
+    combatTechniques: [{ level: 1, techniqueId: "firebolt" }],
+    exploration: {},
+    equipmentProfile: { slots: ["weapon"], tags: ["focus", "back_row"] },
+    rowPreference: "back",
+    weakness: { en: "Runs on MP: out of it, out of the fight.", ja: "MPが尽きれば、戦いから降りるほかない。" }
+  },
   occultist: {
     combatTechniques: [
       { level: 1, techniqueId: "firebolt" },
@@ -144,30 +133,18 @@ export const CLASS_CAPABILITIES: Record<CharacterClassId, ClassCapabilities> = {
     equipmentProfile: { slots: ["weapon"], tags: ["focus", "back_row"] },
     rowPreference: "back",
     weakness: { en: "Control fails on what cannot be controlled; then it is nearly unarmed.", ja: "効かない相手には無力に等しい。" }
-  },
-  arcanist: {
-    combatTechniques: [{ level: 1, techniqueId: "firebolt" }],
-    exploration: {},
-    equipmentProfile: { slots: ["weapon"], tags: ["focus", "back_row"] },
-    rowPreference: "back",
-    weakness: { en: "Runs on MP: out of it, out of the fight.", ja: "MPが尽きれば、戦いから降りるほかない。" }
-  },
-  wayfinder: {
-    combatTechniques: [],
-    exploration: { map: "specialist" },
-    equipmentProfile: { slots: ["weapon", "accessory"], tags: ["mapping", "back_row"] },
-    rowPreference: "back",
-    weakness: { en: "Contributes little once the map is drawn and the fighting starts.", ja: "図が引けてしまえば、戦いでの出番は少ない。" }
   }
 };
 
-export function classCapabilities(classId: CharacterClassId): ClassCapabilities | undefined {
-  return CLASS_CAPABILITIES[classId];
+export function classCapabilities(classId: AnyClassId): ClassCapabilities | undefined {
+  return CLASS_CAPABILITIES[resolveClassId(classId)];
 }
 
 /** What a class knows about an exploration action. An unlisted action is untrained — never forbidden. */
-export function classProficiency(classId: CharacterClassId, action: ExplorationAction): Proficiency {
-  return CLASS_CAPABILITIES[classId]?.exploration[action] ?? "untrained";
+export function classProficiency(classId: AnyClassId, action: ExplorationAction): Proficiency {
+  // Resolved, so a character stored as a 斥候 is read with the Thief's contract without their save being
+  // rewritten (characterCreation.LEGACY_CLASS_MAPPING documents every old id).
+  return CLASS_CAPABILITIES[resolveClassId(classId)]?.exploration[action] ?? "untrained";
 }
 
 /**
@@ -187,6 +164,6 @@ export function proficiencyBonus(proficiency: Proficiency): number {
 }
 
 /** Every technique a class ever learns, in the order it learns them. */
-export function classTechniqueGrants(classId: CharacterClassId): ClassTechniqueGrant[] {
-  return CLASS_CAPABILITIES[classId]?.combatTechniques ?? [];
+export function classTechniqueGrants(classId: AnyClassId): ClassTechniqueGrant[] {
+  return CLASS_CAPABILITIES[resolveClassId(classId)]?.combatTechniques ?? [];
 }

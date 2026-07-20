@@ -43,7 +43,7 @@ const world: ScenarioWorld = {
 const RING = "equip.black-thread-ring"; // a real default accessory to hang the affix on
 
 function hero(equipment: Character["equipment"]): Character {
-  return { ...createGuildCharacter({ name: "Rook", classId: "vanguard", seed: "afx" }), row: "front", equipment };
+  return { ...createGuildCharacter({ name: "Rook", classId: "warrior", seed: "afx" }), row: "front", equipment };
 }
 
 function oneRound(member: Character, enemy: Enemy, turn = 0): GameState {

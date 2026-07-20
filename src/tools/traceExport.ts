@@ -60,7 +60,7 @@ export function traceFixtureToJson(route: TraceRoute, world: ScenarioWorld): str
 // A front-line vanguard vs. the first B1F slime: three attack rounds, resolving to victory. Exercises
 // the seeded combat RNG and the victory/result transition — the parity-critical path.
 function combatRoute(world: ScenarioWorld): { initial: GameState; commands: Command[] } {
-  const hero = { ...createGuildCharacter({ name: "Rook", classId: "vanguard", seed: "slice" }), row: "front" as const };
+  const hero = { ...createGuildCharacter({ name: "Rook", classId: "warrior", seed: "slice" }), row: "front" as const };
   const enemy = world.enemies.find((candidate) => candidate.id === "enemy.b1f.ash-slime") ?? world.enemies[0];
   const base = { ...createInitialGameState(), party: [hero] };
   const initial: GameState = {
@@ -82,7 +82,7 @@ function combatRoute(world: ScenarioWorld): { initial: GameState; commands: Comm
 // the pack survives round 1 and the ENEMY TURN fires (basic front-first swings) before the party
 // finishes them — the parity path for the ported enemy turn + round-end + round advance.
 function combatRoundsRoute(world: ScenarioWorld): { initial: GameState; commands: Command[] } {
-  const hero = { ...createGuildCharacter({ name: "Rook", classId: "vanguard", seed: "slice" }), row: "front" as const };
+  const hero = { ...createGuildCharacter({ name: "Rook", classId: "warrior", seed: "slice" }), row: "front" as const };
   const enemy = world.enemies.find((candidate) => candidate.id === "enemy.b1f.ash-slime") ?? world.enemies[0];
   const base = { ...createInitialGameState(), party: [hero] };
   const initial: GameState = {
@@ -104,7 +104,7 @@ function combatRoundsRoute(world: ScenarioWorld): { initial: GameState; commands
 // (an authored ability, a poison inflict) against the ported rules.
 function combatVsRoute(enemyId: string, count: number, rounds: number) {
   return (world: ScenarioWorld): { initial: GameState; commands: Command[] } => {
-    const hero = { ...createGuildCharacter({ name: "Rook", classId: "vanguard", seed: "slice" }), row: "front" as const };
+    const hero = { ...createGuildCharacter({ name: "Rook", classId: "warrior", seed: "slice" }), row: "front" as const };
     const enemy = world.enemies.find((candidate) => candidate.id === enemyId) ?? world.enemies[0];
     const base = { ...createInitialGameState(), party: [hero] };
     const initial: GameState = {
@@ -128,9 +128,9 @@ function combatVsRoute(enemyId: string, count: number, rounds: number) {
 // default loadouts; the vanguard's 特技 power-strike costs 気力.
 function combatActionsRoute(world: ScenarioWorld): { initial: GameState; commands: Command[] } {
   const party = [
-    { ...createGuildCharacter({ name: "Rook", classId: "vanguard", seed: "acts" }), row: "front" as const },
-    { ...createGuildCharacter({ name: "Sella", classId: "mender", seed: "acts" }), row: "back" as const },
-    { ...createGuildCharacter({ name: "Mira", classId: "arcanist", seed: "acts" }), row: "back" as const }
+    { ...createGuildCharacter({ name: "Rook", classId: "warrior", seed: "acts" }), row: "front" as const },
+    { ...createGuildCharacter({ name: "Sella", classId: "priest", seed: "acts" }), row: "back" as const },
+    { ...createGuildCharacter({ name: "Mira", classId: "mage", seed: "acts" }), row: "back" as const }
   ];
   const enemy = world.enemies.find((candidate) => candidate.id === "enemy.b2f.ash-caller") ?? world.enemies[0];
   const base = { ...createInitialGameState(), party };
@@ -180,7 +180,7 @@ function rosterRoute(): { initial: GameState; commands: Command[] } {
     { type: "retire_member", characterId: party[2].id },
     { type: "unretire_member", characterId: party[2].id },
     { type: "edit_member_identity", characterId: party[1].id, name: "Renamed", title: "Hero", notes: "revised", accentColor: "#ff3366" },
-    { type: "reclass_member", characterId: party[0].id, classId: "scout" }, // re-derive the base at the retained level
+    { type: "reclass_member", characterId: party[0].id, classId: "thief" }, // re-derive the base at the retained level
     { type: "erase_member", characterId: party[3].id }
   ];
   return { initial, commands };
@@ -189,7 +189,7 @@ function rosterRoute(): { initial: GameState; commands: Command[] } {
 // M3 economy: a town shopping trip — buy consumables + gear, equip a clean slot, sell one, discard one.
 // Exercises buy_item (item + equipment), equip_item, sell_item, discard_item + the inventory helpers.
 function economyRoute(): { initial: GameState; commands: Command[] } {
-  const hero = createGuildCharacter({ name: "Rook", classId: "vanguard", seed: "econ" });
+  const hero = createGuildCharacter({ name: "Rook", classId: "warrior", seed: "econ" });
   const base = createInitialGameState();
   const initial: GameState = { ...base, phase: "town", party: [hero], partyGold: 300 };
   const commands: Command[] = [
@@ -206,8 +206,8 @@ function economyRoute(): { initial: GameState; commands: Command[] } {
 // M3 recovery (infirmary): a wounded party is healed for gold, then a no-cost re-heal, then a blocked
 // heal when the purse is empty. Exercises recover_party (cost, injury clear, block).
 function recoveryRoute(): { initial: GameState; commands: Command[] } {
-  const hurt = { ...createGuildCharacter({ name: "Rook", classId: "vanguard", seed: "rec" }), hp: 5, injury: "wounded" as const };
-  const mender = { ...createGuildCharacter({ name: "Sella", classId: "mender", seed: "rec" }), hp: 4 };
+  const hurt = { ...createGuildCharacter({ name: "Rook", classId: "warrior", seed: "rec" }), hp: 5, injury: "wounded" as const };
+  const mender = { ...createGuildCharacter({ name: "Sella", classId: "priest", seed: "rec" }), hp: 4 };
   const base = createInitialGameState();
   const initial: GameState = { ...base, phase: "town", party: [hurt, mender], partyGold: 100 };
   const commands: Command[] = [
@@ -218,7 +218,7 @@ function recoveryRoute(): { initial: GameState; commands: Command[] } {
 }
 
 function recoveryBlockedRoute(): { initial: GameState; commands: Command[] } {
-  const hurt = { ...createGuildCharacter({ name: "Rook", classId: "vanguard", seed: "recb" }), hp: 3, injury: "wounded" as const };
+  const hurt = { ...createGuildCharacter({ name: "Rook", classId: "warrior", seed: "recb" }), hp: 3, injury: "wounded" as const };
   const base = createInitialGameState();
   const initial: GameState = { ...base, phase: "town", party: [hurt], partyGold: 2 };
   return { initial, commands: [{ type: "recover_party" }] }; // too poor → recovery_blocked
@@ -227,7 +227,7 @@ function recoveryBlockedRoute(): { initial: GameState; commands: Command[] } {
 // M3 quests: accept a fresh bounty, then claim a met bounty whose 55-XP reward crosses several level
 // thresholds — exercises accept_quest, claim_quest, the XP grant, and applyLevelUps (level growth).
 function questRoute(): { initial: GameState; commands: Command[] } {
-  const hero = createGuildCharacter({ name: "Rook", classId: "vanguard", seed: "quest" });
+  const hero = createGuildCharacter({ name: "Rook", classId: "warrior", seed: "quest" });
   const base = createInitialGameState();
   const initial: GameState = {
     ...base,
@@ -249,7 +249,7 @@ function questRoute(): { initial: GameState; commands: Command[] } {
 // reinforce_equipment, and bulk_convert + the rarity fee/yield tables.
 function lootRoute(): { initial: GameState; commands: Command[] } {
   const hero = {
-    ...createGuildCharacter({ name: "Rook", classId: "vanguard", seed: "loot" }),
+    ...createGuildCharacter({ name: "Rook", classId: "warrior", seed: "loot" }),
     equipment: { head: { id: "equip.iron-cap", plus: 0 } }
   };
   const base = createInitialGameState();
@@ -283,12 +283,13 @@ function lootRoute(): { initial: GameState; commands: Command[] } {
 // change_vocation's basic-reclass AND advanced-adopt paths, the prereq gate, and set_loadout.
 function vocationRoute(): { initial: GameState; commands: Command[] } {
   const hero = {
-    ...createGuildCharacter({ name: "Rook", classId: "vanguard", seed: "voc" }),
+    ...createGuildCharacter({ name: "Rook", classId: "warrior", seed: "voc" }),
     level: 6,
     xp: 120, // xpForLevel(6) = 4*5*6 — enough for level 6, short of 7 (168), so reclass re-levels to 6
     vocation: {
-      current: "vanguard",
-      mastery: { vanguard: 5, sellsword: 5 },
+      // 戦士 with two disciplines mastered — the consolidated pair the ash-reaver now asks for.
+      current: "warrior",
+      mastery: { warrior: 5, swordmaster: 5 },
       progress: {},
       learned: ["power-strike"],
       loadout: ["power-strike"]
@@ -297,7 +298,7 @@ function vocationRoute(): { initial: GameState; commands: Command[] } {
   const base = createInitialGameState();
   const initial: GameState = { ...base, phase: "town", party: [hero] };
   const commands: Command[] = [
-    { type: "change_vocation", characterId: hero.id, vocationId: "sellsword" },
+    { type: "change_vocation", characterId: hero.id, vocationId: "swordmaster" },
     { type: "set_loadout", characterId: hero.id, loadout: ["power-strike", "spell.not-learned"] },
     { type: "change_vocation", characterId: hero.id, vocationId: "vocation.ash-reaver" }
   ];
@@ -411,7 +412,7 @@ function escapeAndResumeRoute(world: ScenarioWorld): { initial: GameState; comma
 // The legacy one-button combat verbs (attack / defend). import_member mints an id internally, so it
 // is proven by SAMPLE (export:character-samples + verify_character_creation), not a state-hash trace.
 function legacyCombatRoute(world: ScenarioWorld): { initial: GameState; commands: Command[] } {
-  const hero = { ...createGuildCharacter({ name: "Rook", classId: "vanguard", seed: "legacy" }), row: "front" as const };
+  const hero = { ...createGuildCharacter({ name: "Rook", classId: "warrior", seed: "legacy" }), row: "front" as const };
   const enemy = world.enemies.find((candidate) => candidate.id === "enemy.b1f.ash-slime") ?? world.enemies[0];
   const base = { ...createInitialGameState(), party: [hero] };
   const initial: GameState = {

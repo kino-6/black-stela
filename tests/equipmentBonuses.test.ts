@@ -8,19 +8,19 @@ import type { Character } from "../src/domain/types";
 // through getEffectiveCharacterStats so combat heal caps, recovery, and the gauges
 // all see the bigger pool. These lock the new bonus wiring.
 function withAccessory(id: string): Character {
-  const base = createGuildCharacter({ name: "Tess", classId: "vanguard", seed: "gear" });
+  const base = createGuildCharacter({ name: "Tess", classId: "warrior", seed: "gear" });
   return { ...base, equipment: { ...base.equipment, accessory: { id } } };
 }
 
 describe("equipment HP/MP/resist bonuses", () => {
   it("a vitality charm raises effective max HP", () => {
-    const base = createGuildCharacter({ name: "Tess", classId: "vanguard", seed: "gear" });
+    const base = createGuildCharacter({ name: "Tess", classId: "warrior", seed: "gear" });
     const withCharm = withAccessory("equip.vitality-charm");
     expect(getEffectiveCharacterStats(withCharm, defaultWorld).maxHp).toBe(base.maxHp + 6);
   });
 
   it("a focus band raises effective max MP", () => {
-    const mender = createGuildCharacter({ name: "Sei", classId: "mender", seed: "gear" });
+    const mender = createGuildCharacter({ name: "Sei", classId: "priest", seed: "gear" });
     const withBand: Character = { ...mender, equipment: { ...mender.equipment, accessory: { id: "equip.focus-band" } } };
     expect(getEffectiveCharacterStats(withBand, defaultWorld).maxMp).toBe(mender.maxMp + 4);
   });
@@ -33,7 +33,7 @@ describe("equipment HP/MP/resist bonuses", () => {
   });
 
   it("bare gear leaves the base pools untouched", () => {
-    const base = createGuildCharacter({ name: "Tess", classId: "vanguard", seed: "gear" });
+    const base = createGuildCharacter({ name: "Tess", classId: "warrior", seed: "gear" });
     const stats = getEffectiveCharacterStats(base, defaultWorld);
     expect(stats.maxHp).toBe(base.maxHp);
     expect(stats.maxMp).toBe(base.maxMp);
