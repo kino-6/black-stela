@@ -37,6 +37,11 @@ scenario pack brief for the asset you are generating or reviewing.
 - Town facility extension: P19 delivered **8/8** lossless 1600×900 PNG
   backgrounds: market/workshop, infirmary, archive lodge, and dungeon entrance
   for both Default and Verdant.
+- **P20 requested (2026-07-20), not started**: the rules consolidated twelve classes into eight
+  (`docs/design/class-system.md` §4). P17's 144 masters are filed under the twelve OLD names, so the
+  runtime maps eight classes onto three portraits and every new adventurer wears the same face. Brief:
+  `content/worlds/default/ART.md` §P20 — five lines only need re-filing, two need an anchor chosen, and
+  repainting is optional and last.
 - Optional Verdant minimap marker overrides are not included in the required
   count.
 

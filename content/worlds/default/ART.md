@@ -693,9 +693,71 @@ Review sheet:
 
 - `docs/evidence/art-facilities-p19/facility-contact.png`
 
+### P20 — Adventurer masters for the CONSOLIDATED eight classes  ⬜ requested (2026-07-20)
+
+**Why this exists.** The class roster changed in the rules, not in the art. Twelve labels became eight
+classes (`docs/design/class-system.md` §4, shipped in Section 8 item 3): the three near-identical trap
+classes became one Thief, the two near-identical front-liners one Warrior, and the route-keeper folded
+into the Thief. P17's 144 masters are all still good paintings — but they are filed under the twelve old
+names, so the runtime currently maps eight classes onto **three** portraits and every new adventurer
+wears the same face. That fallback (`_portrait_class` in `godot/scripts/combat.gd` / `dungeon.gd`) is the
+thing this brief retires.
+
+**What the mapping was** (authoritative table: `src/domain/classIds.ts`):
+
+| New class | JA | Grew from | What survives from P17 |
+| --- | --- | --- | --- |
+| warrior | 戦士 | vanguard + sellsword | vanguard's spear-and-shield read is the anchor; sellsword's worn half-coat is a valid variant |
+| knight | 盾騎士 | bulwark | unchanged |
+| swordmaster | 剣客 | duelist | unchanged |
+| thief | 盗賊 | seeker + scout + cutpurse + wayfinder | seeker's tools + cutpurse's close jacket; keep bow/map-case people as variants, not as the anchor |
+| priest | 癒し手 | mender | unchanged |
+| chanter | 祈祷師 | chanter | unchanged |
+| mage | 灰術師 | arcanist | unchanged |
+| occultist | 秘術師 | occultist | unchanged |
+
+**Ask — smallest useful delivery first.** Five of the eight need nothing but a rename; two need a
+decision about which of the merged people is now the archetype.
+
+1. **Rename / re-file** the five unchanged lines (bulwark→knight, duelist→swordmaster, mender→priest,
+   arcanist→mage, occultist→occultist, chanter→chanter) so filenames match the class ids the runtime
+   asks for: `adventurer-<classId>-<species>-<gender>-<pose>.png`.
+2. **Choose the anchor** for `warrior` and `thief` from the existing merged masters, and re-file it.
+   No repaint required to close the fallback — an honest face per class beats a new face per class.
+3. **Then, if you want to paint**: the merged classes lost silhouette variety when four became one. A
+   second and third `thief` variant (the bow-and-map person, the lock-tools person) and a second
+   `warrior` variant (the sellsword's coat) keep a six-person party from looking like clones. Optional,
+   and after (1) and (2).
+
+**Class reads for the eight** (supersedes P17's twelve-row table for anything newly painted):
+
+| Class | Base silhouette | Attack read |
+| --- | --- | --- |
+| warrior | spear or sabre, round shield, planted coat | shield-led drive / economical diagonal cut |
+| knight | tower shield, heavy layered armor | shield brace, crushing shove |
+| swordmaster | slim blade, light asymmetric coat | precise forward lunge |
+| thief | dirk, lock tools and chalk cord, close jacket | low opportunistic strike |
+| priest | staff, medical satchel, candle ward | compact healing / ward gesture |
+| chanter | staff, prayer slips, layered stole | warding chant with raised seals |
+| mage | ash staff, black-glass focus | compact destructive casting pose |
+| occultist | grimoire, black thread, ritual focus | contained binding hex |
+
+**Rules unchanged from P17**: 1024×1536 PNG RGBA, clean alpha, base/attack are the same person, species
+are distinct people rather than palette swaps, male and female get equal authority and equal practical
+protection, silhouette wins at combat-lane size, no baked impact/particles/scenery.
+
+**Definition of done for this brief**: the eight class ids each resolve to their own master, and
+`_portrait_class`'s three-way collapse is deleted rather than re-pointed. The gate that will hold it is
+`godot/tests/verify_assets.gd` (it already asserts every authored creature resolves; adventurers join it
+when the files land).
+
+**Not in scope**: nothing in the rules waits on this. The consolidation is shipped and green; this is the
+art catching up with it.
+
 ## 8. Retake queue (post-integration review)
 
-The pack art order through P19 is delivered.
+The pack art order through P19 is delivered; **P20 (consolidated-class adventurer masters) is requested
+and not started**.
 P6/P9/P12/P13/P15/P17/P18/P19 still contain unwired presentation work.
 Keep this section for post-integration art-tone corrections that should not be
 forgotten.
