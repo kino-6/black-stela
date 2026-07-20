@@ -203,13 +203,13 @@ func _block_textures() -> Dictionary:
 		var m := re.search(String(floor_id))
 		if m:
 			depth = int(m.get_string(1))
-	var suffix := ""
+	# Every world ships the block variants; the un-suffixed base is NOT universal (verdant has none), so
+	# an unparsed floor must land on block1 rather than a file that may not exist.
+	var suffix := "-block1"
 	if depth >= 7:
 		suffix = "-block3"
 	elif depth >= 4:
 		suffix = "-block2"
-	elif depth >= 1:
-		suffix = "-block1"
 	return {
 		"wall": _asset("dungeon/stone-wall%s.jpg" % suffix),
 		"floor": _asset("dungeon/stone-floor%s.jpg" % suffix)

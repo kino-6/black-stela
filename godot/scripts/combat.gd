@@ -113,7 +113,7 @@ func _build() -> void:
 
 	_enemy_stage_rect = Rect2(size.x / 2 - 230, 150, 460, 460)
 	var slime := TextureRect.new()
-	slime.texture = _texture(_asset("enemies/%s.png" % _short_id(group.get("enemyId", ""))))
+	slime.texture = _enemy_texture(group)
 	slime.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	slime.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	slime.position = _enemy_stage_rect.position
@@ -448,7 +448,7 @@ func _all_out_actions() -> Array:
 # Rebuild the beat feel from before/after: HP removed per group, defeats, then the rewards event.
 func _playback(before: Dictionary, events: Array, animated: bool) -> void:
 	var group := _first_group()
-	var enemy_name: String = before.get("name", "Enemy")
+	var enemy_name: String = _enemy_ja(before if before.has("enemyId") else _first_group())
 	var removed := int(before.get("hp", 0)) - _group_hp(group)
 	var remaining := _group_hp(group)
 
@@ -710,6 +710,16 @@ func _portrait_class(member: Dictionary) -> String:
 func _hp_text(member: Dictionary) -> String:
 	return "HP %d/%d" % [int(member.get("hp", 0)), int(member.get("maxHp", 0))]
 
+# The creature art. Authored art lives under assets/dungeon/; a few were hand-copied into enemies/
+# early on, so both are tried before giving up.
+func _enemy_texture(group: Dictionary) -> Texture2D:
+	var short := _short_id(String(group.get("enemyId", "")))
+	for sub in ["dungeon/%s.png" % short, "enemies/%s.png" % short, "dungeon/%s.png" % String(group.get("enemyId", "")).replace(".", "-")]:
+		var tex := _texture(_asset(sub))
+		if tex:
+			return tex
+	return null
+
 func _short_id(full_id: String) -> String:
 	var parts := full_id.split(".")
 	return parts[parts.size() - 1] if parts.size() > 0 else full_id
@@ -738,6 +748,8 @@ func _asset(sub: String) -> String:
 	return _run.asset_path(sub) if _run else "res://assets/worlds/%s/%s" % [_world_id, sub]
 
 func _texture(path: String) -> Texture2D:
+	if not FileAccess.file_exists(path):
+		return null
 	var img := Image.load_from_file(path)
 	if img == null:
 		return null
