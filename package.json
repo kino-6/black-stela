@@ -5,6 +5,9 @@
   "type": "module",
   "scripts": {
     "play": "godot --path godot/",
+    "package:web": "godot --headless --path godot/ --export-release \"Web\" ../build/web/index.html",
+    "package:macos": "godot --headless --path godot/ --export-release \"macOS\" ../build/macos/BlackStela.zip",
+    "package": "npm run export:godot && npm run package:web && npm run package:macos",
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview --host 127.0.0.1",

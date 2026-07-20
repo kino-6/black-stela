@@ -55,7 +55,14 @@ The following stay TypeScript and keep their value after cutover — they are to
 ## Status of the cutover (M7)
 
 - Content parity on **both** worlds (default + verdant), rules and screens: **done**.
-- Export **presets** committed (`godot/export_presets.cfg`, Web + macOS). Producing a build requires
-  Godot's export templates for 4.7.1, which are a separate download and are **not installed in the
-  development environment used for this migration** — the packaging pass is therefore **unverified**
-  and is the one M7 item still open.
+- **Packaging: done and verified.** `npm run package` produces both a Web build (`build/web/`,
+  gl_compatibility, ~42 MB pck) and a macOS app (`build/macos/BlackStela.zip`), and the packaged macOS
+  binary boots with no missing-data errors. Export templates for 4.7.1 are a separate download
+  (`Godot_v4.7.1-stable_export_templates.tpz`, ~1.3 GB) extracted into
+  `~/Library/Application Support/Godot/export_templates/4.7.1.stable/`.
+- Three things the packaging pass exposed that no headless test could: `data/*.json` and the staged art
+  are read with FileAccess / Image.load_from_file rather than as Godot resources, so they had to be
+  named in `include_filter` or the build would ship with no worlds and no art; the parity fixtures and
+  sample data were being shipped to players and are now excluded; an arm64 macOS export refuses to
+  build unless `textures/vram_compression/import_etc2_astc` is enabled; and the app still called itself
+  "(Godot vertical slice)".

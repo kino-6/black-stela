@@ -189,9 +189,10 @@ Every M4 command is ported and parity-gated, and the crawl's screens are faithfu
 1. **Content parity on both runtimes: done.** 33 golden traces across Default AND Verdant (incl.
    `verdant-expedition` / `verdant-walk`), the save round-trip suite, and a Verdant town screen driven
    through the SAME scene code from Verdant's pack and assets.
-2. **Packaging: OPEN.** `godot/export_presets.cfg` (Web + macOS, `gl_compatibility`) is committed and
-   recognized, but Godot's 4.7.1 export templates are a separate download and are NOT installed in this
-   development environment, so no build was produced. This is the one M7 item still unverified.
+2. **Packaging: DONE.** `npm run package` builds Web (`build/web/`) and macOS
+   (`build/macos/BlackStela.zip`); the packaged macOS binary boots with no missing-data errors. The
+   4.7.1 export templates are a separate ~1.3 GB download extracted into
+   `~/Library/Application Support/Godot/export_templates/4.7.1.stable/`.
 3. **React archived, NOT deleted.** Every normal-play surface is covered in Godot (all 50 commands, 20
    gated screens), so React is retired as the player surface: README, `index.html` and the ADR mark it
    as the UX reference. It is deliberately KEPT because (a) the UX-parity gate points at its panels as
