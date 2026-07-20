@@ -118,6 +118,19 @@ func _text_for_state(entry: Dictionary, state: Dictionary) -> Variant:
 		patched["phase"] = "town"
 		for key in fixture:
 			patched[key] = fixture[key]
+		if fixture.has("__afflictParty"):
+			# Statuses and a wound, so the strip's pips are PROVEN to render rather than assumed.
+			var afflicted := []
+			var ailments := ["poison", "sleep", "fear", "silence", "ward"]
+			var index := 0
+			for member in patched.get("party", []):
+				var m: Dictionary = member.duplicate(true)
+				m["status"] = [ailments[index % ailments.size()]]
+				if index == 0:
+					m["injury"] = "wounded"
+				afflicted.append(m)
+				index += 1
+			patched["party"] = afflicted
 		if fixture.has("__wearNone"):
 			var stripped := []
 			for member in patched.get("party", []):

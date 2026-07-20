@@ -21,6 +21,7 @@ const BG := Color("0b0d09")
 const GOLD := Color("c9a765")
 const INK := Color("e6e2d4")
 const DIM := Color("9a927e")
+const BAD := Color("c96a5a")
 const HURT := Color("d98a5a")
 const OK := Color("9db06a")
 
@@ -32,6 +33,7 @@ var _engine: Dictionary = {}
 var _damage_layer: Control
 var _log_label: Label
 var _cmd_panel: PanelContainer
+var _strip_box: VBoxContainer = null
 var _party_slots: Dictionary = {}   # member id -> { "bar": ProgressBar, "label": Label }
 var _stage_layer: Control = null
 var _enemy_marks: Dictionary = {}   # groupId -> the mark node, so a beat can flash the right creature
@@ -122,16 +124,13 @@ func _build() -> void:
 
 	# --- 3+3 formation band (rendered from the live party) ---
 	var strip := PanelContainer.new()
-	strip.position = Vector2(0, 620)
-	strip.custom_minimum_size = Vector2(size.x, 170)
+	strip.position = Vector2(0, 640)
+	strip.custom_minimum_size = Vector2(size.x, 330)
 	strip.add_theme_stylebox_override("panel", _panel_style(Color("11140dcc")))
 	add_child(strip)
-	var strip_box := VBoxContainer.new()
-	strip.add_child(strip_box)
-	strip_box.add_child(_row_label("前衛  FRONT"))
-	strip_box.add_child(_party_row("front"))
-	strip_box.add_child(_row_label("後衛  BACK"))
-	strip_box.add_child(_party_row("back"))
+	_strip_box = VBoxContainer.new()
+	strip.add_child(_strip_box)
+	_rebuild_party_strip()
 
 	# --- Command window overlay (controller-first) ---
 	_cmd_panel = PanelContainer.new()
@@ -158,15 +157,37 @@ func _unhandled_input(event: InputEvent) -> void:
 		_menu_back()
 		get_viewport().set_input_as_handled()
 
+## Test seam for the UX-parity gate: drive the screen from a specific state (an afflicted, wounded
+## party) so the status pips and down-state are asserted rather than assumed.
+func set_state_override(patched: Dictionary) -> void:
+	_run = null
+	var combat: Variant = _state.get("combat", null)
+	_state = patched.duplicate(true)
+	if typeof(_state.get("combat", null)) != TYPE_DICTIONARY and typeof(combat) == TYPE_DICTIONARY:
+		_state["combat"] = combat      # keep the fight the scene was built around
+	_state["phase"] = "combat"
+	_actor_index = 0
+	_stage = "command"
+	_pending = {}
+	_rebuild_stage()
+	_rebuild_party_strip()
+	_rebuild_command_menu()
+
 ## Test seam for the UX-parity gate: force a menu stage so the target/technique surfaces are asserted.
 func set_ui_state(ui: Dictionary) -> void:
+	if ui.has("tempo_repeat"):
+		_last_round = [{"actorId": "seed", "action": "attack"}]
+	if ui.has("tempo_auto"):
+		_auto = true
 	if ui.has("stage"):
 		_stage = String(ui["stage"])
 		if _stage == "target-group":
 			var actors := _actors()
 			if not actors.is_empty():
 				_pending = {"actorId": actors[_actor_index].get("id", ""), "action": "attack"}
-		_rebuild_command_menu()
+	# Any ui-state change must repaint — a seam that sets state without rebuilding proves nothing.
+	_rebuild_stage()
+	_rebuild_command_menu()
 
 # --- per-actor order collection --------------------------------------------------------------------
 # The adventurers who can still act, front row first — the order the player gives commands in.
@@ -217,15 +238,18 @@ func _rebuild_command_menu() -> void:
 	_cmd_box.add_child(built["control"])
 
 	# 全員でかかる stays reachable: the one-press round for when there is nothing to decide.
+	_cmd_box.add_child(UIKit.label(I18n.t("play.combatCommands"), 15, GOLD))
 	var allout := _command_button(I18n.t("tempo.allOut"))
 	allout.pressed.connect(_on_attack_pressed)
 	_cmd_box.add_child(allout)
+	_cmd_box.add_child(UIKit.label(I18n.t("tempo.allOutHint"), 12, DIM))
 	# リピート — repeat the LAST declared round. Unavailable until one has been given, and it says so
 	# rather than sitting dead (tempo.repeatRoundUnavailable).
 	var repeat := _command_button(I18n.t("tempo.repeatRound") if not _last_round.is_empty() else I18n.t("tempo.repeatRoundUnavailable"))
 	repeat.disabled = _last_round.is_empty()
 	repeat.pressed.connect(_on_repeat)
 	_cmd_box.add_child(repeat)
+	_cmd_box.add_child(UIKit.label(I18n.t("tempo.repeatRoundHint"), 12, DIM))
 	# オート — keep resolving rounds until the fight ends or the party is in danger.
 	var auto := _command_button(I18n.t("tempo.stop") if _auto else I18n.t("tempo.auto"))
 	auto.pressed.connect(_on_toggle_auto)
@@ -584,21 +608,35 @@ func _party_row(row: String) -> HBoxContainer:
 			box.add_child(_party_slot(member))
 	while box.get_child_count() < 3:
 		var pad := Control.new()
-		pad.custom_minimum_size = Vector2(196, 68)
+		pad.custom_minimum_size = Vector2(300, 132)
 		box.add_child(pad)
 	return box
 
+# Port of CombatPartyStrip.tsx. The adventurers are what the player BRINGS — they get a readable
+# portrait, their name, HP and MP gauges, the level/HP/MP line, and labelled status pips. Why a member
+# acts oddly must be VISIBLE (sleep cannot act, fear misses, silence cannot cast, poison bleeds), not
+# implied by a dimmed box.
 func _party_slot(member: Dictionary) -> Control:
+	var max_hp: int = maxi(1, int(member.get("maxHp", 1)))
+	var hp_now: int = int(member.get("hp", 0))
+	var max_mp: int = int(member.get("maxMp", 0))
+	var down: bool = member.get("injury", null) != null or hp_now <= 0
+	var danger: bool = hp_now <= int(ceil(float(max_hp) * 0.35))
+	var acting: bool = String(member.get("id", "")) == _acting_member_id()
+
 	var slot := PanelContainer.new()
-	slot.custom_minimum_size = Vector2(196, 68)
+	slot.custom_minimum_size = Vector2(300, 132)
 	slot.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	slot.clip_contents = true
-	slot.add_theme_stylebox_override("panel", _panel_style(Color("1c2013e6"), Color("3a4326")))
+	var border: Color = GOLD if acting else (BAD if down else Color("3a4326"))
+	slot.add_theme_stylebox_override("panel", _panel_style(Color("1c2013f0"), border))
+
 	var h := HBoxContainer.new()
-	h.add_theme_constant_override("separation", 8)
+	h.add_theme_constant_override("separation", 10)
 	slot.add_child(h)
+
+	# A portrait you can actually read a face in.
 	var frame := Control.new()
-	frame.custom_minimum_size = Vector2(52, 60)
+	frame.custom_minimum_size = Vector2(92, 112)
 	frame.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	frame.clip_contents = true
 	var portrait := TextureRect.new()
@@ -606,21 +644,87 @@ func _party_slot(member: Dictionary) -> Control:
 	portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 	portrait.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	portrait.modulate = Color(1, 1, 1, 0.45) if down else Color(1, 1, 1, 1)
 	frame.add_child(portrait)
 	h.add_child(frame)
+
 	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", 3)
+	v.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	h.add_child(v)
-	v.add_child(_label(member.get("name", "?"), 18, INK))
-	var hp := ProgressBar.new()
-	hp.max_value = maxf(1.0, float(member.get("maxHp", 1)))
-	hp.value = float(member.get("hp", 0))
-	hp.show_percentage = false
-	hp.custom_minimum_size = Vector2(84, 8)
+
+	var head := HBoxContainer.new()
+	head.add_theme_constant_override("separation", 6)
+	head.add_child(_label(String(member.get("name", "?")), 20, BAD if down else INK))
+	if acting:
+		head.add_child(_label("▶", 18, GOLD))
+	v.add_child(head)
+
+	var hp := _stat_gauge(float(hp_now) / float(max_hp), BAD if danger else OK)
 	v.add_child(hp)
-	var hp_label := _label(_hp_text(member), 13, OK)
+	var mp: ProgressBar = null
+	if max_mp > 0:
+		mp = _stat_gauge(float(int(member.get("mp", 0))) / float(max_mp), Color("6a86b0"))
+		v.add_child(mp)
+
+	var hp_label := _label(_hp_text(member), 14, BAD if danger else INK)
 	v.add_child(hp_label)
-	_party_slots[member.get("id", "")] = {"bar": hp, "label": hp_label}
+
+	# Status pips — labelled, so the player reads WHY, not just that something is wrong.
+	var pips := HBoxContainer.new()
+	pips.add_theme_constant_override("separation", 4)
+	if member.get("injury", null) != null:
+		pips.add_child(_pip(I18n.t("partyMenu.wounded"), BAD))
+	for status in member.get("status", []):
+		var key := "partyMenu.status.%s" % String(status)
+		pips.add_child(_pip(I18n.t(key) if I18n.has(key) else String(status), GOLD if String(status) == "ward" else BAD))
+	v.add_child(pips)
+
+	_party_slots[member.get("id", "")] = {"bar": hp, "label": hp_label, "mp": mp}
 	return slot
+
+func _rebuild_party_strip() -> void:
+	if _strip_box == null:
+		return
+	for child in _strip_box.get_children():
+		child.queue_free()
+	_party_slots.clear()
+	_strip_box.add_child(_row_label(I18n.t("play.partyFormation")))
+	_strip_box.add_child(_row_label(I18n.t("play.frontRow")))
+	_strip_box.add_child(_party_row("front"))
+	_strip_box.add_child(_row_label(I18n.t("play.backRow")))
+	_strip_box.add_child(_party_row("back"))
+
+func _stat_gauge(ratio: float, col: Color) -> ProgressBar:
+	var bar := ProgressBar.new()
+	bar.max_value = 100
+	bar.value = clampf(ratio, 0.0, 1.0) * 100.0
+	bar.show_percentage = false
+	bar.custom_minimum_size = Vector2(180, 7)
+	var fill := StyleBoxFlat.new()
+	fill.bg_color = col
+	fill.set_corner_radius_all(2)
+	var bg := StyleBoxFlat.new()
+	bg.bg_color = Color(0.10, 0.10, 0.09, 0.95)
+	bg.set_corner_radius_all(2)
+	bar.add_theme_stylebox_override("fill", fill)
+	bar.add_theme_stylebox_override("background", bg)
+	return bar
+
+func _pip(text: String, col: Color) -> Control:
+	var p := PanelContainer.new()
+	var style := _panel_style(Color(0.12, 0.11, 0.09, 0.9), col)
+	style.set_content_margin_all(3)
+	p.add_theme_stylebox_override("panel", style)
+	p.add_child(_label(text, 12, col))
+	return p
+
+# Whose orders are being given right now — the strip marks them so the menu and the strip agree.
+func _acting_member_id() -> String:
+	var actors := _actors()
+	if actors.is_empty() or _actor_index >= actors.size():
+		return ""
+	return String(actors[_actor_index].get("id", ""))
 
 func _refresh_member(member: Dictionary) -> void:
 	var refs: Variant = _party_slots.get(member.get("id", ""), null)

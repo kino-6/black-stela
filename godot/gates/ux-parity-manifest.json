@@ -1760,7 +1760,35 @@
         "play.spell",
         "play.useItem"
       ],
-      "notes": "Orders are given ONE adventurer at a time, front row first. A choice needing a target opens a second STAGE (標的を選ぶ), never a free-aim cursor. Esc backs out exactly one stage. A technique the actor cannot pay for is shown WITH its cost and disabled, not hidden. PARTY PRESENCE: the adventurers are the concept players bring — the party strip must show them at a readable size with portrait, row, HP/MP and status pips (CombatPartyStrip / CharacterPresence), not as thumbnails in a corner."
+      "notes": "Orders are given ONE adventurer at a time, front row first. A choice needing a target opens a second STAGE (標的を選ぶ), never a free-aim cursor. Esc backs out exactly one stage. A technique the actor cannot pay for is shown WITH its cost and disabled, not hidden. PARTY PRESENCE: the adventurers are the concept players bring — the party strip must show them at a readable size with portrait, row, HP/MP and status pips (CombatPartyStrip / CharacterPresence), not as thumbnails in a corner.",
+      "states": [
+        {},
+        {
+          "uiState": {
+            "stage": "skill"
+          }
+        },
+        {
+          "uiState": {
+            "stage": "spell"
+          }
+        },
+        {
+          "uiState": {
+            "stage": "item"
+          }
+        },
+        {
+          "uiState": {
+            "stage": "target-group"
+          }
+        },
+        {
+          "fixture": {
+            "__afflictParty": true
+          }
+        }
+      ]
     },
     {
       "id": "combat-target",
@@ -1768,9 +1796,6 @@
       "reactPanel": "src/components/CombatCommandMenu.tsx",
       "scene": "res://scenes/combat.tscn",
       "evidence": "tests/_ux_combat-target.png",
-      "uiState": {
-        "stage": "target-group"
-      },
       "requiredKeys": [
         "play.attack",
         "play.chooseItem",
@@ -1785,7 +1810,35 @@
         "play.spell",
         "play.useItem"
       ],
-      "notes": "TARGET SELECTION BELONGS ON THE STAGE, NOT IN A LIST. React deliberately moved it there (CombatCommandMenu.onTargetPreview -> a pulsing reticle follows the cursor on the creature via CombatCockpit/setSelectedTargetId); the list was kept only for the xN count. The Godot port regressed to a plain list and must be rebuilt to drive a stage reticle."
+      "notes": "TARGET SELECTION BELONGS ON THE STAGE, NOT IN A LIST. React deliberately moved it there (CombatCommandMenu.onTargetPreview -> a pulsing reticle follows the cursor on the creature via CombatCockpit/setSelectedTargetId); the list was kept only for the xN count. The Godot port regressed to a plain list and must be rebuilt to drive a stage reticle. (Same panel as combat-command, so the same contract — this entry exists to hold the target-stage screenshot.)",
+      "states": [
+        {},
+        {
+          "uiState": {
+            "stage": "skill"
+          }
+        },
+        {
+          "uiState": {
+            "stage": "spell"
+          }
+        },
+        {
+          "uiState": {
+            "stage": "item"
+          }
+        },
+        {
+          "uiState": {
+            "stage": "target-group"
+          }
+        },
+        {
+          "fixture": {
+            "__afflictParty": true
+          }
+        }
+      ]
     },
     {
       "id": "scenario-picker",
@@ -1830,7 +1883,20 @@
         "tempo.repeatRoundHint",
         "tempo.stop"
       ],
-      "notes": "全員でかかる / リピート / オート sit beside the per-actor menu. リピート is unavailable until a round has been declared and SAYS so; オート stops itself when the fight ends or the party is in danger."
+      "notes": "全員でかかる / リピート / オート sit beside the per-actor menu. リピート is unavailable until a round has been declared and SAYS so; オート stops itself when the fight ends or the party is in danger.",
+      "states": [
+        {},
+        {
+          "uiState": {
+            "tempo_repeat": true
+          }
+        },
+        {
+          "uiState": {
+            "tempo_auto": true
+          }
+        }
+      ]
     },
     {
       "id": "town-party-items",
