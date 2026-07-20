@@ -35,8 +35,18 @@ const data = {
     // and change that order, so ship an array to preserve it.
     equipment: Object.entries(def.equipment).map(([slot, id]) => ({ slot, id }))
   })),
-  backgrounds: backgroundCatalog.map((bg) => ({ id: bg.id, aptitude: bg.aptitude, accentColor: bg.accentColor })),
-  traits: traitCatalog.map((tr) => ({ id: tr.id, aptitude: tr.aptitude })),
+  // Labels, origin notes and the portrait key are PRESENTATION, but the guild's appearance step is a
+  // decision surface: 来歴 and 気質 are chosen by what they say and by the face they bring, not by their
+  // aptitude rows. Exporting only the math is what left the Godot guild unable to offer the choice.
+  backgrounds: backgroundCatalog.map((bg) => ({
+    id: bg.id,
+    label: bg.label,
+    notes: bg.notes,
+    portraitKey: bg.portraitKey,
+    aptitude: bg.aptitude,
+    accentColor: bg.accentColor
+  })),
+  traits: traitCatalog.map((tr) => ({ id: tr.id, label: tr.label, aptitude: tr.aptitude })),
   mpModeByClass
 };
 
