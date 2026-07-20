@@ -565,7 +565,10 @@ func _on_wipe_continue() -> void:
 func _show_victory(rewards: Dictionary) -> void:
 	_resolved = true
 	if _run:
-		_run.last_rewards = rewards
+		# The RESULT screen is React's CombatResultPanel, whose prop is the whole CombatConclusion — the
+		# rewards EVENT carries no levelUps, so stashing it is what left growth off the result screen.
+		var conclusion: Variant = _state.get("combatConclusion", null)
+		_run.last_rewards = conclusion if typeof(conclusion) == TYPE_DICTIONARY else rewards
 	var panel := PanelContainer.new()
 	panel.custom_minimum_size = Vector2(560, 260)
 	panel.size = Vector2(560, 260)

@@ -110,7 +110,9 @@ static func read_slot(slot: int) -> Dictionary:
 static func slot_summary(slot: int) -> Dictionary:
 	var loaded := read_slot(slot)
 	if not bool(loaded.get("ok", false)):
-		return {"slot": slot, "empty": true}
+		# A slot that EXISTS but will not load is not the same as an empty one: React says so on the
+		# title screen (save.corrupt) rather than silently offering three empty slots.
+		return {"slot": slot, "empty": true, "corrupt": String(loaded.get("error", "")) != "empty"}
 	var envelope: Dictionary = loaded.get("envelope", {})
 	var state: Dictionary = loaded.get("state", {})
 	return {

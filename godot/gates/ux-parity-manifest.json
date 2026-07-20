@@ -2157,7 +2157,19 @@
         "result.title",
         "result.xp"
       ],
-      "notes": "The expedition result: what was defeated, the xp and gold taken, any level-ups, then the way on."
+      "notes": "The expedition result: what was defeated, the xp and gold taken, any level-ups, then the way on. GROWTH is conditional in React, so both the levelled and the un-levelled result are driven.",
+      "states": [
+        {
+          "uiState": {
+            "no_growth": false
+          }
+        },
+        {
+          "uiState": {
+            "no_growth": true
+          }
+        }
+      ]
     },
     {
       "id": "title",
@@ -2179,7 +2191,20 @@
         "title.menu",
         "title.newGame"
       ],
-      "notes": "New run, continue (one row per non-empty save slot, described by what it holds), config."
+      "notes": "New run, continue (one row per non-empty save slot, described by what it holds), config. React renders the settings INSIDE this screen, and reports a save it cannot read — both are states of the title, so both are driven here.",
+      "states": [
+        {
+          "uiState": {
+            "config": false
+          }
+        },
+        {
+          "uiState": {
+            "config": true,
+            "corrupt": true
+          }
+        }
+      ]
     }
   ],
   "exemptScenes": [

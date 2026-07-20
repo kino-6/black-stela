@@ -61,20 +61,30 @@ func _initialize() -> void:
 			for i in 6:
 				await process_frame
 
-		var ui_state: Dictionary = entry.get("uiState", {})
-		if not ui_state.is_empty() and root.has_method("set_ui_state"):
-			root.call("set_ui_state", ui_state)
-			for i in 4:
-				await process_frame
+		# A screen's contract is measured across its declared STATES, so the evidence has to cover them
+		# too — one shot of the happy path is not evidence for the confirm / failure / opened states the
+		# gate asserts. The first state keeps the manifest's filename; the rest get a suffix.
+		var states: Array = entry.get("states", [])
+		if states.is_empty():
+			states = [{"uiState": entry.get("uiState", {})}]
 
-		var img := get_root().get_texture().get_image()
-		if img == null:
-			push_error("[ux-evidence] %s: NULL image — you are running with --headless; re-run without it" % id)
-			root.queue_free()
-			continue
-		img.save_png("res://" + evidence)
-		print("[ux-evidence] %s -> godot/%s (%dx%d)" % [id, evidence, img.get_width(), img.get_height()])
-		written += 1
+		var index := 0
+		for state in states:
+			var ui_state: Dictionary = state.get("uiState", {})
+			if not ui_state.is_empty() and root.has_method("set_ui_state"):
+				root.call("set_ui_state", ui_state)
+				for i in 4:
+					await process_frame
+
+			var img := get_root().get_texture().get_image()
+			if img == null:
+				push_error("[ux-evidence] %s: NULL image — you are running with --headless; re-run without it" % id)
+				break
+			var path := evidence if index == 0 else evidence.replace(".png", "--%d.png" % index)
+			img.save_png("res://" + path)
+			print("[ux-evidence] %s -> godot/%s (%dx%d)" % [id, path, img.get_width(), img.get_height()])
+			written += 1
+			index += 1
 
 		root.queue_free()
 		for i in 3:
