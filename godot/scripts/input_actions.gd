@@ -13,6 +13,7 @@ const ACTIONS := {
 	"confirm": [KEY_ENTER, KEY_SPACE],
 	"cancel": [KEY_ESCAPE],
 	"menu": [KEY_TAB],
+	"full_map": [KEY_M],   # the floor map has a shortcut, not just a dock button
 	"actor_prev": [KEY_BRACKETLEFT],
 	"actor_next": [KEY_BRACKETRIGHT],
 	"target_prev": [KEY_COMMA],

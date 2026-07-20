@@ -16,7 +16,7 @@ quests:
     locales:
       ja:
         name: 常設依頼――灰銀の残光
-        description: 灰銀の残光を仕留めるたび、文書庫は報いを惜しまない。追い詰めて討て。
+        description: 灰銀の残光は台帳に載っている。一体につき定額、何度でも。持ち込めば文書庫が支払う。
   # An early, learnable cull. Five ash-slimes is a run's worth of B1F attrition turned into pay.
   - id: quest.cull-the-ash
     kind: bounty
@@ -30,7 +30,7 @@ quests:
     locales:
       ja:
         name: 灰の這い寄りを間引く
-        description: 灰スライムは番人が焼くより早く湧く。五体を仕留めて報告せよ。
+        description: 焼いても焼いても湧いてくる。五体でいい、間引いてくれると助かる。――門の番人より
   # A repeatable delivery: relics carried up from the labyrinth, exchanged for a growth reward that
   # itself bypasses the falloff (emberwit ash raises wit permanently). Collection loop, not grind.
   - id: quest.shard-tithe
@@ -47,7 +47,7 @@ quests:
     locales:
       ja:
         name: 黒碑片の納め
-        description: 黒碑片を三つ、聖遺物室へ。守り手は迷宮の遺物と引き換えに知恵を分ける。
+        description: 黒碑の欠片を三つ、聖遺物室までお届けください。迷宮が手放したものと引き換えに、こちらの知るところをお分けします。
 ---
 
 # Quest board — Gate of Ash

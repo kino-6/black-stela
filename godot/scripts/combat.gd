@@ -97,7 +97,7 @@ func _build() -> void:
 	var group: Dictionary = groups[0] if groups.size() > 0 else {}
 
 	# --- Enemy stage (owns the upper frame) ---
-	_enemy_name = _label("%s  ·  %s" % [_enemy_ja(group), group.get("name", "Enemy")], 34, GOLD)
+	_enemy_name = _label(_enemy_ja(group), 34, GOLD)
 	_enemy_name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_enemy_name.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE)
 	_enemy_name.offset_top = 40
@@ -671,10 +671,17 @@ func _group_hp(group: Dictionary) -> int:
 func _group_max_hp(group: Dictionary) -> int:
 	return int(group.get("initialCount", group.get("count", 0))) * int(group.get("maxHpEach", group.get("hpEach", 1)))
 
+# The enemy's name is resolved from the WORLD catalog by enemyId, exactly as React's
+# localizedEnemyGroupName does. A combat group carries no `locales` (neither runtime puts it there —
+# adding it would change the state hash), so reading `group.locales` always missed and fell through to a
+# hardcoded default: every scenario's monsters were announced with the ash world's name.
 func _enemy_ja(group: Dictionary) -> String:
-	var locales: Dictionary = group.get("locales", {})
-	var ja: Dictionary = locales.get("ja", {}) if typeof(locales) == TYPE_DICTIONARY else {}
-	return ja.get("name", "灰泥")
+	for enemy in _world.get("enemies", []):
+		if enemy.get("id", "") == group.get("enemyId", ""):
+			var locales: Dictionary = enemy.get("locales", {})
+			var ja: Dictionary = locales.get("ja", {}) if typeof(locales) == TYPE_DICTIONARY else {}
+			return String(ja.get("name", enemy.get("name", group.get("name", ""))))
+	return String(group.get("name", ""))
 
 func _short_name(group: Dictionary) -> String:
 	return group.get("name", "Enemy")

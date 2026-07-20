@@ -32,6 +32,11 @@ func _initialize() -> void:
 	for entry in screens:
 		failures += await _check_screen(entry, copy)
 
+	# A player-facing scene that is not in the manifest is NOT passing — it is UNMEASURED, and claiming
+	# it done is the exact failure this gate exists to stop. (The guild/result/title screens were built
+	# before this gate existed and silently escaped it for three milestones.)
+	failures += _check_coverage(manifest)
+
 	print("")
 	if failures == 0:
 		print("[ux-parity] PASS — every migrated screen matches its React counterpart and has evidence")
@@ -130,6 +135,37 @@ func _check_screen(entry: Dictionary, copy: Dictionary) -> int:
 	if entry.get("notes", "") != "":
 		print("    contract: %s" % entry["notes"])
 	return failures
+
+# Every scene under res://scenes/ must be measured, unless the manifest explicitly exempts it as a
+# non-player transition (boot). Exemptions are DECLARED, never implicit.
+func _check_coverage(manifest: Dictionary) -> int:
+	var measured := {}
+	for entry in manifest.get("screens", []):
+		measured[String(entry.get("scene", ""))] = true
+	var exempt := {}
+	for scene in manifest.get("exemptScenes", []):
+		exempt[String(scene)] = true
+
+	var unmeasured := []
+	var dir := DirAccess.open("res://scenes")
+	if dir == null:
+		return 0
+	for file in dir.get_files():
+		if not file.ends_with(".tscn"):
+			continue
+		var path := "res://scenes/%s" % file
+		if not measured.has(path) and not exempt.has(path):
+			unmeasured.append(path)
+
+	if unmeasured.is_empty():
+		return 0
+	print("")
+	print("[ux-parity] UNMEASURED SCREENS — present in the build but absent from the manifest:")
+	for path in unmeasured:
+		print("      - %s" % path)
+	print("    A screen nobody measured is not a screen that passed. Add it to the manifest (with the")
+	print("    React panel it replaces) or declare it in `exemptScenes` with a reason.")
+	return unmeasured.size()
 
 # A key is "shown" when every literal segment of its template (split on {vars}) appears on screen.
 func _shows(shown: String, template: String) -> bool:

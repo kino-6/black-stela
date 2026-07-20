@@ -1,4 +1,6 @@
 extends Control
+
+const Fmt := preload("res://scripts/town_format.gd")
 ## M2 — the adventurer guild: build a 3+3 party by hand before descending. Pick a class + aptitude
 ## focus + name, see the exact adventurer the PORTED create() will mint (character_creation.gd, proven
 ## byte-identical to TS), register it, repeat up to six, then depart to town. Controller-first: the class
@@ -18,6 +20,7 @@ const NAMES := ["ミラ", "ルーク", "ヴェイル", "セイ", "ブラン", "�
 const PARTY_MAX := 6
 
 var _run: Node = null
+var _world: Dictionary = {}
 var _data: Dictionary = {}
 var _class_id: String = "vanguard"
 var _focus: String = "balanced"
@@ -30,6 +33,12 @@ var _depart: Button
 func _ready() -> void:
 	await get_tree().process_frame
 	_run = get_node_or_null("/root/Run")
+	if _run:
+		_run.ensure_loaded()
+		_world = _run.world
+	if _world.is_empty():
+		var pack: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/worlds/default.json"))
+		_world = (pack as Dictionary).get("world", {}) if typeof(pack) == TYPE_DICTIONARY else {}
 	if _run:
 		_run.start_guild()
 		_data = _run.character_data
@@ -212,11 +221,12 @@ func _role_tags(c: Dictionary) -> Array:
 		out.append(str(t))
 	return out
 
+# The player reads NAMES, never ids. Stripping "equip." off the id and showing the slug ("militia-sabre")
+# is the raw-identifier leak AGENTS.md bars from normal play.
 func _short_equip(c: Dictionary) -> Array:
 	var out := []
 	for eid in c.get("startingEquipment", []):
-		var parts := String(eid).split(".")
-		out.append(parts[parts.size() - 1])
+		out.append(Fmt.localized_catalog_name(_world, eid))
 	return out
 
 func _row_ja(row: String) -> String:

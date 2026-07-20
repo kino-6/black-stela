@@ -15,7 +15,7 @@ quests:
     locales:
       ja:
         name: 常設依頼――黄金の胞子雲
-        description: 黄金の胞子雲を散らすたび、森守は報いる。鉄の刃を携え、漂う前に打ち払え。
+        description: 黄金の胞子雲、見つけ次第散らしてほしい。漂い出すと手がつけられない。鉄の刃があるとよい。――森守
   # An early cull the grove can teach a new party.
   - id: quest.verdant.thin-the-swarm
     kind: bounty
@@ -29,7 +29,7 @@ quests:
     locales:
       ja:
         name: 胞子の群れを間引く
-        description: 胞子蚋が下層の道を塞ぐ。五体を散らせば番人も息をつける。
+        description: 胞子蚋が下層の道を塞いでいる。五体も散らせば、こちらも息をつける。
   # A repeatable delivery of the heartwood relic for a growth reward.
   - id: quest.verdant.heartseed-tithe
     kind: delivery
@@ -45,7 +45,7 @@ quests:
     locales:
       ja:
         name: 大樹の種の納め
-        description: 大樹の種を三つ、根の社へ。森は返された実りと引き換えに、己の成長を分ける。
+        description: 大樹の種を三つ、根の社までお納めください。返された実りと引き換えに、森はその育ちを分け与えます。
 ---
 
 # Quest board — The Drowned Grove
