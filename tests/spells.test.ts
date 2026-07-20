@@ -24,7 +24,7 @@ describe("spells", () => {
     // Front-row martial classes learn a 特技, not a spell.
     expect(knownSpells("warrior", 1)).toContain("power-strike");
     // A class with neither spell nor 特技 has nothing to command.
-    expect(knownSpells("thief", 99)).toHaveLength(0);
+    expect(knownSpells("knight", 99)).toHaveLength(0);
   });
 
   it("gives casters an MP pool, 特技 classes a smaller 気力 pool, and others none", () => {
@@ -36,7 +36,7 @@ describe("spells", () => {
     expect(baseMaxMpForClass("warrior", stats)).toBeGreaterThan(0);
     expect(baseMaxMpForClass("warrior", stats)).toBeLessThan(baseMaxMpForClass("occultist", stats));
     // A plain martial class (no abilities) still has no pool.
-    expect(baseMaxMpForClass("thief", stats)).toBe(0);
+    expect(baseMaxMpForClass("knight", stats)).toBe(0);
   });
 
   it("casts an attack spell, spending MP and damaging the enemy", () => {

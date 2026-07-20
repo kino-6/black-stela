@@ -15,15 +15,16 @@ describe("reclass (転職)", () => {
     expect(asVanguard.name).toBe("Cael");
     expect(asVanguard.maxMp).toBeGreaterThan(0); // vanguard now carries a 特技 気力 pool
 
-    const asScout = reclassCharacter(mender, "thief", defaultWorld);
-    expect(asScout.maxMp).toBe(0); // a class with no abilities keeps no pool
+    // 盾騎士 carries no technique at all, so no pool. (盗賊 does carry one since the consolidation.)
+    const asKnight = reclassCharacter(mender, "knight", defaultWorld);
+    expect(asKnight.maxMp).toBe(0);
   });
 
   it("grants a pool when retraining a plain martial into a caster", () => {
-    const scout = createGuildCharacter({ name: "Rook", classId: "thief", seed: "r" });
-    expect(scout.maxMp).toBe(0);
+    const knight = createGuildCharacter({ name: "Rook", classId: "knight", seed: "r" });
+    expect(knight.maxMp).toBe(0);
 
-    const asMender = reclassCharacter(scout, "priest", defaultWorld);
+    const asMender = reclassCharacter(knight, "priest", defaultWorld);
     expect(asMender.maxMp).toBeGreaterThan(0);
   });
 

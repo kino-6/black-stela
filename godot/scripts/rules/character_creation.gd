@@ -10,10 +10,22 @@ extends RefCounted
 
 const APTITUDE_KEYS := ["might", "agility", "spirit", "wit", "luck"]
 
+## Port of classIds.resolveClassId — the mapping rides in the exported data so there is ONE table.
+static func resolve_class_id(id: Variant, data: Dictionary) -> String:
+	var wanted := String(id) if typeof(id) == TYPE_STRING else ""
+	for cls in data.get("classes", []):
+		if String(cls.get("id", "")) == wanted:
+			return wanted
+	var mapping: Dictionary = data.get("legacyClassMapping", {})
+	return String(mapping.get(wanted, "warrior"))
+
 static func create(input: Dictionary, data: Dictionary) -> Dictionary:
-	var class_def := _find(data.get("classes", []), input.get("classId", "vanguard"))
+	# A stored id may be a LEGACY one (the twelve → eight consolidation). Resolve it exactly as the oracle
+	# does — an unresolved id used to fall through to an empty class and mint a character made of zeros.
+	var class_id := resolve_class_id(input.get("classId", "warrior"), data)
+	var class_def := _find(data.get("classes", []), class_id)
 	if class_def.is_empty():
-		class_def = _find(data.get("classes", []), "vanguard")
+		class_def = _find(data.get("classes", []), "warrior")
 	var background := _find(data.get("backgrounds", []), input.get("backgroundId", "watch"))
 	if background.is_empty():
 		background = _find(data.get("backgrounds", []), "watch")
@@ -30,7 +42,7 @@ static func create(input: Dictionary, data: Dictionary) -> Dictionary:
 
 	var aptitude := _build_aptitude(class_def, input.get("aptitudeFocus", "balanced"), background, traits, input.get("bonusAptitude", {}), data.get("defaultAptitude", {}))
 	var stats := _derive_stats(class_def, aptitude)
-	var mp := _base_max_mp(input.get("classId", "vanguard"), aptitude, data.get("mpModeByClass", {}))
+	var mp := _base_max_mp(class_id, aptitude, data.get("mpModeByClass", {}))
 
 	# equipment is an ORDERED array of {slot, id} (class-insertion order) so startingEquipment matches TS.
 	var loadout: Array = class_def.get("equipment", [])
@@ -48,9 +60,10 @@ static func create(input: Dictionary, data: Dictionary) -> Dictionary:
 	return {
 		"id": input.get("id", ""),
 		"name": String(input.get("name", "")).strip_edges(),
-		"classId": class_def.get("id", "vanguard"),
+		"classId": class_def.get("id", "warrior"),
 		"roleTags": class_def.get("roleTags", []),
 		"rowPreference": class_def.get("rowPreference", "front"),
+		"startingDiscipline": class_def.get("id", "warrior"),
 		"backgroundId": background.get("id", "watch"),
 		"aptitude": aptitude,
 		"traitIds": trait_ids,
@@ -168,14 +181,10 @@ static func reclass_character(character: Dictionary, new_class_id: String, world
 
 	var releveled: Dictionary = Leveling.apply_level_ups(base)["character"]
 
-	var equipment := {}
-	for slot in (releveled.get("equipment", {}) as Dictionary):
-		var equipped: Variant = releveled["equipment"][slot]
-		if typeof(equipped) != TYPE_DICTIONARY:
-			continue
-		var equip: Variant = Economy.find_equipment(world, equipped.get("id", ""))
-		if typeof(equip) == TYPE_DICTIONARY and Economy.is_equipment_usable_by(equip, releveled):
-			equipment[slot] = equipped
+	# GEAR IS KEPT (class-system.md §2.8, §6): a change of vocation must not force off equipment the
+	# adventurer was already legitimately using. What may be equipped FRESH is still checked at the shop
+	# and the party menu.
+	var equipment: Dictionary = (releveled.get("equipment", {}) as Dictionary).duplicate(true)
 
 	var result: Dictionary = releveled.duplicate(true)
 	result["hp"] = int(releveled.get("maxHp", 0))
@@ -195,11 +204,17 @@ static func import_adventurer(portable: Dictionary, world: Dictionary, engine: D
 	var identity: Dictionary = portable.get("identity", {})
 	var adjustments := []
 
-	var class_id := String(build.get("classId", "vanguard"))
+	# A vault adventurer may carry a legacy id, and a scenario policy may list legacy ids: both sides are
+	# RESOLVED before comparing, so an old 斥候 counts as the 盗賊 a policy allows.
+	var class_id := resolve_class_id(build.get("classId", "warrior"), engine)
 	var allowed: Variant = policy.get("allowedClasses", null)
-	if typeof(allowed) == TYPE_ARRAY and not (allowed as Array).is_empty() and not (allowed as Array).has(class_id):
-		class_id = String((allowed as Array)[0])
-		adjustments.append("class_remapped")
+	if typeof(allowed) == TYPE_ARRAY and not (allowed as Array).is_empty():
+		var resolved_allowed := []
+		for entry in allowed:
+			resolved_allowed.append(resolve_class_id(entry, engine))
+		if not resolved_allowed.has(class_id):
+			class_id = String(resolved_allowed[0])
+			adjustments.append("class_remapped")
 
 	var level := maxi(1, int(progress.get("level", 1)))
 	if policy.get("levelCap", null) != null and level > int(policy["levelCap"]):

@@ -119,19 +119,23 @@ const facilityBackgrounds = [
   "dungeon-entrance"
 ] as const;
 
+// The delivered adventurer MASTERS, by the file names they actually ship under. These are art, not
+// taxonomy: the twelve-class roster was consolidated into eight (docs/design/class-system.md §8.3), but
+// the paintings did not change, and re-cutting them under the new names is Codex's art task rather than
+// something a rules commit should rename on disk.
 const adventurerClasses = [
-  "warrior",
-  "warrior",
-  "knight",
-  "swordmaster",
-  "thief",
-  "thief",
-  "thief",
-  "priest",
+  "vanguard",
+  "sellsword",
+  "bulwark",
+  "duelist",
+  "seeker",
+  "scout",
+  "cutpurse",
+  "mender",
   "chanter",
   "occultist",
-  "mage",
-  "thief"
+  "arcanist",
+  "wayfinder"
 ] as const;
 
 const adventurerSpecies = ["human", "sylvan", "beastkin"] as const;

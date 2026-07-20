@@ -599,7 +599,7 @@ func _unhandled_input(event: InputEvent) -> void:
 func _build_character() -> Dictionary:
 	var character: Dictionary = CharacterCreation.create({
 		"name": _display_name(),
-		"classId": String(_draft.get("classId", "vanguard")),
+		"classId": String(_draft.get("classId", "warrior")),
 		"backgroundId": String(_draft.get("backgroundId", "watch")),
 		"traitIds": [String(_draft.get("traitId", "steady"))],
 		"bonusAptitude": _draft.get("bonusAptitude", {}),

@@ -107,7 +107,7 @@ func _initialize() -> void:
 		print("[guild-controller] the cursor stayed on the 気質 just chosen")
 
 	# 4. The whole flow mints the adventurer the player built.
-	guild.call("_select_class", "mender")
+	guild.call("_select_class", "priest")
 	await process_frame
 	guild.call("_select_background", "apothecary")
 	await process_frame
@@ -129,7 +129,7 @@ func _initialize() -> void:
 		_fail("register: party holds %d member(s), expected 1" % party.size())
 	else:
 		var member: Dictionary = party[0]
-		if String(member.get("classId", "")) != "mender":
+		if String(member.get("classId", "")) != "priest":
 			_fail("register: the recruit is a %s, not the 癒し手 that was chosen" % member.get("classId", ""))
 		if String(member.get("backgroundId", "")) != "apothecary":
 			_fail("register: the chosen 来歴 was dropped (%s)" % member.get("backgroundId", ""))

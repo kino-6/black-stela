@@ -29,7 +29,7 @@ static func fresh(seed: int) -> Dictionary:
 		"name": "",
 		"title": "",
 		"notes": "",
-		"classId": "vanguard",
+		"classId": "warrior",
 		"backgroundId": "watch",
 		"traitId": "steady",
 		"bonusPool": roll_bonus_pool(seed),

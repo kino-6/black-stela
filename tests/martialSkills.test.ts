@@ -12,7 +12,9 @@ describe("front-row 特技", () => {
     expect(isMartialSkillClass("warrior")).toBe(true);
     expect(isCasterClass("warrior")).toBe(false);
     expect(isMartialSkillClass("occultist")).toBe(false);
-    expect(isMartialSkillClass("thief")).toBe(false);
+    expect(isMartialSkillClass("knight")).toBe(false);
+    expect(knownSpells("knight", 1)).toHaveLength(0);
+    // 盗賊 carries the same 特技 the front line does — the consolidation gave the merged trap classes a line.
     expect(knownSpells("thief", 1)).toContain("power-strike");
   });
 

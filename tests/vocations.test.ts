@@ -34,7 +34,7 @@ describe("vocation mastery contract", () => {
     expect(catalog.some((v) => v.id === "warrior" && v.tier === "basic" && !v.authored)).toBe(true);
     const reaver = catalog.find((v) => v.id === "vocation.ash-reaver");
     expect(reaver).toMatchObject({ tier: "advanced", authored: true });
-    expect(reaver?.requires?.mastered).toEqual(["warrior", "warrior"]);
+    expect(reaver?.requires?.mastered).toEqual(["warrior", "swordmaster"]);
   });
 
   it("defaults a vocation state from the character's class when none is stored", () => {
@@ -53,11 +53,11 @@ describe("vocation mastery contract", () => {
   it("banks mastery into ranks and caps at MASTERED_RANK", () => {
     let state: CharacterVocationState = { current: "warrior", mastery: {}, progress: {}, learned: [], loadout: [] };
     state = applyMastery(state, MASTERY_POINTS_PER_RANK + 10);
-    expect(state.mastery.vanguard).toBe(1);
-    expect(state.progress.vanguard).toBe(10);
+    expect(state.mastery.warrior).toBe(1);
+    expect(state.progress.warrior).toBe(10);
     state = applyMastery(state, MASTERY_POINTS_PER_RANK * 10); // overshoot far past mastered
-    expect(state.mastery.vanguard).toBe(MASTERED_RANK);
-    expect(state.progress.vanguard).toBe(0);
+    expect(state.mastery.warrior).toBe(MASTERED_RANK);
+    expect(state.progress.warrior).toBe(0);
   });
 
   it("gates an advanced vocation behind mastered prerequisites and a level floor", () => {
@@ -67,7 +67,7 @@ describe("vocation mastery contract", () => {
 
     const mastered: CharacterVocationState = {
       current: "warrior",
-      mastery: { vanguard: MASTERED_RANK, sellsword: MASTERED_RANK },
+      mastery: { warrior: MASTERED_RANK, swordmaster: MASTERED_RANK },
       progress: {},
       learned: ["power-strike"],
       loadout: ["power-strike"]
@@ -79,13 +79,13 @@ describe("vocation mastery contract", () => {
   });
 
   it("adopting a vocation keeps learned techniques and adds the new one, without touching level", () => {
-    const start: CharacterVocationState = { current: "warrior", mastery: { vanguard: MASTERED_RANK }, progress: {}, learned: ["sleep"], loadout: ["sleep"] };
+    const start: CharacterVocationState = { current: "warrior", mastery: { warrior: MASTERED_RANK }, progress: {}, learned: ["sleep"], loadout: ["sleep"] };
     const reaver = findVocation(defaultWorld, "vocation.ash-reaver")!;
     const next = adoptVocationState(start, reaver);
     expect(next.current).toBe("vocation.ash-reaver");
     expect(next.learned).toEqual(expect.arrayContaining(["sleep", "power-strike"])); // old kept + new granted
     expect(next.loadout).toContain("power-strike"); // the signature move is usable at once
-    expect(next.mastery.vanguard).toBe(MASTERED_RANK); // prior mastery untouched
+    expect(next.mastery.warrior).toBe(MASTERED_RANK); // prior mastery untouched
   });
 
   it("applies an active vocation's stat modifiers on top of the base", () => {
@@ -102,11 +102,14 @@ describe("vocation mastery contract", () => {
     const levelBefore = hero.level;
     expect(levelBefore).toBeGreaterThan(1);
     const state: GameState = { ...townState(), party: [hero] };
-    // Vanguard → sellsword (a basic vocation, no prereqs).
-    const after = executeCommand(state, defaultWorld, { type: "change_vocation", characterId: hero.id, vocationId: "warrior" });
+    // 戦士 → 剣客 (another basic vocation, no prereqs). The consolidation merged 傭兵 into 戦士, so the
+    // old "retrain into the neighbouring front-liner" case is this one now.
+    const after = executeCommand(state, defaultWorld, { type: "change_vocation", characterId: hero.id, vocationId: "swordmaster" });
     const changed = after.party[0];
-    expect(changed.vocation?.current).toBe("warrior");
-    expect(changed.classId).toBe("warrior");
+    expect(changed.vocation?.current).toBe("swordmaster");
+    expect(changed.classId).toBe("swordmaster");
+    // §6: the discipline they registered as survives the change.
+    expect(changed.startingDiscipline).toBe("warrior");
     expect(changed.level).toBe(levelBefore); // the vocation change does NOT reset level
   });
 

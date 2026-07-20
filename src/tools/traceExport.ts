@@ -287,8 +287,9 @@ function vocationRoute(): { initial: GameState; commands: Command[] } {
     level: 6,
     xp: 120, // xpForLevel(6) = 4*5*6 — enough for level 6, short of 7 (168), so reclass re-levels to 6
     vocation: {
-      current: "vanguard",
-      mastery: { vanguard: 5, sellsword: 5 },
+      // 戦士 with two disciplines mastered — the consolidated pair the ash-reaver now asks for.
+      current: "warrior",
+      mastery: { warrior: 5, swordmaster: 5 },
       progress: {},
       learned: ["power-strike"],
       loadout: ["power-strike"]
@@ -297,7 +298,7 @@ function vocationRoute(): { initial: GameState; commands: Command[] } {
   const base = createInitialGameState();
   const initial: GameState = { ...base, phase: "town", party: [hero] };
   const commands: Command[] = [
-    { type: "change_vocation", characterId: hero.id, vocationId: "sellsword" },
+    { type: "change_vocation", characterId: hero.id, vocationId: "swordmaster" },
     { type: "set_loadout", characterId: hero.id, loadout: ["power-strike", "spell.not-learned"] },
     { type: "change_vocation", characterId: hero.id, vocationId: "vocation.ash-reaver" }
   ];

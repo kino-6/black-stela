@@ -1,3 +1,4 @@
+import { resolveClassId } from "./classIds";
 import type { Character, CombatStatus, Element, EquipmentSlot, InventoryItem, ScenarioEquipment, ScenarioItem, ScenarioWorld } from "./types";
 import { PHYSICAL } from "./types";
 import { equipmentInstanceKey, plusPrimaryStat } from "./affixes";
@@ -247,7 +248,14 @@ export function getEquipmentSlot(world: ScenarioWorld, equipmentId: string): Equ
 }
 
 export function isEquipmentUsableBy(equipment: ScenarioEquipment, character: Character) {
-  return !equipment.allowedClasses?.length || equipment.allowedClasses.includes(character.classId);
+  // Authored `allowedClasses` still name the pre-consolidation ids (docs/design/class-system.md §8.3), so
+  // both sides are RESOLVED before comparing: a 戦士 may wear what the list gave to 先鋒 and 傭兵. Without
+  // this every authored restriction would silently refuse every adventurer.
+  if (!equipment.allowedClasses?.length) {
+    return true;
+  }
+  const allowed = equipment.allowedClasses.map((id) => resolveClassId(id));
+  return allowed.includes(resolveClassId(character.classId));
 }
 
 export function calculateRecoveryCost(party: Character[]) {

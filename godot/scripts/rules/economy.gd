@@ -1,4 +1,12 @@
 extends RefCounted
+
+# The twelve → eight consolidation, mirrored for the case where no engine data is threaded through.
+# The exported `legacyClassMapping` (engine-data.json) is authoritative when present.
+const LEGACY_CLASS_MAPPING := {
+	"vanguard": "warrior", "sellsword": "warrior", "bulwark": "knight", "duelist": "swordmaster",
+	"seeker": "thief", "scout": "thief", "cutpurse": "thief", "mender": "priest",
+	"chanter": "chanter", "occultist": "occultist", "arcanist": "mage", "wayfinder": "thief"
+}
 ## GDScript port of the town economy (src/domain/economy.ts + commands/economyCommands.ts): buy / sell /
 ## equip / discard, plus the inventory + equipment helpers they share. State-hash parity requires the
 ## built item dict to carry EXACTLY the fields TS emits — undefined catalog fields are omitted in JSON,
@@ -37,11 +45,19 @@ static func get_equipment_slot(world: Dictionary, id: String) -> Variant:
 	var eq: Variant = find_equipment(world, id)
 	return eq.get("slot", null) if typeof(eq) == TYPE_DICTIONARY else null
 
-static func is_equipment_usable_by(equipment: Dictionary, character: Dictionary) -> bool:
+## Authored `allowedClasses` still name the pre-consolidation ids (docs/design/class-system.md §8.3), so
+## both sides are RESOLVED before comparing: a 戦士 may wear what the list gave to 先鋒 and 傭兵. Without
+## this every authored restriction silently refuses every adventurer.
+static func is_equipment_usable_by(equipment: Dictionary, character: Dictionary, engine: Dictionary = {}) -> bool:
 	var allowed: Variant = equipment.get("allowedClasses", null)
 	if typeof(allowed) != TYPE_ARRAY or (allowed as Array).is_empty():
 		return true
-	return allowed.has(character.get("classId", ""))
+	var mapping: Dictionary = engine.get("legacyClassMapping", LEGACY_CLASS_MAPPING)
+	var wanted := String(mapping.get(String(character.get("classId", "")), String(character.get("classId", ""))))
+	for entry in allowed:
+		if String(mapping.get(String(entry), String(entry))) == wanted:
+			return true
+	return false
 
 static func create_inventory_item(world: Dictionary, item_id: String, quantity: int) -> Variant:
 	var it: Variant = find_catalog_item(world, item_id)

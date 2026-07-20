@@ -325,7 +325,7 @@ export const starterTemplates: Record<StarterTemplateId, { label: LocalizedLabel
       { name: "Vale", classId: "thief", backgroundId: "ruinborn", traitIds: ["curious"], method: "template" },
       { name: "Sei", classId: "priest", backgroundId: "apothecary", traitIds: ["steady"], method: "template" },
       { name: "Mira", classId: "mage", backgroundId: "cartographer", traitIds: ["lucky"], method: "template" },
-      { name: "Lio", classId: "thief", backgroundId: "cartographer", traitIds: ["curious"], method: "template" }
+      { name: "Lio", classId: "chanter", backgroundId: "cartographer", traitIds: ["curious"], method: "template" }
     ]
   },
   cautious: {
@@ -336,18 +336,18 @@ export const starterTemplates: Record<StarterTemplateId, { label: LocalizedLabel
       { name: "Kest", classId: "thief", backgroundId: "cartographer", traitIds: ["curious"], method: "template" },
       { name: "Sei", classId: "priest", backgroundId: "apothecary", traitIds: ["steady"], method: "template" },
       { name: "Mira", classId: "chanter", backgroundId: "cartographer", traitIds: ["grim"], method: "template" },
-      { name: "Nera", classId: "thief", backgroundId: "watch", traitIds: ["steady"], method: "template" }
+      { name: "Nera", classId: "occultist", backgroundId: "watch", traitIds: ["steady"], method: "template" }
     ]
   },
   treasure: {
     label: { en: "Treasure Hunters", ja: "財宝狙い" },
     members: [
       { name: "Vale", classId: "thief", backgroundId: "ruinborn", traitIds: ["lucky"], method: "template" },
-      { name: "Kest", classId: "thief", backgroundId: "cartographer", traitIds: ["curious"], method: "template" },
-      { name: "Rook", classId: "swordmaster", backgroundId: "debtor", traitIds: ["grim"], method: "template" },
+      { name: "Kest", classId: "swordmaster", backgroundId: "cartographer", traitIds: ["curious"], method: "template" },
+      { name: "Rook", classId: "warrior", backgroundId: "debtor", traitIds: ["grim"], method: "template" },
       { name: "Sei", classId: "priest", backgroundId: "apothecary", traitIds: ["steady"], method: "template" },
       { name: "Mira", classId: "occultist", backgroundId: "cartographer", traitIds: ["lucky"], method: "template" },
-      { name: "Lio", classId: "thief", backgroundId: "watch", traitIds: ["curious"], method: "template" }
+      { name: "Lio", classId: "mage", backgroundId: "watch", traitIds: ["curious"], method: "template" }
     ]
   },
   aggressive: {
@@ -355,7 +355,7 @@ export const starterTemplates: Record<StarterTemplateId, { label: LocalizedLabel
     members: [
       { name: "Rook", classId: "warrior", backgroundId: "debtor", traitIds: ["scarred"], method: "template" },
       { name: "Ash", classId: "swordmaster", backgroundId: "watch", traitIds: ["grim"], method: "template" },
-      { name: "Vale", classId: "warrior", backgroundId: "ruinborn", traitIds: ["curious"], method: "template" },
+      { name: "Vale", classId: "thief", backgroundId: "ruinborn", traitIds: ["curious"], method: "template" },
       { name: "Mira", classId: "mage", backgroundId: "cartographer", traitIds: ["lucky"], method: "template" },
       { name: "Sei", classId: "chanter", backgroundId: "apothecary", traitIds: ["steady"], method: "template" },
       { name: "Nera", classId: "occultist", backgroundId: "watch", traitIds: ["grim"], method: "template" }
@@ -368,7 +368,7 @@ export const starterTemplates: Record<StarterTemplateId, { label: LocalizedLabel
       { name: "Vale", classId: "thief", backgroundId: "ruinborn", traitIds: ["lucky"], method: "template" },
       { name: "Bran", classId: "knight", backgroundId: "debtor", traitIds: ["steady"], method: "template" },
       { name: "Sei", classId: "priest", backgroundId: "apothecary", traitIds: ["steady"], method: "template" },
-      { name: "Lio", classId: "thief", backgroundId: "cartographer", traitIds: ["curious"], method: "template" },
+      { name: "Lio", classId: "chanter", backgroundId: "cartographer", traitIds: ["curious"], method: "template" },
       { name: "Mira", classId: "mage", backgroundId: "cartographer", traitIds: ["lucky"], method: "template" }
     ]
   }

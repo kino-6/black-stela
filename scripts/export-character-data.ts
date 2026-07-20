@@ -2,6 +2,7 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { backgroundCatalog, classCatalog, traitCatalog } from "../src/domain/characterCreation";
+import { LEGACY_CLASS_MAPPING } from "../src/domain/classIds";
 import { isCasterClass, isMartialSkillClass } from "../src/domain/spells";
 import { canonicalize } from "../src/tools/packExport";
 import type { CharacterClassId } from "../src/domain/types";
@@ -22,6 +23,10 @@ for (const def of classCatalog) {
 const data = {
   schemaVersion: 1,
   defaultAptitude,
+  // The twelve → eight consolidation (docs/design/class-system.md §8.3). Shipped so the runtime resolves
+  // a stored legacy id exactly as the oracle does, rather than failing to find a class and building a
+  // character out of zeros.
+  legacyClassMapping: LEGACY_CLASS_MAPPING,
   classes: classCatalog.map((def) => ({
     id: def.id,
     label: def.label,

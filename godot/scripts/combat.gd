@@ -811,11 +811,12 @@ func _acting_name() -> String:
 	return "?"
 
 func _portrait_class(member: Dictionary) -> String:
-	var cls: String = member.get("classId", "vanguard")
-	# The slice ships three base portraits; map anything else to the nearest archetype.
-	if cls in ["vanguard", "mender", "arcanist"]:
-		return cls
-	if cls in ["occultist", "sage", "cleric"]:
+	var cls: String = member.get("classId", "warrior")
+	# The slice ships three master portraits; map the eight classes onto the nearest archetype until
+	# per-class art is cut (class-system.md §8.5). Legacy ids resolve too, so an older save still has a face.
+	if cls in ["priest", "mender"]:
+		return "mender"
+	if cls in ["mage", "occultist", "chanter", "arcanist", "wayfinder", "sage", "cleric"]:
 		return "arcanist"
 	return "vanguard"
 
