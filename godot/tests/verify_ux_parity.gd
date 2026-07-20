@@ -55,6 +55,12 @@ func _check_screen(entry: Dictionary, copy: Dictionary) -> int:
 	for i in 8:
 		await process_frame
 
+	var world_id: String = entry.get("worldId", "")
+	if world_id != "" and root.has_method("set_world_override"):
+		root.call("set_world_override", world_id)
+		for i in 3:
+			await process_frame
+
 	# Drive the screen from the manifest's fixture so conditional/failure surfaces actually render.
 	var fixture: Dictionary = entry.get("fixture", {})
 	if not fixture.is_empty() and root.has_method("set_state_override"):

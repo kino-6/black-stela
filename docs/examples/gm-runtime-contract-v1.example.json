@@ -1,0 +1,112 @@
+{
+  "_status": "proposal-example-not-yet-consumed-by-runtime",
+  "schemaVersion": 1,
+  "publicContext": {
+    "requestId": "gmreq.verdant.breathing-root.0001",
+    "worldId": "verdant",
+    "locale": "ja",
+    "phase": "dungeon",
+    "turn": 84,
+    "location": {
+      "floorId": "dungeon.verdant.b1f",
+      "roomId": "room.verdant.b1f.breathing-root",
+      "roomName": "呼吸根の浅瀬",
+      "dangerTier": 1
+    },
+    "party": [
+      {
+        "characterId": "char.mira",
+        "name": "ミラ",
+        "title": "塵足",
+        "classId": "seeker",
+        "backgroundId": "background.surveyor",
+        "traitIds": [
+          "trait.patient"
+        ],
+        "condition": "healthy",
+        "deeds": [
+          "鉄杭で胞子弁を固定した"
+        ]
+      }
+    ],
+    "recentEvents": [
+      {
+        "type": "room_entered",
+        "roomId": "room.verdant.b1f.breathing-root",
+        "roomName": "呼吸根の浅瀬"
+      }
+    ],
+    "eligibleStorylets": [
+      {
+        "storyletId": "storylet.verdant.breathing-root",
+        "npcId": null,
+        "allowedSubjectCharacterIds": [
+          "char.mira"
+        ],
+        "allowedIntentIds": [
+          "intent.measure-breath",
+          "intent.cut-with-metal",
+          "intent.withdraw"
+        ],
+        "allowedContinuityTags": [
+          "root-measured",
+          "root-cut"
+        ],
+        "fallbackFraming": "水面下の根が膨らむたび、通路の空気が薄くなる。"
+      }
+    ],
+    "memory": []
+  },
+  "proposal": {
+    "requestId": "gmreq.verdant.breathing-root.0001",
+    "storyletId": "storylet.verdant.breathing-root",
+    "subjectCharacterId": "char.mira",
+    "framing": "ミラが息を止める。根の膨らみには、短い間がある。",
+    "npcReaction": null,
+    "offeredIntentIds": [
+      "intent.measure-breath",
+      "intent.cut-with-metal",
+      "intent.withdraw"
+    ],
+    "continuityTags": [
+      "root-measured"
+    ]
+  },
+  "confirmedCommand": {
+    "type": "resolve_storylet_intent",
+    "storyletId": "storylet.verdant.breathing-root",
+    "intentId": "intent.measure-breath",
+    "subjectCharacterId": "char.mira"
+  },
+  "deterministicResult": {
+    "events": [
+      {
+        "type": "storylet_intent_resolved",
+        "storyletId": "storylet.verdant.breathing-root",
+        "intentId": "intent.measure-breath",
+        "subjectCharacterId": "char.mira",
+        "checkId": "check.verdant.measure-breath",
+        "result": "success",
+        "consequenceEventIds": [
+          "event.verdant.reveal-root-interval"
+        ]
+      },
+      {
+        "type": "gm_memory_recorded",
+        "storyletId": "storylet.verdant.breathing-root",
+        "intentId": "intent.measure-breath",
+        "result": "success"
+      }
+    ],
+    "memory": {
+      "storyletId": "storylet.verdant.breathing-root",
+      "intentId": "intent.measure-breath",
+      "result": "success",
+      "consequenceEventIds": [
+        "event.verdant.reveal-root-interval"
+      ],
+      "subjectCharacterId": "char.mira",
+      "turn": 84
+    }
+  }
+}

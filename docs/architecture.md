@@ -6,8 +6,8 @@ is the single "how the whole system fits together" map. Per-feature design lives
 under `docs/design/`; this file is the layer above them — read it first, then
 follow the pointers at the end.
 
-> **Why this doc exists now.** A runtime migration to Godot 4.7.1 is under
-> evaluation (`docs/design/godot-migration-plan.md`). That plan keeps the
+> **Why this doc exists now.** A runtime migration to Godot 4.7.1 is active
+> (`docs/design/godot-full-migration-plan.md`). That plan keeps the
 > deterministic rules, world packs, save format, and simulation as the oracle and
 > rebuilds the player-facing UI. This document draws the exact line between the
 > **durable core** (ports / stays authoritative) and the **presentation layer**
@@ -67,11 +67,19 @@ boundary may depend on anything above it.
 | Player UI, layout, focus | `App.tsx`, `components/*`, `ui/controllerFocus.ts`, `ui/combatFraming.ts` | **Rebuilt** (Godot `Control`/scenes) |
 | 3D dungeon renderer | `components/DungeonView.tsx`, `components/dungeonScene.ts` | **Rebuilt** (Godot 3D scene) |
 | Localization data | `i18n/en.ts`, `i18n/ja.ts` + world `copy:` | **Port the data**, re-bind rendering |
-| Local narration | `services/narrator*`, `aiPolicyGuard.ts` | **Adapt** (optional subsystem) |
+| Local narration / bounded GM | `services/narrator*`, `aiPolicyGuard.ts`; target contract in `AIPlan.md` | **Adapt behind an engine-neutral service**; see `docs/design/ai-godot-migration-contract.md` |
 
 The rule of thumb: **anything that decides game truth ports; anything that draws
 it is rebuilt.** The regression gates (below) are the parity harness that proves
 a port matches.
+
+The AI lane adds one further distinction: generated framing is replaceable
+presentation, while an accepted intent and its deterministic consequence are
+rules truth. Godot consumes normalized scenario JSON, never source Markdown,
+and scenes never call a model provider directly. The migration-ready contract,
+M3 preservation checklist, and target module map live in
+[`docs/design/ai-godot-migration-contract.md`](design/ai-godot-migration-contract.md);
+the product direction remains in [`AIPlan.md`](../AIPlan.md).
 
 ---
 

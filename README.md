@@ -1,5 +1,18 @@
 # Black Stela
 
+> **The player runtime is Godot 4.7.1 / GDScript** (`godot/`). The React app under `src/` is the
+> **archived UX reference** the migration is measured against — it is no longer the shipping player
+> surface. See [ADR 0001](docs/adr/0001-godot-gdscript-as-the-player-runtime.md).
+>
+> ```sh
+> godot --path godot/            # play
+> npm run gate:migration         # the migration gate (UX parity + controller + saves + rules parity)
+> npm run export:godot           # rebuild the data bridge Godot reads
+> ```
+>
+> TypeScript remains the **rules oracle** and the authoring / simulation / validation toolchain, and
+> `src/i18n/ja.ts` is still the single source of the Japanese copy BOTH runtimes read.
+
 Black Stela is a first-person grid dungeon RPG prototype where players bring
 their own adventurers into a dangerous labyrinth beneath an ancient black stela.
 
@@ -26,7 +39,10 @@ a product goal.
 The current MVP has the DRPG and policy foundations, but its AI subsystem is
 still an advisory service contract rather than a consequential GM loop. The
 bounded concept slice and authority model are defined in
-[Black Stela AI Scenario + GM Plan](AIPlan.md).
+[Black Stela AI Scenario + GM Plan](AIPlan.md). The active Godot migration uses
+the separate [AI / Godot migration contract](docs/design/ai-godot-migration-contract.md)
+so town, dungeon, combat, and save ports preserve the future GM seam without
+putting provider logic in scenes.
 
 ## Current MVP
 
@@ -131,6 +147,7 @@ src/App.tsx                  MVP game UI shell
 tests/                       Vitest unit tests
 tests/e2e/                   Playwright smoke tests
 src-tauri/                   Tauri v2 desktop shell
+godot/                       Godot migration runtime; consumes generated JSON
 ```
 
 ## Architecture
@@ -140,6 +157,11 @@ src-tauri/                   Tauri v2 desktop shell
 > the command loop, every gameplay subsystem, the simulation oracle, and the
 > durable-core-vs-UI line the Godot migration works against. The summary below is
 > the elevator version.
+
+Migration implementers should then read the
+[full Godot migration plan](docs/design/godot-full-migration-plan.md). Work that
+touches the future AI scenario or realtime GM boundary follows the
+[AI / Godot migration contract](docs/design/ai-godot-migration-contract.md).
 
 The implementation keeps a hard boundary between scenario truth, deterministic
 rules, user interface, and local narration.

@@ -52,10 +52,14 @@ var _selected_id: String = ""     # the adventurer services act on
 var _shop_category: String = ""
 var _loot_filter: String = "all"
 var _loot_pending: String = ""
+var _party_page: String = "status"
+var _party_item: String = ""
+var _party_discard: bool = false
 var _event_text: String = ""      # the last thing that happened, shown at the open counter
 
 var _menu_host: VBoxContainer = null
 var _service_layer: Control = null
+var _backdrop: TextureRect = null
 var _pending_focus: Control = null
 
 func _ready() -> void:
@@ -90,6 +94,23 @@ func set_ui_state(ui: Dictionary) -> void:
 	if ui.has("loot_pending"): _loot_pending = String(ui["loot_pending"])
 	if ui.has("loot_filter"): _loot_filter = String(ui["loot_filter"])
 	if ui.has("shop_category"): _shop_category = String(ui["shop_category"])
+	if ui.has("party_page"): _party_page = String(ui["party_page"])
+	_rebuild()
+
+## Test seam: drive the town from ANOTHER world's pack, proving the same scene code renders both.
+func set_world_override(world_id: String) -> void:
+	_run = null
+	_world_id = world_id
+	_world = _read_json("res://data/worlds/%s.json" % world_id).get("world", {})
+	if _fallback_engine.is_empty():
+		_fallback_engine = _read_json("res://data/engine-data.json")
+	if _fallback_state.is_empty():
+		_fallback_state = (_read_json("res://data/traces/b1f-exploration.json").get("initialState", {}) as Dictionary).duplicate(true)
+		_fallback_state["phase"] = "town"
+	# The world's ASSETS switch with its data — a world-parameterized scene that keeps the previous
+	# world's backdrop is only half parameterized.
+	if _backdrop:
+		_backdrop.texture = _texture(_asset("ui/town-hub.jpg"))
 	_rebuild()
 
 func set_state_override(patched: Dictionary) -> void:
@@ -141,7 +162,8 @@ func _build() -> void:
 	bg.color = BG
 	bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(bg)
-	var back := TextureRect.new()
+	_backdrop = TextureRect.new()
+	var back := _backdrop
 	back.texture = _texture(_asset("ui/town-hub.jpg"))
 	back.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	back.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
@@ -326,6 +348,12 @@ func _service_ctx() -> Dictionary:
 		"set_shop_category": func(cat): _shop_category = String(cat); _rebuild(),
 		"loot_filter": _loot_filter,
 		"set_loot_filter": func(f): _loot_filter = String(f); _rebuild(),
+		"party_page": _party_page,
+		"set_party_page": func(page): _party_page = String(page); _party_discard = false; _rebuild(),
+		"party_item": _party_item,
+		"set_party_item": func(key): _party_item = String(key); _party_discard = false; _rebuild(),
+		"party_discard_pending": _party_discard,
+		"set_party_discard": func(pending): _party_discard = bool(pending); _rebuild(),
 		"loot_pending_bulk": _loot_pending,
 		"set_loot_pending": func(p): _loot_pending = String(p); _rebuild()
 	}

@@ -16,7 +16,8 @@
     "AGENTS.md is the authority this encodes: 'Do not call town services done if they are just",
     "lists. Shops must show who can use equipment and what changes. Recovery must show cost,",
     "wounds, before/after, and insufficient-funds states.'",
-    "`fixture` patches the state before the screen builds, so CONDITIONAL and FAILURE surfaces (wounded party, unaffordable, loot to appraise, quest ready to claim, known bestiary entry) are actually asserted — not just the empty happy path."
+    "`fixture` patches the state before the screen builds, so CONDITIONAL and FAILURE surfaces (wounded party, unaffordable, loot to appraise, quest ready to claim, known bestiary entry) are actually asserted — not just the empty happy path.",
+    "`worldId` drives a screen from ANOTHER world's pack — the S5 criterion that the same scene code renders both scenarios from data alone, not just the world it was written against."
   ],
   "screens": [
     {
@@ -313,7 +314,7 @@
         "partyMenu.xpToNext",
         "partyMenu.close"
       ],
-      "notes": "Six-person formation: condition, combat stats, resistances, aptitudes and the six equipment slots for the selected adventurer, plus front/back row and bench/recall. The 所持品/貴重品 tabs await use_item."
+      "notes": "Six-person formation across four tabs (能力 / 装備 / 所持品 / 貴重品): condition, combat stats, resistances, aptitudes, the six equipment slots, plus front/back row and bench/recall."
     },
     {
       "id": "dungeon-dock",
@@ -435,6 +436,71 @@
         "play.retreat"
       ],
       "notes": "全員でかかる / リピート / オート sit beside the per-actor menu. リピート is unavailable until a round has been declared and SAYS so; オート stops itself when the fight ends or the party is in danger."
+    },
+    {
+      "id": "town-party-items",
+      "milestone": "M7",
+      "reactPanel": "src/components/PartyMenuPanel.tsx",
+      "scene": "res://scenes/town.tscn",
+      "service": "party",
+      "evidence": "tests/_ux_town-party-items.png",
+      "uiState": {
+        "party_page": "items"
+      },
+      "fixture": {
+        "partyGold": 200,
+        "inventory": [
+          {
+            "id": "item.healing-draught",
+            "name": "Healing Draught",
+            "kind": "healing",
+            "quantity": 3,
+            "healAmount": 6
+          },
+          {
+            "id": "item.antidote",
+            "name": "Antidote",
+            "kind": "cure",
+            "quantity": 1,
+            "curesStatuses": [
+              "poison"
+            ]
+          },
+          {
+            "id": "equip.iron-cap",
+            "name": "Iron Cap",
+            "kind": "equipment",
+            "quantity": 1,
+            "slot": "head",
+            "sellValue": 6
+          }
+        ]
+      },
+      "requiredKeys": [
+        "partyMenu.tabs.items",
+        "partyMenu.tabs.valuables",
+        "partyMenu.useOn",
+        "partyMenu.discard"
+      ],
+      "notes": "An item's detail says what it DOES before any action is offered; discarding is a TWO-PRESS confirm so one press can never destroy a carried item; a valuable that may not be discarded says so instead of showing a dead button."
+    },
+    {
+      "id": "town-square-verdant",
+      "milestone": "M7",
+      "reactPanel": "src/components/TownEntryPanel.tsx",
+      "scene": "res://scenes/town.tscn",
+      "worldId": "verdant",
+      "evidence": "tests/_ux_town-square-verdant.png",
+      "requiredKeys": [
+        "town.gold",
+        "town.nextPreparation",
+        "town.locGuildHall",
+        "town.locMarket",
+        "town.locArchive",
+        "town.recovery",
+        "play.enterDungeon"
+      ],
+      "notes": "THE SAME town scene code, driven by Verdant's pack. Proves the hub is world-parameterized (its own title, tagline and assets) rather than written against the default scenario."
     }
   ]
 }

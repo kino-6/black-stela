@@ -424,6 +424,27 @@ function legacyCombatRoute(world: ScenarioWorld): { initial: GameState; commands
   return { initial, commands: [{ type: "defend" }, { type: "attack" }, { type: "defend" }] };
 }
 
+// Verdant is wandering-encounter-driven and gate-flagged; walking it proves the ported rules are
+// world-agnostic rather than tuned to the default pack.
+function verdantExpeditionRoute(world: ScenarioWorld): { initial: GameState; commands: Command[] } {
+  const seeded = createDebugStateFromProgress(world, "ready");
+  const initial: GameState = { ...seeded, phase: "town", position: null };
+  return { initial, commands: [{ type: "enter_dungeon" }, { type: "move_forward" }, { type: "search" }, { type: "turn_right" }] };
+}
+
+function verdantWalkRoute(world: ScenarioWorld): { initial: GameState; commands: Command[] } {
+  const initial = withDebugStartCell(createDebugStateFromProgress(world, "ready"), world, "room.verdant.g1f.c2_1", "east");
+  return {
+    initial,
+    commands: [
+      { type: "move_forward" },   // into the flagged gate room
+      { type: "move_forward" },
+      { type: "move_backward" },
+      { type: "listen" }
+    ]
+  };
+}
+
 // The slice's golden routes. More can be added as the vertical slice grows.
 export const SLICE_ROUTES: TraceRoute[] = [
   { name: "b1f-turns", worldId: "default", build: turnsRoute },
@@ -447,6 +468,10 @@ export const SLICE_ROUTES: TraceRoute[] = [
   { name: "loot", worldId: "default", build: lootRoute },
   { name: "vocation", worldId: "default", build: vocationRoute },
   { name: "b1f-exploration", worldId: "default", build: dungeonRoute },
+  // M7 content parity: the SAME rules driven by the other world's data — Verdant enters, walks its
+  // grove corridors (wandering-only floors), takes its shortcut gate, and descends.
+  { name: "verdant-expedition", worldId: "verdant", build: verdantExpeditionRoute },
+  { name: "verdant-walk", worldId: "verdant", build: verdantWalkRoute },
   { name: "combat-actions", worldId: "default", build: combatActionsRoute },
   { name: "expedition", worldId: "default", build: expeditionRoute },
   { name: "legacy-combat", worldId: "default", build: legacyCombatRoute },

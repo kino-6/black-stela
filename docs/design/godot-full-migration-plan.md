@@ -185,12 +185,22 @@ Every M4 command is ported and parity-gated, and the crawl's screens are faithfu
   (scenario, party size, purse), never a raw id or file name. Continuing resumes in town or the dungeon
   according to the saved phase.
 
-### M7 — Cutover
-1. Run save-migration + Default/Verdant content-parity suites on both runtimes.
-2. Godot **Web export** (gl_compatibility) + native desktop packaging pass.
-3. Archive the React player runtime **only after** every normal-play surface is covered in Godot.
-4. Keep TS authoring / simulation / validation tooling; delete only duplicated runtime code.
-5. Record the final engine + language decision in an ADR (`docs/adr/`).
+### M7 — Cutover — DONE except packaging (2026-07-20)
+1. **Content parity on both runtimes: done.** 33 golden traces across Default AND Verdant (incl.
+   `verdant-expedition` / `verdant-walk`), the save round-trip suite, and a Verdant town screen driven
+   through the SAME scene code from Verdant's pack and assets.
+2. **Packaging: OPEN.** `godot/export_presets.cfg` (Web + macOS, `gl_compatibility`) is committed and
+   recognized, but Godot's 4.7.1 export templates are a separate download and are NOT installed in this
+   development environment, so no build was produced. This is the one M7 item still unverified.
+3. **React archived, NOT deleted.** Every normal-play surface is covered in Godot (all 50 commands, 20
+   gated screens), so React is retired as the player surface: README, `index.html` and the ADR mark it
+   as the UX reference. It is deliberately KEPT because (a) the UX-parity gate points at its panels as
+   the standard the port is held to, and (b) the 53 Playwright specs are the past-trouble regression
+   record. Deleting it would remove the standard and the regression gate at once — a product decision,
+   not a migration step.
+4. **TS tooling kept** — authoring, validation, simulators, the trace oracle, and `ja.ts` (which BOTH
+   runtimes read via `npm run export:i18n`).
+5. **ADR recorded:** `docs/adr/0001-godot-gdscript-as-the-player-runtime.md`.
 
 ## 5. Verification strategy (every milestone)
 

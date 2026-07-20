@@ -30,6 +30,12 @@ func _initialize() -> void:
 		get_root().add_child(root)
 		for i in 8:
 			await process_frame
+		var world_id: String = entry.get("worldId", "")
+		if world_id != "" and root.has_method("set_world_override"):
+			root.call("set_world_override", world_id)
+			for i in 3:
+				await process_frame
+
 		# same fixture + ui state the gate asserts against, so the shot IS the asserted screen
 		var fixture: Dictionary = entry.get("fixture", {})
 		if not fixture.is_empty() and root.has_method("set_state_override"):
