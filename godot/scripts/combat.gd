@@ -20,6 +20,7 @@ const Encounter := preload("res://scripts/encounter.gd")
 const BG := Color("0b0d09")
 const GOLD := Color("c9a765")
 const INK := Color("e6e2d4")
+const DIM := Color("9a927e")
 const HURT := Color("d98a5a")
 const OK := Color("9db06a")
 
@@ -28,12 +29,12 @@ var _world: Dictionary = {}
 var _engine: Dictionary = {}
 
 # Live UI handles updated during playback.
-var _enemy_cond: ProgressBar
-var _enemy_name: Label
 var _damage_layer: Control
 var _log_label: Label
 var _cmd_panel: PanelContainer
 var _party_slots: Dictionary = {}   # member id -> { "bar": ProgressBar, "label": Label }
+var _stage_layer: Control = null
+var _enemy_marks: Dictionary = {}   # groupId -> the mark node, so a beat can flash the right creature
 var _enemy_stage_rect: Rect2 = Rect2()
 var _busy: bool = false
 var _resolved: bool = false
@@ -96,29 +97,15 @@ func _build() -> void:
 	var groups: Array = combat.get("enemyGroups", [])
 	var group: Dictionary = groups[0] if groups.size() > 0 else {}
 
-	# --- Enemy stage (owns the upper frame) ---
-	_enemy_name = _label(_enemy_ja(group), 34, GOLD)
-	_enemy_name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_enemy_name.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE)
-	_enemy_name.offset_top = 40
-	add_child(_enemy_name)
-
-	_enemy_cond = ProgressBar.new()
-	_enemy_cond.max_value = maxf(1.0, float(_group_max_hp(group)))
-	_enemy_cond.value = float(_group_hp(group))
-	_enemy_cond.show_percentage = false
-	_enemy_cond.custom_minimum_size = Vector2(280, 10)
-	_enemy_cond.position = Vector2(size.x / 2 - 140, 92)
-	add_child(_enemy_cond)
-
-	_enemy_stage_rect = Rect2(size.x / 2 - 230, 150, 460, 460)
-	var slime := TextureRect.new()
-	slime.texture = _enemy_texture(group)
-	slime.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	slime.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	slime.position = _enemy_stage_rect.position
-	slime.size = _enemy_stage_rect.size
-	add_child(slime)
+	# --- Enemy stage: ONE MARK PER GROUP, spread across the stage (CombatEnemyStage.tsx) ---
+	# Every group is its own creature on the stage with its own name and condition bar; targeting is
+	# done BY POINTING AT THE CREATURE (a reticle rides the chosen one), never by picking a list row.
+	_stage_layer = Control.new()
+	_stage_layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_stage_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_stage_layer)
+	_enemy_stage_rect = Rect2(0, 60, size.x, 540)
+	_rebuild_stage()
 
 	# A layer above the stage for floating damage / defeat flourishes.
 	_damage_layer = Control.new()
@@ -222,7 +209,10 @@ func _rebuild_command_menu() -> void:
 		"groups": _combat().get("enemyGroups", []),
 		"inventory": _state.get("inventory", []),
 		"choose": func(kind, payload): _on_menu_choice(kind, payload),
-		"back": func(): _menu_back()
+		"back": func(): _menu_back(),
+		"target_group_id": _target_group_id(),
+		"cycle_target": func(delta): _cycle_target(delta),
+		"enemy_name": func(group): return _enemy_ja(group)
 	})
 	_cmd_box.add_child(built["control"])
 
@@ -296,6 +286,21 @@ func _on_menu_choice(kind: String, payload: Dictionary) -> void:
 			_pending["targetCharacterId"] = String(payload["targetCharacterId"])
 			_commit(_pending)
 			return
+	_rebuild_command_menu()
+
+# Move the aim along the stage; the reticle follows because the stage is rebuilt from the same value.
+func _cycle_target(delta: int) -> void:
+	var living := []
+	for group in _combat().get("enemyGroups", []):
+		if int(group.get("count", 0)) > 0:
+			living.append(String(group.get("id", "")))
+	if living.is_empty():
+		return
+	var index := living.find(_target_group_id())
+	if index < 0:
+		index = 0
+	_pending["targetGroupId"] = living[(index + delta + living.size()) % living.size()]
+	_rebuild_stage()
 	_rebuild_command_menu()
 
 func _commit(order: Dictionary) -> void:
@@ -455,13 +460,13 @@ func _playback(before: Dictionary, events: Array, animated: bool) -> void:
 	if animated:
 		_spawn_damage_number(removed)
 
-	_enemy_cond.value = float(remaining)
+	_rebuild_stage()
 	_set_log("%s が %s に %d ダメージ。" % [_acting_name(), enemy_name, maxi(removed, 0)])
 	if animated:
 		await get_tree().create_timer(0.55).timeout
 
 	if remaining <= 0:
-		_enemy_name.modulate = Color(1, 1, 1, 0.35)
+		_rebuild_stage()
 		_set_log("%s を撃破！" % enemy_name)
 		if animated:
 			_spawn_defeat_flourish()
@@ -485,7 +490,7 @@ func _playback(before: Dictionary, events: Array, animated: bool) -> void:
 		_show_wipe(wiped)
 	else:
 		# Round survived on both sides — hand the command back for the next round.
-		_enemy_cond.value = float(_group_hp(_first_group()))
+		_rebuild_stage()
 		if _cmd_panel:
 			_cmd_panel.show()
 			var b := _first_command_button()
@@ -784,3 +789,108 @@ func _panel_style(bg: Color, border: Color = Color(0, 0, 0, 0)) -> StyleBoxFlat:
 		s.border_color = border
 		s.set_border_width_all(1)
 	return s
+
+
+# --- the stage ------------------------------------------------------------------------------------
+# Groups are spread evenly across the stage width and anchored on a common floor line, so a pack reads
+# as several creatures standing together rather than one sprite with a number beside it.
+func _rebuild_stage() -> void:
+	if _stage_layer == null:
+		return
+	for child in _stage_layer.get_children():
+		child.queue_free()
+	_enemy_marks.clear()
+
+	var groups: Array = _combat().get("enemyGroups", [])
+	if groups.is_empty():
+		return
+	var slot_w: float = _enemy_stage_rect.size.x / float(groups.size())
+	for index in groups.size():
+		var group: Dictionary = groups[index]
+		var centre := _enemy_stage_rect.position.x + slot_w * (float(index) + 0.5)
+		_stage_layer.add_child(_enemy_mark(group, centre, slot_w))
+
+func _enemy_mark(group: Dictionary, centre_x: float, slot_w: float) -> Control:
+	var gid := String(group.get("id", ""))
+	var dead := int(group.get("count", 0)) <= 0
+	var selected := gid == _target_group_id()
+
+	var mark := Control.new()
+	mark.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var art_w: float = minf(slot_w * 0.9, 420.0)
+	var art_h: float = minf(_enemy_stage_rect.size.y * 0.74, 400.0)
+	mark.position = Vector2(centre_x - art_w / 2.0, _enemy_stage_rect.position.y)
+	mark.size = Vector2(art_w, _enemy_stage_rect.size.y)
+
+	var art := TextureRect.new()
+	art.texture = _enemy_texture(group)
+	art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	art.size = Vector2(art_w, art_h)
+	art.modulate = Color(1, 1, 1, 0.28) if dead else Color(1, 1, 1, 1)
+	mark.add_child(art)
+
+	# The reticle rides the CHOSEN creature — this is what makes "the one you will strike" read on the
+	# stage instead of in a menu.
+	if selected and not dead:
+		var reticle := PanelContainer.new()
+		var frame := StyleBoxFlat.new()
+		frame.bg_color = Color(0, 0, 0, 0)
+		frame.border_color = GOLD
+		frame.set_border_width_all(3)
+		frame.set_corner_radius_all(4)
+		reticle.add_theme_stylebox_override("panel", frame)
+		reticle.position = Vector2(-8, -8)
+		reticle.size = Vector2(art_w + 16, art_h + 16)
+		reticle.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		mark.add_child(reticle)
+		var arrow := _label("▼", 32, GOLD)
+		arrow.position = Vector2(art_w / 2.0 - 14, -40)
+		mark.add_child(arrow)
+		_reticle_pulse(reticle)
+
+	var caption := UIKit.col(2)
+	caption.position = Vector2(0, art_h + 6)
+	caption.custom_minimum_size = Vector2(art_w, 0)
+	var name_label := _label(_enemy_ja(group), 22, GOLD if selected else INK)
+	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	name_label.custom_minimum_size = Vector2(art_w, 0)
+	caption.add_child(name_label)
+
+	var bar := ProgressBar.new()
+	bar.max_value = maxf(1.0, float(_group_max_hp(group)))
+	bar.value = float(_group_hp(group))
+	bar.show_percentage = false
+	bar.custom_minimum_size = Vector2(minf(art_w, 260.0), 8)
+	caption.add_child(bar)
+
+	var count_label := _label("×%d" % int(group.get("count", 0)), 16, DIM)
+	count_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	count_label.custom_minimum_size = Vector2(art_w, 0)
+	caption.add_child(count_label)
+	mark.add_child(caption)
+
+	_enemy_marks[gid] = mark
+	return mark
+
+func _reticle_pulse(node: Control) -> void:
+	# Never start faded — a screenshot taken mid-fade would show no reticle at all.
+	node.modulate.a = 1.0
+	var tween := create_tween().set_loops()
+	tween.tween_property(node, "modulate:a", 0.45, 0.6)
+	tween.tween_property(node, "modulate:a", 1.0, 0.6)
+
+# The group the cursor is aimed at. The combat state owns it (as React does), but a state built by the
+# legacy encounter helper carries a NULL selection — and an unaimed cursor means the player cannot see
+# what they are about to hit. Fall back to the first creature still standing.
+func _target_group_id() -> String:
+	var pending: Variant = _pending.get("targetGroupId", null)
+	if typeof(pending) == TYPE_STRING and String(pending) != "":
+		return String(pending)
+	var selected: Variant = _combat().get("selectedTargetId", null)
+	if typeof(selected) == TYPE_STRING and String(selected) != "":
+		return String(selected)
+	for group in _combat().get("enemyGroups", []):
+		if int(group.get("count", 0)) > 0:
+			return String(group.get("id", ""))
+	return ""

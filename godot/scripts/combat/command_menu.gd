@@ -109,18 +109,32 @@ static func _item_stage(root: VBoxContainer, ctx: Dictionary) -> Button:
 		root.add_child(UI.label(I18n.t("partyMenu.inventoryEmpty"), 14, UI.DIM))
 	return first
 
+# TARGETING HAPPENS ON THE STAGE. The reticle rides the chosen creature (combat.gd draws it); this
+# stage only shows WHICH creature is aimed at and how to move the aim. React deliberately moved this
+# off a list — a list row is not where the player is looking.
 static func _group_target_stage(root: VBoxContainer, ctx: Dictionary) -> Button:
 	root.add_child(UI.label(I18n.t("play.chooseTarget"), 17, UI.GOLD))
-	var first: Button = null
+	var living := []
 	for group in ctx.get("groups", []):
-		if int(group.get("count", 0)) <= 0:
-			continue
-		var gid := String(group.get("id", ""))
-		var b := UI.button("%s ×%d" % [String(group.get("name", "")), int(group.get("count", 0))], func(): ctx["choose"].call("target-group", {"targetGroupId": gid}), Vector2(280, 40), 16)
-		root.add_child(b)
-		if first == null:
-			first = b
-	return first
+		if int(group.get("count", 0)) > 0:
+			living.append(group)
+	if living.is_empty():
+		return null
+	var aimed := String(ctx.get("target_group_id", ""))
+	var current: Dictionary = living[0]
+	for group in living:
+		if String(group.get("id", "")) == aimed:
+			current = group
+	# The creature under the reticle, named — the confirmation of what the stage is already showing.
+	root.add_child(UI.label("%s  ×%d" % [String(ctx["enemy_name"].call(current)), int(current.get("count", 0))], 20, UI.INK))
+	var row := UI.row()
+	if living.size() > 1:
+		row.add_child(UI.button("◀", func(): ctx["cycle_target"].call(-1), Vector2(56, 40), 17))
+		row.add_child(UI.button("▶", func(): ctx["cycle_target"].call(1), Vector2(56, 40), 17))
+	var confirm := UI.button(I18n.t("play.attack"), func(): ctx["choose"].call("target-group", {"targetGroupId": String(current.get("id", ""))}), Vector2(150, 40), 16)
+	row.add_child(confirm)
+	root.add_child(row)
+	return confirm
 
 static func _ally_target_stage(root: VBoxContainer, ctx: Dictionary) -> Button:
 	root.add_child(UI.label(I18n.t("play.chooseTarget"), 17, UI.GOLD))
