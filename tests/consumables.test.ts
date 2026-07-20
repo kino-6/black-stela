@@ -8,7 +8,7 @@ import type { CombatStatus, GameState } from "../src/domain/types";
 
 // New consumables (schema expansion): cure removes ailments, focus restores 気力.
 function stateWith(itemId: string, patch: (member: GameState["party"][number]) => GameState["party"][number]): GameState {
-  const base = addCharacter(createInitialGameState(), createGuildCharacter({ name: "Sei", classId: "mender", seed: "cons" }));
+  const base = addCharacter(createInitialGameState(), createGuildCharacter({ name: "Sei", classId: "priest", seed: "cons" }));
   const item = createInventoryItemFromCatalog(defaultWorld, itemId, 1)!;
   return { ...base, party: base.party.map(patch), inventory: [...base.inventory, item] };
 }

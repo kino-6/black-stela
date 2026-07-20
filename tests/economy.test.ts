@@ -104,7 +104,7 @@ describe("economy and equipment", () => {
     const state = {
       ...stateWithParty(),
       partyGold: 100,
-      party: stateWithParty().party.map((member) => ({ ...member, classId: "mender" as const, row: "back" as const }))
+      party: stateWithParty().party.map((member) => ({ ...member, classId: "priest" as const, row: "back" as const }))
     };
     const bought = executeCommand(state, defaultWorld, {
       type: "buy_item",

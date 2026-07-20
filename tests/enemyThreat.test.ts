@@ -101,7 +101,7 @@ describe("the Verdant roster acts with intent", () => {
     );
     expect(ward, "verdant needs a wood-resist accessory to counter its wood abilities").toBeTruthy();
 
-    const bare = createGuildCharacter({ name: "Prep", classId: "vanguard", seed: "ward" });
+    const bare = createGuildCharacter({ name: "Prep", classId: "warrior", seed: "ward" });
     const warded: Character = { ...bare, equipment: { accessory: { id: ward!.id } } };
     const stats = getEffectiveCharacterStats(warded, worldRegistry.verdant);
     expect(stats.elementResist.wood).toBeLessThan(1); // takes less wood damage

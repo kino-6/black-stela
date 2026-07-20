@@ -40,7 +40,7 @@ describe("character creation", () => {
       name: "Mira",
       notes: "Maps by candlelight.",
       title: "Candle Mapper",
-      classId: "seeker",
+      classId: "thief",
       backgroundId: "cartographer",
       traitIds: ["curious"],
       aptitudeFocus: "wit",
@@ -52,7 +52,7 @@ describe("character creation", () => {
     expect(character).toMatchObject({
       name: "Mira",
       title: "Candle Mapper",
-      classId: "seeker",
+      classId: "thief",
       backgroundId: "cartographer",
       traitIds: ["curious"],
       row: "front",
@@ -69,7 +69,7 @@ describe("character creation", () => {
   });
 
   it("equips the class starting loadout so adventurers are not empty-handed", () => {
-    const vanguard = createGuildCharacter({ name: "Mira", classId: "vanguard" });
+    const vanguard = createGuildCharacter({ name: "Mira", classId: "warrior" });
     expect(vanguard.equipment.weapon?.id).toBe("equip.militia-sabre");
     expect(vanguard.equipment.body?.id).toBe("equip.padded-jack");
     const effective = getEffectiveCharacterStats(vanguard, defaultWorld);
@@ -86,7 +86,7 @@ describe("character creation", () => {
   it("uses the origin as the default visual accent when no manual color is provided", () => {
     const character = createGuildCharacter({
       name: "Orn",
-      classId: "mender",
+      classId: "priest",
       backgroundId: "grave_tender",
       traitIds: ["soft_spoken"]
     });
@@ -107,10 +107,10 @@ describe("character creation", () => {
   });
 
   it("applies manually allocated bonus aptitude during detailed creation", () => {
-    const base = createGuildCharacter({ name: "Rill", classId: "seeker", backgroundId: "watch", traitIds: ["steady"] });
+    const base = createGuildCharacter({ name: "Rill", classId: "thief", backgroundId: "watch", traitIds: ["steady"] });
     const boosted = createGuildCharacter({
       name: "Rill",
-      classId: "seeker",
+      classId: "thief",
       backgroundId: "watch",
       traitIds: ["steady"],
       bonusAptitude: { agility: 3 }
@@ -121,8 +121,8 @@ describe("character creation", () => {
   });
 
   it("starts from class aptitude instead of zeroed ability rows", () => {
-    const vanguard = createGuildCharacter({ name: "Rook", classId: "vanguard", backgroundId: "watch", traitIds: ["steady"] });
-    const arcanist = createGuildCharacter({ name: "Mira", classId: "arcanist", backgroundId: "scriptorium", traitIds: ["curious"] });
+    const vanguard = createGuildCharacter({ name: "Rook", classId: "warrior", backgroundId: "watch", traitIds: ["steady"] });
+    const arcanist = createGuildCharacter({ name: "Mira", classId: "mage", backgroundId: "scriptorium", traitIds: ["curious"] });
 
     expect(vanguard.aptitude.might).toBeGreaterThan(2);
     expect(vanguard.aptitude.spirit).toBeGreaterThan(2);
@@ -133,14 +133,14 @@ describe("character creation", () => {
     const suggestion = createIdentitySuggestion({
       seed: 4,
       locale: "ja",
-      classId: "seeker",
+      classId: "thief",
       backgroundId: "cartographer",
       traitId: "curious"
     });
     const nextSuggestion = createIdentitySuggestion({
       seed: 5,
       locale: "ja",
-      classId: "seeker",
+      classId: "thief",
       backgroundId: "cartographer",
       traitId: "curious"
     });

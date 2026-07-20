@@ -19,6 +19,7 @@ import { SPELLS, knownSpells } from "./spells";
 import { getCriticalChance, getEvasionChance, getInitiativeScore, getSpellPowerBonus, getStatusSpellChance } from "./combatMath";
 import { FEAR_ACCURACY_PENALTY, POISON_DAMAGE, STATUS_WEAR_OFF, statusResistPct } from "./status";
 import { chestAt, disarmChest, investigateChest, makeChest, openChest, roomChest } from "./chests";
+import { resolveClassId } from "./characterCreation";
 import { consumeAid, resolveAttempt, type AttemptRecord, type ExplorationAid } from "./exploration";
 import {
   getExit,
@@ -177,7 +178,7 @@ export function resolveCommand(state: GameState, world: ScenarioWorld, command: 
     case "recall_member":
       return recallMember(state, command.characterId);
     case "reclass_member":
-      return reclassMemberCommand(state, world, command.characterId, command.classId);
+      return reclassMemberCommand(state, world, command.characterId, resolveClassId(command.classId));
     case "retire_member":
       return retireMember(state, command.characterId);
     case "unretire_member":

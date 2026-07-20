@@ -4,7 +4,7 @@ import { analyzePartyCoverage, createGuildCharacter, createStarterParty } from "
 describe("partyCoverage", () => {
   it("reports missing roles without blocking expressive parties", () => {
     const party = [
-      createGuildCharacter({ name: "Rook", classId: "vanguard", backgroundId: "watch", traitIds: ["steady"] })
+      createGuildCharacter({ name: "Rook", classId: "warrior", backgroundId: "watch", traitIds: ["steady"] })
     ];
 
     const coverage = analyzePartyCoverage(party);

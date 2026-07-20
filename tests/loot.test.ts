@@ -152,7 +152,7 @@ describe("rare-loot contract", () => {
     expect(reinforceCost(0)).toBe(2);
     expect(reinforceCost(1)).toBeGreaterThan(reinforceCost(0)); // each step costs more
 
-    const hero = { ...createGuildCharacter({ name: "Rook", classId: "vanguard", seed: "forge" }), equipment: { weapon: { id: WEAPON } } };
+    const hero = { ...createGuildCharacter({ name: "Rook", classId: "warrior", seed: "forge" }), equipment: { weapon: { id: WEAPON } } };
     const base: GameState = { ...createInitialGameState(), phase: "town", party: [hero], materials: 10 };
 
     const forged = executeCommand(base, defaultWorld, { type: "reinforce_equipment", characterId: hero.id, slot: "weapon" });

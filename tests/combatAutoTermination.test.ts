@@ -24,7 +24,7 @@ function squadFight(world: ScenarioWorld, front: Enemy, back: Enemy): GameState 
     { name: "Lio", front: false }
   ];
   for (const { name } of roster) {
-    state = addCharacter(state, createGuildCharacter({ name, classId: name === "Mira" || name === "Sei" || name === "Lio" ? "occultist" : "vanguard", seed: name }));
+    state = addCharacter(state, createGuildCharacter({ name, classId: name === "Mira" || name === "Sei" || name === "Lio" ? "occultist" : "warrior", seed: name }));
   }
   const party: Character[] = state.party.map((member, index) => ({ ...member, row: roster[index].front ? "front" : "back", level: 2 }));
   return { ...state, party, phase: "combat", combat: createSquadCombatState("room.squad", [front, back]) } as GameState;

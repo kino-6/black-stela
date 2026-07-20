@@ -12,7 +12,7 @@ import { hashState, runTrace, stableStringify, traceHash, withDeterministicIds }
 // the state hash is CANONICAL (structurally equal states hash identically, whatever the key order).
 
 function combatStart(): GameState {
-  const hero = { ...createGuildCharacter({ name: "Rook", classId: "vanguard", seed: "trace" }), row: "front" as const };
+  const hero = { ...createGuildCharacter({ name: "Rook", classId: "warrior", seed: "trace" }), row: "front" as const };
   const enemy = defaultWorld.enemies.find((candidate) => candidate.id === "enemy.b1f.ash-slime") ?? defaultWorld.enemies[0];
   const base = { ...createInitialGameState(), party: [hero] };
   return {
@@ -64,7 +64,7 @@ describe("deterministic trace fixture (migration parity oracle)", () => {
     // sequence, which is what lets a full-play golden trace (a route that mints ids) parity-check.
     const build = () =>
       withDeterministicIds("party", () => ({
-        ...createGuildCharacter({ name: "Rook", classId: "vanguard", seed: "x" })
+        ...createGuildCharacter({ name: "Rook", classId: "warrior", seed: "x" })
       }));
 
     const a = build();
@@ -73,8 +73,8 @@ describe("deterministic trace fixture (migration parity oracle)", () => {
     expect(a.id).toMatch(/^party-/); // from the seeded generator, not a random UUID
 
     // Outside the scope, ids are back to unique-per-call (production behaviour is preserved).
-    const random1 = createGuildCharacter({ name: "Rook", classId: "vanguard", seed: "x" });
-    const random2 = createGuildCharacter({ name: "Rook", classId: "vanguard", seed: "x" });
+    const random1 = createGuildCharacter({ name: "Rook", classId: "warrior", seed: "x" });
+    const random2 = createGuildCharacter({ name: "Rook", classId: "warrior", seed: "x" });
     expect(random1.id).not.toBe(random2.id);
   });
 

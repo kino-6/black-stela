@@ -1,4 +1,5 @@
 import type {
+  AnyClassId,
   Character,
   CharacterAptitudes,
   CharacterBackgroundId,
@@ -10,14 +11,15 @@ import type {
   EquipmentSlot,
   EquippedItem,
   ImportAdjustmentKind,
+  LegacyClassId,
   PortableAdventurer,
   ScenarioImportPolicy,
   ScenarioWorld
 } from "./types";
 import { newId } from "./ids";
+import { LEGACY_CLASS_MAPPING, resolveClassId } from "./classIds";
 import { baseMaxMpForClass } from "./spells";
 import { applyLevelUps, xpForLevel } from "./leveling";
-import { findEquipment, isEquipmentUsableBy } from "./economy";
 
 export interface LocalizedLabel {
   en: string;
@@ -55,7 +57,8 @@ export interface GuildCharacterInput {
   name: string;
   notes?: string;
   title?: string;
-  classId?: CharacterClassId;
+  /** Accepts a legacy id too; it is resolved through LEGACY_CLASS_MAPPING. */
+  classId?: AnyClassId;
   backgroundId?: CharacterBackgroundId;
   traitIds?: CharacterTraitId[];
   aptitudeFocus?: keyof CharacterAptitudes | "balanced";
@@ -78,10 +81,23 @@ export type StarterTemplateId = "balanced" | "cautious" | "treasure" | "aggressi
 
 export const PARTY_SIZE_LIMIT = 6;
 
+/**
+ * THE SELECTABLE CLASSES (docs/design/class-system.md §4).
+ *
+ * Twelve labels became eight archetypes. §2.2 asks for legible anchors — warrior, knight, thief, priest,
+ * mage — because a familiar name lets the player form an expectation before reading a word of lore; the
+ * game's voice then lives in the Japanese description, the portrait, the gear and the techniques. The
+ * three near-duplicate trap classes (探索者 / 斥候 / 鍵師) became one Thief, and the two near-duplicate
+ * front-liners (先鋒 / 傭兵) one Warrior, because §3's finding was that they were separated by stats and
+ * prose rather than by anything a rule could tell apart.
+ *
+ * Each class KEEPS the numbers of the class it grew from (see LEGACY_CLASS_MAPPING), so consolidating the
+ * roster did not quietly re-balance the game: 戦士 is 先鋒's line, 盗賊 is 探索者's, and so on.
+ */
 export const classCatalog: CharacterClassDefinition[] = [
   {
-    id: "vanguard",
-    label: { en: "Vanguard", ja: "先鋒" },
+    id: "warrior",
+    label: { en: "Warrior", ja: "戦士" },
     description: {
       en: "Takes the first blow and keeps the line from breaking.",
       ja: "最初の一撃を受け、列を崩さず押し返す。"
@@ -93,21 +109,8 @@ export const classCatalog: CharacterClassDefinition[] = [
     equipment: { weapon: "equip.militia-sabre", body: "equip.padded-jack" }
   },
   {
-    id: "sellsword",
-    label: { en: "Sellsword", ja: "傭兵" },
-    description: {
-      en: "Cuts steadily for coin; plain, durable, and hard to surprise.",
-      ja: "金で刃を振るう。地味だが崩れず、不意にも強い。"
-    },
-    roleTags: ["front_line", "damage"],
-    rowPreference: "front",
-    aptitude: { might: 2, agility: 1 },
-    base: { maxHp: 14, attack: 5, damageMin: 4, damageMax: 7, accuracy: 78, armor: 1, speed: 6 },
-    equipment: { weapon: "equip.militia-sabre", body: "equip.padded-jack" }
-  },
-  {
-    id: "bulwark",
-    label: { en: "Bulwark", ja: "盾守" },
+    id: "knight",
+    label: { en: "Knight", ja: "盾騎士" },
     description: {
       en: "Stands in the door and turns bad rounds into survivable ones.",
       ja: "扉口に立ち、悪い流れを耐えられる傷に抑える。"
@@ -119,8 +122,8 @@ export const classCatalog: CharacterClassDefinition[] = [
     equipment: { offhand: "equip.split-buckler", body: "equip.padded-jack" }
   },
   {
-    id: "duelist",
-    label: { en: "Duelist", ja: "剣客" },
+    id: "swordmaster",
+    label: { en: "Swordmaster", ja: "剣客" },
     description: {
       en: "Finds one opening and ends weak foes before they gather.",
       ja: "一つの隙を拾い、弱い敵が群れる前に落とす。"
@@ -132,8 +135,8 @@ export const classCatalog: CharacterClassDefinition[] = [
     equipment: { weapon: "equip.militia-sabre", hands: "equip.grip-gloves" }
   },
   {
-    id: "seeker",
-    label: { en: "Seeker", ja: "探索者" },
+    id: "thief",
+    label: { en: "Thief", ja: "盗賊" },
     description: {
       en: "Reads hinges, dust, and floor scars before the party steps in.",
       ja: "蝶番、埃、床の傷を読み、踏み込む前に危険を拾う。"
@@ -145,34 +148,8 @@ export const classCatalog: CharacterClassDefinition[] = [
     equipment: { weapon: "equip.rusted-dirk", accessory: "equip.chalk-cord" }
   },
   {
-    id: "scout",
-    label: { en: "Scout", ja: "斥候" },
-    description: {
-      en: "Moves ahead by a step, marks turns, and hears trouble early.",
-      ja: "半歩先を取り、角を印し、まずい音を先に聞く。"
-    },
-    roleTags: ["mapping", "retreat_guard", "trap_handling"],
-    rowPreference: "front",
-    aptitude: { agility: 2, wit: 1, luck: 1 },
-    base: { maxHp: 10, attack: 3, damageMin: 2, damageMax: 5, accuracy: 86, armor: 0, speed: 11 },
-    equipment: { weapon: "equip.rusted-dirk", accessory: "equip.chalk-cord" }
-  },
-  {
-    id: "cutpurse",
-    label: { en: "Cutpurse", ja: "鍵師" },
-    description: {
-      en: "Works locks and pockets; treasure comes safer, never clean.",
-      ja: "鍵と懐に手を入れる。宝は安全に近づくが、手は汚れる。"
-    },
-    roleTags: ["trap_handling", "damage"],
-    rowPreference: "front",
-    aptitude: { agility: 2, luck: 1 },
-    base: { maxHp: 10, attack: 4, damageMin: 2, damageMax: 6, accuracy: 88, armor: 0, speed: 10 },
-    equipment: { weapon: "equip.rusted-dirk", hands: "equip.grip-gloves" }
-  },
-  {
-    id: "mender",
-    label: { en: "Mender", ja: "癒し手" },
+    id: "priest",
+    label: { en: "Priest", ja: "癒し手" },
     description: {
       en: "Keeps breath in the wounded and spends light when panic spreads.",
       ja: "倒れかけた者の息を繋ぎ、恐慌には灯を使う。"
@@ -197,21 +174,8 @@ export const classCatalog: CharacterClassDefinition[] = [
     equipment: { weapon: "equip.ashwood-staff", offhand: "equip.candle-ward" }
   },
   {
-    id: "occultist",
-    label: { en: "Occultist", ja: "秘術師" },
-    description: {
-      en: "Breaks nerve and sleep from the back row when steel is too loud.",
-      ja: "刃が届かぬ時、後列から眠りと怯えを差し込む。"
-    },
-    roleTags: ["status_safety", "damage", "mapping"],
-    rowPreference: "back",
-    aptitude: { spirit: 1, wit: 2 },
-    base: { maxHp: 9, attack: 3, damageMin: 2, damageMax: 5, accuracy: 78, armor: 0, speed: 7 },
-    equipment: { weapon: "equip.ashwood-staff", accessory: "equip.black-thread-ring" }
-  },
-  {
-    id: "arcanist",
-    label: { en: "Arcanist", ja: "灰術師" },
+    id: "mage",
+    label: { en: "Mage", ja: "灰術師" },
     description: {
       en: "Burns signs into the air; fragile, but ends clustered threats.",
       ja: "空に灰の印を焼く。脆いが、群れをまとめて崩す。"
@@ -223,19 +187,20 @@ export const classCatalog: CharacterClassDefinition[] = [
     equipment: { weapon: "equip.ashwood-staff", accessory: "equip.black-thread-ring" }
   },
   {
-    id: "wayfinder",
-    label: { en: "Wayfinder", ja: "道標師" },
+    id: "occultist",
+    label: { en: "Occultist", ja: "秘術師" },
     description: {
-      en: "Keeps the route in mind and knows when a bad delve must turn back.",
-      ja: "帰り道を頭に残し、退くべき探索を見誤らない。"
+      en: "Breaks nerve and sleep from the back row when steel is too loud.",
+      ja: "刃が届かぬ時、後列から眠りと怯えを差し込む。"
     },
-    roleTags: ["mapping", "retreat_guard", "status_safety"],
+    roleTags: ["status_safety", "damage", "mapping"],
     rowPreference: "back",
-    aptitude: { agility: 1, spirit: 1, wit: 2 },
-    base: { maxHp: 10, attack: 3, damageMin: 2, damageMax: 5, accuracy: 82, armor: 0, speed: 8 },
-    equipment: { weapon: "equip.short-bow", accessory: "equip.chalk-cord" }
+    aptitude: { spirit: 1, wit: 2 },
+    base: { maxHp: 9, attack: 3, damageMin: 2, damageMax: 5, accuracy: 78, armor: 0, speed: 7 },
+    equipment: { weapon: "equip.ashwood-staff", accessory: "equip.black-thread-ring" }
   }
 ];
+
 
 export const backgroundCatalog: CharacterBackgroundDefinition[] = [
   {
@@ -355,43 +320,43 @@ export const starterTemplates: Record<StarterTemplateId, { label: LocalizedLabel
   balanced: {
     label: { en: "Balanced", ja: "均衡" },
     members: [
-      { name: "Rook", classId: "vanguard", backgroundId: "watch", traitIds: ["steady"], method: "template" },
-      { name: "Bran", classId: "bulwark", backgroundId: "debtor", traitIds: ["scarred"], method: "template" },
-      { name: "Vale", classId: "cutpurse", backgroundId: "ruinborn", traitIds: ["curious"], method: "template" },
-      { name: "Sei", classId: "mender", backgroundId: "apothecary", traitIds: ["steady"], method: "template" },
-      { name: "Mira", classId: "arcanist", backgroundId: "cartographer", traitIds: ["lucky"], method: "template" },
-      { name: "Lio", classId: "wayfinder", backgroundId: "cartographer", traitIds: ["curious"], method: "template" }
+      { name: "Rook", classId: "warrior", backgroundId: "watch", traitIds: ["steady"], method: "template" },
+      { name: "Bran", classId: "knight", backgroundId: "debtor", traitIds: ["scarred"], method: "template" },
+      { name: "Vale", classId: "thief", backgroundId: "ruinborn", traitIds: ["curious"], method: "template" },
+      { name: "Sei", classId: "priest", backgroundId: "apothecary", traitIds: ["steady"], method: "template" },
+      { name: "Mira", classId: "mage", backgroundId: "cartographer", traitIds: ["lucky"], method: "template" },
+      { name: "Lio", classId: "thief", backgroundId: "cartographer", traitIds: ["curious"], method: "template" }
     ]
   },
   cautious: {
     label: { en: "Cautious", ja: "慎重" },
     members: [
-      { name: "Rook", classId: "bulwark", backgroundId: "watch", traitIds: ["scarred"], method: "template" },
-      { name: "Bran", classId: "sellsword", backgroundId: "debtor", traitIds: ["steady"], method: "template" },
-      { name: "Kest", classId: "scout", backgroundId: "cartographer", traitIds: ["curious"], method: "template" },
-      { name: "Sei", classId: "mender", backgroundId: "apothecary", traitIds: ["steady"], method: "template" },
+      { name: "Rook", classId: "knight", backgroundId: "watch", traitIds: ["scarred"], method: "template" },
+      { name: "Bran", classId: "warrior", backgroundId: "debtor", traitIds: ["steady"], method: "template" },
+      { name: "Kest", classId: "thief", backgroundId: "cartographer", traitIds: ["curious"], method: "template" },
+      { name: "Sei", classId: "priest", backgroundId: "apothecary", traitIds: ["steady"], method: "template" },
       { name: "Mira", classId: "chanter", backgroundId: "cartographer", traitIds: ["grim"], method: "template" },
-      { name: "Nera", classId: "wayfinder", backgroundId: "watch", traitIds: ["steady"], method: "template" }
+      { name: "Nera", classId: "thief", backgroundId: "watch", traitIds: ["steady"], method: "template" }
     ]
   },
   treasure: {
     label: { en: "Treasure Hunters", ja: "財宝狙い" },
     members: [
-      { name: "Vale", classId: "cutpurse", backgroundId: "ruinborn", traitIds: ["lucky"], method: "template" },
-      { name: "Kest", classId: "seeker", backgroundId: "cartographer", traitIds: ["curious"], method: "template" },
-      { name: "Rook", classId: "duelist", backgroundId: "debtor", traitIds: ["grim"], method: "template" },
-      { name: "Sei", classId: "mender", backgroundId: "apothecary", traitIds: ["steady"], method: "template" },
+      { name: "Vale", classId: "thief", backgroundId: "ruinborn", traitIds: ["lucky"], method: "template" },
+      { name: "Kest", classId: "thief", backgroundId: "cartographer", traitIds: ["curious"], method: "template" },
+      { name: "Rook", classId: "swordmaster", backgroundId: "debtor", traitIds: ["grim"], method: "template" },
+      { name: "Sei", classId: "priest", backgroundId: "apothecary", traitIds: ["steady"], method: "template" },
       { name: "Mira", classId: "occultist", backgroundId: "cartographer", traitIds: ["lucky"], method: "template" },
-      { name: "Lio", classId: "wayfinder", backgroundId: "watch", traitIds: ["curious"], method: "template" }
+      { name: "Lio", classId: "thief", backgroundId: "watch", traitIds: ["curious"], method: "template" }
     ]
   },
   aggressive: {
     label: { en: "Aggressive", ja: "強襲" },
     members: [
-      { name: "Rook", classId: "sellsword", backgroundId: "debtor", traitIds: ["scarred"], method: "template" },
-      { name: "Ash", classId: "duelist", backgroundId: "watch", traitIds: ["grim"], method: "template" },
-      { name: "Vale", classId: "vanguard", backgroundId: "ruinborn", traitIds: ["curious"], method: "template" },
-      { name: "Mira", classId: "arcanist", backgroundId: "cartographer", traitIds: ["lucky"], method: "template" },
+      { name: "Rook", classId: "warrior", backgroundId: "debtor", traitIds: ["scarred"], method: "template" },
+      { name: "Ash", classId: "swordmaster", backgroundId: "watch", traitIds: ["grim"], method: "template" },
+      { name: "Vale", classId: "warrior", backgroundId: "ruinborn", traitIds: ["curious"], method: "template" },
+      { name: "Mira", classId: "mage", backgroundId: "cartographer", traitIds: ["lucky"], method: "template" },
       { name: "Sei", classId: "chanter", backgroundId: "apothecary", traitIds: ["steady"], method: "template" },
       { name: "Nera", classId: "occultist", backgroundId: "watch", traitIds: ["grim"], method: "template" }
     ]
@@ -399,12 +364,12 @@ export const starterTemplates: Record<StarterTemplateId, { label: LocalizedLabel
   beginner: {
     label: { en: "Beginner Safe", ja: "初心者向け" },
     members: [
-      { name: "Rook", classId: "vanguard", backgroundId: "watch", traitIds: ["steady"], method: "template" },
-      { name: "Vale", classId: "seeker", backgroundId: "ruinborn", traitIds: ["lucky"], method: "template" },
-      { name: "Bran", classId: "bulwark", backgroundId: "debtor", traitIds: ["steady"], method: "template" },
-      { name: "Sei", classId: "mender", backgroundId: "apothecary", traitIds: ["steady"], method: "template" },
-      { name: "Lio", classId: "wayfinder", backgroundId: "cartographer", traitIds: ["curious"], method: "template" },
-      { name: "Mira", classId: "arcanist", backgroundId: "cartographer", traitIds: ["lucky"], method: "template" }
+      { name: "Rook", classId: "warrior", backgroundId: "watch", traitIds: ["steady"], method: "template" },
+      { name: "Vale", classId: "thief", backgroundId: "ruinborn", traitIds: ["lucky"], method: "template" },
+      { name: "Bran", classId: "knight", backgroundId: "debtor", traitIds: ["steady"], method: "template" },
+      { name: "Sei", classId: "priest", backgroundId: "apothecary", traitIds: ["steady"], method: "template" },
+      { name: "Lio", classId: "thief", backgroundId: "cartographer", traitIds: ["curious"], method: "template" },
+      { name: "Mira", classId: "mage", backgroundId: "cartographer", traitIds: ["lucky"], method: "template" }
     ]
   }
 };
@@ -432,6 +397,8 @@ export function createGuildCharacter(input: GuildCharacterInput): Character {
     notes: input.notes?.trim() || background.notes.en,
     title: input.title?.trim() || classDef.label.en,
     classId: classDef.id,
+    // Registered as this, for good (§6): the discipline stays even when the vocation changes.
+    startingDiscipline: classDef.id,
     roleTags: classDef.roleTags,
     rowPreference: classDef.rowPreference,
     backgroundId: background.id,
@@ -471,14 +438,18 @@ export function createGuildCharacter(input: GuildCharacterInput): Character {
 // baseline plus their retained aptitude, re-level from XP with the new class's
 // growth, drop gear the new class cannot use, and keep identity, portrait,
 // memory, XP, gold, and gold-carried progress. Restores HP/MP.
-export function reclassCharacter(character: Character, newClassId: CharacterClassId, world: ScenarioWorld): Character {
-  const classDef = findClass(newClassId);
+export function reclassCharacter(character: Character, newClassId: AnyClassId, world: ScenarioWorld): Character {
+  const resolved = resolveClassId(newClassId);
+  const classDef = findClass(resolved);
   const stats = deriveStats(classDef, character.aptitude);
-  const maxMp = baseMaxMpForClass(newClassId, character.aptitude);
+  const maxMp = baseMaxMpForClass(resolved, character.aptitude);
 
   const base: Character = {
     ...character,
     classId: classDef.id,
+    // The discipline they registered as is not overwritten by training (§6). It is the one layer a
+    // vocation change may never touch.
+    startingDiscipline: character.startingDiscipline ?? character.classId,
     roleTags: classDef.roleTags,
     rowPreference: classDef.rowPreference,
     row: classDef.rowPreference,
@@ -499,16 +470,12 @@ export function reclassCharacter(character: Character, newClassId: CharacterClas
   };
   const releveled = applyLevelUps(base).character;
 
-  const equipment: Partial<Record<EquipmentSlot, EquippedItem>> = {};
-  for (const [slot, equipped] of Object.entries(releveled.equipment) as [EquipmentSlot, EquippedItem | undefined][]) {
-    if (!equipped) {
-      continue;
-    }
-    const equip = findEquipment(world, equipped.id);
-    if (equip && isEquipmentUsableBy(equip, releveled)) {
-      equipment[slot] = equipped;
-    }
-  }
+  // GEAR IS KEPT (§2.8, §6): a change of vocation "must not... force-equipped gear off... they were
+  // already legitimately using". This used to silently strip every piece the new class could not wear,
+  // so training as something else confiscated the sword you were carrying — the punishment the design
+  // explicitly forbids. What a class may EQUIP FRESH is still checked at the shop and the party menu;
+  // what an adventurer already wears, they keep.
+  const equipment = { ...releveled.equipment };
 
   return { ...releveled, hp: releveled.maxHp, mp: releveled.maxMp, equipment };
 }
@@ -578,9 +545,12 @@ export function importAdventurer(
 ): ImportResult {
   const adjustments: ImportAdjustmentKind[] = [];
 
-  let classId = portable.build.classId;
-  if (policy?.allowedClasses && policy.allowedClasses.length > 0 && !policy.allowedClasses.includes(classId)) {
-    classId = policy.allowedClasses[0];
+  // A vault adventurer may carry a legacy id; the scenario's policy may list legacy ids too. Both are
+  // compared as RESOLVED classes so an old 斥候 counts as the Thief a policy allows.
+  let classId: CharacterClassId = resolveClassId(portable.build.classId);
+  const allowed = (policy?.allowedClasses ?? []).map((id) => resolveClassId(id));
+  if (allowed.length > 0 && !allowed.includes(classId)) {
+    classId = allowed[0];
     adjustments.push("class_remapped");
   }
 
@@ -618,6 +588,7 @@ export function importAdventurer(
     notes: portable.identity.notes,
     title: portable.identity.title,
     classId: classDef.id,
+    startingDiscipline: resolveClassId(portable.build.classId),
     roleTags: classDef.roleTags,
     rowPreference: classDef.rowPreference,
     backgroundId: portable.build.backgroundId,
@@ -655,7 +626,7 @@ export function importAdventurer(
 export function createLegacyGuildCharacter(input: { name: string; notes: string; portraitRef?: string }): Character {
   return createGuildCharacter({
     ...input,
-    classId: "vanguard",
+    classId: "warrior",
     backgroundId: "watch",
     traitIds: ["steady"],
     method: "legacy"
@@ -715,8 +686,9 @@ export function createEmptyRosterMemory() {
   };
 }
 
-export function findClass(id: CharacterClassId) {
-  return classCatalog.find((candidate) => candidate.id === id) ?? classCatalog[0];
+export function findClass(id: AnyClassId | string) {
+  const resolved = resolveClassId(id);
+  return classCatalog.find((candidate) => candidate.id === resolved) ?? classCatalog[0];
 }
 
 export function findBackground(id: CharacterBackgroundId) {
@@ -783,3 +755,6 @@ function hashSeed(seed: string) {
   }
   return hash;
 }
+
+// Re-exported so existing importers keep working; the table itself lives in the leaf module.
+export { LEGACY_CLASS_MAPPING, resolveClassId };

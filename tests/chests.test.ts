@@ -27,7 +27,7 @@ const CHAMBER_ROOM = "room.b1f.002";
 const CHAMBER_CELL = "cell.b1f.002";
 
 function chamberVictoryState(): GameState {
-  const hero: Character = { ...createGuildCharacter({ name: "Rook", classId: "vanguard", seed: "imp029" }), row: "front" };
+  const hero: Character = { ...createGuildCharacter({ name: "Rook", classId: "warrior", seed: "imp029" }), row: "front" };
   const enemy = defaultWorld.enemies.find((candidate) => candidate.id === "enemy.b1f.ash-slime")!;
   const base = createInitialGameState();
   const combatState: GameState = {
@@ -71,7 +71,7 @@ describe("IMP-029 chest state machine (pure)", () => {
 
   it("investigate and disarm are one attempt each (a failure cannot be reloaded)", () => {
     let chest = makeChest(CHAMBER_CELL, CHAMBER_ROOM, trapped);
-    const master: Character = { ...createGuildCharacter({ name: "Nim", classId: "cutpurse", seed: "x" }), level: 5 };
+    const master: Character = { ...createGuildCharacter({ name: "Nim", classId: "thief", seed: "x" }), level: 5 };
     chest = investigateChest(chest, master, "s");
     const afterFirst = { ...chest };
     chest = investigateChest(chest, master, "s"); // second call is a no-op
@@ -97,8 +97,8 @@ describe("IMP-029 chest state machine (pure)", () => {
   });
 
   it("selectTrapHandler prefers a trap-handling vocation over a plain fighter", () => {
-    const cutpurse = createGuildCharacter({ name: "Nim", classId: "cutpurse", seed: "a" });
-    const fighter = createGuildCharacter({ name: "Bran", classId: "vanguard", seed: "b" });
+    const cutpurse = createGuildCharacter({ name: "Nim", classId: "thief", seed: "a" });
+    const fighter = createGuildCharacter({ name: "Bran", classId: "warrior", seed: "b" });
     expect(trapSkill(cutpurse)).toBeGreaterThan(trapSkill(fighter));
     expect(selectTrapHandler([fighter, cutpurse])?.id).toBe(cutpurse.id);
     // …but anyone can be chosen when no specialist stands.
@@ -114,7 +114,7 @@ describe("IMP-029 chest state machine (pure)", () => {
 
 describe("IMP-029 integration (default world)", () => {
   it("entering the dungeon collects NO treasure, and the safe stair landing leaves no chest", () => {
-    const base = { ...createInitialGameState(), party: [createGuildCharacter({ name: "Rook", classId: "vanguard", seed: "e" })] };
+    const base = { ...createInitialGameState(), party: [createGuildCharacter({ name: "Rook", classId: "warrior", seed: "e" })] };
     const entered = executeCommand(base, defaultWorld, { type: "enter_dungeon" });
     expect(entered.inventory.length).toBe(base.inventory.length); // no auto-loot on descent
     expect(entered.floorClaimedTreasures).not.toContain(defaultWorld.startRoom);
@@ -123,7 +123,7 @@ describe("IMP-029 integration (default world)", () => {
   });
 
   it("a chest is inoperable before the chamber fight is won", () => {
-    const hero = { ...createGuildCharacter({ name: "Rook", classId: "vanguard", seed: "g" }), row: "front" as const };
+    const hero = { ...createGuildCharacter({ name: "Rook", classId: "warrior", seed: "g" }), row: "front" as const };
     const enemy = defaultWorld.enemies.find((c) => c.id === "enemy.b1f.ash-slime")!;
     const base = createInitialGameState();
     const inCombat: GameState = {

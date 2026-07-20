@@ -142,10 +142,16 @@ export function formatCharacterSummary(
 
 export function isDefaultClassTitle(title: string, classId: GameState["party"][number]["classId"]) {
   const classDef = findClass(classId);
+  // Titles minted by older builds, when the class名 itself was used as a default 二つ名. Keyed by the
+  // CURRENT class so a consolidated adventurer still has their placeholder title recognised as a
+  // placeholder rather than shown as if they had chosen it.
   const defaultAliases: Partial<Record<GameState["party"][number]["classId"], string[]>> = {
-    vanguard: ["Vanguard", "前衛"],
-    seeker: ["Seeker", "探索者"],
-    mender: ["Mender", "癒し手"],
+    warrior: ["Warrior", "Vanguard", "Sellsword", "先鋒", "傭兵", "前衛"],
+    knight: ["Knight", "Bulwark", "盾守"],
+    swordmaster: ["Swordmaster", "Duelist", "剣客"],
+    thief: ["Thief", "Seeker", "Scout", "Cutpurse", "Wayfinder", "探索者", "斥候", "鍵師", "道標師"],
+    priest: ["Priest", "Mender", "癒し手"],
+    mage: ["Mage", "Arcanist", "灰術師"],
     occultist: ["Occultist", "秘術師"]
   };
   return [classDef.label.en, classDef.label.ja, ...(defaultAliases[classId] ?? [])].includes(title);

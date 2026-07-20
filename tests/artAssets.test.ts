@@ -120,18 +120,18 @@ const facilityBackgrounds = [
 ] as const;
 
 const adventurerClasses = [
-  "vanguard",
-  "sellsword",
-  "bulwark",
-  "duelist",
-  "seeker",
-  "scout",
-  "cutpurse",
-  "mender",
+  "warrior",
+  "warrior",
+  "knight",
+  "swordmaster",
+  "thief",
+  "thief",
+  "thief",
+  "priest",
   "chanter",
   "occultist",
-  "arcanist",
-  "wayfinder"
+  "mage",
+  "thief"
 ] as const;
 
 const adventurerSpecies = ["human", "sylvan", "beastkin"] as const;

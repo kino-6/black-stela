@@ -10,7 +10,7 @@ function fightAgainst(enemyId: string): GameState {
   const enemy = defaultWorld.enemies.find((candidate) => candidate.id === enemyId)!;
   // Level the defender up so it outlasts the (now hard-hitting) ward long enough for its 40%-chance
   // ability to roll — otherwise the test measures the new damage, not the AI.
-  const raised = applyLevelUps({ ...createGuildCharacter({ name: "Cael", classId: "bulwark", seed: "ai" }), level: 1, xp: xpForLevel(8) }).character;
+  const raised = applyLevelUps({ ...createGuildCharacter({ name: "Cael", classId: "knight", seed: "ai" }), level: 1, xp: xpForLevel(8) }).character;
   const base = addCharacter(createInitialGameState(), { ...raised, hp: raised.maxHp });
   return {
     ...base,

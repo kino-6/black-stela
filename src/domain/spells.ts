@@ -1,5 +1,6 @@
-import type { CharacterAptitudes, CharacterClassId } from "./types";
+import type { AnyClassId, CharacterAptitudes, CharacterClassId } from "./types";
 import { CLASS_CAPABILITIES } from "./classCapabilities";
+import { resolveClassId } from "./classIds";
 import { TECHNIQUES, type Technique, type TechniqueEffect, type TechniqueId } from "./techniques";
 
 /**
@@ -85,25 +86,26 @@ export const CLASS_ABILITIES: Partial<Record<CharacterClassId, { level: number; 
       .filter(([, grants]) => grants.length > 0)
   );
 
-export function knownSpells(classId: CharacterClassId, level: number): SpellId[] {
-  return (CLASS_ABILITIES[classId] ?? []).filter((entry) => level >= entry.level).map((entry) => entry.spellId);
+export function knownSpells(classId: AnyClassId, level: number): SpellId[] {
+  // Resolved: an adventurer stored as a 斥候 knows what a 盗賊 knows (characterCreation §8.3 mapping).
+  return (CLASS_ABILITIES[resolveClassId(classId)] ?? []).filter((entry) => level >= entry.level).map((entry) => entry.spellId);
 }
 
 // True only for arcane spellcasters — a class whose abilities include an actual
 // spell. Martial 特技 classes are not casters (they command "特技", not "呪文").
-export function isCasterClass(classId: CharacterClassId): boolean {
-  return (CLASS_ABILITIES[classId] ?? []).some((entry) => SPELLS[entry.spellId].kind === "spell");
+export function isCasterClass(classId: AnyClassId): boolean {
+  return (CLASS_ABILITIES[resolveClassId(classId)] ?? []).some((entry) => SPELLS[entry.spellId].kind === "spell");
 }
 
 // True for front-row classes that carry a 特技 but no spell.
-export function isMartialSkillClass(classId: CharacterClassId): boolean {
-  const abilities = CLASS_ABILITIES[classId] ?? [];
+export function isMartialSkillClass(classId: AnyClassId): boolean {
+  const abilities = CLASS_ABILITIES[resolveClassId(classId)] ?? [];
   return abilities.length > 0 && abilities.every((entry) => SPELLS[entry.spellId].kind === "skill");
 }
 
 // Casters get an MP pool scaled by arcane aptitude; 特技 classes get a smaller
 // 気力 pool scaled by might; everyone else has none.
-export function baseMaxMpForClass(classId: CharacterClassId, aptitude: CharacterAptitudes): number {
+export function baseMaxMpForClass(classId: AnyClassId, aptitude: CharacterAptitudes): number {
   if (isCasterClass(classId)) {
     const arcane = (aptitude.spirit ?? 0) + (aptitude.wit ?? 0);
     return 4 + arcane * 2;

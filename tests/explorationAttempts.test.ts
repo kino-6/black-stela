@@ -85,7 +85,7 @@ function eventOf(events: GameEvent[], type: string) {
 describe("an exploration attempt names who made it", () => {
   it("obeys the declared actor — even one with no business trying", () => {
     // Sending the bulwark is a decision the player is allowed to make; the odds are how they learn it.
-    const party = [member("cutpurse", "Nim"), member("bulwark", "Bran")];
+    const party = [member("thief", "Nim"), member("knight", "Bran")];
     const bran = party[1];
     const result = resolveCommand(stateWithChest(party), world, { type: "investigate_chest", characterId: bran.id });
     const event = eventOf(result.events, "chest_investigated") as any;
@@ -97,7 +97,7 @@ describe("an exploration attempt names who made it", () => {
   });
 
   it("still picks for the player when nobody was named — and says so", () => {
-    const party = [member("bulwark", "Bran"), member("cutpurse", "Nim")];
+    const party = [member("knight", "Bran"), member("thief", "Nim")];
     const result = resolveCommand(stateWithChest(party), world, { type: "investigate_chest" });
     const event = eventOf(result.events, "chest_investigated") as any;
 
@@ -109,7 +109,7 @@ describe("an exploration attempt names who made it", () => {
   });
 
   it("refuses a declared actor who cannot act instead of handing the job to someone else", () => {
-    const party = [member("cutpurse", "Nim"), { ...member("bulwark", "Bran"), injury: "wounded" as const }];
+    const party = [member("thief", "Nim"), { ...member("knight", "Bran"), injury: "wounded" as const }];
     const bran = party[1];
     const result = resolveCommand(stateWithChest(party), world, { type: "disarm_chest", characterId: bran.id });
 
@@ -119,7 +119,7 @@ describe("an exploration attempt names who made it", () => {
   });
 
   it("records the difficulty band the attempt was made against", () => {
-    const party = [member("cutpurse", "Nim")];
+    const party = [member("thief", "Nim")];
     const routine = resolveCommand(stateWithChest(party, { difficulty: 6 }), world, { type: "investigate_chest" });
     const deadly = resolveCommand(stateWithChest(party, { difficulty: 24 }), world, { type: "investigate_chest" });
 
@@ -136,7 +136,7 @@ describe("an exploration attempt names who made it", () => {
   it("leaves an un-declared attempt scoring exactly what it scored before", () => {
     // The regression guard for every existing route, save and trace: same party, same chest, same seed —
     // the automatic pick must resolve to the same outcome it did when selectTrapHandler was called.
-    const party = [member("bulwark", "Bran"), member("cutpurse", "Nim")];
+    const party = [member("knight", "Bran"), member("thief", "Nim")];
     const before = resolveCommand(stateWithChest(party), world, { type: "investigate_chest" });
     const after = resolveCommand(stateWithChest(party), world, { type: "investigate_chest", characterId: party[1].id });
 
@@ -165,7 +165,7 @@ describe("an item is a valid answer to a missing specialist", () => {
   const carrying = [{ id: "item.lock-shims", name: "Lock Shims", kind: "utility" as const, quantity: 2 }];
 
   it("spends the tool and applies its bonus", () => {
-    const party = [member("bulwark", "Bran")];
+    const party = [member("knight", "Bran")];
     const result = resolveCommand(
       stateWithChest(party, { inventory: carrying }),
       aidedWorld,
@@ -186,7 +186,7 @@ describe("an item is a valid answer to a missing specialist", () => {
   });
 
   it("refuses a tool the party does not hold, and one offered for the wrong action, without consuming it", () => {
-    const party = [member("bulwark", "Bran")];
+    const party = [member("knight", "Bran")];
     const notHeld = resolveCommand(
       stateWithChest(party, { inventory: [] }),
       aidedWorld,
@@ -206,7 +206,7 @@ describe("an item is a valid answer to a missing specialist", () => {
 
 describe("nobody is ever refused for being untrained", () => {
   it("lets a party with no specialist attempt everything, at worse odds", () => {
-    const party = [member("bulwark", "Bran"), member("mender", "Sei")];
+    const party = [member("knight", "Bran"), member("priest", "Sei")];
     const result = resolveCommand(stateWithChest(party), world, { type: "investigate_chest" });
     const event = eventOf(result.events, "chest_investigated") as any;
 
@@ -216,7 +216,7 @@ describe("nobody is ever refused for being untrained", () => {
   });
 
   it("returns no actor at all only when the whole party is down", () => {
-    const downed = [{ ...member("cutpurse", "Nim"), hp: 0 }];
+    const downed = [{ ...member("thief", "Nim"), hp: 0 }];
     expect(resolveActor(downed, undefined).actor).toBeNull();
     expect(resolveActor([], undefined).selection).toBe("automatic");
   });

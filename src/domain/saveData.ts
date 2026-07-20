@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { GameEvent, GameState, ScenarioWorld } from "./types";
+import { resolveClassId } from "./classIds";
 
 const DirectionSchema = z.enum(["north", "east", "south", "west"]);
 const GamePhaseSchema = z.enum(["town", "dungeon", "combat"]);
@@ -35,23 +36,14 @@ const CharacterSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
   notes: z.string(),
-  title: z.string().default("Vanguard"),
-  classId: z
-    .enum([
-      "vanguard",
-      "sellsword",
-      "bulwark",
-      "duelist",
-      "seeker",
-      "scout",
-      "cutpurse",
-      "mender",
-      "chanter",
-      "occultist",
-      "arcanist",
-      "wayfinder"
-    ])
-    .default("vanguard"),
+  title: z.string().default("Warrior"),
+  // A stored class id may be a LEGACY one (docs/design/class-system.md §8.3 consolidated twelve into
+  // eight). It is normalized on read through the documented mapping rather than rejected, and the file
+  // itself is left alone — rewriting saves is a beta-time migration with its own version bump.
+  classId: z.string().min(1).default("warrior").transform((id) => resolveClassId(id)),
+  // The permanent discipline (§6). Absent in saves written before the split; resolveVocationState-style
+  // defaulting is done by the reader, not by inventing one here.
+  startingDiscipline: z.string().min(1).transform((id) => resolveClassId(id)).optional(),
   roleTags: z.array(z.string().min(1)).default(["front_line", "damage", "retreat_guard"]),
   rowPreference: z.enum(["front", "back"]).default("front"),
   backgroundId: z

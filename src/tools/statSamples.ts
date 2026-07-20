@@ -12,7 +12,7 @@ import type { Character } from "../domain/types";
 export const STAT_SAMPLES_SCHEMA_VERSION = 1;
 
 function vanguard(): Character {
-  return { ...createGuildCharacter({ name: "Rook", classId: "vanguard", seed: "slice" }), row: "front" };
+  return { ...createGuildCharacter({ name: "Rook", classId: "warrior", seed: "slice" }), row: "front" };
 }
 
 export function buildStatSamples(worldId = "default") {

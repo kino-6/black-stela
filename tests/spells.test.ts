@@ -6,37 +6,37 @@ import { baseMaxMpForClass, isCasterClass, knownSpells } from "../src/domain/spe
 import { defaultWorld } from "../src/data/defaultWorld";
 import type { CombatStatus, GameState } from "../src/domain/types";
 
-function caster(classId: "occultist" | "mender"): GameState {
+function caster(classId: "occultist" | "priest"): GameState {
   return addCharacter(createInitialGameState(), createGuildCharacter({ name: "Cael", classId, seed: "spell-test" }));
 }
 
-function slimeFight(classId: "occultist" | "mender"): GameState {
+function slimeFight(classId: "occultist" | "priest"): GameState {
   const entered = executeCommand(caster(classId), defaultWorld, { type: "enter_dungeon" });
   return executeCommand(entered, defaultWorld, { type: "move_forward" });
 }
 
 describe("spells", () => {
   it("teaches abilities on a per-class level schedule", () => {
-    expect(knownSpells("mender", 1)).toContain("heal");
+    expect(knownSpells("priest", 1)).toContain("heal");
     expect(knownSpells("occultist", 1)).toContain("firebolt");
     expect(knownSpells("occultist", 1)).not.toContain("sleep");
     expect(knownSpells("occultist", 3)).toContain("sleep");
     // Front-row martial classes learn a 特技, not a spell.
-    expect(knownSpells("vanguard", 1)).toContain("power-strike");
+    expect(knownSpells("warrior", 1)).toContain("power-strike");
     // A class with neither spell nor 特技 has nothing to command.
-    expect(knownSpells("scout", 99)).toHaveLength(0);
+    expect(knownSpells("thief", 99)).toHaveLength(0);
   });
 
   it("gives casters an MP pool, 特技 classes a smaller 気力 pool, and others none", () => {
     const stats = { might: 2, agility: 0, spirit: 2, wit: 1, luck: 0 };
     expect(isCasterClass("occultist")).toBe(true);
-    expect(isCasterClass("vanguard")).toBe(false); // 特技 user, not a caster
+    expect(isCasterClass("warrior")).toBe(false); // 特技 user, not a caster
     expect(baseMaxMpForClass("occultist", stats)).toBeGreaterThan(0);
     // A front-row 特技 class has a pool, but a smaller one than a caster.
-    expect(baseMaxMpForClass("vanguard", stats)).toBeGreaterThan(0);
-    expect(baseMaxMpForClass("vanguard", stats)).toBeLessThan(baseMaxMpForClass("occultist", stats));
+    expect(baseMaxMpForClass("warrior", stats)).toBeGreaterThan(0);
+    expect(baseMaxMpForClass("warrior", stats)).toBeLessThan(baseMaxMpForClass("occultist", stats));
     // A plain martial class (no abilities) still has no pool.
-    expect(baseMaxMpForClass("scout", stats)).toBe(0);
+    expect(baseMaxMpForClass("thief", stats)).toBe(0);
   });
 
   it("casts an attack spell, spending MP and damaging the enemy", () => {
