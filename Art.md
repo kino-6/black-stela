@@ -11,7 +11,8 @@ scenario pack brief for the asset you are generating or reviewing.
 
 - Physical-file re-audit (2026-07-20): **no missing required art**. All 59
   authored catalog ids have own-basename 256x256 RGBA icons (Default 46,
-  Verdant 13); the 144-file adventurer source matrix is complete; all audited
+  Verdant 13); the current eight-class adventurer matrix has 96 canonical
+  source masters plus 48 retained optional legacy variants; all audited
   character, enemy/hurt, facility, and support deliverables match their required
   dimensions and alpha contracts. Remaining items called "pending" below are
   runtime wiring or optional enhancements, not ungenerated assets.
@@ -37,11 +38,10 @@ scenario pack brief for the asset you are generating or reviewing.
 - Town facility extension: P19 delivered **8/8** lossless 1600×900 PNG
   backgrounds: market/workshop, infirmary, archive lodge, and dungeon entrance
   for both Default and Verdant.
-- **P20 requested (2026-07-20), not started**: the rules consolidated twelve classes into eight
-  (`docs/design/class-system.md` §4). P17's 144 masters are filed under the twelve OLD names, so the
-  runtime maps eight classes onto three portraits and every new adventurer wears the same face. Brief:
-  `content/worlds/default/ART.md` §P20 — five lines only need re-filing, two need an anchor chosen, and
-  repainting is optional and last.
+- **P20 delivered (2026-07-20)**: the eight current class IDs now have a 96-master source matrix and
+  sixteen selected runtime base/action masters. Warrior uses the former vanguard line; Thief uses the
+  former lock-tool cutpurse line. Godot resolves each class directly (including legacy-save mapping), and
+  its asset gate asserts every staged master. The other merged P17 lines remain optional future variants.
 - Optional Verdant minimap marker overrides are not included in the required
   count.
 

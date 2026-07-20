@@ -643,7 +643,7 @@ func _party_slot(member: Dictionary) -> Control:
 	frame.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	frame.clip_contents = true
 	var portrait := TextureRect.new()
-	portrait.texture = _texture("res://assets/characters/adventurer-%s-base.png" % _portrait_class(member))
+	portrait.texture = _texture(_portrait_path(member))
 	portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 	portrait.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -810,15 +810,22 @@ func _acting_name() -> String:
 			return member.get("name", "?")
 	return "?"
 
-func _portrait_class(member: Dictionary) -> String:
-	var cls: String = member.get("classId", "warrior")
-	# The slice ships three master portraits; map the eight classes onto the nearest archetype until
-	# per-class art is cut (class-system.md §8.5). Legacy ids resolve too, so an older save still has a face.
-	if cls in ["priest", "mender"]:
-		return "mender"
-	if cls in ["mage", "occultist", "chanter", "arcanist", "wayfinder", "sage", "cleric"]:
-		return "arcanist"
-	return "vanguard"
+func _portrait_path(member: Dictionary) -> String:
+	# Keep portrait lookup on the canonical class id. The legacy mapping comes from the same exported
+	# engine data as the rule port, so an older save gets its current discipline's own master.
+	var class_id := String(member.get("classId", "warrior"))
+	var legacy: Dictionary = _engine.get("legacyClassMapping", {})
+	class_id = String(legacy.get(class_id, class_id))
+	var known := false
+	for class_def in _engine.get("classes", []):
+		if String((class_def as Dictionary).get("id", "")) == class_id:
+			known = true
+			break
+	if not known:
+		class_id = "warrior"
+	var sub := "characters/adventurer-%s-base.png" % class_id
+	var pack_path := _asset(sub)
+	return pack_path if FileAccess.file_exists(pack_path) else "res://assets/worlds/default/%s" % sub
 
 func _hp_text(member: Dictionary) -> String:
 	return "HP %d/%d" % [int(member.get("hp", 0)), int(member.get("maxHp", 0))]

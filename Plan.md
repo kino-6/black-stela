@@ -83,8 +83,6 @@ Alternative considered: a single mastered discipline plus a level floor.
 
 - [ ] **Localization** — export `en`, runtime locale in `i18n.gd`, ~33 hardcoded JA strings → keys,
       locale-aware catalog names. Until then the title is honestly 3 keys red.
-- [ ] **Adventurer art still ships under the twelve old class names** — the portrait fallback collapses
-      eight classes onto three faces until Codex re-cuts the masters.
 - [ ] **Floor names are English** — no dungeon authors `locales.ja`; React does the same. Content.
 - [ ] **Desktop bundle** — needs a macOS + Windows toolchain: [steps](docs/desktop-productization.md)
 - [ ] **Live-LLM narration** — ops layer done, needs a provider: [AIPlan](AIPlan.md) ·

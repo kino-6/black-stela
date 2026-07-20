@@ -480,7 +480,7 @@ func _party_token(member: Dictionary) -> Control:
 	var body := UIKit.col(1)
 	var head := UIKit.row()
 	var portrait := TextureRect.new()
-	portrait.texture = _texture("res://assets/characters/adventurer-%s-base.png" % _portrait_class(member))
+	portrait.texture = _texture(_portrait_path(member))
 	portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 	portrait.custom_minimum_size = Vector2(32, 36)
@@ -541,15 +541,23 @@ func _gauge(ratio: float, col: Color) -> Control:
 	bar.add_theme_stylebox_override("background", bg)
 	return bar
 
-func _portrait_class(member: Dictionary) -> String:
-	var cls: String = member.get("classId", "warrior")
-	# The slice ships three master portraits; map the eight classes onto the nearest archetype until
-	# per-class art is cut (class-system.md §8.5). Legacy ids resolve too, so an older save still has a face.
-	if cls in ["priest", "mender"]:
-		return "mender"
-	if cls in ["mage", "occultist", "chanter", "arcanist", "wayfinder", "sage", "cleric"]:
-		return "arcanist"
-	return "vanguard"
+func _portrait_path(member: Dictionary) -> String:
+	# Portrait identity follows the same twelve-to-eight resolver as the rules. A legacy save keeps its
+	# face, but it resolves to its real current discipline — never to a nearest-archetype placeholder.
+	var class_id := String(member.get("classId", "warrior"))
+	var legacy: Dictionary = _engine.get("legacyClassMapping", {})
+	class_id = String(legacy.get(class_id, class_id))
+	var known := false
+	for class_def in _engine.get("classes", []):
+		if String((class_def as Dictionary).get("id", "")) == class_id:
+			known = true
+			break
+	if not known:
+		class_id = "warrior"
+	var sub := "characters/adventurer-%s-base.png" % class_id
+	var pack_path := _asset(sub)
+	# Scenario packs may override a class figure; the Default eight-class library is the shared fallback.
+	return pack_path if FileAccess.file_exists(pack_path) else "res://assets/worlds/default/%s" % sub
 
 func _rebuild_dock() -> void:
 	if _dock_host == null:

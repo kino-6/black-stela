@@ -119,23 +119,17 @@ const facilityBackgrounds = [
   "dungeon-entrance"
 ] as const;
 
-// The delivered adventurer MASTERS, by the file names they actually ship under. These are art, not
-// taxonomy: the twelve-class roster was consolidated into eight (docs/design/class-system.md §8.3), but
-// the paintings did not change, and re-cutting them under the new names is Codex's art task rather than
-// something a rules commit should rename on disk.
+// P20 re-filed the selected P17 masters under the eight current class ids. The unused merged lines stay
+// in source-art as optional future variants; they are deliberately not a second, contradictory catalog.
 const adventurerClasses = [
-  "vanguard",
-  "sellsword",
-  "bulwark",
-  "duelist",
-  "seeker",
-  "scout",
-  "cutpurse",
-  "mender",
+  "warrior",
+  "knight",
+  "swordmaster",
+  "thief",
+  "priest",
   "chanter",
   "occultist",
-  "arcanist",
-  "wayfinder"
+  "mage"
 ] as const;
 
 const adventurerSpecies = ["human", "sylvan", "beastkin"] as const;
@@ -372,8 +366,29 @@ describe("adventurer source-art contract", () => {
       }
     }
 
-    expect(hashes).toHaveLength(144);
-    expect(new Set(hashes).size).toBe(144);
+    expect(hashes).toHaveLength(96);
+    expect(new Set(hashes).size).toBe(96);
+  });
+
+  it("exports a distinct base/action pair for every current class without shipping the full source matrix", () => {
+    const hashes: string[] = [];
+
+    for (const characterClass of adventurerClasses) {
+      for (const pose of adventurerPoses) {
+        const path = new URL(
+          `../content/worlds/default/assets/characters/adventurer-${characterClass}-${pose}.png`,
+          import.meta.url
+        );
+        const png = readFileSync(path);
+
+        expect(pngSize(path), path.pathname).toEqual({ width: 1024, height: 1536 });
+        expect(png[25], `${path.pathname} must use PNG color type 6 (RGBA)`).toBe(6);
+        hashes.push(createHash("sha256").update(png).digest("hex"));
+      }
+    }
+
+    expect(hashes).toHaveLength(16);
+    expect(new Set(hashes).size).toBe(16);
   });
 });
 

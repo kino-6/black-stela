@@ -693,7 +693,7 @@ Review sheet:
 
 - `docs/evidence/art-facilities-p19/facility-contact.png`
 
-### P20 — Adventurer masters for the CONSOLIDATED eight classes  ⬜ requested (2026-07-20)
+### P20 — Adventurer masters for the CONSOLIDATED eight classes  ✅ 96 source / 16 runtime masters (2026-07-20)
 
 **Why this exists.** The class roster changed in the rules, not in the art. Twelve labels became eight
 classes (`docs/design/class-system.md` §4, shipped in Section 8 item 3): the three near-identical trap
@@ -716,8 +716,10 @@ thing this brief retires.
 | mage | 灰術師 | arcanist | unchanged |
 | occultist | 秘術師 | occultist | unchanged |
 
-**Ask — smallest useful delivery first.** Five of the eight need nothing but a rename; two need a
-decision about which of the merged people is now the archetype.
+**Delivered — smallest useful pass.** The selected P17 lines now use the eight current IDs. The Warrior
+anchor is the former `vanguard` spear-and-shield line; the Thief anchor is the former `cutpurse` line,
+whose lock tools make the current role legible. The old `sellsword`, `seeker`, `scout`, and `wayfinder`
+masters remain outside the canonical matrix as optional future variants; no painting was discarded.
 
 1. **Rename / re-file** the five unchanged lines (bulwark→knight, duelist→swordmaster, mender→priest,
    arcanist→mage, occultist→occultist, chanter→chanter) so filenames match the class ids the runtime
@@ -746,18 +748,17 @@ decision about which of the merged people is now the archetype.
 are distinct people rather than palette swaps, male and female get equal authority and equal practical
 protection, silhouette wins at combat-lane size, no baked impact/particles/scenery.
 
-**Definition of done for this brief**: the eight class ids each resolve to their own master, and
-`_portrait_class`'s three-way collapse is deleted rather than re-pointed. The gate that will hold it is
-`godot/tests/verify_assets.gd` (it already asserts every authored creature resolves; adventurers join it
-when the files land).
+**Completed definition of done**: the eight class ids each resolve to their own Default-pack base master,
+with the action mate staged beside it; legacy saves resolve through the exported class mapping. The former
+`_portrait_class` three-way collapse is deleted, and `godot/tests/verify_assets.gd` now asserts all
+sixteen runtime masters before a package can pass.
 
 **Not in scope**: nothing in the rules waits on this. The consolidation is shipped and green; this is the
 art catching up with it.
 
 ## 8. Retake queue (post-integration review)
 
-The pack art order through P19 is delivered; **P20 (consolidated-class adventurer masters) is requested
-and not started**.
+The pack art order through P20 is delivered.
 P6/P9/P12/P13/P15/P17/P18/P19 still contain unwired presentation work.
 Keep this section for post-integration art-tone corrections that should not be
 forgotten.
