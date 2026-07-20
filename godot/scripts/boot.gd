@@ -19,4 +19,9 @@ func _ready() -> void:
 	else:
 		# Deferred: changing scene DURING _ready (while the tree is still adding Boot) trips
 		# "Parent node is busy adding/removing children". Defer it to the end of the frame.
+		# Developer tooling only — AGENTS.md keeps debug UI out of normal play, so this mounts ONLY when
+		# asked for (`godot --path godot/ -- --debug-mode`, or F12 once mounted).
+		var DebugOverlay := preload("res://scripts/debug_overlay.gd")
+		if DebugOverlay.enabled():
+			get_tree().root.add_child.call_deferred(DebugOverlay.new())
 		SceneManager.goto.call_deferred("res://scenes/title.tscn")

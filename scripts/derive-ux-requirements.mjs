@@ -46,9 +46,16 @@ const report = [];
 for (const screen of manifest.screens) {
   const sources = [screen.reactPanel, ...(EXTRA_SOURCES[screen.id] ?? [])].filter((s) => s?.endsWith(".tsx"));
   if (sources.length === 0) continue; // e.g. "src/i18n (config.*)" — described, not a panel
+  // A template family — t(`career.stat.${k}`) — expands to the whole namespace, but the code may only
+  // reach a few of them. A narrowing must be DECLARED with a reason so it stays visible; it can never
+  // be dropped silently, which is the failure mode this whole script exists to prevent.
+  const exclusions = new Map((screen.derivedExclusions ?? []).map((e) => [e.key, e.reason]));
   const derived = [...new Set(sources.flatMap(keysIn))]
-    .filter((k) => copy[k] !== undefined && !NEVER_REQUIRED.test(k))
+    .filter((k) => copy[k] !== undefined && !NEVER_REQUIRED.test(k) && !exclusions.has(k))
     .sort();
+  for (const [key, reason] of exclusions) {
+    if (!reason) throw new Error(`${screen.id}: derivedExclusions["${key}"] needs a reason`);
+  }
   if (derived.length === 0) continue;
   const missing = derived.filter((k) => !(screen.requiredKeys ?? []).includes(k));
   if (missing.length > 0) {

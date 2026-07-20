@@ -18,7 +18,8 @@
     "wounds, before/after, and insufficient-funds states.'",
     "`fixture` patches the state before the screen builds, so CONDITIONAL and FAILURE surfaces (wounded party, unaffordable, loot to appraise, quest ready to claim, known bestiary entry) are actually asserted — not just the empty happy path.",
     "`worldId` drives a screen from ANOTHER world's pack — the S5 criterion that the same scene code renders both scenarios from data alone, not just the world it was written against.",
-    "`exemptScenes` declares the scenes that are NOT player-facing (boot is a one-frame transition). Every other scene under res://scenes/ must appear in `screens` — an unmeasured screen fails the gate, because 'nobody checked it' is how the guild screen escaped for three milestones."
+    "`exemptScenes` declares the scenes that are NOT player-facing (boot is a one-frame transition). Every other scene under res://scenes/ must appear in `screens` — an unmeasured screen fails the gate, because 'nobody checked it' is how the guild screen escaped for three milestones.",
+    "`derivedExclusions` narrows a template family the code cannot actually reach (t(`ns.${k}`) expands to the whole namespace). Every exclusion carries a REASON — a narrowing must stay visible, never silent."
   ],
   "screens": [
     {
@@ -88,10 +89,25 @@
         "town.serviceCancel"
       ],
       "notes": "Per-wounded row must show hp/maxHp -> maxHp (before/after) and that member's cost; healthy members are NOT listed. town.cannotAffordRecovery must appear when the purse is short.",
-      "fixture": {
-        "__woundParty": 6,
-        "partyGold": 300
-      }
+      "states": [
+        {
+          "fixture": {
+            "__woundParty": 6,
+            "partyGold": 300
+          }
+        },
+        {
+          "fixture": {
+            "__woundParty": 8,
+            "partyGold": 1
+          }
+        },
+        {
+          "fixture": {
+            "partyGold": 300
+          }
+        }
+      ]
     },
     {
       "id": "town-market",
@@ -126,9 +142,44 @@
         "town.shopStock"
       ],
       "notes": "AGENTS.md: a shop MUST show who can use the equipment (town.canEquip/cannotEquip against the selected adventurer) and what changes (town.equipmentSummary stat deltas). A name+price list is a gate failure.",
-      "fixture": {
-        "partyGold": 400
-      }
+      "states": [
+        {
+          "fixture": {
+            "partyGold": 400,
+            "inventory": [
+              {
+                "id": "equip.grip-gloves",
+                "name": "Grip Gloves",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "hands",
+                "sellValue": 7
+              },
+              {
+                "id": "equip.militia-sabre",
+                "name": "Militia Sabre",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "weapon",
+                "sellValue": 9
+              },
+              {
+                "id": "item.healing-draught",
+                "name": "Healing Draught",
+                "kind": "healing",
+                "quantity": 2,
+                "healAmount": 6
+              }
+            ]
+          }
+        },
+        {
+          "fixture": {
+            "partyGold": 400,
+            "inventory": []
+          }
+        }
+      ]
     },
     {
       "id": "town-loot",
@@ -183,43 +234,542 @@
         "town.serviceCancel"
       ],
       "notes": "Appraisal is PAID (loot.appraiseCost badge; loot.appraiseCantAfford when broke). The entry stage previews what would convert (loot.convertible) and offers sell/dismantle — it must NEVER convert on one press. An appraised piece shows a fit comparison vs the chosen adventurer and an equip action.",
-      "fixture": {
-        "partyGold": 400,
-        "materials": 20,
-        "inventory": [
-          {
-            "id": "equip.iron-cap",
-            "name": "Iron Cap",
-            "kind": "equipment",
-            "quantity": 1,
-            "slot": "head",
-            "sellValue": 6,
-            "rarity": "rare",
-            "identified": false,
-            "affix": "warding",
-            "instanceId": "gate.rare-1"
-          },
-          {
-            "id": "equip.grip-gloves",
-            "name": "Grip Gloves",
-            "kind": "equipment",
-            "quantity": 1,
-            "slot": "hands",
-            "sellValue": 7,
-            "rarity": "rare",
-            "identified": true,
-            "instanceId": "gate.rare-2"
-          },
-          {
-            "id": "equip.ring-mail",
-            "name": "Ring Mail",
-            "kind": "equipment",
-            "quantity": 2,
-            "slot": "body",
-            "sellValue": 25
+      "states": [
+        {
+          "fixture": {
+            "partyGold": 400,
+            "materials": 20,
+            "inventory": [
+              {
+                "id": "equip.iron-cap",
+                "name": "Iron Cap",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "head",
+                "sellValue": 6,
+                "rarity": "rare",
+                "identified": false,
+                "affix": "warding",
+                "instanceId": "gate.rare-1"
+              },
+              {
+                "id": "equip.grip-gloves",
+                "name": "Grip Gloves",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "hands",
+                "sellValue": 7,
+                "rarity": "epic",
+                "identified": true,
+                "instanceId": "gate.epic-1"
+              },
+              {
+                "id": "equip.short-bow",
+                "name": "Short Bow",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "weapon",
+                "sellValue": 15
+              },
+              {
+                "id": "equip.ring-mail",
+                "name": "Ring Mail",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "body",
+                "sellValue": 25,
+                "instanceId": "gate.locked-1",
+                "locked": true
+              },
+              {
+                "id": "equip.chalk-cord",
+                "name": "Chalk Cord",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "accessory",
+                "sellValue": 4,
+                "instanceId": "gate.fav-1",
+                "favorite": true
+              },
+              {
+                "id": "equip.vitality-charm",
+                "name": "Vitality Charm",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "accessory",
+                "sellValue": 8,
+                "instanceId": "gate.hp-1"
+              },
+              {
+                "id": "equip.focus-band",
+                "name": "Focus Band",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "accessory",
+                "sellValue": 8,
+                "instanceId": "gate.mp-1"
+              },
+              {
+                "id": "equip.antivenom-ring",
+                "name": "Antivenom Ring",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "accessory",
+                "sellValue": 1,
+                "instanceId": "gate.same-1"
+              }
+            ]
           }
-        ]
-      }
+        },
+        {
+          "fixture": {
+            "partyGold": 5,
+            "materials": 20,
+            "inventory": [
+              {
+                "id": "equip.iron-cap",
+                "name": "Iron Cap",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "head",
+                "sellValue": 6,
+                "rarity": "rare",
+                "identified": false,
+                "affix": "warding",
+                "instanceId": "gate.rare-1"
+              },
+              {
+                "id": "equip.grip-gloves",
+                "name": "Grip Gloves",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "hands",
+                "sellValue": 7,
+                "rarity": "epic",
+                "identified": true,
+                "instanceId": "gate.epic-1"
+              },
+              {
+                "id": "equip.short-bow",
+                "name": "Short Bow",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "weapon",
+                "sellValue": 15
+              },
+              {
+                "id": "equip.ring-mail",
+                "name": "Ring Mail",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "body",
+                "sellValue": 25,
+                "instanceId": "gate.locked-1",
+                "locked": true
+              },
+              {
+                "id": "equip.chalk-cord",
+                "name": "Chalk Cord",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "accessory",
+                "sellValue": 4,
+                "instanceId": "gate.fav-1",
+                "favorite": true
+              },
+              {
+                "id": "equip.vitality-charm",
+                "name": "Vitality Charm",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "accessory",
+                "sellValue": 8,
+                "instanceId": "gate.hp-1"
+              },
+              {
+                "id": "equip.focus-band",
+                "name": "Focus Band",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "accessory",
+                "sellValue": 8,
+                "instanceId": "gate.mp-1"
+              },
+              {
+                "id": "equip.antivenom-ring",
+                "name": "Antivenom Ring",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "accessory",
+                "sellValue": 1,
+                "instanceId": "gate.same-1"
+              }
+            ]
+          }
+        },
+        {
+          "fixture": {
+            "partyGold": 400,
+            "materials": 20,
+            "inventory": [
+              {
+                "id": "equip.iron-cap",
+                "name": "Iron Cap",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "head",
+                "sellValue": 6,
+                "rarity": "rare",
+                "identified": false,
+                "affix": "warding",
+                "instanceId": "gate.rare-1"
+              },
+              {
+                "id": "equip.grip-gloves",
+                "name": "Grip Gloves",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "hands",
+                "sellValue": 7,
+                "rarity": "epic",
+                "identified": true,
+                "instanceId": "gate.epic-1"
+              },
+              {
+                "id": "equip.short-bow",
+                "name": "Short Bow",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "weapon",
+                "sellValue": 15
+              },
+              {
+                "id": "equip.ring-mail",
+                "name": "Ring Mail",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "body",
+                "sellValue": 25,
+                "instanceId": "gate.locked-1",
+                "locked": true
+              },
+              {
+                "id": "equip.chalk-cord",
+                "name": "Chalk Cord",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "accessory",
+                "sellValue": 4,
+                "instanceId": "gate.fav-1",
+                "favorite": true
+              },
+              {
+                "id": "equip.vitality-charm",
+                "name": "Vitality Charm",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "accessory",
+                "sellValue": 8,
+                "instanceId": "gate.hp-1"
+              },
+              {
+                "id": "equip.focus-band",
+                "name": "Focus Band",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "accessory",
+                "sellValue": 8,
+                "instanceId": "gate.mp-1"
+              },
+              {
+                "id": "equip.antivenom-ring",
+                "name": "Antivenom Ring",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "accessory",
+                "sellValue": 1,
+                "instanceId": "gate.same-1"
+              }
+            ]
+          },
+          "uiState": {
+            "loot_pending": "sell"
+          }
+        },
+        {
+          "fixture": {
+            "partyGold": 400,
+            "materials": 20,
+            "inventory": [
+              {
+                "id": "equip.iron-cap",
+                "name": "Iron Cap",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "head",
+                "sellValue": 6,
+                "rarity": "rare",
+                "identified": false,
+                "affix": "warding",
+                "instanceId": "gate.rare-1"
+              },
+              {
+                "id": "equip.grip-gloves",
+                "name": "Grip Gloves",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "hands",
+                "sellValue": 7,
+                "rarity": "epic",
+                "identified": true,
+                "instanceId": "gate.epic-1"
+              },
+              {
+                "id": "equip.short-bow",
+                "name": "Short Bow",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "weapon",
+                "sellValue": 15
+              },
+              {
+                "id": "equip.ring-mail",
+                "name": "Ring Mail",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "body",
+                "sellValue": 25,
+                "instanceId": "gate.locked-1",
+                "locked": true
+              },
+              {
+                "id": "equip.chalk-cord",
+                "name": "Chalk Cord",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "accessory",
+                "sellValue": 4,
+                "instanceId": "gate.fav-1",
+                "favorite": true
+              },
+              {
+                "id": "equip.vitality-charm",
+                "name": "Vitality Charm",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "accessory",
+                "sellValue": 8,
+                "instanceId": "gate.hp-1"
+              },
+              {
+                "id": "equip.focus-band",
+                "name": "Focus Band",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "accessory",
+                "sellValue": 8,
+                "instanceId": "gate.mp-1"
+              },
+              {
+                "id": "equip.antivenom-ring",
+                "name": "Antivenom Ring",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "accessory",
+                "sellValue": 1,
+                "instanceId": "gate.same-1"
+              }
+            ]
+          },
+          "uiState": {
+            "loot_pending": "dismantle"
+          }
+        },
+        {
+          "fixture": {
+            "partyGold": 400,
+            "materials": 20,
+            "inventory": [
+              {
+                "id": "equip.iron-cap",
+                "name": "Iron Cap",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "head",
+                "sellValue": 6,
+                "rarity": "rare",
+                "identified": false,
+                "affix": "warding",
+                "instanceId": "gate.rare-1"
+              },
+              {
+                "id": "equip.grip-gloves",
+                "name": "Grip Gloves",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "hands",
+                "sellValue": 7,
+                "rarity": "epic",
+                "identified": true,
+                "instanceId": "gate.epic-1"
+              },
+              {
+                "id": "equip.short-bow",
+                "name": "Short Bow",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "weapon",
+                "sellValue": 15
+              },
+              {
+                "id": "equip.ring-mail",
+                "name": "Ring Mail",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "body",
+                "sellValue": 25,
+                "instanceId": "gate.locked-1",
+                "locked": true
+              },
+              {
+                "id": "equip.chalk-cord",
+                "name": "Chalk Cord",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "accessory",
+                "sellValue": 4,
+                "instanceId": "gate.fav-1",
+                "favorite": true
+              },
+              {
+                "id": "equip.vitality-charm",
+                "name": "Vitality Charm",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "accessory",
+                "sellValue": 8,
+                "instanceId": "gate.hp-1"
+              },
+              {
+                "id": "equip.focus-band",
+                "name": "Focus Band",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "accessory",
+                "sellValue": 8,
+                "instanceId": "gate.mp-1"
+              },
+              {
+                "id": "equip.antivenom-ring",
+                "name": "Antivenom Ring",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "accessory",
+                "sellValue": 1,
+                "instanceId": "gate.same-1"
+              }
+            ]
+          },
+          "uiState": {
+            "loot_pending": "",
+            "loot_filter": "common"
+          }
+        },
+        {
+          "fixture": {
+            "partyGold": 400,
+            "materials": 20,
+            "inventory": []
+          }
+        },
+        {
+          "fixture": {
+            "partyGold": 400,
+            "materials": 20,
+            "inventory": [
+              {
+                "id": "equip.iron-cap",
+                "name": "Iron Cap",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "head",
+                "sellValue": 6,
+                "rarity": "rare",
+                "identified": false,
+                "affix": "warding",
+                "instanceId": "gate.rare-1"
+              },
+              {
+                "id": "equip.grip-gloves",
+                "name": "Grip Gloves",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "hands",
+                "sellValue": 7,
+                "rarity": "epic",
+                "identified": true,
+                "instanceId": "gate.epic-1"
+              },
+              {
+                "id": "equip.short-bow",
+                "name": "Short Bow",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "weapon",
+                "sellValue": 15
+              },
+              {
+                "id": "equip.ring-mail",
+                "name": "Ring Mail",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "body",
+                "sellValue": 25,
+                "instanceId": "gate.locked-1",
+                "locked": true
+              },
+              {
+                "id": "equip.chalk-cord",
+                "name": "Chalk Cord",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "accessory",
+                "sellValue": 4,
+                "instanceId": "gate.fav-1",
+                "favorite": true
+              },
+              {
+                "id": "equip.vitality-charm",
+                "name": "Vitality Charm",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "accessory",
+                "sellValue": 8,
+                "instanceId": "gate.hp-1"
+              },
+              {
+                "id": "equip.focus-band",
+                "name": "Focus Band",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "accessory",
+                "sellValue": 8,
+                "instanceId": "gate.mp-1"
+              },
+              {
+                "id": "equip.antivenom-ring",
+                "name": "Antivenom Ring",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "accessory",
+                "sellValue": 1,
+                "instanceId": "gate.same-1"
+              }
+            ],
+            "__wearNone": true
+          }
+        }
+      ]
     },
     {
       "id": "town-loot-confirm",
@@ -274,46 +824,542 @@
         "town.serviceCancel"
       ],
       "notes": "The CONFIRM stage. Bulk conversion is two-step: the player sees exactly what will be destroyed and what it yields, then answers 実行/やめる. Cancel returns to the entry stage, not out of the service.",
-      "fixture": {
-        "partyGold": 400,
-        "materials": 20,
-        "inventory": [
-          {
-            "id": "equip.iron-cap",
-            "name": "Iron Cap",
-            "kind": "equipment",
-            "quantity": 1,
-            "slot": "head",
-            "sellValue": 6,
-            "rarity": "rare",
-            "identified": false,
-            "affix": "warding",
-            "instanceId": "gate.rare-1"
-          },
-          {
-            "id": "equip.grip-gloves",
-            "name": "Grip Gloves",
-            "kind": "equipment",
-            "quantity": 1,
-            "slot": "hands",
-            "sellValue": 7,
-            "rarity": "rare",
-            "identified": true,
-            "instanceId": "gate.rare-2"
-          },
-          {
-            "id": "equip.ring-mail",
-            "name": "Ring Mail",
-            "kind": "equipment",
-            "quantity": 2,
-            "slot": "body",
-            "sellValue": 25
+      "states": [
+        {
+          "fixture": {
+            "partyGold": 400,
+            "materials": 20,
+            "inventory": [
+              {
+                "id": "equip.iron-cap",
+                "name": "Iron Cap",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "head",
+                "sellValue": 6,
+                "rarity": "rare",
+                "identified": false,
+                "affix": "warding",
+                "instanceId": "gate.rare-1"
+              },
+              {
+                "id": "equip.grip-gloves",
+                "name": "Grip Gloves",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "hands",
+                "sellValue": 7,
+                "rarity": "epic",
+                "identified": true,
+                "instanceId": "gate.epic-1"
+              },
+              {
+                "id": "equip.short-bow",
+                "name": "Short Bow",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "weapon",
+                "sellValue": 15
+              },
+              {
+                "id": "equip.ring-mail",
+                "name": "Ring Mail",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "body",
+                "sellValue": 25,
+                "instanceId": "gate.locked-1",
+                "locked": true
+              },
+              {
+                "id": "equip.chalk-cord",
+                "name": "Chalk Cord",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "accessory",
+                "sellValue": 4,
+                "instanceId": "gate.fav-1",
+                "favorite": true
+              },
+              {
+                "id": "equip.vitality-charm",
+                "name": "Vitality Charm",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "accessory",
+                "sellValue": 8,
+                "instanceId": "gate.hp-1"
+              },
+              {
+                "id": "equip.focus-band",
+                "name": "Focus Band",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "accessory",
+                "sellValue": 8,
+                "instanceId": "gate.mp-1"
+              },
+              {
+                "id": "equip.antivenom-ring",
+                "name": "Antivenom Ring",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "accessory",
+                "sellValue": 1,
+                "instanceId": "gate.same-1"
+              }
+            ]
           }
-        ]
-      },
-      "uiState": {
-        "loot_pending": "sell"
-      }
+        },
+        {
+          "fixture": {
+            "partyGold": 5,
+            "materials": 20,
+            "inventory": [
+              {
+                "id": "equip.iron-cap",
+                "name": "Iron Cap",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "head",
+                "sellValue": 6,
+                "rarity": "rare",
+                "identified": false,
+                "affix": "warding",
+                "instanceId": "gate.rare-1"
+              },
+              {
+                "id": "equip.grip-gloves",
+                "name": "Grip Gloves",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "hands",
+                "sellValue": 7,
+                "rarity": "epic",
+                "identified": true,
+                "instanceId": "gate.epic-1"
+              },
+              {
+                "id": "equip.short-bow",
+                "name": "Short Bow",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "weapon",
+                "sellValue": 15
+              },
+              {
+                "id": "equip.ring-mail",
+                "name": "Ring Mail",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "body",
+                "sellValue": 25,
+                "instanceId": "gate.locked-1",
+                "locked": true
+              },
+              {
+                "id": "equip.chalk-cord",
+                "name": "Chalk Cord",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "accessory",
+                "sellValue": 4,
+                "instanceId": "gate.fav-1",
+                "favorite": true
+              },
+              {
+                "id": "equip.vitality-charm",
+                "name": "Vitality Charm",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "accessory",
+                "sellValue": 8,
+                "instanceId": "gate.hp-1"
+              },
+              {
+                "id": "equip.focus-band",
+                "name": "Focus Band",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "accessory",
+                "sellValue": 8,
+                "instanceId": "gate.mp-1"
+              },
+              {
+                "id": "equip.antivenom-ring",
+                "name": "Antivenom Ring",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "accessory",
+                "sellValue": 1,
+                "instanceId": "gate.same-1"
+              }
+            ]
+          }
+        },
+        {
+          "fixture": {
+            "partyGold": 400,
+            "materials": 20,
+            "inventory": [
+              {
+                "id": "equip.iron-cap",
+                "name": "Iron Cap",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "head",
+                "sellValue": 6,
+                "rarity": "rare",
+                "identified": false,
+                "affix": "warding",
+                "instanceId": "gate.rare-1"
+              },
+              {
+                "id": "equip.grip-gloves",
+                "name": "Grip Gloves",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "hands",
+                "sellValue": 7,
+                "rarity": "epic",
+                "identified": true,
+                "instanceId": "gate.epic-1"
+              },
+              {
+                "id": "equip.short-bow",
+                "name": "Short Bow",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "weapon",
+                "sellValue": 15
+              },
+              {
+                "id": "equip.ring-mail",
+                "name": "Ring Mail",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "body",
+                "sellValue": 25,
+                "instanceId": "gate.locked-1",
+                "locked": true
+              },
+              {
+                "id": "equip.chalk-cord",
+                "name": "Chalk Cord",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "accessory",
+                "sellValue": 4,
+                "instanceId": "gate.fav-1",
+                "favorite": true
+              },
+              {
+                "id": "equip.vitality-charm",
+                "name": "Vitality Charm",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "accessory",
+                "sellValue": 8,
+                "instanceId": "gate.hp-1"
+              },
+              {
+                "id": "equip.focus-band",
+                "name": "Focus Band",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "accessory",
+                "sellValue": 8,
+                "instanceId": "gate.mp-1"
+              },
+              {
+                "id": "equip.antivenom-ring",
+                "name": "Antivenom Ring",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "accessory",
+                "sellValue": 1,
+                "instanceId": "gate.same-1"
+              }
+            ]
+          },
+          "uiState": {
+            "loot_pending": "sell"
+          }
+        },
+        {
+          "fixture": {
+            "partyGold": 400,
+            "materials": 20,
+            "inventory": [
+              {
+                "id": "equip.iron-cap",
+                "name": "Iron Cap",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "head",
+                "sellValue": 6,
+                "rarity": "rare",
+                "identified": false,
+                "affix": "warding",
+                "instanceId": "gate.rare-1"
+              },
+              {
+                "id": "equip.grip-gloves",
+                "name": "Grip Gloves",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "hands",
+                "sellValue": 7,
+                "rarity": "epic",
+                "identified": true,
+                "instanceId": "gate.epic-1"
+              },
+              {
+                "id": "equip.short-bow",
+                "name": "Short Bow",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "weapon",
+                "sellValue": 15
+              },
+              {
+                "id": "equip.ring-mail",
+                "name": "Ring Mail",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "body",
+                "sellValue": 25,
+                "instanceId": "gate.locked-1",
+                "locked": true
+              },
+              {
+                "id": "equip.chalk-cord",
+                "name": "Chalk Cord",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "accessory",
+                "sellValue": 4,
+                "instanceId": "gate.fav-1",
+                "favorite": true
+              },
+              {
+                "id": "equip.vitality-charm",
+                "name": "Vitality Charm",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "accessory",
+                "sellValue": 8,
+                "instanceId": "gate.hp-1"
+              },
+              {
+                "id": "equip.focus-band",
+                "name": "Focus Band",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "accessory",
+                "sellValue": 8,
+                "instanceId": "gate.mp-1"
+              },
+              {
+                "id": "equip.antivenom-ring",
+                "name": "Antivenom Ring",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "accessory",
+                "sellValue": 1,
+                "instanceId": "gate.same-1"
+              }
+            ]
+          },
+          "uiState": {
+            "loot_pending": "dismantle"
+          }
+        },
+        {
+          "fixture": {
+            "partyGold": 400,
+            "materials": 20,
+            "inventory": [
+              {
+                "id": "equip.iron-cap",
+                "name": "Iron Cap",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "head",
+                "sellValue": 6,
+                "rarity": "rare",
+                "identified": false,
+                "affix": "warding",
+                "instanceId": "gate.rare-1"
+              },
+              {
+                "id": "equip.grip-gloves",
+                "name": "Grip Gloves",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "hands",
+                "sellValue": 7,
+                "rarity": "epic",
+                "identified": true,
+                "instanceId": "gate.epic-1"
+              },
+              {
+                "id": "equip.short-bow",
+                "name": "Short Bow",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "weapon",
+                "sellValue": 15
+              },
+              {
+                "id": "equip.ring-mail",
+                "name": "Ring Mail",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "body",
+                "sellValue": 25,
+                "instanceId": "gate.locked-1",
+                "locked": true
+              },
+              {
+                "id": "equip.chalk-cord",
+                "name": "Chalk Cord",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "accessory",
+                "sellValue": 4,
+                "instanceId": "gate.fav-1",
+                "favorite": true
+              },
+              {
+                "id": "equip.vitality-charm",
+                "name": "Vitality Charm",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "accessory",
+                "sellValue": 8,
+                "instanceId": "gate.hp-1"
+              },
+              {
+                "id": "equip.focus-band",
+                "name": "Focus Band",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "accessory",
+                "sellValue": 8,
+                "instanceId": "gate.mp-1"
+              },
+              {
+                "id": "equip.antivenom-ring",
+                "name": "Antivenom Ring",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "accessory",
+                "sellValue": 1,
+                "instanceId": "gate.same-1"
+              }
+            ]
+          },
+          "uiState": {
+            "loot_pending": "",
+            "loot_filter": "common"
+          }
+        },
+        {
+          "fixture": {
+            "partyGold": 400,
+            "materials": 20,
+            "inventory": []
+          }
+        },
+        {
+          "fixture": {
+            "partyGold": 400,
+            "materials": 20,
+            "inventory": [
+              {
+                "id": "equip.iron-cap",
+                "name": "Iron Cap",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "head",
+                "sellValue": 6,
+                "rarity": "rare",
+                "identified": false,
+                "affix": "warding",
+                "instanceId": "gate.rare-1"
+              },
+              {
+                "id": "equip.grip-gloves",
+                "name": "Grip Gloves",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "hands",
+                "sellValue": 7,
+                "rarity": "epic",
+                "identified": true,
+                "instanceId": "gate.epic-1"
+              },
+              {
+                "id": "equip.short-bow",
+                "name": "Short Bow",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "weapon",
+                "sellValue": 15
+              },
+              {
+                "id": "equip.ring-mail",
+                "name": "Ring Mail",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "body",
+                "sellValue": 25,
+                "instanceId": "gate.locked-1",
+                "locked": true
+              },
+              {
+                "id": "equip.chalk-cord",
+                "name": "Chalk Cord",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "accessory",
+                "sellValue": 4,
+                "instanceId": "gate.fav-1",
+                "favorite": true
+              },
+              {
+                "id": "equip.vitality-charm",
+                "name": "Vitality Charm",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "accessory",
+                "sellValue": 8,
+                "instanceId": "gate.hp-1"
+              },
+              {
+                "id": "equip.focus-band",
+                "name": "Focus Band",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "accessory",
+                "sellValue": 8,
+                "instanceId": "gate.mp-1"
+              },
+              {
+                "id": "equip.antivenom-ring",
+                "name": "Antivenom Ring",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "accessory",
+                "sellValue": 1,
+                "instanceId": "gate.same-1"
+              }
+            ],
+            "__wearNone": true
+          }
+        }
+      ]
     },
     {
       "id": "town-workshop",
@@ -332,11 +1378,6 @@
         "career.stat.accuracy",
         "career.stat.armor",
         "career.stat.attack",
-        "career.stat.damageMax",
-        "career.stat.damageMin",
-        "career.stat.maxHp",
-        "career.stat.maxMp",
-        "career.stat.speed",
         "town.serviceCancel",
         "workshop.atCap",
         "workshop.boosts",
@@ -349,9 +1390,58 @@
         "workshop.title"
       ],
       "notes": "Must name the stat each reinforce boosts (workshop.boosts), the materials cost, and the at-cap / cant-afford states (workshop.atCap, workshop.cantAfford).",
-      "fixture": {
-        "materials": 40
-      }
+      "states": [
+        {
+          "fixture": {
+            "materials": 40
+          }
+        },
+        {
+          "fixture": {
+            "materials": 0
+          }
+        },
+        {
+          "fixture": {
+            "materials": 40,
+            "__wearAll": true
+          }
+        },
+        {
+          "fixture": {
+            "materials": 40,
+            "__wearMaxed": true
+          }
+        },
+        {
+          "fixture": {
+            "materials": 40,
+            "__wearNone": true
+          }
+        }
+      ],
+      "derivedExclusions": [
+        {
+          "key": "career.stat.damageMin",
+          "reason": "WorkshopPanel reaches career.stat.* only through PRIMARY_STAT_KEY (weapon->attack, accessory->accuracy, else armor); the other stats are not reachable from this screen."
+        },
+        {
+          "key": "career.stat.damageMax",
+          "reason": "WorkshopPanel reaches career.stat.* only through PRIMARY_STAT_KEY (weapon->attack, accessory->accuracy, else armor); the other stats are not reachable from this screen."
+        },
+        {
+          "key": "career.stat.maxHp",
+          "reason": "WorkshopPanel reaches career.stat.* only through PRIMARY_STAT_KEY (weapon->attack, accessory->accuracy, else armor); the other stats are not reachable from this screen."
+        },
+        {
+          "key": "career.stat.maxMp",
+          "reason": "WorkshopPanel reaches career.stat.* only through PRIMARY_STAT_KEY (weapon->attack, accessory->accuracy, else armor); the other stats are not reachable from this screen."
+        },
+        {
+          "key": "career.stat.speed",
+          "reason": "WorkshopPanel reaches career.stat.* only through PRIMARY_STAT_KEY (weapon->attack, accessory->accuracy, else armor); the other stats are not reachable from this screen."
+        }
+      ]
     },
     {
       "id": "town-quests",

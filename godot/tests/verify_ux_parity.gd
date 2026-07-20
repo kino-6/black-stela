@@ -48,13 +48,58 @@ func _initialize() -> void:
 func _check_screen(entry: Dictionary, copy: Dictionary) -> int:
 	var id: String = entry.get("id", "?")
 	var failures := 0
-	var missing: Array = []
 
-	var scene_path: String = entry.get("scene", "")
-	var packed: Variant = load(scene_path)
+	# A screen's contract is what the React panel can render ACROSS ITS STATES — React never shows all
+	# of them at once either (the loot counter's entry stage and its confirm stage are exclusive). So the
+	# gate drives every declared state and checks the UNION. Declaring a state is also how the failure /
+	# confirm / empty surfaces get PROVEN to exist rather than assumed.
+	var states: Array = entry.get("states", [])
+	if states.is_empty():
+		states = [{"fixture": entry.get("fixture", {}), "uiState": entry.get("uiState", {})}]
+
+	var shown := ""
+	for state in states:
+		var text: Variant = await _text_for_state(entry, state)
+		if typeof(text) != TYPE_STRING:
+			print("[ux-parity] %s: could not build state" % id)
+			return 1
+		shown += String(text) + "\n"
+
+	var missing: Array = []
+	for key in entry.get("requiredKeys", []):
+		var template: Variant = copy.get(key, null)
+		if typeof(template) != TYPE_STRING:
+			print("[ux-parity] %s: manifest key not in ja.ts: %s" % [id, key])
+			failures += 1
+			continue
+		if not _shows(shown, String(template)):
+			missing.append("%s (\"%s\")" % [key, template])
+
+	var evidence: String = entry.get("evidence", "")
+	var has_evidence := evidence != "" and FileAccess.file_exists("res://" + evidence)
+
+	if missing.is_empty() and has_evidence:
+		print("[ux-parity] %s: OK (%d keys over %d state(s), evidence present)" % [id, entry.get("requiredKeys", []).size(), states.size()])
+		return failures
+
+	print("[ux-parity] %s: FAIL  [React: %s]" % [id, entry.get("reactPanel", "?")])
+	if not missing.is_empty():
+		print("    missing information (%d of %d required, across %d state(s)):" % [missing.size(), entry.get("requiredKeys", []).size(), states.size()])
+		for m in missing:
+			print("      - %s" % m)
+		failures += 1
+	if not has_evidence:
+		print("    missing comparison evidence: godot/%s (capture it, then compare against %s)" % [evidence, entry.get("reactPanel", "?")])
+		failures += 1
+	if entry.get("notes", "") != "":
+		print("    contract: %s" % entry["notes"])
+	return failures
+
+# Build the screen in one declared state and return every piece of text it shows.
+func _text_for_state(entry: Dictionary, state: Dictionary) -> Variant:
+	var packed: Variant = load(entry.get("scene", ""))
 	if packed == null:
-		print("[ux-parity] %s: MISSING SCENE %s" % [id, scene_path])
-		return 1
+		return null
 	var root: Node = (packed as PackedScene).instantiate()
 	get_root().add_child(root)
 	for i in 8:
@@ -66,14 +111,40 @@ func _check_screen(entry: Dictionary, copy: Dictionary) -> int:
 		for i in 3:
 			await process_frame
 
-	# Drive the screen from the manifest's fixture so conditional/failure surfaces actually render.
-	var fixture: Dictionary = entry.get("fixture", {})
+	var fixture: Dictionary = state.get("fixture", {})
 	if not fixture.is_empty() and root.has_method("set_state_override"):
 		var base: Dictionary = (JSON.parse_string(FileAccess.get_file_as_string("res://data/traces/b1f-exploration.json")) as Dictionary).get("initialState", {})
 		var patched: Dictionary = base.duplicate(true)
 		patched["phase"] = "town"
 		for key in fixture:
 			patched[key] = fixture[key]
+		if fixture.has("__wearNone"):
+			var stripped := []
+			for member in patched.get("party", []):
+				var m: Dictionary = member.duplicate(true)
+				m["equipment"] = {}
+				stripped.append(m)
+			patched["party"] = stripped
+		if fixture.has("__wearMaxed"):
+			# A piece already at the reinforce cap, so 鍛え切った is proven rather than assumed.
+			var maxed := []
+			for member in patched.get("party", []):
+				var m: Dictionary = member.duplicate(true)
+				m["equipment"] = {"weapon": {"id": "equip.militia-sabre", "plus": 5}}
+				maxed.append(m)
+			patched["party"] = maxed
+		if fixture.has("__wearAll"):
+			# The forge lists only the slots a member WEARS; kit one out so every slot label is proven.
+			var kitted := []
+			for member in patched.get("party", []):
+				var m: Dictionary = member.duplicate(true)
+				m["equipment"] = {
+					"weapon": {"id": "equip.militia-sabre"}, "offhand": {"id": "equip.split-buckler"},
+					"body": {"id": "equip.padded-jack"}, "head": {"id": "equip.iron-cap"},
+					"hands": {"id": "equip.grip-gloves"}, "accessory": {"id": "equip.chalk-cord"}
+				}
+				kitted.append(m)
+			patched["party"] = kitted
 		if fixture.has("__woundParty"):
 			var hurt := []
 			for member in patched.get("party", []):
@@ -86,55 +157,22 @@ func _check_screen(entry: Dictionary, copy: Dictionary) -> int:
 			await process_frame
 
 	var service: String = entry.get("service", "")
-	if service != "":
-		if not root.has_method("_open_service"):
-			print("[ux-parity] %s: scene cannot open services (no _open_service)" % id)
-			root.queue_free()
-			return 1
+	if service != "" and root.has_method("_open_service"):
 		root.call("_open_service", service)
 		for i in 4:
 			await process_frame
 
-	var ui_state: Dictionary = entry.get("uiState", {})
+	var ui_state: Dictionary = state.get("uiState", {})
 	if not ui_state.is_empty() and root.has_method("set_ui_state"):
 		root.call("set_ui_state", ui_state)
 		for i in 4:
 			await process_frame
 
-	var shown := _collect_text(root)
-	for key in entry.get("requiredKeys", []):
-		var template: Variant = copy.get(key, null)
-		if typeof(template) != TYPE_STRING:
-			print("[ux-parity] %s: manifest key not in ja.ts: %s" % [id, key])
-			failures += 1
-			continue
-		if not _shows(shown, String(template)):
-			missing.append("%s (\"%s\")" % [key, template])
-
+	var text := _collect_text(root)
 	root.queue_free()
 	for i in 2:
 		await process_frame
-
-	# 2. comparison evidence must exist
-	var evidence: String = entry.get("evidence", "")
-	var has_evidence := evidence != "" and FileAccess.file_exists("res://" + evidence)
-
-	if missing.is_empty() and has_evidence:
-		print("[ux-parity] %s: OK (%d keys, evidence present)" % [id, entry.get("requiredKeys", []).size()])
-		return failures
-
-	print("[ux-parity] %s: FAIL  [React: %s]" % [id, entry.get("reactPanel", "?")])
-	if not missing.is_empty():
-		print("    missing information (%d of %d required):" % [missing.size(), entry.get("requiredKeys", []).size()])
-		for m in missing:
-			print("      - %s" % m)
-		failures += 1
-	if not has_evidence:
-		print("    missing comparison evidence: godot/%s (capture it, then compare against %s)" % [evidence, entry.get("reactPanel", "?")])
-		failures += 1
-	if entry.get("notes", "") != "":
-		print("    contract: %s" % entry["notes"])
-	return failures
+	return text
 
 # Every scene under res://scenes/ must be measured, unless the manifest explicitly exempts it as a
 # non-player transition (boot). Exemptions are DECLARED, never implicit.
