@@ -136,6 +136,21 @@ const adventurerSpecies = ["human", "sylvan", "beastkin"] as const;
 const adventurerGenders = ["male", "female"] as const;
 const adventurerPoses = ["base", "attack"] as const;
 
+const advancedVocationSourceMasters = [
+  { pack: "default", slug: "ash-reaver", genders: ["male", "female"] as const },
+  { pack: "default", slug: "salt-warden", genders: ["male", "female"] as const },
+  { pack: "default", slug: "star-votary", genders: ["male", "female"] as const },
+  { pack: "default", slug: "needle-dancer", genders: ["male", "female"] as const },
+  { pack: "default", slug: "dust-ranger", genders: ["male", "female"] as const },
+  { pack: "default", slug: "candle-pilgrim", genders: ["male", "female"] as const },
+  { pack: "verdant", slug: "verdant-briar-reaver", genders: ["male", "female"] as const },
+  { pack: "verdant", slug: "verdant-bark-keeper", genders: ["male", "female"] as const },
+  { pack: "verdant", slug: "verdant-dewblade", genders: ["male", "female"] as const },
+  { pack: "verdant", slug: "verdant-canopy-reader", genders: ["male", "female"] as const },
+  { pack: "verdant", slug: "verdant-sap-binder", genders: ["male", "female"] as const },
+  { pack: "verdant", slug: "verdant-spore-seer", genders: ["male", "female"] as const }
+] as const;
+
 function pngSize(path: URL): { width: number; height: number } {
   const png = readFileSync(path);
   expect(png.subarray(1, 4).toString("ascii"), `${path.pathname} is not PNG`).toBe("PNG");
@@ -389,6 +404,29 @@ describe("adventurer source-art contract", () => {
 
     expect(hashes).toHaveLength(16);
     expect(new Set(hashes).size).toBe(16);
+  });
+});
+
+describe("advanced-vocation source-art contract", () => {
+  it("keeps each delivered vocation's male and female base masters as distinct clean-alpha figures", () => {
+    const hashes: string[] = [];
+
+    for (const vocation of advancedVocationSourceMasters) {
+      for (const gender of vocation.genders) {
+        const path = new URL(
+          `../content/worlds/${vocation.pack}/source-art/vocations/vocation-${vocation.slug}-human-${gender}-base.png`,
+          import.meta.url
+        );
+        const png = readFileSync(path);
+
+        expect(pngSize(path), path.pathname).toEqual({ width: 1024, height: 1536 });
+        expect(png[25], `${path.pathname} must use PNG color type 6 (RGBA)`).toBe(6);
+        hashes.push(createHash("sha256").update(png).digest("hex"));
+      }
+    }
+
+    expect(hashes).toHaveLength(24);
+    expect(new Set(hashes).size).toBe(24);
   });
 });
 

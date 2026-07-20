@@ -42,6 +42,29 @@ scenario pack brief for the asset you are generating or reviewing.
   sixteen selected runtime base/action masters. Warrior uses the former vanguard line; Thief uses the
   former lock-tool cutpurse line. Godot resolves each class directly (including legacy-save mapping), and
   its asset gate asserts every staged master. The other merged P17 lines remain optional future variants.
+- **P21 source-library delivered (2026-07-20): advanced-vocation visual continuity.** Every authored advanced vocation
+  receives at least one male and one female 1024×1536 RGBA **base** master. This is not an outfit swap on
+  an arbitrary existing person: character identity must stay stable across a vocation change, and a
+  custom `visualProfile` must always win. Until the registration/appearance model stores a stable visual
+  lineage, the runtime must keep the character's existing basic-class image rather than choose a
+  differently gendered advanced image. The masters are therefore generated and reviewed first, then
+  wired only with that identity-preserving resolver.
+
+  | Batch | Pack | Vocations | Required base masters | Status |
+  | --- | --- | --- | ---: | --- |
+  | A | Default / Ash | 灰の刃 `ash-reaver` | male + female | **2/2 delivered** |
+  | B | Default / Ash | 塩の守り手, 星の信徒 | 4 | **4/4 delivered** |
+  | C | Default / Ash | 針舞い, 塵路師, 灯巡り | 6 | **6/6 delivered** |
+  | D | Verdant | 茨砕き, 樹皮守, 露刃 | 6 | **6/6 delivered** |
+  | E | Verdant | 梢読み, 樹液結び, 胞子見 | 6 | **6/6 delivered** |
+  | F | Runtime | stable appearance lineage, advanced-vocation resolver, controller/browser proof | — | blocked on explicit lineage implementation |
+
+  Source filename: `content/worlds/<pack>/source-art/vocations/vocation-<slug>-human-<male|female>-base.png`.
+  Each source master has clean alpha, neutral studio lighting, full figure, and a distinct role silhouette.
+  A runtime derivative may only be exported under `assets/characters/` after it can be selected from the
+  adventurer's own stored appearance lineage; never infer a gender from a class, name, or current party
+  slot. Attack mates are a later paired delivery, after the advanced techniques themselves have stable
+  player-facing animations/commands to depict.
 - Optional Verdant minimap marker overrides are not included in the required
   count.
 

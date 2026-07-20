@@ -12,9 +12,21 @@ var _failures := 0
 func _initialize() -> void:
 	var worlds: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/worlds/index.json"))
 	var ids: Array = (worlds as Dictionary).get("worlds", []) if typeof(worlds) == TYPE_DICTIONARY else []
+	var engine: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/engine-data.json"))
+	var classes: Array = (engine as Dictionary).get("classes", []) if typeof(engine) == TYPE_DICTIONARY else []
 
 	# The build stamp both runtimes show.
 	_require("res://data/build-stamp.json", "build stamp (npm run export:build)")
+
+	# P20: every selectable class owns a Default-pack base/action master. Dungeon and combat use the
+	# current class id directly and fall back to this pack only when a scenario does not override it.
+	for class_def in classes:
+		var class_id := String((class_def as Dictionary).get("id", ""))
+		if class_id.is_empty():
+			_fail("engine class catalog has an empty id")
+			continue
+		for pose in ["base", "attack"]:
+			_require("res://assets/worlds/default/characters/adventurer-%s-%s.png" % [class_id, pose], "P20 %s %s master" % [class_id, pose])
 
 	for entry in ids:
 		var world_id := String(entry)

@@ -756,6 +756,34 @@ sixteen runtime masters before a package can pass.
 **Not in scope**: nothing in the rules waits on this. The consolidation is shipped and green; this is the
 art catching up with it.
 
+### P21 — Advanced-vocation visual continuity  ✅ Source library delivered (2026-07-20)
+
+The vocation system must never turn an existing adventurer into a differently gendered stranger. Each
+advanced destination therefore receives a male and female full-figure base master before its presentation
+is wired. The current runtime continues to show the registered adventurer's existing basic-class figure
+until a stored appearance lineage can select the matching advanced master; it must not guess from a name,
+class, or party position.
+
+**Source contract:** `source-art/vocations/vocation-<slug>-human-<male|female>-base.png`, 1024×1536 PNG
+RGBA, clean alpha, no background, floor, shadow, particles, or readable text. Both forms receive equal
+practical protection, authority, silhouette clarity, and role-specific equipment. They are distinct
+people, not palette swaps. `base` is the required first pass; an `attack` mate follows only after the
+advanced vocation has a player-facing technique/command worth depicting.
+
+| Batch | Vocation | Male/female role read | Delivery |
+| --- | --- | --- | --- |
+| A | `ash-reaver` / 灰の刃 | ash-stained heavy cutter; broad cleaver, broken ward plates, restrained cinder-red cord | **2/2 base masters delivered** |
+| B | `salt-warden` / 塩の守り手 | shield-and-medic guardian; tower shield, salt-white bandages, compact ward kit | **2/2 base masters delivered** |
+| B | `star-votary` / 星の信徒 | star-script caster; black-glass focus, late-star tablets, dark blue/violet cloth | **2/2 base masters delivered** |
+| C | `needle-dancer` / 針舞い | close knife duelist; paired needles, mobile close jacket, no sexualized armour | **2/2 base masters delivered** |
+| C | `dust-ranger` / 塵路師 | route-reading ranged scout; bow or long reach weapon, chalk/map case, dust coat | **2/2 base masters delivered** |
+| C | `candle-pilgrim` / 灯巡り | road-ward pilgrim; candle ward, staff, travel mantle, calm practical kit | **2/2 base masters delivered** |
+
+Integration acceptance: store an explicit presentation lineage at registration (or preserve a supplied
+`visualProfile`); resolve the advanced image from that lineage; retain the existing basic image if the
+matching advanced master is absent. A save/import must preserve that lineage. Normal play must never show
+an automatic gender or face change when adopting a vocation.
+
 ## 8. Retake queue (post-integration review)
 
 The pack art order through P20 is delivered.

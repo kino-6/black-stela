@@ -183,6 +183,27 @@ resolution alone do not prove the portraits are usable.
 
 ## Delivery audit (2026-07-19)
 
+## P21 — Advanced-vocation visual continuity  ✅ Source library delivered
+
+Verdant follows the shared P21 contract in `Art.md`: every authored advanced vocation receives separate
+male and female 1024×1536 RGBA base masters under
+`source-art/vocations/vocation-verdant-<slug>-human-<male|female>-base.png`. These are living-grove
+redesigns, not green-tinted Ash outfits, and they are not wired until character appearance lineage can
+preserve the registered person's gender/identity across vocation change.
+
+| Batch | Vocation | Role read | Delivery |
+| --- | --- | --- | --- |
+| D | 茨砕き / `briar-reaver` | thorn-cleaving front liner; heartwood-felling weapon, living-bramble guard | **2/2 base masters delivered** |
+| D | 樹皮守 / `bark-keeper` | warding shield keeper; layered bark plates and prayer slips | **2/2 base masters delivered** |
+| D | 露刃 / `dewblade` | quiet wet-leaf blade; light cutter with dew-proof travel gear | **2/2 base masters delivered** |
+| E | 梢読み / `canopy-reader` | echo-reading pathfinder; cord, map case, rain hood | **2/2 base masters delivered** |
+| E | 樹液結び / `sap-binder` | practical sap healer; resin kit, cautery focus, bark-staff | **2/2 base masters delivered** |
+| E | 胞子見 / `spore-seer` | spore omen-reader; sealed mask, specimen vials, controlled haze focus | **2/2 base masters delivered** |
+
+Each vocation requires a male and female base master before it is marked delivered. Base/action identity
+pairs and runtime selection follow the shared P21 plan after the advanced techniques have stable visual
+beats.
+
 Required asset files in this order: **58**. Delivered: **58**. Undelivered: **0**.
 Optional Verdant minimap-marker overrides are excluded from this count.
 
