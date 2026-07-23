@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { worldRegistry } from "../src/data/worldRegistry";
-import { SPELLS } from "../src/domain/spells";
+import { SPELLS, knownSpells } from "../src/domain/spells";
 import { BUILTIN_VOCATION_IDS } from "../src/domain/vocations";
-import type { ScenarioAffix, ScenarioWorld } from "../src/domain/types";
+import type { CharacterClassId, ScenarioAffix, ScenarioWorld } from "../src/domain/types";
 
 const shippedWorlds = [
   ["default", worldRegistry.default],
@@ -28,8 +28,16 @@ function expectCompleteVocationGraph(worldId: string, world: ScenarioWorld) {
   );
   expect(requiredByEveryDestination, `${worldId}: no basic vocation should be compulsory for every route`).toEqual([]);
 
+  // §7A: the prerequisite PAIRS are distinct. Two advanced vocations bridging the exact same two
+  // classes are two names for one destination — the "empty class names" §7 warns against. This is the
+  // rule the interim scaffolding failed: three vocations reused the same grant off overlapping pairs.
+  const pairKeys = advanced.map((vocation) => [...(vocation.requires?.mastered ?? [])].sort().join("+"));
+  expect(new Set(pairKeys).size, `${worldId}: advanced vocations must bridge DISTINCT pairs`).toBe(advanced.length);
+
   for (const vocation of advanced) {
     expect(vocation.requires?.mastered?.length ?? 0, `${worldId}:${vocation.id} prerequisite texture`).toBeGreaterThanOrEqual(2);
+    // §7A: an advanced vocation is a gated destination — a real level floor, never available from turn 1.
+    expect(vocation.requires?.minLevel ?? 0, `${worldId}:${vocation.id} has no level floor`).toBeGreaterThanOrEqual(6);
     expect(vocation.locales?.ja?.name, `${worldId}:${vocation.id} Japanese name`).toBeTruthy();
     expect(vocation.locales?.ja?.signature, `${worldId}:${vocation.id} Japanese signature`).toBeTruthy();
     expect(vocation.locales?.ja?.signature ?? "", `${worldId}:${vocation.id} leaked an implementation id`).not.toMatch(
@@ -37,6 +45,15 @@ function expectCompleteVocationGraph(worldId: string, world: ScenarioWorld) {
     );
     for (const technique of vocation.grantsTechniques ?? []) {
       expect(technique in SPELLS, `${worldId}:${vocation.id} grants unknown technique ${technique}`).toBe(true);
+      // §7A: an advanced vocation may not grant a technique EITHER of its two parent classes already
+      // teaches — that grant is redundant (the adopter learned it by mastering the parent, §6) and it
+      // fakes a signature. Only an EXCLUSIVE technique (7B) may be granted; until then, none.
+      const parentClasses = vocation.requires?.mastered ?? [];
+      const parentTechniques = new Set<string>(parentClasses.flatMap((classId) => knownSpells(classId as CharacterClassId, 99)));
+      expect(
+        parentTechniques.has(technique),
+        `${worldId}:${vocation.id} grants ${technique}, which a parent class already teaches — that is scaffolding, not a signature`
+      ).toBe(false);
     }
   }
 }

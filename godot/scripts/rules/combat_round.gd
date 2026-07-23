@@ -354,7 +354,21 @@ static func _apply_technique(technique: Dictionary, actor: Dictionary, action: D
 				var spell_seed := "%d:%d:%s:%s:spell" % [turn, rnd, actor["id"], target["id"]]
 				var raw := CombatRng.roll_damage(spell_seed, int(effect.get("min", 0)), int(effect.get("max", 0)), 0)
 				var weak := CombatRng.element_multiplier(target.get("weaknesses", {}), effect.get("element", "physical"))
-				var damage := CombatRng.chip_through_resistance(roundi((raw + spell_power) * weak), spell_seed)
+				# §7B: detonate / exploit — bonus damage against a pack already carrying a named status;
+				# `consume` strips it (a detonation cannot re-trigger on the same affliction).
+				var bonus := 0
+				var trigger: Variant = effect.get("bonusVsStatus", null)
+				if typeof(trigger) == TYPE_DICTIONARY:
+					var hit_status := ""
+					for status in (trigger.get("statuses", []) as Array):
+						if (target.get("status", []) as Array).has(String(status)):
+							hit_status = String(status)
+							break
+					if hit_status != "":
+						bonus = CombatRng.roll_damage("%s:bonus" % spell_seed, int(trigger.get("bonusMin", 0)), int(trigger.get("bonusMax", 0)), 0)
+						if bool(trigger.get("consume", false)):
+							enemy_groups = _strip_group_status(enemy_groups, String(target["id"]), hit_status)
+				var damage := CombatRng.chip_through_resistance(roundi((raw + spell_power + bonus) * weak), spell_seed)
 				enemy_groups = CombatHelpers.damage_group(enemy_groups, String(target["id"]), damage)
 
 		elif effect_kind == "status":
@@ -734,6 +748,22 @@ static func _with_member_status(party: Array, member_id: String, status: String)
 			statuses.append(status)
 		m["status"] = statuses
 		out.append(m)
+	return out
+
+## §7B: remove a status from a group (the detonate consumes what it triggered on).
+static func _strip_group_status(groups: Array, group_id: String, status: String) -> Array:
+	var out := []
+	for group in groups:
+		if String((group as Dictionary).get("id", "")) != group_id:
+			out.append(group)
+			continue
+		var g: Dictionary = (group as Dictionary).duplicate(true)
+		var kept := []
+		for s2 in (g.get("status", []) as Array):
+			if String(s2) != status:
+				kept.append(s2)
+		g["status"] = kept
+		out.append(g)
 	return out
 
 static func _with_group_status(groups: Array, group_id: String, status: String) -> Array:

@@ -1215,7 +1215,21 @@ function declareRound(state: GameState, world: ScenarioWorld, actions: CombatAct
           const raw = rollDamage(spellSeed, effect.min, effect.max, 0);
           const weakness = elementMultiplier(group.weaknesses, effect.element);
           const spellPower = technique.kind === "spell" ? getSpellPowerBonus(actor) : 0;
-          const damage = chipThroughResistance(Math.round((raw + spellPower) * weakness), spellSeed);
+          // §7B: detonate / exploit — extra damage when the pack already carries a named status. The
+          // bonus rolls on its own seed so it reads as its own dice, and `consume` strips the status
+          // (a detonation cannot be re-triggered on the same affliction).
+          let bonus = 0;
+          const trigger = effect.bonusVsStatus;
+          const hitStatus = trigger?.statuses.find((status) => group.status?.includes(status));
+          if (trigger && hitStatus) {
+            bonus = rollDamage(`${spellSeed}:bonus`, trigger.bonusMin, trigger.bonusMax, 0);
+            if (trigger.consume) {
+              enemyGroups = enemyGroups.map((candidate) =>
+                candidate.id === group.id ? { ...candidate, status: (candidate.status ?? []).filter((status) => status !== hitStatus) } : candidate
+              );
+            }
+          }
+          const damage = chipThroughResistance(Math.round((raw + spellPower + bonus) * weakness), spellSeed);
           enemyGroups = damageGroup(enemyGroups, group.id, damage);
           const updated = enemyGroups.find((candidate) => candidate.id === group.id);
           // Martial 特技 land as strikes; arcane bolts scorch.

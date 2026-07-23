@@ -219,6 +219,91 @@ without flooding the player with empty class names. A world may author its own
 advanced vocations through the normalized vocation data only after the
 underlying technique ids and rules exist.
 
+### 7A. Audit and the adopted roster (2026-07-21)
+
+**Audit finding.** All twelve advanced vocations shipped in the two worlds are, at the
+rules level, a stat block. Each carries `statModifiers`, a prerequisite pair, and a
+`signature` sentence — and grants a technique its parent classes already teach (three of
+them the *same* `power-strike`). None has the one active signature mechanism §7 requires,
+and none grants a technique a basic class does not. A stat modifier and a signature
+sentence is not an implementation.
+
+That grant is also *redundant*: reaching an advanced vocation means mastering both parents,
+so the adopter has already learned both parents' lines (§6, the learned set is a union). An
+advanced vocation can therefore only add value through an EXCLUSIVE technique — one no basic
+class teaches — which is 7B's work. Until then the honest state of the roster is:
+prerequisites + stat profile + a named mechanism awaiting its techniques. The reused grants
+are removed rather than left to imply an implementation that is not there.
+
+**The adopted roster.** The twelve are kept — their art shipped (P21) and their pair graph
+is already legal (every basic class opens at least one destination, none gates all). Each is
+now bound to one §7 direction and one signature mechanism 7B will implement as 2–4 exclusive
+techniques:
+
+| Vocation | Pair | §7 direction | Signature mechanism (7B implements) |
+| --- | --- | --- | --- |
+| 灰の刃 ash-reaver | Warrior+Swordmaster | war master | a **stance** self-buff whose follow-up strike chains harder off it |
+| 塩の守り手 salt-warden | Knight+Priest | paladin | **cover** an ally, then a shielded restore that heals the one covered |
+| 星の信徒 star-votary | Occultist+Mage | hexer | **detonate**: bonus damage to a pack already afflicted, spending the status |
+| 針舞い needle-dancer | Swordmaster+Thief | ninja | an **evasion** window that converts a dodged blow into a guaranteed opening |
+| 塵路師 dust-ranger | Thief+Mage | arcane thief | mark **distance**: a ranged strike that grows the longer a foe is untouched |
+| 灯巡り candle-pilgrim | Chanter+Thief | trickster | a **ward that also buys a withdrawal** — keep the light, keep the way out |
+| 茨砕き briar-reaver | Warrior+Knight | fortress guard | **intercept**, then a shielded counter that sunders what it blocked |
+| 樹皮守 bark-keeper | Knight+Chanter | warder | a maintained **defensive field** over a row that decays if not re-sung |
+| 露刃 dewblade | Swordmaster+Thief | ninja (grove) | precision from concealment: a first-strike bonus while unhit |
+| 梢読み canopy-reader | Thief+Chanter | trickster (grove) | read intent: pre-empt an enemy's telegraphed action with a debuff |
+| 樹液結び sap-binder | Priest+Mage | sage | convert an enemy's element read into a matched heal or resistance |
+| 胞子見 spore-seer | Occultist+Thief | assassin | exploit the afflicted: a strike amplified against sleeping/feared targets |
+
+**Two rules gaps 7B must close before those mechanisms are real** (surfaced by this audit,
+not yet built — the technique model from §9.4 does not carry them):
+
+1. **Exploration proficiency does not persist through mastery.** `trapSkill` /
+   `resolveAttempt` read `classProficiency(character.classId, …)` — the *current* base class
+   only. A ninja who mastered Thief but whose base class is Swordmaster does not inherit
+   Thief's disarm/unlock specialism, which contradicts §6 ("earned proficiencies always
+   persist"). 7B must make exploration proficiency aggregate over mastered vocations (and
+   port it to Godot to keep parity) before any exploration-bridge vocation delivers its
+   promise.
+2. **The technique model has no conditional / detonate effect.** `damage` cannot read a
+   target's status, so hexer/assassin's "amplified against the afflicted" and star-votary's
+   detonate are unexpressible today. 7B adds the primitive with the technique that needs it.
+
+### 7B. The exclusive signatures, built (2026-07-21)
+
+Both rules gaps above are closed. Gap 1: `characterProficiency` (`chests.ts`, ported to
+`exploration.gd`) aggregates a character's exploration proficiency over their current class **and every
+basic class they have mastered**, so a mastered-Thief keeps the disarm/unlock specialism — the
+`mastered-explorer` parity trace proves Godot matches. Gap 2: the `damage.bonusVsStatus` primitive
+(detonate when `consume`, exploit otherwise), ported to `combat_round.gd` and proven by the `detonate`
+trace.
+
+**All twelve advanced vocations now grant one exclusive signature technique** — never a re-granted
+parent technique (§7A forbids that), each a distinct COMBINATION of §9.4 primitives under one target
+scope, so the vocation opens a play pattern rather than a bigger stat line (§7):
+
+| Vocation | Exclusive technique | Combination |
+| --- | --- | --- |
+| 灰の刃 ash-reaver | `ash-stance` | self buff: damage + accuracy (the banked stance) |
+| 塩の守り手 salt-warden | `sheltering-prayer` | self: cover + a scaling restore |
+| 星の信徒 star-votary | `star-nova` | fire damage, detonate (consumes the status) |
+| 針舞い needle-dancer | `needle-flurry` | self buff: evasion + accuracy (dodge into opening) |
+| 塵路師 dust-ranger | `dust-volley` | enemy group: physical burst + accuracy debuff |
+| 灯巡り candle-pilgrim | `candle-ward` | party: fear/sleep ward + evasion (the withdrawal) |
+| 茨砕き briar-reaver | `thorn-guard` | self: cover + attack buff (the braced counter) |
+| 樹皮守 bark-keeper | `bark-field` | party: armour buff + fire ward, decays (rounds, re-sung) |
+| 露刃 dewblade | `dew-cut` | enemy group: heavy physical cut + speed debuff |
+| 梢読み canopy-reader | `canopy-read` | enemy group: accuracy + damage debuff (pre-empt) |
+| 樹液結び sap-binder | `sap-weave` | party: scaling heal + fire ward (read and match) |
+| 胞子見 spore-seer | `spore-burst` | physical damage, exploit (does not consume) |
+
+Guards: `advancedVocations.test.ts` locks the whole-roster contract (one exclusive apiece, in the
+catalog, taught by no basic class, twelve distinct) **and** a falsifiable behavioural proof that every
+effect of a self / party / enemy technique lands (guarding against a second effect silently no-oping
+because its natural scope differs from the technique's). The combined effects reuse only primitives the
+`technique-families` and `detonate` parity traces already prove, so the catalog re-export keeps Godot
+parity at 33/33 without a new trace per vocation.
+
 ## 8. Proficiency and item model
 
 Rules should model the action, not ask whether a class id has permission.

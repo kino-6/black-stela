@@ -8,7 +8,8 @@ import {
 } from "../src/domain/classCapabilities";
 import { TECHNIQUES, findTechnique, validateTechnique, type Technique } from "../src/domain/techniques";
 import { CLASS_ABILITIES, SPELLS, baseMaxMpForClass, isCasterClass, isMartialSkillClass, knownSpells, toLegacySpell } from "../src/domain/spells";
-import { trapSkill } from "../src/domain/chests";
+import { characterProficiency, trapSkill } from "../src/domain/chests";
+import { MASTERED_RANK } from "../src/domain/vocations";
 import type { CharacterAptitudes, CharacterClassId } from "../src/domain/types";
 
 /**
@@ -251,6 +252,36 @@ describe("class capabilities — existing behaviour is preserved", () => {
     const veteran = createGuildCharacter({ name: "Veteran", classId: "warrior", seed: "trap:legacy" });
     const tagged = { ...veteran, roleTags: [...veteran.roleTags, "trap_handling"] };
     expect(trapSkill(tagged)).toBe(trapSkill(veteran) + 8);
+  });
+
+  it("§7B: a character keeps the Thief's exploration specialism after MASTERING it (§6 persistence)", () => {
+    // The gap 7A surfaced: `trapSkill` read `classId` only, so a Swordmaster who mastered Thief lost
+    // Thief's disarm specialism — contradicting §6 ("earned proficiencies always persist") and hollowing
+    // every exploration-bridge advanced vocation. Now the discipline pool includes mastered basic classes.
+    const swordmaster = createGuildCharacter({ name: "Kai", classId: "swordmaster", seed: "mastery" });
+    expect(trapSkill(swordmaster), "a plain swordmaster is not a trap specialist").toBe(
+      trapSkill({ ...swordmaster, roleTags: [] }) // sanity: same value, no tag
+    );
+    const beforeMastery = trapSkill(swordmaster);
+
+    // The same swordmaster, having mastered Thief (rank at the mastered threshold).
+    const withThief = {
+      ...swordmaster,
+      vocation: { current: "swordmaster", mastery: { thief: MASTERED_RANK }, progress: {}, learned: [], loadout: [] }
+    };
+    expect(trapSkill(withThief), "mastering Thief must grant the specialist bonus").toBe(beforeMastery + 8);
+
+    // A character who has PARTIALLY trained Thief (below the mastered rank) does not yet inherit it —
+    // the promise is for MASTERED disciplines, not dabbling.
+    const dabbling = {
+      ...swordmaster,
+      vocation: { current: "swordmaster", mastery: { thief: MASTERED_RANK - 1 }, progress: {}, learned: [], loadout: [] }
+    };
+    expect(trapSkill(dabbling), "unmastered training grants nothing yet").toBe(beforeMastery);
+
+    // characterProficiency reports the SPECIFIC action the record will name.
+    expect(characterProficiency(withThief, "unlock")).toBe("specialist");
+    expect(characterProficiency(swordmaster, "unlock")).toBe("untrained");
   });
 });
 

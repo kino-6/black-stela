@@ -1,5 +1,6 @@
-import type { Character, ChestState, ChestTrapKind, GameState, ScenarioChest } from "./types";
-import { classProficiency, proficiencyBonus } from "./classCapabilities";
+import type { AnyClassId, Character, ChestState, ChestTrapKind, GameState, ScenarioChest } from "./types";
+import { classProficiency, proficiencyBonus, type ExplorationAction, type Proficiency } from "./classCapabilities";
+import { BUILTIN_VOCATION_IDS, MASTERED_RANK } from "./vocations";
 
 // IMP-029 — the treasure-chest state machine + trap handling, kept a LEAF module (no rulesEngine
 // import) so the rules engine can wire it without a cycle. Reward payout stays in rulesEngine (it owns
@@ -40,9 +41,32 @@ function clamp(value: number, min: number, max: number): number {
  *  had, and leaving it here would keep the contract in two places. The numbers are unchanged — the same
  *  three classes are specialists, worth the same +8 — and a character carrying the old tag from a save
  *  still gets it, so nothing already in a save file loses a skill it had. */
+/**
+ * §7B (class-system.md §7A gap 1) — the best exploration proficiency a character has for one action,
+ * across their current class AND every basic class they have MASTERED. §6 promises "earned proficiencies
+ * always persist"; the code only ever read `classId`, so a Swordmaster who mastered Thief lost Thief's
+ * disarm/unlock specialism and every exploration-bridge advanced vocation (ninja, dust-ranger …) was
+ * hollow. Now the discipline pool includes mastered basic classes, so the specialism follows the training.
+ * A character with no mastery resolves to exactly `classProficiency(classId, …)`, so nothing existing moves.
+ */
+export function characterProficiency(member: Character, action: ExplorationAction): Proficiency {
+  const mastered = Object.entries(member.vocation?.mastery ?? {})
+    .filter(([id, rank]) => rank >= MASTERED_RANK && (BUILTIN_VOCATION_IDS as string[]).includes(id))
+    .map(([id]) => id as AnyClassId);
+  const disciplines: AnyClassId[] = [member.classId, ...mastered];
+  return disciplines.reduce<Proficiency>(
+    (best, discipline) => {
+      const proficiency = classProficiency(discipline, action);
+      return proficiencyBonus(proficiency) > proficiencyBonus(best) ? proficiency : best;
+    },
+    "untrained"
+  );
+}
+
 export function trapSkill(member: Character): number {
   const apt = member.aptitude;
-  const declared = proficiencyBonus(classProficiency(member.classId, "disarm"));
+  // Mastery-aware (§7B): a mastered Thief keeps the specialist bonus even when their base class is not Thief.
+  const declared = proficiencyBonus(characterProficiency(member, "disarm"));
   const legacyTag = member.roleTags?.includes("trap_handling") ? proficiencyBonus("specialist") : 0;
   return member.level + (apt.agility ?? 0) * 2 + (apt.wit ?? 0) + (apt.luck ?? 0) + Math.max(declared, legacyTag);
 }

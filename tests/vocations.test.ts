@@ -78,13 +78,16 @@ describe("vocation mastery contract", () => {
     expect(canAdoptVocation({ ...hero, level: 6, vocation: mastered }, "vocation.ash-reaver", defaultWorld)).toBe(true);
   });
 
-  it("adopting a vocation keeps learned techniques and adds the new one, without touching level", () => {
+  it("adopting a vocation keeps learned techniques, adds only its EXCLUSIVE signature, and preserves mastery", () => {
     const start: CharacterVocationState = { current: "warrior", mastery: { warrior: MASTERED_RANK }, progress: {}, learned: ["sleep"], loadout: ["sleep"] };
     const reaver = findVocation(defaultWorld, "vocation.ash-reaver")!;
     const next = adoptVocationState(start, reaver);
     expect(next.current).toBe("vocation.ash-reaver");
-    expect(next.learned).toEqual(expect.arrayContaining(["sleep", "power-strike"])); // old kept + new granted
-    expect(next.loadout).toContain("power-strike"); // the signature move is usable at once
+    // §7B: ash-reaver's grant is the EXCLUSIVE ash-stance, never the reused power-strike a parent teaches
+    // (§7A removed that). The prior learned set is kept and the one exclusive is added — nothing faked.
+    expect(reaver.grantsTechniques ?? []).toEqual(["ash-stance"]);
+    expect(next.learned).toEqual(expect.arrayContaining(["sleep", "ash-stance"])); // old kept + exclusive added
+    expect(next.loadout).toContain("ash-stance"); // the signature move is usable at once
     expect(next.mastery.warrior).toBe(MASTERED_RANK); // prior mastery untouched
   });
 

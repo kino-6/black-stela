@@ -128,13 +128,40 @@ signature, never by deleting what was learned.
 
 Split into three tasks, in this order:
 
-- [ ] **7A — design & rules**: audit which current advanced vocations have any mechanic at all (a stat
-      modifier and a signature sentence is NOT implemented), choose the pairs worth authoring, put
-      prerequisites in world data, and verify no single class is a prerequisite for everything.
-      **Replaces the interim prerequisites below.** Depends on 4 (the technique model must carry
-      signatures, durations, buffs/debuffs and exploration effects first).
-- [ ] **7B — techniques**: the 2–4 exclusive techniques per adopted vocation, with deterministic tests
-      that each one actually changes a combat or exploration OUTCOME. Depends on 7A.
+- [x] **7A — design & rules.** Audit: all twelve advanced vocations are a stat block + a `signature`
+      sentence + a grant a parent class already teaches (three reuse the *same* `power-strike`) — not an
+      implementation, and the grant is redundant with §6 mastery. Adopted the twelve (art-locked, pair
+      graph already legal), bound each to one §7 direction and one signature mechanism (the table in
+      **class-system.md §7A**), and **removed the reused grants** — a vocation is now its prerequisites,
+      stat profile and a named mechanism, never a faked technique. `contentAuthoring.test.ts` gained the
+      §7A contract: distinct pairs, a real level floor, and **no grant a parent class already teaches**
+      (falsified — reintroducing `power-strike` turns it red). Surfaced two rules gaps 7B must close:
+      (a) exploration proficiency reads `classId` only, so it does NOT persist through mastery — a §6
+      violation that makes the exploration-bridge vocations hollow; (b) the technique model has no
+      conditional/detonate effect for hexer/assassin. Both documented in §7A, neither built here.
+- [x] **7B — techniques** (done). The two rules gaps 7A surfaced are **both closed, ported and
+      parity-traced**, and **all twelve advanced vocations now ship one exclusive signature**:
+  - **Gap 1 — exploration proficiency persists through mastery.** `characterProficiency` aggregates over
+    the character's current class AND mastered basic classes (§6). A Swordmaster who mastered Thief now
+    keeps the disarm/unlock specialism. Ported to `exploration.gd`; the `mastered-explorer` parity trace
+    (a mastered-Thief non-Thief disarms a trap) proves Godot matches — falsified.
+  - **Gap 2 — the DETONATE primitive.** `damage.bonusVsStatus` gives bonus damage against an afflicted
+    pack, optionally CONSUMING the status (detonate) or leaving it (exploit). Ported to `combat_round.gd`;
+    the `detonate` parity trace fires it — falsified (an earlier version silently passed because the
+    status never landed; now the pack is pre-bound).
+  - **The detonate/exploit pair**: 星の信徒 grants `star-nova` (detonate, consumes), 胞子見 grants
+    `spore-burst` (exploit, does not). `advancedVocations.test.ts`, falsified.
+  - **The other ten signatures — DONE.** Each is a distinct COMBINATION of existing §9.4 primitives under
+    one target scope, so no new rules were needed — only new catalog entries + labels + world grants:
+    `ash-stance` (banked stance: damage+accuracy), `sheltering-prayer` (cover+restore), `needle-flurry`
+    (evasion+accuracy opening), `dust-volley` (ranged group burst+blind), `candle-ward` (party ward+
+    evasion withdrawal), `thorn-guard` (cover+attack counter), `bark-field` (armour+fire-resist field,
+    decays), `dew-cut` (deep cut+slow), `canopy-read` (pre-empt accuracy+damage debuff), `sap-weave`
+    (party heal+fire ward). Guarded by `advancedVocations.test.ts` (the whole-roster contract: one
+    exclusive apiece, catalogued, taught by no basic class, twelve distinct) **plus a falsifiable
+    behavioural proof that every effect of a self / party / enemy technique actually lands** (no
+    target-scope no-op). Re-exported to Godot; **parity 33/33 still green** (the combined effects reuse
+    only primitives the `technique-families` + `detonate` traces already prove, so no new trace needed).
 - [ ] **7C — art**: portraits / signature art for the adopted vocations (Codex, as P21). Depends on 7A's
       final list; independent of 7B.
 
@@ -142,12 +169,10 @@ Proof required before it is done: a vocation-change trace and a save migration s
 techniques, prior proficiency and worn gear all survive; TS traces green before any Godot parity work;
 guild presentation last.
 
-### Interim, replaced by 7A
+### Interim prerequisites — REPLACED by 7A (2026-07-21)
 
-Advanced vocations required mastering a PAIR of old classes; several pairs collapsed to one class under
-the mapping, so they are re-paired with an adjacent discipline to keep the graph legal. Scaffolding, not
-design. The two that had to change: 灰の刃/茨砕き (was 先鋒+傭兵) and 塵の斥候/樹冠読み (was 探索者+斥候).
-Alternative considered: a single mastered discipline plus a level floor.
+The scaffolding pairs and reused grants are gone; the adopted roster and its verified prerequisites live
+in `content/worlds/*/vocations.md`, the audit and per-vocation mechanism spec in class-system.md §7A.
 
 ## Gaps
 

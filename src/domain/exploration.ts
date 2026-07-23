@@ -1,6 +1,6 @@
 import type { Character, GameState, InventoryItem } from "./types";
-import { classProficiency, proficiencyBonus, type ExplorationAction, type Proficiency } from "./classCapabilities";
-import { trapSkill } from "./chests";
+import { proficiencyBonus, type ExplorationAction, type Proficiency } from "./classCapabilities";
+import { characterProficiency, trapSkill } from "./chests";
 
 /**
  * WHO TRIED, AND WITH WHAT — the resolution layer for exploration attempts.
@@ -146,7 +146,9 @@ export function resolveAttempt(
   }
 
   const aid = findAid(state.inventory, aids, request.itemId, request.action);
-  const proficiency = actor ? classProficiency(actor.classId, request.action) : "untrained";
+  // §7B: the recorded proficiency aggregates over mastered basic classes, so an event names the training
+  // that actually applied — not just the base class (see characterProficiency).
+  const proficiency = actor ? characterProficiency(actor, request.action) : "untrained";
   const skill = (actor ? trapSkill(actor) : 0) + (aid?.bonus ?? 0);
 
   return {

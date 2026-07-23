@@ -3,9 +3,10 @@ import { createGuildCharacter } from "../domain/characterCreation";
 import { createCombatState } from "../domain/rulesEngine";
 import { createDebugStateFromProgress, withDebugStartCell } from "../debug/debugStart";
 import { withDeterministicIds } from "../domain/ids";
+import { MASTERED_RANK } from "../domain/vocations";
 import { runTrace, hashState } from "../headless/traceFixture";
 import { canonicalize } from "./packExport";
-import type { Command, GameState, ScenarioWorld } from "../domain/types";
+import type { Command, CombatStatus, GameState, ScenarioWorld } from "../domain/types";
 
 // S1 of the Godot migration: emit golden trace fixtures — the parity targets a GDScript port must
 // reproduce. Each fixture is a serialized initial state, a command sequence, and the per-step events
@@ -128,16 +129,48 @@ function combatVsRoute(enemyId: string, count: number, rounds: number) {
 // default loadouts; the vanguard's 特技 power-strike costs 気力.
 
 /**
+ * §7B — the DETONATE trace. An Occultist binds a pack with sleep, then casts `star-nova` — whose bonus
+ * damage fires only against the afflicted and SPENDS the status. A Godot port that ignored `bonusVsStatus`
+ * would diverge on the hash the moment the nova lands, which no other trace exercises.
+ */
+function detonateRoute(world: ScenarioWorld): { initial: GameState; commands: Command[] } {
+  const votary = {
+    ...createGuildCharacter({ name: "Sol", classId: "occultist", seed: "detonate" }),
+    row: "back" as const,
+    level: 8,
+    mp: 40,
+    maxMp: 40,
+    // The adopter carries both: sleep from the Occultist line, star-nova from the vocation.
+    vocation: { current: "occultist", mastery: {}, progress: {}, learned: ["sleep", "star-nova"], loadout: ["sleep", "star-nova"] }
+  };
+  const enemy = world.enemies.find((candidate) => candidate.id === "enemy.b2f.ash-warden") ?? world.enemies[0];
+  const base = { ...createInitialGameState(), party: [votary] };
+  const seeded = createCombatState("room.b1f.001", enemy, 3);
+  // The pack is ALREADY bound with sleep, so the nova's detonate fires deterministically — casting sleep
+  // first would leave it to a resist roll the warden can win, and then the trace would prove nothing (as
+  // an earlier version silently did: disabling the Godot port still passed because no status was present).
+  const initial: GameState = {
+    ...base,
+    phase: "combat",
+    position: { roomId: "room.b1f.001", facing: "east" },
+    map: { ...base.map, floorId: "dungeon.b1f" },
+    combat: { ...seeded, enemyGroups: seeded.enemyGroups.map((g) => ({ ...g, status: ["sleep"] as CombatStatus[] })) }
+  };
+  const group = initial.combat!.enemyGroups[0];
+  return {
+    initial,
+    commands: [{ type: "declare_round", actions: [{ actorId: votary.id, action: "cast", spellId: "star-nova", targetGroupId: group.id }] }]
+  };
+}
+
+/**
  * §9.5 — the trace the parity gate was MISSING.
  *
  * Every other combat trace casts only the four techniques the game shipped with (firebolt, heal,
  * power-strike, sleep), so Godot's combat resolver stayed on the pre-§9.4 narrow shape — one `effect`,
  * ally-or-enemyGroup — right through §9.4a..e and parity never noticed. A gate is only as strong as the
- * paths it walks.
- *
- * This walks the ones it did not: a party-scope WARD, a party BUFF, an enemy DEBUFF, a CURE, the
- * Knight's COVER, a multi-effect strike, a DRAIN (enemy-scope technique whose heal returns to the
- * caster), an allEnemies group spell, and an ITEM that performs a technique.
+ * paths it walks. This walks the ones it did not: a party WARD, a party BUFF, an enemy DEBUFF, a CURE,
+ * cover, a multi-effect strike, a DRAIN, an allEnemies group spell, and an ITEM that performs a technique.
  */
 function techniqueFamiliesRoute(world: ScenarioWorld): { initial: GameState; commands: Command[] } {
   const at = (classId: Parameters<typeof createGuildCharacter>[0]["classId"], name: string, row: "front" | "back", level: number) => ({
@@ -555,6 +588,8 @@ export const SLICE_ROUTES: TraceRoute[] = [
   { name: "combat-actions", worldId: "default", build: combatActionsRoute },
   // §9.5 — the families the other traces never cast (see techniqueFamiliesRoute).
   { name: "technique-families", worldId: "default", build: techniqueFamiliesRoute },
+  // §7B — the detonate primitive (see detonateRoute).
+  { name: "detonate", worldId: "default", build: detonateRoute },
   { name: "expedition", worldId: "default", build: expeditionRoute },
   { name: "legacy-combat", worldId: "default", build: legacyCombatRoute },
   { name: "growth-items", worldId: "default", build: growthItemsRoute },
@@ -617,5 +652,26 @@ export const SLICE_ROUTES: TraceRoute[] = [
       initial: withDebugStartCell(createDebugStateFromProgress(world, "floor_3"), world, "room.b3f.002", "north"),
       commands: [{ type: "search" }, { type: "disarm_trap" }, { type: "disarm_trap" }]
     })
+  },
+  {
+    // §7B — the trace 7A's proficiency-persistence gap needed. A SWORDMASTER who has MASTERED Thief (not
+    // a Thief) searches and disarms the b3f trap. The disarm/detect events carry `proficiency`, which is
+    // "specialist" only if the runtime aggregates the mastered discipline — so a Godot port that reads
+    // `classId` alone diverges here even though every other exploration trace (no mastery) stays green.
+    name: "mastered-explorer",
+    worldId: "default",
+    build: (world: ScenarioWorld) =>
+      withDeterministicIds("mastered-explorer", () => {
+        const kai = {
+          ...createGuildCharacter({ name: "Kai", classId: "swordmaster", seed: "mastered" }),
+          level: 8,
+          vocation: { current: "swordmaster", mastery: { thief: MASTERED_RANK }, progress: {}, learned: [], loadout: [] }
+        };
+        const base = { ...createInitialGameState(), party: [kai] };
+        return {
+          initial: withDebugStartCell(base, world, "room.b3f.002", "north"),
+          commands: [{ type: "search" }, { type: "disarm_trap" }] as Command[]
+        };
+      })
   }
 ];

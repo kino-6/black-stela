@@ -1616,7 +1616,6 @@
         "career.current",
         "career.destinations",
         "career.equips",
-        "career.grants",
         "career.intro",
         "career.loadout",
         "career.loadoutFull",
@@ -1778,6 +1777,10 @@
         }
       ],
       "derivedExclusions": [
+        {
+          "key": "career.grants",
+          "reason": "Unreachable in the 7A state: every advanced vocation grants [] (class-system.md §7A removed the reused parent-technique grants, which were redundant with §6 mastery and faked a signature). The React panel renders the 習得 row only for a destination with granted techniques, so no destination emits this key. Restore it the moment 7B authors a vocation's exclusive techniques."
+        },
         {
           "key": "career.noTechniques",
           "reason": "Unreachable since §9.4b: every class grants TWO techniques at level 1 (class-system.md §5, 'two or three usable choices at creation'), and resolveVocationState folds the class line into any stored vocation on read, so `learned` is never empty. React still renders the branch defensively. Restore this requirement if a class is ever authored with no level-1 grant."

@@ -86,7 +86,20 @@ export type TechniqueId =
   | "smoke-veil"
   | "shadow-step"
   | "blinding-dust"
-  | "backstab";
+  | "backstab"
+  // §7B — exclusive advanced-vocation signatures (no basic class teaches these)
+  | "star-nova"
+  | "spore-burst"
+  | "ash-stance"
+  | "sheltering-prayer"
+  | "needle-flurry"
+  | "dust-volley"
+  | "candle-ward"
+  | "thorn-guard"
+  | "bark-field"
+  | "dew-cut"
+  | "canopy-read"
+  | "sap-weave";
 
 /** 呪文 (arcane, scales with spell power, stopped by silence) vs 特技 (martial, spends 気力). */
 export type TechniqueKind = "spell" | "skill";
@@ -128,7 +141,21 @@ export interface TechniqueCost {
 
 export type TechniqueEffect =
   | { kind: "heal"; amount: number; scalesWithSpellPower?: boolean }
-  | { kind: "damage"; min: number; max: number; element: Element; scalesWithSpellPower?: boolean }
+  | {
+      kind: "damage";
+      min: number;
+      max: number;
+      element: Element;
+      scalesWithSpellPower?: boolean;
+      /**
+       * §7B (class-system.md §7A gap 2) — the DETONATE / exploit-the-afflicted primitive. Extra damage
+       * when the target group already carries one of `statuses`. `consume: true` spends that status on
+       * the hit (a detonation — it cannot be re-triggered on the same affliction); omitted, the status
+       * stays (an assassin exploiting a standing one). The damage effect could not read a target's status
+       * before, so the hexer's detonate and the assassin's exploit were unbuildable (§7A).
+       */
+      bonusVsStatus?: { statuses: CombatStatus[]; bonusMin: number; bonusMax: number; consume?: boolean };
+    }
   | { kind: "status"; status: CombatStatus; duration?: TechniqueDuration }
   /** Lifts afflictions — the priest's half of the status system, which had no shape at all. */
   | { kind: "cure"; statuses: CombatStatus[] }
@@ -668,6 +695,206 @@ export const TECHNIQUES: Record<TechniqueId, Technique> = {
     effects: [{ kind: "damage", min: 10, max: 18, element: "physical" }],
     duration: { kind: "instant" },
     tags: ["martial"]
+  },
+
+  // ——————————————— §7B: exclusive advanced-vocation signatures ———————————————
+
+  // 星の信徒 (Star Votary, hexer). The DETONATE: modest base fire, but a heavy bonus against a pack the
+  // Occultist half has already bound — and it SPENDS that status, so it is a setup-and-payoff, not a
+  // spammable nuke. No basic class teaches it; the Occultist binds, the Mage burns, this is the bridge.
+  "star-nova": {
+    id: "star-nova",
+    kind: "spell",
+    target: "enemyGroup",
+    cost: { mp: 7 },
+    effects: [
+      {
+        kind: "damage",
+        min: 6,
+        max: 10,
+        element: "fire",
+        scalesWithSpellPower: true,
+        bonusVsStatus: { statuses: ["sleep", "silence", "fear"], bonusMin: 10, bonusMax: 16, consume: true }
+      }
+    ],
+    duration: { kind: "instant" },
+    tags: ["elemental", "control"]
+  },
+  // 胞子見 (Spore Seer, assassin). EXPLOIT: physical damage amplified against the sleeping / feared /
+  // poisoned, and it does NOT consume — the assassin keeps hitting the afflicted while the affliction
+  // lasts. The Occultist supplies the condition, the Thief supplies the blade.
+  "spore-burst": {
+    id: "spore-burst",
+    kind: "skill",
+    target: "enemyGroup",
+    cost: { mp: 5 },
+    effects: [
+      {
+        kind: "damage",
+        min: 5,
+        max: 9,
+        element: "physical",
+        bonusVsStatus: { statuses: ["sleep", "fear", "poison"], bonusMin: 8, bonusMax: 12 }
+      }
+    ],
+    duration: { kind: "instant" },
+    tags: ["martial", "control"]
+  },
+
+  // The other ten advanced signatures — each a distinct COMBINATION of §9.4 primitives no basic class
+  // teaches, so the vocation opens a play pattern rather than a bigger stat line (§7). Each fits one
+  // target scope (the resolver applies every effect against the same subject set), which is why the
+  // "cover then heal the ally" fantasy is expressed as the coverer sustaining the line rather than as
+  // two target scopes in one cast — the primitives are honest about what one technique can reach.
+
+  // 灰の刃 (Ash Reaver, war master). The BANKED STANCE: a turn spent to make every follow-up strike
+  // chain harder — more damage AND more accuracy than the Warrior's war-cry (+3 damage only), the reward
+  // for pairing the Warrior's force with the Swordmaster's precision.
+  "ash-stance": {
+    id: "ash-stance",
+    kind: "skill",
+    target: "self",
+    cost: { mp: 5 },
+    effects: [
+      { kind: "buff", stat: "damage", amount: 5 },
+      { kind: "buff", stat: "accuracy", amount: 4 }
+    ],
+    duration: { kind: "rounds", rounds: 3 },
+    tags: ["martial", "buff"]
+  },
+  // 塩の守り手 (Salt Warden, paladin). COVER AND MEND in one prayer: the warden draws the blow meant for
+  // the line (cover) and closes their own wounds so the shield keeps standing. The Knight's cover with a
+  // Priest's restore folded together — neither basic class does both.
+  "sheltering-prayer": {
+    id: "sheltering-prayer",
+    kind: "spell",
+    target: "self",
+    cost: { mp: 6 },
+    effects: [
+      { kind: "cover" },
+      { kind: "heal", amount: 12, scalesWithSpellPower: true }
+    ],
+    duration: { kind: "rounds", rounds: 3 },
+    tags: ["cover", "recovery"]
+  },
+  // 針舞い (Needle Dancer, ninja). The EVASION→OPENING: a dodge stance that ALSO sharpens the counter,
+  // so a slipped blow becomes a guaranteed opening. High evasion (like flowing-stance) plus the accuracy
+  // flowing-stance lacks — the Thief's footwork wedded to the Swordmaster's blade.
+  "needle-flurry": {
+    id: "needle-flurry",
+    kind: "skill",
+    target: "self",
+    cost: { mp: 4 },
+    effects: [
+      { kind: "buff", stat: "evasion", amount: 16 },
+      { kind: "buff", stat: "accuracy", amount: 12 }
+    ],
+    duration: { kind: "rounds", rounds: 3 },
+    tags: ["martial", "buff"]
+  },
+  // 塵路師 (Dust Ranger, arcane thief). The RANGED BURST: a volley across the whole pack that also kicks
+  // up dust to blind them. A Thief has no group-damage technique of its own; this is what the Mage half buys.
+  "dust-volley": {
+    id: "dust-volley",
+    kind: "skill",
+    target: "enemyGroup",
+    cost: { mp: 5 },
+    effects: [
+      { kind: "damage", min: 7, max: 12, element: "physical" },
+      { kind: "debuff", stat: "accuracy", amount: 8, duration: { kind: "rounds", rounds: 2 } }
+    ],
+    duration: { kind: "instant" },
+    tags: ["martial", "debuff"]
+  },
+  // 灯巡り (Candle Pilgrim, trickster). The WARD THAT BUYS A WITHDRAWAL: a party ward against fear/sleep
+  // that also lifts everyone's footing (evasion) — keep the light, keep the way home. Ward-hymn wards; it
+  // does not also open the escape the Thief half is there to guarantee.
+  "candle-ward": {
+    id: "candle-ward",
+    kind: "spell",
+    target: "party",
+    cost: { mp: 6 },
+    effects: [
+      { kind: "ward", statusResist: { fear: 25, sleep: 25 } },
+      { kind: "buff", stat: "evasion", amount: 8 }
+    ],
+    duration: { kind: "combat" },
+    tags: ["ward", "buff"]
+  },
+  // 茨砕き (Briar Reaver, fortress guard). INTERCEPT THEN COUNTER: the guard takes the thorn-strike (cover)
+  // and its own attacks bite harder while braced (attack buff) — the shielded counter that sunders what it
+  // blocked. The Warrior's aggression on the Knight's cover; no basic class fuses them.
+  "thorn-guard": {
+    id: "thorn-guard",
+    kind: "skill",
+    target: "self",
+    cost: { mp: 5 },
+    effects: [
+      { kind: "cover" },
+      { kind: "buff", stat: "attack", amount: 4 }
+    ],
+    duration: { kind: "rounds", rounds: 3 },
+    tags: ["martial", "cover", "buff"]
+  },
+  // 樹皮守 (Bark Keeper, warder). The MAINTAINED FIELD: a bark-and-ward field of armour and fire
+  // resistance over the party that FADES if not re-sung — rounds, not combat, so the warder keeps paying
+  // for it. Combines what iron-oath (armour) and ember-chant (element) do apart, on a decaying timer.
+  "bark-field": {
+    id: "bark-field",
+    kind: "spell",
+    target: "party",
+    cost: { mp: 7 },
+    effects: [
+      { kind: "buff", stat: "armor", amount: 4 },
+      { kind: "ward", elementResist: { fire: 0.7 } }
+    ],
+    duration: { kind: "rounds", rounds: 3 },
+    tags: ["ward", "buff"]
+  },
+  // 露刃 (Dewblade, grove ninja). The FIRST CUT FROM CONCEALMENT: a deep precise strike that also robs the
+  // pack of its footing (speed), so the answer never comes. Heavier than any single basic cut; the
+  // Swordmaster's precision with the Thief's opening.
+  "dew-cut": {
+    id: "dew-cut",
+    kind: "skill",
+    target: "enemyGroup",
+    cost: { mp: 5 },
+    effects: [
+      { kind: "damage", min: 9, max: 15, element: "physical" },
+      { kind: "debuff", stat: "speed", amount: 3, duration: { kind: "rounds", rounds: 2 } }
+    ],
+    duration: { kind: "instant" },
+    tags: ["martial", "debuff"]
+  },
+  // 梢読み (Canopy Reader, grove trickster). PRE-EMPT: reads a telegraphed action and breaks it before it
+  // lands — both the pack's aim (accuracy) and its force (damage) at once. Two single-stat debuffs
+  // (blinding-dust, wither) folded into one pre-emptive read the Chanter half makes possible.
+  "canopy-read": {
+    id: "canopy-read",
+    kind: "spell",
+    target: "enemyGroup",
+    cost: { mp: 5 },
+    effects: [
+      { kind: "debuff", stat: "accuracy", amount: 10 },
+      { kind: "debuff", stat: "damage", amount: 3 }
+    ],
+    duration: { kind: "rounds", rounds: 3 },
+    tags: ["control", "debuff"]
+  },
+  // 樹液結び (Sap Binder, sage). READ AND MATCH: reads the enemy's element and answers with a matched
+  // restore — a party heal plus a fire-resistance ward woven together. The Priest's recovery on the Mage's
+  // elemental knowledge; neither casts both in one breath.
+  "sap-weave": {
+    id: "sap-weave",
+    kind: "spell",
+    target: "party",
+    cost: { mp: 7 },
+    effects: [
+      { kind: "heal", amount: 12, scalesWithSpellPower: true },
+      { kind: "ward", elementResist: { fire: 0.7 } }
+    ],
+    duration: { kind: "combat" },
+    tags: ["recovery", "ward"]
   }
 };
 

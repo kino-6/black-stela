@@ -17,13 +17,35 @@ const TRAINED_BONUS := 4
 
 ## The class's declared proficiency for an action, from the exported contract. Falls back to the legacy
 ## `trap_handling` role tag so a character loaded from an older save keeps a skill it already had.
+## §7B (class-system.md §7A gap 1) — the best proficiency for an action across the member's CURRENT
+## class AND every basic class they have MASTERED. Mirrors chests.characterProficiency: §6 promises
+## earned proficiencies persist, so a Swordmaster who mastered Thief keeps Thief's disarm/unlock
+## specialism. A member with no mastery resolves to exactly their class's proficiency, so nothing moves.
 static func proficiency_for(member: Dictionary, engine: Dictionary, action: String) -> String:
 	var capabilities: Dictionary = engine.get("classCapabilities", {})
-	var entry: Variant = capabilities.get(String(member.get("classId", "")), null)
-	if typeof(entry) == TYPE_DICTIONARY:
-		var declared: Variant = (entry.get("exploration", {}) as Dictionary).get(action, null)
-		if typeof(declared) == TYPE_STRING:
-			return String(declared)
+	var mastered_rank := int(engine.get("masteredRank", 5))
+	var mastery: Dictionary = {}
+	var vocation: Variant = member.get("vocation", null)
+	if typeof(vocation) == TYPE_DICTIONARY:
+		mastery = vocation.get("mastery", {})
+
+	# The discipline pool: current class, then any basic class mastered to the threshold.
+	var disciplines := [String(member.get("classId", ""))]
+	for entry_def in engine.get("classes", []):
+		var class_id := String((entry_def as Dictionary).get("id", ""))
+		if int(mastery.get(class_id, 0)) >= mastered_rank and not disciplines.has(class_id):
+			disciplines.append(class_id)
+
+	var best := "untrained"
+	for discipline in disciplines:
+		var caps: Variant = capabilities.get(discipline, null)
+		if typeof(caps) != TYPE_DICTIONARY:
+			continue
+		var declared: Variant = (caps.get("exploration", {}) as Dictionary).get(action, null)
+		if typeof(declared) == TYPE_STRING and proficiency_bonus(String(declared)) > proficiency_bonus(best):
+			best = String(declared)
+	if best != "untrained":
+		return best
 	if (member.get("roleTags", []) as Array).has("trap_handling"):
 		return "specialist"
 	return "untrained"
