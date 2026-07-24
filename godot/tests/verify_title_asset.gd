@@ -6,16 +6,23 @@ extends SceneTree
 ## Usage: godot --headless --path godot/ --script res://tests/verify_title_asset.gd
 
 const TITLE_BACKDROP := "res://assets/worlds/default/title/black-stela-title.jpg"
+# Every pack backdrop loaded through a scene's _texture() must ship in an export (title.gd, town.gd, and
+# dungeon.gd now all prefer the imported resource — IMP-047/IMP-053).
+const BACKDROPS := [
+	"res://assets/worlds/default/title/black-stela-title.jpg",
+	"res://assets/worlds/default/ui/town-hub.jpg",
+]
 
 func _initialize() -> void:
 	var fail := 0
 
-	if not ResourceLoader.exists(TITLE_BACKDROP):
-		push_error("[title-asset] %s is not an imported resource — export would drop it" % TITLE_BACKDROP)
-		fail += 1
-	elif not (load(TITLE_BACKDROP) is Texture2D):
-		push_error("[title-asset] %s does not load as a Texture2D" % TITLE_BACKDROP)
-		fail += 1
+	for path in BACKDROPS:
+		if not ResourceLoader.exists(path):
+			push_error("[title-asset] %s is not an imported resource — export would drop it" % path)
+			fail += 1
+		elif not (load(path) is Texture2D):
+			push_error("[title-asset] %s does not load as a Texture2D" % path)
+			fail += 1
 
 	# End to end: the title scene must render a non-null backdrop through the fixed loader.
 	var title := (load("res://scenes/title.tscn") as PackedScene).instantiate()

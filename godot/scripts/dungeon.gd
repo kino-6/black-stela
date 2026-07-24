@@ -221,10 +221,18 @@ func _asset(sub: String) -> String:
 	return "res://assets/worlds/%s/%s" % [world_id, sub]
 
 func _texture(path: String) -> Texture2D:
-	if not FileAccess.file_exists(path):
-		return null
-	var img := Image.load_from_file(path)
-	return ImageTexture.create_from_image(img) if img != null else null
+	# Export-safe: prefer the imported resource. Image.load_from_file reads the raw file, which export
+	# strips (only the imported texture ships), so packaged builds lost pack backdrops (IMP-047/IMP-053).
+	# Fall back to a raw read only for a runtime/user:// pack asset that was never imported.
+	if ResourceLoader.exists(path):
+		var res := load(path)
+		if res is Texture2D:
+			return res as Texture2D
+	if FileAccess.file_exists(path):
+		var img := Image.load_from_file(path)
+		if img != null:
+			return ImageTexture.create_from_image(img)
+	return null
 
 func _textured_mat(path: String, tint: Color) -> StandardMaterial3D:
 	var mat := StandardMaterial3D.new()

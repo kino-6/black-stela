@@ -490,8 +490,18 @@ func _dispatch_resume(room_id: String) -> void:
 		get_tree().change_scene_to_file("res://scenes/dungeon.tscn")
 
 func _texture(path: String) -> Texture2D:
-	var img := Image.load_from_file(path)
-	return ImageTexture.create_from_image(img) if img != null else null
+	# Export-safe: prefer the imported resource. Image.load_from_file reads the raw file which export
+	# strips, so a packaged build lost the town backdrop (IMP-047/IMP-053). Fall back to a raw read only
+	# for a runtime/user:// pack asset that was never imported.
+	if ResourceLoader.exists(path):
+		var res := load(path)
+		if res is Texture2D:
+			return res as Texture2D
+	if FileAccess.file_exists(path):
+		var img := Image.load_from_file(path)
+		if img != null:
+			return ImageTexture.create_from_image(img)
+	return null
 
 # The one line telling the player what just happened at this counter.
 func _describe(event: Dictionary) -> String:
