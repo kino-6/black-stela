@@ -20,7 +20,7 @@ unfixed** (`IMP-024..029`) while advanced content shipped on top.
 - **P3** every hand-found defect earns a regression lock **and**, if a gate should
   have caught it, the missing gate.
 
-New numbered items from this playtest: `IMP-030..IMP-042` (below). `IMP-024`,
+New numbered items from this playtest: `IMP-030..IMP-048` (below). `IMP-024`,
 `IMP-025`, `IMP-026`, `IMP-028`, `IMP-029` were **re-confirmed by live play** and
 are now under the P2 priority guard.
 
@@ -82,6 +82,133 @@ like a DRPG rather than a web service.
 | `IMP-041` | P3 | Confirmed intended (feel open) | First-contact encounters go silent per floor visit; make density/respawn scenario-authored rather than fixed. |
 | `IMP-042` | P1 | Reproduced | No always-visible party status in town and no menu openable at any time. |
 | `IMP-043` | P1 | Reproduced (gate debt) | `gate:ux-parity` fails on the title screen (3/12 keys — New run / continue save-slots / config not rendered vs React TitleScreen.tsx), so the whole `gate:migration` Godot chain is red and unwatched. Proven pre-existing via a stashed baseline on 2026-07-25. Until fixed, `gate:play` runs standalone. |
+| `IMP-044` | P1 | Reproduced by independent Godot play | Using an authored return stair reaches town correctly but logs `Invalid call. Nonexistent function 'get' in base 'Nil'` from `dungeon.gd:_current_cell`: the old dungeon scene rebuilds its camera after the return command has nulled `position`. |
+| `IMP-045` | P1 | Reproduced (gate debt) | `gate:play` passes only pure entry/continuation decisions for #11/#12. It does not exercise the real scene/input paths for #3, #13, or #17 despite the played-build gate describing those locks. |
+| `IMP-046` | P1 | Reproduced by independent native launch | The documented debug start (`godot --path godot/ -- --debug-mode`) does not mount the debug overlay, so QA cannot reliably reach the controlled states needed to reproduce input, return, loot, or modal defects. |
+| `IMP-047` | P1 | Reproduced by independent native launch | Title background loading emits Godot's “will not work on export” warning. The development tree renders it, but packaged macOS/Web builds can lose the player-facing title image. |
+| `IMP-048` | P2 | Reproduced by independent native play | The scenario-selection screen has a selected card but no visible select/confirm/cancel legend, unlike the title. The first decision is keyboard-operable but does not teach its operation. |
+
+## IMP-046: Make QA Debug Starts Reproducible And Observable
+
+**Category:** Native Godot QA / debug tooling
+
+**Evidence:** On 2026-07-25 Codex launched the documented command
+`godot --path godot/ -- --debug-mode`, then sent F12 in the visible title
+screen. No debug overlay appeared. `debug_overlay.gd` tests only
+`OS.get_cmdline_args()` for `--debug-mode` / `--debug-panel`; arguments after
+`--` must be read through `OS.get_cmdline_user_args()`. Further, F12 can only
+toggle an overlay that Boot has already mounted, so it cannot rescue a failed
+debug-start flag.
+
+**Why this matters:** a human found 21 problems in three minutes partly because
+the other agent cannot quickly and repeatably inspect the dangerous states in
+the native build. A QA shortcut must use the same `Run` and scene code as play,
+but it must also be reliably launchable and leave no control in normal play.
+
+### Implementation Slices
+
+- [ ] Recognize debug flags from both engine and user argument arrays; keep the
+  overlay absent in a normal launch and document one canonical command.
+- [ ] Add deterministic, named QA starts for `open_corridor`, `map_modal`,
+  `combat_victory`, `return_ready`, `loot_delta`, and `shop_description`.
+  Fixtures may seed a known state, but actions from that state must dispatch
+  through the same `Run` commands and scenes as normal play.
+- [ ] In debug mode only, show current scene, phase, state hash, focused
+  control, and the most recent input actions. On a script error, persist this
+  short trace and a screenshot beside the test artifact.
+- [ ] Keep raw state ids, force-victory, and fixture controls out of normal
+  play; this is a developer tool, not a player-facing menu.
+
+### Acceptance / Gate
+
+- [ ] `gate:debug-start` launches the native Godot executable with
+  `-- --debug-mode`, proves the overlay Control exists, and proves it is absent
+  without that flag.
+- [ ] Every named QA start renders its target scene and can take one real
+  player action without a `SCRIPT ERROR`.
+- [ ] A recorded action trace can be replayed to reproduce the same scene,
+  phase, and state hash. This is diagnostic evidence, not a substitute for the
+  title-to-town normal route.
+
+**Past trouble likely to recur:** a green headless fixture being described as
+real play; defects that only appear on scene handoff or held input; debug
+controls leaking into normal UI.
+
+## IMP-047: Verify Player-Facing Assets In the Exported Build
+
+**Category:** Packaging / native presentation gate
+
+**Evidence:** The native Godot title launch on 2026-07-25 printed:
+
+```text
+WARNING: Loaded resource as image file, this will not work on export:
+'res://assets/worlds/default/title/black-stela-title.jpg'.
+```
+
+`title.gd:_texture()` currently uses `Image.load_from_file()` on a dynamic
+`res://` path. The source checkout displays the image, so a development
+screenshot cannot establish that the exported application contains it.
+
+**Player outcome:** the shipped macOS/Web title keeps its authored background
+and starts without missing-resource warnings; a release cannot silently turn
+the opening screen into a black or fallback panel.
+
+### Implementation Slices
+
+- [ ] Resolve world title art as an imported `Texture2D`/exported resource (or
+  explicitly register dynamic assets in the export contract), rather than an
+  image-file path that Godot excludes from the package.
+- [ ] Make missing mandatory title art a visible development failure, not a
+  silent null texture fallback.
+- [ ] Preserve scenario-specific title art; do not solve this by hardcoding the
+  Default world into the title scene.
+
+### Acceptance / Gate
+
+- [ ] `gate:package-smoke` builds the macOS and Web artifacts, starts each
+  exported artifact at the title, and fails on missing-resource/export warnings
+  or `SCRIPT ERROR` output.
+- [ ] The exported title has a non-null background texture in the actual scene
+  (and screenshot evidence shows the authored image, not merely a file on disk).
+- [ ] Run the smoke after `npm run package`, not only against `godot/` in the
+  source tree.
+
+**Past trouble likely to recur:** source-tree screenshots being mistaken for
+evidence of the shipped artifact; player-facing assets becoming invisible in a
+release without changing any deterministic state hash.
+
+## IMP-048: Teach the First Scenario Choice Through the Screen Itself
+
+**Category:** First-play controller UX
+
+**Evidence:** In native play on 2026-07-25, title → `新たな探索` opened the
+scenario picker. The selected scenario has a gold border and Enter works, but
+the screen does not display the title screen's `↑↓ 選択・Enter 決定・Esc 戻る`
+legend. A first-time player is asked to choose a world without seeing how to
+choose, confirm, or return.
+
+**Player outcome:** every first decision visibly explains its controller/keyboard
+contract without reading a manual or guessing from an earlier screen.
+
+### Implementation Slices
+
+- [ ] Add a compact, fixed legend for selection, confirm, and cancel to the
+  scenario picker; it must not compete with the world descriptions.
+- [ ] Keep a focusable initial scenario and make Esc return exactly one level to
+  the title.
+- [ ] Use the same component or contract as other staged first-play choices so
+  a later screen cannot silently omit its interaction help.
+
+### Acceptance / Gate
+
+- [ ] Native controller test: initial focus is on an enabled scenario; Down/Up
+  changes selection; Confirm advances; Cancel returns to title.
+- [ ] Screen contract: the picker renders an in-world select/confirm/cancel
+  legend at 1280x720 and it is not clipped or obscured.
+
+**Past trouble likely to recur:** keyboard support existing in code but being
+invisible to a first-time player; controller gates proving action dispatch while
+missing the player-facing affordance.
 
 ## Archive
 
