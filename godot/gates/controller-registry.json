@@ -7,7 +7,7 @@
     "town.tscn": { "status": "covered", "verify": "verify_town_controller.gd" },
     "boot.tscn": { "status": "exempt", "reason": "Transient loader — _ready prints the pack and calls SceneManager.goto(title). No player choice, nothing focusable." },
     "config.tscn": { "status": "exempt", "reason": "Not a reachable standalone route: settings render as a panel INSIDE title.tscn (covered by verify_front_controller's 設定 open/close check); nothing changes scene to config.tscn." },
-    "scenario_picker.tscn": { "status": "todo", "reason": "Reachable from title 新たな探索; an interactive world pick. No controller verify yet.", "imp": "IMP-001-controller-coverage" },
+    "scenario_picker.tscn": { "status": "covered", "verify": "verify_scenario_picker.gd" },
     "dungeon.tscn": { "status": "covered", "verify": "verify_dungeon_controller.gd" },
     "combat.tscn": { "status": "todo", "reason": "Command selection + targeting. Under Codex visual rework; no controller verify yet.", "imp": "IMP-024" }
   }

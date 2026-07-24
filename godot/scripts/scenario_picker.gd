@@ -67,6 +67,9 @@ func _build() -> void:
 			first = card
 
 	root.add_child(UI.gap(12))
+	# The first real choice a player makes needs its controls named, the way the title does — Esc already
+	# walks back (see _unhandled_input) but nothing said so (playtest #26 / IMP-048).
+	root.add_child(UI.label(I18n.t("play.menuHint"), 15, UI.DIM))
 	var foot := UI.row()
 	var back := UI.button(I18n.t("scenario.pick.back"), func(): _on_back(), Vector2(180, 46), 17)
 	foot.add_child(back)
