@@ -498,6 +498,7 @@ export const en = {
     statusCopy: "Read the damage, count the purse, and choose the next preparation.",
     expeditionResult: "Return record",
     wounds: "Wounds",
+    partyStatus: "Party status",
     loot: "Carried goods",
     nextPreparation: "Next preparation",
     noWounds: "No one needs treatment.",

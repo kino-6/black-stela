@@ -230,6 +230,11 @@ func _build_square() -> void:
 		_ledger_row(ledger, I18n.t("town.nextPreparation"), _next_preparation(s, party))
 	_menu_host.add_child(UI.card(ledger))
 
+	# The whole party's condition, always on the square — not only the wounded line in the ledger, and
+	# without opening a service (playtest #4). Compact so the destinations still fit.
+	if not party_empty:
+		_menu_host.add_child(_party_status_card(party))
+
 	# --- the way back down to a rest point already reached ---
 	# A checkpoint is earned progress: once a rest point has been walked to, the party never has to walk
 	# the whole floor again. The rules command exists (resume_at_checkpoint) and the square had no way to
@@ -309,6 +314,21 @@ func _latest_log_text(s: Dictionary) -> String:
 	# A RECORD of the expedition, so the empty case is an honest "nothing to report" — not the flavour
 	# "もう一度潜れる" (that belongs to 次の支度, and reading it as a record was the playtest #16 "大嘘").
 	return I18n.t("town.noRecord")
+
+## Every member's condition at a glance — one compact line each (name · HP · MP for casters), HP in the
+## hurt colour when the infirmary would charge for them.
+func _party_status_card(party: Array) -> Control:
+	var col := UI.col(2)
+	col.add_child(UI.label(I18n.t("town.partyStatus"), 15, UI.GOLD))
+	for member in party:
+		var row := UI.row()
+		row.add_child(UI.grow(UI.label(String(member.get("name", "?")), 15, UI.INK)))
+		var hurt: bool = Fmt.member_recovery_cost(member) > 0
+		row.add_child(UI.label("HP %d/%d" % [int(member.get("hp", 0)), int(member.get("maxHp", 0))], 14, UI.BAD if hurt else UI.DIM))
+		if int(member.get("maxMp", 0)) > 0:
+			row.add_child(UI.label("MP %d/%d" % [int(member.get("mp", 0)), int(member.get("maxMp", 0))], 14, UI.DIM))
+		col.add_child(row)
+	return UI.card(col)
 
 func _wounds_summary(party: Array) -> String:
 	var parts := []

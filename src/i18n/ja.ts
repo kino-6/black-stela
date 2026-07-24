@@ -500,6 +500,7 @@ export const ja = {
     statusCopy: "帰還後の状態です。傷の治療や補給を済ませてから、次の探索へ。",
     expeditionResult: "帰還記録",
     wounds: "負傷",
+    partyStatus: "隊列の状態",
     loot: "持ち帰った物",
     nextPreparation: "次の支度",
     noWounds: "治療が必要な者はいない。",
