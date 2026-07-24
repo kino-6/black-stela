@@ -1,0 +1,14 @@
+{
+  "_comment": "Every scene the Godot build ships must be classified here so a screen that a keyboard/controller player cannot operate can never ship unnoticed (2026-07-25 playtest: 'forbid screens that cannot be operated by keyboard/controller, and set up a Gate'). verify_controller_coverage.gd fails if any res://scenes/*.tscn is missing from this map, if a 'covered' entry names a verify script that does not exist, or if an entry points at a scene that no longer exists. 'todo' entries are the visible, tracked debt — a screen that is reachable and interactive but has no controller verify yet.",
+  "scenes": {
+    "title.tscn": { "status": "covered", "verify": "verify_front_controller.gd" },
+    "result.tscn": { "status": "covered", "verify": "verify_front_controller.gd" },
+    "guild.tscn": { "status": "covered", "verify": "verify_guild_controller.gd" },
+    "town.tscn": { "status": "covered", "verify": "verify_town_controller.gd" },
+    "boot.tscn": { "status": "exempt", "reason": "Transient loader — _ready prints the pack and calls SceneManager.goto(title). No player choice, nothing focusable." },
+    "config.tscn": { "status": "exempt", "reason": "Not a reachable standalone route: settings render as a panel INSIDE title.tscn (covered by verify_front_controller's 設定 open/close check); nothing changes scene to config.tscn." },
+    "scenario_picker.tscn": { "status": "todo", "reason": "Reachable from title 新たな探索; an interactive world pick. No controller verify yet.", "imp": "IMP-001-controller-coverage" },
+    "dungeon.tscn": { "status": "todo", "reason": "Exploration: arrow/held movement + dock + map/party overlays. Esc-closes-map (#13) and held-repeat (#17) were fixed 2026-07-25 but no controller verify drives the scene yet.", "imp": "IMP-032 / IMP-033 / IMP-045" },
+    "combat.tscn": { "status": "todo", "reason": "Command selection + targeting. Under Codex visual rework; no controller verify yet.", "imp": "IMP-024" }
+  }
+}
