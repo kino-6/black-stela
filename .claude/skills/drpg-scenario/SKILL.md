@@ -42,6 +42,28 @@ scenario isn't a literal clone while its art is in flight. It is **not** worldbu
 it does not count as "different", and it should be dialled back once the pack lands.
 Never design *to* the tint.
 
+## The shop's stock has a SHAPE, not just a list
+
+A shop that sorts items by category but not by ROLE is a spreadsheet, not a
+temptation. Whatever the world, the stock a returning party sees should span
+three intents, so the screen creates desire and a plan (2026-07-25 playtest #10):
+
+- **Immediate** — cheap gear/consumables that visibly help THIS next dive; the
+  player affords one now and feels the difference. Without it the shop feels
+  pointless after a bad run — the floor of the economy loop.
+- **Aspirational** — something priced well out of current reach, so a run's gold
+  becomes a goal with a face. It must read as *wantable* (what it does, who it is
+  for) even while unaffordable.
+- **Mysterious** — an item whose USE is not obvious from its line: a key-shaped
+  charm, a sealed vial, gear with an affix the party cannot yet read. Intrigue,
+  not just stats — pair it with an appraisal/lore route so the mystery resolves.
+
+Author this in the world's items/gear + shop stock (and unlock-by-descent), never
+in code. `drpg-balance` owns the price NUMBERS; this owns the price SPREAD — a
+stock of only mid-priced sidegrades is the failure mode. Every item still carries
+a readable description (played-build-gate G3), so "mysterious" means *its purpose
+is a puzzle*, never *it has no text*.
+
 **Anti-pattern:** declaring a scenario "done" when it parses, descends and passes
 gates — but looks and feels like the world you copied. Take a browser screenshot of
 the new world next to the old one. If you cannot tell them apart, it is not done.
