@@ -457,7 +457,7 @@ func _stairs_facing(cell: Dictionary) -> String:
 		var edge: Variant = (cell["edges"] as Dictionary)[dir]
 		if typeof(edge) == TYPE_DICTIONARY and String(edge.get("kind", "")) == "stairs":
 			return String(dir)
-	return String(_state.get("position", {}).get("facing", "north"))
+	return String(_position().get("facing", "north"))
 
 func _room_has_stairs(room: Dictionary) -> bool:
 	for dungeon in _world.get("dungeons", []):
@@ -811,6 +811,11 @@ func _apply(result: Dictionary) -> void:
 		await get_tree().create_timer(0.35).timeout   # let the encounter line read before the cut
 		get_tree().change_scene_to_file("res://scenes/combat.tscn")
 		return
+	# A return-to-town command nulls the position; its caller changes scene to the town right after this.
+	# Do NOT rebuild the dungeon we are leaving — _update_view reads the now-null position and crashed
+	# _current_cell ("Invalid call ... 'get' in base 'Nil'", IMP-044).
+	if _state.get("phase", "") != "dungeon":
+		return
 	_update_view(true)
 	_rebuild_dock()
 	_rebuild_party_hud()
@@ -988,8 +993,15 @@ func _update_view(animate: bool) -> void:
 	_header.text = _room_name()
 
 # --- helpers --------------------------------------------------------------------------------------
+# position is a Dictionary while exploring but NULL once a return-to-town command fires. Dictionary.get
+# returns its default only for a MISSING key, not a null VALUE, so `_state.get("position", {})` yields
+# null there and any `.get(...)` on it crashes (IMP-044). This is the one safe accessor.
+func _position() -> Dictionary:
+	var p: Variant = _state.get("position", null)
+	return p if typeof(p) == TYPE_DICTIONARY else {}
+
 func _current_cell() -> Dictionary:
-	var cid: String = _state.get("position", {}).get("cellId", "")
+	var cid: String = _position().get("cellId", "")
 	for dungeon in _world.get("dungeons", []):
 		for cell in (dungeon.get("grid", {}) as Dictionary).get("cells", []):
 			if cell.get("id", "") == cid:
@@ -997,7 +1009,7 @@ func _current_cell() -> Dictionary:
 	return {}
 
 func _room_name() -> String:
-	var rid: String = _state.get("position", {}).get("roomId", "")
+	var rid: String = _position().get("roomId", "")
 	for dungeon in _world.get("dungeons", []):
 		for room in dungeon.get("rooms", []):
 			if room.get("id", "") == rid:

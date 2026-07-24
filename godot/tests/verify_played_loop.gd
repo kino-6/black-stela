@@ -24,6 +24,7 @@ func _initialize() -> void:
 	_test_town_redescend_keeps_automap(world, landing)
 	_test_continue_routes_by_phase()
 	_test_dungeon_script_delegates(world)
+	_test_null_position_is_safe(world)
 
 	print("[played-loop] %s (%d failures)" % ["PASS" if _fail == 0 else "FAIL", _fail])
 	quit(_fail)
@@ -76,6 +77,20 @@ func _test_dungeon_script_delegates(world: Dictionary) -> void:
 	var st: Dictionary = d.get("_state")
 	_check(String(st.get("phase", "")) == "dungeon", "dungeon: entry sets phase=dungeon")
 	_check((st.get("map", {}) as Dictionary).get("visitedCells", []).has("cell.b1f.kept"), "dungeon: _enter_at_landing keeps the automap via DungeonEntry (#12 lock)")
+	if d is Node:
+		(d as Node).free()
+
+# IMP-044 — a return-to-town command sets position to NULL (not missing). Dictionary.get returns its
+# default only for a MISSING key, so the dungeon's position readers must go through _position(), not
+# `_state.get("position", {}).get(...)` which calls .get() on null and crashes _current_cell.
+func _test_null_position_is_safe(world: Dictionary) -> void:
+	var d: Object = Dungeon.new()
+	d.set("_world", world)
+	d.set("_state", {"phase": "town", "position": null})
+	_check((d.call("_position") as Dictionary).is_empty(), "null position: _position() yields {} (IMP-044 guard)")
+	_check((d.call("_current_cell") as Dictionary).is_empty(), "null position: _current_cell() is safe with a nulled position (IMP-044)")
+	d.set("_state", {"phase": "dungeon", "position": {"cellId": "cell.b1f.001", "roomId": "room.b1f.001", "facing": "south"}})
+	_check(String((d.call("_position") as Dictionary).get("cellId", "")) == "cell.b1f.001", "valid position: _position() returns the live cell")
 	if d is Node:
 		(d as Node).free()
 
