@@ -1058,6 +1058,9 @@ export interface EncounterTable {
   id: string;
   floorId?: string;
   groupsMax?: number;
+  /** When true, rolls ignore first-contact suppression so this table's foes keep appearing instead of
+   *  the floor going silent once each type has been met (playtest #20). Omitted/false = first-contact. */
+  respawns?: boolean;
   entries: EncounterEntry[];
 }
 

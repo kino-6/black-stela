@@ -3,7 +3,7 @@ import { worldRegistry } from "../src/data/worldRegistry";
 import { defaultWorld } from "../src/data/defaultWorld";
 import { addCharacter, createCharacter, createInitialGameState } from "../src/domain/gameState";
 import { executeCommand } from "../src/domain/rulesEngine";
-import type { GameState } from "../src/domain/types";
+import type { GameState, ScenarioWorld } from "../src/domain/types";
 
 // Before this, the dungeon was FINITE and FIXED: a defeated enemy TYPE was suppressed
 // for the whole run (first-contact), treasure was claimed forever, and corridors never
@@ -74,5 +74,42 @@ describe("encounter model", () => {
       if (s.position?.roomId === before) s = executeCommand(s, verdant, { type: "turn_right" });
     }
     expect(wandered, "walking the maze should eventually be ambushed").toBe(true);
+  });
+
+  // #20 — a scenario can opt a table OUT of first-contact suppression with `respawns`, so its foes keep
+  // ambushing instead of the floor going silent once each type has been met. Default = first-contact.
+  function countWanderingAmbushes(world: ScenarioWorld, clearedTypes: string[]): number {
+    let s = party(3);
+    s = executeCommand(s, world, { type: "enter_dungeon" });
+    s = { ...s, floorClearedEnemies: [...clearedTypes] } as GameState;
+    let count = 0;
+    for (let step = 0; step < 120; step += 1) {
+      const before = s.position?.roomId;
+      s = executeCommand(s, world, { type: "move_forward" });
+      if (s.phase === "combat") {
+        const room = world.dungeons[0].rooms.find((r) => r.id === s.combat!.roomId);
+        if (!room?.encounter && !room?.encounterTable && !room?.encounterSquad) count += 1;
+        // Shrug it off but KEEP every type cleared, so first-contact stays fully suppressed.
+        s = { ...s, phase: "dungeon", combat: null, floorClearedEnemies: [...clearedTypes] } as GameState;
+      }
+      if (s.position?.roomId === before) s = executeCommand(s, world, { type: "turn_right" });
+    }
+    return count;
+  }
+
+  it("a `respawns` table keeps ambushing even when every type is already cleared (#20)", () => {
+    const verdant = worldRegistry.verdant;
+    const everyType = [...new Set(verdant.encounterTables.flatMap((t) => t.entries.map((e) => e.enemyId)))];
+    expect(everyType.length, "verdant has wandering foes to clear").toBeGreaterThan(0);
+
+    // First-contact (default): a fully-cleared floor goes silent.
+    expect(countWanderingAmbushes(verdant, everyType), "first-contact stops ambushing once all types are met").toBe(0);
+
+    // respawns: the same walk keeps getting ambushed.
+    const respawning: ScenarioWorld = {
+      ...verdant,
+      encounterTables: verdant.encounterTables.map((t) => ({ ...t, respawns: true }))
+    };
+    expect(countWanderingAmbushes(respawning, everyType), "a respawns table keeps ambushing").toBeGreaterThan(0);
   });
 });

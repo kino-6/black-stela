@@ -194,7 +194,9 @@ static func begin_wandering_encounter(world: Dictionary, room: Variant, state: D
 		return null
 
 	var rolled := resolve_encounter_table(world, String(table.get("id", "")), int(state.get("turn", 0)))
-	var fresh := select_encounter_groups(rolled, state.get("floorClearedEnemies", []), int(_or(table, "groupsMax", 1)))
+	# A `respawns` table opts out of first-contact suppression, so its foes keep appearing (#20).
+	var cleared_now: Array = [] if bool(_or(table, "respawns", false)) else (state.get("floorClearedEnemies", []) as Array)
+	var fresh := select_encounter_groups(rolled, cleared_now, int(_or(table, "groupsMax", 1)))
 	if fresh.is_empty():
 		return null
 
@@ -304,14 +306,17 @@ static func begin_room_encounter(world: Dictionary, room: Variant, state: Dictio
 		rolled = resolve_encounter_table(world, String(room["encounterTable"]), int(state.get("turn", 0)))
 
 	var groups_max := 1
+	var respawns := false
 	if typeof(room.get("encounterTable", null)) == TYPE_STRING:
 		for candidate in world.get("encounterTables", []):
 			if candidate.get("id", "") == room["encounterTable"]:
 				groups_max = int(_or(candidate, "groupsMax", 1))
+				respawns = bool(_or(candidate, "respawns", false))
 				break
 
 	# Suppression is scoped to THIS FLOOR VISIT: leave and come back and the chambers are repopulated.
-	var fresh := select_encounter_groups(rolled, cleared, groups_max)
+	# A `respawns` table opts out entirely, so its foes keep appearing (#20).
+	var fresh := select_encounter_groups(rolled, ([] if respawns else cleared), groups_max)
 	if fresh.is_empty():
 		return null
 

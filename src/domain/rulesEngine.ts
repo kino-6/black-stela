@@ -838,7 +838,8 @@ function beginWanderingEncounter(
     return null;
   }
   const rolled = resolveEncounterTable(world, table.id, state.turn);
-  const fresh = selectEncounterGroups(rolled, state.floorClearedEnemies, table.groupsMax ?? 1);
+  // A `respawns` table opts out of first-contact suppression, so its foes keep appearing (#20).
+  const fresh = selectEncounterGroups(rolled, table.respawns ? [] : state.floorClearedEnemies, table.groupsMax ?? 1);
   if (fresh.length === 0) {
     return null;
   }
@@ -2038,8 +2039,9 @@ function beginRoomEncounter(
     ? world.encounterTables.find((candidate) => candidate.id === room.encounterTable)
     : undefined;
   // Suppression is scoped to THIS FLOOR VISIT: leave and come back and the chambers
-  // (玄室) are repopulated. Run-long `defeatedEnemies` is only the record.
-  const fresh = selectEncounterGroups(rolled, state.floorClearedEnemies, table?.groupsMax ?? 1);
+  // (玄室) are repopulated. Run-long `defeatedEnemies` is only the record. A `respawns`
+  // table opts out entirely, so its foes keep appearing (#20).
+  const fresh = selectEncounterGroups(rolled, table?.respawns ? [] : state.floorClearedEnemies, table?.groupsMax ?? 1);
   if (fresh.length === 0) {
     return null;
   }
