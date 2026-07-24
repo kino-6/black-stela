@@ -106,14 +106,17 @@ func _build_3d() -> void:
 
 	var env := WorldEnvironment.new()
 	var e := Environment.new()
+	# Lighting comes from the world's palette so a "verdant/lush" floor is not as dark as an ash pit
+	# (playtest #18). The values here are the ash-pit DEFAULTS, used when a scenario omits them.
+	var pal: Dictionary = _world.get("palette", {}) if typeof(_world.get("palette", null)) == TYPE_DICTIONARY else {}
 	e.background_mode = Environment.BG_COLOR
 	e.background_color = Color("06070500")
 	e.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	e.ambient_light_color = Color("2a2620")
-	e.ambient_light_energy = 0.55
+	e.ambient_light_color = Color(String(pal.get("ambient", "2a2620")))
+	e.ambient_light_energy = float(pal.get("ambientEnergy", 0.55))
 	e.fog_enabled = true
-	e.fog_light_color = Color("0a0b07")
-	e.fog_density = 0.10
+	e.fog_light_color = Color(String(pal.get("fog", "0a0b07")))
+	e.fog_density = float(pal.get("fogDensity", 0.10))
 	env.environment = e
 	vp.add_child(env)
 
@@ -123,9 +126,9 @@ func _build_3d() -> void:
 	vp.add_child(_camera)
 
 	_torch = OmniLight3D.new()
-	_torch.light_color = Color("ffd9a0")
+	_torch.light_color = Color(String(pal.get("torch", "ffd9a0")))
 	_torch.light_energy = 3.2
-	_torch.omni_range = 8.5
+	_torch.omni_range = float(pal.get("torchRange", 8.5))
 	_torch.omni_attenuation = 1.4
 	vp.add_child(_torch)
 
@@ -136,8 +139,9 @@ func _build_geometry(parent: Node) -> void:
 	# TINTED rather than replaced so each world keeps its own colour. Untextured flat planes are what
 	# made the maze read as a placeholder.
 	var block := _block_textures()
-	var wall_mat := _textured_mat(block["wall"], Color("8a8074"))
-	var floor_mat := _textured_mat(block["floor"], Color("6e675c"))
+	var pal: Dictionary = _world.get("palette", {}) if typeof(_world.get("palette", null)) == TYPE_DICTIONARY else {}
+	var wall_mat := _textured_mat(block["wall"], Color(String(pal.get("wall", "8a8074"))))
+	var floor_mat := _textured_mat(block["floor"], Color(String(pal.get("floor", "6e675c"))))
 	var ceil_mat := _textured_mat(block["wall"], Color("3a352c"))
 
 	var start_dungeon: String = _world.get("startDungeon", "dungeon.b1f")

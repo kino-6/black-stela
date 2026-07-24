@@ -435,7 +435,12 @@ export const scenarioWorldSchema = z.object({
       torch: z.string().min(1).optional(),
       front: z.string().min(1).optional(),
       wall: z.string().min(1).optional(),
-      floor: z.string().min(1).optional()
+      floor: z.string().min(1).optional(),
+      // Lighting intensity / view distance, authored per scenario so a "verdant/lush" floor is not as
+      // dark as an ash pit. The dungeon renderer reads these with its ash-pit defaults when omitted.
+      ambientEnergy: z.number().min(0).optional(),
+      fogDensity: z.number().min(0).optional(),
+      torchRange: z.number().min(0).optional()
     })
     .optional(),
   startDungeon: z.string().min(1),

@@ -55,6 +55,9 @@ palette:
   front: "#e4f7c9"
   wall: "#c2c7b5"
   floor: "#a49c85"
+  ambientEnergy: 0.85
+  fogDensity: 0.06
+  torchRange: 10.0
 startDungeon: dungeon.verdant.g1f
 startRoom: room.verdant.g1f.001
 aiPolicy:

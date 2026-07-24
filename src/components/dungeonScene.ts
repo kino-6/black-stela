@@ -94,7 +94,12 @@ export function buildDungeonScene(mount: HTMLDivElement, input: DungeonSceneInpu
     torch: "#f0b76c",
     front: "#ffe0a0",
     wall: "#59615a",
-    floor: "#2a2418"
+    floor: "#2a2418",
+    // Intensity / view distance are honoured by the Godot renderer (dungeon.gd); the reference
+    // Three.js scene here keeps its own look and reads only the colours.
+    ambientEnergy: 0.55,
+    fogDensity: 0.1,
+    torchRange: 8.5
   };
   const p: Required<ScenePalette> = { ...ASH, ...(input.palette ?? {}) };
 

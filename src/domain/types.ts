@@ -818,6 +818,11 @@ export interface ScenePalette {
   front?: string;
   wall?: string;
   floor?: string;
+  /** Lighting intensity / view distance, authored per scenario (a lush floor is brighter and sees
+   *  farther than an ash pit). The dungeon renderer applies its ash-pit defaults when these are omitted. */
+  ambientEnergy?: number;
+  fogDensity?: number;
+  torchRange?: number;
 }
 
 export interface ScenarioWorld {

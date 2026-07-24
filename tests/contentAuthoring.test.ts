@@ -95,6 +95,17 @@ describe("IMP-021B / IMP-022B authored content", () => {
 // can read. The shop consumable tab had regressed to name + price (2026-07-25 playtest #2); the durable
 // half of the fix is this data lock. The game ships Japanese-primary, so the Japanese description is the
 // one that must be present (equipment may still fall back to its base description).
+// IMP-037 / playtest #18 — dungeon lighting (ambient/fog/torch + intensity/view distance) is authored
+// per scenario, so a "verdant/lush" floor is not rendered as dark as an ash pit. The Godot renderer
+// (dungeon.gd) reads world.palette with ash-pit defaults; this locks that Verdant actually lifts it.
+describe("#18: scenario-authored dungeon lighting", () => {
+  it("verdant authors a lush palette brighter than the ash-pit default", () => {
+    const pal = worldRegistry.verdant.palette;
+    expect(pal?.ambient, "verdant authors an ambient colour").toBeTruthy();
+    expect(pal?.ambientEnergy ?? 0.55, "verdant lifts the ambient energy above the ash default").toBeGreaterThan(0.55);
+  });
+});
+
 describe("G3: every catalogued item and gear explains itself", () => {
   for (const [worldId, world] of shippedWorlds) {
     it(`${worldId}: every item has a readable Japanese description`, () => {
