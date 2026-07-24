@@ -81,6 +81,7 @@ like a DRPG rather than a web service.
 | `IMP-040` | P3 | Reproduced (design) | Shop stock lacks a design shape (immediate/aspirational/mystery). Encode as a scenario Skill or gate. |
 | `IMP-041` | P3 | Confirmed intended (feel open) | First-contact encounters go silent per floor visit; make density/respawn scenario-authored rather than fixed. |
 | `IMP-042` | P1 | Reproduced | No always-visible party status in town and no menu openable at any time. |
+| `IMP-043` | P1 | Reproduced (gate debt) | `gate:ux-parity` fails on the title screen (3/12 keys — New run / continue save-slots / config not rendered vs React TitleScreen.tsx), so the whole `gate:migration` Godot chain is red and unwatched. Proven pre-existing via a stashed baseline on 2026-07-25. Until fixed, `gate:play` runs standalone. |
 
 ## Archive
 
