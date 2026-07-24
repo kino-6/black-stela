@@ -41,6 +41,16 @@ func _initialize() -> void:
 	d.call("_process", 0.2)
 	_check(String(d.get("_held_action")) == "", "releasing the key stops the repeat")
 
+	# #29 — the 3D geometry follows the party's FLOOR, not always the first one. Put the party on a B2F
+	# cell and the view rebuilds for B2F (before the fix a B2F debug jump kept showing B1F walls).
+	d.set("_state", {
+		"phase": "dungeon",
+		"position": {"cellId": "cell.b2f.c1_2", "roomId": "room.b2f.c1_2", "facing": "south"},
+		"map": {"floorId": "dungeon.b2f", "currentCellId": "cell.b2f.c1_2", "visitedCells": ["cell.b2f.c1_2"]}
+	})
+	d.call("_update_view", false)
+	_check(String(d.get("_rendered_floor")) == "dungeon.b2f", "the 3D geometry follows the party to B2F (#29)")
+
 	print("[dungeon-controller] %s (%d failures)" % ["PASS" if _fail == 0 else "FAIL", _fail])
 	quit(_fail)
 

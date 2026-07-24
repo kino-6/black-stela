@@ -93,12 +93,17 @@ func _open_dirs(cell: Dictionary) -> Array:
 	return out
 
 # --- 3D corridor ----------------------------------------------------------------------------------
+var _view3d: SubViewportContainer = null   # the 3D view; rebuilt when the party changes floor
+var _rendered_floor: String = ""           # the floor id _build_geometry last drew
+
 func _build_3d() -> void:
 	var container := SubViewportContainer.new()
 	container.stretch = true
 	container.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	container.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(container)
+	move_child(container, 0)   # keep the 3D view UNDER the HUD overlays (matters on a floor-change rebuild)
+	_view3d = container
 	var vp := SubViewport.new()
 	vp.own_world_3d = true
 	vp.size = Vector2i(int(size.x), int(size.y))
@@ -133,6 +138,7 @@ func _build_3d() -> void:
 	vp.add_child(_torch)
 
 	_build_geometry(vp)
+	_rendered_floor = _current_floor_id()
 
 func _build_geometry(parent: Node) -> void:
 	# The authored block textures, chosen by DEPTH the way React's getDungeonBlockTextureUrls does, and
@@ -144,9 +150,12 @@ func _build_geometry(parent: Node) -> void:
 	var floor_mat := _textured_mat(block["floor"], Color(String(pal.get("floor", "6e675c"))))
 	var ceil_mat := _textured_mat(block["wall"], Color("3a352c"))
 
-	var start_dungeon: String = _world.get("startDungeon", "dungeon.b1f")
+	# Render the floor the party is ON, not always the first one — descending stairs (or a debug jump to
+	# a deeper floor) rebuilds this geometry for the new floor. Rendering startDungeon regardless is why a
+	# B2F state showed B1F walls (unblock #29).
+	var floor_dungeon := _current_floor_id()
 	for dungeon in _world.get("dungeons", []):
-		if dungeon.get("id", "") != start_dungeon:
+		if dungeon.get("id", "") != floor_dungeon:
 			continue
 		for cell in (dungeon.get("grid", {}) as Dictionary).get("cells", []):
 			var cx := int(cell.get("x", 0))
@@ -989,6 +998,7 @@ func _coverage_percent() -> int:
 	return 0
 
 func _update_view(animate: bool) -> void:
+	_ensure_floor()   # a stair / debug jump to another floor rebuilds the geometry before we re-aim the camera
 	var cell := _current_cell()
 	if cell.is_empty():
 		return
@@ -1011,6 +1021,20 @@ func _update_view(animate: bool) -> void:
 func _position() -> Dictionary:
 	var p: Variant = _state.get("position", null)
 	return p if typeof(p) == TYPE_DICTIONARY else {}
+
+# The floor the party is on right now (map.floorId), falling back to the world's first floor.
+func _current_floor_id() -> String:
+	var fid: Variant = (_state.get("map", {}) as Dictionary).get("floorId", null)
+	return String(fid) if typeof(fid) == TYPE_STRING and fid != "" else String(_world.get("startDungeon", "dungeon.b1f"))
+
+# Rebuild the 3D view when the party has moved to a different floor than the one currently drawn, so the
+# geometry follows stairs / a debug floor jump instead of showing the first floor forever (#29).
+func _ensure_floor() -> void:
+	if _current_floor_id() == _rendered_floor:
+		return
+	if _view3d and is_instance_valid(_view3d):
+		_view3d.queue_free()
+	_build_3d()
 
 func _current_cell() -> Dictionary:
 	var cid: String = _position().get("cellId", "")
