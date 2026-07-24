@@ -20,7 +20,11 @@ var _panel: PanelContainer = null
 var _progress := "ready"
 
 static func enabled() -> bool:
-	return OS.get_cmdline_args().has("--debug-mode") or OS.is_debug_build() and OS.get_cmdline_args().has("--debug-panel")
+	# `--debug-mode` / `--debug-panel` are USER args passed after `--` (godot --path godot/ -- --debug-mode),
+	# which live in get_cmdline_user_args(); get_cmdline_args() never sees them, so the panel was never
+	# mounted and F12 did nothing (boot.gd only adds the node when this is true). Check BOTH arg lists.
+	var args := OS.get_cmdline_args() + OS.get_cmdline_user_args()
+	return args.has("--debug-mode") or (OS.is_debug_build() and args.has("--debug-panel"))
 
 func _ready() -> void:
 	layer = 128
