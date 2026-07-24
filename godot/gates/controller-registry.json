@@ -8,7 +8,7 @@
     "boot.tscn": { "status": "exempt", "reason": "Transient loader — _ready prints the pack and calls SceneManager.goto(title). No player choice, nothing focusable." },
     "config.tscn": { "status": "exempt", "reason": "Not a reachable standalone route: settings render as a panel INSIDE title.tscn (covered by verify_front_controller's 設定 open/close check); nothing changes scene to config.tscn." },
     "scenario_picker.tscn": { "status": "todo", "reason": "Reachable from title 新たな探索; an interactive world pick. No controller verify yet.", "imp": "IMP-001-controller-coverage" },
-    "dungeon.tscn": { "status": "todo", "reason": "Exploration: arrow/held movement + dock + map/party overlays. Esc-closes-map (#13) and held-repeat (#17) were fixed 2026-07-25 but no controller verify drives the scene yet.", "imp": "IMP-032 / IMP-033 / IMP-045" },
+    "dungeon.tscn": { "status": "covered", "verify": "verify_dungeon_controller.gd" },
     "combat.tscn": { "status": "todo", "reason": "Command selection + targeting. Under Codex visual rework; no controller verify yet.", "imp": "IMP-024" }
   }
 }
