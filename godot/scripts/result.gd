@@ -17,6 +17,8 @@ const BG := Color("0b0d09")
 
 var _result: Dictionary = {}
 var _party: Array = []
+const DungeonEntry := preload("res://scripts/rules/dungeon_entry.gd")
+
 var _run: Node = null
 var _world: Dictionary = {}
 var _world_id: String = "default"
@@ -188,7 +190,11 @@ func _portrait_key(member: Dictionary) -> String:
 	return "gate"
 
 func _on_return() -> void:
-	get_tree().change_scene_to_file("res://scenes/town.tscn")
+	# Route by phase, not always town. A VICTORY leaves phase="dungeon" (run_state.return_to_town clears
+	# combat but keeps the party mid-floor), so "続ける" RESUMES exploration — hard-coding town.tscn here
+	# was the #11 auto-return-after-combat bug. A wipe / expedition-end leaves phase="town".
+	var phase := String((_run.state as Dictionary).get("phase", "")) if _run else ""
+	get_tree().change_scene_to_file(DungeonEntry.continue_scene(phase))
 
 func _unhandled_input(event: InputEvent) -> void:
 	# There is nothing behind a result but the walk back, so Cancel resolves the same way Confirm does

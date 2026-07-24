@@ -3,6 +3,27 @@
 Last browser review: 2026-07-18, Chromium. Primary review at 1280x720;
 career presentation also checked at 1920x1080.
 
+## 2026-07-25 — Verdant 3-minute playtest (verdict: "not properly playable")
+
+A human played the real **Godot** build for ~3 minutes and found 21 player-facing
+defects that **every green gate missed**. Record:
+`docs/reviews/2026-07-25-verdant-3min-playtest.md`. Mechanism to stop the repeat:
+`docs/gates/played-build-gate.md`. Most findings were **already reproduced and
+unfixed** (`IMP-024..029`) while advanced content shipped on top.
+
+**Process rules now in force** (from `played-build-gate.md`):
+- **P1** player-facing work is not done without `gate:play` green **and** visual
+  acceptance by the other agent on the real Godot build; "V blocked/pending" is
+  not a done state.
+- **P2** while any reproduced core-loop/feel defect is open, no advanced-content
+  slice may be marked complete — base playability first.
+- **P3** every hand-found defect earns a regression lock **and**, if a gate should
+  have caught it, the missing gate.
+
+New numbered items from this playtest: `IMP-030..IMP-042` (below). `IMP-024`,
+`IMP-025`, `IMP-026`, `IMP-028`, `IMP-029` were **re-confirmed by live play** and
+are now under the P2 priority guard.
+
 ## Review Evidence
 
 - The same-day normal-route evidence archived with `IMP-013/014` covers:
@@ -46,7 +67,20 @@ like a DRPG rather than a web service.
 | `IMP-026` | P2 | Reproduced | Exploration presents movement and utility as eleven web-toolbar buttons despite controller-first input. |
 | `IMP-027` | P1 | Reproduced | A direct guild departure can return from the dungeon to Adventurer Registration instead of the town return loop. |
 | `IMP-028` | P1 | Reproduced | Character creation remains a scrolling card catalog and stat-entry form rather than a focused adventurer-making flow. |
-| `IMP-029` | High | Approved capability | Entering a room auto-grabs its treasure; there is no chamber-fight → chest → investigate/disarm/open exploration loop, and thief-class trap handling is unused. |
+| `IMP-029` | High | Approved capability; re-confirmed 07-25 | Entering a room auto-grabs its treasure; there is no chamber-fight → chest → investigate/disarm/open exploration loop, and thief-class trap handling is unused. Floors are all 1-wide corridors — no 玄室 authored. |
+| `IMP-030` | **P0** | Reproduced (mechanism authored) | The truth-gate `gate:final` plays **React**; the shipped artifact is **Godot**. No gate plays the Godot build end-to-end. Build the `gate:play` played-build loop gate + wire Godot gates into the truth-gate. |
+| `IMP-031` | P1 | Reproduced (suspected) | Returning to town resets the explored map (`visitedCells`). No gate walks town→dungeon→town→dungeon and asserts persistence. |
+| `IMP-032` | P1 | Reproduced | Held-key movement does not repeat — holding forward steps once. |
+| `IMP-033` | P1 | Reproduced | Esc does not close the full-map modal (only the 立ち去る button does). |
+| `IMP-034` | P1 | Reproduced | Shop consumables show no description though the data has one and the equipment tab renders it. Needs a per-entity surfacing gate. |
+| `IMP-035` | P2 | Reproduced | Character-creation aptitudes have no in-UI explanation of what they change. |
+| `IMP-036` | P2 | Reproduced | Combat background is pure black (FC-like); the full-frame stage has no environment backdrop. |
+| `IMP-037` | P2 | Reproduced | View distance / lighting is pitch-black, contradicting the "Verdant/lush" theme. Make it scenario- and floor-authored (content-is-data). |
+| `IMP-038` | P2 | Reproduced | 帰還後の支度 mislabels the starting potion as brought-back loot and uses lying flavor-status lines ("もう一度潜れる"). Replace with honest, concrete state. |
+| `IMP-039` | P2 | Reproduced | Creation polish: overwrought placeholder name; one reroll changes all identity fields; portrait coupled to origin. Decouple face; per-field reroll. |
+| `IMP-040` | P3 | Reproduced (design) | Shop stock lacks a design shape (immediate/aspirational/mystery). Encode as a scenario Skill or gate. |
+| `IMP-041` | P3 | Confirmed intended (feel open) | First-contact encounters go silent per floor visit; make density/respawn scenario-authored rather than fixed. |
+| `IMP-042` | P1 | Reproduced | No always-visible party status in town and no menu openable at any time. |
 
 ## Archive
 

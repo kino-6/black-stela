@@ -15,6 +15,7 @@ const PartyPanel := preload("res://scripts/town/party_panel.gd")
 const CharacterStats := preload("res://scripts/rules/character_stats.gd")
 const Chests := preload("res://scripts/rules/chests.gd")
 const FloorMap := preload("res://scripts/dungeon/floor_map.gd")
+const DungeonEntry := preload("res://scripts/rules/dungeon_entry.gd")
 
 const CELL := 3.0
 const WALL_H := 3.2
@@ -67,24 +68,15 @@ func _acquire_state() -> void:
 # Place the party at the floor's stair landing (world.startRoom) facing its first open way — data-driven,
 # so the same code drops into b1f (→ the authored ash-slime one step south) or verdant's g1f threshold.
 func _enter_at_landing() -> void:
-	var start_room: String = _world.get("startRoom", "room.b1f.001")
-	var cell := _cell_for_room(start_room)
-	var cell_id: String = cell.get("id", "") if not cell.is_empty() else ""
-	var open_dirs := _open_dirs(cell)
-	var facing: String = open_dirs[0] if not open_dirs.is_empty() else "south"
-
+	# Placement is decided by DungeonEntry.plan so the played-build gate can assert it: a victory RESUMES
+	# on the fight cell (position intact), a town re-descend lands at the stair but KEEPS the explored
+	# automap, and only a brand-new expedition seeds fresh. Overwriting the map on every entry was the
+	# #12 "map resets on return" bug.
 	_state["phase"] = "dungeon"
 	_state["combat"] = null
-	_state["position"] = {"cellId": cell_id, "roomId": start_room, "facing": facing}
-	var map: Dictionary = _state.get("map", {})
-	map["floorId"] = _world.get("startDungeon", "dungeon.b1f")
-	map["currentCellId"] = cell_id
-	map["currentRoomId"] = start_room
-	map["currentFacing"] = facing
-	map["visitedCells"] = [cell_id]
-	map["visitedRooms"] = [start_room]
-	map["knownExits"] = {start_room: open_dirs}
-	_state["map"] = map
+	var plan: Dictionary = DungeonEntry.plan(_state, _world)
+	_state["position"] = plan["position"]
+	_state["map"] = plan["map"]
 
 func _cell_for_room(room_id: String) -> Dictionary:
 	for dungeon in _world.get("dungeons", []):
@@ -305,6 +297,14 @@ func _build_overlays() -> void:
 # --- input: arrows OWN movement (consume them so they don't move dock focus); dock owns confirm ----
 func _input(event: InputEvent) -> void:
 	if _busy:
+		return
+	# The full-floor map is a MODAL overlay: Cancel (Esc) or M closes it, and it swallows every other key
+	# so the party never walks while the player is reading the map. Esc did nothing here before —
+	# `_close_overlays_or` was defined but never wired, so the map could only be dismissed by its button.
+	if _full_map and is_instance_valid(_full_map):
+		if event.is_action_pressed("cancel") or event.is_action_pressed("full_map"):
+			_toggle_full_map()
+		get_viewport().set_input_as_handled()
 		return
 	if event.is_action_pressed("turn_left"):
 		_apply(SliceRules.resolve(_state, {"type": "turn_left"}, _world, _engine))
