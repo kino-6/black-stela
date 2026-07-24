@@ -35,6 +35,15 @@ func _initialize() -> void:
 	for i in 8:
 		await process_frame
 
+	# The guild master's opening is spoken Japanese, not a procedure or faux-archaic
+	# exposition. Read the rendered scene so the Godot port cannot drift from ja.ts.
+	var briefing := _all_text(guild)
+	var expected_briefing := "ようこそ。登録するなら、まずは君の話を聞かせてくれ。どんな冒険者になりたい？"
+	if not briefing.contains(expected_briefing):
+		_fail("briefing: the natural guild-master greeting is not rendered")
+	if briefing.contains("潜る気か") or briefing.contains("帳面にはそれから載せる"):
+		_fail("briefing: removed stiff guild-master copy returned to the screen")
+
 	# 1. Every step hands the cursor a place to land, and never a disabled one.
 	for step in STEPS:
 		guild.call("set_ui_state", {"step": step})
@@ -55,6 +64,28 @@ func _initialize() -> void:
 	guild.call("set_ui_state", {"step": "class"})
 	for i in 4:
 		await process_frame
+	# Choosing a calling must change the recruit's preview figure. The origin portrait belongs to the
+	# later 来歴 step; holding it here made every class look like the same recruit.
+	guild.call("_select_class", "warrior")
+	for i in 3:
+		await process_frame
+	var warrior_figure := String(guild.call("_preview_figure_path"))
+	guild.call("_select_class", "knight")
+	for i in 3:
+		await process_frame
+	var knight_figure := String(guild.call("_preview_figure_path"))
+	if warrior_figure == knight_figure or not knight_figure.contains("adventurer-knight-base.png"):
+		_fail("class preview: choosing a calling did not change to its class figure")
+
+	# The class promise is written as player intent first, with the technique name only as a subtitle.
+	# Exact unlock levels are rules data, but are not useful as a fixed shopping list during recruitment.
+	var knight_copy := _all_text(guild)
+	for promise in ["敵を攻撃", "自分の守りを上げる", "味方への攻撃を引き受ける"]:
+		if not knight_copy.contains(promise):
+			_fail("class promise: knight never explains %s" % promise)
+	if knight_copy.contains("Lv"):
+		_fail("class promise: fixed level labels leaked into recruitment")
+
 	for class_id in ["warrior", "thief", "chanter"]:
 		var draft: Dictionary = guild.get("_draft")
 		draft["classId"] = class_id

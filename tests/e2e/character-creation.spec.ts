@@ -136,7 +136,8 @@ test("Japanese guild registration remains usable on mobile", async ({ page }) =>
   await expect(page.getByRole("heading", { name: "冒険者登録" })).toBeVisible();
   await expect(page.getByRole("button", { name: "炉端の連中を誘う" })).toHaveCount(0);
   await expect(page.getByLabel("隊列の備え")).toHaveCount(0);
-  await expect(page.getByTestId("guild-step-briefing")).toContainText("潜る気か");
+  await expect(page.getByTestId("guild-step-briefing")).toContainText("ようこそ。登録するなら");
+  await expect(page.getByTestId("guild-step-briefing")).not.toContainText("潜る気か");
   await expect(page.getByText("名前は最後でいい")).toHaveCount(0);
   await expect(page.getByText("どの才がまだ伸びるのか")).toHaveCount(0);
   await expect(page.getByText("顔と来歴")).toHaveCount(0);

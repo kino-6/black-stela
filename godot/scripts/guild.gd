@@ -193,15 +193,14 @@ func _stepper() -> Control:
 ## produce, so no step hides the person being made.
 func _preview_card() -> Control:
 	var character := _build_character()
-	var background := Draft.find(_data.get("backgrounds", []), String(_draft.get("backgroundId", "")))
 
 	var row := UI.row()
 	var portrait := TextureRect.new()
 	portrait.custom_minimum_size = Vector2(96, 116)
 	portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-	portrait.texture = _texture(_asset("portraits/%s.png" % String(background.get("portraitKey", "gate"))))
-	row.add_child(UI.card(portrait, Color(String(background.get("accentColor", "#c9a765")))))
+	portrait.texture = _texture(_preview_figure_path())
+	row.add_child(UI.card(portrait))
 
 	var text := UI.col(4)
 	var name_line := String(character.get("name", "")).strip_edges()
@@ -288,8 +287,8 @@ func _class_step() -> Control:
 	# ones it grows into, the exploration it is trusted with, and the thing it cannot answer. Choosing
 	# blind from a stat line is the "data-entry grid" §9.6 forbids in another shape.
 	var class_id := String(selected.get("id", ""))
-	detail.add_child(_fact(I18n.t("party.classPromiseNow"), _techniques_at_creation(class_id)))
-	detail.add_child(_fact(I18n.t("party.classPromiseLater"), _techniques_later(class_id)))
+	detail.add_child(_promise_fact(I18n.t("party.classPromiseNow"), _techniques_at_creation(class_id)))
+	detail.add_child(_promise_fact(I18n.t("party.classPromiseLater"), _techniques_later(class_id)))
 	var exploration := _exploration_line(class_id)
 	if exploration != "":
 		detail.add_child(_fact(I18n.t("party.classPromiseExploration"), exploration))
@@ -327,18 +326,24 @@ func _techniques_at_creation(class_id: String) -> String:
 	var names := []
 	for grant in _capabilities(class_id).get("combatTechniques", []):
 		if int((grant as Dictionary).get("level", 1)) <= 1:
-			names.append(_technique_name(String((grant as Dictionary).get("techniqueId", ""))))
-	return " ・ ".join(PackedStringArray(names)) if not names.is_empty() else I18n.t("party.classPromiseNone")
+			names.append(_technique_promise(String((grant as Dictionary).get("techniqueId", ""))))
+	return "\n".join(PackedStringArray(names)) if not names.is_empty() else I18n.t("party.classPromiseNone")
 
-## What it grows into, each with the level it arrives — the "future promise" half of §9.6.
+## What it grows into. Unlock levels remain rules data, but are deliberately not shown as a rigid
+## shopping list during recruitment: players choose a role by its future options, not by a timetable.
 func _techniques_later(class_id: String) -> String:
 	var names := []
 	for grant in _capabilities(class_id).get("combatTechniques", []):
 		var level := int((grant as Dictionary).get("level", 1))
 		if level <= 1:
 			continue
-		names.append("%s（%s）" % [_technique_name(String((grant as Dictionary).get("techniqueId", ""))), I18n.t("party.classLevelShort", {"level": str(level)})])
-	return " ・ ".join(PackedStringArray(names)) if not names.is_empty() else I18n.t("party.classPromiseNone")
+		names.append(_technique_promise(String((grant as Dictionary).get("techniqueId", ""))))
+	return "\n".join(PackedStringArray(names)) if not names.is_empty() else I18n.t("party.classPromiseNone")
+
+func _technique_promise(id: String) -> String:
+	var summary := Techniques.summary(id, _engine())
+	var name := _technique_name(id)
+	return "%s（%s）" % [summary, name] if summary != "" else name
 
 ## The exploration this class is trusted with, named rather than scored. Empty for the seven classes
 ## §4 gives no exploration proficiency at all — they simply do not show the line.
@@ -699,6 +704,16 @@ func _build_character() -> Dictionary:
 	character["traitId"] = String(_draft.get("traitId", "steady"))
 	return character
 
+## During calling selection the player needs an immediate visual difference. Background portraits are
+## still chosen on the next step; this class figure is the current discipline's readable preview.
+func _preview_figure_path() -> String:
+	var class_id := String(_draft.get("classId", "warrior"))
+	var legacy: Dictionary = _engine().get("legacyClassMapping", {})
+	class_id = String(legacy.get(class_id, class_id))
+	var sub := "characters/adventurer-%s-base.png" % class_id
+	var pack_path := _asset(sub)
+	return pack_path if FileAccess.file_exists(pack_path) else "res://assets/worlds/default/%s" % sub
+
 func _display_name() -> String:
 	var name := String(_draft.get("name", "")).strip_edges()
 	return name if name != "" else I18n.t("party.namePlaceholder")
@@ -724,6 +739,12 @@ func _fact(term: String, value: String) -> Control:
 	row.add_child(_cell(term, 90, UI.DIM))
 	row.add_child(UI.grow(UI.label(value, 16, UI.INK)))
 	return row
+
+func _promise_fact(term: String, value: String) -> Control:
+	var col := UI.col(2)
+	col.add_child(UI.label(term, 16, UI.DIM))
+	col.add_child(UI.prose(value, 15, UI.INK, 620))
+	return col
 
 func _cell(text: String, width: int, col: Color) -> Control:
 	var l := UI.label(text, 16, col)

@@ -39,7 +39,7 @@ test("Japanese message boxes wrap without orphan tails or stranded punctuation",
   // 1) Guild master briefing
   await page.getByRole("button", { name: "新たな探索" }).click();
   await page.getByTestId("scenario-card-default").click({ timeout: 5000 }).catch(() => {});
-  await check(page.getByText("潜る気か", { exact: false }), "ギルド説明", "guild-briefing");
+  await check(page.getByText("ようこそ。登録するなら", { exact: false }), "ギルド説明", "guild-briefing");
 
   // 2) Quick-recruit prompt (guild master speech during recruiting)
   await page.getByRole("button", { name: "登録を始める" }).click().catch(() => undefined);
