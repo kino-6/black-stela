@@ -20,9 +20,10 @@ unfixed** (`IMP-024..029`) while advanced content shipped on top.
 - **P3** every hand-found defect earns a regression lock **and**, if a gate should
   have caught it, the missing gate.
 
-New numbered items from this playtest: `IMP-030..IMP-048` (below). `IMP-024`,
+New numbered items from this playtest: `IMP-030..IMP-054` (below). `IMP-024`,
 `IMP-025`, `IMP-026`, `IMP-028`, `IMP-029` were **re-confirmed by live play** and
-are now under the P2 priority guard.
+are now under the P2 priority guard. `IMP-030/031/032/033/034/038/040/044` are
+**done and archived** — [completion record](docs/archive/Improve.completed-imp-030-044-2026-07-25.md).
 
 ## Review Evidence
 
@@ -68,25 +69,23 @@ like a DRPG rather than a web service.
 | `IMP-027` | P1 | Reproduced | A direct guild departure can return from the dungeon to Adventurer Registration instead of the town return loop. |
 | `IMP-028` | P1 | Reproduced | Character creation remains a scrolling card catalog and stat-entry form rather than a focused adventurer-making flow. |
 | `IMP-029` | High | Approved capability; re-confirmed 07-25 | Entering a room auto-grabs its treasure; there is no chamber-fight → chest → investigate/disarm/open exploration loop, and thief-class trap handling is unused. Floors are all 1-wide corridors — no 玄室 authored. |
-| `IMP-030` | **P0** | Reproduced (mechanism authored) | The truth-gate `gate:final` plays **React**; the shipped artifact is **Godot**. No gate plays the Godot build end-to-end. Build the `gate:play` played-build loop gate + wire Godot gates into the truth-gate. |
-| `IMP-031` | P1 | Reproduced (suspected) | Returning to town resets the explored map (`visitedCells`). No gate walks town→dungeon→town→dungeon and asserts persistence. |
-| `IMP-032` | P1 | Reproduced | Held-key movement does not repeat — holding forward steps once. |
-| `IMP-033` | P1 | Reproduced | Esc does not close the full-map modal (only the 立ち去る button does). |
-| `IMP-034` | P1 | Reproduced | Shop consumables show no description though the data has one and the equipment tab renders it. Needs a per-entity surfacing gate. |
 | `IMP-035` | P2 | Reproduced | Character-creation aptitudes have no in-UI explanation of what they change. |
 | `IMP-036` | P2 | Reproduced | Combat background is pure black (FC-like); the full-frame stage has no environment backdrop. |
 | `IMP-037` | P2 | Reproduced | View distance / lighting is pitch-black, contradicting the "Verdant/lush" theme. Make it scenario- and floor-authored (content-is-data). |
-| `IMP-038` | P2 | Reproduced | 帰還後の支度 mislabels the starting potion as brought-back loot and uses lying flavor-status lines ("もう一度潜れる"). Replace with honest, concrete state. |
-| `IMP-039` | P2 | Reproduced | Creation polish: overwrought placeholder name; one reroll changes all identity fields; portrait coupled to origin. Decouple face; per-field reroll. |
-| `IMP-040` | P3 | Reproduced (design) | Shop stock lacks a design shape (immediate/aspirational/mystery). Encode as a scenario Skill or gate. |
+| `IMP-039` | P2 | Partly done (placeholder fixed) | Creation polish: the overwrought placeholder name is fixed; one reroll still changes all identity fields and the portrait is coupled to origin. Decouple face; per-field reroll. |
 | `IMP-041` | P3 | Confirmed intended (feel open) | First-contact encounters go silent per floor visit; make density/respawn scenario-authored rather than fixed. |
-| `IMP-042` | P1 | Reproduced | No always-visible party status in town and no menu openable at any time. |
-| `IMP-043` | P1 | Reproduced (gate debt) | `gate:ux-parity` fails on the title screen (3/12 keys — New run / continue save-slots / config not rendered vs React TitleScreen.tsx), so the whole `gate:migration` Godot chain is red and unwatched. Proven pre-existing via a stashed baseline on 2026-07-25. Until fixed, `gate:play` runs standalone. |
-| `IMP-044` | P1 | Reproduced by independent Godot play | Using an authored return stair reaches town correctly but logs `Invalid call. Nonexistent function 'get' in base 'Nil'` from `dungeon.gd:_current_cell`: the old dungeon scene rebuilds its camera after the return command has nulled `position`. |
-| `IMP-045` | P1 | Reproduced (gate debt) | `gate:play` passes only pure entry/continuation decisions for #11/#12. It does not exercise the real scene/input paths for #3, #13, or #17 despite the played-build gate describing those locks. |
-| `IMP-046` | P1 | Reproduced by independent native launch | The documented debug start (`godot --path godot/ -- --debug-mode`) does not mount the debug overlay, so QA cannot reliably reach the controlled states needed to reproduce input, return, loot, or modal defects. |
-| `IMP-047` | P1 | Reproduced by independent native launch | Title background loading emits Godot's “will not work on export” warning. The development tree renders it, but packaged macOS/Web builds can lose the player-facing title image. |
-| `IMP-048` | P2 | Reproduced by independent native play | The scenario-selection screen has a selected card but no visible select/confirm/cancel legend, unlike the title. The first decision is keyboard-operable but does not teach its operation. |
+| `IMP-042` | P1 | Partly done (status shown) | Always-visible party status is on the town square; a menu openable at any time (a global status hotkey across scenes) remains, and the 720p fit of the added rows needs a real-build check. |
+| `IMP-043` | P1 | Reproduced (gate debt) | `gate:ux-parity` fails on the title screen (3/12 keys — New run / continue save-slots / config not rendered vs React TitleScreen.tsx), so the whole `gate:migration` Godot chain is red and unwatched. Proven pre-existing via a stashed baseline on 2026-07-25. Needs a product call: EN runtime support vs a documented manifest exemption. |
+| `IMP-045` | P1 | Partly done (gate debt) | `verify_dungeon_controller` now drives the real dungeon scene for #13 (Esc) and #17 (held repeat); the remaining gap is #3's loot-delta on the real scene/input path (town-side, not yet gate-driven). |
+| `IMP-046` | P1 | Partly done (flag fix + gate) | `-- --debug-mode` now mounts the panel (get_cmdline_user_args) and `gate:debug-start` proves it. Remaining: named QA fixture starts (open_corridor / map_modal / combat_victory / return_ready / loot_delta / shop_description), in-mode diagnostics, and action-trace replay. |
+| `IMP-047` | P1 | Partly done (title fixed) | title.gd loads the backdrop as an imported resource (export-safe) with `gate:title-asset`. Remaining: the same `_texture` pattern in town.gd/dungeon.gd, and a real packaged-export `gate:package-smoke`. |
+| `IMP-048` | P2 | Partly done (legend + focus gate) | The select/confirm/back legend is shown and `verify_scenario_picker` locks focus + legend. Remaining: assert Down/Up selection, Confirm-advances, Cancel-returns, and the 1280x720 not-clipped screen contract. |
+| `IMP-049` | P1 | Approved gate design | Verification is either too weak (hand-picked headless checks) or too expensive (full E2E per edit). Add a scoped, executable change gate that runs fast affected checks by default and escalates native/full routes only for defined risk. |
+| `IMP-050` | P1 | Proposed refactor — after active rule fixes land | `slice_rules.gd` is a 1,235-line dispatcher plus exploration, expedition, party lifecycle, item, and grid helpers. Split cohesive pure command handlers while preserving TS parity. |
+| `IMP-051` | P2 | Proposed refactor — defer while dungeon UX is active | `dungeon.gd` is a 1,095-line scene that owns rendering, assets, HUD, modal UI, input repeat, rule dispatch, and scene handoff. Give it a thin scene spine with renderer/HUD/input collaborators. |
+| `IMP-052` | P2 | Proposed refactor — defer while combat presentation is active | `combat.gd` is a 1,037-line scene that owns command flow, stage layout, party vitals, animation playback, assets, and result handoff. Extract presentation collaborators without moving combat truth out of `CombatRound`. |
+| `IMP-053` | P1 | Proposed refactor; coordinate with IMP-047 | Title, town, guild, dungeon, combat, and result duplicate dynamic JSON/image/asset-path loading. Divergent world-id and export behavior is already observable; centralize the runtime resource boundary. |
+| `IMP-054` | P1 | Proposed refactor; prerequisite for IMP-046/049 | Scene captures rely on scattered `set_state_override`/`set_ui_state` seams and direct fixture loading. Make named fixtures and native-route observation one test harness so gate evidence describes the screen actually exercised. |
 
 ## IMP-046: Make QA Debug Starts Reproducible And Observable
 
@@ -210,6 +209,278 @@ contract without reading a manual or guessing from an earlier screen.
 invisible to a first-time player; controller gates proving action dispatch while
 missing the player-facing affordance.
 
+## IMP-049: Add a Scoped Change Gate Instead of Requiring Full E2E Per Edit
+
+**Category:** Developer workflow / regression prevention
+
+**Decision:** player-facing work must have an executable self-check before it is
+reported ready, but full title-to-town E2E is reserved for integration risk and
+merge. This avoids both failure modes seen in this project: a cheap gate that
+never reaches the broken behavior, and a slow gate that agents defer or bypass.
+The policy belongs in a versioned script and manifest, not in a Claude prompt
+or a self-reported checklist.
+
+**Why this matters:** the existing fast gates are useful components
+(`gate:play`, controller and focused `verify_*.gd` scripts), but they are not
+selected consistently by the changed player contract. Conversely,
+`gate:migration` is a broad chain and full normal-route E2E is disproportionate
+for a localized dungeon input or scenario-picker change. A predictable local
+gate gives Claude a fast, honest stop condition while preserving stronger
+coverage where a local test cannot be trusted.
+
+### Implementation Slices
+
+- [ ] Add a versioned impact manifest (for example
+  `godot/gates/change-impact.json`) that maps task scopes and high-risk files to
+  required checks. Initial scopes: `dungeon`, `combat`, `town`, `guild`,
+  `scenario-picker`, `content`, `save`, `package`, and `docs`.
+- [ ] Add `npm run gate:changed -- --scope <scope>`. It must print the selected
+  contract, commands run, commands deliberately not run, and exit non-zero when
+  any required command fails. A shared dirty worktree must not silently make an
+  agent claim another agent's files; the task explicitly names its owned scope.
+- [ ] Define three levels:
+  1. **Fast (always):** diff check, compile/shell, and the relevant deterministic
+     validator or focused test.
+  2. **Affected (player-facing Godot change):** relevant `verify_*.gd`,
+     `gate:play`/controller checks, and an exact screen/state assertion.
+  3. **Native slice:** only when input, modal, scene handoff, or rendering is
+     touched; launch one named debug fixture and prove one real action, expected
+     screen/state, and zero `SCRIPT ERROR` output.
+- [ ] Escalate automatically to the full normal-route E2E and independent visual
+  review when a change touches `scene_manager.gd`, `run_state.gd`, save/schema,
+  `input_actions.gd`, common UI kit, package/export, cross-scene transition, or
+  an `IMP` P0/P1 regression. Run the same full route before merge even if no
+  single trigger fired.
+- [ ] Keep `gate:play`'s current pure rules contract explicitly named as such;
+  do not describe it as native interaction proof. `IMP-045` owns the native
+  route extension.
+
+### Example Contracts
+
+| Scope | Fast + affected checks | Native slice | Full-route escalation |
+| --- | --- | --- | --- |
+| `dungeon` | shell, played-loop, dungeon-controller, controller coverage | `open_corridor`: hold forward; assert repeat and stop conditions | input map, return/combat/result handoff, P0/P1 item |
+| `scenario-picker` | shell + picker/controller contract | selected scenario → Confirm; Esc → title | shared UI kit or first-play route changes |
+| `content` | export pack + schema/topology/content validators | only if its player-facing renderer changed | save schema, generated asset/export contract |
+| `docs` | diff check | none | none |
+
+### Acceptance / Gate
+
+- [ ] A player-facing task cannot be reported ready without one successful
+  `gate:changed` result and its scope in the handoff.
+- [ ] The gate fails if the named scope has no mapping, a required command is
+  skipped, or a declared high-risk file lacks a full-route requirement.
+- [ ] A normal dungeon input edit completes fast + affected + one native slice
+  without running full E2E; a `SceneManager` or save edit demonstrably requests
+  the full route.
+- [ ] Handoff format is machine-readable enough to audit: scope, player
+  contract, commands, result, native evidence path if required, and why full
+  E2E was or was not selected.
+
+**Past trouble likely to recur:** headless rules proof being called real play;
+agents skipping slow verification; controller/input regressions hidden until a
+human plays; a broad, permanently red gate being ignored rather than repaired.
+
+## IMP-050: Split the Pure Command Dispatcher by Gameplay Boundary
+
+**Category:** Rules architecture / parity safety
+
+**Evidence:** `godot/scripts/rules/slice_rules.gd` is 1,235 lines. Its public
+`resolve()` dispatcher is correctly central, but the same file also implements
+dungeon exploration and grid queries, stairs/return/checkpoints, party roster
+lifecycle, debug commands, item use, and low-level collection helpers. This is
+already larger than `combat_round.gd`, despite several command families having
+their own modules (`Economy`, `Loot`, `Quests`, `Vocations`, `Chests`).
+
+**Decision:** retain one thin `SliceRules.resolve()` entry point and the exact
+`{ state, events }` contract. Extract handlers verbatim into leaf modules; do
+not alter command ordering, random seeds, event text, or dictionary shape as
+part of this refactor.
+
+### Implementation Slices
+
+- [ ] Extract `exploration_commands.gd`: turn, move, search/listen, grid edge
+  lookup, cell effects, and map discovery.
+- [ ] Extract `expedition_commands.gd`: enter, stairs, return, checkpoint,
+  combat continuation, and expedition baseline handling.
+- [ ] Extract `party_commands.gd`: row changes, bench/recall/retire/erase,
+  identity edits, reclass, and import.
+- [ ] Extract `item_commands.gd`: normal/growth item use and inventory helpers.
+- [ ] Leave `SliceRules` as imports + command-to-handler routing only. Shared
+  helpers move to a named leaf module only after both consumers exist; do not
+  create a generic utilities dumping ground.
+
+### Acceptance / Gate
+
+- [ ] Every extracted module is pure: no `Node`, scene, input, renderer, or
+  file-system dependency.
+- [ ] Existing TS↔Godot trace parity, save checks, and all focused rule tests
+  pass unchanged; add a trace for each command family if one is missing.
+- [ ] The dispatcher's public commands and unknown-command no-op behavior are
+  byte-for-byte compatible before and after the split.
+- [ ] Refactor commits are separate from gameplay features and each is small
+  enough to revert independently.
+
+**Non-goals:** porting unported commands, renaming player-facing events, or
+changing the TypeScript oracle.
+
+## IMP-051: Turn Dungeon Into a Thin Scene Spine
+
+**Category:** Dungeon presentation maintainability
+
+**Evidence:** `godot/scripts/dungeon.gd` is 1,095 lines and currently combines
+first-person mesh generation/materials, world asset lookup, minimap/party/dock
+construction, map and party modals, held-key repeat, rule dispatch, event log
+projection, and combat/town scene handoff. A change to one concern requires
+reading and rebuilding controls from several others; the `position = null`
+return bug (IMP-044) is an example of lifecycle work leaking across boundaries.
+
+**Decision:** keep `Dungeon` responsible for acquiring `Run`, selecting the
+current scene state, and coordinating transitions. Move rendering and screen
+regions behind explicit collaborators with no authority to mutate game state.
+
+### Implementation Slices
+
+- [ ] Extract `dungeon_renderer.gd`: SubViewport, environment, geometry,
+  camera/light placement, materials, and current-cell view updates.
+- [ ] Extract `dungeon_hud.gd`: header, minimap, party rail, fixed dock, and
+  full-map/party modal construction. It accepts state and callbacks; it does
+  not call `SliceRules` directly.
+- [ ] Extract `dungeon_input.gd`: named input mapping, held-repeat timing, and
+  stop conditions. It emits an action callback; `Dungeon` remains the sole
+  command dispatcher and scene-transition owner.
+- [ ] Keep `set_state_override` / `set_ui_state` as explicit test seams until
+  IMP-054 supplies a shared fixture harness.
+
+### Acceptance / Gate
+
+- [ ] Normal and fixture paths render the same state; no collaborator silently
+  fabricates `position`, map, inventory, or encounter state.
+- [ ] `gate:play`, dungeon-controller checks, and the native corridor slice
+  cover held repeat, map cancel, chest/modal stop, victory resume, and return.
+- [ ] Geometry/minimap/facing agreement remains covered by the Grid Labyrinth
+  Gate; screenshots are reviewed at the project viewport.
+
+**Non-goals:** visual reskin, lighting rebalance, changing command layout, or
+changing dungeon topology. Defer this item until active dungeon UX work lands.
+
+## IMP-052: Separate Combat Orchestration From Combat Presentation
+
+**Category:** Combat presentation maintainability
+
+**Evidence:** `godot/scripts/combat.gd` is 1,037 lines. It owns per-member
+command collection, target selection, repeat/auto, `CombatRound` dispatch,
+playback effects, enemy-stage geometry, party-vital rendering, asset loading,
+and victory/wipe routing. `combat/command_menu.gd` already demonstrates the
+desired boundary, but the remaining visual regions cannot evolve independently.
+
+**Decision:** retain `CombatRound` as the pure deterministic authority and keep
+`Combat` as the single scene-level coordinator. Extract only state-derived
+presentation and playback helpers; no combat rule moves into Controls.
+
+### Implementation Slices
+
+- [ ] Extract `combat_stage.gd`: enemy marks, target reticle, condition labels,
+  placement bounds, and environment backdrop.
+- [ ] Extract `combat_party_hud.gd`: fixed 3+3 formation, vitals, active actor
+  emphasis, and status indicators.
+- [ ] Extract `combat_playback.gd`: damage/defeat flourishes and animation-safe
+  presentation from resolved events. It may not change state or decide victory.
+- [ ] Let `combat.gd` own only state acquisition, menu phase, order commit,
+  dispatch, result routing, and coordination of the three collaborators.
+
+### Acceptance / Gate
+
+- [ ] State hash and emitted combat events remain identical for the same round.
+- [ ] Controller flow still advances standing members in formation order; target
+  selection, Cancel, repeat, auto interruption, victory, and wipe retain their
+  current semantics.
+- [ ] Combat screenshot and geometry gates prove HUD regions do not hide enemy
+  marks, and party vitals remain visible.
+
+**Non-goals:** combat balance, new techniques, a different auto-battle policy,
+or a visual redesign. Defer while IMP-024/036 presentation changes are active.
+
+## IMP-053: Centralize Runtime Resource and World-Asset Resolution
+
+**Category:** Runtime boundary / packaging safety
+
+**Evidence:** title, town, guild, dungeon, combat, and result each implement
+their own JSON/image/asset helpers. Several use `Image.load_from_file()` and
+different world-id fallbacks. `dungeon.gd` contains a historical workaround for
+registry id versus internal world id; title loading currently raises the export
+warning tracked by IMP-047. Repeated resource behavior makes a correct local
+fix easy to miss on another screen.
+
+**Decision:** define one small runtime resource boundary that knows the registry
+world id, pack locations, required-versus-optional assets, imported textures,
+and diagnostic errors. Scenes request named assets; they do not compose raw
+`res://assets/worlds/%s/...` paths independently.
+
+### Implementation Slices
+
+- [ ] Add a `world_resources.gd` leaf service for world pack/engine JSON and
+  world-relative asset paths, with explicit required/optional loading results.
+- [ ] Route title, town, guild, dungeon, combat, and result through it in
+  isolated commits, retaining their visible fallback behavior until IMP-047's
+  exported-build acceptance is available.
+- [ ] Resolve packaged textures through imported resources or an explicit export
+  registry; never suppress a missing required image with a silent null texture.
+- [ ] Make asset diagnostics name the world registry id and logical asset key,
+  not just an opaque path.
+
+### Acceptance / Gate
+
+- [ ] Default and Verdant resolve the same logical title/portrait/dungeon asset
+  keys without a scene-local id conversion.
+- [ ] `verify_assets`, UX captures, and the package smoke from IMP-047 pass;
+  exported builds have no dynamic-image warning or missing mandatory art.
+- [ ] No resource service imports scene code or game rules.
+
+**Non-goals:** changing art direction or merging scenario-specific assets into
+a universal shared pack.
+
+## IMP-054: Unify Native Scene Fixtures and Observation
+
+**Category:** Test harness / evidence integrity
+
+**Evidence:** individual scenes expose similar but separate
+`set_state_override` / `set_ui_state` test seams, while captures and verifiers
+also load JSON traces directly. This has previously permitted an assertion and
+its screenshot to describe different fixture states. It also prevents the
+scoped native slices in IMP-049 from saying exactly which scene, inputs, and
+output they proved.
+
+**Decision:** create a test-only harness for named runtime states and observable
+native actions. Fixtures may establish a deterministic state, but all follow-up
+actions travel through normal input/command/scene code. The harness is never
+mounted in normal play.
+
+### Implementation Slices
+
+- [ ] Define named fixture documents for `open_corridor`, `map_modal`,
+  `combat_victory`, `return_ready`, `loot_delta`, and `shop_description`; reuse
+  them in both captures and assertions.
+- [ ] Provide one test helper to start a scene with a fixture, send a named
+  input/action, wait for its declared idle/transition condition, and collect
+  scene, phase, state hash, errors, and screenshot evidence.
+- [ ] Migrate one existing gate at a time; preserve its old fixture and compare
+  state hash/screenshot before deleting duplicate setup.
+- [ ] Feed the harness into IMP-046's debug state deck and IMP-049's native
+  slice without exposing fixture selection to players.
+
+### Acceptance / Gate
+
+- [ ] A capture and its paired assertion consume the identical named fixture
+  and UI state; the harness rejects a missing or mismatched name.
+- [ ] A native corridor test proves hold-repeat and stop-on-modal; a return test
+  proves no script error; both leave reproducible artifacts.
+- [ ] The harness works in CI/headless where appropriate and labels any visual
+  native-desktop requirement rather than pretending headless pixels prove it.
+
+**Non-goals:** replacing deterministic TS/Godot parity, making debug controls
+player-visible, or treating fixture playback as the title-to-town full route.
+
 ## Archive
 
 - `IMP-001` to `IMP-008`:
@@ -226,6 +497,8 @@ missing the player-facing affordance.
   [completion record](docs/archive/Improve.completed-imp-017-2026-07-14.md)
 - `IMP-018` to `IMP-020`:
   [completion record](docs/archive/Improve.completed-imp-018-020-2026-07-15.md)
+- `IMP-030/031/032/033/034/038/040/044` (2026-07-25 playtest core-loop fixes):
+  [completion record](docs/archive/Improve.completed-imp-030-044-2026-07-25.md)
 
 ## IMP-021: Career Mastery And Advanced Vocations
 
