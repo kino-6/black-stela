@@ -226,7 +226,7 @@ func _build_square() -> void:
 	else:
 		_ledger_row(ledger, I18n.t("town.expeditionResult"), _latest_log_text(s))
 		_ledger_row(ledger, I18n.t("town.wounds"), _wounds_summary(party))
-		_ledger_row(ledger, I18n.t("town.loot"), _loot_summary(s))
+		_ledger_row(ledger, I18n.t("town.loot"), _loot_summary(s, "town.noLoot", true))
 		_ledger_row(ledger, I18n.t("town.nextPreparation"), _next_preparation(s, party))
 	_menu_host.add_child(UI.card(ledger))
 
@@ -317,16 +317,31 @@ func _wounds_summary(party: Array) -> String:
 
 ## Before the first descent the party is looking at SUPPLIES they carry down; afterwards it is LOOT they
 ## carried back. Same emptiness, different sentence — React says both, and the port said only one.
-func _loot_summary(s: Dictionary, empty_key: String = "town.noLoot") -> String:
+func _loot_summary(s: Dictionary, empty_key: String = "town.noLoot", only_gains: bool = false) -> String:
+	# When reporting expedition LOOT (only_gains), subtract what the party carried down (loot_baseline)
+	# so supplies brought from town are never miscounted as things brought back (playtest #3). Before the
+	# first descent the same call reports SUPPLIES in full (only_gains=false).
+	var baseline: Dictionary = _run.loot_baseline if (only_gains and _run) else {}
 	var parts := []
 	var count := 0
 	for item in s.get("inventory", []):
-		count += int(item.get("quantity", 1))
+		var id := String(item.get("id", ""))
+		var qty := int(item.get("quantity", 1)) - int(baseline.get(id, 0))
+		if qty <= 0:
+			continue
+		count += qty
 		if parts.size() < 3:
-			parts.append(Fmt.localized_catalog_name(_world, item.get("id", "")))
+			parts.append(Fmt.localized_catalog_name(_world, id))
 	if count == 0:
 		return I18n.t(empty_key)
 	return " / ".join(PackedStringArray(parts))
+
+func _inventory_counts(s: Dictionary) -> Dictionary:
+	var counts := {}
+	for item in s.get("inventory", []):
+		var id := String(item.get("id", ""))
+		counts[id] = int(counts.get(id, 0)) + int(item.get("quantity", 1))
+	return counts
 
 func _next_preparation(s: Dictionary, party: Array) -> String:
 	if Fmt.party_recovery_cost(party) > 0:
@@ -424,6 +439,10 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 
 func _on_descend() -> void:
+	# Remember what the party carries DOWN, so the return ledger can show what it actually brought back
+	# (playtest #3: an untouched starting potion was reported as "持ち帰った物").
+	if _run:
+		_run.loot_baseline = _inventory_counts(state())
 	get_tree().change_scene_to_file("res://scenes/dungeon.tscn")
 
 ## Rest points the party has actually WALKED to (port of listUnlockedCheckpoints) — never a floor they
@@ -444,6 +463,8 @@ func _dispatch_resume(room_id: String) -> void:
 	if _run:
 		_run.dispatch({"type": "resume_at_checkpoint", "roomId": room_id})
 	if state().get("phase", "") == "dungeon":
+		if _run:
+			_run.loot_baseline = _inventory_counts(state())
 		get_tree().change_scene_to_file("res://scenes/dungeon.tscn")
 
 func _texture(path: String) -> Texture2D:

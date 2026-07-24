@@ -295,6 +295,20 @@ func _build_overlays() -> void:
 	_rebuild_party_hud()
 
 # --- input: arrows OWN movement (consume them so they don't move dock focus); dock owns confirm ----
+# The action → rules-command map, and the hold-to-repeat timings. move_back/sidesteps were promised by
+# the on-screen legend; all six now step AND auto-repeat while held.
+const MOVE_COMMANDS := {
+	"turn_left": "turn_left", "turn_right": "turn_right",
+	"move_forward": "move_forward", "move_back": "move_backward",
+	"sidestep_left": "strafe_left", "sidestep_right": "strafe_right",
+}
+const HOLD_DELAY := 0.30   # a held key waits this long before it starts repeating (so a tap is one step)
+const HOLD_RATE := 0.16    # then repeats at this interval
+
+var _held_action: String = ""
+var _hold_elapsed: float = 0.0
+var _repeat_accum: float = 0.0
+
 func _input(event: InputEvent) -> void:
 	if _busy:
 		return
@@ -306,29 +320,45 @@ func _input(event: InputEvent) -> void:
 			_toggle_full_map()
 		get_viewport().set_input_as_handled()
 		return
-	if event.is_action_pressed("turn_left"):
-		_apply(SliceRules.resolve(_state, {"type": "turn_left"}, _world, _engine))
-		get_viewport().set_input_as_handled()
-	elif event.is_action_pressed("turn_right"):
-		_apply(SliceRules.resolve(_state, {"type": "turn_right"}, _world, _engine))
-		get_viewport().set_input_as_handled()
-	elif event.is_action_pressed("move_forward"):
-		_apply(SliceRules.resolve(_state, {"type": "move_forward"}, _world, _engine))
-		get_viewport().set_input_as_handled()
-	# The legend promises 移動 ↑↓ · 旋回 ←→ · 横歩き Q/E — all four must actually MOVE the party. Only
-	# forward and the turns were ever wired, so S/↓ and Q/E did nothing while the screen said they would.
-	elif event.is_action_pressed("move_back"):
-		_apply(SliceRules.resolve(_state, {"type": "move_backward"}, _world, _engine))
-		get_viewport().set_input_as_handled()
-	elif event.is_action_pressed("sidestep_left"):
-		_apply(SliceRules.resolve(_state, {"type": "strafe_left"}, _world, _engine))
-		get_viewport().set_input_as_handled()
-	elif event.is_action_pressed("full_map"):
+	# The legend promises 移動 ↑↓ · 旋回 ←→ · 横歩き Q/E — every one MOVES the party, and every one
+	# auto-repeats while HELD (see _process), so walking a corridor is one press-and-hold, not a tap per cell.
+	for action in MOVE_COMMANDS:
+		if event.is_action_pressed(action):
+			_begin_move(action)
+			get_viewport().set_input_as_handled()
+			return
+	if event.is_action_pressed("full_map"):
 		_toggle_full_map()
 		get_viewport().set_input_as_handled()
-	elif event.is_action_pressed("sidestep_right"):
-		_apply(SliceRules.resolve(_state, {"type": "strafe_right"}, _world, _engine))
-		get_viewport().set_input_as_handled()
+
+# Auto-repeat a HELD movement key: one press steps once (via _begin_move), then after HOLD_DELAY the
+# party keeps stepping every HOLD_RATE while the key stays down. Any decision that takes the screen — a
+# fight, a chest, an open overlay, or the key being released — ends the repeat at once, so the player is
+# never carried past a choice.
+func _process(delta: float) -> void:
+	if _held_action == "":
+		return
+	if _busy or (_full_map and is_instance_valid(_full_map)) or (_party_menu and is_instance_valid(_party_menu)) \
+			or String(_state.get("phase", "")) != "dungeon" or not current_chest().is_empty() \
+			or not Input.is_action_pressed(_held_action):
+		_held_action = ""
+		return
+	_hold_elapsed += delta
+	if _hold_elapsed < HOLD_DELAY:
+		return
+	_repeat_accum += delta
+	if _repeat_accum >= HOLD_RATE:
+		_repeat_accum = 0.0
+		_do_move(_held_action)
+
+func _begin_move(action: String) -> void:
+	_do_move(action)
+	_held_action = action
+	_hold_elapsed = 0.0
+	_repeat_accum = 0.0
+
+func _do_move(action: String) -> void:
+	_apply(SliceRules.resolve(_state, {"type": String(MOVE_COMMANDS[action])}, _world, _engine))
 
 # Public entry for the headless flow-capture harness: take one step forward through the ported rules
 # (which, at the landing, walks into the authored ash-slime room and hands off to combat).
