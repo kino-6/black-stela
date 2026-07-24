@@ -177,12 +177,14 @@ static func _stock_row(ctx: Dictionary, world: Dictionary, state: Dictionary, en
 	var eq: Variant = Fmt.find_equipment(world, item_id)
 	var body := UI.col(2)
 	body.add_child(UI.label(Fmt.localized_catalog_name(world, item_id), 17, UI.INK))
+	# Every item explains itself — gear AND consumables. The consumable tab used to show only a name and a
+	# price (playtest #2); the description is authored per item and belongs on every category, not just gear.
+	var desc := Fmt.localized_catalog_description(world, item_id)
+	if desc != "":
+		body.add_child(UI.prose(desc, 13, UI.DIM, 380))
 
 	if typeof(eq) == TYPE_DICTIONARY:
 		body.add_child(UI.label("%s · %s" % [Fmt.format_equipment_slot(String(eq.get("slot", ""))), Fmt.format_equipment_effect(eq)], 14, UI.DIM))
-		var desc := Fmt.localized_catalog_description(world, item_id)
-		if desc != "":
-			body.add_child(UI.prose(desc, 13, UI.DIM, 380))
 		# WHO CAN USE IT + WHAT IT CHANGES — the two things AGENTS.md requires of a shop.
 		var usable: bool = Fmt.is_usable_by(eq, selected)
 		var fit := I18n.t("town.canEquip" if usable else "town.cannotEquip", {"member": String(selected.get("name", ""))})

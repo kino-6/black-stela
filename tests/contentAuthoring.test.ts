@@ -90,3 +90,25 @@ describe("IMP-021B / IMP-022B authored content", () => {
     });
   }
 });
+
+// IMP-034 / played-build-gate G3 — every player-facing item and gear must carry a description a player
+// can read. The shop consumable tab had regressed to name + price (2026-07-25 playtest #2); the durable
+// half of the fix is this data lock. The game ships Japanese-primary, so the Japanese description is the
+// one that must be present (equipment may still fall back to its base description).
+describe("G3: every catalogued item and gear explains itself", () => {
+  for (const [worldId, world] of shippedWorlds) {
+    it(`${worldId}: every item has a readable Japanese description`, () => {
+      const missing = world.items
+        .filter((item) => !(item.locales?.ja?.description ?? "").trim())
+        .map((item) => item.id);
+      expect(missing, `${worldId}: items with no readable description: ${missing.join(", ")}`).toEqual([]);
+    });
+
+    it(`${worldId}: every equipment has a readable description`, () => {
+      const missing = world.equipment
+        .filter((gear) => !(gear.locales?.ja?.description ?? gear.description ?? "").trim())
+        .map((gear) => gear.id);
+      expect(missing, `${worldId}: equipment with no readable description: ${missing.join(", ")}`).toEqual([]);
+    });
+  }
+});

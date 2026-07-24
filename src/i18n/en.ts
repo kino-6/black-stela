@@ -505,6 +505,7 @@ export const en = {
     nextRecovery: "Treat wounds before the next descent.",
     nextShop: "Check equipment before the next descent.",
     readyToDescend: "The party can descend again.",
+    noRecord: "Returned in one piece.",
     recoveryHeading: "Recovery",
     recordsHeading: "Records",
     recoverParty: "Recover party",

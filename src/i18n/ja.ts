@@ -507,6 +507,7 @@ export const ja = {
     nextRecovery: "先に傷を診せる。",
     nextShop: "装備を見直す。",
     readyToDescend: "もう一度潜れる。",
+    noRecord: "無事に帰還した。",
     recoveryHeading: "施療院",
     recordsHeading: "記録",
     recoverParty: "治療",

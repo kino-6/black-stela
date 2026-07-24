@@ -306,7 +306,9 @@ func _latest_log_text(s: Dictionary) -> String:
 		var text := String(entry.get("text", ""))
 		if text != "":
 			return text
-	return I18n.t("town.readyToDescend")
+	# A RECORD of the expedition, so the empty case is an honest "nothing to report" — not the flavour
+	# "もう一度潜れる" (that belongs to 次の支度, and reading it as a record was the playtest #16 "大嘘").
+	return I18n.t("town.noRecord")
 
 func _wounds_summary(party: Array) -> String:
 	var parts := []
