@@ -46,7 +46,8 @@
     "tauri": "tauri",
     "export:character-data": "node scripts/run-vite-module.mjs scripts/export-character-data.ts",
     "export:character-samples": "node scripts/run-vite-module.mjs scripts/export-character-samples.ts",
-    "gate:fixtures": "godot --headless --path godot/ --script res://tests/verify_debug_fixtures.gd"
+    "gate:fixtures": "godot --headless --path godot/ --script res://tests/verify_debug_fixtures.gd",
+    "gate:package-smoke": "npm run stage:assets && npm run import:assets && node scripts/gate-package-smoke.mjs"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.0.0",
