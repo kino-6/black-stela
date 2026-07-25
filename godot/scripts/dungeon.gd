@@ -13,6 +13,7 @@ const UIKit := preload("res://scripts/town/ui_kit.gd")
 const ChestPanel := preload("res://scripts/dungeon/chest_panel.gd")
 const WorldResources := preload("res://scripts/world_resources.gd")
 const DungeonRenderer := preload("res://scripts/dungeon/dungeon_renderer.gd")
+const DungeonHud := preload("res://scripts/dungeon/dungeon_hud.gd")
 const PartyPanel := preload("res://scripts/town/party_panel.gd")
 const CharacterStats := preload("res://scripts/rules/character_stats.gd")
 const Chests := preload("res://scripts/rules/chests.gd")
@@ -381,82 +382,7 @@ func _rebuild_party_hud() -> void:
 			if String(member.get("row", "front")) == row:
 				members.append(member)
 	for member in members:
-		_party_hud.add_child(_party_token(member))
-
-func _party_token(member: Dictionary) -> Control:
-	var stats: Dictionary = CharacterStats.effective(member, _world)
-	var max_hp: int = maxi(1, int(stats.get("maxHp", member.get("maxHp", 1))))
-	var hp: int = int(member.get("hp", 0))
-	var down: bool = member.get("injury", null) != null or hp <= 0
-	var danger: bool = hp <= int(ceil(float(max_hp) * 0.35))
-
-	var body := UIKit.col(2)
-	body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	var head := UIKit.row()
-	var portrait := TextureRect.new()
-	portrait.texture = _texture(_portrait_path(member))
-	portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-	portrait.custom_minimum_size = Vector2(48, 76)
-	head.add_child(portrait)
-	head.add_child(UIKit.label(I18n.t("play.frontRow" if String(member.get("row", "front")) == "front" else "play.backRow"), 11, DIM))
-	head.add_child(UIKit.grow(UIKit.label(String(member.get("name", "?")), 16, BAD if down else INK)))
-	head.add_child(UIKit.label("Lv %d" % int(member.get("level", 1)), 12, DIM))
-	body.add_child(head)
-
-	var vitals := UIKit.row()
-	vitals.add_child(UIKit.label("HP %d/%d" % [hp, max_hp], 12, BAD if danger else INK))
-	var max_mp := int(stats.get("maxMp", member.get("maxMp", 0)))
-	if max_mp > 0:
-		vitals.add_child(UIKit.label("%s %d/%d" % [I18n.t("play.mpShort"), int(member.get("mp", 0)), max_mp], 12, INK))
-	body.add_child(vitals)
-	body.add_child(_gauge(float(hp) / float(max_hp), BAD if danger else OK))
-	if max_mp > 0:
-		body.add_child(_gauge(float(int(member.get("mp", 0))) / float(max_mp), Color("6a86b0")))
-
-	# React names this block for the player (play.memberStatus): the numbers underneath are what an
-	# encounter is judged by, and an unlabelled row of figures is a readout, not information.
-	var numbers := UIKit.row()
-	numbers.add_child(UIKit.label(I18n.t("play.memberStatus"), 11, DIM))
-	numbers.add_child(UIKit.label("%s %d-%d" % [I18n.t("party.damage"), int(stats.get("damageMin", 0)), int(stats.get("damageMax", 0))], 12, DIM))
-	numbers.add_child(UIKit.label("%s %d" % [I18n.t("party.armor"), int(stats.get("armor", 0))], 12, DIM))
-	numbers.add_child(UIKit.label("%s %d" % [I18n.t("party.speed"), int(stats.get("speed", 0))], 12, DIM))
-	body.add_child(numbers)
-
-	# Conditions the player must act on (ward is a self-buff, not a warning).
-	var pips := []
-	for status in member.get("status", []):
-		if String(status) != "ward":
-			pips.append(I18n.t("partyMenu.status.%s" % String(status)) if I18n.has("partyMenu.status.%s" % String(status)) else String(status))
-	if member.get("injury", null) != null:
-		pips.append(I18n.t("partyMenu.wounded"))
-	if not pips.is_empty():
-		body.add_child(UIKit.label(" · ".join(PackedStringArray(pips)), 12, BAD))
-
-	var card := PanelContainer.new()
-	card.custom_minimum_size = Vector2(120, 128)
-	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	var style := UIKit.panel_style(UIKit.ROW_BG, BAD if down else (GOLD if danger else Color("3a4326")))
-	style.set_content_margin_all(6)
-	card.add_theme_stylebox_override("panel", style)
-	card.add_child(body)
-	return card
-
-func _gauge(ratio: float, col: Color) -> Control:
-	var bar := ProgressBar.new()
-	bar.custom_minimum_size = Vector2(0, 4)
-	bar.show_percentage = false
-	bar.max_value = 100
-	bar.value = clampf(ratio, 0.0, 1.0) * 100.0
-	var fill := StyleBoxFlat.new()
-	fill.bg_color = col
-	fill.set_corner_radius_all(2)
-	var bg := StyleBoxFlat.new()
-	bg.bg_color = Color(0.12, 0.12, 0.10, 0.9)
-	bg.set_corner_radius_all(2)
-	bar.add_theme_stylebox_override("fill", fill)
-	bar.add_theme_stylebox_override("background", bg)
-	return bar
+		_party_hud.add_child(DungeonHud.party_token(member, _world, _texture(_portrait_path(member))))
 
 func _portrait_path(member: Dictionary) -> String:
 	var portrait_ref := String(member.get("portraitRef", ""))
