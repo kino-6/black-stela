@@ -37,3 +37,46 @@ jobs:
             playwright-report/
             test-results/
           if-no-files-found: ignore
+
+  # The Godot migration gate — the SAME `npm run gate:godot` a developer runs locally. It regenerates the
+  # gitignored packs / assets, imports them, captures the UX-parity comparison screenshots (needs a display,
+  # hence xvfb + software GL), then runs gate:migration. Godot must match the local version (see GODOT_VERSION).
+  godot-gates:
+    runs-on: ubuntu-latest
+    env:
+      GODOT_VERSION: "4.7.1"
+      LIBGL_ALWAYS_SOFTWARE: "1"   # llvmpipe under xvfb — the UX-evidence render step has no GPU
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Install xvfb + mesa (software rendering for the UX-evidence capture)
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends xvfb libgl1-mesa-dri
+      - name: Install Godot ${{ env.GODOT_VERSION }}
+        run: |
+          set -euo pipefail
+          # Override with the GODOT_DOWNLOAD_URL repo variable if this version is not on the public mirror.
+          url="${GODOT_DOWNLOAD_URL:-https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip}"
+          echo "Downloading $url"
+          curl -fL --retry 3 -o /tmp/godot.zip "$url"
+          unzip -q /tmp/godot.zip -d /tmp/godot
+          bin="$(find /tmp/godot -maxdepth 1 -type f -name 'Godot*' | head -n1)"
+          sudo install -m 0755 "$bin" /usr/local/bin/godot
+          godot --version
+        env:
+          GODOT_DOWNLOAD_URL: ${{ vars.GODOT_DOWNLOAD_URL }}
+      - name: Godot gates (regen packs + assets, import, UX evidence, gate:migration)
+        run: xvfb-run -a npm run gate:godot
+      - name: Upload gate evidence on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: godot-gate-evidence
+          path: |
+            godot/tests/_ux_*.png
+            godot/tests/_*.png
+          if-no-files-found: ignore
