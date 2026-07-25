@@ -90,6 +90,43 @@ static func reroll_origin(draft: Dictionary, data: Dictionary) -> void:
 	draft["backgroundId"] = String(backgrounds[(index + 1) % backgrounds.size()].get("id", ""))
 	draft["traitId"] = String(traits[int(floor(origin_seed * 1.7)) % traits.size()].get("id", ""))
 
+## Per-field 見繕う (#6): a face is a player choice, not a property of the origin, so 顔 / 来歴 / 気質 each
+## re-roll on their OWN seed — dealing a fresh face never rewrites the origin story or temperament, and
+## picking a new 来歴 leaves the chosen face alone. Seeds fall back to originSeed for older drafts.
+static func reroll_face(draft: Dictionary, data: Dictionary) -> void:
+	var keys := face_keys(data)
+	if keys.is_empty():
+		return
+	var s := int(draft.get("faceSeed", draft.get("originSeed", 1))) + 1
+	draft["faceSeed"] = s
+	draft["portraitKey"] = String(keys[absi(s) % keys.size()])
+
+static func reroll_background(draft: Dictionary, data: Dictionary) -> void:
+	var backgrounds: Array = data.get("backgrounds", [])
+	if backgrounds.is_empty():
+		return
+	draft["backgroundSeed"] = int(draft.get("backgroundSeed", draft.get("originSeed", 1))) + 1
+	var index := maxi(0, _index_of(backgrounds, String(draft.get("backgroundId", ""))))
+	draft["backgroundId"] = String(backgrounds[(index + 1) % backgrounds.size()].get("id", ""))
+
+static func reroll_trait(draft: Dictionary, data: Dictionary) -> void:
+	var traits: Array = data.get("traits", [])
+	if traits.is_empty():
+		return
+	var s := int(draft.get("traitSeed", draft.get("originSeed", 1))) + 1
+	draft["traitSeed"] = s
+	draft["traitId"] = String(traits[absi(int(floor(s * 1.7))) % traits.size()].get("id", ""))
+
+## The face pool: the distinct portrait keys the backgrounds draw from — a face is chosen from here
+## independently of which 来歴 owns it.
+static func face_keys(data: Dictionary) -> Array:
+	var out := []
+	for background in data.get("backgrounds", []):
+		var key := String((background as Dictionary).get("portraitKey", ""))
+		if key != "" and not out.has(key):
+			out.append(key)
+	return out
+
 static func reroll_identity(draft: Dictionary, data: Dictionary) -> void:
 	draft["identitySeed"] = int(draft.get("identitySeed", 1)) + 1
 	var suggestion := suggest_identity(draft, data)

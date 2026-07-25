@@ -240,6 +240,25 @@ func _initialize() -> void:
 	else:
 		print("[guild-controller] the cursor stayed on the 気質 just chosen")
 
+	# 3e. #6 — 顔 / 来歴 / 気質 EACH RE-ROLL ON THEIR OWN. A face is not a property of the origin: dealing a
+	#     fresh face must not rewrite the 来歴 or 気質, and picking a new 来歴 must leave the face alone. The
+	#     appearance step used to carry ONE 来歴+気質 reroll and no face reroll at all.
+	for facet in [["face", "portraitKey"], ["background", "backgroundId"], ["trait", "traitId"]]:
+		var field := String(facet[0])
+		var key := String(facet[1])
+		var d0: Dictionary = guild.get("_draft")
+		var before_apt := {"portraitKey": String(d0.get("portraitKey", "")), "backgroundId": String(d0.get("backgroundId", "")), "traitId": String(d0.get("traitId", ""))}
+		guild.call("_reroll_appearance", field)
+		for i in 3:
+			await process_frame
+		var d1: Dictionary = guild.get("_draft")
+		if String(d1.get(key, "")) == before_apt[key]:
+			_fail("appearance: 見繕う on %s did not change it" % field)
+		for other in ["portraitKey", "backgroundId", "traitId"]:
+			if other != key and String(d1.get(other, "")) != before_apt[other]:
+				_fail("appearance: 見繕う on %s also changed %s (facets are not independent)" % [field, other])
+	print("[guild-controller] 顔 / 来歴 / 気質 each re-roll independently (#6)")
+
 	# 4. The whole flow mints the adventurer the player built.
 	guild.call("_select_class", "priest")
 	await process_frame

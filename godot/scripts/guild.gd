@@ -408,19 +408,18 @@ func _appearance_step() -> Control:
 
 	var choices := UI.col(8)
 	choices.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	choices.add_child(UI.label(I18n.t("party.background"), 18, UI.GOLD))
-	# The cursor opens on the ORIGIN row — the decision this step leads with.
+	# 来歴 / 顔 / 気質 are three INDEPENDENT decisions (#6): each section owns its own 見繕う, so a face is
+	# never rewritten by picking an origin and vice versa. The cursor opens on the 来歴 row — the decision
+	# this step leads with.
+	choices.add_child(_section_head(I18n.t("party.background"), "reroll:background", func(): _reroll_appearance("background")))
 	choices.add_child(_chip_row(_data.get("backgrounds", []), String(_draft.get("backgroundId", "")), func(id: String): _select_background(id), "bg", true))
 	# What this origin brings — the line the choice is actually made on.
 	choices.add_child(UI.prose(String(background.get("notes", {}).get("ja", "")), 16, UI.DIM, 760))
-	choices.add_child(UI.label("顔", 18, UI.GOLD))
+	choices.add_child(_section_head("顔", "reroll:face", func(): _reroll_appearance("face")))
 	choices.add_child(UI.label("来歴とは別に、顔を選べます。", 14, UI.DIM))
 	choices.add_child(_face_pool())
-	choices.add_child(UI.label(I18n.t("party.trait"), 18, UI.GOLD))
+	choices.add_child(_section_head(I18n.t("party.trait"), "reroll:trait", func(): _reroll_appearance("trait")))
 	choices.add_child(_chip_row(_data.get("traits", []), String(_draft.get("traitId", "")), func(id: String): _select_trait(id), "trait"))
-	var reroll := UI.button(I18n.t("party.rerollOrigin"), func(): _reroll_origin(), Vector2(220, 38), 16)
-	_claim(reroll, "origin:reroll")
-	choices.add_child(reroll)
 	body.add_child(choices)
 
 	col.add_child(_flow_actions("class", "bonus"))
@@ -653,6 +652,15 @@ func _reroll_origin() -> void:
 	_focus_key = "origin:reroll"
 	_rebuild()
 
+## Re-roll ONE appearance facet — 顔 / 来歴 / 気質 — leaving the other two as the player left them (#6).
+func _reroll_appearance(field: String) -> void:
+	match field:
+		"face": Draft.reroll_face(_draft, _data)
+		"background": Draft.reroll_background(_draft, _data)
+		"trait": Draft.reroll_trait(_draft, _data)
+	_focus_key = "reroll:%s" % field
+	_rebuild()
+
 func _reroll_bonus() -> void:
 	Draft.reroll_bonus(_draft)
 	_focus_key = "bonus:reroll"
@@ -754,12 +762,16 @@ func _draft_portrait_path() -> String:
 	return path if FileAccess.file_exists(path) else _asset("portraits/gate.png")
 
 func _face_keys() -> Array:
-	var out := []
-	for background in _data.get("backgrounds", []):
-		var key := String((background as Dictionary).get("portraitKey", ""))
-		if key != "" and not out.has(key):
-			out.append(key)
-	return out
+	return Draft.face_keys(_data)
+
+## A section header (来歴 / 顔 / 気質) with its own 見繕う button on the right — the per-facet random of #6.
+func _section_head(title: String, reroll_key: String, on_reroll: Callable) -> Control:
+	var head := UI.row()
+	head.add_child(UI.grow(UI.label(title, 18, UI.GOLD)))
+	var dice := UI.button(I18n.t("party.rerollField"), on_reroll, Vector2(150, 32), 14)
+	_claim(dice, reroll_key)
+	head.add_child(dice)
+	return head
 
 func _face_pool() -> Control:
 	var grid := GridContainer.new()
