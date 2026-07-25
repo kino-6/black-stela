@@ -20,6 +20,7 @@ const ConfigPanel := preload("res://scripts/config_panel.gd")
 const WorldResources := preload("res://scripts/world_resources.gd")
 const CombatPartyHud := preload("res://scripts/combat/combat_party_hud.gd")
 const CombatPlayback := preload("res://scripts/combat/combat_playback.gd")
+const CombatStage := preload("res://scripts/combat/combat_stage.gd")
 
 const BG := Color("0b0d09")
 const GOLD := Color("c9a765")
@@ -857,57 +858,31 @@ func _rebuild_stage() -> void:
 		child.queue_free()
 	_enemy_marks.clear()
 
-	# The encounter happens IN the dungeon the party is exploring.  A full-stage world vignette gives
-	# the enemy a place to stand and removes the previous pure-black void without competing with art.
-	var backdrop := TextureRect.new()
-	backdrop.texture = _texture(_asset("ui/combat-vignette.jpg"))
-	backdrop.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	backdrop.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-	backdrop.position = _enemy_stage_rect.position
-	backdrop.size = _enemy_stage_rect.size
-	# The scenario's pack supplies the scene image; palette values supply its light and fog character.
-	# Thus a pack can share the combat layout while Verdant reads canopy-green rather than ash-brown.
+	# Stage building lives in the CombatStage collaborator (IMP-052): backdrop, acting-member figure, and
+	# the enemy marks in a HUD-clearing band (IMP-024). The scene owns the layer, the marks cache and the
+	# target selection; CombatStage returns pure Controls.
 	var palette: Dictionary = _world.get("palette", {}) if typeof(_world.get("palette", null)) == TYPE_DICTIONARY else {}
-	var ambient := Color(String(palette.get("ambient", "#5f5548")))
-	backdrop.modulate = ambient.lightened(0.22)
-	_stage_layer.add_child(backdrop)
-	var shade := ColorRect.new()
-	var fog := Color(String(palette.get("fog", "#090906")))
-	shade.color = Color(fog, 0.52)
-	shade.position = _enemy_stage_rect.position
-	shade.size = _enemy_stage_rect.size
-	_stage_layer.add_child(shade)
+	for n in CombatStage.backdrop_nodes(_enemy_stage_rect, _texture(_asset("ui/combat-vignette.jpg")), palette):
+		_stage_layer.add_child(n)
 
-	# During decisions, show whose turn it is at hero scale.  Resolution keeps the stage enemy-led, so
-	# attack playback remains readable; the command phase is the moment the player needs identity most.
+	# During decisions, show whose turn it is at hero scale (IMP-014).
 	if ConfigPanel.spotlight_actor() and _stage in ["command", "skill", "spell", "item", "target-group", "target-ally"]:
 		var actor := _acting_member()
 		if not actor.is_empty():
-			_stage_layer.add_child(_active_actor_figure(actor))
+			_stage_layer.add_child(CombatStage.actor_figure(actor, _enemy_stage_rect, _texture(_portrait_path(actor))))
 
 	var groups: Array = _combat().get("enemyGroups", [])
 	if groups.is_empty():
 		return
-	# IMP-024: the backdrop fills the full stage, but the CREATURES are placed in a band that clears the
-	# command panel (right) and, when it is shown, the acting-member panel (left) — so no enemy body or
-	# mark is ever hidden behind the HUD, however many groups there are. The band is stable across the
-	# command→target→cancel flow (it keys off the config, not the transient stage), so enemies never jump.
-	var band := _enemy_band()
+	var band := CombatStage.enemy_band(_enemy_stage_rect, ConfigPanel.spotlight_actor())
 	var slot_w: float = band.size.x / float(groups.size())
 	for index in groups.size():
 		var group: Dictionary = groups[index]
+		var gid := String(group.get("id", ""))
 		var centre := band.position.x + slot_w * (float(index) + 0.5)
-		_stage_layer.add_child(_enemy_mark(group, centre, slot_w))
-
-## The horizontal band the enemy creatures may occupy: the full stage inset on the right by the command
-## panel, and on the left by the acting-member panel when the spotlight preference is on. Guarantees the
-## HUD never overlaps a creature (IMP-024), independent of group count.
-func _enemy_band() -> Rect2:
-	var right_inset: float = 520.0 + 28.0   # _cmd_panel starts at size.x - 520; keep a gap
-	var left_inset: float = (272.0 + 44.0 + 24.0) if ConfigPanel.spotlight_actor() else 40.0
-	var x := _enemy_stage_rect.position.x + left_inset
-	var w: float = maxf(120.0, _enemy_stage_rect.size.x - left_inset - right_inset)
-	return Rect2(x, _enemy_stage_rect.position.y, w, _enemy_stage_rect.size.y)
+		var mark := CombatStage.enemy_mark(self, group, centre, slot_w, _enemy_stage_rect, gid == _target_group_id(), _enemy_texture(group), _enemy_ja(group), _group_hp(group), _group_max_hp(group))
+		_enemy_marks[gid] = mark
+		_stage_layer.add_child(mark)
 
 func _acting_member() -> Dictionary:
 	# Commands use the filtered, formation-sorted actor queue (not raw party order).  Keeping the hero
@@ -917,103 +892,6 @@ func _acting_member() -> Dictionary:
 		return {}
 	var index := clampi(_actor_index, 0, actors.size() - 1)
 	return actors[index] if typeof(actors[index]) == TYPE_DICTIONARY else {}
-
-func _active_actor_figure(member: Dictionary) -> Control:
-	var panel := PanelContainer.new()
-	panel.set_meta("actor_panel", true)   # IMP-024 geometry gate: an enemy mark must never hide behind it
-	panel.position = Vector2(44, _enemy_stage_rect.position.y + 36)
-	panel.size = Vector2(272, 420)
-	panel.add_theme_stylebox_override("panel", _panel_style(Color("10150bd9"), GOLD))
-	var stack := VBoxContainer.new()
-	stack.add_theme_constant_override("separation", 2)
-	panel.add_child(stack)
-	var marker := _label("手番", 15, GOLD)
-	marker.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	stack.add_child(marker)
-	var art := TextureRect.new()
-	art.texture = _texture(_portrait_path(member))
-	art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-	art.custom_minimum_size = Vector2(248, 320)
-	stack.add_child(art)
-	var name := _label(String(member.get("name", "?")), 24, INK)
-	name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	stack.add_child(name)
-	var role := _label("次の行動を選ぶ", 15, DIM)
-	role.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	stack.add_child(role)
-	return panel
-
-func _enemy_mark(group: Dictionary, centre_x: float, slot_w: float) -> Control:
-	var gid := String(group.get("id", ""))
-	var dead := int(group.get("count", 0)) <= 0
-	var selected := gid == _target_group_id()
-
-	var mark := Control.new()
-	mark.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	mark.set_meta("enemy_mark", true)   # so the IMP-024 geometry gate can find every creature's rect
-	var art_w: float = minf(slot_w * 0.9, 420.0)
-	var art_h: float = minf(_enemy_stage_rect.size.y * 0.74, 400.0)
-	mark.position = Vector2(centre_x - art_w / 2.0, _enemy_stage_rect.position.y)
-	mark.size = Vector2(art_w, _enemy_stage_rect.size.y)
-
-	var art := TextureRect.new()
-	art.texture = _enemy_texture(group)
-	art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	art.size = Vector2(art_w, art_h)
-	art.modulate = Color(1, 1, 1, 0.28) if dead else Color(1, 1, 1, 1)
-	mark.add_child(art)
-
-	# The reticle rides the CHOSEN creature — this is what makes "the one you will strike" read on the
-	# stage instead of in a menu.
-	if selected and not dead:
-		var reticle := PanelContainer.new()
-		var frame := StyleBoxFlat.new()
-		frame.bg_color = Color(0, 0, 0, 0)
-		frame.border_color = GOLD
-		frame.set_border_width_all(3)
-		frame.set_corner_radius_all(4)
-		reticle.add_theme_stylebox_override("panel", frame)
-		reticle.position = Vector2(-8, -8)
-		reticle.size = Vector2(art_w + 16, art_h + 16)
-		reticle.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		mark.add_child(reticle)
-		var arrow := _label("▼", 32, GOLD)
-		arrow.position = Vector2(art_w / 2.0 - 14, -40)
-		mark.add_child(arrow)
-		_reticle_pulse(reticle)
-
-	var caption := UIKit.col(2)
-	caption.position = Vector2(0, art_h + 6)
-	caption.custom_minimum_size = Vector2(art_w, 0)
-	var name_label := _label(_enemy_ja(group), 22, GOLD if selected else INK)
-	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	name_label.custom_minimum_size = Vector2(art_w, 0)
-	caption.add_child(name_label)
-
-	var bar := ProgressBar.new()
-	bar.max_value = maxf(1.0, float(_group_max_hp(group)))
-	bar.value = float(_group_hp(group))
-	bar.show_percentage = false
-	bar.custom_minimum_size = Vector2(minf(art_w, 260.0), 8)
-	caption.add_child(bar)
-
-	var count_label := _label("×%d" % int(group.get("count", 0)), 16, DIM)
-	count_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	count_label.custom_minimum_size = Vector2(art_w, 0)
-	caption.add_child(count_label)
-	mark.add_child(caption)
-
-	_enemy_marks[gid] = mark
-	return mark
-
-func _reticle_pulse(node: Control) -> void:
-	# Never start faded — a screenshot taken mid-fade would show no reticle at all.
-	node.modulate.a = 1.0
-	var tween := create_tween().set_loops()
-	tween.tween_property(node, "modulate:a", 0.45, 0.6)
-	tween.tween_property(node, "modulate:a", 1.0, 0.6)
 
 # The group the cursor is aimed at. The combat state owns it (as React does), but a state built by the
 # legacy encounter helper carries a NULL selection — and an unaimed cursor means the player cannot see
