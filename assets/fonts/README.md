@@ -19,7 +19,10 @@ Drop **one** OFL-licensed Japanese font here, named exactly `ui.ttf`:
 - **M PLUS 1p** — https://fonts.google.com/specimen/M+PLUS+1p
 
 Both are under the **SIL Open Font License**, which permits embedding and
-redistribution in the packaged game (a system font like Hiragino cannot be).
+redistribution in the packaged game (a system font like Hiragino cannot be). OFL
+requires the licence to travel with the font, so keep **`OFL.txt`** here next to
+`ui.ttf` (both are committed). A variable-weight `ui.ttf` is fine — boot pins
+`wght=400` so text is Regular, not the Thin default instance.
 
 ```sh
 # from the repo root, once you have the .ttf:

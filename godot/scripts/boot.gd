@@ -35,7 +35,15 @@ func _ready() -> void:
 # becomes the whole game's font — Web included. Absent → current behaviour (fine on native, tofu on Web).
 func _install_ui_font() -> void:
 	const UI_FONT := "res://assets/fonts/ui.ttf"
-	if ResourceLoader.exists(UI_FONT):
-		var f: Variant = load(UI_FONT)
-		if f is Font:
-			ThemeDB.fallback_font = f
+	if not ResourceLoader.exists(UI_FONT):
+		return
+	var base: Variant = load(UI_FONT)
+	if base is FontFile:
+		# Noto Sans JP ships as a VARIABLE font whose default instance is Thin; pin Regular so UI text is
+		# readable, not hairline. (A static font ignores the wght axis harmlessly.)
+		var fv := FontVariation.new()
+		fv.base_font = base
+		fv.variation_opentype = {"wght": 400}
+		ThemeDB.fallback_font = fv
+	elif base is Font:
+		ThemeDB.fallback_font = base

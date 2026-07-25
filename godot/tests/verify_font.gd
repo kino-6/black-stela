@@ -10,9 +10,9 @@ const UI_FONT := "res://assets/fonts/ui.ttf"
 
 func _initialize() -> void:
 	if not ResourceLoader.exists(UI_FONT):
-		push_warning("[font] no %s — the Web export will render Japanese as tofu; add an OFL font (see assets/fonts/README.md)" % UI_FONT)
-		print("[font] PASS (no embedded UI font yet — native-only; Web needs the font)")
-		quit(0)
+		push_error("[font] no %s — the Web export renders Japanese as tofu; add an OFL font (see assets/fonts/README.md and run stage:assets)" % UI_FONT)
+		print("[font] FAIL (no embedded UI font)")
+		quit(1)
 		return
 
 	var f: Variant = load(UI_FONT)
