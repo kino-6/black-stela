@@ -19,6 +19,7 @@ const Encounter := preload("res://scripts/encounter.gd")
 const ConfigPanel := preload("res://scripts/config_panel.gd")
 const WorldResources := preload("res://scripts/world_resources.gd")
 const CombatPartyHud := preload("res://scripts/combat/combat_party_hud.gd")
+const CombatPlayback := preload("res://scripts/combat/combat_playback.gd")
 
 const BG := Color("0b0d09")
 const GOLD := Color("c9a765")
@@ -684,25 +685,12 @@ func _refresh_member(member: Dictionary) -> void:
 	(refs["label"] as Label).text = _hp_text(member)
 
 # --- floating presentation ------------------------------------------------------------------------
+# The floating flourishes live in the CombatPlayback collaborator (IMP-052).
 func _spawn_damage_number(amount: int) -> void:
-	if amount <= 0:
-		return
-	var dmg := _label(str(amount), 56, HURT)
-	dmg.position = _enemy_stage_rect.position + Vector2(_enemy_stage_rect.size.x / 2 - 20, 120)
-	_damage_layer.add_child(dmg)
-	var tw := create_tween()
-	tw.set_parallel(true)
-	tw.tween_property(dmg, "position:y", dmg.position.y - 80, 0.6)
-	tw.tween_property(dmg, "modulate:a", 0.0, 0.6).set_delay(0.2)
-	tw.chain().tween_callback(dmg.queue_free)
+	CombatPlayback.damage_number(_damage_layer, _enemy_stage_rect, amount)
 
 func _spawn_defeat_flourish() -> void:
-	var mark := _label("撃破", 44, GOLD)
-	mark.position = _enemy_stage_rect.position + Vector2(_enemy_stage_rect.size.x / 2 - 44, 200)
-	_damage_layer.add_child(mark)
-	var tw := create_tween()
-	tw.tween_property(mark, "modulate:a", 0.0, 0.9).set_delay(0.4)
-	tw.tween_callback(mark.queue_free)
+	CombatPlayback.defeat_flourish(_damage_layer, _enemy_stage_rect)
 
 # --- enemy snapshot / lookup helpers --------------------------------------------------------------
 func _enemy_snapshot() -> Dictionary:
