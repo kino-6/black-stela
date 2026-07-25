@@ -12,6 +12,7 @@ const TRACES := {
 	"open_corridor": "b2f-hazard",     # cell.b2f.c1_2 faces a straight N/S corridor — held-move review (#17)
 	"combat_victory": "b1f-combat-victory",  # mid-fight vs the ash slime — command flow / victory review (#46)
 	"loot_delta": "b1f-return",        # the return stair + a gained item on top of the descent supply (#3)
+	"shop_description": "economy",      # a town with a full purse — the market shows what a piece DOES (#46)
 	"floor_2": "b2f-hazard",
 	"floor_3": "b3f-gather",
 	"floor_4": "b4f-spinner",
