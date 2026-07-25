@@ -27,7 +27,21 @@ func _ready() -> void:
 		var DebugOverlay := preload("res://scripts/debug_overlay.gd")
 		if DebugOverlay.enabled():
 			get_tree().root.add_child.call_deferred(DebugOverlay.new())
+		# `-- --fixture <name>` boots straight into a named QA state, so a reviewer reaches the held-input /
+		# return / loot routes without mouse-picking the debug panel (Codex could not select it). #29.
+		var fixture := _fixture_arg()
+		if fixture != "":
+			var scene: String = preload("res://scripts/debug_fixtures.gd").load_into(get_node_or_null("/root/Run"), fixture)
+			if scene != "":
+				SceneManager.goto.call_deferred(scene)
+				return
 		SceneManager.goto.call_deferred("res://scenes/title.tscn")
+
+## The value after `--fixture` in either the engine or user argument list (see debug_fixtures.gd).
+func _fixture_arg() -> String:
+	var args := OS.get_cmdline_args() + OS.get_cmdline_user_args()
+	var i := args.find("--fixture")
+	return String(args[i + 1]) if i >= 0 and i + 1 < args.size() else ""
 
 # The Web export has NO OS font fallback, so Japanese renders as tofu unless a JA-capable font is
 # EMBEDDED. Native only works because Godot falls back to a system font (Hiragino) that the browser

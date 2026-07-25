@@ -132,22 +132,10 @@ func _load_progress() -> void:
 	var run := _run()
 	if run == null:
 		return
-	var trace := "b1f-exploration"
-	match _progress:
-		"ready": trace = "expedition"
-		"return_ready": trace = "b1f-return"
-		"floor_2": trace = "b2f-hazard"
-		"floor_3": trace = "b3f-gather"
-		"floor_4": trace = "b4f-spinner"
-	var path := "res://data/traces/%s.json" % trace
-	if not FileAccess.file_exists(path):
-		path = "res://data/traces/b1f-exploration.json"
-	var doc: Variant = JSON.parse_string(FileAccess.get_file_as_string(path))
-	if typeof(doc) != TYPE_DICTIONARY:
-		return
-	run.state = (doc.get("initialState", {}) as Dictionary).duplicate(true)
-	var phase := String(run.state.get("phase", "town"))
-	get_tree().change_scene_to_file("res://scenes/dungeon.tscn" if phase == "dungeon" else "res://scenes/town.tscn")
+	# Shared with the `-- --fixture <name>` boot flag, so the panel and the command line load the SAME state.
+	var scene: String = preload("res://scripts/debug_fixtures.gd").load_into(run, _progress)
+	if scene != "":
+		get_tree().change_scene_to_file(scene)
 
 func _dispatch(command: Dictionary) -> void:
 	var run := _run()
