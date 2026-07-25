@@ -31,6 +31,10 @@ static func fresh(seed: int) -> Dictionary:
 		"notes": "",
 		"classId": "warrior",
 		"backgroundId": "watch",
+		# A face is a player choice, not a property of the origin.  The key resolves to the shipped
+		# portrait library; storing it separately lets a watchkeeper and an apothecary share neither face
+		# nor story by accident.
+		"portraitKey": "gate",
 		"traitId": "steady",
 		"bonusPool": roll_bonus_pool(seed),
 		"bonusAptitude": empty_bonus(),

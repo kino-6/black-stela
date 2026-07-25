@@ -33,7 +33,7 @@ var _run: Node = null
 var _camera: Camera3D
 var _torch: OmniLight3D
 var _minimap: Control
-var _party_hud: VBoxContainer = null
+var _party_hud: HBoxContainer = null
 var _log_label: Label
 var _header: Label
 var _busy: bool = false
@@ -149,6 +149,12 @@ func _build_geometry(parent: Node) -> void:
 	var wall_mat := _textured_mat(block["wall"], Color(String(pal.get("wall", "8a8074"))))
 	var floor_mat := _textured_mat(block["floor"], Color(String(pal.get("floor", "6e675c"))))
 	var ceil_mat := _textured_mat(block["wall"], Color("3a352c"))
+	# A chamber is an authored junction/room (three or more exits), not every square in the maze.
+	# Raising its ceiling, inlaying its floor and planting four low pillars makes the authored `.` clusters
+	# read as somewhere one can arrive, rather than another identically-sized corridor tile.
+	var chamber_floor_mat := _textured_mat(block["floor"], Color(String(pal.get("chamberFloor", "9a8050"))))
+	var chamber_wall_mat := _textured_mat(block["wall"], Color(String(pal.get("chamberWall", "a18e62"))))
+	var chamber_accent := Color(String(pal.get("chamberAccent", "c9a765")))
 
 	# Render the floor the party is ON, not always the first one — descending stairs (or a debug jump to
 	# a deeper floor) rebuilds this geometry for the new floor. Rendering startDungeon regardless is why a
@@ -161,12 +167,23 @@ func _build_geometry(parent: Node) -> void:
 			var cx := int(cell.get("x", 0))
 			var cy := int(cell.get("y", 0))
 			var base := Vector3(cx * CELL, 0, cy * CELL)
-			_add_plane(parent, floor_mat, base, Vector3(0, 0, 0))
-			_add_plane(parent, ceil_mat, base + Vector3(0, WALL_H, 0), Vector3(PI, 0, 0))
 			var edges: Dictionary = cell.get("edges", {})
+			var chamber := _is_chamber(edges)
+			var wall_height := WALL_H * 1.65 if chamber else WALL_H
+			_add_plane(parent, chamber_floor_mat if chamber else floor_mat, base, Vector3(0, 0, 0))
+			_add_plane(parent, ceil_mat, base + Vector3(0, wall_height, 0), Vector3(PI, 0, 0))
 			for dir in ["north", "south", "east", "west"]:
 				if not _is_passage(edges.get(dir, null)):
-					_add_wall(parent, wall_mat, base, dir)
+					_add_wall(parent, chamber_wall_mat if chamber else wall_mat, base, dir, wall_height)
+			if chamber:
+				_add_chamber_landmarks(parent, base, chamber_accent, wall_height)
+
+func _is_chamber(edges: Dictionary) -> bool:
+	var openings := 0
+	for dir in ["north", "south", "east", "west"]:
+		if _is_passage(edges.get(dir, null)):
+			openings += 1
+	return openings >= 3
 
 func _add_plane(parent: Node, mat: Material, pos: Vector3, rot: Vector3) -> void:
 	var m := MeshInstance3D.new()
@@ -178,17 +195,17 @@ func _add_plane(parent: Node, mat: Material, pos: Vector3, rot: Vector3) -> void
 	m.rotation = rot
 	parent.add_child(m)
 
-func _add_wall(parent: Node, mat: Material, base: Vector3, dir: String) -> void:
+func _add_wall(parent: Node, mat: Material, base: Vector3, dir: String, height: float = WALL_H) -> void:
 	var m := MeshInstance3D.new()
 	var quad := QuadMesh.new()
-	quad.size = Vector2(CELL, WALL_H)
+	quad.size = Vector2(CELL, height)
 	m.mesh = quad
 	m.material_override = mat
 	var off: Vector3 = {
-		"north": Vector3(0, WALL_H / 2, -CELL / 2),
-		"south": Vector3(0, WALL_H / 2, CELL / 2),
-		"east": Vector3(CELL / 2, WALL_H / 2, 0),
-		"west": Vector3(-CELL / 2, WALL_H / 2, 0),
+		"north": Vector3(0, height / 2, -CELL / 2),
+		"south": Vector3(0, height / 2, CELL / 2),
+		"east": Vector3(CELL / 2, height / 2, 0),
+		"west": Vector3(-CELL / 2, height / 2, 0),
 	}[dir]
 	m.position = base + off
 	# QuadMesh faces +Z; rotate so it faces the cell interior.
@@ -198,6 +215,29 @@ func _add_wall(parent: Node, mat: Material, base: Vector3, dir: String) -> void:
 		"east": m.rotation.y = -PI / 2
 		"west": m.rotation.y = PI / 2
 	parent.add_child(m)
+
+func _add_chamber_landmarks(parent: Node, base: Vector3, accent: Color, height: float) -> void:
+	# A thin central inlay catches the torch without becoming a gameplay marker. Four squat pillars give
+	# the raised volume parallax and make a cross-junction feel like an actual hall in first person.
+	var inlay := MeshInstance3D.new()
+	var disk := CylinderMesh.new()
+	disk.top_radius = 0.62
+	disk.bottom_radius = 0.62
+	disk.height = 0.025
+	inlay.mesh = disk
+	inlay.material_override = _mat(Color(accent, 0.72))
+	inlay.position = base + Vector3(0, 0.018, 0)
+	parent.add_child(inlay)
+	for offset in [Vector3(-0.88, 0, -0.88), Vector3(0.88, 0, -0.88), Vector3(-0.88, 0, 0.88), Vector3(0.88, 0, 0.88)]:
+		var pillar := MeshInstance3D.new()
+		var column := CylinderMesh.new()
+		column.top_radius = 0.12
+		column.bottom_radius = 0.18
+		column.height = height * 0.72
+		pillar.mesh = column
+		pillar.material_override = _mat(accent.darkened(0.38))
+		pillar.position = base + offset + Vector3(0, column.height / 2.0, 0)
+		parent.add_child(pillar)
 
 # Deeper floors use a heavier block set (React: depth >= 7 -> block3, >= 4 -> block2, >= 1 -> block1).
 func _block_textures() -> Dictionary:
@@ -288,24 +328,26 @@ func _build_overlays() -> void:
 	_minimap.position = Vector2(size.x - 292, 32)
 	# The rail: 周辺 map above, PARTY STATUS below. A crawl where the player cannot see their party's
 	# state is not the screen React ships — the adventurers are the whole concept.
-	_party_hud = VBoxContainer.new()
-	_party_hud.add_theme_constant_override("separation", 3)
-	_party_hud.position = Vector2(size.x - 292, 308)
-	_party_hud.custom_minimum_size = Vector2(260, 0)
+	_party_hud = HBoxContainer.new()
+	_party_hud.add_theme_constant_override("separation", 8)
+	_party_hud.position = Vector2(48, size.y - 246)
+	_party_hud.custom_minimum_size = Vector2(size.x - 390, 154)
+	_party_hud.size = Vector2(size.x - 390, 154)
 	add_child(_party_hud)
 	add_child(_minimap)
 	_minimap.setup(_world, _state)
 
 	# log ticker
 	_log_label = _label("地下に踏み入った。松明の灯が石を照らす。", 20, INK)
-	_log_label.position = Vector2(48, size.y - 268)   # message band, ABOVE the fixed command dock
+	_log_label.position = Vector2(48, size.y - 286)   # message band, ABOVE the party formation
 	add_child(_log_label)
 
 	# The command region is a FIXED area (AGENTS.md: logs and messages must never push commands around).
 	# It is rebuilt in place, because a chest on this cell takes the region over.
 	_dock_host = PanelContainer.new()
-	_dock_host.position = Vector2(48, size.y - 228)
-	_dock_host.custom_minimum_size = Vector2(900, 160)
+	_dock_host.position = Vector2(size.x - 292, 308)
+	_dock_host.custom_minimum_size = Vector2(260, 370)
+	_dock_host.size = Vector2(260, 370)
 	_dock_host.add_theme_stylebox_override("panel", _panel_style(Color("11140deb"), GOLD))
 	add_child(_dock_host)
 
@@ -509,17 +551,18 @@ func _rebuild_party_hud() -> void:
 		return
 	for child in _party_hud.get_children():
 		child.queue_free()
-	_party_hud.add_child(UIKit.label(I18n.t("play.partyStatus"), 15, GOLD))
+	var heading := VBoxContainer.new()
+	heading.custom_minimum_size = Vector2(76, 128)
+	heading.add_child(UIKit.label(I18n.t("play.partyStatus"), 14, GOLD))
+	heading.add_child(UIKit.label("前衛 / 後衛", 12, DIM))
+	_party_hud.add_child(heading)
+	var members := []
 	for row in ["front", "back"]:
-		var members := []
 		for member in _state.get("party", []):
 			if String(member.get("row", "front")) == row:
 				members.append(member)
-		if members.is_empty():
-			continue
-		_party_hud.add_child(UIKit.label(I18n.t("play.frontRow" if row == "front" else "play.backRow"), 13, DIM))
-		for member in members:
-			_party_hud.add_child(_party_token(member))
+	for member in members:
+		_party_hud.add_child(_party_token(member))
 
 func _party_token(member: Dictionary) -> Control:
 	var stats: Dictionary = CharacterStats.effective(member, _world)
@@ -528,15 +571,17 @@ func _party_token(member: Dictionary) -> Control:
 	var down: bool = member.get("injury", null) != null or hp <= 0
 	var danger: bool = hp <= int(ceil(float(max_hp) * 0.35))
 
-	var body := UIKit.col(1)
+	var body := UIKit.col(2)
+	body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var head := UIKit.row()
 	var portrait := TextureRect.new()
 	portrait.texture = _texture(_portrait_path(member))
 	portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-	portrait.custom_minimum_size = Vector2(32, 36)
+	portrait.custom_minimum_size = Vector2(48, 76)
 	head.add_child(portrait)
-	head.add_child(UIKit.grow(UIKit.label(String(member.get("name", "?")), 14, BAD if down else INK)))
+	head.add_child(UIKit.label(I18n.t("play.frontRow" if String(member.get("row", "front")) == "front" else "play.backRow"), 11, DIM))
+	head.add_child(UIKit.grow(UIKit.label(String(member.get("name", "?")), 16, BAD if down else INK)))
 	head.add_child(UIKit.label("Lv %d" % int(member.get("level", 1)), 12, DIM))
 	body.add_child(head)
 
@@ -570,6 +615,8 @@ func _party_token(member: Dictionary) -> Control:
 		body.add_child(UIKit.label(" · ".join(PackedStringArray(pips)), 12, BAD))
 
 	var card := PanelContainer.new()
+	card.custom_minimum_size = Vector2(120, 128)
+	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var style := UIKit.panel_style(UIKit.ROW_BG, BAD if down else (GOLD if danger else Color("3a4326")))
 	style.set_content_margin_all(6)
 	card.add_theme_stylebox_override("panel", style)
@@ -593,6 +640,13 @@ func _gauge(ratio: float, col: Color) -> Control:
 	return bar
 
 func _portrait_path(member: Dictionary) -> String:
+	var portrait_ref := String(member.get("portraitRef", ""))
+	const BUILTIN_PREFIX := "builtin://portrait/"
+	if portrait_ref.begins_with(BUILTIN_PREFIX):
+		var key := portrait_ref.trim_prefix(BUILTIN_PREFIX)
+		var chosen := _asset("portraits/%s.png" % key)
+		if FileAccess.file_exists(chosen):
+			return chosen
 	# Portrait identity follows the same twelve-to-eight resolver as the rules. A legacy save keeps its
 	# face, but it resolves to its real current discipline — never to a nearest-archetype placeholder.
 	var class_id := String(member.get("classId", "warrior"))
@@ -628,10 +682,15 @@ func _rebuild_dock() -> void:
 
 	var root: VBoxContainer = UIKit.col(6)
 	root.add_child(UIKit.label(I18n.t("play.dungeonCommands"), 16, GOLD))
-	var row: HBoxContainer = UIKit.row()
+	var row := GridContainer.new()
+	row.columns = 2
+	row.add_theme_constant_override("h_separation", 6)
+	row.add_theme_constant_override("v_separation", 6)
 	var first: Button = null
 	for entry in _dock_commands():
 		var b: Button = _command_button(String(entry["label"]))
+		b.custom_minimum_size = Vector2(110, 34)
+		b.add_theme_font_size_override("font_size", 15)
 		var kind: String = String(entry["kind"])
 		b.disabled = bool(entry.get("disabled", false))
 		if not b.disabled:
@@ -644,7 +703,8 @@ func _rebuild_dock() -> void:
 	# END of the dock, distinct from the current-cell decisions, and never becomes the first command in
 	# every room.
 	var tempo: Button = _command_button(I18n.t("tempo.stop") if _auto_running else I18n.t("tempo.auto"))
-	tempo.custom_minimum_size = Vector2(150, 40)
+	tempo.custom_minimum_size = Vector2(110, 34)
+	tempo.add_theme_font_size_override("font_size", 15)
 	tempo.add_theme_color_override("font_color", UIKit.OK if _auto_running else UIKit.DIM)
 	tempo.pressed.connect(func(): _toggle_auto())
 	row.add_child(tempo)

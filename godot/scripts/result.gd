@@ -179,6 +179,10 @@ func _find_member(entry: Dictionary) -> Dictionary:
 ## The face an adventurer wears when they carry no imported portrait — the origin's, exactly as React's
 ## renderPortraitContent falls back.
 func _portrait_key(member: Dictionary) -> String:
+	var portrait_ref := String(member.get("portraitRef", ""))
+	const BUILTIN_PREFIX := "builtin://portrait/"
+	if portrait_ref.begins_with(BUILTIN_PREFIX):
+		return portrait_ref.trim_prefix(BUILTIN_PREFIX)
 	# Read from the exported background catalog rather than a copy of it — a second table here is a table
 	# that drifts the first time a background is added.
 	if _backgrounds.is_empty():
@@ -221,6 +225,10 @@ func _asset(sub: String) -> String:
 	return _run.asset_path(sub) if _run else "res://assets/worlds/%s/%s" % [_world_id, sub]
 
 func _texture(path: String) -> Texture2D:
+	if ResourceLoader.exists(path):
+		var res := load(path)
+		if res is Texture2D:
+			return res as Texture2D
 	if not FileAccess.file_exists(path):
 		return null
 	var img := Image.load_from_file(path)

@@ -114,6 +114,10 @@ func _rebuild() -> void:
 	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	backdrop.modulate = Color(1, 1, 1, 0.30)
 	add_child(backdrop)
+	var scrim := ColorRect.new()
+	scrim.color = Color("07100892")
+	scrim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	add_child(scrim)
 
 	var margin := MarginContainer.new()
 	margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -136,9 +140,12 @@ func _rebuild() -> void:
 	body.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	col.add_child(body)
 
+	var main_frame := PanelContainer.new()
+	main_frame.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	main_frame.add_theme_stylebox_override("panel", _guild_frame_style())
 	var main := UI.col(10)
-	main.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	body.add_child(main)
+	main_frame.add_child(main)
+	body.add_child(main_frame)
 	if _step != "briefing":
 		main.add_child(_preview_card())
 	main.add_child(_step_panel())
@@ -199,7 +206,7 @@ func _preview_card() -> Control:
 	portrait.custom_minimum_size = Vector2(96, 116)
 	portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-	portrait.texture = _texture(_preview_figure_path())
+	portrait.texture = _texture(_draft_portrait_path())
 	row.add_child(UI.card(portrait))
 
 	var text := UI.col(4)
@@ -387,15 +394,15 @@ func _appearance_step() -> Control:
 	col.add_child(body)
 
 	var background := Draft.find(_data.get("backgrounds", []), String(_draft.get("backgroundId", "")))
-	# The portrait area is RESERVED at a fixed size, so choosing an origin swaps the face without the
-	# pane reflowing under the cursor.
+	# The portrait area is RESERVED at a fixed size.  Origin describes the recruit; face is selected from
+	# a separate pool beneath it, so neither decision silently rewrites the other.
 	var face := UI.col(4)
-	face.add_child(UI.label(I18n.t("party.portrait"), 15, UI.DIM))
+	face.add_child(UI.label("%s（選んだ顔）" % I18n.t("party.portrait"), 15, UI.DIM))
 	var portrait := TextureRect.new()
 	portrait.custom_minimum_size = Vector2(220, 260)
 	portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-	portrait.texture = _texture(_asset("portraits/%s.png" % String(background.get("portraitKey", "gate"))))
+	portrait.texture = _texture(_draft_portrait_path())
 	face.add_child(UI.card(portrait, Color(String(background.get("accentColor", "#c9a765")))))
 	body.add_child(face)
 
@@ -406,6 +413,9 @@ func _appearance_step() -> Control:
 	choices.add_child(_chip_row(_data.get("backgrounds", []), String(_draft.get("backgroundId", "")), func(id: String): _select_background(id), "bg", true))
 	# What this origin brings — the line the choice is actually made on.
 	choices.add_child(UI.prose(String(background.get("notes", {}).get("ja", "")), 16, UI.DIM, 760))
+	choices.add_child(UI.label("顔", 18, UI.GOLD))
+	choices.add_child(UI.label("来歴とは別に、顔を選べます。", 14, UI.DIM))
+	choices.add_child(_face_pool())
 	choices.add_child(UI.label(I18n.t("party.trait"), 18, UI.GOLD))
 	choices.add_child(_chip_row(_data.get("traits", []), String(_draft.get("traitId", "")), func(id: String): _select_trait(id), "trait"))
 	var reroll := UI.button(I18n.t("party.rerollOrigin"), func(): _reroll_origin(), Vector2(220, 38), 16)
@@ -619,6 +629,11 @@ func _select_background(id: String) -> void:
 	_focus_key = "bg:%s" % id
 	_rebuild()
 
+func _select_portrait(key: String) -> void:
+	_draft["portraitKey"] = key
+	_focus_key = "face:%s" % key
+	_rebuild()
+
 func _select_trait(id: String) -> void:
 	_draft["traitId"] = id
 	_focus_key = "trait:%s" % id
@@ -691,6 +706,7 @@ func _build_character() -> Dictionary:
 		"backgroundId": String(_draft.get("backgroundId", "watch")),
 		"traitIds": [String(_draft.get("traitId", "steady"))],
 		"bonusAptitude": _draft.get("bonusAptitude", {}),
+		"portraitRef": "builtin://portrait/%s" % String(_draft.get("portraitKey", "gate")),
 		"seed": "guild:%d" % int(_draft.get("bonusSeed", 1)),
 	}, _data)
 	# create() ports the BUILD MATH only; the written identity is the draft's. Blanks fall back the way
@@ -713,6 +729,43 @@ func _preview_figure_path() -> String:
 	var sub := "characters/adventurer-%s-base.png" % class_id
 	var pack_path := _asset(sub)
 	return pack_path if FileAccess.file_exists(pack_path) else "res://assets/worlds/default/%s" % sub
+
+func _draft_portrait_path() -> String:
+	var key := String(_draft.get("portraitKey", "gate"))
+	var path := _asset("portraits/%s.png" % key)
+	return path if FileAccess.file_exists(path) else _asset("portraits/gate.png")
+
+func _face_keys() -> Array:
+	var out := []
+	for background in _data.get("backgrounds", []):
+		var key := String((background as Dictionary).get("portraitKey", ""))
+		if key != "" and not out.has(key):
+			out.append(key)
+	return out
+
+func _face_pool() -> Control:
+	var grid := GridContainer.new()
+	grid.columns = 6
+	grid.add_theme_constant_override("h_separation", 6)
+	grid.add_theme_constant_override("v_separation", 6)
+	var selected := String(_draft.get("portraitKey", "gate"))
+	for key in _face_keys():
+		var b := UI.button("", func(): _select_portrait(String(key)), Vector2(66, 66), 12)
+		b.icon = _texture(_asset("portraits/%s.png" % String(key)))
+		b.expand_icon = true
+		b.tooltip_text = "顔を選ぶ"
+		b.add_theme_stylebox_override("normal", UI.panel_style(Color("11140dcc"), UI.GOLD if String(key) == selected else Color("3a4326")))
+		_claim(b, "face:%s" % String(key))
+		grid.add_child(b)
+	return grid
+
+func _guild_frame_style() -> StyleBoxFlat:
+	var s := UI.panel_style(Color("0e120be3"), Color("6a5a31"))
+	s.set_content_margin_all(18)
+	s.shadow_color = Color("00000088")
+	s.shadow_size = 12
+	s.shadow_offset = Vector2(0, 5)
+	return s
 
 func _display_name() -> String:
 	var name := String(_draft.get("name", "")).strip_edges()
@@ -791,6 +844,12 @@ func _asset(sub: String) -> String:
 	return _run.asset_path(sub) if _run else "res://assets/worlds/%s/%s" % [_world_id, sub]
 
 func _texture(path: String) -> Texture2D:
+	# Scene art must be loaded through the imported resource in exported macOS/Web builds.  The raw-file
+	# fallback is only for a future user:// pack, where an import sidecar does not exist.
+	if ResourceLoader.exists(path):
+		var res := load(path)
+		if res is Texture2D:
+			return res as Texture2D
 	if not FileAccess.file_exists(path):
 		return null
 	var img := Image.load_from_file(path)

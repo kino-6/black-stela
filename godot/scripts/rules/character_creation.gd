@@ -57,7 +57,7 @@ static func create(input: Dictionary, data: Dictionary) -> Dictionary:
 			equipment[slot] = {"id": eid}
 			starting.append(eid)
 
-	return {
+	var character := {
 		"id": input.get("id", ""),
 		"name": String(input.get("name", "")).strip_edges(),
 		"classId": class_def.get("id", "warrior"),
@@ -86,6 +86,11 @@ static func create(input: Dictionary, data: Dictionary) -> Dictionary:
 		"gold": 0,
 		"status": [],
 	}
+	# Built-in face choices travel through the existing optional portraitRef contract.  Omit the key when
+	# absent so parity fixtures retain their exact shape; normal imported portraits remain untouched.
+	if input.get("portraitRef", null) != null:
+		character["portraitRef"] = input["portraitRef"]
+	return character
 
 # default {2,2,2,2,2} + class + focus(+2) + background + each trait + bonus.
 static func _build_aptitude(class_def: Dictionary, focus: String, background: Dictionary, traits: Array, bonus: Dictionary, default_apt: Dictionary) -> Dictionary:

@@ -837,6 +837,17 @@ func _acting_name() -> String:
 	return "?"
 
 func _portrait_path(member: Dictionary) -> String:
+	# A recruit may explicitly choose one of the built-in faces.  It is deliberately independent of
+	# backgroundId: background explains where the character came from, not what every cartographer or
+	# apothecary must look like.  Imported data URLs still belong to the web profile path and fall back
+	# safely here, while this stable built-in URI survives saves and exports.
+	var portrait_ref := String(member.get("portraitRef", ""))
+	const BUILTIN_PREFIX := "builtin://portrait/"
+	if portrait_ref.begins_with(BUILTIN_PREFIX):
+		var key := portrait_ref.trim_prefix(BUILTIN_PREFIX)
+		var chosen := _asset("portraits/%s.png" % key)
+		if FileAccess.file_exists(chosen):
+			return chosen
 	# Keep portrait lookup on the canonical class id. The legacy mapping comes from the same exported
 	# engine data as the rule port, so an older save gets its current discipline's own master.
 	var class_id := String(member.get("classId", "warrior"))
@@ -894,6 +905,12 @@ func _asset(sub: String) -> String:
 	return _run.asset_path(sub) if _run else "res://assets/worlds/%s/%s" % [_world_id, sub]
 
 func _texture(path: String) -> Texture2D:
+	# Imported resources are what a macOS/Web export actually contains.  Raw Image reads are retained
+	# only for user:// packs, which do not have a .import sidecar.
+	if ResourceLoader.exists(path):
+		var res := load(path)
+		if res is Texture2D:
+			return res as Texture2D
 	if not FileAccess.file_exists(path):
 		return null
 	var img := Image.load_from_file(path)
@@ -942,6 +959,29 @@ func _rebuild_stage() -> void:
 		child.queue_free()
 	_enemy_marks.clear()
 
+	# The encounter happens IN the dungeon the party is exploring.  A full-stage world vignette gives
+	# the enemy a place to stand and removes the previous pure-black void without competing with art.
+	var backdrop := TextureRect.new()
+	backdrop.texture = _texture(_asset("ui/combat-vignette.jpg"))
+	backdrop.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	backdrop.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	backdrop.position = _enemy_stage_rect.position
+	backdrop.size = _enemy_stage_rect.size
+	backdrop.modulate = Color(1, 1, 1, 0.72)
+	_stage_layer.add_child(backdrop)
+	var shade := ColorRect.new()
+	shade.color = Color("07100888") if _world_id == "verdant" else Color("09090686")
+	shade.position = _enemy_stage_rect.position
+	shade.size = _enemy_stage_rect.size
+	_stage_layer.add_child(shade)
+
+	# During decisions, show whose turn it is at hero scale.  Resolution keeps the stage enemy-led, so
+	# attack playback remains readable; the command phase is the moment the player needs identity most.
+	if _stage in ["command", "skill", "spell", "item", "target-group", "target-ally"]:
+		var actor := _acting_member()
+		if not actor.is_empty():
+			_stage_layer.add_child(_active_actor_figure(actor))
+
 	var groups: Array = _combat().get("enemyGroups", [])
 	if groups.is_empty():
 		return
@@ -950,6 +990,40 @@ func _rebuild_stage() -> void:
 		var group: Dictionary = groups[index]
 		var centre := _enemy_stage_rect.position.x + slot_w * (float(index) + 0.5)
 		_stage_layer.add_child(_enemy_mark(group, centre, slot_w))
+
+func _acting_member() -> Dictionary:
+	# Commands use the filtered, formation-sorted actor queue (not raw party order).  Keeping the hero
+	# panel on that same queue prevents it showing Mira while the command window is asking for Rook.
+	var actors := _actors()
+	if actors.is_empty():
+		return {}
+	var index := clampi(_actor_index, 0, actors.size() - 1)
+	return actors[index] if typeof(actors[index]) == TYPE_DICTIONARY else {}
+
+func _active_actor_figure(member: Dictionary) -> Control:
+	var panel := PanelContainer.new()
+	panel.position = Vector2(44, _enemy_stage_rect.position.y + 36)
+	panel.size = Vector2(272, 420)
+	panel.add_theme_stylebox_override("panel", _panel_style(Color("10150bd9"), GOLD))
+	var stack := VBoxContainer.new()
+	stack.add_theme_constant_override("separation", 2)
+	panel.add_child(stack)
+	var marker := _label("手番", 15, GOLD)
+	marker.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	stack.add_child(marker)
+	var art := TextureRect.new()
+	art.texture = _texture(_portrait_path(member))
+	art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	art.custom_minimum_size = Vector2(248, 320)
+	stack.add_child(art)
+	var name := _label(String(member.get("name", "?")), 24, INK)
+	name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	stack.add_child(name)
+	var role := _label("次の行動を選ぶ", 15, DIM)
+	role.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	stack.add_child(role)
+	return panel
 
 func _enemy_mark(group: Dictionary, centre_x: float, slot_w: float) -> Control:
 	var gid := String(group.get("id", ""))
