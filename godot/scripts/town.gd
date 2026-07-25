@@ -17,6 +17,7 @@ const UI := preload("res://scripts/town/ui_kit.gd")
 const SliceRules := preload("res://scripts/rules/slice_rules.gd")
 
 const RecoveryPanel := preload("res://scripts/town/recovery_panel.gd")
+const WorldResources := preload("res://scripts/world_resources.gd")
 const ShopPanel := preload("res://scripts/town/shop_panel.gd")
 const LootPanel := preload("res://scripts/town/loot_panel.gd")
 const WorkshopPanel := preload("res://scripts/town/workshop_panel.gd")
@@ -126,13 +127,10 @@ func engine() -> Dictionary:
 	return _run.engine if _run else _fallback_engine
 
 func _read_json(path: String) -> Dictionary:
-	if not FileAccess.file_exists(path):
-		return {}
-	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(path))
-	return parsed if typeof(parsed) == TYPE_DICTIONARY else {}
+	return WorldResources.read_json(path)
 
 func _asset(sub: String) -> String:
-	return _run.asset_path(sub) if _run else "res://assets/worlds/%s/%s" % [_world_id, sub]
+	return WorldResources.world_asset(_run.world_id if _run else _world_id, sub)
 
 # --- the one mutation path: the ported rules, the same ones the parity gate proves ----------------
 func dispatch(command: Dictionary) -> Array:
@@ -490,18 +488,7 @@ func _dispatch_resume(room_id: String) -> void:
 		get_tree().change_scene_to_file("res://scenes/dungeon.tscn")
 
 func _texture(path: String) -> Texture2D:
-	# Export-safe: prefer the imported resource. Image.load_from_file reads the raw file which export
-	# strips, so a packaged build lost the town backdrop (IMP-047/IMP-053). Fall back to a raw read only
-	# for a runtime/user:// pack asset that was never imported.
-	if ResourceLoader.exists(path):
-		var res := load(path)
-		if res is Texture2D:
-			return res as Texture2D
-	if FileAccess.file_exists(path):
-		var img := Image.load_from_file(path)
-		if img != null:
-			return ImageTexture.create_from_image(img)
-	return null
+	return WorldResources.texture(path)   # export-safe load lives in WorldResources (IMP-053)
 
 # The one line telling the player what just happened at this counter.
 func _describe(event: Dictionary) -> String:

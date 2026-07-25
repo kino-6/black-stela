@@ -17,6 +17,7 @@ const UIKit := preload("res://scripts/town/ui_kit.gd")
 const CommandMenu := preload("res://scripts/combat/command_menu.gd")
 const Encounter := preload("res://scripts/encounter.gd")
 const ConfigPanel := preload("res://scripts/config_panel.gd")
+const WorldResources := preload("res://scripts/world_resources.gd")
 
 const BG := Color("0b0d09")
 const GOLD := Color("c9a765")
@@ -903,21 +904,10 @@ func _command_button(text: String) -> Button:
 	return b
 
 func _asset(sub: String) -> String:
-	return _run.asset_path(sub) if _run else "res://assets/worlds/%s/%s" % [_world_id, sub]
+	return WorldResources.world_asset(_run.world_id if _run else _world_id, sub)
 
 func _texture(path: String) -> Texture2D:
-	# Imported resources are what a macOS/Web export actually contains.  Raw Image reads are retained
-	# only for user:// packs, which do not have a .import sidecar.
-	if ResourceLoader.exists(path):
-		var res := load(path)
-		if res is Texture2D:
-			return res as Texture2D
-	if not FileAccess.file_exists(path):
-		return null
-	var img := Image.load_from_file(path)
-	if img == null:
-		return null
-	return ImageTexture.create_from_image(img)
+	return WorldResources.texture(path)   # export-safe load lives in WorldResources (IMP-053)
 
 func _label(text: String, sz: int, col: Color) -> Label:
 	var l := Label.new()

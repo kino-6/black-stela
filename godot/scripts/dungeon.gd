@@ -11,6 +11,7 @@ const SliceRules := preload("res://scripts/rules/slice_rules.gd")
 const I18n := preload("res://scripts/i18n.gd")
 const UIKit := preload("res://scripts/town/ui_kit.gd")
 const ChestPanel := preload("res://scripts/dungeon/chest_panel.gd")
+const WorldResources := preload("res://scripts/world_resources.gd")
 const PartyPanel := preload("res://scripts/town/party_panel.gd")
 const CharacterStats := preload("res://scripts/rules/character_stats.gd")
 const Chests := preload("res://scripts/rules/chests.gd")
@@ -271,21 +272,10 @@ func _asset(sub: String) -> String:
 		world_id = String(_run.world_id)
 	else:
 		world_id = String(_world.get("id", "default")).trim_prefix("world.")
-	return "res://assets/worlds/%s/%s" % [world_id, sub]
+	return WorldResources.world_asset(world_id, sub)
 
 func _texture(path: String) -> Texture2D:
-	# Export-safe: prefer the imported resource. Image.load_from_file reads the raw file, which export
-	# strips (only the imported texture ships), so packaged builds lost pack backdrops (IMP-047/IMP-053).
-	# Fall back to a raw read only for a runtime/user:// pack asset that was never imported.
-	if ResourceLoader.exists(path):
-		var res := load(path)
-		if res is Texture2D:
-			return res as Texture2D
-	if FileAccess.file_exists(path):
-		var img := Image.load_from_file(path)
-		if img != null:
-			return ImageTexture.create_from_image(img)
-	return null
+	return WorldResources.texture(path)   # export-safe load lives in WorldResources (IMP-053)
 
 func _textured_mat(path: String, tint: Color) -> StandardMaterial3D:
 	var mat := StandardMaterial3D.new()

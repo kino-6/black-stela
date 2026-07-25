@@ -221,21 +221,13 @@ func _centered(control: Control) -> Control:
 	c.add_child(control)
 	return c
 
+const WorldResources := preload("res://scripts/world_resources.gd")
+
 func _asset(sub: String) -> String:
-	return _run.asset_path(sub) if _run else "res://assets/worlds/%s/%s" % [_world_id, sub]
+	return WorldResources.world_asset(_run.world_id if _run else _world_id, sub)
 
 func _texture(path: String) -> Texture2D:
-	if ResourceLoader.exists(path):
-		var res := load(path)
-		if res is Texture2D:
-			return res as Texture2D
-	if not FileAccess.file_exists(path):
-		return null
-	var img := Image.load_from_file(path)
-	return ImageTexture.create_from_image(img) if img != null else null
+	return WorldResources.texture(path)   # export-safe load lives in WorldResources (IMP-053)
 
 func _read_json(path: String) -> Dictionary:
-	if not FileAccess.file_exists(path):
-		return {}
-	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(path))
-	return parsed if typeof(parsed) == TYPE_DICTIONARY else {}
+	return WorldResources.read_json(path)

@@ -163,26 +163,13 @@ func _centered(control: Control) -> Control:
 	c.add_child(control)
 	return c
 
+const WorldResources := preload("res://scripts/world_resources.gd")
+
 func _asset(sub: String) -> String:
-	return _run.asset_path(sub) if _run else "res://assets/worlds/%s/%s" % [_world_id, sub]
+	return WorldResources.world_asset(_run.world_id if _run else _world_id, sub)
 
 func _texture(path: String) -> Texture2D:
-	# Prefer the IMPORTED resource — export-safe. Image.load_from_file reads the RAW file, which export
-	# strips (only the imported texture ships), so a dev build showed the title but a packaged macOS/Web
-	# app lost the background (IMP-047). Fall back to a raw read only for a runtime/user:// pack asset
-	# that was never imported.
-	if ResourceLoader.exists(path):
-		var res := load(path)
-		if res is Texture2D:
-			return res as Texture2D
-	if FileAccess.file_exists(path):
-		var img := Image.load_from_file(path)
-		if img != null:
-			return ImageTexture.create_from_image(img)
-	return null
+	return WorldResources.texture(path)   # export-safe load lives in WorldResources (IMP-053)
 
 func _read_json(path: String) -> Dictionary:
-	if not FileAccess.file_exists(path):
-		return {}
-	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(path))
-	return parsed if typeof(parsed) == TYPE_DICTIONARY else {}
+	return WorldResources.read_json(path)

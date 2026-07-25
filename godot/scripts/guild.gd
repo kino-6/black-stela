@@ -26,6 +26,7 @@ extends Control
 const I18n := preload("res://scripts/i18n.gd")
 const UI := preload("res://scripts/town/ui_kit.gd")
 const Fmt := preload("res://scripts/town_format.gd")
+const WorldResources := preload("res://scripts/world_resources.gd")
 const Draft := preload("res://scripts/guild_draft.gd")
 const CharacterCreation := preload("res://scripts/rules/character_creation.gd")
 const Techniques := preload("res://scripts/rules/techniques.gd")
@@ -890,21 +891,10 @@ func _flow_actions(back_step: String, next_step: String) -> Control:
 
 # --- io -------------------------------------------------------------------------------------------
 func _asset(sub: String) -> String:
-	return _run.asset_path(sub) if _run else "res://assets/worlds/%s/%s" % [_world_id, sub]
+	return WorldResources.world_asset(_run.world_id if _run else _world_id, sub)
 
 func _texture(path: String) -> Texture2D:
-	# Scene art must be loaded through the imported resource in exported macOS/Web builds.  The raw-file
-	# fallback is only for a future user:// pack, where an import sidecar does not exist.
-	if ResourceLoader.exists(path):
-		var res := load(path)
-		if res is Texture2D:
-			return res as Texture2D
-	if not FileAccess.file_exists(path):
-		return null
-	var img := Image.load_from_file(path)
-	if img == null:
-		return null
-	return ImageTexture.create_from_image(img)
+	return WorldResources.texture(path)   # export-safe load lives in WorldResources (IMP-053)
 
 func _read_json(path: String) -> Dictionary:
 	if not FileAccess.file_exists(path):
