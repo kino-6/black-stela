@@ -2,6 +2,7 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { ja } from "../src/i18n/ja";
+import { en } from "../src/i18n/en";
 
 // The UX-parity gate compares the Godot port against the REACT screens it replaces, and option A of the
 // migration decision is a FAITHFUL reproduction — same information, same words. So the gate must read the
@@ -21,11 +22,16 @@ function flatten(node: unknown, prefix: string, out: Record<string, string>): vo
   }
 }
 
-const flat: Record<string, string> = {};
-flatten(ja, "", flat);
-
 const here = dirname(fileURLToPath(import.meta.url));
 const outDir = join(here, "..", "godot", "data");
 mkdirSync(outDir, { recursive: true });
-writeFileSync(join(outDir, "i18n-ja.json"), `${JSON.stringify(flat, null, 2)}\n`);
-console.log(`exported ja copy (${Object.keys(flat).length} keys) → godot/data/i18n-ja.json`);
+
+// Ship EVERY locale pack, not just Japanese. The UI is Japanese-only during development, but I18n.gd can
+// set_locale("en") from the start, so shipping the en pack keeps language switching a drop-in rather than
+// a retrofit (IMP-043 / #22). ja stays the default the screens read.
+for (const [locale, copy] of [["ja", ja], ["en", en]] as const) {
+  const flat: Record<string, string> = {};
+  flatten(copy, "", flat);
+  writeFileSync(join(outDir, `i18n-${locale}.json`), `${JSON.stringify(flat, null, 2)}\n`);
+  console.log(`exported ${locale} copy (${Object.keys(flat).length} keys) → godot/data/i18n-${locale}.json`);
+}

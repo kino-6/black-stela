@@ -3801,9 +3801,6 @@
         "config.autoBattleSafety",
         "config.confirmRound",
         "config.instantCombatLog",
-        "locale.en",
-        "locale.ja",
-        "locale.label",
         "save.corrupt",
         "title.config",
         "title.continue",
@@ -3822,6 +3819,20 @@
             "config": true,
             "corrupt": true
           }
+        }
+      ],
+      "derivedExclusions": [
+        {
+          "key": "locale.en",
+          "reason": "Language switching ships in the engine from the start (I18n.set_locale + the exported en pack), but the title's language-selector UI is deferred — development is Japanese-only. A deliberate deferral of the selector widget, not a parity gap: the capability and the data are present (#22/IMP-043)."
+        },
+        {
+          "key": "locale.ja",
+          "reason": "Language switching ships in the engine from the start (I18n.set_locale + the exported en pack), but the title's language-selector UI is deferred — development is Japanese-only. A deliberate deferral of the selector widget, not a parity gap: the capability and the data are present (#22/IMP-043)."
+        },
+        {
+          "key": "locale.label",
+          "reason": "Language switching ships in the engine from the start (I18n.set_locale + the exported en pack), but the title's language-selector UI is deferred — development is Japanese-only. A deliberate deferral of the selector widget, not a parity gap: the capability and the data are present (#22/IMP-043)."
         }
       ]
     }
