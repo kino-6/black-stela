@@ -45,6 +45,7 @@ const Chests := preload("res://scripts/rules/chests.gd")
 const Exploration := preload("res://scripts/rules/exploration.gd")
 const PartyCommands := preload("res://scripts/rules/party_commands.gd")
 const RosterUtil := preload("res://scripts/rules/roster_util.gd")
+const ItemCommands := preload("res://scripts/rules/item_commands.gd")
 ## How hard a hidden passage is to find (mirrors SECRET_DETECT_DC in src/domain/rulesEngine.ts).
 const SECRET_DETECT_DC := 10
 const Leveling := preload("res://scripts/rules/leveling.gd")
@@ -89,7 +90,7 @@ static func resolve(state: Dictionary, command: Dictionary, world: Dictionary = 
 		"resume_at_checkpoint":
 			return _resume_at_checkpoint(state, world, command.get("roomId", ""))
 		"use_item":
-			return _use_item(state, world, command.get("itemId", ""), command.get("targetCharacterId", ""))
+			return ItemCommands.use_item(state, world, command.get("itemId", ""), command.get("targetCharacterId", ""))
 		"attack":
 			return _attack(state, world, engine)
 		"defend":
@@ -832,110 +833,6 @@ static func _resume_at_checkpoint(state: Dictionary, world: Dictionary, room_id:
 	var events: Array = [{"type": "room_entered", "roomId": room_id, "roomName": room.get("name", room_id)}]
 	events.append_array(visit["events"])
 	return {"state": next, "events": events}
-
-static func _find_inventory_item(state: Dictionary, item_id: String) -> Variant:
-	for candidate in state.get("inventory", []):
-		if candidate.get("id", "") == item_id and int(candidate.get("quantity", 0)) > 0:
-			return candidate
-	return null
-
-static func _spend_one(inventory: Array, item_id: String) -> Array:
-	var out := []
-	for candidate in inventory:
-		if candidate.get("id", "") == item_id:
-			var c: Dictionary = candidate.duplicate(true)
-			c["quantity"] = maxi(0, int(c.get("quantity", 0)) - 1)
-			out.append(c)
-		else:
-			out.append(candidate)
-	return out
-
-static func _is_boss_floor(world: Dictionary, floor_id: Variant) -> bool:
-	for dungeon in world.get("dungeons", []):
-		if dungeon.get("id", "") == floor_id:
-			return (dungeon.get("tags", []) as Array).has("boss")
-	return false
-
-# use_item outside combat: an ESCAPE charm goes home, a GROWTH item permanently raises an adventurer,
-# a consumable heals. The escape charm is barred on the boss floor — the finale is a commitment.
-static func _use_item(state: Dictionary, world: Dictionary, item_id: String, target_id: String) -> Dictionary:
-	var item: Variant = _find_inventory_item(state, item_id)
-	if typeof(item) != TYPE_DICTIONARY:
-		return {"state": state, "events": []}
-	var kind := String(item.get("kind", ""))
-
-	if kind == "escape":
-		if state.get("phase", "") != "dungeon" or state.get("position", null) == null:
-			return {"state": state, "events": []}
-		if _is_boss_floor(world, (state.get("map", {}) as Dictionary).get("floorId", null)):
-			return _log_only(state, {"type": "command_blocked", "reason": "town_return_unavailable", "command": "return_to_town"})
-		var escaped: Dictionary = state.duplicate(true)
-		escaped["phase"] = "town"
-		escaped["position"] = null
-		escaped["combat"] = null
-		escaped["map"]["currentRoomId"] = null
-		escaped["map"]["currentCellId"] = null
-		escaped["map"]["currentFacing"] = null
-		escaped["inventory"] = _spend_one(escaped.get("inventory", []), item_id)
-		escaped["turn"] = int(escaped.get("turn", 0)) + 1
-		return {"state": escaped, "events": [{"type": "returned_to_town"}]}
-
-	if kind == "growth" and typeof(item.get("grants", null)) == TYPE_DICTIONARY:
-		return _use_growth_item(state, item, target_id)
-
-	var target := RosterUtil.find_by_id(state.get("party", []), target_id)
-	if target.is_empty() or not (kind == "healing" or kind == "cure" or kind == "focus"):
-		return {"state": state, "events": []}
-	var applied := CombatRound._apply_healing_item(state.get("party", []), state.get("inventory", []), item_id, target_id, world)
-	var next: Dictionary = state.duplicate(true)
-	next["party"] = applied["party"]
-	next["inventory"] = applied["inventory"]
-	next["turn"] = int(next.get("turn", 0)) + 1
-	return {"state": next, "events": [{"type": "item_used", "itemId": item.get("id", ""), "itemName": item.get("name", ""), "targetCharacterId": target_id, "targetName": target.get("name", ""), "healAmount": int(item.get("healAmount", 0))}]}
-
-# A GROWTH item raises aptitudes/stats permanently; granted xp goes through the level curve.
-static func _use_growth_item(state: Dictionary, item: Dictionary, target_id: String) -> Dictionary:
-	if state.get("phase", "") == "combat":
-		return {"state": state, "events": []}
-	var target := RosterUtil.find_by_id(state.get("party", []), target_id)
-	var grants: Dictionary = item.get("grants", {})
-	if target.is_empty():
-		return {"state": state, "events": []}
-	var level_before := int(target.get("level", 1))
-
-	var grown := []
-	var grown_target := {}
-	for member in state.get("party", []):
-		if String(member.get("id", "")) != target_id:
-			grown.append(member)
-			continue
-		var m: Dictionary = member.duplicate(true)
-		var apt: Dictionary = (m.get("aptitude", {}) as Dictionary).duplicate(true)
-		for key in ["might", "agility", "spirit", "wit", "luck"]:
-			apt[key] = int(apt.get(key, 0)) + int(grants.get(key, 0))
-		m["aptitude"] = apt
-		m["maxHp"] = int(m.get("maxHp", 0)) + int(grants.get("maxHp", 0))
-		m["hp"] = int(m.get("hp", 0)) + int(grants.get("maxHp", 0))   # the new HP is usable immediately
-		m["maxMp"] = int(m.get("maxMp", 0)) + int(grants.get("maxMp", 0))
-		m["mp"] = int(m.get("mp", 0)) + int(grants.get("maxMp", 0))
-		m["attack"] = int(m.get("attack", 0)) + int(grants.get("attack", 0))
-		m["damageMin"] = int(m.get("damageMin", 0)) + int(grants.get("attack", 0))
-		m["damageMax"] = int(m.get("damageMax", 0)) + int(grants.get("attack", 0))
-		m["xp"] = int(m.get("xp", 0)) + int(grants.get("xp", 0))
-		if int(grants.get("xp", 0)) != 0:
-			m = Leveling.apply_level_ups(m)["character"]
-		grown_target = m
-		grown.append(m)
-
-	var next: Dictionary = state.duplicate(true)
-	next["party"] = grown
-	next["inventory"] = _spend_one(next.get("inventory", []), String(item.get("id", "")))
-	next["turn"] = int(next.get("turn", 0)) + 1
-	var events: Array = [{"type": "item_used", "itemId": item.get("id", ""), "itemName": item.get("name", ""), "targetCharacterId": target_id, "targetName": target.get("name", ""), "healAmount": 0}]
-	if int(grown_target.get("level", 1)) > level_before:
-		events.append({"type": "character_leveled_up", "characterId": target_id, "characterName": grown_target.get("name", ""), "level": int(grown_target.get("level", 1))})
-	return {"state": next, "events": events}
-
 
 # --- legacy single-action combat verbs + roster import + debug --------------------------------------
 # attack: the one-button melee. Lands on the front line first; the back line only once it is exposed.
