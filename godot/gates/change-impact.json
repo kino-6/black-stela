@@ -1,0 +1,81 @@
+{
+  "version": 1,
+  "note": "IMP-049 change-impact contract. `npm run gate:changed -- --scope <scope>` selects the fast + affected checks a change of that scope must pass, runs a named native slice when the scope declares one, and AUTO-ESCALATES to the full normal-route gate (gate:migration) when a high-risk file is in the diff or the scope names its own escalation trigger. Checks are {godot|npm|sh}; the godot form runs res://tests/<name>.gd headless.",
+  "fullRoute": { "npm": "gate:migration" },
+  "highRiskFiles": [
+    "godot/scripts/scene_manager.gd",
+    "godot/scripts/run_state.gd",
+    "godot/scripts/input_actions.gd",
+    "godot/scripts/rules/slice_rules.gd",
+    "godot/scripts/town/ui_kit.gd",
+    "godot/scripts/i18n.gd",
+    "godot/project.godot",
+    "src/domain/saveData.ts",
+    "src/domain/scenario.ts"
+  ],
+  "scopes": {
+    "dungeon": {
+      "contract": "First-person crawl: movement/turn (arrows), the current-cell dock, chest, full map, return.",
+      "fast": [{ "godot": "verify_shell" }, { "npm": "gate:play" }],
+      "affected": [{ "godot": "verify_dungeon_controller" }, { "godot": "verify_controller_coverage" }],
+      "native": [{ "godot": "verify_debug_fixtures" }],
+      "escalateOn": ["godot/scripts/dungeon.gd", "godot/scripts/encounter.gd", "godot/scripts/rules/chests.gd"]
+    },
+    "combat": {
+      "contract": "Combat stage, command flow, party HUD, playback — rules truth stays in CombatRound.",
+      "fast": [{ "godot": "verify_shell" }],
+      "affected": [{ "godot": "verify_combat_controller" }, { "godot": "verify_parity" }],
+      "native": [{ "godot": "verify_debug_fixtures" }],
+      "escalateOn": ["godot/scripts/rules/combat_round.gd"]
+    },
+    "town": {
+      "contract": "Town hub + prep services: arrival ledger, recovery, market, loot, workshop, quests.",
+      "fast": [{ "godot": "verify_shell" }],
+      "affected": [{ "godot": "verify_town_controller" }, { "godot": "verify_loot_delta" }],
+      "native": []
+    },
+    "guild": {
+      "contract": "Adventurer creation + roster: staged class/origin/aptitude/name, front-door registration.",
+      "fast": [{ "godot": "verify_shell" }],
+      "affected": [{ "godot": "verify_guild_controller" }, { "godot": "verify_character_creation" }],
+      "native": []
+    },
+    "scenario-picker": {
+      "contract": "First-run world choice: card selection, legend, confirm-advances, cancel-returns.",
+      "fast": [{ "godot": "verify_shell" }],
+      "affected": [{ "godot": "verify_scenario_picker" }],
+      "native": []
+    },
+    "status": {
+      "contract": "Global party-status glance: any-scene hotkey, read-only vitals, pauses the scene.",
+      "fast": [{ "godot": "verify_shell" }],
+      "affected": [{ "godot": "verify_status_overlay" }],
+      "native": []
+    },
+    "content": {
+      "contract": "Authored world data: packs, topology, chambers — no source change should be needed.",
+      "fast": [{ "npm": "export:packs" }],
+      "affected": [{ "godot": "verify_verdant_chambers" }, { "godot": "verify_assets" }],
+      "native": []
+    },
+    "save": {
+      "contract": "Save/load schema + migration. Always full route — a schema slip corrupts every run.",
+      "fast": [{ "godot": "verify_shell" }],
+      "affected": [{ "godot": "verify_save" }],
+      "native": [],
+      "alwaysFullRoute": true
+    },
+    "package": {
+      "contract": "Packaging / exported build: title art, resource export, package smoke.",
+      "fast": [{ "godot": "verify_title_asset" }],
+      "affected": [{ "godot": "verify_assets" }],
+      "native": [{ "npm": "gate:package-smoke" }]
+    },
+    "docs": {
+      "contract": "Docs / markdown only — no behaviour to prove.",
+      "fast": [],
+      "affected": [],
+      "native": []
+    }
+  }
+}

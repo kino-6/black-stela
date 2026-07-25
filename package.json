@@ -49,7 +49,8 @@
     "gate:fixtures": "godot --headless --path godot/ --script res://tests/verify_debug_fixtures.gd",
     "gate:chambers": "npm run export:packs && godot --headless --path godot/ --script res://tests/verify_verdant_chambers.gd",
     "gate:prefs": "npm run export:i18n && godot --headless --path godot/ --script res://tests/verify_config_prefs.gd",
-    "gate:package-smoke": "npm run stage:assets && npm run import:assets && node scripts/gate-package-smoke.mjs"
+    "gate:package-smoke": "npm run stage:assets && npm run import:assets && node scripts/gate-package-smoke.mjs",
+    "gate:changed": "node scripts/gate-changed.mjs"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.0.0",
