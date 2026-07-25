@@ -152,6 +152,8 @@ export const en = {
     nameAdventurer: "Enter the name",
     identityCopy: "If nothing comes to mind, the guild can put a name, epithet, and record forward.",
     rerollIdentity: "Roll identity",
+    rerollField: "Suggest this",
+    effectLabel: "Effect",
     next: "Next",
     back: "Back",
     tavern: "Tavern",

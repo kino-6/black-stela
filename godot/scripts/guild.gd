@@ -450,6 +450,7 @@ func _bonus_step() -> Control:
 	header.add_child(_cell(I18n.t("party.current"), 70, UI.DIM))
 	header.add_child(_cell("", 52, UI.DIM))
 	header.add_child(_cell(I18n.t("party.allocated"), 70, UI.DIM))
+	header.add_child(_cell(I18n.t("party.effectLabel"), 200, UI.DIM))
 	grid.add_child(header)
 
 	var first_stepper: Button = null
@@ -473,6 +474,9 @@ func _bonus_step() -> Control:
 		if _claimed_focus == null and _focus_key == "bonus:+:%s" % key and not minus.disabled:
 			_claimed_focus = minus
 		line.add_child(_cell("+%d" % spent if spent > 0 else "", 70, UI.OK))
+		# What the point actually buys — the SAME effect words the party menu shows, so 素質 reads the same
+		# on the creation table and on the隊列 status page. Always on: a spend is never a blind guess (#5).
+		line.add_child(_cell(I18n.t("partyMenu.aptitudeEffect.%s" % key), 200, UI.DIM))
 		grid.add_child(line)
 		if first_stepper == null and not plus.disabled:
 			first_stepper = plus
@@ -509,12 +513,17 @@ func _name_step() -> Control:
 	col.add_child(head)
 
 	var fields := UI.row()
-	fields.add_child(_text_field(I18n.t("party.name"), String(_draft.get("name", "")), I18n.t("party.namePlaceholder"), func(v: String): _draft["name"] = v))
-	fields.add_child(_text_field(I18n.t("party.editTitle"), String(_draft.get("title", "")), I18n.t("party.titlePlaceholder"), func(v: String): _draft["title"] = v))
+	fields.add_child(_identity_field(I18n.t("party.name"), String(_draft.get("name", "")), I18n.t("party.namePlaceholder"), func(v: String): _draft["name"] = v, "name"))
+	fields.add_child(_identity_field(I18n.t("party.editTitle"), String(_draft.get("title", "")), I18n.t("party.titlePlaceholder"), func(v: String): _draft["title"] = v, "title"))
 	col.add_child(fields)
 
 	var notes := UI.col(4)
-	notes.add_child(UI.label(I18n.t("party.notes"), 15, UI.DIM))
+	var notes_head := UI.row()
+	notes_head.add_child(UI.grow(UI.label(I18n.t("party.notes"), 15, UI.DIM)))
+	var notes_dice := UI.button(I18n.t("party.rerollField"), func(): _reroll_field("notes"), Vector2(110, 30), 13)
+	_claim(notes_dice, "identity:notes")
+	notes_head.add_child(notes_dice)
+	notes.add_child(notes_head)
 	var notes_edit := TextEdit.new()
 	notes_edit.text = String(_draft.get("notes", ""))
 	notes_edit.placeholder_text = I18n.t("party.notesPlaceholder")
@@ -652,6 +661,15 @@ func _reroll_bonus() -> void:
 func _reroll_identity() -> void:
 	Draft.reroll_identity(_draft, _data)
 	_focus_key = "identity:reroll"
+	_rebuild()
+
+## Re-roll ONE identity field, leaving the other two as the player left them (#7).
+func _reroll_field(field: String) -> void:
+	match field:
+		"name": Draft.reroll_name(_draft)
+		"title": Draft.reroll_title(_draft)
+		"notes": Draft.reroll_notes(_draft, _data)
+	_focus_key = "identity:%s" % field
 	_rebuild()
 
 func _adjust(key: String, delta: int) -> void:
@@ -821,6 +839,25 @@ func _chip_row(catalog: Array, selected_id: String, on_pick: Callable, prefix: S
 func _text_field(label_text: String, value: String, placeholder: String, on_change: Callable) -> Control:
 	var col := UI.col(4)
 	col.add_child(UI.label(label_text, 15, UI.DIM))
+	var edit := LineEdit.new()
+	edit.text = value
+	edit.placeholder_text = placeholder
+	edit.custom_minimum_size = Vector2(360, 40)
+	edit.add_theme_font_size_override("font_size", 18)
+	edit.text_changed.connect(func(v: String): on_change.call(v))
+	col.add_child(edit)
+	return col
+
+## A name/title field with its OWN 見繕う button (#7): the label sits beside a per-field reroll so a player
+## can deal a fresh name without losing a title they liked — the bulk 名を見繕う up top still fills all three.
+func _identity_field(label_text: String, value: String, placeholder: String, on_change: Callable, field: String) -> Control:
+	var col := UI.col(4)
+	var head := UI.row()
+	head.add_child(UI.grow(UI.label(label_text, 15, UI.DIM)))
+	var dice := UI.button(I18n.t("party.rerollField"), func(): _reroll_field(field), Vector2(110, 30), 13)
+	_claim(dice, "identity:%s" % field)
+	head.add_child(dice)
+	col.add_child(head)
 	var edit := LineEdit.new()
 	edit.text = value
 	edit.placeholder_text = placeholder

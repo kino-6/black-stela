@@ -97,6 +97,24 @@ static func reroll_identity(draft: Dictionary, data: Dictionary) -> void:
 	draft["title"] = suggestion["title"]
 	draft["notes"] = suggestion["notes"]
 
+## Per-field "見繕う" (#7): each field re-rolls on ITS OWN seed, so dealing a fresh NAME never disturbs a
+## title or notes the player chose to keep. The seeds fall back to identitySeed for drafts made before the
+## split, so an in-flight recruit keeps rerolling sensibly.
+static func reroll_name(draft: Dictionary) -> void:
+	var s := int(draft.get("nameSeed", draft.get("identitySeed", 1))) + 1
+	draft["nameSeed"] = s
+	draft["name"] = _name_for(s)
+
+static func reroll_title(draft: Dictionary) -> void:
+	var s := int(draft.get("titleSeed", draft.get("identitySeed", 1))) + 1
+	draft["titleSeed"] = s
+	draft["title"] = _title_for(s)
+
+static func reroll_notes(draft: Dictionary, data: Dictionary) -> void:
+	var s := int(draft.get("notesSeed", draft.get("identitySeed", 1))) + 1
+	draft["notesSeed"] = s
+	draft["notes"] = _notes_for(s, draft, data)
+
 ## Fill blanks on the way INTO the name step (React's enterNameStep): anything the player already wrote
 ## is left alone, so the suggestion never overwrites a name someone chose.
 static func suggest_if_blank(draft: Dictionary, data: Dictionary) -> void:
@@ -111,16 +129,30 @@ static func suggest_if_blank(draft: Dictionary, data: Dictionary) -> void:
 
 static func suggest_identity(draft: Dictionary, data: Dictionary) -> Dictionary:
 	var seed := absi(int(draft.get("identitySeed", 1)))
+	return {
+		"name": _name_for(seed),
+		"title": _title_for(seed),
+		"notes": _notes_for(seed, draft, data),
+	}
+
+# The per-field pickers the bulk suggestion and the #7 field rerolls share, so both routes deal from the
+# same tables with the same offsets — a bulk 見繕う and three separate field rerolls at the same seeds land
+# on identical text.
+static func _name_for(seed: int) -> String:
+	return NAMES[absi(seed) % NAMES.size()]
+
+static func _title_for(seed: int) -> String:
+	var s := absi(seed)
+	return "%s%s" % [TITLE_HEADS[(s + 3) % TITLE_HEADS.size()], TITLE_TAILS[(s + 7) % TITLE_TAILS.size()]]
+
+static func _notes_for(seed: int, draft: Dictionary, data: Dictionary) -> String:
+	var s := absi(seed)
 	var class_label := label_ja(data.get("classes", []), String(draft.get("classId", "")))
 	var background_label := label_ja(data.get("backgrounds", []), String(draft.get("backgroundId", "")))
 	var trait_label := label_ja(data.get("traits", []), String(draft.get("traitId", "")))
-	return {
-		"name": NAMES[seed % NAMES.size()],
-		"title": "%s%s" % [TITLE_HEADS[(seed + 3) % TITLE_HEADS.size()], TITLE_TAILS[(seed + 7) % TITLE_TAILS.size()]],
-		"notes": "%s %sで、%s。%sとして潜る。" % [
-			NOTE_OPENERS[(seed + 11) % NOTE_OPENERS.size()], background_label, trait_label, class_label
-		],
-	}
+	return "%s %sで、%s。%sとして潜る。" % [
+		NOTE_OPENERS[(s + 11) % NOTE_OPENERS.size()], background_label, trait_label, class_label
+	]
 
 static func find(catalog: Array, id: String) -> Dictionary:
 	for entry in catalog:

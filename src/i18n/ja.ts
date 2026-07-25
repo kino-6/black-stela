@@ -154,6 +154,8 @@ export const ja = {
     nameAdventurer: "名を記す",
     identityCopy: "名前や覚え書きは、候補から選ぶこともできます。",
     rerollIdentity: "名を見繕う",
+    rerollField: "この項目を見繕う",
+    effectLabel: "効果",
     next: "次へ",
     back: "戻る",
     tavern: "酒場",

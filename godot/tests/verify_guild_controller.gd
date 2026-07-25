@@ -195,6 +195,39 @@ func _initialize() -> void:
 	else:
 		print("[guild-controller] the cursor stayed on 運 after spending there")
 
+	# 3c. #5 — WHAT A POINT BUYS IS ON SCREEN. The bonus step used to be a bare ± grid; a spend was a blind
+	#     guess. The effect line is now always shown, using the SAME words the 隊列 status page uses, so the
+	#     two screens never drift. Read the rendered bonus step and fail if any aptitude's effect is missing.
+	guild.call("set_ui_state", {"step": "bonus"})
+	for i in 3:
+		await process_frame
+	var bonus_text := _all_text(guild)
+	for apt in ["might", "agility", "spirit", "wit", "luck"]:
+		var effect := I18n.t("partyMenu.aptitudeEffect.%s" % apt)
+		if not bonus_text.contains(effect):
+			_fail("bonus step: 素質 %s never explains its effect (\"%s\")" % [apt, effect])
+	print("[guild-controller] every 素質 states its effect on the bonus step (#5)")
+
+	# 3d. #7 — EACH IDENTITY FIELD RE-ROLLS ON ITS OWN. The single 名を見繕う used to change all three at
+	#     once; now name / title / notes each have their own 見繕う. Re-rolling one must leave the other two
+	#     exactly as the player left them, or the "lazy" bulk button is effectively back.
+	guild.call("set_ui_state", {"step": "name"})
+	for i in 3:
+		await process_frame
+	for field in ["name", "title", "notes"]:
+		var d0: Dictionary = guild.get("_draft")
+		var before_fields := {"name": String(d0.get("name", "")), "title": String(d0.get("title", "")), "notes": String(d0.get("notes", ""))}
+		guild.call("_reroll_field", field)
+		for i in 3:
+			await process_frame
+		var d1: Dictionary = guild.get("_draft")
+		if String(d1.get(field, "")) == before_fields[field]:
+			_fail("identity: 見繕う on %s did not change it" % field)
+		for other in ["name", "title", "notes"]:
+			if other != field and String(d1.get(other, "")) != before_fields[other]:
+				_fail("identity: 見繕う on %s also changed %s (fields are not independent)" % [field, other])
+	print("[guild-controller] name / title / notes each re-roll independently (#7)")
+
 	guild.call("set_ui_state", {"step": "appearance"})
 	for i in 3:
 		await process_frame
