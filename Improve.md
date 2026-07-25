@@ -62,7 +62,7 @@ like a DRPG rather than a web service.
 | --- | --- | --- | --- |
 | `IMP-021` | High | A/B/C shipped; V blocked | Career rules exist, but the service still reads as a long text catalog and loses decision context while focus scrolls. |
 | `IMP-022` | High | A/B/C/D shipped; V blocked | Appraisal and forging work, but loot handling still lacks filtered bulk selection and broad enemy-answer affixes. |
-| `IMP-023` | High | A/B/C shipped; V pending | The deterministic simulator has not received independent production-rule parity review. |
+| `IMP-023` | High | Done | Independent parity review recorded (`docs/reviews/2026-07-26-sim-parity.md`): both simulators reuse the production domain (`contentSim`→loot/vocations/scenario, `descentSim`→rulesEngine), so no formula is duplicated to drift; production↔Godot is byte-for-byte parity-locked (36 traces). `tests/simParity.test.ts` (4 green) resolves the same encounter through `resolveFight` and an independent production loop and requires byte-identical state. Browser reward/combat review stays mandatory (played-build-gate). |
 | `IMP-024` | P1 | Reproduced | The combat command window covers the enemy presentation that should inform the command. |
 | `IMP-025` | P2 | Done | `town.gd` is a two-level hub: a status ledger over four peer destinations (ギルド館・市場通り・記録の間・施療院) plus the separated 迷宮に入る; each location holds its services one step in. Cursor starts on the descent; Cancel resolves one step. Locked by `verify_town_controller.gd`. |
 | `IMP-026` | P2 | Done | The dungeon dock holds only current-cell actions (探索・聞く・全体図・隊列, plus stairs/return/disarm only when the cell offers them); movement/turn/strafe are owned by the arrow keys (`dungeon.gd _input` consumes them), never buttons. Locked by `verify_dungeon_controller.gd`. |
@@ -590,9 +590,12 @@ economy evidence being mistaken for reward excitement.
 
 ### Remaining Acceptance
 
-- [ ] `IMP-023V` / Claude Code: compare selected simulator seeds against
-  production loaders and browser outcomes, then record any parity drift.
-- [ ] Keep browser reward and combat review mandatory even after parity passes.
+- [x] `IMP-023V` / Claude Code: compared the simulators against production loaders
+  and recorded the finding — no drift (`docs/reviews/2026-07-26-sim-parity.md`);
+  both sims reuse production domain functions and `tests/simParity.test.ts`
+  behaviourally locks `resolveFight` to the production engine (4 green).
+- [x] Browser reward and combat review remain mandatory even after parity passes
+  (played-build-gate) — recorded in the review, not waived.
 
 **Verification route:** seeded simulation -> selected-seed browser reproduction
 -> expedition reward, career, and enemy-counter review.
