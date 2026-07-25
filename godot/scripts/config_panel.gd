@@ -17,8 +17,16 @@ const SETTINGS_PATH := "user://config.json"
 const TOGGLES := [
 	{"key": "autoBattleSafety", "label": "config.autoBattleSafety", "default": true},
 	{"key": "confirmRound", "label": "config.confirmRound", "default": false},
-	{"key": "instantCombatLog", "label": "config.instantCombatLog", "default": false}
+	{"key": "instantCombatLog", "label": "config.instantCombatLog", "default": false},
+	# #14 — feature the acting character during command select. Default ON; a player who wants the
+	# creatures unobstructed turns it off. The combat screen reads this via ConfigPanel.load_settings().
+	{"key": "spotlightActor", "label": "config.spotlightActor", "default": true}
 ]
+
+## The #14 preference, read wherever the fight is drawn: whether to feature the acting character's portrait
+## during command selection. One accessor so combat.gd never re-derives the default or the storage key.
+static func spotlight_actor() -> bool:
+	return bool(load_settings().get("spotlightActor", true))
 
 static func load_settings() -> Dictionary:
 	var out := {}

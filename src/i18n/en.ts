@@ -10,7 +10,8 @@ export const en = {
   config: {
     autoBattleSafety: "Auto-battle stops at danger (boss / low HP)",
     instantCombatLog: "Show the combat log all at once (skip the blow-by-blow reveal)",
-    confirmRound: "Confirm before resolving a round (after all orders are set)"
+    confirmRound: "Confirm before resolving a round (after all orders are set)",
+    spotlightActor: "Spotlight the acting character during command select"
   },
   beat: {
     hit: "{actor} strikes {target} for {damage}.",
