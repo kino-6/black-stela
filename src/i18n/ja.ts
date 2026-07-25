@@ -299,6 +299,10 @@ export const ja = {
     noDescription: "詳しいことは分からない。",
     close: "閉じる"
   },
+  statusOverlay: {
+    title: "パーティの状態",
+    hint: "C 開閉 · Esc 閉じる"
+  },
   coverage: {
     front_line: "前衛",
     healing: "回復",

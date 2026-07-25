@@ -16,6 +16,7 @@ InputActions="*res://scripts/input_actions.gd"
 SceneManager="*res://scripts/scene_manager.gd"
 WorldLoader="*res://scripts/world_loader.gd"
 Run="*res://scripts/run_state.gd"
+StatusOverlay="*res://scripts/status_overlay.gd"
 
 [display]
 

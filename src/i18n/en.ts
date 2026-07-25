@@ -297,6 +297,10 @@ export const en = {
     noDescription: "No further details are known.",
     close: "Close"
   },
+  statusOverlay: {
+    title: "Party Status",
+    hint: "C toggle · Esc close"
+  },
   coverage: {
     front_line: "Front line",
     healing: "Healing",
