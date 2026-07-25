@@ -4,6 +4,7 @@ extends Control
 ## as a CI smoke check that the exported data parses in Godot.
 
 func _ready() -> void:
+	_install_ui_font()
 	var pack := WorldLoader.load_world("default")
 	var world: Dictionary = pack.get("world", {})
 	print("[boot] schemaVersion=%s worldId=%s title=%s enemies=%d dungeons=%d" % [
@@ -27,3 +28,14 @@ func _ready() -> void:
 		if DebugOverlay.enabled():
 			get_tree().root.add_child.call_deferred(DebugOverlay.new())
 		SceneManager.goto.call_deferred("res://scenes/title.tscn")
+
+# The Web export has NO OS font fallback, so Japanese renders as tofu unless a JA-capable font is
+# EMBEDDED. Native only works because Godot falls back to a system font (Hiragino) that the browser
+# cannot reach. Drop an OFL Japanese font at res://assets/fonts/ui.ttf (see the README there) and it
+# becomes the whole game's font — Web included. Absent → current behaviour (fine on native, tofu on Web).
+func _install_ui_font() -> void:
+	const UI_FONT := "res://assets/fonts/ui.ttf"
+	if ResourceLoader.exists(UI_FONT):
+		var f: Variant = load(UI_FONT)
+		if f is Font:
+			ThemeDB.fallback_font = f

@@ -37,6 +37,7 @@
     "gate:controller": "godot --headless --path godot/ --script res://tests/verify_controller_coverage.gd",
     "gate:debug-start": "godot --headless --path godot/ --script res://tests/verify_debug_start.gd -- --debug-mode",
     "gate:title-asset": "godot --headless --path godot/ --script res://tests/verify_title_asset.gd",
+    "gate:font": "godot --headless --path godot/ --script res://tests/verify_font.gd",
     "export:build": "node scripts/export-build-stamp.mjs",
     "stage:assets": "node scripts/stage-godot-assets.mjs",
     "export:godot": "npm run export:build && npm run stage:assets && npm run export:packs && npm run export:traces && npm run export:rng && npm run export:stats && npm run export:combat-helpers && npm run export:engine && npm run export:character-data && npm run export:character-samples && npm run export:i18n && npm run export:saves",
