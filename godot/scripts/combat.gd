@@ -991,11 +991,26 @@ func _rebuild_stage() -> void:
 	var groups: Array = _combat().get("enemyGroups", [])
 	if groups.is_empty():
 		return
-	var slot_w: float = _enemy_stage_rect.size.x / float(groups.size())
+	# IMP-024: the backdrop fills the full stage, but the CREATURES are placed in a band that clears the
+	# command panel (right) and, when it is shown, the acting-member panel (left) — so no enemy body or
+	# mark is ever hidden behind the HUD, however many groups there are. The band is stable across the
+	# command→target→cancel flow (it keys off the config, not the transient stage), so enemies never jump.
+	var band := _enemy_band()
+	var slot_w: float = band.size.x / float(groups.size())
 	for index in groups.size():
 		var group: Dictionary = groups[index]
-		var centre := _enemy_stage_rect.position.x + slot_w * (float(index) + 0.5)
+		var centre := band.position.x + slot_w * (float(index) + 0.5)
 		_stage_layer.add_child(_enemy_mark(group, centre, slot_w))
+
+## The horizontal band the enemy creatures may occupy: the full stage inset on the right by the command
+## panel, and on the left by the acting-member panel when the spotlight preference is on. Guarantees the
+## HUD never overlaps a creature (IMP-024), independent of group count.
+func _enemy_band() -> Rect2:
+	var right_inset: float = 520.0 + 28.0   # _cmd_panel starts at size.x - 520; keep a gap
+	var left_inset: float = (272.0 + 44.0 + 24.0) if ConfigPanel.spotlight_actor() else 40.0
+	var x := _enemy_stage_rect.position.x + left_inset
+	var w: float = maxf(120.0, _enemy_stage_rect.size.x - left_inset - right_inset)
+	return Rect2(x, _enemy_stage_rect.position.y, w, _enemy_stage_rect.size.y)
 
 func _acting_member() -> Dictionary:
 	# Commands use the filtered, formation-sorted actor queue (not raw party order).  Keeping the hero
@@ -1008,6 +1023,7 @@ func _acting_member() -> Dictionary:
 
 func _active_actor_figure(member: Dictionary) -> Control:
 	var panel := PanelContainer.new()
+	panel.set_meta("actor_panel", true)   # IMP-024 geometry gate: an enemy mark must never hide behind it
 	panel.position = Vector2(44, _enemy_stage_rect.position.y + 36)
 	panel.size = Vector2(272, 420)
 	panel.add_theme_stylebox_override("panel", _panel_style(Color("10150bd9"), GOLD))
@@ -1038,6 +1054,7 @@ func _enemy_mark(group: Dictionary, centre_x: float, slot_w: float) -> Control:
 
 	var mark := Control.new()
 	mark.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	mark.set_meta("enemy_mark", true)   # so the IMP-024 geometry gate can find every creature's rect
 	var art_w: float = minf(slot_w * 0.9, 420.0)
 	var art_h: float = minf(_enemy_stage_rect.size.y * 0.74, 400.0)
 	mark.position = Vector2(centre_x - art_w / 2.0, _enemy_stage_rect.position.y)
