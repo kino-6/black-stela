@@ -46,6 +46,7 @@ const Exploration := preload("res://scripts/rules/exploration.gd")
 const PartyCommands := preload("res://scripts/rules/party_commands.gd")
 const RosterUtil := preload("res://scripts/rules/roster_util.gd")
 const ItemCommands := preload("res://scripts/rules/item_commands.gd")
+const RulesUtil := preload("res://scripts/rules/rules_util.gd")
 ## How hard a hidden passage is to find (mirrors SECRET_DETECT_DC in src/domain/rulesEngine.ts).
 const SECRET_DETECT_DC := 10
 const Leveling := preload("res://scripts/rules/leveling.gd")
@@ -57,7 +58,7 @@ static func resolve(state: Dictionary, command: Dictionary, world: Dictionary = 
 		"turn_right":
 			return _turn(state, "right")
 		"listen":
-			return _log_only(state, {"type": "inspection_made", "mode": "listen"})
+			return RulesUtil.log_only(state, {"type": "inspection_made", "mode": "listen"})
 		"search":
 			return _search(state, world, engine, String(command.get("characterId", "")), String(command.get("itemId", "")))
 		"move_forward":
@@ -69,9 +70,9 @@ static func resolve(state: Dictionary, command: Dictionary, world: Dictionary = 
 		"strafe_right":
 			return _move_forward(state, world, engine, _facing_of(state, RIGHT_OF), "right")
 		"inspect_wall":
-			return _log_only(state, {"type": "inspection_made", "mode": "inspect_wall"})
+			return RulesUtil.log_only(state, {"type": "inspection_made", "mode": "inspect_wall"})
 		"open_door":
-			return _log_only(state, {"type": "inspection_made", "mode": "open_door"})
+			return RulesUtil.log_only(state, {"type": "inspection_made", "mode": "open_door"})
 		"use_stairs":
 			return _use_stairs(state, world)
 		"return_to_town":
@@ -170,11 +171,7 @@ static func _turn(state: Dictionary, side: String) -> Dictionary:
 	next["turn"] = int(next["turn"]) + 1
 	return {"state": next, "events": [{"type": "party_turned", "side": side, "facing": facing}]}
 
-# logOnly(state, event): +1 turn, emit the one event (no other state change).
-static func _log_only(state: Dictionary, event: Dictionary) -> Dictionary:
-	var next: Dictionary = state.duplicate(true)
-	next["turn"] = int(next["turn"]) + 1
-	return {"state": next, "events": [event]}
+# log_only moved to RulesUtil (rules_util.gd), shared by the dispatcher and the leaf command modules.
 
 # search(state, world): reveal secret grid edges of this cell, else gather, else detect a trap, else
 # nothing. Mirrors the TS search() branch order exactly.
@@ -232,13 +229,13 @@ static func _search(state: Dictionary, world: Dictionary, engine: Dictionary = {
 	var trap: Variant = room.get("trap", null) if typeof(room) == TYPE_DICTIONARY else null
 	var resolved: Array = state.get("resolvedTraps", [])
 	if typeof(trap) != TYPE_DICTIONARY or resolved.has(trap.get("id", "")):
-		return _log_only(state, {"type": "search_completed", "result": "none"})
+		return RulesUtil.log_only(state, {"type": "search_completed", "result": "none"})
 
 	# Spotting the trap was automatic too — the authored detectDc was read by nothing.
 	var detect_dc := int(trap.get("detectDc", 0))
 	var trap_attempt: Dictionary = Exploration.resolve_attempt(state, world, engine, "investigate", detect_dc, character_id, item_id)
 	if String(trap_attempt.get("refused", "")) != "":
-		return _log_only(state, {"type": "search_completed", "result": "none"})
+		return RulesUtil.log_only(state, {"type": "search_completed", "result": "none"})
 
 	var trapped: Dictionary = state.duplicate(true)
 	trapped["inventory"] = trap_attempt.get("inventory", trapped.get("inventory", []))
@@ -627,7 +624,7 @@ static func _use_stairs(state: Dictionary, world: Dictionary) -> Dictionary:
 	var facing: String = state["position"]["facing"]
 	var stair: Variant = _room_stairs_edge(world, room_id, facing)
 	if typeof(stair) != TYPE_DICTIONARY or typeof((stair["edge"] as Dictionary).get("targetRoomId", null)) != TYPE_STRING:
-		return _log_only(state, {"type": "command_blocked", "reason": "stairs_unavailable", "command": "use_stairs"})
+		return RulesUtil.log_only(state, {"type": "command_blocked", "reason": "stairs_unavailable", "command": "use_stairs"})
 	var edge: Dictionary = stair["edge"]
 
 	# A locked gate on the STAIR's direction bars the descent until it is opened.
@@ -678,7 +675,7 @@ static func _return_to_town(state: Dictionary, world: Dictionary) -> Dictionary:
 		return {"state": state, "events": []}
 	var room: Variant = _room(world, String(state["position"]["roomId"]))
 	if typeof(room) != TYPE_DICTIONARY or (not bool(room.get("stairsToTown", false)) and not bool(room.get("restPoint", false))):
-		return _log_only(state, {"type": "command_blocked", "reason": "town_return_unavailable", "command": "return_to_town"})
+		return RulesUtil.log_only(state, {"type": "command_blocked", "reason": "town_return_unavailable", "command": "return_to_town"})
 	var next: Dictionary = state.duplicate(true)
 	next["phase"] = "town"
 	next["position"] = null
@@ -698,12 +695,12 @@ static func _disarm_trap(state: Dictionary, world: Dictionary, engine: Dictionar
 	var room: Variant = _room(world, String(state["position"]["roomId"]))
 	var trap: Variant = room.get("trap", null) if typeof(room) == TYPE_DICTIONARY else null
 	if typeof(trap) != TYPE_DICTIONARY or (state.get("resolvedTraps", []) as Array).has(trap.get("id", "")):
-		return _log_only(state, {"type": "trap_disarm_failed", "reason": "none_active"})
+		return RulesUtil.log_only(state, {"type": "trap_disarm_failed", "reason": "none_active"})
 
 	var detect_dc := int(trap.get("detectDc", 0))
 	var attempt := Exploration.resolve_attempt(state, world, engine, "disarm", detect_dc, character_id, item_id)
 	if String(attempt.get("refused", "")) != "":
-		return _log_only(state, {"type": "trap_disarm_failed", "reason": "none_active"})
+		return RulesUtil.log_only(state, {"type": "trap_disarm_failed", "reason": "none_active"})
 
 	var next: Dictionary = state.duplicate(true)
 	next["inventory"] = attempt.get("inventory", next.get("inventory", []))
@@ -777,7 +774,7 @@ static func _mark_expedition_started(party: Array, floor_id: Variant, turn: int)
 # built around an eastward trunk read unchanged.
 static func _enter_dungeon(state: Dictionary, world: Dictionary) -> Dictionary:
 	if (state.get("party", []) as Array).is_empty():
-		return _log_only(state, {"type": "command_blocked", "reason": "party_required", "command": "enter_dungeon"})
+		return RulesUtil.log_only(state, {"type": "command_blocked", "reason": "party_required", "command": "enter_dungeon"})
 	var start_room_id := String(world.get("startRoom", ""))
 	var start_room: Variant = _room(world, start_room_id)
 	var exits: Dictionary = start_room.get("exits", {}) if typeof(start_room) == TYPE_DICTIONARY else {}
@@ -812,7 +809,7 @@ static func _enter_dungeon(state: Dictionary, world: Dictionary) -> Dictionary:
 # Resume at a REST POINT the party has already reached — the long walk back is not the challenge.
 static func _resume_at_checkpoint(state: Dictionary, world: Dictionary, room_id: String) -> Dictionary:
 	if (state.get("party", []) as Array).is_empty():
-		return _log_only(state, {"type": "command_blocked", "reason": "party_required", "command": "enter_dungeon"})
+		return RulesUtil.log_only(state, {"type": "command_blocked", "reason": "party_required", "command": "enter_dungeon"})
 	var room: Variant = _room(world, room_id)
 	var visited: Array = (state.get("map", {}) as Dictionary).get("visitedRooms", [])
 	if typeof(room) != TYPE_DICTIONARY or not bool(room.get("restPoint", false)) or not visited.has(room_id):

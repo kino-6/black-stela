@@ -7,6 +7,7 @@ extends RefCounted
 const RosterUtil := preload("res://scripts/rules/roster_util.gd")
 const CombatRound := preload("res://scripts/rules/combat_round.gd")
 const Leveling := preload("res://scripts/rules/leveling.gd")
+const RulesUtil := preload("res://scripts/rules/rules_util.gd")
 
 # use_item outside combat: an ESCAPE charm goes home, a GROWTH item permanently raises an adventurer,
 # a consumable heals. The escape charm is barred on the boss floor — the finale is a commitment.
@@ -20,7 +21,7 @@ static func use_item(state: Dictionary, world: Dictionary, item_id: String, targ
 		if state.get("phase", "") != "dungeon" or state.get("position", null) == null:
 			return {"state": state, "events": []}
 		if _is_boss_floor(world, (state.get("map", {}) as Dictionary).get("floorId", null)):
-			return _log_only(state, {"type": "command_blocked", "reason": "town_return_unavailable", "command": "return_to_town"})
+			return RulesUtil.log_only(state, {"type": "command_blocked", "reason": "town_return_unavailable", "command": "return_to_town"})
 		var escaped: Dictionary = state.duplicate(true)
 		escaped["phase"] = "town"
 		escaped["position"] = null
@@ -111,10 +112,3 @@ static func _is_boss_floor(world: Dictionary, floor_id: Variant) -> bool:
 		if dungeon.get("id", "") == floor_id:
 			return (dungeon.get("tags", []) as Array).has("boss")
 	return false
-
-# Verbatim copy of the dispatcher's _log_only (duplicates state + increments turn) so this leaf stays
-# self-contained; a later slice can hoist it into a shared rules util once more consumers are extracted.
-static func _log_only(state: Dictionary, event: Dictionary) -> Dictionary:
-	var next: Dictionary = state.duplicate(true)
-	next["turn"] = int(next["turn"]) + 1
-	return {"state": next, "events": [event]}
