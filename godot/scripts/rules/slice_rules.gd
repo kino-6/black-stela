@@ -43,6 +43,8 @@ const CharacterCreation := preload("res://scripts/rules/character_creation.gd")
 const Encounters := preload("res://scripts/rules/encounters.gd")
 const Chests := preload("res://scripts/rules/chests.gd")
 const Exploration := preload("res://scripts/rules/exploration.gd")
+const PartyCommands := preload("res://scripts/rules/party_commands.gd")
+const RosterUtil := preload("res://scripts/rules/roster_util.gd")
 ## How hard a hidden passage is to find (mirrors SECRET_DETECT_DC in src/domain/rulesEngine.ts).
 const SECRET_DETECT_DC := 10
 const Leveling := preload("res://scripts/rules/leveling.gd")
@@ -105,23 +107,23 @@ static func resolve(state: Dictionary, command: Dictionary, world: Dictionary = 
 		"declare_round":
 			return CombatRound.declare_round(state, world, command.get("actions", []), engine)
 		"set_member_row":
-			return _set_member_row(state, command.get("characterId", ""), command.get("row", "front"))
+			return PartyCommands.set_member_row(state, command.get("characterId", ""), command.get("row", "front"))
 		"swap_member_rows":
-			return _swap_member_rows(state, command.get("characterId", ""), command.get("targetCharacterId", ""))
+			return PartyCommands.swap_member_rows(state, command.get("characterId", ""), command.get("targetCharacterId", ""))
 		"bench_member":
-			return _bench_member(state, command.get("characterId", ""))
+			return PartyCommands.bench_member(state, command.get("characterId", ""))
 		"recall_member":
-			return _recall_member(state, command.get("characterId", ""))
+			return PartyCommands.recall_member(state, command.get("characterId", ""))
 		"retire_member":
-			return _retire_member(state, command.get("characterId", ""))
+			return PartyCommands.retire_member(state, command.get("characterId", ""))
 		"unretire_member":
-			return _unretire_member(state, command.get("characterId", ""))
+			return PartyCommands.unretire_member(state, command.get("characterId", ""))
 		"erase_member":
-			return _erase_member(state, command.get("characterId", ""))
+			return PartyCommands.erase_member(state, command.get("characterId", ""))
 		"edit_member_identity":
-			return _edit_member_identity(state, command)
+			return PartyCommands.edit_member_identity(state, command)
 		"reclass_member":
-			return _reclass_member(state, world, engine, command.get("characterId", ""), command.get("classId", ""))
+			return PartyCommands.reclass_member(state, world, engine, command.get("characterId", ""), command.get("classId", ""))
 		"buy_item":
 			return Economy.buy(state, world, command.get("shopId", ""), command.get("itemId", ""))
 		"sell_item":
@@ -480,155 +482,6 @@ static func _party_can_fight(state: Dictionary) -> bool:
 		if int(member.get("hp", 0)) > 0 and member.get("injury", null) == null:
 			return true
 	return false
-
-# --- roster commands (port of the bench/recall/row/retire set in rulesEngine.ts) ---------------------
-const PARTY_SIZE_LIMIT := 6
-
-static func _set_member_row(state: Dictionary, char_id: String, row: String) -> Dictionary:
-	if state.get("phase", "") == "combat":
-		return {"state": state, "events": []}
-	var member := _find_by_id(state.get("party", []), char_id)
-	if member.is_empty() or member.get("row", "") == row:
-		return {"state": state, "events": []}
-	var next: Dictionary = state.duplicate(true)
-	for m in next["party"]:
-		if String(m.get("id", "")) == char_id:
-			m["row"] = row
-	return {"state": next, "events": [{"type": "party_member_reformed", "characterName": member.get("name", ""), "row": row}]}
-
-static func _swap_member_rows(state: Dictionary, char_id: String, target_id: String) -> Dictionary:
-	if state.get("phase", "") == "combat":
-		return {"state": state, "events": []}
-	var member := _find_by_id(state.get("party", []), char_id)
-	var target := _find_by_id(state.get("party", []), target_id)
-	if member.is_empty() or target.is_empty() or member.get("row", "") == target.get("row", ""):
-		return {"state": state, "events": []}
-	var member_row: String = member.get("row", "front")
-	var target_row: String = target.get("row", "front")
-	var next: Dictionary = state.duplicate(true)
-	for m in next["party"]:
-		if String(m.get("id", "")) == char_id:
-			m["row"] = target_row
-		elif String(m.get("id", "")) == target_id:
-			m["row"] = member_row
-	next["turn"] = int(next.get("turn", 0)) + 1
-	return {"state": next, "events": [
-		{"type": "party_member_reformed", "characterName": member.get("name", ""), "row": target_row},
-		{"type": "party_member_reformed", "characterName": target.get("name", ""), "row": member_row},
-	]}
-
-static func _bench_member(state: Dictionary, char_id: String) -> Dictionary:
-	if state.get("phase", "") != "town":
-		return {"state": state, "events": []}
-	var member := _find_by_id(state.get("party", []), char_id)
-	if member.is_empty():
-		return {"state": state, "events": []}
-	var next: Dictionary = state.duplicate(true)
-	next["party"] = _without_id(next.get("party", []), char_id)
-	next["reserve"] = (next.get("reserve", []) as Array) + [member]
-	return {"state": next, "events": [{"type": "party_member_benched", "characterName": member.get("name", "")}]}
-
-static func _recall_member(state: Dictionary, char_id: String) -> Dictionary:
-	if state.get("phase", "") != "town" or (state.get("party", []) as Array).size() >= PARTY_SIZE_LIMIT:
-		return {"state": state, "events": []}
-	var member := _find_by_id(state.get("reserve", []), char_id)
-	if member.is_empty():
-		return {"state": state, "events": []}
-	var next: Dictionary = state.duplicate(true)
-	next["party"] = (next.get("party", []) as Array) + [member]
-	next["reserve"] = _without_id(next.get("reserve", []), char_id)
-	return {"state": next, "events": [{"type": "party_member_recalled", "characterName": member.get("name", "")}]}
-
-static func _retire_member(state: Dictionary, char_id: String) -> Dictionary:
-	if state.get("phase", "") != "town":
-		return {"state": state, "events": []}
-	var member := _find_by_id(state.get("party", []), char_id)
-	if member.is_empty():
-		member = _find_by_id(state.get("reserve", []), char_id)
-	if member.is_empty():
-		return {"state": state, "events": []}
-	var next: Dictionary = state.duplicate(true)
-	next["party"] = _without_id(next.get("party", []), char_id)
-	next["reserve"] = _without_id(next.get("reserve", []), char_id)
-	next["retired"] = (next.get("retired", []) as Array) + [member]
-	return {"state": next, "events": [{"type": "party_member_retired", "characterName": member.get("name", "")}]}
-
-static func _unretire_member(state: Dictionary, char_id: String) -> Dictionary:
-	if state.get("phase", "") != "town":
-		return {"state": state, "events": []}
-	var member := _find_by_id(state.get("retired", []), char_id)
-	if member.is_empty():
-		return {"state": state, "events": []}
-	var next: Dictionary = state.duplicate(true)
-	next["retired"] = _without_id(next.get("retired", []), char_id)
-	next["reserve"] = (next.get("reserve", []) as Array) + [member]
-	return {"state": next, "events": [{"type": "party_member_unretired", "characterName": member.get("name", "")}]}
-
-static func _erase_member(state: Dictionary, char_id: String) -> Dictionary:
-	if state.get("phase", "") != "town":
-		return {"state": state, "events": []}
-	var member := _find_by_id(state.get("party", []), char_id)
-	if member.is_empty():
-		member = _find_by_id(state.get("reserve", []), char_id)
-	if member.is_empty():
-		member = _find_by_id(state.get("retired", []), char_id)
-	if member.is_empty():
-		return {"state": state, "events": []}
-	var next: Dictionary = state.duplicate(true)
-	next["party"] = _without_id(next.get("party", []), char_id)
-	next["reserve"] = _without_id(next.get("reserve", []), char_id)
-	next["retired"] = _without_id(next.get("retired", []), char_id)
-	return {"state": next, "events": [{"type": "party_member_erased", "characterName": member.get("name", "")}]}
-
-# Revise name/title/notes/accent across every roster (town-only; name required).
-static func _edit_member_identity(state: Dictionary, cmd: Dictionary) -> Dictionary:
-	if state.get("phase", "") != "town":
-		return {"state": state, "events": []}
-	var char_id: String = cmd.get("characterId", "")
-	var name: String = String(cmd.get("name", "")).strip_edges()
-	if name == "":
-		return {"state": state, "events": []}
-	var edited := false
-	var next: Dictionary = state.duplicate(true)
-	for roster in ["party", "reserve", "retired"]:
-		for m in next.get(roster, []):
-			if String(m.get("id", "")) == char_id:
-				m["name"] = name
-				m["title"] = String(cmd.get("title", "")).strip_edges()
-				m["notes"] = String(cmd.get("notes", "")).strip_edges()
-				m["accentColor"] = cmd.get("accentColor", "")
-				edited = true
-	if not edited:
-		return {"state": state, "events": []}
-	return {"state": next, "events": [{"type": "party_member_edited", "characterName": name}]}
-
-# Reclass an active or benched adventurer to a basic class (reclassCharacter re-derives the base at the
-# retained level). Town-only; no-op if already that class. No turn cost (a roster edit, not an action).
-static func _reclass_member(state: Dictionary, world: Dictionary, engine: Dictionary, char_id: String, class_id: String) -> Dictionary:
-	if state.get("phase", "") != "town":
-		return {"state": state, "events": []}
-	var member := _find_by_id(state.get("party", []), char_id)
-	if member.is_empty():
-		member = _find_by_id(state.get("reserve", []), char_id)
-	if member.is_empty() or String(member.get("classId", "")) == class_id:
-		return {"state": state, "events": []}
-	var reclassed := CharacterCreation.reclass_character(member, class_id, world, engine)
-	var next: Dictionary = state.duplicate(true)
-	var party := []
-	for c in next.get("party", []):
-		party.append(reclassed if String(c.get("id", "")) == char_id else c)
-	next["party"] = party
-	var reserve := []
-	for c in next.get("reserve", []):
-		reserve.append(reclassed if String(c.get("id", "")) == char_id else c)
-	next["reserve"] = reserve
-	var cls_name := char_id
-	for def in engine.get("classes", []):
-		if def.get("id", "") == class_id:
-			cls_name = String((def.get("label", {}) as Dictionary).get("en", class_id))
-			break
-	return {"state": next, "events": [{"type": "party_member_reclassed", "characterName": reclassed.get("name", ""), "className": cls_name}]}
-
 
 # --- on-cell floor effects (one fixed order from every call site: spinner -> hazard -> teleport) -----
 static func _apply_cell_effects(state: Dictionary, world: Dictionary, room: Variant, events: Array) -> Dictionary:
@@ -1030,7 +883,7 @@ static func _use_item(state: Dictionary, world: Dictionary, item_id: String, tar
 	if kind == "growth" and typeof(item.get("grants", null)) == TYPE_DICTIONARY:
 		return _use_growth_item(state, item, target_id)
 
-	var target := _find_by_id(state.get("party", []), target_id)
+	var target := RosterUtil.find_by_id(state.get("party", []), target_id)
 	if target.is_empty() or not (kind == "healing" or kind == "cure" or kind == "focus"):
 		return {"state": state, "events": []}
 	var applied := CombatRound._apply_healing_item(state.get("party", []), state.get("inventory", []), item_id, target_id, world)
@@ -1044,7 +897,7 @@ static func _use_item(state: Dictionary, world: Dictionary, item_id: String, tar
 static func _use_growth_item(state: Dictionary, item: Dictionary, target_id: String) -> Dictionary:
 	if state.get("phase", "") == "combat":
 		return {"state": state, "events": []}
-	var target := _find_by_id(state.get("party", []), target_id)
+	var target := RosterUtil.find_by_id(state.get("party", []), target_id)
 	var grants: Dictionary = item.get("grants", {})
 	if target.is_empty():
 		return {"state": state, "events": []}
@@ -1155,20 +1008,7 @@ static func _debug_revive_party(state: Dictionary) -> Dictionary:
 	next["party"] = party
 	return {"state": next, "events": [{"type": "debug_started", "text": "Debug: party fully revived and restored."}]}
 
-static func _find_by_id(list: Variant, id: String) -> Dictionary:
-	if typeof(list) == TYPE_ARRAY:
-		for m in list:
-			if typeof(m) == TYPE_DICTIONARY and String(m.get("id", "")) == id:
-				return m
-	return {}
-
-static func _without_id(list: Variant, id: String) -> Array:
-	var out := []
-	if typeof(list) == TYPE_ARRAY:
-		for m in list:
-			if String(m.get("id", "")) != id:
-				out.append(m)
-	return out
+# _find_by_id / _without_id moved to RosterUtil (roster_util.gd), shared with party_commands (IMP-050).
 
 static func _grid_edge(world: Dictionary, room_id: String, direction: String) -> Variant:
 	var cell: Variant = _grid_cell(world, room_id)
