@@ -16,6 +16,7 @@ const I18n := preload("res://scripts/i18n.gd")
 const UIKit := preload("res://scripts/town/ui_kit.gd")
 const CommandMenu := preload("res://scripts/combat/command_menu.gd")
 const Encounter := preload("res://scripts/encounter.gd")
+const ConfigPanel := preload("res://scripts/config_panel.gd")
 
 const BG := Color("0b0d09")
 const GOLD := Color("c9a765")
@@ -967,17 +968,22 @@ func _rebuild_stage() -> void:
 	backdrop.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 	backdrop.position = _enemy_stage_rect.position
 	backdrop.size = _enemy_stage_rect.size
-	backdrop.modulate = Color(1, 1, 1, 0.72)
+	# The scenario's pack supplies the scene image; palette values supply its light and fog character.
+	# Thus a pack can share the combat layout while Verdant reads canopy-green rather than ash-brown.
+	var palette: Dictionary = _world.get("palette", {}) if typeof(_world.get("palette", null)) == TYPE_DICTIONARY else {}
+	var ambient := Color(String(palette.get("ambient", "#5f5548")))
+	backdrop.modulate = ambient.lightened(0.22)
 	_stage_layer.add_child(backdrop)
 	var shade := ColorRect.new()
-	shade.color = Color("07100888") if _world_id == "verdant" else Color("09090686")
+	var fog := Color(String(palette.get("fog", "#090906")))
+	shade.color = Color(fog, 0.52)
 	shade.position = _enemy_stage_rect.position
 	shade.size = _enemy_stage_rect.size
 	_stage_layer.add_child(shade)
 
 	# During decisions, show whose turn it is at hero scale.  Resolution keeps the stage enemy-led, so
 	# attack playback remains readable; the command phase is the moment the player needs identity most.
-	if _stage in ["command", "skill", "spell", "item", "target-group", "target-ally"]:
+	if ConfigPanel.spotlight_actor() and _stage in ["command", "skill", "spell", "item", "target-group", "target-ally"]:
 		var actor := _acting_member()
 		if not actor.is_empty():
 			_stage_layer.add_child(_active_actor_figure(actor))
