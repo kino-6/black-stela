@@ -18,6 +18,7 @@ const CommandMenu := preload("res://scripts/combat/command_menu.gd")
 const Encounter := preload("res://scripts/encounter.gd")
 const ConfigPanel := preload("res://scripts/config_panel.gd")
 const WorldResources := preload("res://scripts/world_resources.gd")
+const CombatPartyHud := preload("res://scripts/combat/combat_party_hud.gd")
 
 const BG := Color("0b0d09")
 const GOLD := Color("c9a765")
@@ -648,71 +649,11 @@ func _party_row(row: String) -> HBoxContainer:
 # acts oddly must be VISIBLE (sleep cannot act, fear misses, silence cannot cast, poison bleeds), not
 # implied by a dimmed box.
 func _party_slot(member: Dictionary) -> Control:
-	var max_hp: int = maxi(1, int(member.get("maxHp", 1)))
-	var hp_now: int = int(member.get("hp", 0))
-	var max_mp: int = int(member.get("maxMp", 0))
-	var down: bool = member.get("injury", null) != null or hp_now <= 0
-	var danger: bool = hp_now <= int(ceil(float(max_hp) * 0.35))
-	var acting: bool = String(member.get("id", "")) == _acting_member_id()
-
-	var slot := PanelContainer.new()
-	slot.custom_minimum_size = Vector2(300, 132)
-	slot.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	var border: Color = GOLD if acting else (BAD if down else Color("3a4326"))
-	slot.add_theme_stylebox_override("panel", _panel_style(Color("1c2013f0"), border))
-
-	var h := HBoxContainer.new()
-	h.add_theme_constant_override("separation", 10)
-	slot.add_child(h)
-
-	# A portrait you can actually read a face in.
-	var frame := Control.new()
-	frame.custom_minimum_size = Vector2(92, 112)
-	frame.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	frame.clip_contents = true
-	var portrait := TextureRect.new()
-	portrait.texture = _texture(_portrait_path(member))
-	portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-	portrait.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	portrait.modulate = Color(1, 1, 1, 0.45) if down else Color(1, 1, 1, 1)
-	frame.add_child(portrait)
-	h.add_child(frame)
-
-	var v := VBoxContainer.new()
-	v.add_theme_constant_override("separation", 3)
-	v.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	h.add_child(v)
-
-	var head := HBoxContainer.new()
-	head.add_theme_constant_override("separation", 6)
-	head.add_child(_label(String(member.get("name", "?")), 20, BAD if down else INK))
-	if acting:
-		head.add_child(_label("▶", 18, GOLD))
-	v.add_child(head)
-
-	var hp := _stat_gauge(float(hp_now) / float(max_hp), BAD if danger else OK)
-	v.add_child(hp)
-	var mp: ProgressBar = null
-	if max_mp > 0:
-		mp = _stat_gauge(float(int(member.get("mp", 0))) / float(max_mp), Color("6a86b0"))
-		v.add_child(mp)
-
-	var hp_label := _label(_hp_text(member), 14, BAD if danger else INK)
-	v.add_child(hp_label)
-
-	# Status pips — labelled, so the player reads WHY, not just that something is wrong.
-	var pips := HBoxContainer.new()
-	pips.add_theme_constant_override("separation", 4)
-	if member.get("injury", null) != null:
-		pips.add_child(_pip(I18n.t("partyMenu.wounded"), BAD))
-	for status in member.get("status", []):
-		var key := "partyMenu.status.%s" % String(status)
-		pips.add_child(_pip(I18n.t(key) if I18n.has(key) else String(status), GOLD if String(status) == "ward" else BAD))
-	v.add_child(pips)
-
-	_party_slots[member.get("id", "")] = {"bar": hp, "label": hp_label, "mp": mp}
-	return slot
+	# The slot itself is built by the CombatPartyHud collaborator (IMP-052); the scene keeps the live-update
+	# refs so _refresh_member can drive the HP bar/label as the round plays.
+	var built := CombatPartyHud.slot(member, _acting_member_id(), _texture(_portrait_path(member)), _hp_text(member))
+	_party_slots[member.get("id", "")] = {"bar": built["bar"], "label": built["label"], "mp": built["mp"]}
+	return built["control"]
 
 func _rebuild_party_strip() -> void:
 	if _strip_box == null:
@@ -726,29 +667,7 @@ func _rebuild_party_strip() -> void:
 	_strip_box.add_child(_row_label(I18n.t("play.backRow")))
 	_strip_box.add_child(_party_row("back"))
 
-func _stat_gauge(ratio: float, col: Color) -> ProgressBar:
-	var bar := ProgressBar.new()
-	bar.max_value = 100
-	bar.value = clampf(ratio, 0.0, 1.0) * 100.0
-	bar.show_percentage = false
-	bar.custom_minimum_size = Vector2(180, 7)
-	var fill := StyleBoxFlat.new()
-	fill.bg_color = col
-	fill.set_corner_radius_all(2)
-	var bg := StyleBoxFlat.new()
-	bg.bg_color = Color(0.10, 0.10, 0.09, 0.95)
-	bg.set_corner_radius_all(2)
-	bar.add_theme_stylebox_override("fill", fill)
-	bar.add_theme_stylebox_override("background", bg)
-	return bar
-
-func _pip(text: String, col: Color) -> Control:
-	var p := PanelContainer.new()
-	var style := _panel_style(Color(0.12, 0.11, 0.09, 0.9), col)
-	style.set_content_margin_all(3)
-	p.add_theme_stylebox_override("panel", style)
-	p.add_child(_label(text, 12, col))
-	return p
+# _stat_gauge / _pip moved into CombatPartyHud (the party-slot builder) with the slot (IMP-052).
 
 # Whose orders are being given right now — the strip marks them so the menu and the strip agree.
 func _acting_member_id() -> String:
