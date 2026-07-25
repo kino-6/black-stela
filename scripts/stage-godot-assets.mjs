@@ -31,3 +31,16 @@ for (const worldId of readdirSync(contentRoot)) {
   console.log(`staged ${worldId}`);
 }
 console.log(`staged ${copied} art files → godot/assets/worlds/`);
+
+// Shared UI font (not per-world): the Web export has no OS font fallback, so Japanese needs an EMBEDDED
+// font (IMP-047 Web / #30). Source lives at assets/fonts/ui.ttf (tracked); staged into the generated
+// godot/assets so boot.gd:_install_ui_font can load res://assets/fonts/ui.ttf.
+const fontSrc = join(here, "..", "assets", "fonts", "ui.ttf");
+const fontDest = join(here, "..", "godot", "assets", "fonts", "ui.ttf");
+if (existsSync(fontSrc)) {
+  mkdirSync(dirname(fontDest), { recursive: true });
+  cpSync(fontSrc, fontDest);
+  console.log("staged UI font → godot/assets/fonts/ui.ttf");
+} else {
+  console.warn("no assets/fonts/ui.ttf — the Web export will render Japanese as tofu (see assets/fonts/README.md)");
+}
