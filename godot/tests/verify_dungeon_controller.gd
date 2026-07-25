@@ -32,14 +32,14 @@ func _initialize() -> void:
 	var facing0 := _facing(d)
 	d.call("_begin_move", "turn_left")
 	var facing1 := _facing(d)
-	_check(facing1 != facing0 and String(d.get("_held_action")) == "turn_left", "a movement key steps once and arms the hold")
+	_check(facing1 != facing0 and String(d.get("_hold").held()) == "turn_left", "a movement key steps once and arms the hold")
 	Input.action_press("turn_left")
 	d.call("_process", 0.30 + 0.16 + 0.01)   # past HOLD_DELAY, then one HOLD_RATE
 	var facing2 := _facing(d)
 	_check(facing2 != facing1, "holding the key auto-repeats the move (#17)")
 	Input.action_release("turn_left")
 	d.call("_process", 0.2)
-	_check(String(d.get("_held_action")) == "", "releasing the key stops the repeat")
+	_check(String(d.get("_hold").held()) == "", "releasing the key stops the repeat")
 
 	# #29 — the 3D geometry follows the party's FLOOR, not always the first one. Put the party on a B2F
 	# cell and the view rebuilds for B2F (before the fix a B2F debug jump kept showing B1F walls).

@@ -14,6 +14,7 @@ const ChestPanel := preload("res://scripts/dungeon/chest_panel.gd")
 const WorldResources := preload("res://scripts/world_resources.gd")
 const DungeonRenderer := preload("res://scripts/dungeon/dungeon_renderer.gd")
 const DungeonHud := preload("res://scripts/dungeon/dungeon_hud.gd")
+const DungeonInput := preload("res://scripts/dungeon/dungeon_input.gd")
 const PartyPanel := preload("res://scripts/town/party_panel.gd")
 const CharacterStats := preload("res://scripts/rules/character_stats.gd")
 const Chests := preload("res://scripts/rules/chests.gd")
@@ -185,12 +186,7 @@ const MOVE_COMMANDS := {
 	"move_forward": "move_forward", "move_back": "move_backward",
 	"sidestep_left": "strafe_left", "sidestep_right": "strafe_right",
 }
-const HOLD_DELAY := 0.30   # a held key waits this long before it starts repeating (so a tap is one step)
-const HOLD_RATE := 0.16    # then repeats at this interval
-
-var _held_action: String = ""
-var _hold_elapsed: float = 0.0
-var _repeat_accum: float = 0.0
+var _hold := DungeonInput.new()   # held-key auto-repeat collaborator (IMP-051)
 
 func _input(event: InputEvent) -> void:
 	if _busy:
@@ -214,31 +210,17 @@ func _input(event: InputEvent) -> void:
 		_toggle_full_map()
 		get_viewport().set_input_as_handled()
 
-# Auto-repeat a HELD movement key: one press steps once (via _begin_move), then after HOLD_DELAY the
-# party keeps stepping every HOLD_RATE while the key stays down. Any decision that takes the screen — a
-# fight, a chest, an open overlay, or the key being released — ends the repeat at once, so the player is
-# never carried past a choice.
+# Held-movement auto-repeat is driven by the DungeonInput collaborator (IMP-051): the scene supplies the
+# stop condition (a fight / chest / open overlay ends the repeat) and the move callback; it stays the sole
+# command dispatcher.
 func _process(delta: float) -> void:
-	if _held_action == "":
-		return
-	if _busy or (_full_map and is_instance_valid(_full_map)) or (_party_menu and is_instance_valid(_party_menu)) \
-			or String(_state.get("phase", "")) != "dungeon" or not current_chest().is_empty() \
-			or not Input.is_action_pressed(_held_action):
-		_held_action = ""
-		return
-	_hold_elapsed += delta
-	if _hold_elapsed < HOLD_DELAY:
-		return
-	_repeat_accum += delta
-	if _repeat_accum >= HOLD_RATE:
-		_repeat_accum = 0.0
-		_do_move(_held_action)
+	var blocked: bool = _busy or (_full_map and is_instance_valid(_full_map)) or (_party_menu and is_instance_valid(_party_menu)) \
+			or String(_state.get("phase", "")) != "dungeon" or not current_chest().is_empty()
+	_hold.tick(delta, blocked, _do_move)
 
+# Thin seam kept for the controller gate (it drives movement through _begin_move).
 func _begin_move(action: String) -> void:
-	_do_move(action)
-	_held_action = action
-	_hold_elapsed = 0.0
-	_repeat_accum = 0.0
+	_hold.begin(action, _do_move)
 
 func _do_move(action: String) -> void:
 	_apply(SliceRules.resolve(_state, {"type": String(MOVE_COMMANDS[action])}, _world, _engine))
