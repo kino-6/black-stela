@@ -12,6 +12,7 @@ const I18n := preload("res://scripts/i18n.gd")
 const UIKit := preload("res://scripts/town/ui_kit.gd")
 const ChestPanel := preload("res://scripts/dungeon/chest_panel.gd")
 const WorldResources := preload("res://scripts/world_resources.gd")
+const DungeonRenderer := preload("res://scripts/dungeon/dungeon_renderer.gd")
 const PartyPanel := preload("res://scripts/town/party_panel.gd")
 const CharacterStats := preload("res://scripts/rules/character_stats.gd")
 const Chests := preload("res://scripts/rules/chests.gd")
@@ -98,169 +99,15 @@ var _view3d: SubViewportContainer = null   # the 3D view; rebuilt when the party
 var _rendered_floor: String = ""           # the floor id _build_geometry last drew
 
 func _build_3d() -> void:
-	var container := SubViewportContainer.new()
-	container.stretch = true
-	container.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	container.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(container)
-	move_child(container, 0)   # keep the 3D view UNDER the HUD overlays (matters on a floor-change rebuild)
-	_view3d = container
-	var vp := SubViewport.new()
-	vp.own_world_3d = true
-	vp.size = Vector2i(int(size.x), int(size.y))
-	container.add_child(vp)
-
-	var env := WorldEnvironment.new()
-	var e := Environment.new()
-	# Lighting comes from the world's palette so a "verdant/lush" floor is not as dark as an ash pit
-	# (playtest #18). The values here are the ash-pit DEFAULTS, used when a scenario omits them.
-	var pal: Dictionary = _world.get("palette", {}) if typeof(_world.get("palette", null)) == TYPE_DICTIONARY else {}
-	e.background_mode = Environment.BG_COLOR
-	e.background_color = Color("06070500")
-	e.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	e.ambient_light_color = Color(String(pal.get("ambient", "2a2620")))
-	e.ambient_light_energy = float(pal.get("ambientEnergy", 0.55))
-	e.fog_enabled = true
-	e.fog_light_color = Color(String(pal.get("fog", "0a0b07")))
-	e.fog_density = float(pal.get("fogDensity", 0.10))
-	env.environment = e
-	vp.add_child(env)
-
-	_camera = Camera3D.new()
-	_camera.fov = 72.0
-	_camera.near = 0.05
-	vp.add_child(_camera)
-
-	_torch = OmniLight3D.new()
-	_torch.light_color = Color(String(pal.get("torch", "ffd9a0")))
-	_torch.light_energy = 3.2
-	_torch.omni_range = float(pal.get("torchRange", 8.5))
-	_torch.omni_attenuation = 1.4
-	vp.add_child(_torch)
-
-	_build_geometry(vp)
-	_rendered_floor = _current_floor_id()
-
-func _build_geometry(parent: Node) -> void:
-	# The authored block textures, chosen by DEPTH the way React's getDungeonBlockTextureUrls does, and
-	# TINTED rather than replaced so each world keeps its own colour. Untextured flat planes are what
-	# made the maze read as a placeholder.
-	var block := _block_textures()
-	var pal: Dictionary = _world.get("palette", {}) if typeof(_world.get("palette", null)) == TYPE_DICTIONARY else {}
-	var wall_mat := _textured_mat(block["wall"], Color(String(pal.get("wall", "8a8074"))))
-	var floor_mat := _textured_mat(block["floor"], Color(String(pal.get("floor", "6e675c"))))
-	var ceil_mat := _textured_mat(block["wall"], Color("3a352c"))
-	# A chamber is an authored junction/room (three or more exits), not every square in the maze.
-	# Raising its ceiling, inlaying its floor and planting four low pillars makes the authored `.` clusters
-	# read as somewhere one can arrive, rather than another identically-sized corridor tile.
-	var chamber_floor_mat := _textured_mat(block["floor"], Color(String(pal.get("chamberFloor", "9a8050"))))
-	var chamber_wall_mat := _textured_mat(block["wall"], Color(String(pal.get("chamberWall", "a18e62"))))
-	var chamber_accent := Color(String(pal.get("chamberAccent", "c9a765")))
-
-	# Render the floor the party is ON, not always the first one — descending stairs (or a debug jump to
-	# a deeper floor) rebuilds this geometry for the new floor. Rendering startDungeon regardless is why a
-	# B2F state showed B1F walls (unblock #29).
-	var floor_dungeon := _current_floor_id()
-	for dungeon in _world.get("dungeons", []):
-		if dungeon.get("id", "") != floor_dungeon:
-			continue
-		for cell in (dungeon.get("grid", {}) as Dictionary).get("cells", []):
-			var cx := int(cell.get("x", 0))
-			var cy := int(cell.get("y", 0))
-			var base := Vector3(cx * CELL, 0, cy * CELL)
-			var edges: Dictionary = cell.get("edges", {})
-			var chamber := _is_chamber(edges)
-			var wall_height := WALL_H * 1.65 if chamber else WALL_H
-			_add_plane(parent, chamber_floor_mat if chamber else floor_mat, base, Vector3(0, 0, 0))
-			_add_plane(parent, ceil_mat, base + Vector3(0, wall_height, 0), Vector3(PI, 0, 0))
-			for dir in ["north", "south", "east", "west"]:
-				if not _is_passage(edges.get(dir, null)):
-					_add_wall(parent, chamber_wall_mat if chamber else wall_mat, base, dir, wall_height)
-			if chamber:
-				_add_chamber_landmarks(parent, base, chamber_accent, wall_height)
-
-func _is_chamber(edges: Dictionary) -> bool:
-	var openings := 0
-	for dir in ["north", "south", "east", "west"]:
-		if _is_passage(edges.get(dir, null)):
-			openings += 1
-	return openings >= 3
-
-func _add_plane(parent: Node, mat: Material, pos: Vector3, rot: Vector3) -> void:
-	var m := MeshInstance3D.new()
-	var plane := PlaneMesh.new()
-	plane.size = Vector2(CELL, CELL)
-	m.mesh = plane
-	m.material_override = mat
-	m.position = pos
-	m.rotation = rot
-	parent.add_child(m)
-
-func _add_wall(parent: Node, mat: Material, base: Vector3, dir: String, height: float = WALL_H) -> void:
-	var m := MeshInstance3D.new()
-	var quad := QuadMesh.new()
-	quad.size = Vector2(CELL, height)
-	m.mesh = quad
-	m.material_override = mat
-	var off: Vector3 = {
-		"north": Vector3(0, height / 2, -CELL / 2),
-		"south": Vector3(0, height / 2, CELL / 2),
-		"east": Vector3(CELL / 2, height / 2, 0),
-		"west": Vector3(-CELL / 2, height / 2, 0),
-	}[dir]
-	m.position = base + off
-	# QuadMesh faces +Z; rotate so it faces the cell interior.
-	match dir:
-		"north": m.rotation.y = 0
-		"south": m.rotation.y = PI
-		"east": m.rotation.y = -PI / 2
-		"west": m.rotation.y = PI / 2
-	parent.add_child(m)
-
-func _add_chamber_landmarks(parent: Node, base: Vector3, accent: Color, height: float) -> void:
-	# A thin central inlay catches the torch without becoming a gameplay marker. Four squat pillars give
-	# the raised volume parallax and make a cross-junction feel like an actual hall in first person.
-	var inlay := MeshInstance3D.new()
-	var disk := CylinderMesh.new()
-	disk.top_radius = 0.62
-	disk.bottom_radius = 0.62
-	disk.height = 0.025
-	inlay.mesh = disk
-	inlay.material_override = _mat(Color(accent, 0.72))
-	inlay.position = base + Vector3(0, 0.018, 0)
-	parent.add_child(inlay)
-	for offset in [Vector3(-0.88, 0, -0.88), Vector3(0.88, 0, -0.88), Vector3(-0.88, 0, 0.88), Vector3(0.88, 0, 0.88)]:
-		var pillar := MeshInstance3D.new()
-		var column := CylinderMesh.new()
-		column.top_radius = 0.12
-		column.bottom_radius = 0.18
-		column.height = height * 0.72
-		pillar.mesh = column
-		pillar.material_override = _mat(accent.darkened(0.38))
-		pillar.position = base + offset + Vector3(0, column.height / 2.0, 0)
-		parent.add_child(pillar)
-
-# Deeper floors use a heavier block set (React: depth >= 7 -> block3, >= 4 -> block2, >= 1 -> block1).
-func _block_textures() -> Dictionary:
-	var floor_id: Variant = (_state.get("map", {}) as Dictionary).get("floorId", null)
-	var depth := 0
-	if typeof(floor_id) == TYPE_STRING:
-		var re := RegEx.new()
-		re.compile("[a-zA-Z](\\d+)f")
-		var m := re.search(String(floor_id))
-		if m:
-			depth = int(m.get_string(1))
-	# Every world ships the block variants; the un-suffixed base is NOT universal (verdant has none), so
-	# an unparsed floor must land on block1 rather than a file that may not exist.
-	var suffix := "-block1"
-	if depth >= 7:
-		suffix = "-block3"
-	elif depth >= 4:
-		suffix = "-block2"
-	return {
-		"wall": _asset("dungeon/stone-wall%s.jpg" % suffix),
-		"floor": _asset("dungeon/stone-floor%s.jpg" % suffix)
-	}
+	# The 3D renderer is a collaborator (IMP-051): it builds the SubViewport + geometry and hands back the
+	# nodes; this scene keeps positioning the camera/torch per party cell and freeing the view on a floor change.
+	var built := DungeonRenderer.build(_world, _state, _run, size)
+	_view3d = built["container"]
+	_camera = built["camera"]
+	_torch = built["torch"]
+	_rendered_floor = String(built["rendered_floor"])
+	add_child(_view3d)
+	move_child(_view3d, 0)   # keep the 3D view UNDER the HUD overlays
 
 # The world's own art root, so a second scenario textures its maze from its own pack.
 # NOTE: the art directory is keyed by the REGISTRY id ("default"), not the world's internal id
@@ -276,24 +123,6 @@ func _asset(sub: String) -> String:
 
 func _texture(path: String) -> Texture2D:
 	return WorldResources.texture(path)   # export-safe load lives in WorldResources (IMP-053)
-
-func _textured_mat(path: String, tint: Color) -> StandardMaterial3D:
-	var mat := StandardMaterial3D.new()
-	var tex := _texture(path)
-	if tex:
-		mat.albedo_texture = tex
-		mat.uv1_scale = Vector3(1.0, 1.0, 1.0)
-	mat.albedo_color = tint
-	mat.roughness = 0.95
-	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
-	return mat
-
-func _mat(col: Color) -> StandardMaterial3D:
-	var mat := StandardMaterial3D.new()
-	mat.albedo_color = col
-	mat.roughness = 0.95
-	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
-	return mat
 
 # --- overlays -------------------------------------------------------------------------------------
 func _build_overlays() -> void:
