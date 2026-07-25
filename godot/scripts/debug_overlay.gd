@@ -12,12 +12,15 @@ extends CanvasLayer
 const I18n := preload("res://scripts/i18n.gd")
 const UI := preload("res://scripts/town/ui_kit.gd")
 const SliceRules := preload("res://scripts/rules/slice_rules.gd")
+const StateHash := preload("res://scripts/rules/state_hash.gd")
+const InputActionsScript := preload("res://scripts/input_actions.gd")
 
 const PROGRESS_VALUES := ["ready", "after_encounter", "return_ready", "floor_2", "floor_3", "floor_4", "floor_5", "floor_6", "floor_7", "floor_8"]
 
 var _open := false
 var _panel: PanelContainer = null
 var _progress := "ready"
+var _recent_inputs: Array = []   # ring of the last few named actions, for the diagnostics readout (#46)
 
 static func enabled() -> bool:
 	# `--debug-mode` / `--debug-panel` are USER args passed after `--` (godot --path godot/ -- --debug-mode),
@@ -35,9 +38,23 @@ func _input(event: InputEvent) -> void:
 		_open = not _open
 		_build()
 		get_viewport().set_input_as_handled()
+		return
+	# Record the named game actions the reviewer is pressing, so a script error's trace shows what led to
+	# it. Only the DRPG actions (never mouse/echo), so the readout stays the commands, not raw keys.
+	if event is InputEventKey and event.pressed and not (event as InputEventKey).is_echo():
+		for action in InputActionsScript.ACTIONS:
+			if event.is_action_pressed(String(action)):
+				_recent_inputs.push_back(String(action))
+				while _recent_inputs.size() > 8:
+					_recent_inputs.pop_front()
+				if _open:
+					_build()
+				break
 
 func _run() -> Node:
-	return get_node_or_null("/root/Run")
+	# Look the autoload up RELATIVE to root — an absolute /root/ path is rejected when no scene is current
+	# (the capture/test harness), and the bare global name will not compile from a non-autoload script.
+	return get_tree().root.get_node_or_null("Run")
 
 func _build() -> void:
 	for child in get_children():
@@ -63,6 +80,7 @@ func _build() -> void:
 		for dungeon in (run.world as Dictionary).get("dungeons", []):
 			total += (dungeon.get("rooms", []) as Array).size()
 		root.add_child(UI.label(I18n.t("debug.visited", {"visited": visited, "total": total, "phase": String(state.get("phase", "?"))}), 13, UI.DIM))
+		root.add_child(_diagnostics(state))
 	if not _open:
 		return
 
@@ -102,6 +120,23 @@ func _build() -> void:
 		root.add_child(UI.label(_reach_text, 13, UI.OK))
 
 var _reach_text := ""
+
+## In debug mode only: the current scene, phase (in the visited line), state hash, focused control, and the
+## most recent named inputs — enough to reproduce and describe the exact screen a script error hit (#46).
+## Dev-only tooling, so the labels are literal rather than localized player copy.
+func _diagnostics(state: Dictionary) -> Control:
+	var col := UI.col(2)
+	var scene_name := "?"
+	var cur := get_tree().current_scene
+	if cur != null:
+		scene_name = cur.name
+	col.add_child(UI.label("scene %s · hash %s" % [scene_name, StateHash.hash_state(state).substr(0, 8)], 12, UI.DIM))
+	var focus := get_viewport().gui_get_focus_owner()
+	var focus_label: String = ((focus as Button).text if focus is Button else focus.name) if focus != null else "—"
+	col.add_child(UI.label("focus %s" % focus_label, 12, UI.DIM))
+	if not _recent_inputs.is_empty():
+		col.add_child(UI.label("keys %s" % " ".join(PackedStringArray(_recent_inputs)), 12, UI.DIM))
+	return col
 
 func _progress_label(value: String) -> String:
 	match value:

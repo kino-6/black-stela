@@ -36,6 +36,12 @@ func _initialize() -> void:
 	_check(has_gained, "loot_delta inventory carries the gained item (item.lantern-oil)")
 	_check(not (run.loot_baseline as Dictionary).has("item.lantern-oil"), "loot_delta baseline EXCLUDES the gained item, so it shows as brought-back (#3)")
 
+	# combat_victory (#46): lands the reviewer in the combat scene, mid-fight, so command flow / victory
+	# can be inspected in the RIGHT screen (not the dungeon or town).
+	scene = String(Fixtures.load_into(run, "combat_victory"))
+	_check(scene.ends_with("combat.tscn"), "combat_victory lands in the combat scene")
+	_check(String(run.state.get("phase", "")) == "combat" and run.state.get("combat", null) != null, "combat_victory carries a live combat state")
+
 	print("[fixtures] %s (%d failures)" % ["PASS" if _fail == 0 else "FAIL", _fail])
 	quit(_fail)
 

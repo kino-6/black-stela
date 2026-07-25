@@ -10,6 +10,7 @@ const TRACES := {
 	"ready": "expedition",
 	"return_ready": "b1f-return",      # party at the B1F return stair — return-loop / no-crash review (#44)
 	"open_corridor": "b2f-hazard",     # cell.b2f.c1_2 faces a straight N/S corridor — held-move review (#17)
+	"combat_victory": "b1f-combat-victory",  # mid-fight vs the ash slime — command flow / victory review (#46)
 	"loot_delta": "b1f-return",        # the return stair + a gained item on top of the descent supply (#3)
 	"floor_2": "b2f-hazard",
 	"floor_3": "b3f-gather",
@@ -38,7 +39,18 @@ static func load_into(run: Object, name: String) -> String:
 	if name == "loot_delta":
 		_seed_loot_delta(run, state)
 	run.state = state
-	return "res://scenes/dungeon.tscn" if String(state.get("phase", "town")) == "dungeon" else "res://scenes/town.tscn"
+	return _scene_for_phase(String(state.get("phase", "town")))
+
+## The scene each phase plays in — a fixture lands the reviewer in the RIGHT screen (a combat fixture in
+## combat, a floor fixture in the dungeon, everything else in town), all driven by the ported rules.
+static func _scene_for_phase(phase: String) -> String:
+	match phase:
+		"combat":
+			return "res://scenes/combat.tscn"
+		"dungeon":
+			return "res://scenes/dungeon.tscn"
+		_:
+			return "res://scenes/town.tscn"
 
 ## loot_delta: the party stands at the return stair carrying its descent supply PLUS one item picked up
 ## below. loot_baseline is set to the descent inventory, so the return ledger shows ONLY the gained item
