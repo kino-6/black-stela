@@ -25,6 +25,15 @@ avoid the parallel-uncommitted-edit collision we already hit once.
 
 So #14's "表示ON/OFF" half is done. You own the render half (below).
 
+## Status (2026-07-25, updated)
+
+- **#14 / #15 — DONE & COMMITTED** (`6c9242a`, `combat.gd` only). Codex delivered both in one
+  edit; Claude 検品'd (`gate:migration` 21/21 green) + rendered evidence and committed. Spotlight
+  gates on `ConfigPanel.spotlight_actor()` (ON features the acting member without obstructing the
+  stage; OFF leaves creatures clear). Backdrop is palette-driven: Verdant reads canopy-green
+  (`palette.ambient #9cba8c` / `fog #0a170e`), Ash falls back to the ash defaults. Not pushed.
+- **#9 / #21 — still open in the visual lane** (Codex's; not yet in the tree).
+
 ## The four items
 
 ### #9 — registration reskin (in flight)
