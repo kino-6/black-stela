@@ -26,6 +26,9 @@ const argv = process.argv.slice(2);
 const scopeIdx = argv.indexOf("--scope");
 const scope = scopeIdx >= 0 ? argv[scopeIdx + 1] : undefined;
 const planOnly = argv.includes("--plan"); // preview the selected contract without running it
+// Tests/CI can inject a deterministic changed-file set instead of reading the live working tree.
+const changedIdx = argv.indexOf("--changed");
+const changedOverride = changedIdx >= 0 ? argv[changedIdx + 1] : undefined;
 if (!scope) {
   fail(2, "usage: npm run gate:changed -- --scope <scope>  (scopes: see godot/gates/change-impact.json)");
 }
@@ -55,7 +58,10 @@ function changedFiles() {
     return [];
   }
 }
-const changed = changedFiles();
+const changed =
+  changedOverride !== undefined
+    ? changedOverride.split(",").map((s) => s.trim()).filter(Boolean)
+    : changedFiles();
 
 // --- decide escalation to the full normal route ---
 const highRisk = (manifest.highRiskFiles || []).filter((f) => changed.includes(f));

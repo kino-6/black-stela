@@ -430,7 +430,15 @@ export const scenarioWorldSchema = z.object({
     )
     .optional(),
   // Difficulty knobs the balance tuner settles (see domain/balance.ts). Applied once at world load.
-  balance: z.object({ threatScalar: z.number().positive().optional(), counterplayBoost: z.number().positive().optional() }).optional(),
+  balance: z
+    .object({
+      threatScalar: z.number().positive().optional(),
+      counterplayBoost: z.number().positive().optional(),
+      // Wandering-encounter density, scenario-authored (IMP-041); omitted ⇒ engine defaults.
+      wanderingEncounterPct: z.number().int().positive().optional(),
+      wanderingCooldownSteps: z.number().int().nonnegative().optional(),
+    })
+    .optional(),
   assetPack: z.string().min(1).optional(),
   // Per-scenario scene colour (fog/lights/wall+floor tint). Omitted → default ash.
   palette: z

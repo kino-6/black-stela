@@ -839,7 +839,15 @@ export interface ScenarioWorld {
   elements?: ElementDef[];
   /** Difficulty knobs (domain/balance.ts): enemy-damage scalar + counterplay boost, tuned so a
    *  prepared party can clear ~10 levels under a naive one. Applied once when the world is loaded. */
-  balance?: { threatScalar?: number; counterplayBoost?: number };
+  balance?: {
+    threatScalar?: number;
+    counterplayBoost?: number;
+    /** Wandering-encounter density, scenario-authored (IMP-041). % chance per eligible step once the
+     *  cooldown has passed, and the safety window of steps after a fight. Omitted ⇒ the engine defaults
+     *  (WANDERING_ENCOUNTER_PCT / WANDERING_COOLDOWN_STEPS). */
+    wanderingEncounterPct?: number;
+    wanderingCooldownSteps?: number;
+  };
   /** Art pack folder under content/worlds/<assetPack>/assets (defaults to "default").
    *  Lets a scenario ship its own atmosphere pack. */
   assetPack?: string;

@@ -97,7 +97,9 @@ function planWanderingFights(world: ScenarioWorld, floorId: string): PlannedEnco
     ? Math.max(1, graph.shortestPathCells(floor.startRoom, downStairRoom).length - 1)
     : 30;
   const walkSteps = Math.round(shortest * EXPLORE_FACTOR);
-  const spacing = WANDERING_COOLDOWN_STEPS + 100 / WANDERING_ENCOUNTER_PCT;
+  const cooldown = world.balance?.wanderingCooldownSteps ?? WANDERING_COOLDOWN_STEPS;
+  const encounterPct = world.balance?.wanderingEncounterPct ?? WANDERING_ENCOUNTER_PCT;
+  const spacing = cooldown + 100 / encounterPct;
   // Every floor is walked, so it always draws SOME ambushes — a floor whose down-stair
   // happens to sit near its landing must not read as encounter-free.
   const count = Math.round(walkSteps / spacing);

@@ -32,6 +32,11 @@ elements:
 balance:
   threatScalar: 2.4
   counterplayBoost: 2.0
+  # Wandering-encounter density is scenario-authored (IMP-041). Omit to keep the engine defaults
+  # (~4% per eligible step, 8-step safety window after a fight ⇒ classic ~33-step DRPG cadence). A
+  # denser world draws more corridor ambushes; both runtimes read the same two keys:
+  #   wanderingEncounterPct: 4
+  #   wanderingCooldownSteps: 8
 startDungeon: dungeon.b1f
 startRoom: room.b1f.001
 aiPolicy:

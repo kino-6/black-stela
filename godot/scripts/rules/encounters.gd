@@ -180,9 +180,13 @@ static func begin_wandering_encounter(world: Dictionary, room: Variant, state: D
 	var floor_def: Variant = floor_for_room(world, String(room.get("id", "")))
 	if typeof(floor_def) != TYPE_DICTIONARY:
 		return null
-	if int(state.get("stepsSinceEncounter", 0)) < WANDERING_COOLDOWN_STEPS:
+	# Density is scenario-authored (IMP-041); a world with no override keeps the engine defaults.
+	var balance: Dictionary = world.get("balance", {}) if typeof(world.get("balance", null)) == TYPE_DICTIONARY else {}
+	var cooldown := int(balance.get("wanderingCooldownSteps", WANDERING_COOLDOWN_STEPS))
+	var encounter_pct := int(balance.get("wanderingEncounterPct", WANDERING_ENCOUNTER_PCT))
+	if int(state.get("stepsSinceEncounter", 0)) < cooldown:
 		return null
-	if CombatRng.roll_percent("%d:%s:wander" % [int(state.get("turn", 0)), String(room.get("id", ""))]) >= WANDERING_ENCOUNTER_PCT:
+	if CombatRng.roll_percent("%d:%s:wander" % [int(state.get("turn", 0)), String(room.get("id", ""))]) >= encounter_pct:
 		return null
 
 	var table: Variant = null

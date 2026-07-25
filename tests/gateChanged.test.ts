@@ -73,21 +73,28 @@ describe("gate:changed runner", () => {
     expect(runGate([]).code).toBe(2);
   });
 
+  // A fixed changed-file set is injected with --changed so the assertions do not depend on the live
+  // working tree (a dirty tree with a high-risk file would legitimately flip these to full-route).
   it("a docs edit is diff-only and does not select the full route", () => {
-    const { code, out } = runGate(["--scope", "docs", "--plan"]);
+    const { code, out } = runGate(["--scope", "docs", "--plan", "--changed", "README.md"]);
     expect(code).toBe(0);
     expect(out).toContain('"fullRouteSelected":false');
   });
 
   it("a save edit demonstrably requests the full route", () => {
-    const { out } = runGate(["--scope", "save", "--plan"]);
+    const { out } = runGate(["--scope", "save", "--plan", "--changed", ""]);
     expect(out).toContain('"fullRouteSelected":true');
     expect(out).toContain("gate:migration");
   });
 
   it("a plain dungeon edit runs affected checks without the full route", () => {
-    const { out } = runGate(["--scope", "dungeon", "--plan"]);
+    const { out } = runGate(["--scope", "dungeon", "--plan", "--changed", "godot/scripts/minimap.gd"]);
     expect(out).toContain("verify_dungeon_controller");
     expect(out).toContain('"fullRouteSelected":false');
+  });
+
+  it("a high-risk file in the diff escalates any scope to the full route", () => {
+    const { out } = runGate(["--scope", "dungeon", "--plan", "--changed", "godot/scripts/scene_manager.gd"]);
+    expect(out).toContain('"fullRouteSelected":true');
   });
 });

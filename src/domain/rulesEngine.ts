@@ -826,10 +826,13 @@ function beginWanderingEncounter(
   if (!floor) {
     return null;
   }
-  if (state.stepsSinceEncounter < WANDERING_COOLDOWN_STEPS) {
+  // Density is scenario-authored (IMP-041); a world with no override keeps the engine defaults.
+  const cooldown = world.balance?.wanderingCooldownSteps ?? WANDERING_COOLDOWN_STEPS;
+  const encounterPct = world.balance?.wanderingEncounterPct ?? WANDERING_ENCOUNTER_PCT;
+  if (state.stepsSinceEncounter < cooldown) {
     return null; // safety window since the last fight
   }
-  if (rollPercent(`${state.turn}:${room.id}:wander`) >= WANDERING_ENCOUNTER_PCT) {
+  if (rollPercent(`${state.turn}:${room.id}:wander`) >= encounterPct) {
     return null;
   }
 
