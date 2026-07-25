@@ -234,3 +234,4 @@ godot/data/
 godot/.godot/
 godot/assets/
 godot/tests/_*.png
+godot/tests/_*.png.import
