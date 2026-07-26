@@ -68,6 +68,16 @@ func _initialize() -> void:
 		await process_frame
 	_check((d.call("current_chest") as Dictionary).is_empty(), "探索へ戻る releases the chest — movement is not frozen")
 
+	# party-menu Esc (playtest) — the 隊列 overlay must close on Cancel, not only via its 閉じる button.
+	d.call("_toggle_party_menu")
+	for i in 4:
+		await process_frame
+	_check(_valid(d.get("_party_menu")), "隊列 opens over the dungeon")
+	d.call("_input", _pressed("cancel"))
+	for i in 4:
+		await process_frame
+	_check(not _valid(d.get("_party_menu")), "Esc closes 隊列 (not only its 閉じる button)")
+
 	print("[dungeon-controller] %s (%d failures)" % ["PASS" if _fail == 0 else "FAIL", _fail])
 	quit(_fail)
 

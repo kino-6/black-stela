@@ -199,6 +199,14 @@ func _input(event: InputEvent) -> void:
 			_toggle_full_map()
 		get_viewport().set_input_as_handled()
 		return
+	# The 隊列 menu is a MODAL overlay too: Esc/Cancel closes it (it could only be dismissed by its 閉じる
+	# button before — playtest), and the dungeon must not walk the party while it is open. The menu owns its
+	# own arrows/Confirm for navigation, so only Cancel is consumed here; everything else falls through to it.
+	if _party_menu and is_instance_valid(_party_menu):
+		if event.is_action_pressed("cancel"):
+			_toggle_party_menu()
+			get_viewport().set_input_as_handled()
+		return
 	# The legend promises 移動 ↑↓ · 旋回 ←→ · 横歩き Q/E — every one MOVES the party, and every one
 	# auto-repeats while HELD (see _process), so walking a corridor is one press-and-hold, not a tap per cell.
 	for action in MOVE_COMMANDS:

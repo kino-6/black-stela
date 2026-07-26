@@ -84,9 +84,11 @@ static func build(ctx: Dictionary) -> Control:
 	detail.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var stats: Dictionary = CharacterStats.effective(member, world)
 
+	# Name then level, adjacent on the LEFT — the level used to be grow-pushed to the far right edge, where
+	# it sat under the scroll bar and a two-digit level would have been hidden behind it (playtest).
 	var head := UI.row()
-	head.add_child(UI.grow(UI.label(String(member.get("name", "?")), 24, UI.GOLD)))
-	head.add_child(UI.label("%s %d" % [I18n.t("partyMenu.level"), int(member.get("level", 1))], 17, UI.INK))
+	head.add_child(UI.label(String(member.get("name", "?")), 24, UI.GOLD))
+	head.add_child(UI.label("%s %d" % [I18n.t("partyMenu.level"), int(member.get("level", 1))], 17, UI.DIM))
 	detail.add_child(head)
 
 	var vitals := UI.row()
