@@ -66,6 +66,10 @@ var _pending_focus: Control = null
 func _ready() -> void:
 	await get_tree().process_frame
 	_acquire_state()
+	# Autosave 1 — arriving in town with a party (playtest: the build never autosaved, so every run started
+	# from the beginning). An empty brand-new town (no party yet) is not worth a save.
+	if _run and not _run.state.get("party", []).is_empty():
+		_run.save_to_slot(1)
 	_build()
 
 func _acquire_state() -> void:
@@ -394,6 +398,13 @@ func _close_service() -> void:
 	_event_text = ""
 	_rebuild()
 
+# Manual save (slot 3) from the 記録の間 — the town/stairs autosaves are 1 and 2.
+func _save_run() -> void:
+	if _run:
+		_run.save_to_slot(3)
+		_event_text = I18n.t("save.saved", {"slot": "%s 3" % I18n.t("save.slot")})
+		_rebuild()
+
 func _service_ctx() -> Dictionary:
 	return {
 		"state": state(),
@@ -401,6 +412,7 @@ func _service_ctx() -> Dictionary:
 		"engine": engine(),
 		"event_text": _event_text,
 		"dispatch": func(command): dispatch(command),
+		"save_run": func(): _save_run(),
 		"close": func(): _close_service(),
 		"selected_member": func(): return selected_member(),
 		"set_selected": func(id): _selected_id = String(id); _rebuild(),

@@ -577,6 +577,10 @@ func _on_command(kind: String) -> void:
 			_apply(SliceRules.resolve(_state, {"type": "listen"}, _world, _engine))
 		"stairs":
 			_apply(SliceRules.resolve(_state, {"type": "use_stairs"}, _world, _engine))
+			# Autosave 2 — on stairs up/down (playtest). Only when we stayed in the dungeon (a floor change);
+			# a stair that returns to town saves via the town's own autosave.
+			if _run and String(_state.get("phase", "")) == "dungeon":
+				_run.save_to_slot(2)
 		"disarm":
 			_apply(SliceRules.resolve(_state, {"type": "disarm_trap"}, _world, _engine))
 		"map":

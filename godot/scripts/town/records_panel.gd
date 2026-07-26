@@ -16,6 +16,11 @@ static func build(ctx: Dictionary) -> Control:
 	var root := UI.col(10)
 	root.add_child(UI.service_heading(I18n.t("town.recordsHeading"), I18n.t("town.gold", {"gold": int(state.get("partyGold", 0))})))
 
+	# Manual save (slot 3) — the 記録の間 is where a run is written to the ledger by hand; town/stairs
+	# autosave to slots 1/2 on their own.
+	if ctx.has("save_run"):
+		root.add_child(UI.button(I18n.t("save.save"), func(): (ctx["save_run"] as Callable).call(), Vector2(200, 44), 17))
+
 	# --- bestiary ---
 	root.add_child(UI.label(I18n.t("bestiary.heading"), 20, UI.GOLD))
 	var entries := _bestiary_entries(world, state.get("enemyRecord", {}))

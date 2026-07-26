@@ -21,6 +21,33 @@ var _loaded: bool = false
 var _id_counter: int = 0
 
 const SliceRules := preload("res://scripts/rules/slice_rules.gd")
+const SaveGame := preload("res://scripts/rules/save_game.gd")
+
+# --- persistence -----------------------------------------------------------------------------------
+# Slots: 1 = town autosave, 2 = stairs autosave, 3 = manual save. The play scenes call these; the title
+# lists every non-empty slot under 続きから. Nothing was ever written before (the build had the save RULES
+# and the LOAD, but no scene ever CALLED write) — so every run started from the beginning (playtest).
+func save_to_slot(slot: int) -> void:
+	ensure_loaded()
+	SaveGame.write_slot(slot, state, world, Time.get_datetime_string_from_system(), "ja")
+
+# Load a slot into THIS run — restoring the world it was saved in (the old load kept only the state, so a
+# non-default save loaded with the wrong world). Returns false if the slot is empty/corrupt.
+func load_slot(slot: int) -> bool:
+	var loaded: Dictionary = SaveGame.read_slot(slot)
+	if not bool(loaded.get("ok", false)):
+		return false
+	var envelope: Dictionary = loaded.get("envelope", {})
+	var saved_world := String((envelope.get("scenario", {}) as Dictionary).get("worldId", ""))
+	if saved_world != "":
+		world_id = saved_world
+	world = read_json("res://data/worlds/%s.json" % world_id).get("world", {})
+	engine = read_json("res://data/engine-data.json")
+	character_data = read_json("res://data/character-data.json")
+	last_rewards = {}
+	_loaded = true
+	state = loaded["state"]
+	return true
 
 # Run one command through the ported rules and commit the result to the shared state. Returns the
 # emitted events (so a service screen can narrate what happened). This is the single mutation path town

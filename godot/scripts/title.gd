@@ -135,16 +135,14 @@ func _toggle_config() -> void:
 
 # Continue: load the slot into the shared run and drop the party back where they stood.
 func _on_continue(slot: int) -> void:
-	var loaded: Dictionary = SaveGame.read_slot(slot)
-	if not bool(loaded.get("ok", false)):
+	var run := get_node_or_null("/root/Run")
+	# load_slot restores the world the save was made in AND its state (the old path kept only the state, so
+	# a Verdant save loaded onto the default world — its rooms/cells would not exist).
+	if run == null or not bool(run.call("load_slot", slot)):
 		_status = I18n.t("save.corrupt")
 		_rebuild()
 		return
-	var run := get_node_or_null("/root/Run")
-	if run:
-		run.ensure_loaded()
-		run.state = loaded["state"]
-	var phase := String((loaded["state"] as Dictionary).get("phase", "town"))
+	var phase := String((run.state as Dictionary).get("phase", "town"))
 	get_tree().change_scene_to_file("res://scenes/dungeon.tscn" if phase == "dungeon" else "res://scenes/town.tscn")
 
 func _on_start() -> void:

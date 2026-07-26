@@ -1,0 +1,44 @@
+# Tasks — Verdant playtest follow-through (2026-07-27)
+
+Rapid-fire playtest backlog, to be completed one at a time with verification + a gate where it
+prevents recurrence. Ordered by the agreed priority (A first). Tick items as they land.
+
+## A. Save system  — DONE
+The Godot build never autosaved during play, so every run started from the beginning. Wired it:
+- [x] **Town autosave** (slot 1) — written on arrival in town (with a party).
+- [x] **Stairs autosave** (slot 2) — written on a floor change via 階段を使う.
+- [x] **Manual save** (slot 3) — 記録の間 has a 保存 button.
+- [x] Title "続きから" loads the chosen slot and restores the run — now including the WORLD it was saved
+      in (the old load kept only the state, so a Verdant save loaded onto the default world).
+- [x] Gate: verify_save writes a Verdant slot to disk and reads it back with world + state preserved.
+
+## B. Chamber (玄室) density — Verdant G1–G3 ≥ 6 each
+Wiz-style guaranteed-fight + treasure rooms. Currently 3–4/floor.
+- [ ] genVerdantFloors: G1–G3 use ~8 chamber coords (was 4) so plainChambers ≥ 6. Regenerate + export.
+- [ ] Keep the maze metrics (sweep/loops) within the design gate (raise/exempt G2F sweep as needed).
+- [ ] Gate: every Verdant G1–G3 floor has ≥ 6 玄室 (authored encounter + treasure).
+
+## C. Shortcuts: warp → hidden door / hidden passage (Verdant, all floors)
+Only hidden doors / secret passages allowed; no warp shortcuts.
+- [ ] Replace `kind: shortcut` (warp) with a physical `secret`-gated passage on every Verdant floor.
+- [ ] Update the design gate rule 4 to require a hidden-door shortcut, not a warp edge.
+
+## D. Chest loot display
+Opening a chest only says "宝箱は開いた。" — it must report WHAT was obtained (items/gold).
+- [ ] Chest-open result lists the loot; parity with React ChestPanel.
+
+## E. Workshop (錬成所) discoverability
+分解 → 素材 → 強化 flow is opaque ("素材とは？").
+- [ ] Make the path clear: where 素材 come from (聖遺物で分解) and how to use them.
+
+## F. Chamber landmark clarity + minimap markers
+- [ ] The 玄室 landmark (pillars + floor disk) reads as an unexplained "green object" — make it legible.
+- [ ] Minimap shows no cell markers (chips: stairs/treasure/etc.) the full map has — add them.
+
+## G. Maze debt — Verdant G2F honest sweep
+- [ ] Raise G2F sweep from 286 to ≥ 300 (currently exempt in MAZE_EXEMPT); then drop the exemption.
+
+---
+### Done this session (context)
+Chest freeze/clip · 隊列 Esc + level · 全体図 centered · stairs render→billboard · return-ledger trim ·
+design gate → all worlds + encounter-table rule · full-map/minimap wall consistency.

@@ -66,6 +66,29 @@ func _initialize() -> void:
 	else:
 		print("[save] version guard: a newer save is refused (%s)" % future.get("error", ""))
 
+	# 5. DISK round-trip (playtest) — the play scenes autosave to a disk slot; the build never called write
+	#    before, so every run started over. Write a slot and read it back with its WORLD preserved, so
+	#    run_state.load_slot can restore a Verdant save onto the Verdant world (not the default).
+	var disk_state := {"phase": "dungeon", "partyGold": 321, "party": [{"id": "rt", "name": "RT"}], "quests": [], "chests": []}
+	if not SaveGame.write_slot(9, disk_state, {"id": "verdant", "title": "Verdant Gallery"}, "2026-07-27", "ja"):
+		print("[save] DISK write failed")
+		failures += 1
+	else:
+		var disk_loaded: Dictionary = SaveGame.read_slot(9)
+		var disk_scenario: Dictionary = (disk_loaded.get("envelope", {}) as Dictionary).get("scenario", {})
+		if not bool(disk_loaded.get("ok", false)):
+			print("[save] DISK read failed — %s" % disk_loaded.get("error", "?"))
+			failures += 1
+		elif String(disk_scenario.get("worldId", "")) != "verdant":
+			print("[save] DISK round-trip lost the worldId — load would restore the wrong world")
+			failures += 1
+		elif int((disk_loaded.get("state", {}) as Dictionary).get("partyGold", 0)) != 321:
+			print("[save] DISK round-trip lost state")
+			failures += 1
+		else:
+			print("[save] DISK slot round-trip preserves world + state")
+		DirAccess.remove_absolute(SaveGame.slot_path(9))
+
 	print("")
 	if failures == 0:
 		print("[save] PASS — TS saves load in Godot and survive a Godot re-save unchanged")
