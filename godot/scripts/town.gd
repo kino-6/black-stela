@@ -219,12 +219,13 @@ func _build_square() -> void:
 	# Before the first descent the "初めて潜る前に" heading already says it all; the 一党 / 手持ち / 次の支度
 	# rows just restated it and read as clutter (playtest). So the ledger is the RETURN ledger only — what came
 	# back and what to do about it, which is genuinely new each trip.
+	# The return ledger is only what CHANGED this trip: the result and any wounds. 持ち帰った物 (the 聖遺物
+	# service shows it) and 次の支度 (a restatement of "you can dive again") were clutter (playtest).
 	if not first_departure:
 		var ledger := UI.col(4)
-		_ledger_row(ledger, I18n.t("town.expeditionResult"), _latest_log_text(s))
+		var result_text := _latest_log_text(s)
+		_ledger_row(ledger, I18n.t("town.expeditionResult"), result_text if result_text != "" else I18n.t("town.readyToDescend"))
 		_ledger_row(ledger, I18n.t("town.wounds"), _wounds_summary(party))
-		_ledger_row(ledger, I18n.t("town.loot"), _loot_summary(s, "town.noLoot", true))
-		_ledger_row(ledger, I18n.t("town.nextPreparation"), _next_preparation(s, party))
 		_menu_host.add_child(UI.card(ledger))
 
 	# The whole party's condition, always on the square — not only the wounded line in the ledger, and

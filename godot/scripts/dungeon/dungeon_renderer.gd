@@ -109,7 +109,8 @@ static func _floor_depth(floor_id: String) -> int:
 	var m := re.search(floor_id)
 	return int(m.get_string(1)) if m else 0
 
-# A flat decal on the floor showing the stairs, lifted a hair to avoid z-fighting with the floor plane.
+# A standing BILLBOARD sprite of the stairs, facing the camera. A flat floor decal read as a squashed
+# smear from the first-person angle (playtest); an upright sprite shows the art un-distorted.
 static func _add_stairs(parent: Node, base: Vector3, tex_path: String) -> void:
 	if not ResourceLoader.exists(tex_path):
 		return
@@ -117,15 +118,17 @@ static func _add_stairs(parent: Node, base: Vector3, tex_path: String) -> void:
 	if tex == null:
 		return
 	var m := MeshInstance3D.new()
-	var plane := PlaneMesh.new()
-	plane.size = Vector2(CELL * 0.82, CELL * 0.82)
-	m.mesh = plane
+	var quad := QuadMesh.new()
+	var h := CELL * 0.8
+	quad.size = Vector2(h, h)
+	m.mesh = quad
 	var mat := StandardMaterial3D.new()
 	mat.albedo_texture = tex
 	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
 	m.material_override = mat
-	m.position = base + Vector3(0, 0.04, 0)
+	m.position = base + Vector3(0, h / 2.0, 0)   # standing on the floor, centred in the cell
 	parent.add_child(m)
 
 static func _add_plane(parent: Node, mat: Material, pos: Vector3, rot: Vector3) -> void:

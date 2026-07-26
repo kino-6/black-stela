@@ -43,14 +43,8 @@
         "town.locArchive",
         "town.locGuildHall",
         "town.locMarket",
-        "town.loot",
-        "town.nextPreparation",
-        "town.nextRecovery",
-        "town.nextShop",
-        "town.noLoot",
         "town.noWounds",
         "town.quests",
-        "town.readyToDescend",
         "town.records",
         "town.recovery",
         "town.reliquary",
@@ -159,6 +153,10 @@
         {
           "key": "town.noShop",
           "reason": "React renders this only as the TITLE (hover tooltip) of the disabled 商店 button, never as visible copy. A controller player has no pointer; the port disables the button the same way, and both shipped worlds stock a shop."
+        },
+        {
+          "key": "town.readyToDescend",
+          "reason": "Conditional fallback for 帰還記録 when the log is empty; not shown in the driven states after the 次の支度 row was removed (playtest)."
         }
       ]
     },
@@ -3537,14 +3535,8 @@
         "town.locArchive",
         "town.locGuildHall",
         "town.locMarket",
-        "town.loot",
-        "town.nextPreparation",
-        "town.nextRecovery",
-        "town.nextShop",
-        "town.noLoot",
         "town.noWounds",
         "town.quests",
-        "town.readyToDescend",
         "town.records",
         "town.recovery",
         "town.reliquary",
@@ -3653,6 +3645,10 @@
         {
           "key": "town.noShop",
           "reason": "React renders this only as the TITLE (hover tooltip) of the disabled 商店 button, never as visible copy. A controller player has no pointer; the port disables the button the same way, and both shipped worlds stock a shop."
+        },
+        {
+          "key": "town.readyToDescend",
+          "reason": "Conditional fallback for 帰還記録 when the log is empty; not shown in the driven states after the 次の支度 row was removed (playtest)."
         }
       ]
     },

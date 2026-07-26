@@ -116,6 +116,8 @@ export function TownEntryPanel({
             (form up at the guild, then go). The 一党 / 手持ち / 次の支度 rows restated it and read as clutter
             (playtest: "この情報いらない"), so the first-departure state shows just the heading. The RETURN
             ledger — what came back and what to do about it — stays, because that is genuinely new each time. */}
+        {/* The return ledger is now just what CHANGED: the trip result and any wounds. 持ち帰った物 (its own
+            聖遺物 service shows it) and 次の支度 (a restatement of "you can dive again") were clutter — playtest. */}
         {!firstDeparture && (
           <dl className="town-status-ledger" data-testid="town-return-ledger">
             <div>
@@ -125,14 +127,6 @@ export function TownEntryPanel({
             <div>
               <dt>{t("town.wounds")}</dt>
               <dd>{injuredMembers.length > 0 ? injuredMembers.map((member) => `${member.name} ${member.hp}/${member.maxHp}`).join(" / ") : t("town.noWounds")}</dd>
-            </div>
-            <div>
-              <dt>{t("town.loot")}</dt>
-              <dd>{carriedLootCount > 0 ? carriedLootSummary : t("town.noLoot")}</dd>
-            </div>
-            <div>
-              <dt>{t("town.nextPreparation")}</dt>
-              <dd>{recoveryCost > 0 ? t("town.nextRecovery") : hasEquipmentLoot ? t("town.nextShop") : t("town.readyToDescend")}</dd>
             </div>
           </dl>
         )}
