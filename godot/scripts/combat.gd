@@ -593,6 +593,10 @@ func _on_wipe_continue() -> void:
 	get_tree().change_scene_to_file("res://scenes/town.tscn")
 
 # --- victory overlay (controller-first) -----------------------------------------------------------
+## ONE victory screen. The combat scene used to raise its OWN spoils panel here (戦闘に勝利した / 撃破 / 続ける)
+## and THEN route to the result scene (勝利 / 戦果 / 探索へ戻る) — two screens for one victory, with the same
+## rewards shown twice (playtest: "上記の後にさらにResultが出てくる。どうして"). React shows a single
+## CombatResultPanel; go straight to the richer result (spoils + growth), no redundant in-combat panel.
 func _show_victory(rewards: Dictionary) -> void:
 	_resolved = true
 	if _run:
@@ -600,29 +604,6 @@ func _show_victory(rewards: Dictionary) -> void:
 		# rewards EVENT carries no levelUps, so stashing it is what left growth off the result screen.
 		var conclusion: Variant = _state.get("combatConclusion", null)
 		_run.last_rewards = conclusion if typeof(conclusion) == TYPE_DICTIONARY else rewards
-	var panel := PanelContainer.new()
-	panel.custom_minimum_size = Vector2(560, 260)
-	panel.size = Vector2(560, 260)
-	panel.position = Vector2(size.x / 2 - 280, size.y / 2 - 130)
-	panel.add_theme_stylebox_override("panel", _panel_style(Color("14180ff7"), GOLD))
-	add_child(panel)
-	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation", 12)
-	box.alignment = BoxContainer.ALIGNMENT_CENTER
-	panel.add_child(box)
-	box.add_child(_centered(_label("戦闘に勝利した", 32, GOLD)))
-	var names: Array = rewards.get("enemyNames", [])
-	box.add_child(_centered(_label("撃破: %s" % ", ".join(_stringify(names)), 18, INK)))
-	box.add_child(_centered(_label("獲得 経験値 %d ・ %d G" % [int(rewards.get("xp", 0)), int(rewards.get("gold", 0))], 22, OK)))
-	var cont := _command_button("続ける  ▶")
-	cont.custom_minimum_size = Vector2(240, 44)
-	cont.alignment = HORIZONTAL_ALIGNMENT_CENTER
-	cont.pressed.connect(_on_continue)
-	box.add_child(_centered(cont))
-	cont.grab_focus()
-
-func _on_continue() -> void:
-	if _run:
 		_run.return_to_town()
 	get_tree().change_scene_to_file("res://scenes/result.tscn")
 
