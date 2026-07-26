@@ -343,6 +343,14 @@ func _gate_blocking(room: Dictionary) -> Variant:
 
 # The chest sitting on the party's cell, or {} — while one is here it OWNS the command region.
 func current_chest() -> Dictionary:
+	# 探索へ戻る steps off the prompt WITHOUT consuming the chest — so while the party has chosen to leave the
+	# chest on THIS cell it is not "current" (or the dock would re-raise the panel and the move-guard would
+	# keep input frozen — playtest). Moving to another cell clears that, so walking back faces it again.
+	var here := String(_position().get("cellId", ""))
+	if _left_chest_cell != "" and here != _left_chest_cell:
+		_left_chest_cell = ""
+	if _left_chest_cell != "" and here == _left_chest_cell:
+		return {}
 	var chest: Variant = Chests.current_chest(_state)
 	return chest if typeof(chest) == TYPE_DICTIONARY else {}
 

@@ -51,6 +51,23 @@ func _initialize() -> void:
 	d.call("_update_view", false)
 	_check(String(d.get("_rendered_floor")) == "dungeon.b2f", "the 3D geometry follows the party to B2F (#29)")
 
+	# chest-leave (playtest) — 探索へ戻る steps OFF a chest prompt WITHOUT consuming it, and control returns.
+	# The bug: after opening, current_chest() ignored the leave, kept re-raising the panel, and the move-guard
+	# (`not current_chest().is_empty()`) left the party FROZEN. Leaving must clear the prompt on this cell.
+	d.set("_state", {
+		"phase": "dungeon",
+		"position": {"cellId": "cell.b1f.002", "roomId": "room.b1f.002", "facing": "south"},
+		"map": {"floorId": "dungeon.b1f", "currentCellId": "cell.b1f.002", "visitedCells": ["cell.b1f.002"]}
+	})
+	d.call("set_ui_state", {"chest": true, "chest_opened": true})
+	for i in 3:
+		await process_frame
+	_check(not (d.call("current_chest") as Dictionary).is_empty(), "an opened chest on the cell raises the panel")
+	d.call("_leave_chest")
+	for i in 3:
+		await process_frame
+	_check((d.call("current_chest") as Dictionary).is_empty(), "探索へ戻る releases the chest — movement is not frozen")
+
 	print("[dungeon-controller] %s (%d failures)" % ["PASS" if _fail == 0 else "FAIL", _fail])
 	quit(_fail)
 

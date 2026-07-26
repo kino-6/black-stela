@@ -30,25 +30,29 @@ static func build(chest: Dictionary, on_command: Callable, on_leave: Callable) -
 	root.add_child(UI.label(I18n.t("play.chestHeading"), 20, UI.GOLD))
 	root.add_child(UI.label(note, 17, UI.INK))
 
-	var actions := UI.row()
+	# The chest dock is a NARROW right-hand column (≈260px of usable width), so the actions STACK vertically —
+	# a row of 調べる / 開ける / 立ち去る ran off the right edge (playtest: 開ける was clipped). Buttons fill the
+	# column width so the stack reads as one menu.
+	var button_size := Vector2(232, 42)
+	var actions := UI.col(6)
 	var focus: Button = null
 	if opened:
-		focus = UI.button(I18n.t("play.chestResume"), on_leave, Vector2(200, 44), 17)
+		focus = UI.button(I18n.t("play.chestResume"), on_leave, button_size, 17)
 		actions.add_child(focus)
 	else:
 		if not bool(chest.get("investigated", false)):
-			focus = UI.button(I18n.t("play.chestInvestigate"), func(): on_command.call({"type": "investigate_chest"}), Vector2(160, 44), 17)
+			focus = UI.button(I18n.t("play.chestInvestigate"), func(): on_command.call({"type": "investigate_chest"}), button_size, 17)
 			actions.add_child(focus)
 		# Disarm surfaces ONLY when an investigation actually detected a trap — never as a blind guess.
 		if known_trapped and not bool(chest.get("disarmAttempted", false)):
-			var disarm := UI.button(I18n.t("play.chestDisarm"), func(): on_command.call({"type": "disarm_chest"}), Vector2(160, 44), 17)
+			var disarm := UI.button(I18n.t("play.chestDisarm"), func(): on_command.call({"type": "disarm_chest"}), button_size, 17)
 			actions.add_child(disarm)
 			if focus == null:
 				focus = disarm
-		var open_button := UI.button(I18n.t("play.chestOpen"), func(): on_command.call({"type": "open_chest"}), Vector2(160, 44), 17)
+		var open_button := UI.button(I18n.t("play.chestOpen"), func(): on_command.call({"type": "open_chest"}), button_size, 17)
 		actions.add_child(open_button)
 		if focus == null:
 			focus = open_button
-		actions.add_child(UI.button(I18n.t("play.chestLeave"), on_leave, Vector2(160, 44), 17))
+		actions.add_child(UI.button(I18n.t("play.chestLeave"), on_leave, button_size, 17))
 	root.add_child(actions)
 	return {"control": UI.card(root, UI.GOLD), "focus": focus}
