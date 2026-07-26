@@ -54,7 +54,7 @@ test("guild registration supports quick and detailed recruits without roster sco
   // ORIGIN step — its own decision now.
   await expect(page.getByLabel("Background", { exact: true }).locator("option")).toHaveCount(12);
   const originBefore = await page.getByLabel("Background", { exact: true }).inputValue();
-  await page.getByRole("button", { name: "Pick origin" }).click();
+  await page.getByRole("button", { name: "Random" }).click();
   await expect.poll(async () => page.getByLabel("Background", { exact: true }).inputValue()).not.toBe(originBefore);
   await page.getByLabel("Background", { exact: true }).selectOption("cartographer");
   await page.getByTestId("guild-step-background").getByRole("button", { name: "Next" }).click();
@@ -73,9 +73,9 @@ test("guild registration supports quick and detailed recruits without roster sco
   }
   await expect(page.getByTestId("stat-preview")).toContainText("Damage");
   await page.getByTestId("guild-step-bonus").getByRole("button", { name: "Next" }).click();
-  await expect(page.getByRole("button", { name: "Roll identity" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Randomize all" })).toBeVisible();
   const generatedName = await page.getByLabel("Name").inputValue();
-  await page.getByRole("button", { name: "Roll identity" }).click();
+  await page.getByRole("button", { name: "Randomize all" }).click();
   await expect.poll(async () => page.getByLabel("Name").inputValue()).not.toBe(generatedName);
   await page.getByLabel("Name").fill("Lena");
   await page.getByLabel("Epithet").fill("Candle Mapper");
@@ -168,7 +168,7 @@ test("Japanese guild registration remains usable on mobile", async ({ page }) =>
   await expect(page.getByTestId("guild-step-face")).toContainText("あとから変更");
   await page.getByTestId("guild-step-face").getByRole("button", { name: "次へ" }).click();
   // 来歴 step.
-  await expect(page.getByRole("button", { name: "来歴を見繕う" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "ランダム" })).toBeVisible();
   await page.getByTestId("guild-step-background").getByRole("button", { name: "次へ" }).click();
   // 気質 step.
   await page.getByTestId("guild-step-trait").getByRole("button", { name: "次へ" }).click();
@@ -180,7 +180,7 @@ test("Japanese guild registration remains usable on mobile", async ({ page }) =>
     await agilityPlus.click();
   }
   await page.getByTestId("guild-step-bonus").getByRole("button", { name: "次へ" }).click();
-  await expect(page.getByRole("button", { name: "名を見繕う" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "全部ランダム" })).toBeVisible();
   await expect(page.getByLabel("覚え書き")).not.toHaveValue("");
   await expect(page.getByLabel("メモ")).toHaveCount(0);
   await page.getByLabel("名前").fill("ミラ");
