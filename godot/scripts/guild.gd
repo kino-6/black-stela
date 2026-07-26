@@ -552,6 +552,9 @@ func _name_step() -> Control:
 	notes_edit.add_theme_font_size_override("font_size", 16)
 	notes_edit.text_changed.connect(func(): _draft["notes"] = notes_edit.text)
 	notes.add_child(notes_edit)
+	# The record is the one multi-line field on this screen; a controller can get its caret stuck here with
+	# no way out. Spell out the Start-role SUBMIT key that commits registration from anywhere on the step.
+	notes.add_child(UI.label(I18n.t("party.submitHint"), 14, UI.GOLD))
 	col.add_child(notes)
 
 	var character := _build_character()
@@ -728,6 +731,17 @@ func _register() -> void:
 
 func _depart() -> void:
 	get_tree().change_scene_to_file("res://scenes/town.tscn")
+
+## The "Start"-role SUBMIT key commits registration even from INSIDE the 覚え書き text field. A multi-line
+## field otherwise traps a controller — arrows move the caret, nothing escapes — so a player could reach the
+## name step and never register (playtest). Handled in _input (before the field consumes the key), name step
+## only, and only when the draft is actually registerable.
+func _input(event: InputEvent) -> void:
+	if _step != "name" or _roster_open:
+		return
+	if event.is_action_pressed("submit") and _party().size() < PARTY_MAX and Draft.remaining(_draft) <= 0:
+		_register()
+		get_viewport().set_input_as_handled()
 
 ## Cancel resolves exactly one step: the roster closes, then the flow walks back, and the briefing is the
 ## floor (there is nothing behind the guild but the title).

@@ -203,6 +203,7 @@ export const ja = {
     namePlaceholder: "名無しの冒険者",
     notesPlaceholder: "酒場で聞いた噂、癖、借り、古傷",
     noNotes: "まだ覚え書きはありません。",
+    submitHint: "Enter（またはスタートボタン）で登録 — 覚え書きに入力中でも決定できます。",
     add: "冒険者を登録",
     manageRoster: "名簿を整える",
     rosterDone: "戻る",

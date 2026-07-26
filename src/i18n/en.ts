@@ -201,6 +201,7 @@ export const en = {
     namePlaceholder: "Unnamed adventurer",
     notesPlaceholder: "Rumor, habit, debt, scar, or promise",
     noNotes: "No record yet.",
+    submitHint: "Press Enter (or the Start button) to register — it works even while typing the record.",
     add: "Register adventurer",
     manageRoster: "Manage roster",
     rosterDone: "Done",

@@ -12,6 +12,7 @@ const ACTIONS := {
 	"sidestep_right": [KEY_E],
 	"confirm": [KEY_ENTER, KEY_SPACE],
 	"cancel": [KEY_ESCAPE],
+	"submit": [KEY_ENTER, KEY_KP_ENTER],   # a "Start"-role key: commits a form even from inside a text field (registration名前 step)
 	"menu": [KEY_TAB],
 	"status": [KEY_C],   # the party-status glance is global — the same key opens it in ANY scene (IMP-042)
 	"full_map": [KEY_M],   # the floor map has a shortcut, not just a dock button

@@ -287,9 +287,29 @@ func _initialize() -> void:
 		_fail("name step: arrived with a blank name — the suggestion did not fill it")
 	if not _register_enabled(guild):
 		_fail("登録 still refused with the pool spent")
-	guild.call("_register")
+
+	# BLOCKER (playtest): the 覚え書き is the one multi-line field on this screen. A controller that lands
+	# in it can't get out — arrows only move the caret. The screen must SPELL OUT a Start-role SUBMIT key,
+	# and that key must commit registration even while the field holds focus. Prove both.
+	if not _all_text(guild).contains(I18n.t("party.submitHint")):
+		_fail("name step: the SUBMIT key is not documented on-screen (a controller in 覚え書き is stranded)")
+	# Let the step's own deferred focus settle before we hijack the cursor into the trap field.
 	for i in 4:
 		await process_frame
+	var notes_field := _find_textedit(guild)
+	if notes_field == null:
+		_fail("name step: the 覚え書き field is missing")
+	else:
+		# grab_focus is synchronous; fire SUBMIT on the SAME step so the deferred step-focus cannot steal
+		# it back first. The caret is genuinely trapped in the multi-line field when submit fires.
+		notes_field.grab_focus()
+		if _focused() != notes_field:
+			_fail("name step: could not place the cursor inside the 覚え書き field")
+		_fire_action(guild, "submit")
+	for i in 4:
+		await process_frame
+	if guild.call("_party").size() != 1:
+		_fail("name step: SUBMIT did not register from inside the 覚え書き field — the controller trap is still live")
 
 	var party: Array = guild.call("_party")
 	if party.size() != 1:
@@ -362,6 +382,22 @@ func _press_cancel(guild: Node) -> void:
 	event.action = "cancel"
 	event.pressed = true
 	guild.call("_unhandled_input", event)
+
+## Drive a named action through the scene's _input (which runs before a focused field consumes the key).
+func _fire_action(guild: Node, action: String) -> void:
+	var event := InputEventAction.new()
+	event.action = action
+	event.pressed = true
+	guild.call("_input", event)
+
+func _find_textedit(node: Node) -> TextEdit:
+	if node is TextEdit:
+		return node
+	for child in node.get_children():
+		var found := _find_textedit(child)
+		if found:
+			return found
+	return null
 
 func _focused() -> Control:
 	return get_root().gui_get_focus_owner()
