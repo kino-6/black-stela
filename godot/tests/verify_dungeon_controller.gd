@@ -78,6 +78,16 @@ func _initialize() -> void:
 		await process_frame
 	_check(not _valid(d.get("_party_menu")), "Esc closes 隊列 (not only its 閉じる button)")
 
+	# map consistency (playtest) — the full map and the minimap must classify a cell's SIDES identically, or a
+	# wall shows on one and not the other (the stairs-cell wall vanished only on the full map).
+	var FloorMap := preload("res://scripts/dungeon/floor_map.gd")
+	var mm: Object = preload("res://scripts/minimap.gd").new()
+	for kind in ["open", "door", "one_way", "stairs", "shortcut", "secret"]:
+		var e := {"kind": kind}
+		_check(bool(FloorMap._is_passage(e)) == bool(mm.call("_is_passage", e)), "full map and minimap agree whether a '%s' side is a wall" % kind)
+	if mm is Node:
+		(mm as Node).free()
+
 	print("[dungeon-controller] %s (%d failures)" % ["PASS" if _fail == 0 else "FAIL", _fail])
 	quit(_fail)
 

@@ -265,6 +265,9 @@ static func _in_dark_zone(world: Dictionary, room_id: Variant, _state: Dictionar
 	return false
 
 static func _is_passage(edge: Variant) -> bool:
+	# ONLY a walkable neighbour on THIS floor counts as a passage (matches the minimap). A `stairs` edge
+	# leads to ANOTHER floor and a `shortcut`/`secret` is not an open way, so those sides are WALLS — the
+	# full map used to erase the wall on a stairs cell while the minimap drew it, a jarring mismatch (playtest).
 	if typeof(edge) != TYPE_DICTIONARY:
 		return false
-	return ["open", "door", "one_way", "shortcut", "stairs"].has(String(edge.get("kind", "")))
+	return ["open", "door", "one_way"].has(String(edge.get("kind", "")))
