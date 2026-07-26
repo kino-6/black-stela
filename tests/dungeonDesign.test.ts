@@ -24,19 +24,26 @@ function downStairRoom(world: ScenarioWorld, floorId: string): string | null {
   return null;
 }
 
-// The on-floor loop-back shortcut: a `shortcut` edge whose target stays on this
-// floor. Returns the room it opens FROM and the room it lands ON.
-function shortcutEdge(world: ScenarioWorld, floorId: string): { from: string; to: string } | null {
+// On-floor loop-back shortcuts. A shortcut is EITHER a `shortcut` (warp) or — the Verdant rule, playtest —
+// a `secret` hidden door whose far side is a physical passage (warps are banned there). Both stay on this
+// floor. Returns every candidate (secret overrides are reciprocal, so a hidden door appears twice); rule 4
+// then takes whichever collapses the descent best.
+function shortcutEdges(world: ScenarioWorld, floorId: string): Array<{ from: string; to: string; kind: string }> {
   const floor = world.dungeons.find((d) => d.id === floorId);
   const roomByCellId = new Map((floor?.grid?.cells ?? []).map((c) => [c.id, c.roomId]));
+  const out: Array<{ from: string; to: string; kind: string }> = [];
   for (const cell of floor?.grid?.cells ?? []) {
     for (const edge of Object.values(cell.edges)) {
-      if (edge?.kind === "shortcut" && edge.targetCellId && roomByCellId.has(edge.targetCellId)) {
-        return { from: cell.roomId, to: roomByCellId.get(edge.targetCellId)! };
+      if (
+        (edge?.kind === "shortcut" || edge?.kind === "secret") &&
+        edge.targetCellId &&
+        roomByCellId.has(edge.targetCellId)
+      ) {
+        out.push({ from: cell.roomId, to: roomByCellId.get(edge.targetCellId)!, kind: edge.kind });
       }
     }
   }
-  return null;
+  return out;
 }
 
 // The full maze rules (frame-fill, honest sweep 300-360, shortcut collapse) are tuned for a
@@ -108,13 +115,25 @@ describe("dungeon design gate", () => {
                 expect(graph.branchPointsOnPath(floor.startRoom, downStair)).toBeGreaterThanOrEqual(3);
               });
 
-              it("rule 4 — the loop-back shortcut collapses the descent to a few moves", () => {
-                const shortcut = shortcutEdge(world, floor.id);
-                expect(shortcut, `${floor.id} needs an on-floor shortcut edge`).not.toBeNull();
-                const legIn = graph.shortestPathCells(floor.startRoom, shortcut!.from).length - 1;
-                const legOut = graph.shortestPathCells(shortcut!.to, downStair).length - 1;
-                // entrance → sealed door → (warp) → near the deep stair
-                expect(legIn + 1 + legOut).toBeLessThanOrEqual(15);
+              it("rule 4 — a warp collapses the descent, or a hidden door short-circuits a long loop", () => {
+                const candidates = shortcutEdges(world, floor.id);
+                expect(candidates.length, `${floor.id} needs an on-floor shortcut (warp or hidden door)`).toBeGreaterThan(0);
+                const warp = candidates.find((c) => c.kind === "shortcut");
+                if (warp) {
+                  // A magic warp can drop the party right by the deep stair: entrance → sealed door → (warp)
+                  // → near the stair, in a few moves. (Default world; Verdant bans warps — see the world rule.)
+                  const legIn = graph.shortestPathCells(floor.startRoom, warp.from).length - 1;
+                  const legOut = graph.shortestPathCells(warp.to, downStair).length - 1;
+                  expect(legIn + 1 + legOut, `${floor.id} warp collapse`).toBeLessThanOrEqual(15);
+                } else {
+                  // A PHYSICAL hidden door is bound to real adjacency — it can't teleport to the stair, so its
+                  // worth is the loop it short-circuits: the open-only way round between its two sides (the
+                  // secret edge itself is not walkable until found). A big loop = a real shortcut once revealed.
+                  const loop = Math.max(
+                    ...candidates.map((sc) => graph.shortestPathCells(sc.from, sc.to).length - 1)
+                  );
+                  expect(loop, `${floor.id} hidden-door loop ${loop} is too small to be a real shortcut`).toBeGreaterThanOrEqual(15);
+                }
               });
             }
           }
@@ -134,6 +153,39 @@ describe("dungeon design gate", () => {
           ).toBeUndefined();
         }
       });
+
+      if (world.id === "verdant") {
+        it("rule — Verdant shortcuts are physical hidden doors, never warps (playtest: no teleport shortcuts)", () => {
+          // The player rejected warp shortcuts ("ワープによるショートカットではなく、隠し扉、隠しみちのみ").
+          // Every Verdant floor's shortcut must be a `secret` hidden door — spatially adjacent (a real door in a
+          // wall, not a disguised teleport) — and NO floor may carry a `shortcut` (warp) edge.
+          for (const floor of world.dungeons) {
+            if ((floor.tags ?? []).includes("boss")) continue;
+            const cellById = new Map((floor.grid?.cells ?? []).map((c) => [c.id, c]));
+            const shortcuts = shortcutEdges(world, floor.id);
+            expect(
+              shortcuts.some((s) => s.kind === "shortcut"),
+              `${floor.id} has a warp shortcut — Verdant allows only hidden doors`
+            ).toBe(false);
+            const secrets = shortcuts.filter((s) => s.kind === "secret");
+            expect(secrets.length, `${floor.id} has no hidden-door shortcut`).toBeGreaterThan(0);
+            // Every secret edge must join spatially-adjacent cells (a door in a wall), never a far cell (a warp
+            // wearing a `secret` label). Look it up from the raw grid edge, not the room ids.
+            for (const cell of floor.grid?.cells ?? []) {
+              for (const edge of Object.values(cell.edges)) {
+                if (edge?.kind !== "secret" || !edge.targetCellId) continue;
+                const target = cellById.get(edge.targetCellId);
+                expect(target, `${floor.id} secret edge targets an unknown cell`).toBeTruthy();
+                const manhattan = Math.abs(cell.x - target!.x) + Math.abs(cell.y - target!.y);
+                expect(
+                  manhattan,
+                  `${floor.id} secret edge spans ${manhattan} cells — a hidden door must join adjacent cells`
+                ).toBe(1);
+              }
+            }
+          }
+        });
+      }
 
       it("rule — a walkable floor can actually FIGHT: it has a wandering encounter table for its own id", () => {
         // Verdant is wandering-only (no set-piece encounters) — without a table whose floorId matches, a

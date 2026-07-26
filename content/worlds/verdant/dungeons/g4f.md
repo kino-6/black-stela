@@ -9,7 +9,7 @@ tags:
 startRoom: room.verdant.g4f.001
 map: |
   ###################
-  #E.s..............#
+  #E................#
   #.#.#.#####.#.#####
   #.#.#...#...#.....#
   #.##..###.#...#.###
@@ -19,11 +19,11 @@ map: |
   #.#####....####.###
   #...#....A....#...#
   #.#.#.#....##.###.#
-  #.#.#.#.....#.#2..#
-  #.#.####..#######.#
-  #.#...#..M......#.#
+  #.#.#.#.....#.#...#
+  #.#.####..#####S#.#
+  #.#...#..M.....s#2#
   ###.###.#.#########
-  #.....#....S......#
+  #.....#...........#
   #.#.###.#.#.#####.#
   #.#.#...#.#....1#X#
   ###################
@@ -58,7 +58,7 @@ edges:
     targetFloorId: dungeon.verdant.g5f
   - from: room.verdant.g4f.gate
     direction: north
-    kind: shortcut
+    kind: secret
     to: room.verdant.g4f.lift
 rooms:
   - id: room.verdant.g4f.001
@@ -118,28 +118,19 @@ rooms:
         name: 根の下り
         description: 根が次の深みへとねじれ落ちる。蔦の鎖が下へ垂れている。
   - id: room.verdant.g4f.gate
-    name: Sealed Bar
-    description: A heavy vine-bar can be lifted to open a shorter way down.
-    gates:
-      - id: gate.verdant.g4f.shortcut
-        direction: north
-        kind: shortcut
-        grantsFlag: flag.verdant.g4f.shortcut
-        clue: The bar lifts toward the deeper dark.
-        locales:
-          ja:
-            clue: 横木は奥の闇へ向かって上がる。
+    name: Suspect Wall
+    description: A stretch of root-wall rings hollow — search here to reveal a hidden way down.
     locales:
       ja:
-        name: 封じの横木
-        description: 重い蔦の横木。上げれば下りの近道が開く。
+        name: 怪しい壁
+        description: 根の壁の一角が虚ろに響く。ここを調べれば、下りへの隠しみちが現れるかもしれない。
   - id: room.verdant.g4f.lift
-    name: Lifted Vine
-    description: Where the lifted vine-bar lets you out, close to the descent.
+    name: Hidden Passage
+    description: A cramped passage behind the false wall, letting out close to the descent.
     locales:
       ja:
-        name: 上がる蔦
-        description: 上げた蔦の横木が抜ける先。下りのすぐ近く。
+        name: 隠しみち
+        description: 偽りの壁の奥の狭い抜け道。下りのすぐ近くへ通じている。
   - id: room.verdant.g4f.nook1
     name: Spore Niche 1
     description: A dead-end niche where something was left in the drift.

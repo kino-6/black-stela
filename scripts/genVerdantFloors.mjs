@@ -78,6 +78,39 @@ function wallDir(w, [y, x]) {
   for (const [name, dy, dx] of order) if (inb(w, y + dy, x + dx) && w[y + dy][x + dx]) return name;
   return "west";
 }
+// Compass direction from cell `a` to an orthogonally-adjacent cell `b`.
+function dirBetween([ay, ax], [by, bx]) {
+  if (by === ay - 1) return "north";
+  if (by === ay + 1) return "south";
+  if (bx === ax - 1) return "west";
+  return "east";
+}
+// A HIDDEN-DOOR shortcut (no warp): find a single maze wall W whose two opposite neighbours A/B are open
+// corridors, and whose perpendicular sides stay walled — so opening W bridges ONLY A↔B and adds no stray
+// loop that would flatten the honest sweep. Opening W and hiding the A↔W edge behind a `secret` override
+// makes a physical hidden passage: search at A, step through W onto the far corridor B. We pick the wall
+// whose two sides are FARTHEST apart in the maze (max dMaze(A,B)) — that door short-circuits the longest way
+// round, the physical analogue of the old warp. A = search side (nearer the entrance), W = the passage cell.
+function secretShortcut(w, dEnt) {
+  const g = (m, [y, x]) => m.get(`${y},${x}`);
+  let best = null;
+  for (let y = 2; y < w.length - 2; y++) {
+    for (let x = 2; x < w.length - 2; x++) {
+      if (!w[y][x]) continue; // must be a wall to open
+      const vert = !w[y - 1][x] && !w[y + 1][x] && w[y][x - 1] && w[y][x + 1];
+      const horz = !w[y][x - 1] && !w[y][x + 1] && w[y - 1][x] && w[y + 1][x];
+      if (!vert && !horz) continue;
+      const [p, q] = vert ? [[y - 1, x], [y + 1, x]] : [[y, x - 1], [y, x + 1]];
+      if (g(dEnt, p) == null || g(dEnt, q) == null) continue;
+      const loop = bfs(w, p[0], p[1]).get(`${q[0]},${q[1]}`) ?? -1; // way round with the wall still closed
+      if (loop < 0) continue;
+      // A = whichever side you reach first while exploring (smaller dEnt), so the door is found on the way in.
+      const [A, B] = g(dEnt, p) <= g(dEnt, q) ? [p, q] : [q, p];
+      if (!best || loop > best.loop) best = { W: [y, x], A, B, loop };
+    }
+  }
+  return best;
+}
 
 // Per-floor spec: seed + names (en/ja) for entrance, exit(down-stair), the miniboss/boss
 // chamber, plain chambers, shortcut, and reward nooks. Enemy/table ids match the roster in
@@ -120,11 +153,14 @@ function buildFloor(spec) {
   const entrance = [1, 1];
   const exit = farthest(w, 1, 1);
   const dEnt = bfs(w, ...entrance);
-  const dExit = bfs(w, ...exit);
+  // Hidden-door shortcut: open ONE maze wall between two far-apart corridors and hide it behind a `secret`
+  // edge — a physical hidden passage, NOT a warp (playtest rule). scFrom = the search side (gate), scTo = the
+  // opened wall cell (lift), stepping through which lands on the far corridor, short-circuiting a long loop.
+  const sc = secretShortcut(w, dEnt);
+  const scFrom = sc.A;
+  const scTo = sc.W;
+  w[scTo[0]][scTo[1]] = false; // physically open the wall so the passage exists once the door is found
   const cells = openCells(w);
-  // Shortcut: sealed door ~2 from entrance -> lift ~7 before exit (collapses the descent).
-  const scFrom = cells.find(([y, x]) => (dEnt.get(`${y},${x}`) ?? 99) === 2) ?? [1, 2];
-  const scTo = cells.find(([y, x]) => { const d = dExit.get(`${y},${x}`) ?? 99; return d >= 6 && d <= 8; }) ?? exit;
   // Boss/miniboss chamber = the carved chamber nearest the exit (a natural deep choke).
   const key = (c) => `${c[0]},${c[1]}`;
   const usedChamber = chambers.slice().sort((a, b) => (dEnt.get(key(b)) ?? 0) - (dEnt.get(key(a)) ?? 0))[0] ?? [9, 9];
@@ -165,7 +201,10 @@ function buildFloor(spec) {
   if (!spec.finale) {
     edges.push(`  - from: ${rid(n, "exit")}\n    direction: ${wallDir(w, exit)}\n    kind: stairs\n    to: ${rid(n + 1, "001")}\n    targetFloorId: ${did(n + 1)}`);
   }
-  edges.push(`  - from: ${rid(n, "gate")}\n    direction: ${wallDir(w, scFrom)}\n    kind: shortcut\n    to: ${rid(n, "lift")}`);
+  // The hidden door: a `secret` edge from the search side (gate) into the opened passage cell (lift). It is
+  // revealed by 探索/search, never a warp; floorMap makes the reverse side secret too, and lift↔beyond stays
+  // an open passage — so found, it collapses the descent; unfound, the honest sweep is unchanged.
+  edges.push(`  - from: ${rid(n, "gate")}\n    direction: ${dirBetween(scFrom, scTo)}\n    kind: secret\n    to: ${rid(n, "lift")}`);
 
   // ---- rooms ----
   const rooms = [];
@@ -212,9 +251,8 @@ function buildFloor(spec) {
     rooms.push(room(rid(n, "exit"), "Beneath the Heart", "樹心の下", "The gallery ends here, beneath the living heart.", "回廊はここで尽きる。生きた樹心の真下。",
       "    restPoint: true\n"));
   }
-  rooms.push(room(rid(n, "gate"), "Sealed Bar", "封じの横木", "A heavy vine-bar can be lifted to open a shorter way down.", "重い蔦の横木。上げれば下りの近道が開く。",
-    "    gates:\n      - id: gate.verdant.g" + n + "f.shortcut\n        direction: " + wallDir(w, scFrom) + "\n        kind: shortcut\n        grantsFlag: flag.verdant.g" + n + "f.shortcut\n        clue: The bar lifts toward the deeper dark.\n        locales:\n          ja:\n            clue: 横木は奥の闇へ向かって上がる。\n"));
-  rooms.push(room(rid(n, "lift"), "Lifted Vine", "上がる蔦", "Where the lifted vine-bar lets you out, close to the descent.", "上げた蔦の横木が抜ける先。下りのすぐ近く。"));
+  rooms.push(room(rid(n, "gate"), "Suspect Wall", "怪しい壁", "A stretch of root-wall rings hollow — search here to reveal a hidden way down.", "根の壁の一角が虚ろに響く。ここを調べれば、下りへの隠しみちが現れるかもしれない。"));
+  rooms.push(room(rid(n, "lift"), "Hidden Passage", "隠しみち", "A cramped passage behind the false wall, letting out close to the descent.", "偽りの壁の奥の狭い抜け道。下りのすぐ近くへ通じている。"));
   nooks.forEach((c, i) => rooms.push(room(rid(n, `nook${i + 1}`), `Spore Niche ${i + 1}`, `胞子の窪み ${i + 1}`,
     "A dead-end niche where something was left in the drift.", "吹き溜まりに何かが残された行き止まりの窪み。",
     `    treasureTable: treasure.verdant.g${n}.side\n`)));

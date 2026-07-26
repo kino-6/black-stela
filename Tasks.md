@@ -20,10 +20,15 @@ extra chamber rooms were defined but never placed on the grid and dropped on exp
 - [x] Sweep/loops stay within the design gate (G2F still exempt).
 - [x] Gate: dungeonDesign.test asserts Verdant G1–G3 each have ≥ 6 玄室. Parity + verdant-chambers green.
 
-## C. Shortcuts: warp → hidden door / hidden passage (Verdant, all floors)
-Only hidden doors / secret passages allowed; no warp shortcuts.
-- [ ] Replace `kind: shortcut` (warp) with a physical `secret`-gated passage on every Verdant floor.
-- [ ] Update the design gate rule 4 to require a hidden-door shortcut, not a warp edge.
+## C. Shortcuts: warp → hidden door / hidden passage (Verdant, all floors)  — DONE
+Only hidden doors / secret passages allowed; no warp shortcuts ("ワープではなく隠し扉・隠しみちのみ").
+- [x] The generator now opens ONE maze wall between the two FARTHEST-apart corridors and hides it behind a
+      `secret` edge — a physical hidden door (search 探索 to reveal, step through). No `gates:`/grantsFlag warp.
+      Each floor's door short-circuits a 21–47-step loop (measured on the exported grid); 0 warp edges remain.
+- [x] Design gate rewritten: a warp must collapse ≤15 (default b1f), a hidden door must short-circuit a
+      loop ≥15; plus a Verdant world rule — every floor's shortcut is a spatially-adjacent `secret`, never a warp.
+- [x] verdant-walk parity trace re-authored to the new mechanic (search → through the door → back → listen);
+      parity + flow + played/return loops + fixtures all green.
 
 ## D. Chest loot display  — DONE
 Opening a chest only said "宝箱は開いた。" — the loot event was emitted but Godot's _event_line never

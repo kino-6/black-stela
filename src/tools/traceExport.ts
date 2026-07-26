@@ -546,13 +546,17 @@ function verdantExpeditionRoute(world: ScenarioWorld): { initial: GameState; com
 }
 
 function verdantWalkRoute(world: ScenarioWorld): { initial: GameState; commands: Command[] } {
-  const initial = withDebugStartCell(createDebugStateFromProgress(world, "ready"), world, "room.verdant.g1f.c2_1", "east");
+  // Verdant's shortcut is a physical HIDDEN DOOR now, not a warp (playtest: no teleport shortcuts). This route
+  // stands at the suspect wall (the gate cell, whose secret edge faces south into the hidden passage), then:
+  // search to reveal the door, step through it, step back, listen — proving the ported secret-reveal + reciprocal
+  // traversal rules match the TS oracle.
+  const initial = withDebugStartCell(createDebugStateFromProgress(world, "ready"), world, "room.verdant.g1f.gate", "south");
   return {
     initial,
     commands: [
-      { type: "move_forward" },   // into the flagged gate room
-      { type: "move_forward" },
-      { type: "move_backward" },
+      { type: "search" },         // reveal the hidden door (the secret edge south → lift)
+      { type: "move_forward" },   // through the revealed door into the hidden passage
+      { type: "move_backward" },  // back to the suspect wall
       { type: "listen" }
     ]
   };
