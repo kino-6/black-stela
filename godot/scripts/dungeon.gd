@@ -722,13 +722,21 @@ func _toggle_full_map() -> void:
 	scrim.color = Color(0, 0, 0, 0.82)
 	scrim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	layer.add_child(scrim)
+	# CENTER the map panel and size it to its content. It used to be a fixed 1600×900 box pinned at (160,90),
+	# so the map+legend sat in its top-left and the whole thing drifted with how much of the floor was explored
+	# (playtest: "妙に左に寄っている"). A CenterContainer keeps it balanced at any map size.
+	var center := CenterContainer.new()
+	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	layer.add_child(center)
+	var margin := MarginContainer.new()
+	for side in ["left", "right", "top", "bottom"]:
+		margin.add_theme_constant_override("margin_%s" % side, 32)
 	var panel := PanelContainer.new()
-	panel.position = Vector2(160, 90)
-	panel.custom_minimum_size = Vector2(1600, 900)
 	panel.add_theme_stylebox_override("panel", _panel_style(Color("11140df7"), GOLD))
-	layer.add_child(panel)
+	center.add_child(panel)
+	panel.add_child(margin)
 	var body: VBoxContainer = UIKit.col(8)
-	panel.add_child(body)
+	margin.add_child(body)
 	body.add_child(FloorMap.build(_state, _world))
 	body.add_child(UIKit.label(I18n.t("map.coverage", {"percent": _coverage_percent()}), 17, INK))
 	var close: Button = UIKit.button(I18n.t("play.chestLeave"), func(): _toggle_full_map(), Vector2(180, 44), 17)
