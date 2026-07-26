@@ -1,5 +1,8 @@
 # Black Stela Agent Instructions
 
+**Not sure what to read?** `CLAUDE.md` → "Repository map — what to read, what to SKIP" lists the live docs
+and the large history/generated trees (`docs/archive/**`, `godot/data/**`, `dist/`, evidence PNGs …) to skip.
+
 Before Godot migration work, read `docs/architecture.md` and
 `docs/design/godot-full-migration-plan.md`. If the change touches scenario AI,
 narration, canonical events, records, or saves, also read
