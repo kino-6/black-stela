@@ -118,7 +118,7 @@ function secretShortcut(w, dEnt) {
 const FLOORS = [
   { n: 1, seed: 50501, level: 1, title: ["Root Gallery", "根の回廊"],
     boss: null, bossEnc: "encounters.verdant.g1.pack" },
-  { n: 2, seed: 50502, level: 2, title: ["Spore Drift", "胞子の吹き溜まり"],
+  { n: 2, seed: 50522, level: 2, title: ["Spore Drift", "胞子の吹き溜まり"],
     boss: ["Bramble Warden", "茨の番人"], bossSquad: ["enemy.verdant.g2.bramble-shield", "enemy.verdant.g2.spore-caster"], bossEnc: "encounters.verdant.g2.squad" },
   { n: 3, seed: 50503, level: 3, title: ["Pollen Cistern", "花粉の貯水池"],
     boss: ["Bloom Warden", "花守り"], bossEnemy: "enemy.verdant.g3.bloom-warden", bossEnc: "encounters.verdant.g3.gate" },

@@ -50,8 +50,11 @@ formatted it, so it was silent (React logs it via events.inventoryItemGained).
 - [ ] The 玄室 landmark (pillars + floor disk) reads as an unexplained "green object" — visual tuning
       (Codex art-lane): tone the floor disk / make the hall read as a room, not a prop.
 
-## G. Maze debt — Verdant G2F honest sweep
-- [ ] Raise G2F sweep from 286 to ≥ 300 (currently exempt in MAZE_EXEMPT); then drop the exemption.
+## G. Maze debt — Verdant G2F honest sweep  — DONE
+- [x] Reseeded G2F (50502 → 50522): the old seed's maze was too open (sweep 288); the new one winds to
+      sweep 342 (cells 187, loops 35) — within the 300–360 labyrinth band.
+- [x] Dropped `dungeon.verdant.g2f` from MAZE_EXEMPT; it now passes every maze rule (frame-fill, sweep,
+      on-path branches, hidden-door loop). Design gate 87 tests; parity + verdant-chambers + flow green.
 
 ---
 ### Done this session (context)

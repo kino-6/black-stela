@@ -54,9 +54,9 @@ const MAZE_EXEMPT = new Set<string>([
   // hand-authored floors that still owe the shortcut / on-path-branch / honest-sweep work (documented
   // rollout debt — shrink this list as they are redesigned). B8F is the boss finale (boss-exempt already).
   "dungeon.b2f", "dungeon.b3f", "dungeon.b4f", "dungeon.b5f", "dungeon.b6f", "dungeon.b7f",
-  // Verdant is generated (genVerdantFloors.mjs) and meets the maze rules on g1/g3–g8; g2f's honest sweep
-  // lands at 286, just under the 300 labyrinth floor — a generation-tuning debt to raise, not a design gap.
-  "dungeon.verdant.g2f",
+  // Verdant is generated (genVerdantFloors.mjs) and now meets the maze rules on EVERY floor — g2f's honest
+  // sweep debt (was 286, under the 300 floor) is cleared by a windier seed (50522 → sweep 342), so it is no
+  // longer exempt. Keep this list at default rollout debt only.
 ]);
 
 describe("dungeon design gate", () => {
