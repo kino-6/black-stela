@@ -97,7 +97,7 @@ export const en = {
       name: "Name"
     },
     guildMaster: "Guild master",
-    guildBriefing: "Going below? Then show me your trade first. Where are you from, and what are you good at? The ledger comes after that.",
+    guildBriefing: "Going below? Then let's get you onto the guild's roll first — we'll do it one step at a time.",
     partyReadyHeading: "Party ready",
     partyReadyCopy: "Six names are on the ledger. Review the roster, then take them to the stair.",
     startRegistration: "Begin registration",

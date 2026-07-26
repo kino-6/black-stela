@@ -203,12 +203,22 @@ func _preview_card() -> Control:
 	var character := _build_character()
 
 	var row := UI.row()
-	var portrait := TextureRect.new()
-	portrait.custom_minimum_size = Vector2(96, 116)
-	portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-	portrait.texture = _texture(_draft_portrait_path())
-	row.add_child(UI.card(portrait))
+	# The face is a player CHOICE made at 来歴 (IMP-039), decoupled from class and origin. Before that step
+	# it is genuinely undecided, so the preview shows a "？" rather than implying a face the player never picked.
+	var face_chosen: bool = STEPS.find(_step) >= STEPS.find("appearance")
+	if face_chosen:
+		var portrait := TextureRect.new()
+		portrait.custom_minimum_size = Vector2(96, 116)
+		portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+		portrait.texture = _texture(_draft_portrait_path())
+		row.add_child(UI.card(portrait))
+	else:
+		var unknown := UI.label("？", 52, UI.DIM)
+		unknown.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		unknown.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		unknown.custom_minimum_size = Vector2(96, 116)
+		row.add_child(UI.card(unknown))
 
 	var text := UI.col(4)
 	var name_line := String(character.get("name", "")).strip_edges()
@@ -238,9 +248,10 @@ func _briefing_step() -> Control:
 	var col := UI.col(10)
 	var head := UI.row()
 	var master := TextureRect.new()
-	master.custom_minimum_size = Vector2(120, 140)
+	master.custom_minimum_size = Vector2(132, 184)
 	master.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	master.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	# Fit the WHOLE figure — the guild master is full-length NPC art, so COVERED cropped his head/feet.
+	master.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	master.texture = _texture(_asset("characters/npc-guild-master.png"))
 	head.add_child(master)
 	var speech := UI.col(6)
@@ -249,10 +260,11 @@ func _briefing_step() -> Control:
 	head.add_child(UI.grow(speech))
 	col.add_child(head)
 
+	# One command only: "説明を聞かない" led to the exact same _goto("class"), so it was a choice that
+	# chose nothing. Registration IS the briefing being read one step at a time.
 	var actions := UI.row()
 	var start := UI.button(I18n.t("party.startRegistration"), func(): _goto("class"), Vector2(260, 46), 19)
 	actions.add_child(start)
-	actions.add_child(UI.button(I18n.t("party.skipBriefing"), func(): _goto("class"), Vector2(200, 46), 17))
 	col.add_child(actions)
 	if _party().size() >= PARTY_MAX:
 		col.add_child(UI.label(I18n.t("party.partyReadyHeading"), 19, UI.GOLD))
@@ -310,7 +322,12 @@ func _class_step() -> Control:
 	for entry in selected.get("equipment", []):
 		gear.append(Fmt.localized_catalog_name(_world, String(entry.get("id", ""))))
 	detail.add_child(_fact(I18n.t("party.equipment"), " / ".join(PackedStringArray(gear))))
-	body.add_child(UI.card(detail))
+	# FIXED-height detail pane — a taller class (more techniques) used to grow the pane and jolt the whole
+	# step; now it is a stable 420 box that scrolls if a calling has more to say, so switching classes never
+	# makes the layout jump.
+	var detail_pane := UI.scroller(detail, Vector2(660, 420))
+	detail_pane.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	body.add_child(UI.grow(UI.card(detail_pane)))
 
 	col.add_child(_flow_actions("briefing", "appearance"))
 	return UI.card(col)
@@ -349,9 +366,11 @@ func _techniques_later(class_id: String) -> String:
 	return "\n".join(PackedStringArray(names)) if not names.is_empty() else I18n.t("party.classPromiseNone")
 
 func _technique_promise(id: String) -> String:
+	# NAME first, then what it does — "ヒール：味方を小回復" reads as a skill entry, not a description with
+	# the skill's name tucked in parentheses at the end.
 	var summary := Techniques.summary(id, _engine())
 	var name := _technique_name(id)
-	return "%s（%s）" % [summary, name] if summary != "" else name
+	return "%s：%s" % [name, summary] if summary != "" else name
 
 ## The exploration this class is trusted with, named rather than scored. Empty for the seven classes
 ## §4 gives no exploration proficiency at all — they simply do not show the line.

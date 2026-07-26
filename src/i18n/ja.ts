@@ -99,7 +99,7 @@ export const ja = {
       name: "名前"
     },
     guildMaster: "ギルドマスター",
-    guildBriefing: "ようこそ。登録するなら、まずは君の話を聞かせてくれ。どんな冒険者になりたい？",
+    guildBriefing: "ようこそ。潜るなら、まずはギルドに名を連ねてもらう。手順に沿って登録を進めよう。",
     partyReadyHeading: "隊列準備完了",
     partyReadyCopy: "六人が揃いました。隊列を確認して出発できます。",
     startRegistration: "登録を始める",

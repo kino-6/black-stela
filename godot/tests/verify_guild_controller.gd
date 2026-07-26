@@ -38,11 +38,16 @@ func _initialize() -> void:
 	# The guild master's opening is spoken Japanese, not a procedure or faux-archaic
 	# exposition. Read the rendered scene so the Godot port cannot drift from ja.ts.
 	var briefing := _all_text(guild)
-	var expected_briefing := "ようこそ。登録するなら、まずは君の話を聞かせてくれ。どんな冒険者になりたい？"
+	var expected_briefing := "潜るなら、まずはギルドに名を連ねてもらう"
 	if not briefing.contains(expected_briefing):
 		_fail("briefing: the natural guild-master greeting is not rendered")
-	if briefing.contains("潜る気か") or briefing.contains("帳面にはそれから載せる"):
-		_fail("briefing: removed stiff guild-master copy returned to the screen")
+	# The greeting must NOT ask an out-of-place "what kind of adventurer do you want to be?" (playtest)
+	# and must NOT bring back the old stiff copy.
+	if briefing.contains("どんな冒険者になりたい") or briefing.contains("潜る気か") or briefing.contains("帳面にはそれから載せる"):
+		_fail("briefing: removed guild-master copy returned to the screen")
+	# "説明を聞かない" was a choice that chose nothing (same _goto), so it must be gone.
+	if briefing.contains("説明を聞かない"):
+		_fail("briefing: the meaningless 説明を聞かない choice is still shown")
 
 	# 1. Every step hands the cursor a place to land, and never a disabled one.
 	for step in STEPS:
