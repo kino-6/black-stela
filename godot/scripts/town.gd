@@ -377,6 +377,12 @@ func _go_location(location: String) -> void:
 
 # --- level 3: the service counter ------------------------------------------------------------------
 func _open_service(service: String) -> void:
+	# The guild is the registration CEREMONY — a full scene, not a town panel. Entering it from town KEEPS
+	# the roster (guild.gd no longer wipes on _ready), so this is the path to create and add more adventurers.
+	# Without it there was no way to build a party from town at all (playtest regression).
+	if service == "guild":
+		get_tree().change_scene_to_file("res://scenes/guild.tscn")
+		return
 	_service = service
 	_loot_pending = ""
 	_event_text = ""
@@ -463,6 +469,11 @@ func _on_descend() -> void:
 	# (playtest #3: an untouched starting potion was reported as "持ち帰った物").
 	if _run:
 		_run.loot_baseline = _inventory_counts(state())
+		# COUNT THE DESCENT. In the rules this lives in the enter_dungeon command (expeditions += 1), but the
+		# Godot descent enters the dungeon scene directly (dungeon_entry.plan) and bypasses that command, so
+		# expeditions never advanced — town then greeted a returning party with "初めて潜る前に" forever
+		# (playtest). Once the party has been below, first_departure is false.
+		_run.state["expeditions"] = int(_run.state.get("expeditions", 0)) + 1
 	get_tree().change_scene_to_file("res://scenes/dungeon.tscn")
 
 ## Rest points the party has actually WALKED to (port of listUnlockedCheckpoints) — never a floor they

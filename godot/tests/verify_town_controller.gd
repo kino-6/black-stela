@@ -8,7 +8,9 @@ extends SceneTree
 ##   (1) something focusable holds the cursor, and (2) Cancel resolved exactly one level.
 ## Usage: godot --headless --path godot/ --script res://tests/verify_town_controller.gd
 
-const LOCATIONS := {"hall": ["guild", "party", "career"], "market": ["shop", "loot", "workshop"], "archive": ["records", "quests"]}
+# NOTE: "guild" is NOT a town panel — it launches the registration scene (guild.tscn), which is exercised
+# by verify_guild_controller. Opening it here would change_scene mid-gate. Roster management is "party".
+const LOCATIONS := {"hall": ["party", "career"], "market": ["shop", "loot", "workshop"], "archive": ["records", "quests"]}
 const DungeonEntry := preload("res://scripts/rules/dungeon_entry.gd")
 
 var _failures := 0
