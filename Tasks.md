@@ -12,11 +12,13 @@ The Godot build never autosaved during play, so every run started from the begin
       in (the old load kept only the state, so a Verdant save loaded onto the default world).
 - [x] Gate: verify_save writes a Verdant slot to disk and reads it back with world + state preserved.
 
-## B. Chamber (玄室) density — Verdant G1–G3 ≥ 6 each
-Wiz-style guaranteed-fight + treasure rooms. Currently 3–4/floor.
-- [ ] genVerdantFloors: G1–G3 use ~8 chamber coords (was 4) so plainChambers ≥ 6. Regenerate + export.
-- [ ] Keep the maze metrics (sweep/loops) within the design gate (raise/exempt G2F sweep as needed).
-- [ ] Gate: every Verdant G1–G3 floor has ≥ 6 玄室 (authored encounter + treasure).
+## B. Chamber (玄室) density — Verdant G1–G3 ≥ 6 each  — DONE
+Wiz-style guaranteed-fight + treasure rooms. Was 3–4/floor (the generator only had 3 chamber GLYPHS, so
+extra chamber rooms were defined but never placed on the grid and dropped on export).
+- [x] genVerdantFloors: G1–G3 use 8 chamber coords + 7 chamber glyphs → G1f=8 / G2f=7 / G3f=8 玄室. Regen+export.
+- [x] The keep's reward is a snare-TRAPPED chest again (restored in the generator so it survives regen).
+- [x] Sweep/loops stay within the design gate (G2F still exempt).
+- [x] Gate: dungeonDesign.test asserts Verdant G1–G3 each have ≥ 6 玄室. Parity + verdant-chambers green.
 
 ## C. Shortcuts: warp → hidden door / hidden passage (Verdant, all floors)
 Only hidden doors / secret passages allowed; no warp shortcuts.

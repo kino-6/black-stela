@@ -58,11 +58,11 @@ edges:
 rooms:
   - id: room.verdant.g8f.001
     name: Root Landing
-    description: A vine-wrapped ladder climbs from the knotted-root landing.
+    description: A landing of knotted roots; a stair climbs back toward the floor above.
     locales:
       ja:
         name: 根の踊り場
-        description: 根の絡む踊り場。蔦を巻いた梯子が上の階へ伸びている。
+        description: 根の絡む踊り場。階段が上の階へと登っていく。
   - id: room.verdant.g8f.02
     name: Green Chamber 1
     description: A chamber where the canopy-light pools green on standing water.
@@ -93,21 +93,16 @@ rooms:
   - id: room.verdant.g8f.keep
     name: Rootheart
     description: A close, root-walled keep; the only way deeper passes through it.
-    encounter:
-      id: enemy.verdant.g8.rootheart
-      name: Rootheart
-      hp: 50
-      attack: 15
-      role: boss
-      dangerTier: 5
-      isBoss: true
-      tags:
-        - grove-heart
     encounterTable: encounters.verdant.g8.keep
-    treasureTable: treasure.verdant.g8.keep
+    chest:
+      treasureTable: treasure.verdant.g8.keep
+      trap:
+        kind: snare
+        difficulty: 21
+        damage: 12
     locales:
       ja:
-        name: 心臓の間
+        name: 樹心の主
         description: 根の壁に囲まれた狭い番所。奥へはここを抜けるほかない。
   - id: room.verdant.g8f.exit
     name: Beneath the Heart

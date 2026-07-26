@@ -63,12 +63,12 @@ edges:
 rooms:
   - id: room.verdant.g4f.001
     name: Root Landing
-    description: A vine-wrapped ladder climbs from the knotted-root landing.
+    description: A landing of knotted roots; a stair climbs back toward the floor above.
     restPoint: true
     locales:
       ja:
         name: 根の踊り場
-        description: 根の絡む踊り場。蔦を巻いた梯子が上の階へ伸びている。
+        description: 根の絡む踊り場。階段が上の階へと登っていく。
   - id: room.verdant.g4f.02
     name: Green Chamber 1
     description: A chamber where the canopy-light pools green on standing water.
@@ -99,28 +99,24 @@ rooms:
   - id: room.verdant.g4f.keep
     name: Bark Ward
     description: A close, root-walled keep; the only way deeper passes through it.
-    encounter:
-      id: enemy.verdant.g4.bark-ward
-      name: Bark Ward
-      hp: 24
-      attack: 9
-      role: miniboss
-      dangerTier: 3
-      tags:
-        - grove-warden
     encounterTable: encounters.verdant.g4.keep
-    treasureTable: treasure.verdant.g4.keep
+    chest:
+      treasureTable: treasure.verdant.g4.keep
+      trap:
+        kind: snare
+        difficulty: 17
+        damage: 8
     locales:
       ja:
-        name: 樹皮の番所
+        name: 樹皮衛
         description: 根の壁に囲まれた狭い番所。奥へはここを抜けるほかない。
   - id: room.verdant.g4f.exit
     name: Root Descent
-    description: A vine-wrapped ladder drops through a gap in the roots.
+    description: Roots twist down toward the next depth; a chain of vine falls away below.
     locales:
       ja:
         name: 根の下り
-        description: 根の隙間から、蔦を巻いた梯子が下の階へ降りている。
+        description: 根が次の深みへとねじれ落ちる。蔦の鎖が下へ垂れている。
   - id: room.verdant.g4f.gate
     name: Sealed Bar
     description: A heavy vine-bar can be lifted to open a shorter way down.

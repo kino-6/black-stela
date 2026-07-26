@@ -16,16 +16,16 @@ map: |
   #....B..#.#..C..#.#
   ###.#.###.###.###.#
   #.......#...#...#.#
-  #.######....###.#.#
-  #........A..#...#.#
-  ###.####...##.###.#
-  #.......#...#...#.#
-  #.#.#.##..#####.###
-  #.#.#....M.....S..#
-  #.#####.#.#.###.###
+  #.##..##......#.#.#
+  #....F...A...G..#.#
+  ###.#.##...##.###.#
+  #.......#...#...#1#
+  #.#...##..##..#.###
+  #.#..H...D...M.S..#
+  #.###.#.#.#.#.#.###
   #...#...#...#.....#
   #####.#####.#.###.#
-  #1....#.....#2#X..#
+  #.....#2....#.#X..#
   ###################
 symbols:
   1: room.verdant.g3f.nook1
@@ -36,6 +36,10 @@ symbols:
   A: room.verdant.g3f.02
   B: room.verdant.g3f.03
   C: room.verdant.g3f.04
+  D: room.verdant.g3f.05
+  F: room.verdant.g3f.06
+  G: room.verdant.g3f.07
+  H: room.verdant.g3f.08
   s: room.verdant.g3f.gate
   S: room.verdant.g3f.lift
 corridor:
@@ -63,11 +67,11 @@ edges:
 rooms:
   - id: room.verdant.g3f.001
     name: Root Landing
-    description: A vine-wrapped ladder climbs from the knotted-root landing.
+    description: A landing of knotted roots; a stair climbs back toward the floor above.
     locales:
       ja:
         name: 根の踊り場
-        description: 根の絡む踊り場。蔦を巻いた梯子が上の階へ伸びている。
+        description: 根の絡む踊り場。階段が上の階へと登っていく。
   - id: room.verdant.g3f.02
     name: Green Chamber 1
     description: A chamber where the canopy-light pools green on standing water.
@@ -82,16 +86,6 @@ rooms:
     description: A chamber where the canopy-light pools green on standing water.
     encounterTable: encounters.verdant.g3.pack
     treasureTable: treasure.verdant.g3.side
-    trap:
-      id: trap.verdant.g3.spore-vent
-      name: Spore Vent
-      damage: 4
-      detectDc: 13
-      warning: The standing water is dimpled from below, in a slow and regular rhythm.
-      locales:
-        ja:
-          name: 胞子の噴き
-          warning: 溜まり水が下から一定の間合いで小さく波打っている。
     locales:
       ja:
         name: 翠の間 2
@@ -105,31 +99,63 @@ rooms:
       ja:
         name: 翠の間 3
         description: 樹冠の光が水面に翠色を落とす間。
+  - id: room.verdant.g3f.05
+    name: Green Chamber 4
+    description: A chamber where the canopy-light pools green on standing water.
+    encounterTable: encounters.verdant.g3.pack
+    treasureTable: treasure.verdant.g3.side
+    locales:
+      ja:
+        name: 翠の間 4
+        description: 樹冠の光が水面に翠色を落とす間。
+  - id: room.verdant.g3f.06
+    name: Green Chamber 5
+    description: A chamber where the canopy-light pools green on standing water.
+    encounterTable: encounters.verdant.g3.pack
+    treasureTable: treasure.verdant.g3.side
+    locales:
+      ja:
+        name: 翠の間 5
+        description: 樹冠の光が水面に翠色を落とす間。
+  - id: room.verdant.g3f.07
+    name: Green Chamber 6
+    description: A chamber where the canopy-light pools green on standing water.
+    encounterTable: encounters.verdant.g3.pack
+    treasureTable: treasure.verdant.g3.side
+    locales:
+      ja:
+        name: 翠の間 6
+        description: 樹冠の光が水面に翠色を落とす間。
+  - id: room.verdant.g3f.08
+    name: Green Chamber 7
+    description: A chamber where the canopy-light pools green on standing water.
+    encounterTable: encounters.verdant.g3.pack
+    treasureTable: treasure.verdant.g3.side
+    locales:
+      ja:
+        name: 翠の間 7
+        description: 樹冠の光が水面に翠色を落とす間。
   - id: room.verdant.g3f.keep
     name: Bloom Warden
     description: A close, root-walled keep; the only way deeper passes through it.
-    encounter:
-      id: enemy.verdant.g3.bloom-warden
-      name: Bloom Warden
-      hp: 18
-      attack: 9
-      role: miniboss
-      dangerTier: 3
-      tags:
-        - grove-warden
     encounterTable: encounters.verdant.g3.keep
-    treasureTable: treasure.verdant.g3.keep
+    chest:
+      treasureTable: treasure.verdant.g3.keep
+      trap:
+        kind: snare
+        difficulty: 16
+        damage: 7
     locales:
       ja:
-        name: 花の番所
+        name: 花守り
         description: 根の壁に囲まれた狭い番所。奥へはここを抜けるほかない。
   - id: room.verdant.g3f.exit
     name: Root Descent
-    description: A vine-wrapped ladder drops through a gap in the roots.
+    description: Roots twist down toward the next depth; a chain of vine falls away below.
     locales:
       ja:
         name: 根の下り
-        description: 根の隙間から、蔦を巻いた梯子が下の階へ降りている。
+        description: 根が次の深みへとねじれ落ちる。蔦の鎖が下へ垂れている。
   - id: room.verdant.g3f.gate
     name: Sealed Bar
     description: A heavy vine-bar can be lifted to open a shorter way down.

@@ -108,9 +108,14 @@ function buildFloor(spec) {
   const { n } = spec;
   const w = genPerfect(CELLS, spec.seed);
   const S = w.length;
-  const chambers = [[9, 9], [5, 5], [5, 13], [13, 9]].filter(([y, x]) => y > 1 && x > 1 && y < S - 2 && x < S - 2);
+  // 玄室 (Wiz-style guaranteed-fight + treasure rooms). G1–G3 seat EIGHT (7 plain + 1 keep ≥ 6) so the early
+  // floors are dense with rooms to clear (playtest); deeper floors keep the leaner four. One becomes the keep.
+  const chamberCoords = n <= 3
+    ? [[9, 9], [5, 5], [5, 13], [13, 9], [9, 5], [9, 13], [13, 5], [13, 13]]
+    : [[9, 9], [5, 5], [5, 13], [13, 9]];
+  const chambers = chamberCoords.filter(([y, x]) => y > 1 && x > 1 && y < S - 2 && x < S - 2);
   carveChamber(w, 9, 9, "block");
-  for (const [cy, cx] of [[5, 5], [5, 13], [13, 9]]) carveChamber(w, cy, cx, "plus");
+  for (const [cy, cx] of chambers.filter(([y, x]) => !(y === 9 && x === 9))) carveChamber(w, cy, cx, "plus");
 
   const entrance = [1, 1];
   const exit = farthest(w, 1, 1);
@@ -140,7 +145,10 @@ function buildFloor(spec) {
   put(entrance, "E"); symbols.E = rid(n, "001");
   put(exit, "X"); symbols.X = rid(n, "exit");
   put(usedChamber, "M"); symbols.M = rid(n, "keep");
-  const chamberGlyphs = ["A", "B", "C"];
+  // Enough glyphs for every plain chamber to be PLACED on the grid — with only A/B/C, G1–G3's extra chambers
+  // were defined as rooms but never put on the map, so export dropped them (playtest:玄室 stayed at 3–4).
+  // Avoids the reserved E/X/M/s/S glyphs.
+  const chamberGlyphs = ["A", "B", "C", "D", "F", "G", "H"];
   plainChambers.forEach((c, i) => { put(c, chamberGlyphs[i]); symbols[chamberGlyphs[i]] = rid(n, `0${i + 2}`); });
   put(scFrom, "s"); symbols.s = rid(n, "gate");
   put(scTo, "S"); symbols.S = rid(n, "lift");
@@ -192,11 +200,11 @@ function buildFloor(spec) {
     rooms.push(room(
       rid(n, "keep"), spec.boss[0], spec.boss[1],
       "A close, root-walled keep; the only way deeper passes through it.", "根の壁に囲まれた狭い番所。奥へはここを抜けるほかない。",
-      `${field}    treasureTable: treasure.verdant.g${n}.keep\n`
+      `${field}    chest:\n      treasureTable: treasure.verdant.g${n}.keep\n      trap:\n        kind: snare\n        difficulty: ${13 + n}\n        damage: ${4 + n}\n`
     ));
   } else {
     rooms.push(room(rid(n, "keep"), "Deep Grove", "奥の木立", "A quiet grove deep in the gallery.", "回廊の奥の静かな木立。",
-      `    encounterTable: encounters.verdant.g${n}.pack\n    treasureTable: treasure.verdant.g${n}.keep\n`));
+      `    encounterTable: encounters.verdant.g${n}.pack\n    chest:\n      treasureTable: treasure.verdant.g${n}.keep\n      trap:\n        kind: snare\n        difficulty: ${13 + n}\n        damage: ${4 + n}\n`));
   }
   if (!spec.finale) {
     rooms.push(room(rid(n, "exit"), "Root Descent", "根の下り", "Roots twist down toward the next depth; a chain of vine falls away below.", "根が次の深みへとねじれ落ちる。蔦の鎖が下へ垂れている。"));

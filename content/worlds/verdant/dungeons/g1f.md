@@ -15,16 +15,16 @@ map: |
   #.#..B....#..C..#.#
   #.###.#.#.###.#.###
   #.....#.#.#...#...#
-  #.#.#.##....#.#.#.#
-  #.#.#....A..#.#.#.#
+  #.#...##......#.#.#
+  #.#..F...A...G..#.#
   #.#.#.##....#.#.###
-  #.#.#.....#.#.#...#
-  #.#.###...#.#.#.###
-  #.#...#..M..#.#S..#
-  #.#.###.#.#####.###
+  #.#.#.....#.#.#S..#
+  #.#...#...#...#.###
+  #.#..H...D...M....#
+  #.#.#.#.#.###.#.###
   #.#...#.....#.....#
   #.###########.###.#
-  #.........#X...1#2#
+  #.........#1...2#X#
   ###################
 symbols:
   1: room.verdant.g1f.nook1
@@ -35,6 +35,10 @@ symbols:
   A: room.verdant.g1f.02
   B: room.verdant.g1f.03
   C: room.verdant.g1f.04
+  D: room.verdant.g1f.05
+  F: room.verdant.g1f.06
+  G: room.verdant.g1f.07
+  H: room.verdant.g1f.08
   s: room.verdant.g1f.gate
   S: room.verdant.g1f.lift
 corridor:
@@ -57,13 +61,13 @@ edges:
 rooms:
   - id: room.verdant.g1f.001
     name: Sunken Threshold
-    description: A vine-wrapped ladder leads back to the surface.
+    description: The way in from the surface — a mossy stair climbs back toward daylight.
     stairsToTown: true
     returnStyle: stairs
     locales:
       ja:
         name: 沈んだ入口
-        description: 蔦の絡んだ梯子が、地上へ向かって伸びている。
+        description: 地上への入口。苔むした階段が陽の光へと登っていく。
   - id: room.verdant.g1f.02
     name: Green Chamber 1
     description: A chamber where the canopy-light pools green on standing water.
@@ -91,31 +95,63 @@ rooms:
       ja:
         name: 翠の間 3
         description: 樹冠の光が水面に翠色を落とす間。
+  - id: room.verdant.g1f.05
+    name: Green Chamber 4
+    description: A chamber where the canopy-light pools green on standing water.
+    encounterTable: encounters.verdant.g1.pack
+    treasureTable: treasure.verdant.g1.side
+    locales:
+      ja:
+        name: 翠の間 4
+        description: 樹冠の光が水面に翠色を落とす間。
+  - id: room.verdant.g1f.06
+    name: Green Chamber 5
+    description: A chamber where the canopy-light pools green on standing water.
+    encounterTable: encounters.verdant.g1.pack
+    treasureTable: treasure.verdant.g1.side
+    locales:
+      ja:
+        name: 翠の間 5
+        description: 樹冠の光が水面に翠色を落とす間。
+  - id: room.verdant.g1f.07
+    name: Green Chamber 6
+    description: A chamber where the canopy-light pools green on standing water.
+    encounterTable: encounters.verdant.g1.pack
+    treasureTable: treasure.verdant.g1.side
+    locales:
+      ja:
+        name: 翠の間 6
+        description: 樹冠の光が水面に翠色を落とす間。
+  - id: room.verdant.g1f.08
+    name: Green Chamber 7
+    description: A chamber where the canopy-light pools green on standing water.
+    encounterTable: encounters.verdant.g1.pack
+    treasureTable: treasure.verdant.g1.side
+    locales:
+      ja:
+        name: 翠の間 7
+        description: 樹冠の光が水面に翠色を落とす間。
   - id: room.verdant.g1f.keep
     name: Deep Grove
     description: A quiet grove deep in the gallery.
-    encounter:
-      id: enemy.verdant.g1.moss-mite
-      name: Moss Mite
-      hp: 5
-      attack: 4
-      role: attrition
-      dangerTier: 1
-      tags:
-        - grove
     encounterTable: encounters.verdant.g1.pack
-    treasureTable: treasure.verdant.g1.keep
+    chest:
+      treasureTable: treasure.verdant.g1.keep
+      trap:
+        kind: snare
+        difficulty: 14
+        damage: 5
     locales:
       ja:
         name: 奥の木立
         description: 回廊の奥の静かな木立。
   - id: room.verdant.g1f.exit
     name: Root Descent
-    description: A vine-wrapped ladder drops through a gap in the roots.
+    description: Roots twist down toward the next depth; a chain of vine falls away below.
     locales:
       ja:
         name: 根の下り
-        description: 根の隙間から、蔦を巻いた梯子が下の階へ降りている。
+        description: 根が次の深みへとねじれ落ちる。蔦の鎖が下へ垂れている。
   - id: room.verdant.g1f.gate
     name: Sealed Bar
     description: A heavy vine-bar can be lifted to open a shorter way down.

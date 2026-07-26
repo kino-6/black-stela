@@ -63,11 +63,11 @@ edges:
 rooms:
   - id: room.verdant.g6f.001
     name: Root Landing
-    description: A vine-wrapped ladder climbs from the knotted-root landing.
+    description: A landing of knotted roots; a stair climbs back toward the floor above.
     locales:
       ja:
         name: 根の踊り場
-        description: 根の絡む踊り場。蔦を巻いた梯子が上の階へ伸びている。
+        description: 根の絡む踊り場。階段が上の階へと登っていく。
   - id: room.verdant.g6f.02
     name: Green Chamber 1
     description: A chamber where the canopy-light pools green on standing water.
@@ -98,28 +98,24 @@ rooms:
   - id: room.verdant.g6f.keep
     name: Strangler Warden
     description: A close, root-walled keep; the only way deeper passes through it.
-    encounter:
-      id: enemy.verdant.g6.strangler-warden
-      name: Strangler Warden
-      hp: 24
-      attack: 15
-      role: miniboss
-      dangerTier: 4
-      tags:
-        - grove-warden
     encounterTable: encounters.verdant.g6.keep
-    treasureTable: treasure.verdant.g6.keep
+    chest:
+      treasureTable: treasure.verdant.g6.keep
+      trap:
+        kind: snare
+        difficulty: 19
+        damage: 10
     locales:
       ja:
-        name: 蔦の番所
+        name: 絞め殺しの番人
         description: 根の壁に囲まれた狭い番所。奥へはここを抜けるほかない。
   - id: room.verdant.g6f.exit
     name: Root Descent
-    description: A vine-wrapped ladder drops through a gap in the roots.
+    description: Roots twist down toward the next depth; a chain of vine falls away below.
     locales:
       ja:
         name: 根の下り
-        description: 根の隙間から、蔦を巻いた梯子が下の階へ降りている。
+        description: 根が次の深みへとねじれ落ちる。蔦の鎖が下へ垂れている。
   - id: room.verdant.g6f.gate
     name: Sealed Bar
     description: A heavy vine-bar can be lifted to open a shorter way down.

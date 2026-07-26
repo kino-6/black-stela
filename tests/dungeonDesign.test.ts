@@ -60,10 +60,23 @@ describe("dungeon design gate", () => {
         const downStair = downStairRoom(world, floor.id);
         const isMaze = !MAZE_EXEMPT.has(floor.id) && !(floor.tags ?? []).includes("boss");
 
+        // Wiz-style 玄室: a room whose entry is a guaranteed fight AND that holds treasure. The early Verdant
+        // floors owe a dense set of these (playtest); the gate stops them regressing below the agreed floor.
+        const chamberFloor = /dungeon\.verdant\.g[123]f/.test(floor.id) ? 6 : 0;
+
         describe(floor.id, () => {
           it("rule 1 — dense, meaningful space (not a thin corridor)", () => {
             expect(graph.cellCount).toBeGreaterThanOrEqual(80);
           });
+
+          if (chamberFloor > 0) {
+            it(`玄室 — a guaranteed-fight + treasure room count of ≥ ${chamberFloor}`, () => {
+              const genshitsu = floor.rooms.filter(
+                (r) => (r.encounter || r.encounterTable) && (r.treasureTable || (r as { chest?: unknown }).chest)
+              ).length;
+              expect(genshitsu, `${floor.id} needs ≥ ${chamberFloor} 玄室`).toBeGreaterThanOrEqual(chamberFloor);
+            });
+          }
 
           it("rule 2 — non-linear: weaves back on itself (loops)", () => {
             expect(graph.loopCount).toBeGreaterThanOrEqual(4);
