@@ -23,9 +23,11 @@ Only hidden doors / secret passages allowed; no warp shortcuts.
 - [ ] Replace `kind: shortcut` (warp) with a physical `secret`-gated passage on every Verdant floor.
 - [ ] Update the design gate rule 4 to require a hidden-door shortcut, not a warp edge.
 
-## D. Chest loot display
-Opening a chest only says "宝箱は開いた。" — it must report WHAT was obtained (items/gold).
-- [ ] Chest-open result lists the loot; parity with React ChestPanel.
+## D. Chest loot display  — DONE
+Opening a chest only said "宝箱は開いた。" — the loot event was emitted but Godot's _event_line never
+formatted it, so it was silent (React logs it via events.inventoryItemGained).
+- [x] Godot _event_line now logs `inventory_item_gained` (item name + quantity, affix/plus), so opening a
+      chest shows "◯◯ を N 個見つけた。" in the message band. No state change → parity safe.
 
 ## E. Workshop (錬成所) discoverability
 分解 → 素材 → 強化 flow is opaque ("素材とは？").

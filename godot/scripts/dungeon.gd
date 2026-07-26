@@ -18,6 +18,7 @@ const DungeonInput := preload("res://scripts/dungeon/dungeon_input.gd")
 const PartyPanel := preload("res://scripts/town/party_panel.gd")
 const CharacterStats := preload("res://scripts/rules/character_stats.gd")
 const Chests := preload("res://scripts/rules/chests.gd")
+const Fmt := preload("res://scripts/town_format.gd")
 const FloorMap := preload("res://scripts/dungeon/floor_map.gd")
 const DungeonEntry := preload("res://scripts/rules/dungeon_entry.gd")
 
@@ -902,6 +903,17 @@ func _event_line(e: Dictionary) -> String:
 			return "あたりを探ったが、何も見つからない。"
 		"secret_found":
 			return "隠された継ぎ目を見つけた！"
+		"inventory_item_gained":
+			# The loot from a chest / reward — logged so the player SEES what they got (playtest: opening a
+			# chest said only "宝箱は開いた。"). Mirrors React's events.inventoryItemGained line.
+			var item_name := Fmt.localized_catalog_name(_world, String(e.get("itemId", "")))
+			if item_name == "" or item_name == String(e.get("itemId", "")):
+				item_name = String(e.get("itemName", ""))
+			if e.get("affix", null) != null:
+				item_name = "%s %s" % [I18n.t("affix.%s" % String(e.get("affix", ""))), item_name]
+			if e.get("plus", null) != null:
+				item_name = "%s +%d" % [item_name, int(e.get("plus", 0))]
+			return I18n.t("events.inventoryItemGained", {"item": item_name, "quantity": int(e.get("quantity", 1))})
 	return ""
 
 func _room_name_for(rid: String) -> String:
