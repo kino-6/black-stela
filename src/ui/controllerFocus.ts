@@ -86,11 +86,33 @@ function getAllControllerFocusableElements() {
   );
 }
 
-export function focusFirstControllerChoice() {
+// A stable identity for a focused control that survives a React re-render (which swaps the DOM node):
+// prefer the test id, then the accessible name, then the trimmed text. Used to RESTORE the cursor onto
+// the same logical control after a re-render, instead of snapping to the screen's default.
+export function controllerFocusKey(element: EventTarget | null): string | null {
+  if (!(element instanceof HTMLElement)) {
+    return null;
+  }
+  return element.dataset.testid || element.getAttribute("aria-label") || element.textContent?.trim() || null;
+}
+
+export function focusFirstControllerChoice(preferKey: string | null = null) {
   const active = document.activeElement;
   const focusable = getAllControllerFocusableElements();
   if (active instanceof HTMLElement && focusable.includes(active) && isControllerInteractiveTarget(active)) {
     return true;
+  }
+
+  // A re-render detaches the focused button (new node, same control). Restore the cursor onto its
+  // replacement by stable identity BEFORE falling back to the default — otherwise the cursor snaps to the
+  // screen's first control (in town, 迷宮に入る), and the very next Confirm descends by accident. On a real
+  // transition the old control is gone, no key matches, and we fall through to the intended default.
+  if (preferKey) {
+    const restored = focusable.find((element) => controllerFocusKey(element) === preferKey);
+    if (restored) {
+      restored.focus();
+      return true;
+    }
   }
 
   // Start the cursor on what the screen is ASKING for, not on the way out of it. Chrome (the

@@ -3700,11 +3700,9 @@
       "requiredKeys": [
         "party.chooseClass",
         "party.aptitude",
-        "party.creationSteps",
-        "party.next",
-        "party.back"
+        "party.creationSteps"
       ],
-      "notes": "Bounded class list beside a STABLE detail pane. Starting gear is named from the catalog — a raw id ('militia-sabre') in normal play is a gate failure."
+      "notes": "Bounded class list beside a STABLE detail pane. Confirming a calling advances — no 次へ/戻る on this step (playtest). Starting gear is named from the catalog — a raw id ('militia-sabre') in normal play is a gate failure."
     },
     {
       "id": "guild-face",

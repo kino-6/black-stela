@@ -56,6 +56,7 @@ import { SPELLS, isCasterClass, knownSpells, spellTargeting, type SpellId } from
 import { TECHNIQUES } from "./domain/techniques";
 import {
   activateControllerCancel,
+  controllerFocusKey,
   focusFirstControllerChoice,
   moveControllerFocus,
   moveControllerFocusDirection,
@@ -1400,8 +1401,12 @@ export function App() {
       return;
     }
 
+    // Remember which control the cursor is on, so a re-render that detaches it can RESTORE it by identity
+    // rather than snapping to the screen default (in town that is 迷宮に入る — an accidental descend one
+    // Confirm away). Captured before the frame because the re-render happens in between.
+    const preferKey = controllerFocusKey(document.activeElement);
     const frame = window.requestAnimationFrame(() => {
-      focusFirstControllerChoice();
+      focusFirstControllerChoice(preferKey);
     });
 
     return () => window.cancelAnimationFrame(frame);
@@ -1840,8 +1845,12 @@ export function App() {
                                       className={isSelected ? "guild-class-option selected" : "guild-class-option"}
                                       data-testid={`guild-class-${classDef.id}`}
                                       // Cursor = preview: focusing a calling reads it into the detail pane.
+                                      // CONFIRMING a calling picks it AND advances — the class step has no 次へ (playtest).
                                       onFocus={() => setDraft((current) => (current.classId === classDef.id ? current : { ...current, classId: classDef.id }))}
-                                      onClick={() => setDraft((current) => ({ ...current, classId: classDef.id }))}
+                                      onClick={() => {
+                                        setDraft((current) => ({ ...current, classId: classDef.id }));
+                                        setGuildCreationStep("face");
+                                      }}
                                     >
                                       <strong>{classDef.label[locale]}</strong>
                                       <span className="guild-class-option-row">{formatCombatRow(classDef.rowPreference, t)}</span>
@@ -1875,10 +1884,17 @@ export function App() {
                               </dl>
                             </div>
                           </div>
-                          <div className="flow-actions">
-                            <button type="button" data-controller-cancel="true" onClick={() => setGuildCreationStep("briefing")}>{t("party.back")}</button>
-                            <button type="button" className="primary-action" data-guild-advance="true" onClick={() => setGuildCreationStep("face")}>{t("party.next")}</button>
-                          </div>
+                          {/* No visible 次へ/戻る: confirming a calling in the list advances (playtest). Back is
+                              the stepper above, or Esc — kept working by a hidden cancel target so a controller is
+                              never stuck, without adding a button to the screen or the focus ring. */}
+                          <button
+                            type="button"
+                            data-controller-cancel="true"
+                            tabIndex={-1}
+                            aria-hidden="true"
+                            style={{ position: "absolute", width: 1, height: 1, padding: 0, margin: -1, overflow: "hidden", clip: "rect(0 0 0 0)", border: 0 }}
+                            onClick={() => setGuildCreationStep("briefing")}
+                          />
                         </section>
                       )}
 

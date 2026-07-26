@@ -10,7 +10,7 @@ test("Verdant portraits read in character creation and the six-person dungeon HU
   await page.getByRole("button", { name: "新たな探索" }).click();
   await page.getByTestId("scenario-card-verdant").click();
   await page.getByRole("button", { name: "登録を始める" }).click();
-  await page.getByTestId("guild-step-class").getByRole("button", { name: "次へ" }).click();
+  await page.getByTestId("guild-class-warrior").click();
 
   const preview = page.getByTestId("portrait-preview");
   await expect(preview).toBeVisible();

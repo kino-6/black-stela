@@ -36,7 +36,7 @@ test("guild registration supports quick and detailed recruits without roster sco
   await expect(classDetail).toContainText("Equipment");
   await expect(page.getByText("Front line")).toHaveCount(0);
   await expect(page.getByText("Retreat guard")).toHaveCount(0);
-  await page.getByTestId("guild-step-class").getByRole("button", { name: "Next" }).click();
+  await page.getByTestId("guild-class-thief").click(); // confirming the calling advances
   // FACE step — chosen first, decoupled from origin; the note says it can be changed or imported later.
   await expect(page.getByTestId("guild-step-face")).toContainText("change it later");
   await expect(page.getByTestId("portrait-preview")).toBeVisible();
@@ -161,7 +161,7 @@ test("Japanese guild registration remains usable on mobile", async ({ page }) =>
   await expect(page.getByTestId("guild-step-class").locator(".guild-class-option")).toHaveCount(8);
   await page.getByTestId("guild-class-thief").focus();
   await expect(page.getByTestId("guild-class-detail")).toContainText("蝶番、埃、床の傷を読み");
-  await page.getByTestId("guild-step-class").getByRole("button", { name: "次へ" }).click();
+  await page.getByTestId("guild-class-thief").click(); // confirming the calling advances
   // 顔 step first.
   await expect(page.getByTestId("portrait-preview")).toBeVisible();
   await expect(page.getByLabel("色")).toHaveCount(0);

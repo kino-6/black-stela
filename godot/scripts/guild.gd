@@ -286,12 +286,13 @@ func _class_step() -> Control:
 	body.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	col.add_child(body)
 
-	# The bounded list. Focus IS the cursor: moving onto a calling reads it into the pane beside it, so
-	# the player compares by moving rather than by committing.
+	# The bounded list. Focus IS the cursor: moving onto a calling reads it into the pane beside it, so the
+	# player compares by MOVING (the detail follows), and CONFIRMING a calling is what advances — there is no
+	# separate 次へ on this step (playtest). Back is the stepper above and Cancel.
 	var list := UI.col(2)
 	for class_def in _data.get("classes", []):
 		var id := String(class_def.get("id", ""))
-		var b := UI.button("%s   %s" % [_class_label(id), _row_label(String(class_def.get("rowPreference", "front")))], func(): _select_class(id), Vector2(280, 34), 16)
+		var b := UI.button("%s   %s" % [_class_label(id), _row_label(String(class_def.get("rowPreference", "front")))], func(): _confirm_class(id), Vector2(280, 34), 16)
 		b.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		b.focus_entered.connect(func(): _select_class(id))
 		if id == String(_draft.get("classId", "")):
@@ -334,7 +335,7 @@ func _class_step() -> Control:
 	detail_pane.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	body.add_child(UI.grow(UI.card(detail_pane)))
 
-	col.add_child(_flow_actions("briefing", "face"))
+	# No 次へ/戻る here: confirming a calling in the list IS the advance (playtest). Back is the stepper + Cancel.
 	return UI.card(col)
 
 
@@ -675,6 +676,11 @@ func _select_class(id: String) -> void:
 		return
 	_draft["classId"] = id
 	_rebuild()
+
+## Confirming a calling in the list picks it AND advances to 顔 — the class step has no separate 次へ (playtest).
+func _confirm_class(id: String) -> void:
+	_draft["classId"] = id
+	_goto("face")
 
 func _select_background(id: String) -> void:
 	_draft["backgroundId"] = id

@@ -11,7 +11,7 @@ test("character creation previews one image in every gameplay context", async ({
   await page.setViewportSize(CONTROLLER_VIEWPORT);
   await startNewExpedition(page);
   await page.getByRole("button", { name: "Begin registration" }).click();
-  await page.getByTestId("guild-step-class").getByRole("button", { name: "Next" }).click();
+  await page.getByTestId("guild-class-warrior").click();
 
   await expect(page.getByTestId("visual-preview-token")).toBeVisible();
   await expect(page.getByTestId("portrait-preview")).toBeVisible();

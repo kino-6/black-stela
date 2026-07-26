@@ -13,7 +13,7 @@ test("captures desktop screenshot review states", async ({ page }) => {
   await page.screenshot({ path: "test-results/screenshot-review/desktop-guild-empty.png", fullPage: true });
   await page.getByRole("button", { name: "Begin registration" }).click();
   await page.screenshot({ path: "test-results/screenshot-review/desktop-guild-class.png", fullPage: true });
-  await page.getByTestId("guild-step-class").getByRole("button", { name: "Next" }).click();
+  await page.getByTestId("guild-class-warrior").click();
   await page.getByTestId("guild-step-face").getByRole("button", { name: "Next" }).click();
   await page.getByTestId("guild-step-background").getByRole("button", { name: "Next" }).click();
   await page.getByTestId("guild-step-trait").getByRole("button", { name: "Next" }).click();

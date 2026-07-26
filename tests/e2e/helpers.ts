@@ -115,15 +115,26 @@ export async function focusControllerButton(page: Page, name: string | RegExp, o
   const direction = options.direction === "previous" ? "ArrowLeft" : "ArrowRight";
   const limit = options.limit ?? 24;
 
+  const matches = (label: string) => (typeof name === "string" ? label.includes(name) : name.test(label));
   for (let attempt = 0; attempt < limit; attempt += 1) {
-    const label = await getActiveElementLabel(page);
-    if (typeof name === "string" ? label.includes(name) : name.test(label)) {
-      return;
+    if (matches(await getActiveElementLabel(page))) {
+      // The app rescues a dropped cursor on a rAF after re-renders; let that settle and confirm the cursor
+      // is STILL on the target before returning, so a caller's Enter can't land on a control the snapback
+      // moved onto (in town that default is 迷宮に入る — an accidental descend). If it moved, keep navigating.
+      await settleFrames(page);
+      if (matches(await getActiveElementLabel(page))) {
+        return;
+      }
+      continue;
     }
     await page.keyboard.press(direction);
   }
 
   throw new Error(`Controller focus did not reach ${String(name)}. Last focus: ${await getActiveElementLabel(page)}`);
+}
+
+async function settleFrames(page: Page) {
+  await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
 }
 
 async function getActiveElementLabel(page: Page) {
@@ -166,7 +177,8 @@ export async function registerAdventurer(
       };
 
   await page.getByRole("button", { name: labels.skip }).click();
-  await page.getByTestId("guild-step-class").getByRole("button", { name: labels.next }).click();
+  // The class step advances on SELECTION now (no 次へ) — click a calling to confirm and move on.
+  await page.getByTestId("guild-class-warrior").click();
   if (options.portrait) {
     await page.getByTestId("portrait-input").setInputFiles(options.portrait);
   }

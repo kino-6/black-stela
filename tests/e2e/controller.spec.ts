@@ -9,7 +9,8 @@ test("normal play surfaces support directional focus, confirm, and cancel", asyn
   await page.keyboard.press("Enter");
   await expect(page.getByTestId("guild-step-class")).toBeVisible();
 
-  await focusControllerButton(page, "Next");
+  // The class step advances on SELECTION (no 次へ): move the cursor onto a calling and confirm it.
+  await focusControllerButton(page, "Warrior");
   await page.keyboard.press("Enter");
   await expect(page.getByTestId("guild-step-face")).toBeVisible();
 
