@@ -216,17 +216,16 @@ func _build_square() -> void:
 	_menu_host.add_child(head)
 
 	# --- THE STATUS LEDGER: what came back, and what to do about it ---
-	var ledger := UI.col(4)
-	if first_departure:
-		_ledger_row(ledger, I18n.t("town.party"), I18n.t("town.noParty") if party_empty else I18n.t("town.partyReady", {"count": party.size()}))
-		_ledger_row(ledger, I18n.t("town.supplies"), _loot_summary(s, "town.noSupplies"))
-		_ledger_row(ledger, I18n.t("town.nextPreparation"), I18n.t("town.firstNeedParty") if party_empty else I18n.t("town.firstDescend"))
-	else:
+	# Before the first descent the "初めて潜る前に" heading already says it all; the 一党 / 手持ち / 次の支度
+	# rows just restated it and read as clutter (playtest). So the ledger is the RETURN ledger only — what came
+	# back and what to do about it, which is genuinely new each trip.
+	if not first_departure:
+		var ledger := UI.col(4)
 		_ledger_row(ledger, I18n.t("town.expeditionResult"), _latest_log_text(s))
 		_ledger_row(ledger, I18n.t("town.wounds"), _wounds_summary(party))
 		_ledger_row(ledger, I18n.t("town.loot"), _loot_summary(s, "town.noLoot", true))
 		_ledger_row(ledger, I18n.t("town.nextPreparation"), _next_preparation(s, party))
-	_menu_host.add_child(UI.card(ledger))
+		_menu_host.add_child(UI.card(ledger))
 
 	# The whole party's condition, always on the square — not only the wounded line in the ledger, and
 	# without opening a service (playtest #4). Compact so the destinations still fit.

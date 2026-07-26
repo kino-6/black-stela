@@ -112,23 +112,12 @@ export function TownEntryPanel({
         {/* The town-hub still (P7) IS the scene now — the old CSS stand-in props
             (skyline/gate/lanterns/stela/steps) would sit on top of a real town. */}
         <div className="town-scene" aria-hidden="true" />
-        {firstDeparture ? (
-          <dl className="town-status-ledger" data-testid="town-first-departure">
-            <div>
-              <dt>{t("town.party")}</dt>
-              <dd>{partyEmpty ? t("town.noParty") : t("town.partyReady", { count: partySize })}</dd>
-            </div>
-            <div>
-              <dt>{t("town.supplies")}</dt>
-              <dd>{carriedLootCount > 0 ? carriedLootSummary : t("town.noSupplies")}</dd>
-            </div>
-            <div>
-              <dt>{t("town.nextPreparation")}</dt>
-              <dd>{partyEmpty ? t("town.firstNeedParty") : t("town.firstDescend")}</dd>
-            </div>
-          </dl>
-        ) : (
-          <dl className="town-status-ledger">
+        {/* Before the first descent the "初めて潜る前に" heading already says everything a fresh party needs
+            (form up at the guild, then go). The 一党 / 手持ち / 次の支度 rows restated it and read as clutter
+            (playtest: "この情報いらない"), so the first-departure state shows just the heading. The RETURN
+            ledger — what came back and what to do about it — stays, because that is genuinely new each time. */}
+        {!firstDeparture && (
+          <dl className="town-status-ledger" data-testid="town-return-ledger">
             <div>
               <dt>{t("town.expeditionResult")}</dt>
               <dd>{latestLogText || t("town.readyToDescend")}</dd>

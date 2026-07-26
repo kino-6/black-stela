@@ -19,8 +19,11 @@ test.describe("first departure", () => {
     await createStarterParty(page);
     await page.keyboard.press("Escape"); // leave the guild
 
-    await expect(page.getByTestId("town-first-departure")).toBeVisible();
     const town = page.getByTestId("town-cockpit");
+    // The first-departure state is the HEADING now (the 一党/手持ち/次の支度 ledger rows were dropped as
+    // clutter — playtest); the RETURN ledger must not be there before there is anything to return from.
+    await expect(town).toContainText("Before the first descent");
+    await expect(page.getByTestId("town-return-ledger")).toHaveCount(0);
 
     // None of the return furniture may appear before there is anything to return from.
     await expect(town).not.toContainText("Town return");
@@ -28,9 +31,6 @@ test.describe("first departure", () => {
     await expect(town).not.toContainText("descend again");
     // …and above all, the last recruit joining is not an expedition result.
     await expect(town).not.toContainText("joined the roster");
-
-    await expect(town).toContainText("Before the first descent");
-    await expect(town).toContainText("6 registered");
   });
 
   test("the return state comes back once the party has actually returned", async ({ page }) => {
@@ -48,8 +48,9 @@ test.describe("first departure", () => {
     const town = page.getByTestId("town-cockpit");
     await expect(town).toContainText("Town return");
     await expect(town).toContainText("Return record");
-    // The first-departure ledger is gone for good — this party HAS been below.
-    await expect(page.getByTestId("town-first-departure")).toHaveCount(0);
+    // This party HAS been below — the return ledger is present, the first-departure heading gone.
+    await expect(page.getByTestId("town-return-ledger")).toBeVisible();
+    await expect(town).not.toContainText("Before the first descent");
   });
 
   test("Japanese normal play does not tell a fresh party it can descend 'again'", async ({ page }) => {
