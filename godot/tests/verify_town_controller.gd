@@ -9,8 +9,22 @@ extends SceneTree
 ## Usage: godot --headless --path godot/ --script res://tests/verify_town_controller.gd
 
 const LOCATIONS := {"hall": ["guild", "party", "career"], "market": ["shop", "loot", "workshop"], "archive": ["records", "quests"]}
+const DungeonEntry := preload("res://scripts/rules/dungeon_entry.gd")
 
 var _failures := 0
+
+## Every string the built screen is currently rendering — the gate reads what a PLAYER sees.
+func _all_text(node: Node) -> String:
+	var out := ""
+	if node is Label:
+		out += (node as Label).text + "\n"
+	elif node is Button:
+		out += (node as Button).text + "\n"
+	elif node is RichTextLabel:
+		out += (node as RichTextLabel).get_parsed_text() + "\n"
+	for child in node.get_children():
+		out += _all_text(child)
+	return out
 
 func _initialize() -> void:
 	var town := (load("res://scenes/town.tscn") as PackedScene).instantiate()
@@ -80,6 +94,38 @@ func _initialize() -> void:
 		_fail("loot: Cancel from the confirm stage ejected the player out of the service")
 	else:
 		print("[town-controller] loot confirm: Cancel returned to the counter, not out of it")
+
+	# REGRESSION (playtest #4): a BRAND-NEW game has never descended — town must read as a FIRST departure
+	# (初めて潜る前に / 手持ち), never a post-return state (帰還後の支度 / 持ち帰った物). The shared state seeds
+	# from a debug mid-dungeon fixture; start_guild() must zero the expedition history, or the first town
+	# screen reports a starting potion as brought-back loot and the first descent resumes mid-floor.
+	var run := get_root().get_node_or_null("Run")
+	if run != null:
+		run.start_guild()
+		# Give the fresh guild a recruit so the screen isn't the empty-roster edge — first_departure is a
+		# function of expeditions, not of party size.
+		run.state["party"] = [{"id": "new", "name": "新兵", "classId": "warrior", "row": "front", "hp": 10, "maxHp": 10}]
+		if int(run.state.get("expeditions", -1)) != 0:
+			_fail("new game: expeditions was not zeroed (%d) — town will show the 帰還後 view" % int(run.state.get("expeditions", -1)))
+		if run.state.get("position") != null:
+			_fail("new game: position survived start_guild — the first descent would resume mid-floor")
+		# The first descent must land at the world's ENTRANCE, not the fixture's mid-floor fight cell.
+		var landing: Dictionary = DungeonEntry.plan(run.state, run.world)
+		var landing_cell := String((landing.get("position", {}) as Dictionary).get("cellId", ""))
+		if landing_cell == "cell.b1f.002" or landing_cell == "":
+			_fail("new game: the first descent did not land at the entrance (landed at '%s')" % landing_cell)
+		var fresh_town := (load("res://scenes/town.tscn") as PackedScene).instantiate()
+		get_root().add_child(fresh_town)
+		for i in 8:
+			await process_frame
+		var shown := _all_text(fresh_town)
+		if not shown.contains("初めて潜る前に"):
+			_fail("new game: town does not show the first-departure heading")
+		if shown.contains("帰還後の支度") or shown.contains("持ち帰った物"):
+			_fail("new game: town shows the post-return view (帰還後の支度 / 持ち帰った物) before the first descent")
+		else:
+			print("[town-controller] new game reads as the first departure (no 帰還後 / 持ち帰った物)")
+		fresh_town.queue_free()
 
 	print("")
 	if _failures == 0:

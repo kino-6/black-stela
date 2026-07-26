@@ -36,12 +36,32 @@ func mint_id() -> String:
 	_id_counter += 1
 	return "char.%d" % _id_counter
 
-# Start a fresh guild: keep the run's structure (world/map) but clear the party so it is built by hand.
+# Start a fresh guild for a BRAND-NEW game (the only caller is the scenario picker). Keep the world/engine
+# structure, but return the run to a true "nobody has descended yet" state. The shared state is seeded from
+# a DEBUG mid-dungeon fixture (expeditions=1, a dungeon position, an explored automap, a debug log, and
+# cleared-enemy/secret progress). Left in place, town reads it as a post-return state and shows 帰還後の支度
+# / 持ち帰った物 before the first step down, and the first descent would resume mid-floor onto already-beaten
+# enemies (playtest). Zero the expedition history so the first departure really is the first departure.
 func start_guild() -> void:
 	ensure_loaded()
 	state["party"] = []
 	state["reserve"] = []
 	state["phase"] = "town"
+	state["expeditions"] = 0
+	state["log"] = []
+	state["combat"] = null
+	state["position"] = null            # nulled so the first descent seeds a FRESH landing at the entrance
+	state["map"] = {}                   # drop the debug fixture's explored automap
+	state["turn"] = 0
+	state["stepsSinceEncounter"] = 0
+	state["defeatedEnemies"] = []
+	state["discoveredSecrets"] = []
+	state["claimedTreasures"] = []
+	state["floorClearedEnemies"] = []
+	state["floorClaimedTreasures"] = []
+	state["resolvedTraps"] = []
+	state["retired"] = []
+	loot_baseline = {}
 
 func ensure_loaded() -> void:
 	if _loaded:
