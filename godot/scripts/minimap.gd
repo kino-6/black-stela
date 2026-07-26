@@ -12,6 +12,14 @@ const PARTY_COL := Color("e6e2d4")
 const STAIR_COL := Color("7fb0d8")
 const BG_COL := Color("0c0e08ee")
 const BORDER_COL := Color("3a4326")
+const FloorMap := preload("res://scripts/dungeon/floor_map.gd")
+# Same marker vocabulary the FULL map uses, drawn here as small dots so the minimap reflects the map chips
+# (playtest: only the town-return stair showed). Colours read at a glance; the full map spells them out.
+const MARKER_COL := {
+	"return_stair": Color("7fb0d8"), "stairs": Color("e8c15a"), "treasure": Color("f0d060"),
+	"gather": Color("8fd06a"), "event": Color("d6a0e6"), "trap": Color("d07a6a"),
+	"spinner": Color("6ab0d0"), "teleporter": Color("9a6ad0"), "blade": Color("d06a6a"),
+}
 
 var _world: Dictionary = {}
 var _state: Dictionary = {}
@@ -56,9 +64,9 @@ func _draw() -> void:
 		var top_left := origin + Vector2(dx, dy) * CELL
 		draw_rect(Rect2(top_left, Vector2(CELL, CELL) - Vector2(2, 2)), FLOOR_COL, true)
 		_draw_walls(cell, top_left)
-		var room: Variant = _room(cell.get("roomId", ""))
-		if typeof(room) == TYPE_DICTIONARY and room.get("stairsToTown", false):
-			draw_rect(Rect2(top_left + Vector2(6, 6), Vector2(CELL, CELL) - Vector2(14, 14)), STAIR_COL, true)
+		var marker := String(FloorMap._marker(cell, _world, _state))
+		if marker != "":
+			draw_circle(top_left + (Vector2(CELL, CELL) - Vector2(2, 2)) / 2.0, 3.5, MARKER_COL.get(marker, PARTY_COL))
 
 	# party marker + facing arrow at centre
 	var centre := origin + Vector2(CELL, CELL) / 2.0

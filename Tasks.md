@@ -33,9 +33,11 @@ formatted it, so it was silent (React logs it via events.inventoryItemGained).
 分解 → 素材 → 強化 flow is opaque ("素材とは？").
 - [ ] Make the path clear: where 素材 come from (聖遺物で分解) and how to use them.
 
-## F. Chamber landmark clarity + minimap markers
-- [ ] The 玄室 landmark (pillars + floor disk) reads as an unexplained "green object" — make it legible.
-- [ ] Minimap shows no cell markers (chips: stairs/treasure/etc.) the full map has — add them.
+## F. Chamber landmark clarity + minimap markers  — minimap DONE; landmark pending
+- [x] Minimap now draws the same chips the full map shows (stairs/treasure/gather/event/trap/… as
+      colour dots via the shared FloorMap._marker), not just the town-return stair.
+- [ ] The 玄室 landmark (pillars + floor disk) reads as an unexplained "green object" — visual tuning
+      (Codex art-lane): tone the floor disk / make the hall read as a room, not a prop.
 
 ## G. Maze debt — Verdant G2F honest sweep
 - [ ] Raise G2F sweep from 286 to ≥ 300 (currently exempt in MAZE_EXEMPT); then drop the exemption.
