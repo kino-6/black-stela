@@ -7,7 +7,7 @@ test("switches to Japanese from title config and persists the selected language"
   await page.getByTestId("scenario-card-default").click({ timeout: 5000 }).catch(() => {});
 
   await expect(page.getByRole("heading", { name: "冒険者登録" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "説明を聞かない" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "登録を始める" })).toBeVisible();
 
   await page.reload();
   await expect(page.getByRole("button", { name: "新たな探索" })).toBeVisible();
@@ -41,7 +41,7 @@ test("keeps Japanese layout usable on mobile", async ({ page }) => {
   await page.getByRole("button", { name: "新たな探索" }).click();
   await page.getByTestId("scenario-card-default").click({ timeout: 5000 }).catch(() => {});
 
-  await expect(page.getByRole("button", { name: "説明を聞かない" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "登録を始める" })).toBeVisible();
   await registerAdventurer(page, { locale: "ja", name: "ミラ" });
   await page.getByRole("button", { name: "迷宮に入る" }).click();
 

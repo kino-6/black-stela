@@ -143,7 +143,7 @@ import {
 } from "./ui/characterDraft";
 import { cssArtVariables, portraitUrl, setActiveArtPack } from "./ui/artAssets";
 
-type GuildCreationStep = "briefing" | "class" | "appearance" | "bonus" | "name";
+type GuildCreationStep = "briefing" | "class" | "face" | "background" | "trait" | "bonus" | "name";
 type GuildOfferState = "ask" | "suggestion" | "dismissed";
 type TownMode = "guild" | "shop" | "recovery" | "records" | "quests" | "career" | "loot" | "workshop" | "entry";
 type AppScreen = "title" | "config" | "scenario" | "game";
@@ -152,7 +152,7 @@ const AUTO_SAVE_SLOT = "autosave";
 // The active art pack for this world, resolved once. Passed explicitly to every
 // resolver call (portraits, icons, CSS vars, dungeon scene) so rendering never
 // depends on the resolver's module-level active-pack timing.
-const guildStepOrder: GuildCreationStep[] = ["briefing", "class", "appearance", "bonus", "name"];
+const guildStepOrder: GuildCreationStep[] = ["briefing", "class", "face", "background", "trait", "bonus", "name"];
 
 export function App() {
   const [debugMode] = useState(() => isDebugModeEnabled());
@@ -1812,11 +1812,10 @@ export function App() {
                           <h4>{t("party.guildMaster")}</h4>
                           <p>{t("party.guildBriefing")}</p>
                           <div className="flow-actions">
+                            {/* One command only: 説明を聞かない led to the exact same step("class") as
+                                登録を始める — a choice that chose nothing (playtest), so it is gone. */}
                             <button type="button" className="primary-action" onClick={() => setGuildCreationStep("class")}>
                               {t("party.startRegistration")}
-                            </button>
-                            <button type="button" onClick={() => setGuildCreationStep("class")}>
-                              {t("party.skipBriefing")}
                             </button>
                           </div>
                         </section>
@@ -1878,14 +1877,15 @@ export function App() {
                           </div>
                           <div className="flow-actions">
                             <button type="button" data-controller-cancel="true" onClick={() => setGuildCreationStep("briefing")}>{t("party.back")}</button>
-                            <button type="button" className="primary-action" data-guild-advance="true" onClick={() => setGuildCreationStep("appearance")}>{t("party.next")}</button>
+                            <button type="button" className="primary-action" data-guild-advance="true" onClick={() => setGuildCreationStep("face")}>{t("party.next")}</button>
                           </div>
                         </section>
                       )}
 
-                      {guildCreationStep === "appearance" && (
-                        <section className="guild-step-panel" data-controller-active="true" data-controller-surface="guild-appearance" data-testid="guild-step-appearance">
-                          <h4>{t("party.chooseAppearance")}</h4>
+                      {guildCreationStep === "face" && (
+                        <section className="guild-step-panel" data-controller-active="true" data-controller-surface="guild-face" data-testid="guild-step-face">
+                          <h4>{t("party.chooseFace")}</h4>
+                          <p className="origin-note">{t("party.faceProvidedNote")}</p>
                           <div className="creator-topline visual-authoring">
                             <CharacterVisualPreview
                               portraitRef={draft.portraitRef}
@@ -1917,6 +1917,16 @@ export function App() {
                               </label>
                             </div>
                           </div>
+                          <div className="flow-actions">
+                            <button type="button" data-controller-cancel="true" onClick={() => setGuildCreationStep("class")}>{t("party.back")}</button>
+                            <button type="button" className="primary-action" onClick={() => setGuildCreationStep("background")}>{t("party.next")}</button>
+                          </div>
+                        </section>
+                      )}
+
+                      {guildCreationStep === "background" && (
+                        <section className="guild-step-panel" data-controller-active="true" data-controller-surface="guild-background" data-testid="guild-step-background">
+                          <h4>{t("party.chooseBackground")}</h4>
                           <div className="creator-grid compact">
                             <label>
                               {t("party.background")}
@@ -1930,6 +1940,25 @@ export function App() {
                                 ))}
                               </select>
                             </label>
+                          </div>
+                          <div className="origin-support">
+                            <p className="origin-note">{findBackground(draft.backgroundId).notes[locale]}</p>
+                            <button type="button" onClick={rerollOrigin}>
+                              <Wand2 size={18} />
+                              {t("party.rerollOrigin")}
+                            </button>
+                          </div>
+                          <div className="flow-actions">
+                            <button type="button" data-controller-cancel="true" onClick={() => setGuildCreationStep("face")}>{t("party.back")}</button>
+                            <button type="button" className="primary-action" onClick={() => setGuildCreationStep("trait")}>{t("party.next")}</button>
+                          </div>
+                        </section>
+                      )}
+
+                      {guildCreationStep === "trait" && (
+                        <section className="guild-step-panel" data-controller-active="true" data-controller-surface="guild-trait" data-testid="guild-step-trait">
+                          <h4>{t("party.chooseTrait")}</h4>
+                          <div className="creator-grid compact">
                             <label>
                               {t("party.trait")}
                               <select
@@ -1943,15 +1972,8 @@ export function App() {
                               </select>
                             </label>
                           </div>
-                          <div className="origin-support">
-                            <p className="origin-note">{findBackground(draft.backgroundId).notes[locale]}</p>
-                            <button type="button" onClick={rerollOrigin}>
-                              <Wand2 size={18} />
-                              {t("party.rerollOrigin")}
-                            </button>
-                          </div>
                           <div className="flow-actions">
-                            <button type="button" data-controller-cancel="true" onClick={() => setGuildCreationStep("class")}>{t("party.back")}</button>
+                            <button type="button" data-controller-cancel="true" onClick={() => setGuildCreationStep("background")}>{t("party.back")}</button>
                             <button type="button" className="primary-action" onClick={() => setGuildCreationStep("bonus")}>{t("party.next")}</button>
                           </div>
                         </section>
@@ -2009,7 +2031,7 @@ export function App() {
                             HP {draftPreview.maxHp} / {t("party.damage")} {draftPreview.damageMin}-{draftPreview.damageMax} / {t("party.accuracy")} {draftPreview.accuracy} / {t("party.speed")} {draftPreview.speed}
                           </p>
                           <div className="flow-actions">
-                            <button type="button" data-controller-cancel="true" onClick={() => setGuildCreationStep("appearance")}>{t("party.back")}</button>
+                            <button type="button" data-controller-cancel="true" onClick={() => setGuildCreationStep("trait")}>{t("party.back")}</button>
                             <button type="button" className="primary-action" disabled={remainingBonusPoints > 0} onClick={enterNameStep}>{t("party.next")}</button>
                           </div>
                         </section>

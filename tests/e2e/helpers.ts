@@ -28,14 +28,14 @@ export async function createStarterParty(page: Page, locale: "en" | "ja" = "en")
     ? {
         guild: "ギルド",
         back: "町へ戻る",
-        skip: "説明を聞かない",
+        skip: "登録を始める",
         yes: "はい",
         proposal: "こいつはどうだ？"
       }
     : {
         guild: "Guild",
         back: "Back to town",
-        skip: "Skip explanation",
+        skip: "Begin registration",
         yes: "Yes",
         proposal: "How about this one?"
       };
@@ -147,7 +147,7 @@ export async function registerAdventurer(
   const locale = options.locale ?? "en";
   const labels = locale === "ja"
     ? {
-        skip: "説明を聞かない",
+        skip: "登録を始める",
         next: "次へ",
         plus: "筋力 +",
         name: "名前",
@@ -156,7 +156,7 @@ export async function registerAdventurer(
         register: "冒険者を登録"
       }
     : {
-        skip: "Skip explanation",
+        skip: "Begin registration",
         next: "Next",
         plus: "Might +",
         name: "Name",
@@ -170,7 +170,9 @@ export async function registerAdventurer(
   if (options.portrait) {
     await page.getByTestId("portrait-input").setInputFiles(options.portrait);
   }
-  await page.getByTestId("guild-step-appearance").getByRole("button", { name: labels.next }).click();
+  await page.getByTestId("guild-step-face").getByRole("button", { name: labels.next }).click();
+  await page.getByTestId("guild-step-background").getByRole("button", { name: labels.next }).click();
+  await page.getByTestId("guild-step-trait").getByRole("button", { name: labels.next }).click();
   const plusButton = page.getByLabel(labels.plus);
   for (let index = 0; index < 8; index += 1) {
     if (await plusButton.isDisabled()) {
@@ -484,8 +486,8 @@ export async function startExpeditionByController(page: Page, options: { scenari
 export async function createStarterPartyByController(page: Page, locale: "en" | "ja" = "en") {
   const labels =
     locale === "ja"
-      ? { skip: "説明を聞かない", yes: "はい", proposal: "こいつはどうだ？" }
-      : { skip: "Skip explanation", yes: "Yes", proposal: "How about this one?" };
+      ? { skip: "登録を始める", yes: "はい", proposal: "こいつはどうだ？" }
+      : { skip: "Begin registration", yes: "Yes", proposal: "How about this one?" };
 
   for (let index = 0; index < 6; index += 1) {
     await activateByController(page, labels.yes);

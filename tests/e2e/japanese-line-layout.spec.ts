@@ -39,7 +39,7 @@ test("Japanese message boxes wrap without orphan tails or stranded punctuation",
   // 1) Guild master briefing
   await page.getByRole("button", { name: "新たな探索" }).click();
   await page.getByTestId("scenario-card-default").click({ timeout: 5000 }).catch(() => {});
-  await check(page.getByText("ようこそ。登録するなら", { exact: false }), "ギルド説明", "guild-briefing");
+  await check(page.getByText("潜るなら、まずはギルドに名を連ねてもらう", { exact: false }), "ギルド説明", "guild-briefing");
 
   // 2) Quick-recruit prompt (guild master speech during recruiting)
   await page.getByRole("button", { name: "登録を始める" }).click().catch(() => undefined);
@@ -54,7 +54,7 @@ test("Japanese message boxes wrap without orphan tails or stranded punctuation",
   await page.getByTestId("scenario-card-default").click({ timeout: 5000 }).catch(() => {});
   await createStarterParty(page, "ja");
   await expect(page.getByText("6/6")).toBeVisible();
-  await check(page.getByText("六人の名は帳面に揃った", { exact: false }), "隊列準備完了コピー", "party-ready");
+  await check(page.getByText("六人が揃いました", { exact: false }), "隊列準備完了コピー", "party-ready");
 
   // 3) Dungeon room description + event window
   await page.getByRole("button", { name: "迷宮に入る" }).click();

@@ -3707,20 +3707,54 @@
       "notes": "Bounded class list beside a STABLE detail pane. Starting gear is named from the catalog — a raw id ('militia-sabre') in normal play is a gate failure."
     },
     {
-      "id": "guild-appearance",
+      "id": "guild-face",
       "milestone": "M2",
-      "reactPanel": "src/App.tsx (guildCreationStep=appearance)",
+      "reactPanel": "src/App.tsx (guildCreationStep=face)",
       "scene": "res://scenes/guild.tscn",
-      "evidence": "tests/_ux_guild-appearance.png",
+      "evidence": "tests/_ux_guild-face.png",
       "uiState": {
-        "step": "appearance"
+        "step": "face"
       },
       "requiredKeys": [
-        "party.chooseAppearance",
-        "party.background",
+        "party.chooseFace",
+        "party.faceProvidedNote",
         "party.portrait"
       ],
-      "notes": "Origin (来歴) and impression. The portrait area is RESERVED so the pane does not reflow when one is chosen."
+      "notes": "FACE first (playtest): chosen from a provided pool, decoupled from class and origin. The step SAYS the face can be changed later or replaced with the player's own imported image."
+    },
+    {
+      "id": "guild-background",
+      "milestone": "M2",
+      "reactPanel": "src/App.tsx (guildCreationStep=background)",
+      "scene": "res://scenes/guild.tscn",
+      "evidence": "tests/_ux_guild-background.png",
+      "uiState": {
+        "step": "background"
+      },
+      "requiredKeys": [
+        "party.chooseBackground",
+        "party.background",
+        "party.next",
+        "party.back"
+      ],
+      "notes": "Origin (来歴) on its own step: what the recruit did before the guild, with the line the choice is actually made on. Picking one never rewrites the face or the nature."
+    },
+    {
+      "id": "guild-trait",
+      "milestone": "M2",
+      "reactPanel": "src/App.tsx (guildCreationStep=trait)",
+      "scene": "res://scenes/guild.tscn",
+      "evidence": "tests/_ux_guild-trait.png",
+      "uiState": {
+        "step": "trait"
+      },
+      "requiredKeys": [
+        "party.chooseTrait",
+        "party.trait",
+        "party.next",
+        "party.back"
+      ],
+      "notes": "Nature (気質) on its own step: the disposition that colours the aptitudes."
     },
     {
       "id": "guild-bonus",

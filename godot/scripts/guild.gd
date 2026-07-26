@@ -1,20 +1,21 @@
 extends Control
 ## THE GUILD — a faithful port of the registration flow in src/App.tsx (townMode === "guild").
 ##
-## Registration is STAGED: 説明 → 職業 → 来歴 → 能力 → 名前, one decision at a time, with the stepper
-## always visible and 戻る/次へ in fixed places. The port had collapsed all five into ONE screen (a class
-## list, six aptitude chips and a name cycler side by side) — which is the shape React deliberately moved
-## away from (IMP-028: a card wall that scrolled 次へ off the screen), and it left 来歴・気質・持ち点・
-## 二つ名・覚え書き with no surface at all. Those are the choices that make the adventurer the player's
-## own, which is the whole premise of the game.
+## Registration is STAGED: 説明 → 職業 → 顔 → 来歴 → 気質 → 能力 → 名前, ONE decision at a time, with the
+## stepper always visible and 戻る/次へ in fixed places. The port had collapsed everything into ONE screen (a
+## class list, six aptitude chips and a name cycler side by side) — the shape React deliberately moved away
+## from (IMP-028). 顔 / 来歴 / 気質 used to share a single "appearance" step; the playtest asked for each to be
+## its own decision, with the FACE chosen first (it is the thing the player sees).
 ##
 ## What each step owns (and why it is its own step):
 ##   説明 — the guild master asks who you are before writing anything down; the hall behind him shows the
 ##          party you already have and the way to the roster.
 ##   職業 — a bounded LIST beside a stable detail pane: the cursor's calling reads into the pane
 ##          (signature, formation, aptitude, starting gear NAMED from the catalog — never a raw id).
-##   来歴 — origin and impression, with the face the origin brings; the portrait area is reserved so the
-##          pane does not reflow when the origin changes.
+##   顔 — the FACE, chosen first from a provided pool. It is decoupled from class and origin, and the step
+##          says so: the face can be changed later or replaced with the player's own imported image.
+##   来歴 — origin: what the recruit did before the guild, with the line the choice is actually made on.
+##   気質 — nature: the disposition that colours the aptitudes.
 ##   能力 — spend the bonus pool: base vs allocated side by side, so a point's effect is visible BEFORE
 ##          it is committed. 次へ stays disabled while points remain unspent (React does the same).
 ##   名前 — name, title and notes. Text entry is allowed here, and 名を見繕う fills all three, so a player
@@ -31,7 +32,7 @@ const Draft := preload("res://scripts/guild_draft.gd")
 const CharacterCreation := preload("res://scripts/rules/character_creation.gd")
 const Techniques := preload("res://scripts/rules/techniques.gd")
 
-const STEPS := ["briefing", "class", "appearance", "bonus", "name"]
+const STEPS := ["briefing", "class", "face", "background", "trait", "bonus", "name"]
 const APTITUDE_KEYS := ["might", "agility", "spirit", "wit", "luck"]
 const PARTY_MAX := 6
 const BG := Color("0b0d09")
@@ -205,9 +206,9 @@ func _preview_card() -> Control:
 	var character := _build_character()
 
 	var row := UI.row()
-	# The face is a player CHOICE made at 来歴 (IMP-039), decoupled from class and origin. Before that step
-	# it is genuinely undecided, so the preview shows a "？" rather than implying a face the player never picked.
-	var face_chosen: bool = STEPS.find(_step) >= STEPS.find("appearance")
+	# The face is a player CHOICE made at the 顔 step (IMP-039), decoupled from class and origin. Before that
+	# step it is genuinely undecided, so the preview shows a "？" rather than implying a face never picked.
+	var face_chosen: bool = STEPS.find(_step) >= STEPS.find("face")
 	if face_chosen:
 		var portrait := TextureRect.new()
 		portrait.custom_minimum_size = Vector2(96, 116)
@@ -241,7 +242,9 @@ func _preview_card() -> Control:
 func _step_panel() -> Control:
 	match _step:
 		"class": return _class_step()
-		"appearance": return _appearance_step()
+		"face": return _face_step()
+		"background": return _background_step()
+		"trait": return _trait_step()
 		"bonus": return _bonus_step()
 		"name": return _name_step()
 		_: return _briefing_step()
@@ -331,7 +334,7 @@ func _class_step() -> Control:
 	detail_pane.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	body.add_child(UI.grow(UI.card(detail_pane)))
 
-	col.add_child(_flow_actions("briefing", "appearance"))
+	col.add_child(_flow_actions("briefing", "face"))
 	return UI.card(col)
 
 
@@ -408,16 +411,16 @@ func _engine() -> Dictionary:
 			_engine_cache = _read_json("res://data/engine-data.json")
 	return _engine_cache
 
-func _appearance_step() -> Control:
+## 顔 — FIRST of the three appearance decisions (playtest): the face the player sees, chosen from a provided
+## pool. Decoupled from class and origin, and the step SAYS so — the face can be changed later or replaced
+## with the player's own imported image (party.faceProvidedNote).
+func _face_step() -> Control:
 	var col := UI.col(10)
-	col.add_child(UI.label(I18n.t("party.chooseAppearance"), 22, UI.GOLD))
+	col.add_child(UI.label(I18n.t("party.chooseFace"), 22, UI.GOLD))
+	col.add_child(UI.prose(I18n.t("party.faceProvidedNote"), 15, UI.DIM, 760))
 
 	var body := UI.row()
-	col.add_child(body)
-
-	var background := Draft.find(_data.get("backgrounds", []), String(_draft.get("backgroundId", "")))
-	# The portrait area is RESERVED at a fixed size.  Origin describes the recruit; face is selected from
-	# a separate pool beneath it, so neither decision silently rewrites the other.
+	# The chosen face at a reserved size, beside the pool it is picked from.
 	var face := UI.col(4)
 	face.add_child(UI.label("%s（選んだ顔）" % I18n.t("party.portrait"), 15, UI.DIM))
 	var portrait := TextureRect.new()
@@ -425,26 +428,42 @@ func _appearance_step() -> Control:
 	portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 	portrait.texture = _texture(_draft_portrait_path())
-	face.add_child(UI.card(portrait, Color(String(background.get("accentColor", "#c9a765")))))
+	face.add_child(UI.card(portrait))
 	body.add_child(face)
 
 	var choices := UI.col(8)
 	choices.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	# 来歴 / 顔 / 気質 are three INDEPENDENT decisions (#6): each section owns its own 見繕う, so a face is
-	# never rewritten by picking an origin and vice versa. The cursor opens on the 来歴 row — the decision
-	# this step leads with.
-	choices.add_child(_section_head(I18n.t("party.background"), "reroll:background", func(): _reroll_appearance("background")))
-	choices.add_child(_chip_row(_data.get("backgrounds", []), String(_draft.get("backgroundId", "")), func(id: String): _select_background(id), "bg", true))
-	# What this origin brings — the line the choice is actually made on.
-	choices.add_child(UI.prose(String(background.get("notes", {}).get("ja", "")), 16, UI.DIM, 760))
-	choices.add_child(_section_head("顔", "reroll:face", func(): _reroll_appearance("face")))
-	choices.add_child(UI.label("来歴とは別に、顔を選べます。", 14, UI.DIM))
+	choices.add_child(_section_head(I18n.t("party.step.face"), "reroll:face", func(): _reroll_appearance("face")))
 	choices.add_child(_face_pool())
-	choices.add_child(_section_head(I18n.t("party.trait"), "reroll:trait", func(): _reroll_appearance("trait")))
-	choices.add_child(_chip_row(_data.get("traits", []), String(_draft.get("traitId", "")), func(id: String): _select_trait(id), "trait"))
 	body.add_child(choices)
+	col.add_child(body)
 
-	col.add_child(_flow_actions("class", "bonus"))
+	col.add_child(_flow_actions("class", "background"))
+	return UI.card(col)
+
+## 来歴 — origin: what the recruit did before the guild, with the line the choice is actually made on. Its own
+## step now (#6 / playtest), so picking an origin never silently rewrites the face or the nature.
+func _background_step() -> Control:
+	var col := UI.col(10)
+	col.add_child(UI.label(I18n.t("party.chooseBackground"), 22, UI.GOLD))
+
+	var background := Draft.find(_data.get("backgrounds", []), String(_draft.get("backgroundId", "")))
+	col.add_child(_section_head(I18n.t("party.background"), "reroll:background", func(): _reroll_appearance("background")))
+	col.add_child(_chip_row(_data.get("backgrounds", []), String(_draft.get("backgroundId", "")), func(id: String): _select_background(id), "bg", true))
+	col.add_child(UI.prose(String(background.get("notes", {}).get("ja", "")), 16, UI.DIM, 760))
+
+	col.add_child(_flow_actions("face", "trait"))
+	return UI.card(col)
+
+## 気質 — nature: the disposition that colours the aptitudes. Its own step (#6 / playtest).
+func _trait_step() -> Control:
+	var col := UI.col(10)
+	col.add_child(UI.label(I18n.t("party.chooseTrait"), 22, UI.GOLD))
+
+	col.add_child(_section_head(I18n.t("party.trait"), "reroll:trait", func(): _reroll_appearance("trait")))
+	col.add_child(_chip_row(_data.get("traits", []), String(_draft.get("traitId", "")), func(id: String): _select_trait(id), "trait", true))
+
+	col.add_child(_flow_actions("background", "bonus"))
 	return UI.card(col)
 
 func _bonus_step() -> Control:
@@ -512,7 +531,7 @@ func _bonus_step() -> Control:
 
 	# React keeps 次へ disabled until the pool is spent: unspent points are lost forever once registered,
 	# so the flow refuses to walk past them silently.
-	var actions := _flow_actions("appearance", "name")
+	var actions := _flow_actions("trait", "name")
 	var next_button := UI.first_focusable(actions)
 	col.add_child(actions)
 	if first_stepper:
@@ -822,6 +841,9 @@ func _face_pool() -> Control:
 		b.tooltip_text = "顔を選ぶ"
 		b.add_theme_stylebox_override("normal", UI.panel_style(Color("11140dcc"), UI.GOLD if String(key) == selected else Color("3a4326")))
 		_claim(b, "face:%s" % String(key))
+		# The 顔 step opens the cursor on the face already chosen — the decision this step leads with.
+		if String(key) == selected:
+			_pending_focus = b
 		grid.add_child(b)
 	return grid
 

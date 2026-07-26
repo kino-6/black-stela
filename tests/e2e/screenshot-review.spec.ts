@@ -11,10 +11,12 @@ test("captures desktop screenshot review states", async ({ page }) => {
   await startNewExpedition(page);
   await expect(page.getByRole("heading", { name: "Adventurer Registration" })).toBeVisible();
   await page.screenshot({ path: "test-results/screenshot-review/desktop-guild-empty.png", fullPage: true });
-  await page.getByRole("button", { name: "Skip explanation" }).click();
+  await page.getByRole("button", { name: "Begin registration" }).click();
   await page.screenshot({ path: "test-results/screenshot-review/desktop-guild-class.png", fullPage: true });
   await page.getByTestId("guild-step-class").getByRole("button", { name: "Next" }).click();
-  await page.getByTestId("guild-step-appearance").getByRole("button", { name: "Next" }).click();
+  await page.getByTestId("guild-step-face").getByRole("button", { name: "Next" }).click();
+  await page.getByTestId("guild-step-background").getByRole("button", { name: "Next" }).click();
+  await page.getByTestId("guild-step-trait").getByRole("button", { name: "Next" }).click();
   await page.screenshot({ path: "test-results/screenshot-review/desktop-guild-bonus.png", fullPage: true });
 
   // The Guild Master lives in the HALL, and the registration steps no longer sit beside him

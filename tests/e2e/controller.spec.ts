@@ -5,13 +5,13 @@ test("normal play surfaces support directional focus, confirm, and cancel", asyn
   await startNewExpedition(page);
 
   // The hall now carries the Guild Master, the party and the ways on, so the ring is longer.
-  await focusControllerButton(page, "Skip explanation", { limit: 60 });
+  await focusControllerButton(page, "Begin registration", { limit: 60 });
   await page.keyboard.press("Enter");
   await expect(page.getByTestId("guild-step-class")).toBeVisible();
 
   await focusControllerButton(page, "Next");
   await page.keyboard.press("Enter");
-  await expect(page.getByTestId("guild-step-appearance")).toBeVisible();
+  await expect(page.getByTestId("guild-step-face")).toBeVisible();
 
   await page.keyboard.press("Escape");
   await expect(page.getByTestId("guild-step-class")).toBeVisible();

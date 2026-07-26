@@ -10,7 +10,7 @@ extends SceneTree
 ##
 ## Usage: godot --headless --path godot/ --script res://tests/verify_guild_controller.gd
 
-const STEPS := ["briefing", "class", "appearance", "bonus", "name"]
+const STEPS := ["briefing", "class", "face", "background", "trait", "bonus", "name"]
 const I18n := preload("res://scripts/i18n.gd")
 
 var _failures := 0
@@ -153,7 +153,7 @@ func _initialize() -> void:
 	guild.call("set_ui_state", {"step": "name"})
 	for i in 3:
 		await process_frame
-	for expected in ["bonus", "appearance", "class", "briefing", "briefing"]:
+	for expected in ["bonus", "trait", "background", "face", "class", "briefing", "briefing"]:
 		_press_cancel(guild)
 		for i in 3:
 			await process_frame
@@ -242,7 +242,7 @@ func _initialize() -> void:
 				_fail("identity: 見繕う on %s also changed %s (fields are not independent)" % [field, other])
 	print("[guild-controller] name / title / notes each re-roll independently (#7)")
 
-	guild.call("set_ui_state", {"step": "appearance"})
+	guild.call("set_ui_state", {"step": "trait"})
 	for i in 3:
 		await process_frame
 	guild.call("_select_trait", "lucky")

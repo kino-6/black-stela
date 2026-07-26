@@ -92,7 +92,9 @@ export const en = {
     step: {
       briefing: "Briefing",
       class: "Class",
-      appearance: "Origin",
+      face: "Face",
+      background: "Origin",
+      trait: "Nature",
       bonus: "Talent",
       name: "Name"
     },
@@ -146,6 +148,10 @@ export const en = {
     current: "Now",
     allocated: "Added",
     chooseAppearance: "Choose origin and bearing",
+    chooseFace: "Choose a face",
+    faceProvidedNote: "Pick from the faces provided. The face is independent of origin and nature — you can change it later, or import your own image.",
+    chooseBackground: "Choose an origin",
+    chooseTrait: "Choose a nature",
     rerollOrigin: "Pick origin",
     allocateBonus: "Sharpen a talent",
     bonusRemaining: "{remaining}/{pool} points remaining",

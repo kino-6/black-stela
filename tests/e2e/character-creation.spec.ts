@@ -23,29 +23,24 @@ test("guild registration supports quick and detailed recruits without roster sco
   await expect(page.getByText("1/6")).toBeVisible();
 
   // Registering by hand is a separate path, and the roster is NOT beside it.
-  await page.getByRole("button", { name: "Skip explanation" }).click();
+  await page.getByRole("button", { name: "Begin registration" }).click();
   await expect(page.getByTestId("guild-suggestion")).toHaveCount(0);
   await expect(page.getByText("Want me to pick one?")).toHaveCount(0);
   // IMP-028: a bounded class list beside a stable detail pane, not a two-column card wall.
-  await expect(page.getByTestId("guild-step-class").locator(".guild-class-option")).toHaveCount(12);
+  await expect(page.getByTestId("guild-step-class").locator(".guild-class-option")).toHaveCount(8);
   // The pane reads the calling under the cursor — focus Seeker and its signature + gear appear there.
-  await page.getByTestId("guild-class-seeker").focus();
+  await page.getByTestId("guild-class-thief").focus();
   const classDetail = page.getByTestId("guild-class-detail");
-  await expect(classDetail).toContainText("Seeker");
+  await expect(classDetail).toContainText("Thief");
   await expect(classDetail).toContainText("Reads hinges, dust, and floor scars");
   await expect(classDetail).toContainText("Equipment");
   await expect(page.getByText("Front line")).toHaveCount(0);
   await expect(page.getByText("Retreat guard")).toHaveCount(0);
   await page.getByTestId("guild-step-class").getByRole("button", { name: "Next" }).click();
+  // FACE step — chosen first, decoupled from origin; the note says it can be changed or imported later.
+  await expect(page.getByTestId("guild-step-face")).toContainText("change it later");
   await expect(page.getByTestId("portrait-preview")).toBeVisible();
   await expect(page.getByLabel("Accent")).toHaveCount(0);
-  await expect(page.getByLabel("Background", { exact: true }).locator("option")).toHaveCount(12);
-  await expect(page.getByLabel("Trait", { exact: true }).locator("option")).toHaveCount(12);
-  const originBefore = await page.getByLabel("Background", { exact: true }).inputValue();
-  await page.getByRole("button", { name: "Pick origin" }).click();
-  await expect.poll(async () => page.getByLabel("Background", { exact: true }).inputValue()).not.toBe(originBefore);
-  await page.getByLabel("Background", { exact: true }).selectOption("cartographer");
-  await page.getByLabel("Trait", { exact: true }).selectOption("curious");
   await page.getByTestId("portrait-input").setInputFiles({
     name: "portrait.png",
     mimeType: "image/png",
@@ -55,7 +50,18 @@ test("guild registration supports quick and detailed recruits without roster sco
     )
   });
   await expect(page.getByTestId("portrait-preview")).toBeVisible();
-  await page.getByTestId("guild-step-appearance").getByRole("button", { name: "Next" }).click();
+  await page.getByTestId("guild-step-face").getByRole("button", { name: "Next" }).click();
+  // ORIGIN step — its own decision now.
+  await expect(page.getByLabel("Background", { exact: true }).locator("option")).toHaveCount(12);
+  const originBefore = await page.getByLabel("Background", { exact: true }).inputValue();
+  await page.getByRole("button", { name: "Pick origin" }).click();
+  await expect.poll(async () => page.getByLabel("Background", { exact: true }).inputValue()).not.toBe(originBefore);
+  await page.getByLabel("Background", { exact: true }).selectOption("cartographer");
+  await page.getByTestId("guild-step-background").getByRole("button", { name: "Next" }).click();
+  // NATURE step — its own decision now.
+  await expect(page.getByLabel("Trait", { exact: true }).locator("option")).toHaveCount(12);
+  await page.getByLabel("Trait", { exact: true }).selectOption("curious");
+  await page.getByTestId("guild-step-trait").getByRole("button", { name: "Next" }).click();
   await expect(page.getByTestId("guild-step-bonus").getByText(/^0$/)).toHaveCount(0);
   await page.getByRole("button", { name: "Reroll talent" }).click();
   const witPlus = page.getByLabel("Wit +");
@@ -80,7 +86,7 @@ test("guild registration supports quick and detailed recruits without roster sco
   // registering someone returns you to the hall, not to a wall of forms.
   await page.getByTestId("guild-roster-open").click();
   await expect(page.getByTestId("character-profile")).toContainText("Lena");
-  await expect(page.getByTestId("character-profile")).toContainText("Candle Mapper / Seeker / Cartographer");
+  await expect(page.getByTestId("character-profile")).toContainText("Candle Mapper / Thief / Cartographer");
   await expect(page.getByTestId("character-profile")).toContainText("Keeps a second map in mirror script.");
   await expect(page.getByTestId("character-profile")).toContainText("Deepest floor");
   await expect(page.getByTestId("character-profile")).toContainText("Injuries");
@@ -136,8 +142,11 @@ test("Japanese guild registration remains usable on mobile", async ({ page }) =>
   await expect(page.getByRole("heading", { name: "冒険者登録" })).toBeVisible();
   await expect(page.getByRole("button", { name: "炉端の連中を誘う" })).toHaveCount(0);
   await expect(page.getByLabel("隊列の備え")).toHaveCount(0);
-  await expect(page.getByTestId("guild-step-briefing")).toContainText("ようこそ。登録するなら");
+  await expect(page.getByTestId("guild-step-briefing")).toContainText("潜るなら、まずはギルドに名を連ねてもらう");
   await expect(page.getByTestId("guild-step-briefing")).not.toContainText("潜る気か");
+  await expect(page.getByTestId("guild-step-briefing")).not.toContainText("どんな冒険者になりたい");
+  // C: the meaningless 説明を聞かない duplicate is gone from the briefing.
+  await expect(page.getByRole("button", { name: "説明を聞かない" })).toHaveCount(0);
   await expect(page.getByText("名前は最後でいい")).toHaveCount(0);
   await expect(page.getByText("どの才がまだ伸びるのか")).toHaveCount(0);
   await expect(page.getByText("顔と来歴")).toHaveCount(0);
@@ -147,16 +156,22 @@ test("Japanese guild registration remains usable on mobile", async ({ page }) =>
   await expect(page.getByRole("button", { name: "はい" })).toBeVisible();
   await expect(page.getByRole("button", { name: "いいえ" })).toBeVisible();
 
-  await page.getByRole("button", { name: "説明を聞かない" }).click();
+  await page.getByRole("button", { name: "登録を始める" }).click();
   await expect(page.getByText("迷うなら、見繕うが？")).toHaveCount(0);
-  await expect(page.getByTestId("guild-step-class").locator(".guild-class-option")).toHaveCount(12);
-  await page.getByTestId("guild-class-seeker").focus();
+  await expect(page.getByTestId("guild-step-class").locator(".guild-class-option")).toHaveCount(8);
+  await page.getByTestId("guild-class-thief").focus();
   await expect(page.getByTestId("guild-class-detail")).toContainText("蝶番、埃、床の傷を読み");
   await page.getByTestId("guild-step-class").getByRole("button", { name: "次へ" }).click();
+  // 顔 step first.
   await expect(page.getByTestId("portrait-preview")).toBeVisible();
   await expect(page.getByLabel("色")).toHaveCount(0);
+  await expect(page.getByTestId("guild-step-face")).toContainText("あとから変更");
+  await page.getByTestId("guild-step-face").getByRole("button", { name: "次へ" }).click();
+  // 来歴 step.
   await expect(page.getByRole("button", { name: "来歴を見繕う" })).toBeVisible();
-  await page.getByTestId("guild-step-appearance").getByRole("button", { name: "次へ" }).click();
+  await page.getByTestId("guild-step-background").getByRole("button", { name: "次へ" }).click();
+  // 気質 step.
+  await page.getByTestId("guild-step-trait").getByRole("button", { name: "次へ" }).click();
   const agilityPlus = page.getByLabel("敏捷 +");
   for (let index = 0; index < 8; index += 1) {
     if (await agilityPlus.isDisabled()) {
@@ -172,7 +187,7 @@ test("Japanese guild registration remains usable on mobile", async ({ page }) =>
   await page.getByLabel("二つ名").fill("灯の地図師");
   await page.getByRole("button", { name: "冒険者を登録" }).click();
   await page.getByTestId("guild-roster-open").click();
-  await expect(page.getByTestId("character-profile")).toContainText("灯の地図師 / 探索者");
+  await expect(page.getByTestId("character-profile")).toContainText("灯の地図師 / 盗賊");
 
   const horizontalOverflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth);
   expect(horizontalOverflow).toBe(false);

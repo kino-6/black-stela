@@ -94,7 +94,9 @@ export const ja = {
     step: {
       briefing: "説明",
       class: "職業",
-      appearance: "来歴",
+      face: "顔",
+      background: "来歴",
+      trait: "気質",
       bonus: "能力",
       name: "名前"
     },
@@ -148,6 +150,10 @@ export const ja = {
     current: "現在",
     allocated: "加算",
     chooseAppearance: "出自と印象を選ぶ",
+    chooseFace: "顔を選ぶ",
+    faceProvidedNote: "用意された顔から選びます。顔は来歴・気質とは無関係で、あとから変更したり、自分の画像を取り込むこともできます。",
+    chooseBackground: "来歴を選ぶ",
+    chooseTrait: "気質を選ぶ",
     rerollOrigin: "来歴を見繕う",
     allocateBonus: "伸ばす才を決める",
     bonusRemaining: "持ち点 {remaining}/{pool}",

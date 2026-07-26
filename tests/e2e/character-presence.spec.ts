@@ -10,7 +10,7 @@ const pixelPng = Buffer.from(
 test("character creation previews one image in every gameplay context", async ({ page }, testInfo) => {
   await page.setViewportSize(CONTROLLER_VIEWPORT);
   await startNewExpedition(page);
-  await page.getByRole("button", { name: "Skip explanation" }).click();
+  await page.getByRole("button", { name: "Begin registration" }).click();
   await page.getByTestId("guild-step-class").getByRole("button", { name: "Next" }).click();
 
   await expect(page.getByTestId("visual-preview-token")).toBeVisible();
