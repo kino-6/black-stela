@@ -1474,6 +1474,7 @@
         "workshop.intro",
         "workshop.materials",
         "workshop.member",
+        "workshop.noMaterials",
         "workshop.nothingWorn",
         "workshop.reinforce",
         "workshop.title"

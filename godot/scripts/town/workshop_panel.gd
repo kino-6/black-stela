@@ -30,6 +30,10 @@ static func build(ctx: Dictionary) -> Control:
 	var root := UI.col(10)
 	root.add_child(UI.service_heading(I18n.t("workshop.title"), I18n.t("workshop.materials", {"materials": materials})))
 	root.add_child(UI.prose(I18n.t("workshop.intro"), 16, UI.DIM, 900))
+	# When the party has no materials yet, spell out the source inline (playtest: "素材とは？") so the sink
+	# never reads as broken — the rows below all show "素材N必要" with nothing to earn them.
+	if materials <= 0:
+		root.add_child(UI.prose(I18n.t("workshop.noMaterials"), 15, UI.GOLD, 900))
 	var last_event: String = ctx.get("event_text", "")
 	if last_event != "":
 		root.add_child(UI.event_window(last_event))

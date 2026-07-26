@@ -587,7 +587,7 @@ export const ja = {
   },
   loot: {
     title: "鑑定所",
-    intro: "未鑑定のレアを鑑定できます。残す品は施錠・お気に入りで保護され、一括処分の対象から外れます。",
+    intro: "未鑑定のレアを鑑定できます。残す品は施錠・お気に入りで保護され、一括処分の対象から外れます。不要な品を分解すれば、錬成所での装備強化に使う素材になります。",
     gold: "{gold}G",
     materials: "素材 {materials}",
     rarity: { common: "並", rare: "レア", epic: "極上" },
@@ -676,7 +676,7 @@ export const ja = {
   },
   workshop: {
     title: "錬成所",
-    intro: "分解で得た素材を使って、いま身につけている装備を強化できます。",
+    intro: "素材は、鑑定所の「一括処分」で不要な装備を分解すると手に入ります。その素材で、いま身につけている装備を強化できます。",
     member: "冒険者",
     materials: "素材 {materials}",
     reinforce: "強化（{cost}）",
@@ -684,6 +684,7 @@ export const ja = {
     atCap: "鍛え切った",
     boosts: "→ {stat} +1",
     current: "+{plus}",
+    noMaterials: "素材がありません。鑑定所の「一括処分」で不要な装備を分解すると手に入ります。",
     nothingWorn: "強化できる装備がない。",
     back: "戻る"
   },

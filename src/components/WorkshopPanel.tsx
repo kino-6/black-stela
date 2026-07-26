@@ -79,6 +79,9 @@ export function WorkshopPanel({
           <strong>{t("workshop.materials", { materials })}</strong>
         </div>
         <p className="service-intro">{t("workshop.intro")}</p>
+        {materials <= 0 && (
+          <p className="service-intro workshop-no-materials">{t("workshop.noMaterials")}</p>
+        )}
 
         {latestLogText && latestEventType === "equipment_reinforced" && (
           <p className="event-window" aria-live="polite">

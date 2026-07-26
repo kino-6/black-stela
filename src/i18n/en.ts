@@ -585,7 +585,7 @@ export const en = {
   },
   loot: {
     title: "Appraiser",
-    intro: "Reveal rare finds, protect keepers, and clear routine loot in one safe operation.",
+    intro: "Reveal rare finds, protect keepers, and clear routine loot in one safe operation. Dismantling unneeded gear yields materials for reinforcing equipment at the Forge.",
     gold: "{gold} gold",
     materials: "{materials} materials",
     rarity: { common: "Common", rare: "Rare", epic: "Epic" },
@@ -674,7 +674,7 @@ export const en = {
   },
   workshop: {
     title: "Forge",
-    intro: "The reforge. Spend materials — the take from dismantled loot — to temper what an adventurer already wears.",
+    intro: "Materials come from dismantling unneeded gear at the Appraiser's bulk-clear. Spend them here to temper what an adventurer already wears.",
     member: "Adventurer",
     materials: "{materials} materials",
     reinforce: "Reinforce ({cost})",
@@ -682,6 +682,7 @@ export const en = {
     atCap: "Fully tempered",
     boosts: "→ {stat} +1",
     current: "+{plus}",
+    noMaterials: "No materials yet — dismantle unneeded gear at the Appraiser's bulk-clear to earn some.",
     nothingWorn: "Nothing equipped to reinforce.",
     back: "Back"
   },

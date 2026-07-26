@@ -36,9 +36,13 @@ formatted it, so it was silent (React logs it via events.inventoryItemGained).
 - [x] Godot _event_line now logs `inventory_item_gained` (item name + quantity, affix/plus), so opening a
       chest shows "◯◯ を N 個見つけた。" in the message band. No state change → parity safe.
 
-## E. Workshop (錬成所) discoverability
-分解 → 素材 → 強化 flow is opaque ("素材とは？").
-- [ ] Make the path clear: where 素材 come from (聖遺物で分解) and how to use them.
+## E. Workshop (錬成所) discoverability  — DONE
+分解 → 素材 → 強化 flow was opaque ("素材とは？").
+- [x] 錬成所 intro now names the source: 素材 come from dismantling unneeded gear at the 鑑定所's 一括処分.
+- [x] A gold zero-materials hint shows inline when materials == 0 (React + Godot), so the sink never reads
+      as broken when every row says "素材N必要".
+- [x] The 鑑定所 intro now says dismantling yields 素材 for 錬成所 強化 — both ends of the loop point at each
+      other. ux-parity manifest re-derived (town-workshop 20 keys); ux-parity + town-controller green.
 
 ## F. Chamber landmark clarity + minimap markers  — minimap DONE; landmark pending
 - [x] Minimap now draws the same chips the full map shows (stairs/treasure/gather/event/trap/… as
