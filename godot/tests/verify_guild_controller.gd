@@ -30,6 +30,15 @@ func _all_text(node: Node) -> String:
 	return out
 
 func _initialize() -> void:
+	# A NEW game starts the guild with an empty roster (the scenario picker clears it); the guild no longer
+	# wipes on _ready (that deleted everyone when you re-entered mid-registration). The gate establishes the
+	# same clean precondition itself instead of relying on that destructive wipe.
+	var run := get_root().get_node_or_null("Run")
+	if run != null:
+		run.ensure_loaded()
+		run.state["party"] = []
+		run.state["reserve"] = []
+
 	var guild := (load("res://scenes/guild.tscn") as PackedScene).instantiate()
 	get_root().add_child(guild)
 	for i in 8:
@@ -303,6 +312,20 @@ func _initialize() -> void:
 	# A fresh draft for the next recruit — its own pool, nothing carried over.
 	if int(guild.get("_draft").get("bonusAptitude", {}).get("might", 0)) != 0:
 		_fail("register: the next recruit inherited the last one's spent points")
+
+	# REGRESSION (playtest): re-entering the guild with an existing roster must KEEP it, not wipe it.
+	# guild.gd used to start_guild() on every _ready, deleting everyone made so far.
+	if run != null:
+		run.state["party"] = [{"id": "kept", "name": "既存兵", "classId": "warrior", "row": "front", "hp": 10, "maxHp": 10}]
+		run.state["reserve"] = []
+		var reentry := (load("res://scenes/guild.tscn") as PackedScene).instantiate()
+		get_root().add_child(reentry)
+		for i in 8:
+			await process_frame
+		var kept: Array = run.state.get("party", [])
+		if kept.size() != 1 or String((kept[0] as Dictionary).get("id", "")) != "kept":
+			_fail("re-entering the guild wiped the existing roster (%d members) — start_guild must not run on _ready" % kept.size())
+		reentry.queue_free()
 
 	print("")
 	if _failures == 0:

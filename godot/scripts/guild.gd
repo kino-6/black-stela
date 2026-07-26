@@ -66,7 +66,9 @@ func _acquire_state() -> void:
 		_world_id = _run.world_id
 		_world = _run.world
 		_data = _run.character_data
-		_run.start_guild()
+		# NB: do NOT start_guild() here — it wipes party+reserve. A NEW game is cleared once by the scenario
+		# picker; re-entering the guild from town (to register more adventurers) must KEEP the roster, or
+		# leaving registration midway and coming back would delete everyone already made (playtest bug).
 	else:
 		_world = _read_json("res://data/worlds/default.json").get("world", {})
 		_data = _read_json("res://data/character-data.json")
