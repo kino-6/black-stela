@@ -78,6 +78,12 @@ static func _build_geometry(parent: Node, world: Dictionary, state: Dictionary, 
 					_add_wall(parent, chamber_wall_mat if chamber else wall_mat, base, dir, wall_height)
 			if chamber:
 				_add_chamber_landmarks(parent, base, chamber_accent, wall_height)
+			# The pack ships stair-up/stair-down art; draw it so a stair cell is VISIBLE in the first-person
+			# view instead of a plain dead-end the 階段を使う command only hints at (playtest: asset delivered,
+			# never rendered).
+			var stair_kind := _stairs_kind(cell, floor_dungeon)
+			if stair_kind != "":
+				_add_stairs(parent, base, _asset(world, run, "dungeon/stair-%s.png" % stair_kind))
 
 static func _is_chamber(edges: Dictionary) -> bool:
 	var openings := 0
@@ -85,6 +91,42 @@ static func _is_chamber(edges: Dictionary) -> bool:
 		if _is_passage(edges.get(dir, null)):
 			openings += 1
 	return openings >= 3
+
+# "" / "down" / "up" — a cell carries stairs when one of its edges is a `stairs` edge. A deeper target is
+# a descent (stair-down art); anything else (shallower, or off-floor to town) is an ascent (stair-up).
+static func _stairs_kind(cell: Dictionary, floor_id: String) -> String:
+	var depth := _floor_depth(floor_id)
+	for dir in ["north", "south", "east", "west"]:
+		var edge: Variant = cell.get("edges", {}).get(dir, null)
+		if typeof(edge) == TYPE_DICTIONARY and String(edge.get("kind", "")) == "stairs":
+			var target := String(edge.get("targetFloorId", ""))
+			return "down" if target != "" and _floor_depth(target) > depth else "up"
+	return ""
+
+static func _floor_depth(floor_id: String) -> int:
+	var re := RegEx.new()
+	re.compile("[a-zA-Z](\\d+)f")
+	var m := re.search(floor_id)
+	return int(m.get_string(1)) if m else 0
+
+# A flat decal on the floor showing the stairs, lifted a hair to avoid z-fighting with the floor plane.
+static func _add_stairs(parent: Node, base: Vector3, tex_path: String) -> void:
+	if not ResourceLoader.exists(tex_path):
+		return
+	var tex: Texture2D = load(tex_path)
+	if tex == null:
+		return
+	var m := MeshInstance3D.new()
+	var plane := PlaneMesh.new()
+	plane.size = Vector2(CELL * 0.82, CELL * 0.82)
+	m.mesh = plane
+	var mat := StandardMaterial3D.new()
+	mat.albedo_texture = tex
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	m.material_override = mat
+	m.position = base + Vector3(0, 0.04, 0)
+	parent.add_child(m)
 
 static func _add_plane(parent: Node, mat: Material, pos: Vector3, rot: Vector3) -> void:
 	var m := MeshInstance3D.new()
