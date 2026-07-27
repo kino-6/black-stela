@@ -283,11 +283,18 @@ static func begin_room_encounter(world: Dictionary, room: Variant, state: Dictio
 		return null
 	var room_id := String(room.get("id", ""))
 	var cleared: Array = state.get("floorClearedEnemies", [])
-	# A Wiz-style 玄室 (chamberGuardian): its guardian is gated PER-ROOM — by whether THIS room's chest is
-	# still unclaimed this floor visit — not by enemy-type first contact. So every chamber on a floor fights
-	# even when they share one pack table (playtest: with a shared table only the first chamber fought and the
-	# rest sat empty with their chests locked). Cleared once its chest is claimed; a fresh descent re-arms it.
-	var chamber_guardian: bool = bool(room.get("chamberGuardian", false)) and not (state.get("floorClaimedTreasures", []) as Array).has(room_id)
+	# A Wiz-style 玄室 (chamberGuardian): its guardian is gated PER-ROOM — not by enemy-type first contact —
+	# so every chamber on a floor fights even when they share one pack table (playtest: with a shared table
+	# only the first chamber fought and the rest sat empty). "Cleared" for this visit = the guardian is beaten,
+	# read as "its guarded chest is now out (or already claimed)". That kills the re-fight exploit (playtest:
+	# walking in and out re-fought the room with no stair between) while re-arming on a fresh descent — chests
+	# and claims both reset on a floor change.
+	var chest_out := false
+	for chest in state.get("chests", []):
+		if String(chest.get("roomId", "")) == room_id:
+			chest_out = true
+			break
+	var chamber_guardian: bool = bool(room.get("chamberGuardian", false)) and not chest_out and not (state.get("floorClaimedTreasures", []) as Array).has(room_id)
 
 	var squad_ids: Variant = room.get("encounterSquad", null)
 	if typeof(squad_ids) == TYPE_ARRAY:

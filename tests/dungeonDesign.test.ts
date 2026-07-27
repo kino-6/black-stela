@@ -192,6 +192,22 @@ describe("dungeon design gate", () => {
         });
       }
 
+      it("rule — a 玄室-dense floor's pack has ≥2 enemy types (playtest: chambers must not all be the same foe)", () => {
+        // With 6-8 玄室 sharing one pack table, a single-type table made EVERY chamber the same fight
+        // ("常時同じ敵"). Any floor carrying ≥2 chamberGuardian rooms must draw from ≥2 distinct enemy types
+        // so the chambers vary.
+        for (const floor of world.dungeons) {
+          const chambers = floor.rooms.filter((r) => (r as { chamberGuardian?: boolean }).chamberGuardian).length;
+          if (chambers < 2) continue;
+          const table = (world.encounterTables ?? []).find((t) => t.floorId === floor.id && (t.entries?.length ?? 0) > 0);
+          const distinctTypes = new Set((table?.entries ?? []).map((e) => e.enemyId)).size;
+          expect(
+            distinctTypes,
+            `${world.id} ${floor.id} has ${chambers} 玄室 but its pack table draws only ${distinctTypes} enemy type(s)`
+          ).toBeGreaterThanOrEqual(2);
+        }
+      });
+
       it("rule — a walkable floor can actually FIGHT: it has a wandering encounter table for its own id", () => {
         // Verdant is wandering-only (no set-piece encounters) — without a table whose floorId matches, a
         // party walks the whole maze and never fights (playtest "ランダムエンカウントがない"). Every

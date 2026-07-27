@@ -16,8 +16,11 @@ encounterTables:
       - { enemyId: enemy.verdant.g2.thorn-crawler, weight: 10, minCount: 1, maxCount: 2 }
   - id: encounters.verdant.g3.pack
     floorId: dungeon.verdant.g3f
+    groupsMax: 2
     entries:
       - { enemyId: enemy.verdant.g2.thorn-crawler, weight: 10, minCount: 2, maxCount: 3 }
+      - { enemyId: enemy.verdant.g2.spore-caster, weight: 6, minCount: 1, maxCount: 2 }
+      - { enemyId: enemy.verdant.g1.moss-mite, weight: 4, minCount: 2, maxCount: 3 }
   - id: encounters.verdant.g4.pack
     floorId: dungeon.verdant.g4f
     groupsMax: 2
@@ -28,20 +31,31 @@ encounterTables:
       - { enemyId: enemy.verdant.rare.gilded-sporecloud, weight: 1, minCount: 1, maxCount: 1 }
   - id: encounters.verdant.g5.pack
     floorId: dungeon.verdant.g5f
+    groupsMax: 2
     entries:
       - { enemyId: enemy.verdant.g4.pollen-drifter, weight: 10, minCount: 1, maxCount: 2 }
+      - { enemyId: enemy.verdant.g6.thorn-cutter, weight: 6, minCount: 1, maxCount: 1 }
+      - { enemyId: enemy.verdant.g2.spore-caster, weight: 4, minCount: 1, maxCount: 2 }
   - id: encounters.verdant.g6.pack
     floorId: dungeon.verdant.g6f
+    groupsMax: 2
     entries:
       - { enemyId: enemy.verdant.g6.thorn-cutter, weight: 10, minCount: 1, maxCount: 2 }
+      - { enemyId: enemy.verdant.g7.husk-spawn, weight: 6, minCount: 1, maxCount: 1 }
+      - { enemyId: enemy.verdant.g4.pollen-drifter, weight: 4, minCount: 1, maxCount: 2 }
   - id: encounters.verdant.g7.pack
     floorId: dungeon.verdant.g7f
+    groupsMax: 2
     entries:
       - { enemyId: enemy.verdant.g7.husk-spawn, weight: 10, minCount: 1, maxCount: 2 }
+      - { enemyId: enemy.verdant.g6.thorn-cutter, weight: 6, minCount: 1, maxCount: 2 }
+      - { enemyId: enemy.verdant.g4.pollen-drifter, weight: 4, minCount: 1, maxCount: 1 }
   - id: encounters.verdant.g8.pack
     floorId: dungeon.verdant.g8f
+    groupsMax: 2
     entries:
       - { enemyId: enemy.verdant.g7.husk-spawn, weight: 10, minCount: 1, maxCount: 2 }
+      - { enemyId: enemy.verdant.g6.thorn-cutter, weight: 6, minCount: 1, maxCount: 2 }
   # ---- keep chokes (single miniboss/boss) ----
   - id: encounters.verdant.g3.keep
     floorId: dungeon.verdant.g3f

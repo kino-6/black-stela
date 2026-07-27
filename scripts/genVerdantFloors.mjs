@@ -206,6 +206,20 @@ function buildFloor(spec) {
   // an open passage — so found, it collapses the descent; unfound, the honest sweep is unchanged.
   edges.push(`  - from: ${rid(n, "gate")}\n    direction: ${dirBetween(scFrom, scTo)}\n    kind: secret\n    to: ${rid(n, "lift")}`);
 
+  // A DOOR on every 玄室 (and the keep): a rooted threshold on the room's approach side — the open neighbour
+  // nearest the entrance, so the door faces the way the party comes in. `door` stays walkable (the fight
+  // still triggers on entry, not on "opening" it), so this is purely the Wiz 扉付き look; floorMap makes the
+  // reverse side a door too. Authored from the named chamber cell (the only cell an edge override can key on).
+  const chamberDoor = (coord, roomId) => {
+    const open = nbrs(coord[0], coord[1]).filter(([ny, nx]) => inb(w, ny, nx) && !w[ny][nx]);
+    if (open.length === 0) return;
+    const approach = open.slice().sort((a, b) =>
+      (dEnt.get(`${a[0]},${a[1]}`) ?? 1e9) - (dEnt.get(`${b[0]},${b[1]}`) ?? 1e9))[0];
+    edges.push(`  - from: ${roomId}\n    direction: ${dirBetween(coord, approach)}\n    kind: door`);
+  };
+  plainChambers.forEach((c, i) => chamberDoor(c, rid(n, `0${i + 2}`)));
+  chamberDoor(usedChamber, rid(n, "keep"));
+
   // ---- rooms ----
   const rooms = [];
   const room = (id, name, ja, desc, jaDesc, extra = "") =>

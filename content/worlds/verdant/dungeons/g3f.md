@@ -64,6 +64,30 @@ edges:
     direction: east
     kind: secret
     to: room.verdant.g3f.lift
+  - from: room.verdant.g3f.02
+    direction: north
+    kind: door
+  - from: room.verdant.g3f.03
+    direction: north
+    kind: door
+  - from: room.verdant.g3f.04
+    direction: west
+    kind: door
+  - from: room.verdant.g3f.05
+    direction: north
+    kind: door
+  - from: room.verdant.g3f.06
+    direction: north
+    kind: door
+  - from: room.verdant.g3f.07
+    direction: north
+    kind: door
+  - from: room.verdant.g3f.08
+    direction: north
+    kind: door
+  - from: room.verdant.g3f.keep
+    direction: north
+    kind: door
 rooms:
   - id: room.verdant.g3f.001
     name: Root Landing

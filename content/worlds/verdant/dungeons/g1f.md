@@ -58,6 +58,30 @@ edges:
     direction: south
     kind: secret
     to: room.verdant.g1f.lift
+  - from: room.verdant.g1f.02
+    direction: north
+    kind: door
+  - from: room.verdant.g1f.03
+    direction: north
+    kind: door
+  - from: room.verdant.g1f.04
+    direction: north
+    kind: door
+  - from: room.verdant.g1f.05
+    direction: north
+    kind: door
+  - from: room.verdant.g1f.06
+    direction: north
+    kind: door
+  - from: room.verdant.g1f.07
+    direction: north
+    kind: door
+  - from: room.verdant.g1f.08
+    direction: north
+    kind: door
+  - from: room.verdant.g1f.keep
+    direction: north
+    kind: door
 rooms:
   - id: room.verdant.g1f.001
     name: Sunken Threshold

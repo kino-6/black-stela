@@ -6,6 +6,8 @@ treasureTables:
       - { itemId: item.healing-draught, weight: 6 }
       - { itemId: item.verdant.sap-draught, weight: 5 }
       - { itemId: item.verdant.pollen-salve, weight: 4 }
+      # A 玄室 is a fight — its chest can hold gear, rolled with a floor-scaled rarity/affix, not only potions.
+      - { itemId: equip.verdant.thorn-lash, weight: 3 }
   - id: treasure.verdant.g1.keep
     tier: 1
     entries:
@@ -17,6 +19,8 @@ treasureTables:
       - { itemId: item.healing-draught, weight: 6 }
       - { itemId: item.verdant.sap-draught, weight: 5 }
       - { itemId: item.verdant.pollen-salve, weight: 4 }
+      - { itemId: equip.verdant.thorn-lash, weight: 3 }
+      - { itemId: equip.verdant.bark-plate, weight: 2 }
   - id: treasure.verdant.g2.keep
     tier: 1
     entries:
@@ -28,6 +32,8 @@ treasureTables:
       - { itemId: item.healing-draught, weight: 6 }
       - { itemId: item.verdant.sap-draught, weight: 5 }
       - { itemId: item.verdant.pollen-salve, weight: 4 }
+      - { itemId: equip.verdant.thorn-lash, weight: 3 }
+      - { itemId: equip.verdant.bark-plate, weight: 2 }
   - id: treasure.verdant.g3.keep
     tier: 1
     entries:
@@ -41,6 +47,8 @@ treasureTables:
       - { itemId: item.verdant.sap-draught, weight: 5 }
       - { itemId: item.verdant.pollen-salve, weight: 4 }
       - { itemId: item.verdant.greater-sap, weight: 3 }
+      - { itemId: equip.verdant.iron-edge, weight: 3 }
+      - { itemId: equip.verdant.bark-plate, weight: 2 }
   - id: treasure.verdant.g4.keep
     tier: 2
     entries:
@@ -54,6 +62,8 @@ treasureTables:
       - { itemId: item.verdant.sap-draught, weight: 5 }
       - { itemId: item.verdant.pollen-salve, weight: 4 }
       - { itemId: item.verdant.greater-sap, weight: 3 }
+      - { itemId: equip.verdant.iron-edge, weight: 3 }
+      - { itemId: equip.verdant.living-charm, weight: 2 }
   - id: treasure.verdant.g5.keep
     tier: 2
     entries:
@@ -69,6 +79,8 @@ treasureTables:
       - { itemId: item.verdant.sap-draught, weight: 5 }
       - { itemId: item.verdant.pollen-salve, weight: 4 }
       - { itemId: item.verdant.greater-sap, weight: 3 }
+      - { itemId: equip.verdant.iron-edge, weight: 3 }
+      - { itemId: equip.verdant.living-charm, weight: 2 }
   - id: treasure.verdant.g6.keep
     tier: 2
     entries:
@@ -83,6 +95,8 @@ treasureTables:
       - { itemId: item.verdant.sap-draught, weight: 5 }
       - { itemId: item.verdant.pollen-salve, weight: 4 }
       - { itemId: item.verdant.greater-sap, weight: 3 }
+      - { itemId: equip.verdant.reaver-axe, weight: 3 }
+      - { itemId: equip.verdant.heartwood-ward, weight: 2 }
   - id: treasure.verdant.g7.keep
     tier: 3
     entries:
@@ -99,6 +113,8 @@ treasureTables:
       - { itemId: item.verdant.sap-draught, weight: 5 }
       - { itemId: item.verdant.pollen-salve, weight: 4 }
       - { itemId: item.verdant.greater-sap, weight: 3 }
+      - { itemId: equip.verdant.reaver-axe, weight: 3 }
+      - { itemId: equip.verdant.heartwood-ward, weight: 2 }
   - id: treasure.verdant.g8.keep
     tier: 3
     entries:

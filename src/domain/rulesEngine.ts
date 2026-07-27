@@ -2023,13 +2023,17 @@ function beginRoomEncounter(
   room: DungeonRoom,
   state: GameState
 ): { combat: CombatState; event: GameEvent } | null {
-  // A Wiz-style 玄室 (chamberGuardian): its guardian is gated PER-ROOM — by whether THIS room's chest is
-  // still unclaimed this floor visit — not by enemy-type first contact. So every chamber on a floor is its
-  // own guaranteed fight even when they share one pack table (the playtest bug: with a shared table, only
-  // the first chamber fought and the rest sat empty with their chests locked behind a fight that never
-  // fired). Once the chest is claimed the room is done; a fresh descent re-arms it (floorClaimedTreasures
-  // resets on floor change), matching the "入るたび確定湧き" ruling.
-  const chamberGuardian = Boolean(room.chamberGuardian) && !state.floorClaimedTreasures.includes(room.id);
+  // A Wiz-style 玄室 (chamberGuardian): its guardian is gated PER-ROOM — not by enemy-type first contact —
+  // so every chamber on a floor is its own guaranteed fight even when they share one pack table (the
+  // playtest bug: with a shared table only the FIRST chamber fought and the rest sat empty). "Cleared" for
+  // this floor visit = the guardian is already beaten, which we read as "its guarded chest is now out (or
+  // already claimed)". That kills the re-fight exploit (playtest: walking in and out re-fought the room with
+  // no stair between) while keeping the room re-armed on a fresh descent — chests + claims both reset on a
+  // floor change. The chest is released on victory (declareRound), so once you win, stepping back in is safe.
+  const chamberBeaten =
+    (state.chests ?? []).some((chest) => chest.roomId === room.id) ||
+    state.floorClaimedTreasures.includes(room.id);
+  const chamberGuardian = Boolean(room.chamberGuardian) && !chamberBeaten;
 
   const squad = room.encounterSquad
     ?.map((enemyId) => world.enemies.find((enemy) => enemy.id === enemyId))
