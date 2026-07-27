@@ -55,6 +55,12 @@ palette:
   front: "#e4f7c9"
   wall: "#c2c7b5"
   floor: "#a49c85"
+  # 玄室は「緑の置物」ではなく、番人と報酬のために根が磨いた儀式の床。濡れた石灰岩の
+  # 基壇と暗い根の建築を、琥珀の埋め込み環だけで拾わせる。緑の環境光に染まっても用途が
+  # 読めるよう、通常床より低彩度・暖色寄りに分離する。
+  chamberFloor: "#777765"
+  chamberWall: "#827761"
+  chamberAccent: "#b67b42"
   ambientEnergy: 0.85
   fogDensity: 0.06
   torchRange: 10.0

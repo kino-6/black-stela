@@ -453,6 +453,12 @@ export const scenarioWorldSchema = z.object({
       front: z.string().min(1).optional(),
       wall: z.string().min(1).optional(),
       floor: z.string().min(1).optional(),
+      // The chamber is a deliberately authored combat-and-reward space, not a green prop placed on
+      // the normal floor. These stay in the scenario palette so Godot can render that distinction
+      // without baking a Verdant-only colour into its shared renderer.
+      chamberFloor: z.string().min(1).optional(),
+      chamberWall: z.string().min(1).optional(),
+      chamberAccent: z.string().min(1).optional(),
       // Lighting intensity / view distance, authored per scenario so a "verdant/lush" floor is not as
       // dark as an ash pit. The dungeon renderer reads these with its ash-pit defaults when omitted.
       ambientEnergy: z.number().min(0).optional(),

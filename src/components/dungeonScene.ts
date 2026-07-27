@@ -95,6 +95,11 @@ export function buildDungeonScene(mount: HTMLDivElement, input: DungeonSceneInpu
     front: "#ffe0a0",
     wall: "#59615a",
     floor: "#2a2418",
+    // Godot uses these only when it renders an authored guardian chamber. Keep the reference scene's
+    // palette contract complete without adding a Web-only chamber treatment.
+    chamberFloor: "#9a8050",
+    chamberWall: "#a18e62",
+    chamberAccent: "#c9a765",
     // Intensity / view distance are honoured by the Godot renderer (dungeon.gd); the reference
     // Three.js scene here keeps its own look and reads only the colours.
     ambientEnergy: 0.55,

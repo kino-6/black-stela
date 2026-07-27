@@ -59,25 +59,47 @@ static func _build_geometry(parent: Node, world: Dictionary, state: Dictionary, 
 	var chamber_floor_mat := _textured_mat(block["floor"], Color(String(pal.get("chamberFloor", "9a8050"))))
 	var chamber_wall_mat := _textured_mat(block["wall"], Color(String(pal.get("chamberWall", "a18e62"))))
 	var chamber_accent := Color(String(pal.get("chamberAccent", "c9a765")))
+	# `door` remains a walkable edge in the rules. Its visual is a rooted, opened threshold: enough to
+	# announce a room boundary without pretending that the player is blocked by a collision the rules do
+	# not have. The scenario pack owns the texture; the shared renderer only places it.
+	var door_mat := _textured_mat(_asset(world, run, "dungeon/wood-door.jpg"), Color("d2b184"))
+	var rendered_doors := {}
 
 	var floor_dungeon := _current_floor_id(state, world)
 	for dungeon in world.get("dungeons", []):
 		if dungeon.get("id", "") != floor_dungeon:
 			continue
+		var rooms_by_id := {}
+		for room in dungeon.get("rooms", []):
+			rooms_by_id[String((room as Dictionary).get("id", ""))] = room
 		for cell in (dungeon.get("grid", {}) as Dictionary).get("cells", []):
 			var cx := int(cell.get("x", 0))
 			var cy := int(cell.get("y", 0))
 			var base := Vector3(cx * CELL, 0, cy * CELL)
 			var edges: Dictionary = cell.get("edges", {})
 			var chamber := _is_chamber(edges)
-			var wall_height := WALL_H * 1.65 if chamber else WALL_H
-			_add_plane(parent, chamber_floor_mat if chamber else floor_mat, base, Vector3(0, 0, 0))
+			# A dense maze has many 3-way intersections. They need the ordinary hall geometry, not the
+			# guardian-room landmark: otherwise every distant junction repeats the ritual seal and the real
+			# fight/reward room is no longer special. Verdant explicitly marks those rooms in data; legacy
+			# worlds retain the old shape-derived treatment until they author the same field.
+			var room: Dictionary = rooms_by_id.get(String(cell.get("roomId", "")), {})
+			var authored_chamber := chamber and bool(room.get("chamberGuardian", false))
+			var use_authored_chambers := pal.has("chamberFloor") or pal.has("chamberWall") or pal.has("chamberAccent")
+			var landmark_chamber := authored_chamber if use_authored_chambers else chamber
+			var wall_height := WALL_H * 1.65 if landmark_chamber else WALL_H
+			_add_plane(parent, chamber_floor_mat if landmark_chamber else floor_mat, base, Vector3(0, 0, 0))
 			_add_plane(parent, ceil_mat, base + Vector3(0, wall_height, 0), Vector3(PI, 0, 0))
 			for dir in ["north", "south", "east", "west"]:
-				if not _is_passage(edges.get(dir, null)):
-					_add_wall(parent, chamber_wall_mat if chamber else wall_mat, base, dir, wall_height)
-			if chamber:
-				_add_chamber_landmarks(parent, base, chamber_accent, wall_height)
+				var edge: Variant = edges.get(dir, null)
+				if not _is_passage(edge):
+					_add_wall(parent, chamber_wall_mat if landmark_chamber else wall_mat, base, dir, wall_height)
+				elif _is_door(edge):
+					var door_key := _door_key(cx, cy, dir)
+					if not rendered_doors.has(door_key):
+						rendered_doors[door_key] = true
+						_add_door(parent, door_mat, chamber_wall_mat, chamber_accent, base, dir)
+			if landmark_chamber:
+				_add_chamber_landmarks(parent, base, chamber_floor_mat, chamber_wall_mat, chamber_accent, wall_height)
 			# The pack ships stair-up/stair-down art; draw it so a stair cell is VISIBLE in the first-person
 			# view instead of a plain dead-end the 階段を使う command only hints at (playtest: asset delivered,
 			# never rendered).
@@ -161,26 +183,131 @@ static func _add_wall(parent: Node, mat: Material, base: Vector3, dir: String, h
 		"west": m.rotation.y = PI / 2
 	parent.add_child(m)
 
-static func _add_chamber_landmarks(parent: Node, base: Vector3, accent: Color, height: float) -> void:
-	var inlay := MeshInstance3D.new()
-	var disk := CylinderMesh.new()
-	disk.top_radius = 0.62
-	disk.bottom_radius = 0.62
-	disk.height = 0.025
-	inlay.mesh = disk
-	inlay.material_override = _mat(Color(accent, 0.72))
-	inlay.position = base + Vector3(0, 0.018, 0)
-	parent.add_child(inlay)
-	for offset in [Vector3(-0.88, 0, -0.88), Vector3(0.88, 0, -0.88), Vector3(-0.88, 0, 0.88), Vector3(0.88, 0, 0.88)]:
-		var pillar := MeshInstance3D.new()
-		var column := CylinderMesh.new()
-		column.top_radius = 0.12
-		column.bottom_radius = 0.18
-		column.height = height * 0.72
-		pillar.mesh = column
-		pillar.material_override = _mat(accent.darkened(0.38))
-		pillar.position = base + offset + Vector3(0, column.height / 2.0, 0)
-		parent.add_child(pillar)
+static func _add_chamber_landmarks(parent: Node, base: Vector3, floor_mat: Material, wall_mat: Material, accent: Color, height: float) -> void:
+	# The old treatment was a thin coloured coin plus four full-height columns. Because geometry for every
+	# room is visible through open hallways, it read as a forest of green props rather than one special
+	# place. A low, constructed floor treatment keeps sightlines open and says "arena / reward room" before
+	# the guardian or chest ever appears (the chest itself must remain a post-victory state).
+	var foundation := CylinderMesh.new()
+	foundation.top_radius = 1.14
+	foundation.bottom_radius = 1.18
+	foundation.height = 0.055
+	_add_mesh(parent, foundation, wall_mat, base + Vector3(0, 0.028, 0))
+
+	# Two flat layers make the accent a SET-IN ring, not a freestanding green disc. A little emission keeps
+	# the sap-amber readable under Verdant's canopy light without becoming a glowing pickup or a treasure.
+	var inlay := CylinderMesh.new()
+	inlay.top_radius = 0.93
+	inlay.bottom_radius = 0.93
+	inlay.height = 0.024
+	_add_mesh(parent, inlay, _emissive_mat(accent, 0.06), base + Vector3(0, 0.068, 0))
+	var centre := CylinderMesh.new()
+	centre.top_radius = 0.72
+	centre.bottom_radius = 0.72
+	centre.height = 0.028
+	_add_mesh(parent, centre, floor_mat, base + Vector3(0, 0.083, 0))
+	var seal := CylinderMesh.new()
+	seal.top_radius = 0.22
+	seal.bottom_radius = 0.22
+	seal.height = 0.018
+	_add_mesh(parent, seal, _emissive_mat(accent.lightened(0.08), 0.08), base + Vector3(0, 0.106, 0))
+	# The raised ceiling is part of the room's promise, not empty vertical space. Its subdued root-crown
+	# echoes the floor seal overhead, so an approaching player reads the chamber before the floor mark is
+	# underfoot. It is architectural (flat to the ceiling), never a floating treasure prop.
+	var crown := CylinderMesh.new()
+	crown.top_radius = 0.98
+	crown.bottom_radius = 0.98
+	crown.height = 0.035
+	_add_mesh(parent, crown, wall_mat, base + Vector3(0, height - 0.035, 0))
+	var crown_inlay := CylinderMesh.new()
+	crown_inlay.top_radius = 0.68
+	crown_inlay.bottom_radius = 0.68
+	crown_inlay.height = 0.02
+	_add_mesh(parent, crown_inlay, _emissive_mat(accent.darkened(0.20), 0.04), base + Vector3(0, height - 0.063, 0))
+
+	# Root-bound boundary stones replace the sight-blocking columns. They frame the raised ceiling and the
+	# battle floor, but stay below a standing character's waist when looked at from the approach corridor.
+	for offset in [Vector3(-1.03, 0, -1.03), Vector3(1.03, 0, -1.03), Vector3(-1.03, 0, 1.03), Vector3(1.03, 0, 1.03)]:
+		var cairn := CylinderMesh.new()
+		cairn.top_radius = 0.13
+		cairn.bottom_radius = 0.21
+		cairn.height = 0.58
+		_add_mesh(parent, cairn, wall_mat, base + offset + Vector3(0, cairn.height / 2.0, 0))
+		var cap := CylinderMesh.new()
+		cap.top_radius = 0.09
+		cap.bottom_radius = 0.13
+		cap.height = 0.035
+		_add_mesh(parent, cap, _emissive_mat(accent.darkened(0.18), 0.04), base + offset + Vector3(0, cairn.height + cap.height / 2.0, 0))
+
+static func _add_door(parent: Node, door_mat: Material, frame_mat: Material, accent: Color, base: Vector3, dir: String) -> void:
+	# A door edge is still traversable by the rules, so draw the two living leaves already pushed aside.
+	# The player sees an intentional threshold and can pass through its centre; no state or collision rule is
+	# changed here. This is the Godot counterpart of the Web renderer's wood-door material and frame.
+	var root := Node3D.new()
+	var offset: Vector3 = {
+		"north": Vector3(0, 0, -CELL / 2),
+		"south": Vector3(0, 0, CELL / 2),
+		"east": Vector3(CELL / 2, 0, 0),
+		"west": Vector3(-CELL / 2, 0, 0),
+	}[dir]
+	root.position = base + offset
+	match dir:
+		"north": root.rotation.y = 0
+		"south": root.rotation.y = PI
+		"east": root.rotation.y = -PI / 2
+		"west": root.rotation.y = PI / 2
+	parent.add_child(root)
+
+	# Threshold frame: intentionally broad but not a wall. It makes the entrance read from a distance even
+	# when the door texture is dark, while its colour follows the chamber/world palette rather than a UI gold.
+	for spec in [
+		{"size": Vector3(0.16, 2.58, 0.18), "pos": Vector3(-1.08, 1.29, 0)},
+		{"size": Vector3(0.16, 2.58, 0.18), "pos": Vector3(1.08, 1.29, 0)},
+		{"size": Vector3(2.32, 0.16, 0.18), "pos": Vector3(0, 2.50, 0)},
+	]:
+		_add_box(root, spec["size"], frame_mat, spec["pos"])
+
+	# The leaves are deliberately ajar. A closed slab would look like a collision wall although `door` is a
+	# normal passage in the ported rules; the opening leaves the centre of the threshold legible and passable.
+	for side in [-1.0, 1.0]:
+		var leaf := MeshInstance3D.new()
+		var slab := BoxMesh.new()
+		slab.size = Vector3(0.58, 2.28, 0.09)
+		leaf.mesh = slab
+		leaf.material_override = door_mat
+		leaf.position = Vector3(side * 0.76, 1.14, -0.16)
+		leaf.rotation.y = -side * 0.48
+		root.add_child(leaf)
+	var latch := CylinderMesh.new()
+	latch.top_radius = 0.055
+	latch.bottom_radius = 0.055
+	latch.height = 0.06
+	_add_mesh(root, latch, _emissive_mat(accent, 0.08), Vector3(0, 1.22, 0.06), Vector3(PI / 2, 0, 0))
+
+static func _door_key(cx: int, cy: int, dir: String) -> String:
+	# Mirror edges describe the same physical threshold. Canonicalising its boundary prevents a doubled
+	# texture/frame while still rendering data that marks only one side as `door`.
+	match dir:
+		"north": return "h:%d:%d" % [cx, cy]
+		"south": return "h:%d:%d" % [cx, cy + 1]
+		"west": return "v:%d:%d" % [cx, cy]
+		_: return "v:%d:%d" % [cx + 1, cy]
+
+static func _is_door(edge: Variant) -> bool:
+	return typeof(edge) == TYPE_DICTIONARY and String(edge.get("kind", "")) == "door"
+
+static func _add_mesh(parent: Node, mesh: Mesh, material: Material, pos: Vector3, rot: Vector3 = Vector3.ZERO) -> void:
+	var instance := MeshInstance3D.new()
+	instance.mesh = mesh
+	instance.material_override = material
+	instance.position = pos
+	instance.rotation = rot
+	parent.add_child(instance)
+
+static func _add_box(parent: Node, dimensions: Vector3, material: Material, pos: Vector3) -> void:
+	var box := BoxMesh.new()
+	box.size = dimensions
+	_add_mesh(parent, box, material, pos)
 
 # Deeper floors use a heavier block set (React: depth >= 7 -> block3, >= 4 -> block2, >= 1 -> block1).
 static func _block_textures(state: Dictionary, world: Dictionary, run: Object) -> Dictionary:
@@ -230,6 +357,13 @@ static func _mat(col: Color) -> StandardMaterial3D:
 	mat.albedo_color = col
 	mat.roughness = 0.95
 	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	return mat
+
+static func _emissive_mat(col: Color, energy: float) -> StandardMaterial3D:
+	var mat := _mat(col)
+	mat.emission_enabled = true
+	mat.emission = col
+	mat.emission_energy_multiplier = energy
 	return mat
 
 static func _is_passage(edge: Variant) -> bool:
