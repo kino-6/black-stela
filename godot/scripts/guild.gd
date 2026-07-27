@@ -31,6 +31,7 @@ const WorldResources := preload("res://scripts/world_resources.gd")
 const Draft := preload("res://scripts/guild_draft.gd")
 const CharacterCreation := preload("res://scripts/rules/character_creation.gd")
 const Techniques := preload("res://scripts/rules/techniques.gd")
+const SliceRules := preload("res://scripts/rules/slice_rules.gd")
 
 const STEPS := ["briefing", "class", "face", "background", "trait", "bonus", "name"]
 const APTITUDE_KEYS := ["might", "agility", "spirit", "wit", "luck"]
@@ -46,6 +47,9 @@ var _fallback_state: Dictionary = {}
 var _step: String = "briefing"
 var _draft: Dictionary = {}
 var _roster_open: bool = false
+# Roster EDIT: which existing member is being edited, and the working copy of their identity fields.
+var _roster_selected_id: String = ""
+var _roster_draft: Dictionary = {}
 var _event_text: String = ""
 
 var _pending_focus: Control = null   # where this step lands the cursor when it opens
@@ -634,12 +638,31 @@ func _hall_panel() -> Control:
 	# recall / retire) is the town's guild counter — this opens the same list so the hall is not a dead
 	# end while the party is still being built.
 	if _roster_open:
-		col.add_child(UI.label(I18n.t("party.reserveHeading"), 16, UI.GOLD))
-		var reserve: Array = state().get("reserve", [])
-		if reserve.is_empty():
+		col.add_child(UI.label(I18n.t("party.manageRoster"), 16, UI.GOLD))
+		# Every registered adventurer — party AND reserve — is selectable, so names/来歴 can be corrected
+		# after registration (playtest: "ギルドで名前変更できない / 冒険者情報の修正できないの？").
+		var everyone: Array = []
+		everyone.append_array(state().get("party", []))
+		everyone.append_array(state().get("reserve", []))
+		if everyone.is_empty():
 			col.add_child(UI.label("—", 15, UI.DIM))
-		for member in reserve:
-			col.add_child(UI.label(String(member.get("name", "?")), 15, UI.INK))
+		var picker := UI.row()
+		for member in everyone:
+			var mid := String(member.get("id", ""))
+			var pick := UI.button(String(member.get("name", "?")), func(): _roster_select(mid), Vector2(150, 34), 14)
+			if mid == _roster_selected_id:
+				pick.add_theme_color_override("font_color", UI.GOLD)
+			_claim(pick, "roster:%s" % mid)
+			picker.add_child(pick)
+		col.add_child(picker)
+		var editing := _member_by_id(_roster_selected_id)
+		if not editing.is_empty():
+			col.add_child(_roster_field(I18n.t("party.editName"), String(_roster_draft.get("name", "")), I18n.t("party.namePlaceholder"), "name"))
+			col.add_child(_roster_field(I18n.t("party.editTitle"), String(_roster_draft.get("title", "")), I18n.t("party.titlePlaceholder"), "title"))
+			col.add_child(_roster_field(I18n.t("party.editNotes"), String(_roster_draft.get("notes", "")), I18n.t("party.notesPlaceholder"), "notes"))
+			var save := UI.button(I18n.t("party.editSave"), func(): _save_roster_edit(), Vector2(200, 40), 16)
+			_claim(save, "roster:save")
+			col.add_child(save)
 		col.add_child(UI.button(I18n.t("party.rosterDone"), func(): _set_roster(false), Vector2(200, 40), 16))
 	else:
 		col.add_child(UI.button(I18n.t("party.manageRoster"), func(): _set_roster(true), Vector2(220, 40), 16))
@@ -737,6 +760,67 @@ func _adjust(key: String, delta: int) -> void:
 
 func _set_roster(open: bool) -> void:
 	_roster_open = open
+	if not open:
+		_roster_selected_id = ""
+	_rebuild()
+
+func _member_by_id(id: String) -> Dictionary:
+	if id == "":
+		return {}
+	for member in state().get("party", []):
+		if String(member.get("id", "")) == id:
+			return member
+	for member in state().get("reserve", []):
+		if String(member.get("id", "")) == id:
+			return member
+	return {}
+
+# Select an existing member to edit; seed the working draft from their current identity.
+func _roster_select(id: String) -> void:
+	_roster_selected_id = id
+	var m := _member_by_id(id)
+	_roster_draft = {
+		"name": String(m.get("name", "")),
+		"title": String(m.get("title", "")),
+		"notes": String(m.get("notes", "")),
+		"accentColor": String(m.get("accentColor", "#c9a765"))
+	}
+	_focus_key = "roster:%s" % id
+	_rebuild()
+
+# A plain identity LineEdit for the roster editor — no reroll dice (that targets the CREATION draft).
+func _roster_field(label_text: String, value: String, placeholder: String, field: String) -> Control:
+	var box := UI.col(4)
+	box.add_child(UI.label(label_text, 15, UI.DIM))
+	var edit := LineEdit.new()
+	edit.text = value
+	edit.placeholder_text = placeholder
+	edit.custom_minimum_size = Vector2(360, 40)
+	edit.add_theme_font_size_override("font_size", 18)
+	edit.text_changed.connect(func(v: String): _roster_draft[field] = v)
+	box.add_child(edit)
+	return box
+
+# Commit the edit through the durable rule (trims, and covers party/reserve/retired), then write state back.
+func _save_roster_edit() -> void:
+	if _roster_selected_id == "" or String(_roster_draft.get("name", "")).strip_edges() == "":
+		return
+	var command := {
+		"type": "edit_member_identity",
+		"characterId": _roster_selected_id,
+		"name": String(_roster_draft.get("name", "")),
+		"title": String(_roster_draft.get("title", "")),
+		"notes": String(_roster_draft.get("notes", "")),
+		"accentColor": String(_roster_draft.get("accentColor", "#c9a765"))
+	}
+	var result: Dictionary = SliceRules.resolve(state(), command, _world, _engine())
+	var next: Dictionary = result.get("state", state())
+	if _run != null:
+		_run.state = next
+	else:
+		_fallback_state = next
+	_event_text = "%s: %s" % [I18n.t("party.review"), String(_roster_draft.get("name", ""))]
+	_focus_key = "roster:%s" % _roster_selected_id
 	_rebuild()
 
 func _register() -> void:
