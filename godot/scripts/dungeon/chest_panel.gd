@@ -11,7 +11,9 @@ const I18n := preload("res://scripts/i18n.gd")
 const UI := preload("res://scripts/town/ui_kit.gd")
 
 ## Returns { control, focus } — `focus` is the button the cursor must land on.
-static func build(chest: Dictionary, on_command: Callable, on_leave: Callable) -> Dictionary:
+## `loot_line` is the "◯◯ を N 個見つけた。" text from the just-fired loot event, shown INSIDE the panel on
+## open so the reward is visible where the player is looking (playtest: the panel only said "宝箱は開いた。").
+static func build(chest: Dictionary, on_command: Callable, on_leave: Callable, loot_line: String = "") -> Dictionary:
 	var opened := String(chest.get("phase", "")) == "opened"
 	var result := String(chest.get("investigateResult", "")) if chest.get("investigateResult", null) != null else ""
 	var known_trapped := result == "trapped"
@@ -29,6 +31,9 @@ static func build(chest: Dictionary, on_command: Callable, on_leave: Callable) -
 	var root := UI.col(8)
 	root.add_child(UI.label(I18n.t("play.chestHeading"), 20, UI.GOLD))
 	root.add_child(UI.label(note, 17, UI.INK))
+	# The reward, shown right where the chest was opened — not only in the far-off message band.
+	if opened and loot_line != "":
+		root.add_child(UI.label(loot_line, 16, UI.GOLD))
 
 	# The chest dock is a NARROW right-hand column (≈260px of usable width), so the actions STACK vertically —
 	# a row of 調べる / 開ける / 立ち去る ran off the right edge (playtest: 開ける was clipped). Buttons fill the

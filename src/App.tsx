@@ -2727,6 +2727,7 @@ export function App() {
                     run({ type: "use_item", itemId: escapeItem.id, targetCharacterId: state.party[0]?.id ?? "" })
                   }
                   chest={activeChest}
+                  chestLootLine={latestEventType === "inventory_item_gained" ? latestLogText : ""}
                   onLeaveChest={() => setDismissedChestCellId(activeChest?.cellId ?? null)}
                 />
               ) : (

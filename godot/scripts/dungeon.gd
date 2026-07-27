@@ -42,6 +42,8 @@ var _party_hud: HBoxContainer = null
 var _log_label: Label
 var _header: Label
 var _busy: bool = false
+# The loot text from the most recent command's chest/reward pickup, surfaced in the chest panel on open.
+var _chest_loot_line: String = ""
 var _engine: Dictionary = {}
 var _dock_host: PanelContainer = null
 var _full_map: Control = null
@@ -418,7 +420,7 @@ func _rebuild_dock() -> void:
 	if not chest.is_empty():
 		# IMP-029: a chest HOLDS the cell — its actions replace the walk commands rather than sitting
 		# beside them, so Confirm can never walk the party off the chest by accident.
-		var built: Dictionary = ChestPanel.build(chest, func(cmd): _apply(SliceRules.resolve(_state, cmd, _world, _engine)), func(): _leave_chest())
+		var built: Dictionary = ChestPanel.build(chest, func(cmd): _apply(SliceRules.resolve(_state, cmd, _world, _engine)), func(): _leave_chest(), _chest_loot_line)
 		_dock_host.add_child(built["control"])
 		if built["focus"] != null:
 			(built["focus"] as Control).call_deferred("grab_focus")
@@ -634,6 +636,12 @@ func _apply(result: Dictionary) -> void:
 		_run.state = _state
 	var events: Array = result.get("events", [])
 	_log_events(events)
+	# Capture this command's loot line (if any) so an opened chest can show WHAT it held, in the panel; a
+	# command with no pickup clears it, so a later opened chest never shows a stale reward.
+	_chest_loot_line = ""
+	for e in events:
+		if String((e as Dictionary).get("type", "")) == "inventory_item_gained":
+			_chest_loot_line = _event_line(e)
 
 	if _state.get("phase", "") == "combat":
 		_busy = true

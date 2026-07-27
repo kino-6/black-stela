@@ -38,6 +38,8 @@ interface DungeonCockpitProps {
   onUseEscapeItem: () => void;
   /** IMP-029 — the closed/opened chest on the party's current cell (null = none, or dismissed). */
   chest: ChestState | null;
+  /** The just-picked-up loot line, shown in the chest panel on open. */
+  chestLootLine?: string;
   onLeaveChest: () => void;
 }
 
@@ -69,6 +71,7 @@ export function DungeonCockpit({
   showEscapeItem,
   onUseEscapeItem,
   chest,
+  chestLootLine,
   onLeaveChest
 }: DungeonCockpitProps) {
   const currentRoom = state.position ? getRoom(world, state.position.roomId) : undefined;
@@ -203,7 +206,7 @@ export function DungeonCockpit({
       {chest ? (
         // IMP-029 — the chest owns the command region while it sits on this cell (same footprint as the
         // dock, so nothing reflows). Leaving hands the region back to movement/utility commands.
-        <ChestPanel chest={chest} t={t} onCommand={run} onLeave={onLeaveChest} />
+        <ChestPanel chest={chest} t={t} onCommand={run} onLeave={onLeaveChest} lootLine={chestLootLine} />
       ) : (
       <DungeonCommandDock
         t={t}

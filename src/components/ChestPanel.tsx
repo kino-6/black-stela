@@ -8,6 +8,9 @@ interface ChestPanelProps {
   t: Translator;
   onCommand: (command: Command) => void;
   onLeave: () => void;
+  /** The "◯◯ を N 個見つけた。" loot line from the just-fired pickup, shown IN the panel on open so the
+   *  reward is visible where the player is looking (playtest: the panel only said "宝箱は開いた。"). */
+  lootLine?: string;
 }
 
 // IMP-029 — the current-cell chest command surface. Occupies the SAME command region as the movement
@@ -15,7 +18,7 @@ interface ChestPanelProps {
 // and no fight is on. Controller-first: the first action grabs focus; confirm/cancel drive it. Success
 // rates and internal difficulty are never shown — only what the party can see (closed / a found trap /
 // "can't tell" / opened).
-export function ChestPanel({ chest, t, onCommand, onLeave }: ChestPanelProps) {
+export function ChestPanel({ chest, t, onCommand, onLeave, lootLine }: ChestPanelProps) {
   const firstRef = useRef<HTMLButtonElement>(null);
   const opened = chest.phase === "opened";
   // Only a DETECTED trap surfaces a disarm option — an "uncertain" investigation must not reveal a
@@ -53,6 +56,11 @@ export function ChestPanel({ chest, t, onCommand, onLeave }: ChestPanelProps) {
       <p className="chest-panel-note" data-testid="chest-note" aria-live="polite">
         {note}
       </p>
+      {opened && lootLine ? (
+        <p className="chest-panel-loot" data-testid="chest-loot" aria-live="polite">
+          {lootLine}
+        </p>
+      ) : null}
       {opened ? (
         <button
           type="button"
