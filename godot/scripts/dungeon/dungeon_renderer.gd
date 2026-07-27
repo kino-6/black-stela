@@ -72,27 +72,55 @@ static func _build_geometry(parent: Node, world: Dictionary, state: Dictionary, 
 		var rooms_by_id := {}
 		for room in dungeon.get("rooms", []):
 			rooms_by_id[String((room as Dictionary).get("id", ""))] = room
-		for cell in (dungeon.get("grid", {}) as Dictionary).get("cells", []):
+		# 玄室 read as a whole 2×2 ROOM, not a single decorated tile (playtest: "マスではなく2x2の部屋"). A
+		# chamberGuardian cell is the ANCHOR (encounter + chest + the one central landmark); its 2×2 walkable
+		# block (chosen from the four squares the anchor can corner) is decorated as chamber floor/walls too, so
+		# the entire room reads as the 玄室. The map already carves the 2×2 — this makes the render honour it.
+		var walkable := {}
+		var all_cells: Array = (dungeon.get("grid", {}) as Dictionary).get("cells", [])
+		for cell in all_cells:
+			walkable["%d,%d" % [int(cell.get("x", 0)), int(cell.get("y", 0))]] = true
+		var chamber_block := {}
+		var chamber_anchor := {}
+		for cell in all_cells:
+			var r: Dictionary = rooms_by_id.get(String(cell.get("roomId", "")), {})
+			if not bool(r.get("chamberGuardian", false)):
+				continue
+			var ax := int(cell.get("x", 0))
+			var ay := int(cell.get("y", 0))
+			chamber_anchor["%d,%d" % [ax, ay]] = true
+			chamber_block["%d,%d" % [ax, ay]] = true  # the anchor is always decorated, 2×2 or not
+			for q in [[1, 1], [-1, 1], [1, -1], [-1, -1]]:
+				var square := [[ax, ay], [ax + q[0], ay], [ax, ay + q[1]], [ax + q[0], ay + q[1]]]
+				var square_open := true
+				for p in square:
+					if not walkable.has("%d,%d" % [p[0], p[1]]):
+						square_open = false
+						break
+				if square_open:
+					for p in square:
+						chamber_block["%d,%d" % [p[0], p[1]]] = true
+					break
+		for cell in all_cells:
 			var cx := int(cell.get("x", 0))
 			var cy := int(cell.get("y", 0))
 			var base := Vector3(cx * CELL, 0, cy * CELL)
 			var edges: Dictionary = cell.get("edges", {})
-			var chamber := _is_chamber(edges)
-			# A dense maze has many 3-way intersections. They need the ordinary hall geometry, not the
-			# guardian-room landmark: otherwise every distant junction repeats the ritual seal and the real
-			# fight/reward room is no longer special. Verdant explicitly marks those rooms in data; legacy
-			# worlds retain the old shape-derived treatment until they author the same field.
-			var room: Dictionary = rooms_by_id.get(String(cell.get("roomId", "")), {})
-			var authored_chamber := chamber and bool(room.get("chamberGuardian", false))
+			var coord_key := "%d,%d" % [cx, cy]
+			# Authored worlds (Verdant marks its 玄室 in data) decorate the ANCHOR's whole 2×2 block and put the
+			# single landmark on the anchor; legacy worlds without a chamber palette keep the old shape-derived
+			# treatment (a 3-way+ junction), so a dense maze's junctions are not all lit as guardian rooms.
 			var use_authored_chambers := pal.has("chamberFloor") or pal.has("chamberWall") or pal.has("chamberAccent")
-			var landmark_chamber := authored_chamber if use_authored_chambers else chamber
-			var wall_height := WALL_H * 1.65 if landmark_chamber else WALL_H
-			_add_plane(parent, chamber_floor_mat if landmark_chamber else floor_mat, base, Vector3(0, 0, 0))
+			var shape_chamber := _is_chamber(edges)
+			var chamber_deco := chamber_block.has(coord_key) if use_authored_chambers else shape_chamber
+			var landmark_chamber := chamber_anchor.has(coord_key) if use_authored_chambers else shape_chamber
+			var wall_height := WALL_H * 1.65 if chamber_deco else WALL_H
+			_add_plane(parent, chamber_floor_mat if chamber_deco else floor_mat, base, Vector3(0, 0, 0))
 			_add_plane(parent, ceil_mat, base + Vector3(0, wall_height, 0), Vector3(PI, 0, 0))
 			for dir in ["north", "south", "east", "west"]:
 				var edge: Variant = edges.get(dir, null)
 				if not _is_passage(edge):
-					_add_wall(parent, chamber_wall_mat if landmark_chamber else wall_mat, base, dir, wall_height)
+					_add_wall(parent, chamber_wall_mat if chamber_deco else wall_mat, base, dir, wall_height)
 				elif _is_door(edge):
 					var door_key := _door_key(cx, cy, dir)
 					if not rendered_doors.has(door_key):
