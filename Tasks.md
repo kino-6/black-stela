@@ -20,6 +20,23 @@ extra chamber rooms were defined but never placed on the grid and dropped on exp
 - [x] Sweep/loops stay within the design gate (G2F still exempt).
 - [x] Gate: dungeonDesign.test asserts Verdant G1–G3 each have ≥ 6 玄室. Parity + verdant-chambers green.
 
+## B2. 玄室 are now REAL guaranteed-fight rooms (correction to B)  — DONE
+Playtest caught that B only satisfied a COUNT: the plain chambers shared one pack table and the engine
+suppresses an enemy TYPE once met per floor visit (first-contact), so only the FIRST chamber entered
+actually fought — the rest sat empty and their chests were locked behind a fight that never fired. Godot
+also never released a chamber's chest on victory at all (a latent parity gap). Fixed to the Wiz model
+("入るたび確定湧き"):
+- [x] New room field `chamberGuardian` — its fight is gated PER-ROOM (by the room's own chest claim), not by
+      enemy type, so every chamber fights even sharing a pack table. (rulesEngine + scenario schema + types)
+- [x] Generator marks every plain chamber `chamberGuardian: true` (the keep stays a once-only unique boss).
+- [x] Godot mirror: `encounters.gd` bypasses type-suppression for chamber guardians, and `combat_round.gd`
+      `_victory` now RELEASES the chamber chest on the win (was missing — chamber loot never dropped on the
+      shipped build). TS `debug_force_victory` gained the same release for headless parity.
+- [x] Gate: dungeonDesign 玄室 rule now requires `chamberGuardian` (not just "has a table"); new
+      `chamberGuardian.test.ts` proves chambers fight independently + drop their chest on victory. Full unit
+      (684) + parity + played-loop + dungeon + flow + verdant-chambers green.
+- [ ] Still open (visual, Codex art-lane): 扉 on chamber entrances + landmark tone (see F).
+
 ## C. Shortcuts: warp → hidden door / hidden passage (Verdant, all floors)  — DONE
 Only hidden doors / secret passages allowed; no warp shortcuts ("ワープではなく隠し扉・隠しみちのみ").
 - [x] The generator now opens ONE maze wall between the two FARTHEST-apart corridors and hides it behind a

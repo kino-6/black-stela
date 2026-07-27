@@ -75,6 +75,7 @@ rooms:
   - id: room.verdant.g2f.02
     name: Green Chamber 1
     description: A chamber where the canopy-light pools green on standing water.
+    chamberGuardian: true
     encounterTable: encounters.verdant.g2.pack
     treasureTable: treasure.verdant.g2.side
     locales:
@@ -84,6 +85,7 @@ rooms:
   - id: room.verdant.g2f.03
     name: Green Chamber 2
     description: A chamber where the canopy-light pools green on standing water.
+    chamberGuardian: true
     encounterTable: encounters.verdant.g2.pack
     treasureTable: treasure.verdant.g2.side
     locales:
@@ -93,6 +95,7 @@ rooms:
   - id: room.verdant.g2f.04
     name: Green Chamber 3
     description: A chamber where the canopy-light pools green on standing water.
+    chamberGuardian: true
     encounterTable: encounters.verdant.g2.pack
     treasureTable: treasure.verdant.g2.side
     locales:
@@ -102,6 +105,7 @@ rooms:
   - id: room.verdant.g2f.05
     name: Green Chamber 4
     description: A chamber where the canopy-light pools green on standing water.
+    chamberGuardian: true
     encounterTable: encounters.verdant.g2.pack
     treasureTable: treasure.verdant.g2.side
     locales:
@@ -111,6 +115,7 @@ rooms:
   - id: room.verdant.g2f.06
     name: Green Chamber 5
     description: A chamber where the canopy-light pools green on standing water.
+    chamberGuardian: true
     encounterTable: encounters.verdant.g2.pack
     treasureTable: treasure.verdant.g2.side
     locales:
@@ -120,6 +125,7 @@ rooms:
   - id: room.verdant.g2f.07
     name: Green Chamber 6
     description: A chamber where the canopy-light pools green on standing water.
+    chamberGuardian: true
     encounterTable: encounters.verdant.g2.pack
     treasureTable: treasure.verdant.g2.side
     locales:
@@ -129,6 +135,7 @@ rooms:
   - id: room.verdant.g2f.08
     name: Green Chamber 7
     description: A chamber where the canopy-light pools green on standing water.
+    chamberGuardian: true
     encounterTable: encounters.verdant.g2.pack
     treasureTable: treasure.verdant.g2.side
     locales:

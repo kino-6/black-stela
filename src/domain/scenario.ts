@@ -382,6 +382,10 @@ const roomSchema = z.object({
   encounter: enemySchema.optional(),
   encounterSquad: z.array(z.string().min(1)).min(2).optional(),
   encounterTable: z.string().min(1).optional(),
+  // A Wiz-style 玄室: its guardian is gated PER-ROOM (by this room's own chest claim), not by enemy-type
+  // first contact — so every chamber on a floor is its own guaranteed fight even when they share a pack
+  // table. Cleared once its chest is claimed; a fresh descent re-arms it. Set by genVerdantFloors.
+  chamberGuardian: z.boolean().optional(),
   treasureTable: z.string().min(1).optional(),
   chest: chestSchema.optional(),
   gates: z.array(explorationGateSchema).default([]),

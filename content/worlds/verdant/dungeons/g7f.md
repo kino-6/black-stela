@@ -72,6 +72,7 @@ rooms:
   - id: room.verdant.g7f.02
     name: Green Chamber 1
     description: A chamber where the canopy-light pools green on standing water.
+    chamberGuardian: true
     encounterTable: encounters.verdant.g7.pack
     treasureTable: treasure.verdant.g7.side
     locales:
@@ -81,6 +82,7 @@ rooms:
   - id: room.verdant.g7f.03
     name: Green Chamber 2
     description: A chamber where the canopy-light pools green on standing water.
+    chamberGuardian: true
     encounterTable: encounters.verdant.g7.pack
     treasureTable: treasure.verdant.g7.side
     locales:
@@ -90,6 +92,7 @@ rooms:
   - id: room.verdant.g7f.04
     name: Green Chamber 3
     description: A chamber where the canopy-light pools green on standing water.
+    chamberGuardian: true
     encounterTable: encounters.verdant.g7.pack
     treasureTable: treasure.verdant.g7.side
     locales:

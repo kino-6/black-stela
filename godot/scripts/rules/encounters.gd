@@ -283,6 +283,11 @@ static func begin_room_encounter(world: Dictionary, room: Variant, state: Dictio
 		return null
 	var room_id := String(room.get("id", ""))
 	var cleared: Array = state.get("floorClearedEnemies", [])
+	# A Wiz-style 玄室 (chamberGuardian): its guardian is gated PER-ROOM — by whether THIS room's chest is
+	# still unclaimed this floor visit — not by enemy-type first contact. So every chamber on a floor fights
+	# even when they share one pack table (playtest: with a shared table only the first chamber fought and the
+	# rest sat empty with their chests locked). Cleared once its chest is claimed; a fresh descent re-arms it.
+	var chamber_guardian: bool = bool(room.get("chamberGuardian", false)) and not (state.get("floorClaimedTreasures", []) as Array).has(room_id)
 
 	var squad_ids: Variant = room.get("encounterSquad", null)
 	if typeof(squad_ids) == TYPE_ARRAY:
@@ -291,7 +296,7 @@ static func begin_room_encounter(world: Dictionary, room: Variant, state: Dictio
 			var enemy: Variant = find_enemy(world, enemy_id)
 			if typeof(enemy) == TYPE_DICTIONARY:
 				squad.append(enemy)
-		if squad.size() >= 2 and not cleared.has((squad[0] as Dictionary).get("id", "")):
+		if squad.size() >= 2 and (chamber_guardian or not cleared.has((squad[0] as Dictionary).get("id", ""))):
 			var names := []
 			for enemy in squad:
 				names.append(String((enemy as Dictionary).get("name", "")))
@@ -319,8 +324,9 @@ static func begin_room_encounter(world: Dictionary, room: Variant, state: Dictio
 				break
 
 	# Suppression is scoped to THIS FLOOR VISIT: leave and come back and the chambers are repopulated.
-	# A `respawns` table opts out entirely, so its foes keep appearing (#20).
-	var fresh := select_encounter_groups(rolled, ([] if respawns else cleared), groups_max)
+	# A `respawns` table opts out entirely (#20); a 玄室 guardian opts out too (gated per-room above), so
+	# shared-table chambers each fight rather than suppressing each other.
+	var fresh := select_encounter_groups(rolled, ([] if (respawns or chamber_guardian) else cleared), groups_max)
 	if fresh.is_empty():
 		return null
 

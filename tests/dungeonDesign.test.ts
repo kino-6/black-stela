@@ -78,8 +78,13 @@ describe("dungeon design gate", () => {
 
           if (chamberFloor > 0) {
             it(`玄室 — a guaranteed-fight + treasure room count of ≥ ${chamberFloor}`, () => {
+              // A real 玄室 is a chamberGuardian room (its guardian is gated PER-ROOM, so every chamber fights
+              // even sharing a pack table — NOT the old structural "has an encounter table" which let 6-8
+              // chambers share one type and suppress each other) that ALSO holds treasure to guard.
               const genshitsu = floor.rooms.filter(
-                (r) => (r.encounter || r.encounterTable) && (r.treasureTable || (r as { chest?: unknown }).chest)
+                (r) =>
+                  (r as { chamberGuardian?: boolean }).chamberGuardian &&
+                  (r.treasureTable || (r as { chest?: unknown }).chest)
               ).length;
               expect(genshitsu, `${floor.id} needs ≥ ${chamberFloor} 玄室`).toBeGreaterThanOrEqual(chamberFloor);
             });

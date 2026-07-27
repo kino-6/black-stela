@@ -1714,7 +1714,7 @@ function debugForceVictory(state: GameState, world: ScenarioWorld): CommandResul
     return leveled.character;
   });
 
-  const next: GameState = {
+  let next: GameState = {
     ...state,
     phase: "dungeon",
     combat: null,
@@ -1741,6 +1741,12 @@ function debugForceVictory(state: GameState, world: ScenarioWorld): CommandResul
     turn: state.turn + 1
   };
 
+  // Mirror the real victory: a CHAMBER (玄室) leaves its guarded chest on its cell only now, on the win —
+  // so a debug/headless victory doesn't silently drop the chamber loot.
+  const chamberCellId = state.position?.cellId ?? getGridCellForRoom(world, combat.roomId)?.id;
+  const released = ensureChestForRoom(next, world, combat.roomId, chamberCellId);
+  next = released.state;
+
   return withEvents(next, [
     ...defeatedNames.map((enemyName, index) => ({
       type: "enemy_defeated" as const,
@@ -1748,6 +1754,7 @@ function debugForceVictory(state: GameState, world: ScenarioWorld): CommandResul
       enemyName
     })),
     { type: "combat_rewards", xp, gold, enemyNames: defeatedNames, enemyIds: defeatedEnemyIds },
+    ...released.events,
     ...levelEvents
   ]);
 }
@@ -2016,10 +2023,18 @@ function beginRoomEncounter(
   room: DungeonRoom,
   state: GameState
 ): { combat: CombatState; event: GameEvent } | null {
+  // A Wiz-style 玄室 (chamberGuardian): its guardian is gated PER-ROOM — by whether THIS room's chest is
+  // still unclaimed this floor visit — not by enemy-type first contact. So every chamber on a floor is its
+  // own guaranteed fight even when they share one pack table (the playtest bug: with a shared table, only
+  // the first chamber fought and the rest sat empty with their chests locked behind a fight that never
+  // fired). Once the chest is claimed the room is done; a fresh descent re-arms it (floorClaimedTreasures
+  // resets on floor change), matching the "入るたび確定湧き" ruling.
+  const chamberGuardian = Boolean(room.chamberGuardian) && !state.floorClaimedTreasures.includes(room.id);
+
   const squad = room.encounterSquad
     ?.map((enemyId) => world.enemies.find((enemy) => enemy.id === enemyId))
     .filter((enemy): enemy is Enemy => Boolean(enemy));
-  if (squad && squad.length >= 2 && !state.floorClearedEnemies.includes(squad[0].id)) {
+  if (squad && squad.length >= 2 && (chamberGuardian || !state.floorClearedEnemies.includes(squad[0].id))) {
     return {
       combat: createSquadCombatState(room.id, squad),
       event: { type: "enemy_encountered", enemyId: squad[0].id, enemyName: squad.map((enemy) => enemy.name).join(" & "), roomId: room.id }
@@ -2043,8 +2058,10 @@ function beginRoomEncounter(
     : undefined;
   // Suppression is scoped to THIS FLOOR VISIT: leave and come back and the chambers
   // (玄室) are repopulated. Run-long `defeatedEnemies` is only the record. A `respawns`
-  // table opts out entirely, so its foes keep appearing (#20).
-  const fresh = selectEncounterGroups(rolled, table?.respawns ? [] : state.floorClearedEnemies, table?.groupsMax ?? 1);
+  // table opts out entirely, so its foes keep appearing (#20). A 玄室 guardian opts out too
+  // (gated per-room above), so shared-table chambers each fight rather than suppressing each other.
+  const defeated = chamberGuardian || table?.respawns ? [] : state.floorClearedEnemies;
+  const fresh = selectEncounterGroups(rolled, defeated, table?.groupsMax ?? 1);
   if (fresh.length === 0) {
     return null;
   }

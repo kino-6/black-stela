@@ -936,6 +936,9 @@ export interface DungeonRoom {
    *  hang back (mid/air) and are shielded from melee until the front falls. */
   encounterSquad?: string[];
   encounterTable?: string;
+  /** A Wiz-style 玄室: guardian gated PER-ROOM (by this room's own chest claim), not by enemy-type first
+   *  contact — so each chamber is its own guaranteed fight even when they share a pack table. */
+  chamberGuardian?: boolean;
   treasureTable?: string;
   /** IMP-029 — an authored chest (reward table + optional trap). A bare `treasureTable` still works as
    *  a plain chest; `chest` is how a scenario adds a trap and difficulty to a chamber's reward. */

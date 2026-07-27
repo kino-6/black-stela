@@ -455,12 +455,71 @@ static func _victory(state: Dictionary, world: Dictionary, combat: Dictionary, p
 	# recordQuestKills is a no-op with no active quests, so next["quests"] carries over unchanged.
 	next["turn"] = int(state.get("turn", 0)) + 1
 
+	# Mirror TS declareRound: a CHAMBER (玄室) leaves its guarded chest on its cell only NOW, on the win —
+	# on entry the chest is gated behind the fight (exploration_commands), and it is released here. Without
+	# this the shipped Godot build gave chamber guardians no reward at all (parity gap: TS released the chest
+	# on victory, Godot never did). Event order matches TS: after combat_rewards, before the level-ups.
+	var chamber_events: Array = []
+	var room_id := String(combat.get("roomId", ""))
+	var chamber_cell: Variant = null
+	if typeof(state.get("position", null)) == TYPE_DICTIONARY:
+		chamber_cell = state["position"].get("cellId", null)
+	var chamber_room: Variant = _find_room(world, room_id)
+	if typeof(chamber_room) == TYPE_DICTIONARY and typeof(chamber_cell) == TYPE_STRING:
+		var released := _release_room_chest(next, chamber_room, String(chamber_cell))
+		next = released["state"]
+		chamber_events = released["events"]
+
 	var events := [{"type": "combat_round_resolved", "round": int(combat.get("round", 1))}]
 	for i in defeated_names.size():
 		events.append({"type": "enemy_defeated", "enemyId": defeated_ids[i], "enemyName": defeated_names[i]})
 	events.append({"type": "combat_rewards", "xp": xp, "gold": gold, "enemyNames": defeated_names, "enemyIds": defeated_ids})
+	events.append_array(chamber_events)
 	events.append_array(level_events)
 	return {"state": next, "events": events}
+
+# A CHAMBER's guarded chest (玄室): released on victory, mirroring exploration_commands._ensure_chest_for_room
+# (kept self-contained here to avoid a preload cycle with the exploration module).
+static func _release_room_chest(state: Dictionary, room: Dictionary, cell_id: String) -> Dictionary:
+	if bool(room.get("stairsToTown", false)) or bool(room.get("restPoint", false)):
+		return {"state": state, "events": []}
+	var authored: Variant = null
+	if typeof(room.get("chest", null)) == TYPE_DICTIONARY:
+		authored = room["chest"]
+	elif typeof(room.get("treasureTable", null)) == TYPE_STRING:
+		authored = {"treasureTable": room["treasureTable"]}
+	if typeof(authored) != TYPE_DICTIONARY:
+		return {"state": state, "events": []}
+	var room_id := String(room.get("id", ""))
+	for chest in state.get("chests", []):
+		if chest.get("cellId", "") == cell_id:
+			return {"state": state, "events": []}
+	if (state.get("floorClaimedTreasures", []) as Array).has(room_id):
+		return {"state": state, "events": []}
+	var made := {
+		"cellId": cell_id,
+		"roomId": room_id,
+		"treasureTable": authored.get("treasureTable", null),
+		"trap": (authored["trap"] as Dictionary).duplicate(true) if typeof(authored.get("trap", null)) == TYPE_DICTIONARY else null,
+		"phase": "closed",
+		"investigated": false,
+		"investigateResult": null,
+		"disarmAttempted": false,
+		"disarmed": false,
+		"sprung": false
+	}
+	var next: Dictionary = state.duplicate(true)
+	var list: Array = (next.get("chests", []) as Array).duplicate(true)
+	list.append(made)
+	next["chests"] = list
+	return {"state": next, "events": [{"type": "chest_appeared", "cellId": cell_id, "roomId": room_id}]}
+
+static func _find_room(world: Dictionary, room_id: String) -> Variant:
+	for dungeon in world.get("dungeons", []):
+		for room in dungeon.get("rooms", []):
+			if String(room.get("id", "")) == room_id:
+				return room
+	return null
 
 static func _reward_member(member: Dictionary, groups: Array, gold: int, defeated_names: Array, engine: Dictionary) -> Dictionary:
 	var m: Dictionary = member.duplicate(true)
