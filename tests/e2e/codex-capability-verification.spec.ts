@@ -50,8 +50,8 @@ test.describe("Codex verification for IMP-021 / IMP-022", () => {
     await expectControllerFocus(page, "default career", { surface: "town-career", exclusive: true });
     await expectFitsViewport(page, "default career");
 
-    await activateByController(page, /Become Sellsword/);
-    await expect(page.getByTestId("career-current-vocation")).toContainText("Sellsword");
+    await activateByController(page, /Become Knight/);
+    await expect(page.getByTestId("career-current-vocation")).toContainText("Knight");
     await expectFitsViewport(page, "default career after vocation change");
     await page.screenshot({ path: `${evidenceDir}/default-career-1920.png`, fullPage: false });
 

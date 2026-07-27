@@ -27,13 +27,14 @@ test.describe("town career service", () => {
     await expect(reaver).toContainText("Needs");
     await expect(page.getByTestId("career-adopt-vocation.ash-reaver")).toHaveCount(0); // cannot adopt yet
 
-    // A basic vocation with no prerequisites can be taken now. The first member is a Vanguard;
-    // becoming a Sellsword is available.
+    // A basic vocation with no prerequisites can be taken now. The first member is a Warrior;
+    // becoming a Knight (another basic) is available. (Was Vanguard→Sellsword before the 12→8 class
+    // consolidation folded both into Warrior — see LEGACY_CLASS_MAPPING.)
     const current = page.getByTestId("career-current-vocation");
     const before = await current.innerText();
-    const adoptSellsword = page.getByTestId("career-adopt-sellsword");
-    await expect(adoptSellsword).toBeVisible();
-    await adoptSellsword.click();
+    const adoptKnight = page.getByTestId("career-adopt-knight");
+    await expect(adoptKnight).toBeVisible();
+    await adoptKnight.click();
     await expect(current).not.toHaveText(before);
 
     // The learned techniques carry a loadout toggle.
