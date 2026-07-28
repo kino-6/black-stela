@@ -4,7 +4,18 @@ Rapid-fire playtest backlog, to be completed one at a time with verification + a
 prevents recurrence. Ordered by the agreed priority (A first). Tick items as they land.
 
 ---
-## ▶ RESUME HERE (next session) — 玄室 redesign, phases B & C
+## ✅ 玄室 redesign COMPLETE (phases A–C) — enclosed 2×2 rooms + closed-door gimmick + cleared visual
+- A (`27c7b92`) — door gimmick: `door` is CLOSED, bump-to-open (first step opens+reveals, next enters) / 開く
+  command; `openedDoors` per floor visit. B (`cc0207e`) — genVerdantFloors braids the maze + carves each 玄室
+  as an ENCLOSED 2×2 with ONE door under a BFS connectivity guard (carve-verdant-chambers retired); metrics in
+  band (sweep 308–339, loops 8–22). C (`this commit`) — CLOSED door renders opaque (leaves meet, hides the
+  room), OPEN when opened; a cleared 玄室's landmark dims (its chest is out / claimed) so victory reads.
+- Verified each phase: unit 687, build, parity (traces re-recorded), verdant-chambers, dungeon, flow, save,
+  scene-harness, assets, clean headless boot. Build/run: `npm run export:godot && npm run play`.
+- Codex owns final art review of the closed/open door + cleared-landmark look.
+
+---
+## (historical) resume note — 玄室 redesign, phases B & C
 
 The 玄室 (Wiz guaranteed-fight + treasure room) redesign the user asked for. Decision LOCKED: **enclosed 2×2
 room + closed door you open (Wiz 正統), fight, chest** + cleared-state visual. Build/run: `npm run

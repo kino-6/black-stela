@@ -125,9 +125,20 @@ static func _build_geometry(parent: Node, world: Dictionary, state: Dictionary, 
 					var door_key := _door_key(cx, cy, dir)
 					if not rendered_doors.has(door_key):
 						rendered_doors[door_key] = true
-						_add_door(parent, door_mat, chamber_wall_mat, chamber_accent, base, dir)
+						# CLOSED until opened this floor visit (bump-to-open) — a closed door hides the room.
+						var opened := (state.get("openedDoors", []) as Array).has("door:%s:%s" % [String(cell.get("roomId", "")), dir])
+						_add_door(parent, door_mat, chamber_wall_mat, chamber_accent, base, dir, opened)
 			if landmark_chamber:
-				_add_chamber_landmarks(parent, base, chamber_floor_mat, chamber_wall_mat, chamber_accent, wall_height)
+				# A CLEARED 玄室 (its guarded chest is out, or already claimed) calms its landmark so victory reads
+				# at a glance (playtest: the room looked unchanged after the fight).
+				var rid := String(cell.get("roomId", ""))
+				var cleared := (state.get("floorClaimedTreasures", []) as Array).has(rid)
+				if not cleared:
+					for ch in state.get("chests", []):
+						if String((ch as Dictionary).get("roomId", "")) == rid:
+							cleared = true
+							break
+				_add_chamber_landmarks(parent, base, chamber_floor_mat, chamber_wall_mat, chamber_accent, wall_height, cleared)
 			# The pack ships stair-up/stair-down art; draw it so a stair cell is VISIBLE in the first-person
 			# view instead of a plain dead-end the 階段を使う command only hints at (playtest: asset delivered,
 			# never rendered).
@@ -211,7 +222,11 @@ static func _add_wall(parent: Node, mat: Material, base: Vector3, dir: String, h
 		"west": m.rotation.y = PI / 2
 	parent.add_child(m)
 
-static func _add_chamber_landmarks(parent: Node, base: Vector3, floor_mat: Material, wall_mat: Material, accent: Color, height: float) -> void:
+static func _add_chamber_landmarks(parent: Node, base: Vector3, floor_mat: Material, wall_mat: Material, accent: Color, height: float, cleared: bool = false) -> void:
+	# A CLEARED 玄室 dims to a spent grey — the sap-amber ring goes cold once its guardian is beaten, so a
+	# room already dealt with reads differently from one still holding a fight (playtest #10A).
+	if cleared:
+		accent = accent.darkened(0.55)
 	# The old treatment was a thin coloured coin plus four full-height columns. Because geometry for every
 	# room is visible through open hallways, it read as a forest of green props rather than one special
 	# place. A low, constructed floor treatment keeps sightlines open and says "arena / reward room" before
@@ -228,7 +243,7 @@ static func _add_chamber_landmarks(parent: Node, base: Vector3, floor_mat: Mater
 	inlay.top_radius = 0.93
 	inlay.bottom_radius = 0.93
 	inlay.height = 0.024
-	_add_mesh(parent, inlay, _emissive_mat(accent, 0.06), base + Vector3(0, 0.068, 0))
+	_add_mesh(parent, inlay, _emissive_mat(accent, 0.0 if cleared else 0.06), base + Vector3(0, 0.068, 0))
 	var centre := CylinderMesh.new()
 	centre.top_radius = 0.72
 	centre.bottom_radius = 0.72
@@ -267,7 +282,7 @@ static func _add_chamber_landmarks(parent: Node, base: Vector3, floor_mat: Mater
 		cap.height = 0.035
 		_add_mesh(parent, cap, _emissive_mat(accent.darkened(0.18), 0.04), base + offset + Vector3(0, cairn.height + cap.height / 2.0, 0))
 
-static func _add_door(parent: Node, door_mat: Material, frame_mat: Material, accent: Color, base: Vector3, dir: String) -> void:
+static func _add_door(parent: Node, door_mat: Material, frame_mat: Material, accent: Color, base: Vector3, dir: String, opened: bool = true) -> void:
 	# A door edge is still traversable by the rules, so draw the two living leaves already pushed aside.
 	# The player sees an intentional threshold and can pass through its centre; no state or collision rule is
 	# changed here. This is the Godot counterpart of the Web renderer's wood-door material and frame.
@@ -295,16 +310,23 @@ static func _add_door(parent: Node, door_mat: Material, frame_mat: Material, acc
 	]:
 		_add_box(root, spec["size"], frame_mat, spec["pos"])
 
-	# The leaves are deliberately ajar. A closed slab would look like a collision wall although `door` is a
-	# normal passage in the ported rules; the opening leaves the centre of the threshold legible and passable.
+	# CLOSED (玄室 not yet opened): the two leaves MEET in the centre and fill the threshold, hiding the room
+	# beyond — the Wiz "what's behind the door?" beat (bump-to-open swings them aside). OPENED: the leaves are
+	# pushed ajar so the cleared room reads as entered and passable.
 	for side in [-1.0, 1.0]:
 		var leaf := MeshInstance3D.new()
 		var slab := BoxMesh.new()
-		slab.size = Vector3(0.58, 2.28, 0.09)
-		leaf.mesh = slab
-		leaf.material_override = door_mat
-		leaf.position = Vector3(side * 0.76, 1.14, -0.16)
-		leaf.rotation.y = -side * 0.48
+		if opened:
+			slab.size = Vector3(0.58, 2.28, 0.09)
+			leaf.mesh = slab
+			leaf.material_override = door_mat
+			leaf.position = Vector3(side * 0.76, 1.14, -0.16)
+			leaf.rotation.y = -side * 0.48
+		else:
+			slab.size = Vector3(1.06, 2.36, 0.12)
+			leaf.mesh = slab
+			leaf.material_override = door_mat
+			leaf.position = Vector3(side * 0.54, 1.18, 0.0)
 		root.add_child(leaf)
 	var latch := CylinderMesh.new()
 	latch.top_radius = 0.055
