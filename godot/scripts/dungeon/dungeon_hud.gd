@@ -18,8 +18,9 @@ const OK := Color("9db06a")
 static func party_token(member: Dictionary, world: Dictionary, portrait_tex: Texture2D) -> Control:
 	var stats: Dictionary = CharacterStats.effective(member, world)
 	var max_hp: int = maxi(1, int(stats.get("maxHp", member.get("maxHp", 1))))
-	var hp: int = int(member.get("hp", 0))
-	var down: bool = member.get("injury", null) != null or hp <= 0
+	# A DOWNED member is stored at hp:1 + injury; show 0 while wounded so it never reads as barely-alive.
+	var down: bool = member.get("injury", null) != null or int(member.get("hp", 0)) <= 0
+	var hp: int = 0 if member.get("injury", null) != null else int(member.get("hp", 0))
 	var danger: bool = hp <= int(ceil(float(max_hp) * 0.35))
 
 	var body := UIKit.col(2)

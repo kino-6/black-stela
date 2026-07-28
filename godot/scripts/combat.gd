@@ -756,7 +756,10 @@ func _portrait_path(member: Dictionary) -> String:
 	return pack_path if FileAccess.file_exists(pack_path) else "res://assets/worlds/default/%s" % sub
 
 func _hp_text(member: Dictionary) -> String:
-	return "HP %d/%d" % [int(member.get("hp", 0)), int(member.get("maxHp", 0))]
+	# A DOWNED member is stored at hp:1 + injury (so they can be revived), but showing "HP 1" read as
+	# barely-alive and confused a wipe for a 相打ち (playtest). Show 0 while wounded — the 負傷 pip says why.
+	var hp := 0 if member.get("injury", null) != null else int(member.get("hp", 0))
+	return "HP %d/%d" % [hp, int(member.get("maxHp", 0))]
 
 # The creature art. Authored art lives under assets/dungeon/; a few were hand-copied into enemies/
 # early on, so both are tried before giving up.

@@ -15,9 +15,10 @@ const OK := Color("9db06a")
 ## for _refresh_member. Portrait texture and the HP line are passed so this stays free of scene resolvers.
 static func slot(member: Dictionary, acting_id: String, portrait_tex: Texture2D, hp_text: String) -> Dictionary:
 	var max_hp: int = maxi(1, int(member.get("maxHp", 1)))
-	var hp_now: int = int(member.get("hp", 0))
+	var down: bool = member.get("injury", null) != null or int(member.get("hp", 0)) <= 0
+	# A DOWNED member sits at hp:1 + injury; the gauge reads empty while wounded, not a sliver of health.
+	var hp_now: int = 0 if member.get("injury", null) != null else int(member.get("hp", 0))
 	var max_mp: int = int(member.get("maxMp", 0))
-	var down: bool = member.get("injury", null) != null or hp_now <= 0
 	var danger: bool = hp_now <= int(ceil(float(max_hp) * 0.35))
 	var acting: bool = String(member.get("id", "")) == acting_id
 

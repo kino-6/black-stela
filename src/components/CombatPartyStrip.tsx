@@ -32,6 +32,8 @@ export function CombatPartyStrip({ members, selectedActorId, orderedActorIds, ac
               const ordered = orderedActorIds.has(member.id);
               const hit = activeBeat?.targetCharacterId === member.id;
               const down = member.injury || member.hp <= 0;
+              // A downed member is stored at hp:1 + injury; show 0 so it never reads as barely-alive.
+              const shownHp = member.injury ? 0 : member.hp;
               const danger = member.hp <= Math.ceil(member.maxHp * 0.35);
               return (
                 <div
@@ -78,7 +80,7 @@ export function CombatPartyStrip({ members, selectedActorId, orderedActorIds, ac
                       aria-valuemax={member.maxHp}
                       aria-label={`${member.name} HP`}
                     >
-                      <span className="stat-gauge-fill" style={{ width: `${Math.max(0, (member.hp / member.maxHp) * 100)}%` }} />
+                      <span className="stat-gauge-fill" style={{ width: `${Math.max(0, (shownHp / member.maxHp) * 100)}%` }} />
                     </div>
                     {member.maxMp > 0 && (
                       <div
@@ -93,7 +95,7 @@ export function CombatPartyStrip({ members, selectedActorId, orderedActorIds, ac
                       </div>
                     )}
                     <span className="pt-hp-text">
-                      Lv {member.level} · HP {member.hp}/{member.maxHp} · {t("play.mpShort")} {member.maxMp > 0 ? `${member.mp}/${member.maxMp}` : "—"}
+                      Lv {member.level} · HP {shownHp}/{member.maxHp} · {t("play.mpShort")} {member.maxMp > 0 ? `${member.mp}/${member.maxMp}` : "—"}
                     </span>
                   </div>
                   {hit && activeBeat?.damage != null && (
