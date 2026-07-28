@@ -12,8 +12,8 @@ map: |
   #E..#.....#.#.#.#.#
   #.###.#.#.#.#.....#
   #.......#.........#
-  #..##.#.##..#####.#
-  #...#B....#..C.#..#
+  #..####.##..#####.#
+  #...#B....#.#C.#..#
   ###.#...#####..##.#
   #.s..##.........#.#
   ##S##########.#####
@@ -63,14 +63,32 @@ edges:
   - from: room.verdant.g6f.02
     direction: west
     kind: door
-  - from: room.verdant.g6f.03
-    direction: north
+  - from: room.verdant.g6f.c10_9
+    direction: east
     kind: door
-  - from: room.verdant.g6f.04
-    direction: west
+  - from: room.verdant.g6f.c6_6
+    direction: east
+    kind: door
+  - from: room.verdant.g6f.c6_5
+    direction: east
+    kind: door
+  - from: room.verdant.g6f.c14_6
+    direction: south
+    kind: door
+  - from: room.verdant.g6f.c13_6
+    direction: south
+    kind: door
+  - from: room.verdant.g6f.c9_14
+    direction: south
     kind: door
   - from: room.verdant.g6f.keep
     direction: west
+    kind: door
+  - from: room.verdant.g6f.c10_14
+    direction: east
+    kind: door
+  - from: room.verdant.g6f.c10_13
+    direction: east
     kind: door
 rooms:
   - id: room.verdant.g6f.001

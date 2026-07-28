@@ -14,17 +14,17 @@ map: |
   #.#.#.###.###.#.#.#
   #.#.#B.#..#..C.##.#
   #.###...#.##....###
-  #....##.#s#..##...#
-  #.#.#.###S#.#X#.#.#
-  #.#.#F...A.##M.##.#
+  #....##.#.#..##...#
+  #.#.#######.###.#.#
+  #.#.#D...A.##F..#.#
   #.#.#..##..##...###
-  #...##...##.#1#...#
+  #...##...##2###...#
   #...###.###.###.###
-  #.#..G...D...H....#
-  #.#.#..##...#...###
-  #.#..##..##.#.#...#
-  #.#####.#####.###.#
-  #.........#.....#2#
+  #.#..G..#M..#H....#
+  #.#.#..#...##...###
+  #.#..##..#.s#.#...#
+  #.#####.###S#.###.#
+  #.........#X...1#.#
   ###################
 symbols:
   1: room.verdant.g1f.nook1
@@ -61,26 +61,59 @@ edges:
   - from: room.verdant.g1f.02
     direction: west
     kind: door
+  - from: room.verdant.g1f.c6_6
+    direction: east
+    kind: door
   - from: room.verdant.g1f.03
     direction: north
+    kind: door
+  - from: room.verdant.g1f.c14_6
+    direction: east
+    kind: door
+  - from: room.verdant.g1f.c13_6
+    direction: west
+    kind: door
+  - from: room.verdant.g1f.04
+    direction: west
     kind: door
   - from: room.verdant.g1f.04
     direction: north
     kind: door
-  - from: room.verdant.g1f.05
-    direction: west
+  - from: room.verdant.g1f.c6_9
+    direction: east
     kind: door
-  - from: room.verdant.g1f.06
-    direction: north
+  - from: room.verdant.g1f.c6_10
+    direction: south
+    kind: door
+  - from: room.verdant.g1f.c14_10
+    direction: east
+    kind: door
+  - from: room.verdant.g1f.c14_9
+    direction: east
+    kind: door
+  - from: room.verdant.g1f.c6_13
+    direction: east
     kind: door
   - from: room.verdant.g1f.07
     direction: west
     kind: door
-  - from: room.verdant.g1f.08
-    direction: west
+  - from: room.verdant.g1f.c13_14
+    direction: south
     kind: door
-  - from: room.verdant.g1f.keep
-    direction: north
+  - from: room.verdant.g1f.c14_14
+    direction: east
+    kind: door
+  - from: room.verdant.g1f.c14_13
+    direction: east
+    kind: door
+  - from: room.verdant.g1f.c10_13
+    direction: east
+    kind: door
+  - from: room.verdant.g1f.c10_14
+    direction: south
+    kind: door
+  - from: room.verdant.g1f.c9_14
+    direction: west
     kind: door
 rooms:
   - id: room.verdant.g1f.001

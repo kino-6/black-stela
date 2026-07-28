@@ -112,5 +112,12 @@ describe("玄室 chamber guardians", () => {
     expect(chamberRoom, "reached a 玄室 fight").not.toBeNull();
     // Victory leaves the chamber's chest on its cell, claimable now.
     expect((s.chests ?? []).some((c) => c.roomId === chamberRoom)).toBe(true);
+
+    // ...and after dismissing the result, the party stands ON that chest cell so the dungeon raises the chest
+    // panel — locks the full "win → chest is right here to open" path (playtest doubt: "宝箱が出ない").
+    s = executeCommand(s, verdant, { type: "continue_after_combat" });
+    expect(s.phase).toBe("dungeon");
+    const chestHere = (s.chests ?? []).find((c) => c.cellId === s.position?.cellId);
+    expect(chestHere?.roomId, "the chest sits on the party's cell after the fight").toBe(chamberRoom);
   });
 });

@@ -16,16 +16,16 @@ map: |
   #....B.##.#..C.#..#
   ###.#..##.###..##.#
   #....#..#...###.#.#
-  #.######..#.#.#.#.#
+  #.######..#.###.#.#
   #....D.##A.##F..#.#
   ###.#..##..##...#.#
   #....#..##..###...#
-  #.#.#.###2#####.###
-  #.#.#G.##M.#.H....#
-  #.###...#......####
-  #...#.#s###.##....#
+  #.#.###########.###
+  #.#.#G.##M.##H....#
+  #.###..##......####
+  #...#..s###.##....#
   ###.#.#S#...#..##.#
-  #.....#X....#.#1..#
+  #.....#X....#2#1..#
   ###################
 symbols:
   1: room.verdant.g3f.nook1
@@ -64,8 +64,14 @@ edges:
     direction: south
     kind: secret
     to: room.verdant.g3f.lift
+  - from: room.verdant.g3f.c10_10
+    direction: south
+    kind: door
   - from: room.verdant.g3f.02
     direction: north
+    kind: door
+  - from: room.verdant.g3f.c6_6
+    direction: south
     kind: door
   - from: room.verdant.g3f.03
     direction: west
@@ -73,20 +79,35 @@ edges:
   - from: room.verdant.g3f.04
     direction: west
     kind: door
+  - from: room.verdant.g3f.c6_10
+    direction: south
+    kind: door
   - from: room.verdant.g3f.05
     direction: west
     kind: door
-  - from: room.verdant.g3f.06
-    direction: north
+  - from: room.verdant.g3f.c14_9
+    direction: east
     kind: door
-  - from: room.verdant.g3f.07
-    direction: north
+  - from: room.verdant.g3f.c14_10
+    direction: east
     kind: door
-  - from: room.verdant.g3f.08
+  - from: room.verdant.g3f.c6_14
+    direction: south
+    kind: door
+  - from: room.verdant.g3f.c5_14
+    direction: south
+    kind: door
+  - from: room.verdant.g3f.c13_14
     direction: west
     kind: door
-  - from: room.verdant.g3f.keep
-    direction: north
+  - from: room.verdant.g3f.c14_14
+    direction: south
+    kind: door
+  - from: room.verdant.g3f.c14_13
+    direction: east
+    kind: door
+  - from: room.verdant.g3f.c10_14
+    direction: east
     kind: door
 rooms:
   - id: room.verdant.g3f.001

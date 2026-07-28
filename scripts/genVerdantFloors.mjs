@@ -134,10 +134,13 @@ function braid(w, rng, count) {
   }
 }
 
-// Carve an ENCLOSED 2×2 玄室 at anchor [ay,ax]: open a 2×2 block (oriented to fit the frame), keep ONE DOOR
-// on the anchor toward the entrance side, and WALL the rest of the block's perimeter — but only where the
-// floor stays fully connected (BFS guard), so it reads as a walled room with a single door without stranding
-// a corridor. Returns { block, doorDir } (doorDir is authored as a `door` edge from the named chamber room).
+// Carve an ENCLOSED 2×2 玄室 at anchor [ay,ax]: open a 2×2 block (oriented to fit the frame), then WALL as
+// much of its perimeter as the connectivity guard allows (farthest-from-entrance openings first, so the
+// natural approach survives). Every opening that CANNOT be walled without stranding a corridor becomes a
+// CLOSED DOOR — so the room is entered only through doors, from whichever side, and the gimmick always
+// applies. Returns { block, openings } where openings = [[blockY, blockX, dir], ...] to author as `door`
+// edges from the block cell (the anchor's named room, or the corridor cell it sits on).
+const DIRS4 = [["north", -1, 0], ["south", 1, 0], ["east", 0, 1], ["west", 0, -1]];
 function carveEnclosedChamber(w, ay, ax, entrance) {
   const S = w.length;
   const dx = ax + 1 <= S - 2 ? 1 : -1;
@@ -145,36 +148,29 @@ function carveEnclosedChamber(w, ay, ax, entrance) {
   const block = [[ay, ax], [ay, ax + dx], [ay + dy, ax], [ay + dy, ax + dx]];
   for (const [by, bx] of block) w[by][bx] = false; // open the room
   const blockSet = new Set(block.map((c) => `${c[0]},${c[1]}`));
-  // Perimeter cells adjacent to the block (outside it), each tagged with the block cell it touches.
-  const perim = [];
-  const seen = new Set();
+  // Boundary openings: a block cell with an OPEN outside neighbour (col/row = x/y).
+  const boundary = [];
   for (const [by, bx] of block) {
-    for (const [ny, nx] of nbrs(by, bx)) {
-      const k = `${ny},${nx}`;
-      if (!inb(w, ny, nx) || blockSet.has(k) || seen.has(k)) continue;
-      seen.add(k);
-      perim.push([ny, nx, by, bx]);
+    for (const [dir, ddy, ddx] of DIRS4) {
+      const ny = by + ddy, nx = bx + ddx;
+      if (!inb(w, ny, nx) || blockSet.has(`${ny},${nx}`)) continue;
+      if (!w[ny][nx]) boundary.push([by, bx, dir, ny, nx]);
     }
   }
-  // The DOOR: a perimeter cell touching the ANCHOR (so the edge can be authored from the named room), opened
-  // toward the corridor nearest the entrance. Guarantee it is a corridor (open it) so the room is reachable.
   const dEnt = bfs(w, entrance[0], entrance[1]);
   const g = (y, x) => dEnt.get(`${y},${x}`) ?? 1e9;
-  const anchorSides = perim
-    .filter(([, , by, bx]) => by === ay && bx === ax)
-    .sort((a, b) => g(a[0], a[1]) - g(b[0], b[1]));
-  const door = anchorSides[0] ?? perim.sort((a, b) => g(a[0], a[1]) - g(b[0], b[1]))[0];
-  if (door) w[door[0]][door[1]] = false; // the doorway is open
-  // Enclose: wall every OTHER perimeter cell, greedily, reverting any wall that would strand a corridor.
-  for (const p of perim) {
-    if (door && p[0] === door[0] && p[1] === door[1]) continue;
-    const [py, px] = p;
-    if (blockSet.has(`${py},${px}`)) continue;
-    w[py][px] = true;
-    if (!fullyConnected(w, entrance)) w[py][px] = false;
+  // Wall the FARTHEST openings first, so the entrance-facing approach is the one most likely left as a door.
+  boundary.sort((a, b) => g(b[3], b[4]) - g(a[3], a[4]));
+  const openings = [];
+  for (const [by, bx, dir, ny, nx] of boundary) {
+    if (w[ny][nx]) continue; // already walled via a shared boundary
+    w[ny][nx] = true;
+    if (!fullyConnected(w, entrance)) {
+      w[ny][nx] = false;
+      openings.push([by, bx, dir]); // can't wall it → it becomes a door
+    }
   }
-  const doorDir = door && door[2] === ay && door[3] === ax ? dirBetween([ay, ax], [door[0], door[1]]) : null;
-  return { block, doorDir };
+  return { block, openings };
 }
 
 // Per-floor spec: seed + names (en/ja) for entrance, exit(down-stair), the miniboss/boss
@@ -218,10 +214,10 @@ function buildFloor(spec) {
   braid(w, mulberry(spec.seed + 4444), n <= 3 ? 12 : 10);
   // Every 玄室 is an ENCLOSED 2×2 room with ONE door (walled perimeter + a single doorway), so the map reads
   // it as a Wiz room, not a wide corridor. carveEnclosedChamber keeps the floor connected (BFS guard).
-  const chamberDoorDir = new Map();
+  const chamberOpenings = new Map();
   for (const c of chambers) {
     const info = carveEnclosedChamber(w, c[0], c[1], entrance);
-    chamberDoorDir.set(`${c[0]},${c[1]}`, info.doorDir);
+    chamberOpenings.set(`${c[0]},${c[1]}`, info.openings);
   }
   const exit = farthest(w, 1, 1);
   const dEnt = bfs(w, ...entrance);
@@ -278,15 +274,19 @@ function buildFloor(spec) {
   // an open passage — so found, it collapses the descent; unfound, the honest sweep is unchanged.
   edges.push(`  - from: ${rid(n, "gate")}\n    direction: ${dirBetween(scFrom, scTo)}\n    kind: secret\n    to: ${rid(n, "lift")}`);
 
-  // The single DOOR into each ENCLOSED 玄室 — the one opening carveEnclosedChamber left in the walled 2×2,
-  // authored from the named chamber room. The door is CLOSED until opened (Wiz gimmick); floorMap mirrors the
-  // reverse side.
-  const chamberDoorEdge = (coord, roomId) => {
-    const dir = chamberDoorDir.get(`${coord[0]},${coord[1]}`);
-    if (dir) edges.push(`  - from: ${roomId}\n    direction: ${dir}\n    kind: door`);
+  // EVERY remaining opening of each ENCLOSED 玄室 is a CLOSED DOOR, so the room is entered only through doors
+  // from whichever side survived the enclosure (Wiz gimmick — no bypassing an open flank). Authored from the
+  // block cell: the anchor's named room for its own side, or the corridor cell (room.<slug>.c<x>_<y>) the
+  // 2×2 sits on for the others. floorMap mirrors the reverse side.
+  const slug = `verdant.g${n}f`;
+  const chamberDoorEdges = (coord, anchorRoomId) => {
+    for (const [by, bx, dir] of chamberOpenings.get(`${coord[0]},${coord[1]}`) ?? []) {
+      const fromId = by === coord[0] && bx === coord[1] ? anchorRoomId : `room.${slug}.c${bx}_${by}`;
+      edges.push(`  - from: ${fromId}\n    direction: ${dir}\n    kind: door`);
+    }
   };
-  plainChambers.forEach((c, i) => chamberDoorEdge(c, rid(n, `0${i + 2}`)));
-  chamberDoorEdge(usedChamber, rid(n, "keep"));
+  plainChambers.forEach((c, i) => chamberDoorEdges(c, rid(n, `0${i + 2}`)));
+  chamberDoorEdges(usedChamber, rid(n, "keep"));
 
   // ---- rooms ----
   const rooms = [];

@@ -12,15 +12,15 @@ map: |
   #E#...#.#...#.....#
   #.#..##.#.#.#.#####
   #.................#
-  ###.#.##..#.#.#####
-  #...#B.#..#.#C....#
+  ###.####..#.#######
+  #....B.#..#.#C....#
   #..##..##.#.#..##.#
   #....##.......#...#
   #.#.#####.#.#.#.###
   #.#...#..A.#..#...#
   #.#######..#.####.#
   #.......###...#...#
-  ###.#####.#.#####.#
+  ###.#######.#####.#
   #.......#M.##.....#
   #.#.###.#..##.###.#
   #.#...#s..#...#...#
@@ -56,16 +56,22 @@ edges:
     kind: secret
     to: room.verdant.g8f.lift
   - from: room.verdant.g8f.02
+    direction: west
+    kind: door
+  - from: room.verdant.g8f.02
     direction: north
     kind: door
   - from: room.verdant.g8f.03
-    direction: north
+    direction: west
     kind: door
-  - from: room.verdant.g8f.04
-    direction: north
+  - from: room.verdant.g8f.c14_5
+    direction: east
     kind: door
-  - from: room.verdant.g8f.keep
-    direction: north
+  - from: room.verdant.g8f.c13_6
+    direction: south
+    kind: door
+  - from: room.verdant.g8f.c9_14
+    direction: south
     kind: door
 rooms:
   - id: room.verdant.g8f.001

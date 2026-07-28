@@ -20,12 +20,12 @@ map: |
   #...#....A....#...#
   #.#.#.#.#..##.##..#
   #.#.#.#..#..#.#...#
-  #.#.#####.#####.#.#
-  #.#...#2#M......#.#
-  ###.###.#..########
-  #....s#...#.......#
+  #.#.###########.#.#
+  #.#...#..M......#.#
+  ###.###.#...#######
+  #....s#..##.......#
   #.#.#S#.#...#####.#
-  #.#.#...#.#....1#X#
+  #.#.#X..#.#....2#1#
   ###################
 symbols:
   1: room.verdant.g4f.nook1
@@ -60,17 +60,35 @@ edges:
     direction: south
     kind: secret
     to: room.verdant.g4f.lift
+  - from: room.verdant.g4f.c10_10
+    direction: south
+    kind: door
+  - from: room.verdant.g4f.c10_9
+    direction: east
+    kind: door
   - from: room.verdant.g4f.02
     direction: west
     kind: door
+  - from: room.verdant.g4f.c6_6
+    direction: south
+    kind: door
   - from: room.verdant.g4f.03
     direction: north
+    kind: door
+  - from: room.verdant.g4f.c14_6
+    direction: east
     kind: door
   - from: room.verdant.g4f.04
     direction: north
     kind: door
   - from: room.verdant.g4f.keep
-    direction: north
+    direction: west
+    kind: door
+  - from: room.verdant.g4f.c10_14
+    direction: east
+    kind: door
+  - from: room.verdant.g4f.c10_13
+    direction: east
     kind: door
 rooms:
   - id: room.verdant.g4f.001
