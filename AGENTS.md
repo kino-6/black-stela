@@ -28,6 +28,19 @@ Do not attempt or report the optional Playwright MCP Chrome extension on each
 run. Ask the user before proposing its installation, and only when a concrete
 test cannot be performed with the repository runner.
 
+Build and self-verify BEFORE handing a player-facing change to the user — never
+ship a "please rebuild and check" with no build of your own. For a Godot-build
+change that means: run the data build yourself (`npm run export:godot`; GDScript
+is interpreted so `.gd` edits need no compile, but content/i18n/schema changes
+must be re-exported into `godot/data/**` or the running app will not reflect
+them), run the relevant Godot gates (`gate:migration` or the specific
+`verify_*.gd`), and do a clean headless boot smoke
+(`godot --headless --path godot/ --quit-after 90`, expect no SCRIPT/Parse
+errors). Only then hand over, and ALWAYS state the exact command the user runs to
+see it: `npm run export:godot && npm run play` (`npm run play` = `godot --path
+godot/`). A build hash shown in-app that predates your change is a sign the user
+is on a stale build because you did not give them the rebuild step.
+
 Normal play must not expose debug/admin/product controls, AI provider setup,
 arbitrary save/load, raw route ids, or implementation terms. Dungeon work must
 respect continuous grid topology, current-cell actions, visible stairs/returns,
