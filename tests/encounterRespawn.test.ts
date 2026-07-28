@@ -16,6 +16,23 @@ function party(size: number): GameState {
   return s;
 }
 
+// One CORRIDOR step: try each facing until the party actually moves, turning away from closed 玄室 doors so
+// the walk stays in the corridors (where wandering packs roll) instead of getting trapped in dead-end rooms.
+// Returns the state after the move (or after giving up, boxed in).
+function corridorStep(s: GameState, world: ScenarioWorld): GameState {
+  for (let t = 0; t < 4; t += 1) {
+    const before = s.position?.cellId;
+    const next = executeCommand(s, world, { type: "move_forward" });
+    if (next.log.at(-1)?.event?.type === "door_opened") {
+      s = executeCommand(s, world, { type: "turn_right" }); // a 玄室 door — turn away, don't enter
+      continue;
+    }
+    if (next.phase === "combat" || next.position?.cellId !== before) return next;
+    s = executeCommand(s, world, { type: "turn_right" });
+  }
+  return s;
+}
+
 describe("encounter model", () => {
   it("scopes cleared enemies + claimed treasure to the floor visit, and resets on floor change", () => {
     let s = party(3);
@@ -62,16 +79,14 @@ describe("encounter model", () => {
     let s = party(3);
     s = executeCommand(s, verdant, { type: "enter_dungeon" });
     let wandered = false;
-    for (let step = 0; step < 120 && !wandered; step += 1) {
-      const before = s.position?.roomId;
-      s = executeCommand(s, verdant, { type: "move_forward" });
+    for (let step = 0; step < 400 && !wandered; step += 1) {
+      s = corridorStep(s, verdant);
       if (s.phase === "combat") {
         const room = verdant.dungeons[0].rooms.find((r) => r.id === s.combat!.roomId);
         // Fired in a room with NO authored fight → it was a wandering pack.
         if (!room?.encounter && !room?.encounterTable && !room?.encounterSquad) wandered = true;
         s = { ...s, phase: "dungeon", combat: null } as GameState; // shrug it off and keep walking
       }
-      if (s.position?.roomId === before) s = executeCommand(s, verdant, { type: "turn_right" });
     }
     expect(wandered, "walking the maze should eventually be ambushed").toBe(true);
   });
@@ -83,16 +98,14 @@ describe("encounter model", () => {
     s = executeCommand(s, world, { type: "enter_dungeon" });
     s = { ...s, floorClearedEnemies: [...clearedTypes] } as GameState;
     let count = 0;
-    for (let step = 0; step < 120; step += 1) {
-      const before = s.position?.roomId;
-      s = executeCommand(s, world, { type: "move_forward" });
+    for (let step = 0; step < 400; step += 1) {
+      s = corridorStep(s, world);
       if (s.phase === "combat") {
         const room = world.dungeons[0].rooms.find((r) => r.id === s.combat!.roomId);
         if (!room?.encounter && !room?.encounterTable && !room?.encounterSquad) count += 1;
         // Shrug it off but KEEP every type cleared, so first-contact stays fully suppressed.
         s = { ...s, phase: "dungeon", combat: null, floorClearedEnemies: [...clearedTypes] } as GameState;
       }
-      if (s.position?.roomId === before) s = executeCommand(s, world, { type: "turn_right" });
     }
     return count;
   }

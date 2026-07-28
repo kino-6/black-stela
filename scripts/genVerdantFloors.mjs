@@ -112,6 +112,71 @@ function secretShortcut(w, dEnt) {
   return best;
 }
 
+// Every open cell reachable from the entrance? (the connectivity guard for enclosing rooms.)
+function fullyConnected(w, entrance) {
+  const d = bfs(w, entrance[0], entrance[1]);
+  for (const [y, x] of openCells(w)) if (!d.has(`${y},${x}`)) return false;
+  return true;
+}
+
+// BRAID the perfect maze: open a few walls that each join two already-open corridors, so the floor has real
+// LOOPS (alternate routes). A perfect maze is a tree with zero loops; enclosing 玄室 into dead-end pockets
+// removes the loops the old open chambers gave, so we add them back here instead. Deterministic per seed.
+function braid(w, rng, count) {
+  const S = w.length;
+  let opened = 0;
+  for (let tries = 0; tries < 4000 && opened < count; tries++) {
+    const y = 2 + Math.floor(rng() * (S - 4));
+    const x = 2 + Math.floor(rng() * (S - 4));
+    if (!w[y][x]) continue; // already a corridor
+    const openNbrs = nbrs(y, x).filter(([ny, nx]) => inb(w, ny, nx) && !w[ny][nx]).length;
+    if (openNbrs >= 2) { w[y][x] = false; opened++; } // joining ≥2 corridors makes a loop
+  }
+}
+
+// Carve an ENCLOSED 2×2 玄室 at anchor [ay,ax]: open a 2×2 block (oriented to fit the frame), keep ONE DOOR
+// on the anchor toward the entrance side, and WALL the rest of the block's perimeter — but only where the
+// floor stays fully connected (BFS guard), so it reads as a walled room with a single door without stranding
+// a corridor. Returns { block, doorDir } (doorDir is authored as a `door` edge from the named chamber room).
+function carveEnclosedChamber(w, ay, ax, entrance) {
+  const S = w.length;
+  const dx = ax + 1 <= S - 2 ? 1 : -1;
+  const dy = ay + 1 <= S - 2 ? 1 : -1;
+  const block = [[ay, ax], [ay, ax + dx], [ay + dy, ax], [ay + dy, ax + dx]];
+  for (const [by, bx] of block) w[by][bx] = false; // open the room
+  const blockSet = new Set(block.map((c) => `${c[0]},${c[1]}`));
+  // Perimeter cells adjacent to the block (outside it), each tagged with the block cell it touches.
+  const perim = [];
+  const seen = new Set();
+  for (const [by, bx] of block) {
+    for (const [ny, nx] of nbrs(by, bx)) {
+      const k = `${ny},${nx}`;
+      if (!inb(w, ny, nx) || blockSet.has(k) || seen.has(k)) continue;
+      seen.add(k);
+      perim.push([ny, nx, by, bx]);
+    }
+  }
+  // The DOOR: a perimeter cell touching the ANCHOR (so the edge can be authored from the named room), opened
+  // toward the corridor nearest the entrance. Guarantee it is a corridor (open it) so the room is reachable.
+  const dEnt = bfs(w, entrance[0], entrance[1]);
+  const g = (y, x) => dEnt.get(`${y},${x}`) ?? 1e9;
+  const anchorSides = perim
+    .filter(([, , by, bx]) => by === ay && bx === ax)
+    .sort((a, b) => g(a[0], a[1]) - g(b[0], b[1]));
+  const door = anchorSides[0] ?? perim.sort((a, b) => g(a[0], a[1]) - g(b[0], b[1]))[0];
+  if (door) w[door[0]][door[1]] = false; // the doorway is open
+  // Enclose: wall every OTHER perimeter cell, greedily, reverting any wall that would strand a corridor.
+  for (const p of perim) {
+    if (door && p[0] === door[0] && p[1] === door[1]) continue;
+    const [py, px] = p;
+    if (blockSet.has(`${py},${px}`)) continue;
+    w[py][px] = true;
+    if (!fullyConnected(w, entrance)) w[py][px] = false;
+  }
+  const doorDir = door && door[2] === ay && door[3] === ax ? dirBetween([ay, ax], [door[0], door[1]]) : null;
+  return { block, doorDir };
+}
+
 // Per-floor spec: seed + names (en/ja) for entrance, exit(down-stair), the miniboss/boss
 // chamber, plain chambers, shortcut, and reward nooks. Enemy/table ids match the roster in
 // docs/design/verdant-areas.md and are filled in V2/V3.
@@ -146,11 +211,18 @@ function buildFloor(spec) {
   const chamberCoords = n <= 3
     ? [[9, 9], [5, 5], [5, 13], [13, 9], [9, 5], [9, 13], [13, 5], [13, 13]]
     : [[9, 9], [5, 5], [5, 13], [13, 9]];
-  const chambers = chamberCoords.filter(([y, x]) => y > 1 && x > 1 && y < S - 2 && x < S - 2);
-  carveChamber(w, 9, 9, "block");
-  for (const [cy, cx] of chambers.filter(([y, x]) => !(y === 9 && x === 9))) carveChamber(w, cy, cx, "plus");
-
+  const chambers = chamberCoords.filter(([y, x]) => y > 1 && x > 1 && y < S - 3 && x < S - 3);
   const entrance = [1, 1];
+  // Braid the perfect (tree) maze so it has real loops — enclosing the 玄室 into dead-end pockets removes the
+  // loops the old OPEN chamber blocks used to give.
+  braid(w, mulberry(spec.seed + 4444), n <= 3 ? 12 : 10);
+  // Every 玄室 is an ENCLOSED 2×2 room with ONE door (walled perimeter + a single doorway), so the map reads
+  // it as a Wiz room, not a wide corridor. carveEnclosedChamber keeps the floor connected (BFS guard).
+  const chamberDoorDir = new Map();
+  for (const c of chambers) {
+    const info = carveEnclosedChamber(w, c[0], c[1], entrance);
+    chamberDoorDir.set(`${c[0]},${c[1]}`, info.doorDir);
+  }
   const exit = farthest(w, 1, 1);
   const dEnt = bfs(w, ...entrance);
   // Hidden-door shortcut: open ONE maze wall between two far-apart corridors and hide it behind a `secret`
@@ -206,19 +278,15 @@ function buildFloor(spec) {
   // an open passage — so found, it collapses the descent; unfound, the honest sweep is unchanged.
   edges.push(`  - from: ${rid(n, "gate")}\n    direction: ${dirBetween(scFrom, scTo)}\n    kind: secret\n    to: ${rid(n, "lift")}`);
 
-  // A DOOR on every 玄室 (and the keep): a rooted threshold on the room's approach side — the open neighbour
-  // nearest the entrance, so the door faces the way the party comes in. `door` stays walkable (the fight
-  // still triggers on entry, not on "opening" it), so this is purely the Wiz 扉付き look; floorMap makes the
-  // reverse side a door too. Authored from the named chamber cell (the only cell an edge override can key on).
-  const chamberDoor = (coord, roomId) => {
-    const open = nbrs(coord[0], coord[1]).filter(([ny, nx]) => inb(w, ny, nx) && !w[ny][nx]);
-    if (open.length === 0) return;
-    const approach = open.slice().sort((a, b) =>
-      (dEnt.get(`${a[0]},${a[1]}`) ?? 1e9) - (dEnt.get(`${b[0]},${b[1]}`) ?? 1e9))[0];
-    edges.push(`  - from: ${roomId}\n    direction: ${dirBetween(coord, approach)}\n    kind: door`);
+  // The single DOOR into each ENCLOSED 玄室 — the one opening carveEnclosedChamber left in the walled 2×2,
+  // authored from the named chamber room. The door is CLOSED until opened (Wiz gimmick); floorMap mirrors the
+  // reverse side.
+  const chamberDoorEdge = (coord, roomId) => {
+    const dir = chamberDoorDir.get(`${coord[0]},${coord[1]}`);
+    if (dir) edges.push(`  - from: ${roomId}\n    direction: ${dir}\n    kind: door`);
   };
-  plainChambers.forEach((c, i) => chamberDoor(c, rid(n, `0${i + 2}`)));
-  chamberDoor(usedChamber, rid(n, "keep"));
+  plainChambers.forEach((c, i) => chamberDoorEdge(c, rid(n, `0${i + 2}`)));
+  chamberDoorEdge(usedChamber, rid(n, "keep"));
 
   // ---- rooms ----
   const rooms = [];

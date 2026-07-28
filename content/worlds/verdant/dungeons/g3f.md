@@ -10,22 +10,22 @@ startRoom: room.verdant.g3f.001
 map: |
   ###################
   #E....#.......#...#
-  ###.#.#.#####.###.#
+  ###.#.#.#.###.###.#
   #...#.......#.....#
-  ###...###.#...###.#
-  #....B..#.#..C..#.#
-  ###.#.###.###.###.#
-  #.......#...#...#.#
-  #.##..##......#.#.#
-  #....F...A...G..#.#
-  ###.#.##...##.###.#
-  #.......#...#..sS.#
-  #.#...##..##..#.###
-  #.#..H...D...M...2#
-  #.###.#.#.#.#.#.###
-  #...#...#...#.....#
-  #####.#####.#.###.#
-  #.....#1....#.#X..#
+  ###.#####.#.#####.#
+  #....B.##.#..C.#..#
+  ###.#..##.###..##.#
+  #....#..#...###.#.#
+  #.######..#.#.#.#.#
+  #....D.##A.##F..#.#
+  ###.#..##..##...#.#
+  #....#..##..###...#
+  #.#.#.###2#####.###
+  #.#.#G.##M.#.H....#
+  #.###...#......####
+  #...#.#s###.##....#
+  ###.#.#S#...#..##.#
+  #.....#X....#.#1..#
   ###################
 symbols:
   1: room.verdant.g3f.nook1
@@ -61,20 +61,20 @@ edges:
     to: room.verdant.g4f.001
     targetFloorId: dungeon.verdant.g4f
   - from: room.verdant.g3f.gate
-    direction: east
+    direction: south
     kind: secret
     to: room.verdant.g3f.lift
   - from: room.verdant.g3f.02
     direction: north
     kind: door
   - from: room.verdant.g3f.03
-    direction: north
+    direction: west
     kind: door
   - from: room.verdant.g3f.04
     direction: west
     kind: door
   - from: room.verdant.g3f.05
-    direction: north
+    direction: west
     kind: door
   - from: room.verdant.g3f.06
     direction: north
@@ -83,7 +83,7 @@ edges:
     direction: north
     kind: door
   - from: room.verdant.g3f.08
-    direction: north
+    direction: west
     kind: door
   - from: room.verdant.g3f.keep
     direction: north

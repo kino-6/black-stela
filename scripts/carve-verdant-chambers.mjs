@@ -1,4 +1,12 @@
 #!/usr/bin/env node
+// ⚠️ RETIRED (Phase B, 玄室 redesign). genVerdantFloors.mjs now carves each 玄室 as an ENCLOSED 2×2 room with
+// ONE door itself (carveEnclosedChamber). This old pass OPENED walls to widen chambers into halls — running it
+// now would BREACH the enclosure. Kept for history only; it no-ops immediately.
+if (process.env.RUN_RETIRED_CARVE !== "1") {
+  console.log("[carve-chambers] RETIRED — enclosure now lives in genVerdantFloors.mjs. Skipped.");
+  process.exit(0);
+}
+
 // #19 玄室 — the Verdant floors are already open fields, so open halls exist; the real gap is that the
 // rooms NAMED as chambers (翠の間 / 奥の木立) mostly sit on a single 1-wide corridor cell, so walking into
 // "翠の間" lands you in a corridor (the player's "玄室未実装？"). This SEATS every fight room in an open

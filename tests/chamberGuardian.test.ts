@@ -1,8 +1,27 @@
 import { describe, expect, it } from "vitest";
 import { worldRegistry } from "../src/data/worldRegistry";
 import { addCharacter, createCharacter, createInitialGameState } from "../src/domain/gameState";
+import { withDebugStartCell } from "../src/debug/debugStart";
 import { executeCommand } from "../src/domain/rulesEngine";
-import type { GameState } from "../src/domain/types";
+import type { Direction, GameState } from "../src/domain/types";
+
+const OFFSET: Record<Direction, [number, number]> = { north: [0, -1], south: [0, 1], east: [1, 0], west: [-1, 0] };
+const OPP: Record<Direction, Direction> = { north: "south", south: "north", east: "west", west: "east" };
+
+// Where a 玄室 (an enclosed room now) is entered from: the corridor cell outside its ONE door, and the facing
+// that looks through the door into the room.
+function chamberApproach(floorId: string, chamberRoomId: string): { outsideRoomId: string; facing: Direction } | null {
+  const floor = worldRegistry.verdant.dungeons.find((d) => d.id === floorId);
+  const cell = floor?.grid?.cells.find((c) => c.roomId === chamberRoomId);
+  if (!cell) return null;
+  for (const [dir, edge] of Object.entries(cell.edges)) {
+    if (edge?.kind !== "door") continue;
+    const [dx, dy] = OFFSET[dir as Direction];
+    const outside = floor!.grid!.cells.find((c) => c.x === cell.x + dx && c.y === cell.y + dy);
+    if (outside) return { outsideRoomId: outside.roomId, facing: OPP[dir as Direction] };
+  }
+  return null;
+}
 
 // The 玄室 (Wiz-style guaranteed-fight + treasure room) gate. Playtest bug: the early Verdant floors seat
 // 6–8 chambers that all SHARE one pack table, and the encounter model suppresses an enemy TYPE once it has
@@ -34,37 +53,30 @@ describe("玄室 chamber guardians", () => {
   });
 
   it("every chamber is its OWN fight — they don't suppress each other once the shared type is met", () => {
-    const chambers = chamberRoomIds("dungeon.verdant.g1f");
     const everyType = [...new Set(verdant.encounterTables.flatMap((t) => t.entries.map((e) => e.enemyId)))];
+    // Walk into each of two DIFFERENT chambers from outside its door (they are enclosed rooms now), with every
+    // enemy type kept "already cleared" so first-contact suppression is fully on. chamberGuardian must make
+    // each fire regardless — the old type-only suppression silenced all but the first.
+    const chamberIds = [...chamberRoomIds("dungeon.verdant.g1f")]
+      .map((id) => ({ id, approach: chamberApproach("dungeon.verdant.g1f", id) }))
+      .filter((c) => c.approach)
+      .slice(0, 2);
+    expect(chamberIds.length, "at least two 玄室 have a reachable door").toBe(2);
 
-    let s = party(4);
-    s = executeCommand(s, verdant, { type: "enter_dungeon" });
     const foughtIn = new Set<string>();
-
-    // Keep EVERY enemy type permanently "already cleared", so first-contact suppression is fully on. Under
-    // the old rules that silenced all chambers; chamberGuardian must make each chamber fight regardless.
-    for (let step = 0; step < 400 && foughtIn.size < 3; step += 1) {
-      const before = s.position?.roomId;
+    for (const { id, approach } of chamberIds) {
+      let s = party(4);
+      s = executeCommand(s, verdant, { type: "enter_dungeon" });
+      s = withDebugStartCell(s, verdant, approach!.outsideRoomId, approach!.facing);
       s = { ...s, floorClearedEnemies: [...everyType] } as GameState;
-      s = executeCommand(s, verdant, { type: "move_forward" });
-      // A 玄室 is entered through a CLOSED door: the first step opens it, the next enters.
-      const doorEv1 = s.log.at(-1)?.event;
-      if (doorEv1?.type === "door_opened") {
-        s = executeCommand(s, verdant, { type: "open_door" });
-        s = { ...s, floorClearedEnemies: [...everyType] } as GameState;
-        s = executeCommand(s, verdant, { type: "move_forward" });
-      }
-      if (s.phase === "combat") {
-        if (chambers.has(s.combat!.roomId)) foughtIn.add(s.combat!.roomId);
-        // Shrug the fight off WITHOUT claiming the chest, and keep every type cleared.
-        s = { ...s, phase: "dungeon", combat: null, floorClearedEnemies: [...everyType] } as GameState;
-      }
-      if (s.position?.roomId === before) s = executeCommand(s, verdant, { type: "turn_right" });
+      s = executeCommand(s, verdant, { type: "move_forward" }); // bump the closed door open
+      s = { ...s, floorClearedEnemies: [...everyType] } as GameState;
+      s = executeCommand(s, verdant, { type: "move_forward" }); // step into the room
+      if (s.phase === "combat" && s.combat!.roomId === id) foughtIn.add(id);
     }
-
     expect(
       foughtIn.size,
-      "multiple distinct 玄室 must each fire their guardian even with the shared type cleared"
+      "each 玄室 fires its own guardian even with the shared type cleared"
     ).toBeGreaterThanOrEqual(2);
   });
 
@@ -76,7 +88,7 @@ describe("玄室 chamber guardians", () => {
     s = executeCommand(s, verdant, { type: "enter_dungeon" });
     let chamberRoom: string | null = null;
 
-    for (let step = 0; step < 400 && !chamberRoom; step += 1) {
+    for (let step = 0; step < 1500 && !chamberRoom; step += 1) {
       const before = s.position?.roomId;
       s = { ...s, floorClearedEnemies: [...everyType] } as GameState;
       s = executeCommand(s, verdant, { type: "move_forward" });

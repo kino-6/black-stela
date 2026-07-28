@@ -9,22 +9,22 @@ startRoom: room.verdant.g1f.001
 map: |
   ###################
   #E............#...#
-  #.#.#####.###.###.#
-  #.#.....#.#.......#
-  #.#...###.##..#.#.#
-  #.#..B....#..C..#.#
-  #.###.#.#.###.#.###
-  #.....#.#.#...#...#
-  #.#...##......#.#.#
-  #.#..F...A...G..#.#
-  #.#.#.##....#.#.###
-  #.#.#.....#.#.#...#
-  #.#...#...#...#.###
-  #.#..H...D...M....#
-  #.#.#.#.#.###.#.###
-  #.#...#..s..#.....#
-  #.#######S###.###.#
-  #.........#1...2#X#
+  #.#..####..##.##..#
+  #.#.......#.......#
+  #.#.#.###.###.#.#.#
+  #.#.#B.#..#..C.##.#
+  #.###...#.##....###
+  #....##.#s#..##...#
+  #.#.#.###S#.#X#.#.#
+  #.#.#F...A.##M.##.#
+  #.#.#..##..##...###
+  #...##...##.#1#...#
+  #...###.###.###.###
+  #.#..G...D...H....#
+  #.#.#..##...#...###
+  #.#..##..##.#.#...#
+  #.#####.#####.###.#
+  #.........#.....#2#
   ###################
 symbols:
   1: room.verdant.g1f.nook1
@@ -59,7 +59,7 @@ edges:
     kind: secret
     to: room.verdant.g1f.lift
   - from: room.verdant.g1f.02
-    direction: north
+    direction: west
     kind: door
   - from: room.verdant.g1f.03
     direction: north
@@ -68,16 +68,16 @@ edges:
     direction: north
     kind: door
   - from: room.verdant.g1f.05
-    direction: north
+    direction: west
     kind: door
   - from: room.verdant.g1f.06
     direction: north
     kind: door
   - from: room.verdant.g1f.07
-    direction: north
+    direction: west
     kind: door
   - from: room.verdant.g1f.08
-    direction: north
+    direction: west
     kind: door
   - from: room.verdant.g1f.keep
     direction: north
