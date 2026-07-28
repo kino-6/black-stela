@@ -46,6 +46,29 @@ static func fresh(seed: int) -> Dictionary:
 static func empty_bonus() -> Dictionary:
 	return {"might": 0, "agility": 0, "spirit": 0, "wit": 0, "luck": 0}
 
+## Deal a COMPLETE random adventurer into the draft — class, face, 来歴/気質, a fully-SPENT bonus pool, and a
+## name — the Godot mirror of React's createQuickRecruit, for a player who would rather be dealt a recruit
+## than build one step by step. The pool is spent in full so the result is immediately registerable.
+static func randomize(draft: Dictionary, data: Dictionary, class_ids: Array, seed: int) -> void:
+	# Pick each field DIRECTLY off the seed (not a +1 nudge from the default) so class/来歴/気質/顔 all vary —
+	# mirrors React's createQuickRecruit (roll, roll/3, roll/7, …).
+	if not class_ids.is_empty():
+		draft["classId"] = String(class_ids[int(abs(seed)) % class_ids.size()])
+	var backgrounds: Array = data.get("backgrounds", [])
+	if not backgrounds.is_empty():
+		draft["backgroundId"] = String(backgrounds[int(abs(seed / 3)) % backgrounds.size()].get("id", ""))
+	var traits: Array = data.get("traits", [])
+	if not traits.is_empty():
+		draft["traitId"] = String(traits[int(abs(seed / 7)) % traits.size()].get("id", ""))
+	var faces := face_keys(data)
+	if not faces.is_empty():
+		draft["portraitKey"] = String(faces[int(abs(seed / 11)) % faces.size()])
+	reroll_identity(draft, data) # a dealt name/title/notes
+	draft["bonusAptitude"] = empty_bonus()
+	var pool := int(draft.get("bonusPool", 0))
+	for i in range(pool):
+		adjust(draft, String(APTITUDE_KEYS[int(abs(seed + i * 7)) % APTITUDE_KEYS.size()]), 1)
+
 ## 4..8 points, from the draft's seed — the same roll React makes, so a Godot recruit is built from the
 ## same size of pool as the React one it replaces.
 static func roll_bonus_pool(seed: int) -> int:

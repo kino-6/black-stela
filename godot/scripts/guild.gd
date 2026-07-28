@@ -274,6 +274,11 @@ func _briefing_step() -> Control:
 	var actions := UI.row()
 	var start := UI.button(I18n.t("party.startRegistration"), func(): _goto("class"), Vector2(260, 46), 19)
 	actions.add_child(start)
+	# 見繕う — deal a COMPLETE random adventurer in one press (React's quick-recruit), for a player who would
+	# rather be handed a recruit than walk the seven steps. Registers straight away.
+	var quick := UI.button(I18n.t("party.quickRecruit"), func(): _random_recruit(), Vector2(200, 46), 18)
+	quick.disabled = _party().size() >= PARTY_MAX
+	actions.add_child(quick)
 	col.add_child(actions)
 	if _party().size() >= PARTY_MAX:
 		col.add_child(UI.label(I18n.t("party.partyReadyHeading"), 19, UI.GOLD))
@@ -891,6 +896,21 @@ func _register() -> void:
 	_draft = Draft.fresh(int(_draft.get("bonusSeed", 1)) + 7)
 	_step = "briefing" if party.size() >= PARTY_MAX else "class"
 	_rebuild()
+
+# 見繕う — fill the draft with a complete RANDOM adventurer and register it in one press. Lands back on the
+# briefing so the player can deal another or start building one by hand.
+func _random_recruit() -> void:
+	if _party().size() >= PARTY_MAX:
+		return
+	var class_ids := []
+	for c in _data.get("classes", []):
+		class_ids.append(String(c.get("id", "")))
+	var seed := int(_draft.get("bonusSeed", 1)) * 31 + _party().size() * 101 + 7
+	Draft.randomize(_draft, _data, class_ids, seed)
+	_register()
+	if _party().size() < PARTY_MAX:
+		_enter_step("briefing")
+		_rebuild()
 
 func _depart() -> void:
 	get_tree().change_scene_to_file("res://scenes/town.tscn")
