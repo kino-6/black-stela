@@ -3,6 +3,42 @@
 Rapid-fire playtest backlog, to be completed one at a time with verification + a gate where it
 prevents recurrence. Ordered by the agreed priority (A first). Tick items as they land.
 
+---
+## ▶ RESUME HERE (next session) — 玄室 redesign, phases B & C
+
+The 玄室 (Wiz guaranteed-fight + treasure room) redesign the user asked for. Decision LOCKED: **enclosed 2×2
+room + closed door you open (Wiz 正統), fight, chest** + cleared-state visual. Build/run: `npm run
+export:godot && npm run play`. Truth gate: `npm run gate:final` (NOT test:e2e). Godot data build needed
+after content/i18n/schema changes.
+
+**DONE + pushed this session:**
+- Phase A — DOOR GIMMICK (`27c7b92`): a `door` edge is now CLOSED. Bump-to-open (first step opens + reveals,
+  next step enters) OR the `open_door` command; `state.openedDoors` (both sides, key `door:roomId:direction`)
+  resets on floor change. floorGraph keeps `door` WALKABLE so maze gates are untouched (runtime gate only).
+  TS+Godot mirror, save schema, events (`door_opened`, movement_blocked reason `door`). Every 玄室 + keep
+  already carries ONE `kind: door` edge (genVerdantFloors `chamberDoor`).
+- #10B retreat→back a cell (`4779efd`); 玄室 2×2 render decorates the whole block (`95a974b`); chest loot in
+  panel (`7ab0a4d`); guild rename + image-import (`1f59112`/`f39dd2f`).
+
+**REMAINING:**
+- **Phase B — enclosed 2×2 rooms (generator, the hard one).** Today the 玄室 are 2×2 OPEN blocks (verified:
+  g1f chamber A = cells (9,9)(8,9)(9,10)(8,10) all open) with multiple corridor connections, so the MINIMAP
+  shows corridors, not a room. Enclose each 玄室's 2×2 to ONE opening (the door), walling the rest, WITH a
+  connectivity guard (BFS from entrance after each wall — only wall if the floor stays fully reachable).
+  Loops will drop (pockets are dead-ends), so BRAID the base maze (open ~N extra walls) to keep loopCount ≥ 4;
+  sweep will rise (backtracking) so RETUNE the maze gate bands in `tests/dungeonDesign.test.ts` (currently
+  sweep 300–360, loops ≥4, frame-fill, branches ≥3, 玄室 ≥6). NOTE the two-stage pipeline (`genVerdantFloors.mjs`
+  → `carve-verdant-chambers.mjs`): the door is authored as an EDGE in genVerdantFloors but the 2×2 is carved
+  in carve-verdant-chambers, and enclosure must not wall the door's target cell — CONSOLIDATE the 2×2 carve +
+  enclosure INTO genVerdantFloors so doors + walls + BFS are coherent (retire carve-verdant-chambers).
+  Regenerate → re-run `dungeonDesign.test` + `verify_parity` (re-record verdant traces) + `verify_verdant_chambers`.
+- **Phase C — closed-door RENDER + cleared-state visual (#10A).** dungeon_renderer.gd `_add_door` currently
+  draws an OPEN door always; make a CLOSED (opaque, hides the room) vs OPEN look driven by `state.openedDoors`.
+  And when a 玄室 is cleared (its chest is out / in floorClaimedTreasures), change its look (door stays open /
+  landmark calms) so victory reads. Codex owns final art review; the wiring is ours.
+
+---
+
 ## A. Save system  — DONE
 The Godot build never autosaved during play, so every run started from the beginning. Wired it:
 - [x] **Town autosave** (slot 1) — written on arrival in town (with a party).
