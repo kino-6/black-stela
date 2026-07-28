@@ -308,12 +308,21 @@ function buildFloor(spec) {
   // Each plain chamber is a true 玄室: chamberGuardian gates its fight PER-ROOM (by its own chest claim),
   // so all of them fire even though they share the floor's pack table — enter, clear the guardian, and the
   // side-treasure chest is left behind on victory. (The keep below stays a once-only unique boss fight.)
-  plainChambers.forEach((c, i) => rooms.push(room(
-    rid(n, `0${i + 2}`),
-    `Green Chamber ${i + 1}`, `翠の間 ${i + 1}`,
-    "A chamber where the canopy-light pools green on standing water.", "樹冠の光が水面に翠色を落とす間。",
-    `    chamberGuardian: true\n    encounterTable: encounters.verdant.g${n}.pack\n    treasureTable: treasure.verdant.g${n}.side\n`
-  )));
+  plainChambers.forEach((c, i) => {
+    // Roughly HALF the side 玄室 hide a snare-TRAPPED chest (difficulty/damage scale with depth), so a thief's
+    // investigate/disarm is worth a party slot (playtest: "盗賊による罠の処理もない"). The rest leave a plain
+    // chest. Either way the reward is claimable only after the guardian falls.
+    const trapped = i % 2 === 1;
+    const reward = trapped
+      ? `    chamberGuardian: true\n    encounterTable: encounters.verdant.g${n}.pack\n    chest:\n      treasureTable: treasure.verdant.g${n}.side\n      trap:\n        kind: snare\n        difficulty: ${11 + n}\n        damage: ${3 + n}\n`
+      : `    chamberGuardian: true\n    encounterTable: encounters.verdant.g${n}.pack\n    treasureTable: treasure.verdant.g${n}.side\n`;
+    rooms.push(room(
+      rid(n, `0${i + 2}`),
+      `Green Chamber ${i + 1}`, `翠の間 ${i + 1}`,
+      "A chamber where the canopy-light pools green on standing water.", "樹冠の光が水面に翠色を落とす間。",
+      reward
+    ));
+  });
   // The keep = miniboss/boss sole-approach choke (or a plain deep chamber on G1).
   // Enemy stats live in enemies.md; the keep references them by table (g3-g8) or as
   // a squad (g2). Boss-floor status comes from the floor's `boss` tag, not inline.

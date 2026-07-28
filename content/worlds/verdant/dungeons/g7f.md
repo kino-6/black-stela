@@ -105,7 +105,12 @@ rooms:
     description: A chamber where the canopy-light pools green on standing water.
     chamberGuardian: true
     encounterTable: encounters.verdant.g7.pack
-    treasureTable: treasure.verdant.g7.side
+    chest:
+      treasureTable: treasure.verdant.g7.side
+      trap:
+        kind: snare
+        difficulty: 18
+        damage: 10
     locales:
       ja:
         name: 翠の間 2
