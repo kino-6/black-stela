@@ -4,6 +4,43 @@ Rapid-fire playtest backlog, to be completed one at a time with verification + a
 prevents recurrence. Ordered by the agreed priority (A first). Tick items as they land.
 
 ---
+## ▶▶ RESUME HERE — 2026-07-28 (session state, all pushed to main)
+Build/run: `npm run export:godot && npm run play` (godot/data GITIGNORED). Truth gate `npm run gate:final`;
+Godot gates `npm run gate:migration`. Self-build + verify before handoff (AGENTS.md).
+
+**Pushed this session (newest last):** `178c476` Codex 棘虫 nameplate clamp (QA'd+committed) · `b0eb2ea`
+TOWN REDESIGN · `e9df977` difficulty sim party-size axis + `sim:balance` · `4ff1c99` difficulty-design doc +
+economy schema (slice 1).
+
+### ✅ Town square redesign — DONE (`b0eb2ea`, React+Godot+manifest parity, gate:final + gate:migration green)
+World-title heading (drops the "初めて潜る前に" tutorial), party FORMATION rail reusing `dungeon_hud.party_token`
++ 職業名 (optional `class_label`), a MENU overlay (settings + title, cancel-closable), bottom-spread layout.
+Screenshot: `godot/tests/_ux_town-square.png`. Codex owns any final art polish.
+
+### ⏳ IN PROGRESS — Difficulty design (sim + theory, scenario-owned) — the user's active thread
+SPEC: **`docs/design/difficulty-design.md`** (read first). Tool: **`npm run sim:balance`**. Decisions LOCKED:
+EO/Galleria-refined; party-size = proportional attrition (`partySizeValue`); resource/economy axis EO-leaning
+**early→mid, easing to Act III** (= felt growth); ALL knobs authored per-scenario in `world.md balance.economy`.
+- **Slice 1 DONE** (`4ff1c99`): `balance.economy` schema (carryCap[] per act, stackCap, priceScalar[],
+  incomeScalar[], provisionKit) in scenario.ts + types WorldBalance — data receptacle, behaviour unchanged.
+- **Slice 2 NEXT** (task #8): extend `descentSim` with the **PROVISIONED descent** (carry a cap-bounded,
+  affordable kit; auto-use heals/cures at HP/status thresholds) → metrics: consumable **burn/floor**,
+  **kit-exhaustion floor**, **economy balance** (dive income ÷ full re-provision). Also **split trash-trough
+  vs telegraphed-spike** (玄室 guardian / 番所 keep) and add **MP/気力 attrition** to `FloorSimResult`. Add
+  columns to `sim:balance`. (`partySizeValue` + party-size sim axis already landed in `e9df977`.)
+- **Slice 3** (task #9): gate the targets in `descentSim.test.ts` (smooth act-curve band, **prepared party
+  never wipes**, party-size cost large-but-finite, scarcity: kit low by the act spike), then TUNE the authored
+  knobs against `sim:balance` and **browser-verify** (sim is a lower bound — tune slightly gentle).
+- **Measured NOW (before tuning):** both worlds flat-then-spike — Verdant g1/g2 troughs 100/95% (target
+  85-65% = "ヌルい") while g8 = 3% (near-wipes a PREPARED party; target 38-28%). `underpowerFactor` is inert
+  (no floor authors `recommendedPartySize`) so under-strength danger isn't proportional (3p trough = 6p).
+
+### ⤷ Combat-depth candidate (design-doc backlog): 多段ヒット `hits:N`
+AoE EXISTS (`target:"allEnemies"` — flame-wave, sweeping-blow). **Multi-hit does NOT** — no hit-count. A
+`hits:N` on a technique effect = a martial "sweep several BODIES of one pack" lever (distinct from AoE), feeds
+build diversity. Recorded in difficulty-design.md "Candidate levers".
+
+---
 ## ✅ NEXT SESSION QUEUE — playtest 2026-07-28 — ALL SIX DONE (gate:final GREEN: 687 unit + 139 e2e)
 Build/run reminder: `npm run export:godot && npm run play` (godot/data is GITIGNORED — `npm run play` alone
 uses STALE data). Truth gate `npm run gate:final`. Self-build + verify before handoff (AGENTS.md rule).
@@ -34,14 +71,48 @@ without a full `gate:final` — a live reminder of the truth-gate rule. Fixed:
 - `combat-stall-verify` couldn't reach the door-sealed 番所 (auto-explore avoids squads; keep isn't a hard
   choke) → starts ON the keep cell via debug `at=` and steps to re-trigger the guardian.
 - `selfplay` asserted the removed 次の支度 ledger row (`f0f616d` dropped it) → asserts the Wounds row now.
-- `combat-layout` @1920 flagged a mark's UNCLIPPED box; marks are `overflow:hidden`-clipped to the stage
-  (above the HUD) → test clamps to the stage's visible bottom.
+- `combat-layout` @1920 originally treated an `overflow:hidden` nameplate as safe by clamping its measured
+  bottom to the stage. That hid the real large-front-foe defect; `178c476` now keeps the mark inside the
+  stage and the regression rejects any clipped nameplate.
 
-### ⤷ Open nit for CODEX (visual lane): 棘虫 nameplate clipped at 1080p on g4f
-On a 2-group g4f fight at 1920×1080 the big 棘虫 (thorn-crawler) grounds so low its nameplate + HP bar fall
-below the `.enemy-stage` clip (stageBottom ~616) and aren't painted, while the 花粉の靄 label shows fine. Not
-a HUD-overlap (nothing sits behind the command band) — a grounding/anchor polish for a large front-grounded
-foe. Codex owns combat-stage grounding/size (tune `size`/anchor in data, never re-order art).
+### ⤷ Done: 棘虫 nameplate clipped at 1080p on g4f (`178c476`, Codex)
+The large, front-grounded 棘虫 could project its below-foot nameplate outside `.enemy-stage` at 1920×1080.
+The fix preserves authored size, grounding, and depth: it puts the label immediately above the feet and
+clamps only the display anchor. The browser regression now requires EVERY enemy mark to be fully inside the
+stage (not merely non-overlapping the HUD), at both 1280×720 and 1920×1080.
+
+---
+## Proposed after Codex independent real play — 2026-07-28 (not yet accepted)
+
+**Route actually played:** native Godot, keyboard only: title → Verdant → six `見繕う` recruits → town →
+G1F → movement/turn/wall feedback → a two-group battle → 全員でかかる → victory → exploration → full map.
+`gate:play` also passed separately. These are candidate IMPs, deliberately not marked done or assigned to
+an implementer before product triage.
+
+1. **IMP-055 / P1 — make Verdant's first-person maze legible, not merely brighter.**
+   The G1F entrance and ordinary corridor read as a near-black ceiling mass plus one saturated green wall;
+   a player cannot tell depth, a forward passage, or a corner from the first-person frame without consulting
+   the minimap. This is distinct from “Verdant is too dark”: the palette currently brightens the walls while
+   `dungeon_renderer.gd` still gives the ceiling a hard-coded dark material. Treat floor / wall / ceiling /
+   fog as one world-owned readability composition. Acceptance: native screenshots at landing, open corridor,
+   corner, and blocked wall make the passable direction obvious at a glance, while preserving the grid's
+   facing/minimap truth; review pixels in a real Godot window, not headless only.
+
+2. **IMP-056 / P1 — eliminate English world and floor names from Japanese normal play.**
+   The full map showed `G1F - Root Gallery`; the title's Continue row showed `Verdant - the Sunken
+   Heartwood`. These are authored names, but Japanese play already has `翠碑 — 沈む樹心` and `蔦の回廊`.
+   Complete the existing Plan.md “Floor names are English” gap with `locales.ja` for every world/floor and
+   use those values in title save summaries as well as the full map. Acceptance: a Japanese normal route has
+   no English scenario/floor proper name (genre `G1F` is fine) and no raw identifier fallback.
+
+3. **IMP-057 / P2 — add a native visual fixture pair for the Verdant chamber.**
+   F's chamber landmark/door visual is still intentionally unapproved, but the debug deck has generic floor
+   starts only; it cannot land a reviewer at a closed chamber door, then at the same cleared chamber. That
+   turns a small visual review into a blind long walk. Add `verdant_chamber_closed` and
+   `verdant_chamber_cleared` fixtures through the existing debug-fixture seam, with a real normal-scene
+   follow-up action to open/enter where applicable. Acceptance: each fixture names its exact cell and opens
+   the real dungeon scene; paired captures prove closed-door threshold, special-room read, and cleared-state
+   contrast. Never mount these controls in normal play.
 
 ---
 ## ✅ 玄室 redesign COMPLETE (phases A–C) — enclosed 2×2 rooms + closed-door gimmick + cleared visual
