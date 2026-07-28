@@ -93,9 +93,31 @@ balance:
 
 1. **Schema + applyBalance** — the `economy` receptacle (data only, behaviour unchanged). ✅
 2. **PROVISIONED sim model + burn/economy metrics** — the measurement; split trash vs spike; add MP/気力
-   attrition to `FloorSimResult`. Report columns in `sim:balance`.
+   attrition to `FloorSimResult`. Report columns in `sim:balance`. ✅
 3. **Gates** — act-curve smoothness, no prepared-wipe, party-size cost, scarcity target. Then tune to hit
    them and browser-verify.
+
+### Slice 2 — what the measurement now shows (Verdant, startLv1, none-heal)
+
+`simulateDescent(world, { provision: true })` carries the world's affordable kit (cheapest heal/cure of
+each kind, capped by `carryCap[0]`, from `provisionKit`) and auto-uses it — cure a blocking status, else
+heal the most-wounded below `healThreshold` (default 0.34), the medic trading their swing for it. New
+`FloorSimResult` fields: `arrival/lowest/departMpPct`, `trash/spikeLowestHpPct` + `trash/spikeFights`,
+`healsUsed`/`curesUsed`/`kitRemaining`/`goldEarned`. New `DescentSimResult`: `kitCost`, `totalGold`,
+`economyBalance` (income ÷ one re-provision), `kitExhaustedFloor`. `npm run sim:balance` prints them.
+
+Findings the tool surfaced (the numbers, not a feel call):
+
+- **Scarcity is currently ~zero.** A 4-heal/2-cure kit runs 6→3 across the whole 8-floor descent, never
+  dries out, and dive income is **2.4× a full re-provision**. That is the measured face of the "ヌルい"
+  report: an affordable, carryable kit trivialises the push. Slice 3 tightens `provisionKit`/`carryCap`/
+  `incomeScalar` until the kit runs low by the Act-II/III spike.
+- **The spike channel is nearly empty.** Verdant authors exactly **one** telegraphed fight in eight floors
+  (the g2f Bramble-Warden keep squad), and it is trivial to a prepared party (spike-trough 100%). All real
+  danger is trash troughs. This is flat-then-spike wearing a different hat — the finale (g7/g8, 19%/33%)
+  is a *trash* wall, not a *designed* guardian. Slice 3 adds telegraphed spikes per act.
+- **MP/気力 reads near-full** because the auto-attack sim never casts. The channel is wired; it only bites
+  once spellcasting is modelled (a later lever, noted below).
 
 ## Candidate levers (backlog, data-authorable)
 

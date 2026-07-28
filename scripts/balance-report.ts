@@ -74,6 +74,45 @@ function reportWorld(world: ScenarioWorld, level: number, sizes: number[]) {
     const shortId = floorId.replace(/^dungeon\./, "");
     console.log(`    ${shortId.padEnd(12)} ${`${pct(hi)}-${pct(lo)}`.padStart(9)}   ${cells.join("")}`);
   });
+
+  reportEconomy(world, level, floors);
+}
+
+// The RESOURCE-ECONOMY axis (difficulty-design.md §3). A full PREPARED party carries the world's
+// affordable kit and auto-uses it; we read the two danger channels apart (trash vs telegraphed spike),
+// the kit burn per floor, where the kit runs dry (the retreat trigger), and whether the dive income
+// covers a re-provision. A world with no `balance.economy` block is skipped (no scarcity authored).
+function reportEconomy(world: ScenarioWorld, level: number, floors: string[]) {
+  if (!world.balance?.economy) {
+    console.log(`\n  RESOURCE-ECONOMY: (no balance.economy authored — modern no-scarcity)`);
+    return;
+  }
+  const run = simulateDescent(world, { heal: "none", policy: "prepared", startLevel: level, provision: true });
+  const cap = world.balance.economy.carryCap;
+  console.log(`\n  RESOURCE-ECONOMY (full prepared party, provisioned, none-heal, startLv=${level}):`);
+  console.log(
+    `    kit cost ${run.kitCost}g  ·  dive income ${run.totalGold}g  ·  economy balance ${
+      Number.isFinite(run.economyBalance) ? `${run.economyBalance.toFixed(1)}× re-provision` : "n/a"
+    }  ·  kit runs dry: ${run.kitExhaustedFloor ? run.kitExhaustedFloor.replace(/^dungeon\./, "") : "never (too loose?)"}${
+      cap ? `  ·  carryCap/act [${cap.join(", ")}]` : ""
+    }`
+  );
+  console.log(`    floor        trough   trash   spike    heal  cure   kit   +gold`);
+  floors.forEach((floorId) => {
+    const f = run.floors.find((fl) => fl.floorId === floorId);
+    const shortId = floorId.replace(/^dungeon\./, "");
+    if (!f) {
+      console.log(`    ${shortId.padEnd(12)}    —`);
+      return;
+    }
+    const trash = f.trashFights === 0 ? "  — " : pct(f.trashLowestHpPct);
+    const spike = f.spikeFights === 0 ? "  — " : pct(f.spikeLowestHpPct);
+    console.log(
+      `    ${shortId.padEnd(12)} ${(f.wiped ? "WIPE" : pct(f.lowestHpPct)).padStart(6)}  ${trash.padStart(5)}  ${spike.padStart(5)}   ${String(
+        f.healsUsed
+      ).padStart(4)}  ${String(f.curesUsed).padStart(4)}  ${String(f.kitRemaining).padStart(4)}  ${String(f.goldEarned).padStart(5)}`
+    );
+  });
 }
 
 function main() {

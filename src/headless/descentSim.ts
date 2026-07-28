@@ -22,11 +22,12 @@
 //            one-push lower bound with no consumables).
 import { createCombatState, executeCommand, scaledEncounterCount } from "../domain/rulesEngine";
 import { applyLevelUps, xpForLevel } from "../domain/leveling";
+import { createInventoryItemFromCatalog } from "../domain/economy";
 import { createDebugStateFromProgress } from "../debug/debugStart";
 import { analyzeFloorGraph } from "../domain/floorGraph";
 import { WANDERING_COOLDOWN_STEPS, WANDERING_ENCOUNTER_PCT } from "../domain/rulesEngine";
 import { floorName } from "../domain/scenario";
-import type { Character, Enemy, GameState, ScenarioWorld } from "../domain/types";
+import type { Character, Enemy, GameState, InventoryItem, ScenarioItem, ScenarioWorld } from "../domain/types";
 
 const DESCENT_ORDER = [
   "dungeon.b1f",
@@ -50,6 +51,26 @@ export interface FloorSimResult {
   departHpPct: number;
   downed: number;
   wiped: boolean;
+  // MP/気力 attrition — the resource an over-extended caster runs out of. The auto-attack sim
+  // barely spends it (actors only swing), so it reads near-full until spellcasting is modelled;
+  // the columns exist so the economy Gate and report have the channel wired.
+  arrivalMpPct: number;
+  lowestMpPct: number;
+  departMpPct: number;
+  // The two danger channels, measured apart (difficulty-design.md §2). trash = random/wandering
+  // packs (the smooth drain); spike = the telegraphed fixed encounter / tactical squad (玄室 guardian,
+  // 番所 keep). The trough is 1 when the floor had no fight of that kind OR the party took no damage
+  // from it — the fight COUNT disambiguates (0 = none authored; a trivialised spike reads 100%/0-burn).
+  trashLowestHpPct: number;
+  spikeLowestHpPct: number;
+  trashFights: number;
+  spikeFights: number;
+  // Resource-economy axis (only populated when provisioned). Consumables burned ON THIS FLOOR and
+  // what the kit has left after it — the retreat trigger is the floor where `kitRemaining` hits 0.
+  healsUsed: number;
+  curesUsed: number;
+  kitRemaining: number;
+  goldEarned: number;
 }
 
 export interface DescentSimResult {
@@ -57,18 +78,33 @@ export interface DescentSimResult {
   floors: FloorSimResult[];
   survived: boolean;
   finalLevel: number;
+  // Resource-economy summary (provisioned runs only; zeros/null otherwise).
+  provisioned: boolean;
+  kitCost: number; // gold to buy the starting kit
+  totalGold: number; // gold earned across the whole descent (dive income)
+  economyBalance: number; // dive income ÷ one full re-provision (Infinity when the kit is free/empty)
+  kitExhaustedFloor: string | null; // floorId where heals+cures first hit 0 (the retreat trigger)
 }
 
 const alive = (member: Character) => member.hp > 0 && !member.injury;
 const hpPct = (member: Character) => (member.maxHp > 0 ? member.hp / member.maxHp : 0);
+const mpPct = (member: Character) => (member.maxMp > 0 ? member.mp / member.maxMp : 1);
 const avg = (values: number[]) => (values.length ? values.reduce((a, b) => a + b, 0) / values.length : 0);
 const avgLevel = (party: Character[]) => avg(party.map((m) => m.level));
 const avgHpPct = (party: Character[]) => avg(party.map(hpPct));
 const lowestHpPct = (party: Character[]) => Math.min(...party.map(hpPct));
+const avgMpPct = (party: Character[]) => avg(party.map(mpPct));
+const lowestMpPct = (party: Character[]) => Math.min(...party.map(mpPct));
+
+export type EncounterKind = "trash" | "spike";
 
 export interface PlannedEncounter {
   enemy: Enemy;
   count: number;
+  // trash = random/wandering pack (the smooth drain); spike = a telegraphed fixed encounter or
+  // tactical squad (玄室 guardian, 番所 keep). Optional so existing callers (simParity) stay valid;
+  // defaults to trash where unset.
+  kind?: EncounterKind;
 }
 
 // The distinct enemy types a floor introduces, in the group sizes its content
@@ -113,7 +149,8 @@ function planWanderingFights(world: ScenarioWorld, floorId: string): PlannedEnco
   }
   return Array.from({ length: count }, () => ({
     enemy,
-    count: entry.maxCount ?? entry.minCount ?? 1
+    count: entry.maxCount ?? entry.minCount ?? 1,
+    kind: "trash" as const
   }));
 }
 
@@ -125,25 +162,27 @@ function planFloor(world: ScenarioWorld, floorId: string, seen: Set<string>): Pl
 
   const encounters: PlannedEncounter[] = [];
   const planned = new Set<string>();
-  const take = (enemy: Enemy, count: number) => {
+  const take = (enemy: Enemy, count: number, kind: EncounterKind) => {
     if (seen.has(enemy.id) || planned.has(enemy.id)) {
       return;
     }
     planned.add(enemy.id);
-    encounters.push({ enemy, count });
+    encounters.push({ enemy, count, kind });
   };
 
   for (const room of floor.rooms) {
+    // A fixed room encounter and a tactical squad are TELEGRAPHED — the player walks into a placed
+    // fight, sees it, and chooses to engage. Those are the spike channel (difficulty-design.md §2).
     if (room.encounter) {
       const enemy = world.enemies.find((candidate) => candidate.id === room.encounter?.id) ?? room.encounter;
-      take(enemy, 1);
+      take(enemy, 1, "spike");
     }
     // A tactical squad (front-blocker + back-caster) is a single planned fight of all
     // its members — otherwise the sim under-counts squad floors (e.g. verdant G2).
     for (const enemyId of room.encounterSquad ?? []) {
       const enemy = world.enemies.find((candidate) => candidate.id === enemyId);
       if (enemy) {
-        take(enemy, 1);
+        take(enemy, 1, "spike");
       }
     }
   }
@@ -162,7 +201,7 @@ function planFloor(world: ScenarioWorld, floorId: string, seen: Set<string>): Pl
     for (const entry of table.entries) {
       const enemy = world.enemies.find((candidate) => candidate.id === entry.enemyId);
       if (enemy && !enemy.prizedXp) {
-        take(enemy, entry.maxCount ?? entry.minCount ?? 1);
+        take(enemy, entry.maxCount ?? entry.minCount ?? 1, "trash");
       }
     }
   }
@@ -246,6 +285,97 @@ export function equipPartyForEnemy(party: Character[], world: ScenarioWorld, ene
   }));
 }
 
+// The PROVISIONED descent (difficulty-design.md §"PROVISIONED descent"): the party carries a kit
+// bounded by the carry cap and the affordable gold, and a competent player auto-uses it — cure a
+// blocking status, else heal the most-wounded once HP drops. This is what turns "consumables exist"
+// into a MEASURABLE scarcity axis: how much of the kit a floor burns, and where it runs dry.
+export interface ProvisionOptions {
+  /** Heal a member once its HP falls below this fraction of max (a competent player's reflex). */
+  healThreshold: number;
+}
+
+interface ProvisionKit {
+  inventory: InventoryItem[];
+  cost: number; // gold to buy this kit at the world's list prices
+}
+
+// Build the starting kit from the world's own `balance.economy.provisionKit` counts, drawing the
+// CHEAPEST real item of each kind (the rationed, affordable choice — a pessimistic lower bound on
+// healing, matching the `none` model's philosophy). Clamped to the Act I carry cap so the cap is a
+// real bound, not decoration. A world without an `economy` block yields an empty (free) kit.
+function buildProvisionKit(world: ScenarioWorld): ProvisionKit {
+  const economy = world.balance?.economy;
+  const spec = economy?.provisionKit;
+  if (!spec) {
+    return { inventory: [], cost: 0 };
+  }
+  const carryCap = economy?.carryCap?.[0] ?? Infinity;
+  const inventory: InventoryItem[] = [];
+  let cost = 0;
+  let carried = 0;
+
+  const cheapest = (predicate: (item: ScenarioItem) => boolean): ScenarioItem | undefined =>
+    world.items
+      .filter(predicate)
+      .sort((a, b) => (a.price ?? Infinity) - (b.price ?? Infinity))[0];
+
+  const stock = (chosen: ScenarioItem | undefined, requested: number | undefined) => {
+    if (!chosen || !requested || requested <= 0) {
+      return;
+    }
+    const qty = Math.max(0, Math.min(requested, carryCap - carried));
+    if (qty <= 0) {
+      return;
+    }
+    const item = createInventoryItemFromCatalog(world, chosen.id, qty);
+    if (!item) {
+      return;
+    }
+    inventory.push(item);
+    cost += (chosen.price ?? 0) * qty;
+    carried += qty;
+  };
+
+  stock(cheapest((item) => item.kind === "healing" && (item.healAmount ?? 0) > 0), spec.heals);
+  stock(cheapest((item) => item.kind === "cure"), spec.cures);
+  // `revives`: no engine item-revive path exists yet (a heal does not clear an injury), so the
+  // count is reserved but unstocked. When a revive item/technique lands, stock it here.
+  return { inventory, cost };
+}
+
+// One medic action for this round, or null. A competent player cures a blocking status before it
+// wastes a turn, otherwise tops up whoever is closest to going down. At most one item per round —
+// the medic trades their swing for it, so healing has a real opportunity cost in the sim.
+function chooseMedicAction(
+  state: GameState,
+  actors: Character[],
+  provision: ProvisionOptions
+): { actorId: string; action: "use_item"; itemId: string; targetCharacterId: string } | null {
+  if (actors.length === 0) {
+    return null;
+  }
+  const medic = actors[0];
+  const standing = state.party.filter(alive);
+
+  const cure = state.inventory.find((item) => item.kind === "cure" && item.quantity > 0 && item.curesStatuses?.length);
+  if (cure) {
+    const cured = new Set<string>(cure.curesStatuses ?? []);
+    const statused = standing.find((member) => (member.status ?? []).some((status) => cured.has(status)));
+    if (statused) {
+      return { actorId: medic.id, action: "use_item", itemId: cure.id, targetCharacterId: statused.id };
+    }
+  }
+
+  const heal = state.inventory.find((item) => item.kind === "healing" && (item.healAmount ?? 0) > 0 && item.quantity > 0);
+  if (heal) {
+    const wounded = [...standing].filter((member) => hpPct(member) < provision.healThreshold).sort((a, b) => hpPct(a) - hpPct(b))[0];
+    if (wounded) {
+      return { actorId: medic.id, action: "use_item", itemId: heal.id, targetCharacterId: wounded.id };
+    }
+  }
+  return null;
+}
+
 // Exported for the IMP-023V parity gate: it must resolve a fight ONLY through the production engine
 // (createCombatState + declare_round), never a re-implemented formula, so the simulator can never
 // drift from what a browser session actually rolls. tests/simParity.test.ts locks that.
@@ -253,8 +383,9 @@ export function resolveFight(
   state: GameState,
   world: ScenarioWorld,
   encounter: PlannedEncounter,
-  policy: SimPolicy = "naive"
-): { state: GameState; midFightLow: number } {
+  policy: SimPolicy = "naive",
+  provision?: ProvisionOptions
+): { state: GameState; midFightLow: number; midFightMpLow: number } {
   const kitted = { ...state, party: equipPartyForEnemy(state.party, world, encounter.enemy, policy) };
   const readyState = kitted.combatConclusion
     ? executeCommand(kitted, world, { type: "continue_after_combat" })
@@ -265,6 +396,7 @@ export function resolveFight(
     combat: createCombatState(readyState.position?.roomId ?? "sim", encounter.enemy, encounter.count)
   };
   let midFightLow = lowestHpPct(current.party);
+  let midFightMpLow = lowestMpPct(current.party);
 
   for (let round = 0; round < 80 && current.phase === "combat"; round += 1) {
     const target = current.combat?.enemyGroups.find((group) => group.count > 0);
@@ -273,25 +405,56 @@ export function resolveFight(
     if (!target || actors.length === 0) {
       break;
     }
+    // The medic (if provisioned and someone needs help) trades their swing for an item this round.
+    const medicAction = provision ? chooseMedicAction(current, actors, provision) : null;
+    const attackers = medicAction ? actors.filter((actor) => actor.id !== medicAction.actorId) : actors;
     current = executeCommand(current, world, {
       type: "declare_round",
-      actions: actors.map((actor) => ({ actorId: actor.id, action: "attack", targetGroupId: target.id }))
+      actions: [
+        ...(medicAction ? [medicAction] : []),
+        ...attackers.map((actor) => ({ actorId: actor.id, action: "attack" as const, targetGroupId: target.id }))
+      ]
     });
     // Sample while still in combat (before the victory level-up heal tops HP off).
     if (current.phase === "combat") {
       midFightLow = Math.min(midFightLow, lowestHpPct(current.party));
+      midFightMpLow = Math.min(midFightMpLow, lowestMpPct(current.party));
     }
   }
 
-  return { state: current, midFightLow };
+  return { state: current, midFightLow, midFightMpLow };
 }
+
+// Default medic reflex when a run is provisioned without an explicit threshold: heal a member the
+// moment it drops below a third of max — a competent player's "don't let anyone die" line.
+const DEFAULT_HEAL_THRESHOLD = 0.34;
+
+const kitSize = (inventory: InventoryItem[]) =>
+  inventory
+    .filter((item) => item.kind === "healing" || item.kind === "cure")
+    .reduce((total, item) => total + item.quantity, 0);
+const kindCount = (inventory: InventoryItem[], kind: InventoryItem["kind"]) =>
+  inventory.filter((item) => item.kind === kind).reduce((total, item) => total + item.quantity, 0);
 
 export function simulateDescent(
   world: ScenarioWorld,
-  options: { heal?: "town" | "none"; policy?: SimPolicy; startLevel?: number; partySize?: number } = {}
+  options: {
+    heal?: "town" | "none";
+    policy?: SimPolicy;
+    startLevel?: number;
+    partySize?: number;
+    /** Carry & auto-use the world's affordable consumable kit (the resource-economy axis). `true`
+     *  uses the default medic threshold; pass an object to set it. */
+    provision?: boolean | ProvisionOptions;
+  } = {}
 ): DescentSimResult {
   const heal = options.heal ?? "town";
   const policy = options.policy ?? "naive";
+  const provision: ProvisionOptions | undefined = options.provision
+    ? typeof options.provision === "object"
+      ? options.provision
+      : { healThreshold: DEFAULT_HEAL_THRESHOLD }
+    : undefined;
 
   const base = createDebugStateFromProgress(world, "ready");
   let party = base.party.map((member) => ({ ...member }));
@@ -308,12 +471,22 @@ export function simulateDescent(
   }
   const floors: FloorSimResult[] = [];
 
+  // Resource-economy state carried ACROSS floors (the whole point of scarcity — one tank of kit for
+  // the whole push, not a fresh stack per floor). `town` heal re-provisions each floor; `none` holds
+  // the kit, so it can run dry mid-descent (the retreat trigger the Gate reads).
+  const startingKit = provision ? buildProvisionKit(world) : { inventory: [], cost: 0 };
+  let inventory: InventoryItem[] = startingKit.inventory.map((item) => ({ ...item }));
+  let partyGold = 0; // dive income accumulator (ignores the starting purse — this is what the crawl EARNS)
+  let kitExhaustedFloor: string | null = null;
+
   // The world's own dungeon order (registry orders by floor level): b1..b8 for the
   // default world, g1..g8 for verdant, etc. Falls back to the default constant.
   const descentOrder = world.dungeons.length > 0 ? world.dungeons.map((dungeon) => dungeon.id) : DESCENT_ORDER;
   for (const floorId of descentOrder) {
     if (heal === "town") {
       party = party.map((member) => ({ ...member, hp: member.maxHp, mp: member.maxMp, injury: undefined, status: [] }));
+      // A town trip also restocks — scarcity only bites on a `none` one-push, which is what the Gate reads.
+      inventory = startingKit.inventory.map((item) => ({ ...item }));
     }
 
     // The encounter economy changed: suppression is now scoped to the FLOOR VISIT, so a
@@ -324,28 +497,57 @@ export function simulateDescent(
       ...planFloor(world, floorId, new Set<string>()),
       ...planWanderingFights(world, floorId)
     ];
+    const spikeFights = encounters.filter((encounter) => (encounter.kind ?? "trash") === "spike").length;
+    const trashFights = encounters.length - spikeFights;
     const arrivalLevel = avgLevel(party);
     const arrivalHpPct = avgHpPct(party);
+    const arrivalMpPct = avgMpPct(party);
     let lowest = arrivalHpPct;
+    let lowestMp = arrivalMpPct;
+    let trashLow = 1;
+    let spikeLow = 1;
     let wiped = false;
+
+    const healsBefore = kindCount(inventory, "healing");
+    const curesBefore = kindCount(inventory, "cure");
+    const goldBefore = partyGold;
 
     const floor = world.dungeons.find((dungeon) => dungeon.id === floorId);
     const floorRoom = floor?.startRoom ?? "sim";
-    let workState: GameState = { ...base, phase: "dungeon", party, position: { roomId: floorRoom, facing: "north" } };
+    let workState: GameState = {
+      ...base,
+      phase: "dungeon",
+      party,
+      inventory,
+      partyGold,
+      position: { roomId: floorRoom, facing: "north" }
+    };
 
     for (const encounter of encounters) {
       // Swell the pack for an under-strength/under-levelled party exactly as beginRoomEncounter does in
       // play (the sim used the RAW count and so under-modelled a small party). With a floor that authors no
       // recommendation this is a no-op, so the full-party curve — and its Gate — is unchanged.
       const scaledCount = scaledEncounterCount(encounter.count, party, floor);
-      const outcome = resolveFight(workState, world, { ...encounter, count: scaledCount }, policy);
+      const outcome = resolveFight(workState, world, { ...encounter, count: scaledCount }, policy, provision);
       workState = outcome.state;
       party = workState.party;
+      inventory = workState.inventory;
+      partyGold = workState.partyGold;
       lowest = Math.min(lowest, outcome.midFightLow);
+      lowestMp = Math.min(lowestMp, outcome.midFightMpLow);
+      if ((encounter.kind ?? "trash") === "spike") {
+        spikeLow = Math.min(spikeLow, outcome.midFightLow);
+      } else {
+        trashLow = Math.min(trashLow, outcome.midFightLow);
+      }
       if (party.filter(alive).length === 0) {
         wiped = true;
         break;
       }
+    }
+
+    if (provision && kitExhaustedFloor === null && kitSize(inventory) === 0) {
+      kitExhaustedFloor = floorId;
     }
 
     floors.push({
@@ -358,7 +560,18 @@ export function simulateDescent(
       lowestHpPct: lowest,
       departHpPct: avgHpPct(party),
       downed: party.filter((member) => !alive(member)).length,
-      wiped
+      wiped,
+      arrivalMpPct,
+      lowestMpPct: lowestMp,
+      departMpPct: avgMpPct(party),
+      trashLowestHpPct: trashLow,
+      spikeLowestHpPct: spikeLow,
+      trashFights,
+      spikeFights,
+      healsUsed: Math.max(0, healsBefore - kindCount(inventory, "healing")),
+      curesUsed: Math.max(0, curesBefore - kindCount(inventory, "cure")),
+      kitRemaining: kitSize(inventory),
+      goldEarned: partyGold - goldBefore
     });
 
     if (wiped) {
@@ -370,7 +583,12 @@ export function simulateDescent(
     heal,
     floors,
     survived: !floors.some((floor) => floor.wiped),
-    finalLevel: floors.length ? floors[floors.length - 1].departLevel : avgLevel(party)
+    finalLevel: floors.length ? floors[floors.length - 1].departLevel : avgLevel(party),
+    provisioned: Boolean(provision),
+    kitCost: startingKit.cost,
+    totalGold: partyGold,
+    economyBalance: startingKit.cost > 0 ? partyGold / startingKit.cost : Infinity,
+    kitExhaustedFloor
   };
 }
 

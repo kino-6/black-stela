@@ -23,17 +23,24 @@ EO/Galleria-refined; party-size = proportional attrition (`partySizeValue`); res
 **early→mid, easing to Act III** (= felt growth); ALL knobs authored per-scenario in `world.md balance.economy`.
 - **Slice 1 DONE** (`4ff1c99`): `balance.economy` schema (carryCap[] per act, stackCap, priceScalar[],
   incomeScalar[], provisionKit) in scenario.ts + types WorldBalance — data receptacle, behaviour unchanged.
-- **Slice 2 NEXT** (task #8): extend `descentSim` with the **PROVISIONED descent** (carry a cap-bounded,
-  affordable kit; auto-use heals/cures at HP/status thresholds) → metrics: consumable **burn/floor**,
-  **kit-exhaustion floor**, **economy balance** (dive income ÷ full re-provision). Also **split trash-trough
-  vs telegraphed-spike** (玄室 guardian / 番所 keep) and add **MP/気力 attrition** to `FloorSimResult`. Add
-  columns to `sim:balance`. (`partySizeValue` + party-size sim axis already landed in `e9df977`.)
-- **Slice 3** (task #9): gate the targets in `descentSim.test.ts` (smooth act-curve band, **prepared party
+- **Slice 2 DONE** (task #8): `descentSim` now runs a **PROVISIONED descent** — `simulateDescent(w, {provision:true})`
+  carries the world's affordable kit (cheapest heal/cure per kind, capped by `carryCap[0]`, from `provisionKit`)
+  and auto-uses it (cure a blocking status, else heal the most-wounded below `healThreshold` 0.34; the medic
+  trades their swing). New `FloorSimResult` fields: MP pcts, `trash/spikeLowestHpPct` + `trash/spikeFights`,
+  `healsUsed`/`curesUsed`/`kitRemaining`/`goldEarned`. New `DescentSimResult`: `kitCost`/`totalGold`/
+  `economyBalance`/`kitExhaustedFloor`. `sim:balance` prints a RESOURCE-ECONOMY block. Verdant authored an
+  `economy` block (EO-leaning early→easing late). All 22 sim tests + tsc green.
+- **Slice 3 NEXT** (task #9): gate the targets in `descentSim.test.ts` (smooth act-curve band, **prepared party
   never wipes**, party-size cost large-but-finite, scarcity: kit low by the act spike), then TUNE the authored
   knobs against `sim:balance` and **browser-verify** (sim is a lower bound — tune slightly gentle).
-- **Measured NOW (before tuning):** both worlds flat-then-spike — Verdant g1/g2 troughs 100/95% (target
-  85-65% = "ヌルい") while g8 = 3% (near-wipes a PREPARED party; target 38-28%). `underpowerFactor` is inert
-  (no floor authors `recommendedPartySize`) so under-strength danger isn't proportional (3p trough = 6p).
+- **Measured NOW by the slice-2 tool (before tuning):**
+  - **Scarcity ≈ 0** (the "ヌルい" report, quantified): Verdant's 4-heal/2-cure kit runs 6→3 over 8 floors,
+    NEVER dries out, dive income = **2.4× a full re-provision**. Tighten `provisionKit`/`carryCap`/`incomeScalar`.
+  - **Spike channel nearly empty**: Verdant authors ONE telegraphed fight in 8 floors (g2f keep squad), trivial
+    when prepared (spike-trough 100%). The g7/g8 finale (19%/33%) is a *trash* wall, not a designed guardian —
+    flat-then-spike in disguise. Slice-3 tuning must ADD per-act spikes (`room.encounter`/`encounterSquad`).
+  - Act-curve still soft early: Verdant g1/g2 troughs 100/95% (target 85-65%). `underpowerFactor` inert (no
+    floor authors `recommendedPartySize`) so under-strength danger isn't proportional (3p trough = 6p).
 
 ### ⤷ Combat-depth candidate (design-doc backlog): 多段ヒット `hits:N`
 AoE EXISTS (`target:"allEnemies"` — flame-wave, sweeping-blow). **Multi-hit does NOT** — no hit-count. A

@@ -27,6 +27,17 @@ elements:
 balance:
   threatScalar: 2.2
   counterplayBoost: 3.0
+  # Resource-economy / scarcity (docs/design/difficulty-design.md). EO-leaning EARLY→MID (a rationed
+  # kit, so attrition and "one more room vs turn back" actually bite), easing toward Act III (escaping
+  # the squeeze IS the felt growth). Per-act arrays index by act (0=green shallows, 1=mid, 2=root deep),
+  # last value held for deeper floors. The sim carries `provisionKit` and auto-uses it; sim:balance reads
+  # the burn/floor, where it runs dry, and whether dive income covers a re-provision.
+  economy:
+    carryCap:    [24, 32, 48]        # total consumables carried — tight grove-shallows, loosening deep
+    stackCap:    9
+    priceScalar: [1.0, 0.95, 0.85]   # shop prices ease as the town grows with your descent
+    incomeScalar: [0.8, 1.0, 1.25]   # dive income climbs — late floors pay out, early ones don't flood
+    provisionKit: { heals: 4, cures: 2 }  # the affordable kit a prepared party sets out with
 assetPack: verdant
 # The grove settlement does not talk like the ash town. Any key omitted here falls through to
 # the shared dictionary, so this file only says what Verdant says differently.
