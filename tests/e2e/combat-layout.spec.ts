@@ -22,11 +22,10 @@ for (const vp of [
     await enterCombatChoosing(page);
 
     // The command zone is the topmost HUD band while choosing; every persistent band sits below it.
-    // So "no enemy mark intersects any HUD band" reduces to: every mark's VISIBLE bottom is above the
-    // command zone's top edge. Marks live inside `.enemy-stage`, which is `overflow: hidden` — a mark
-    // anchored at a low creature's feet (a big foe grounded near the front, e.g. the 棘虫 at 1080p) has a
-    // layout box that runs past the stage, but the overflowing part is CLIPPED and never painted. So clamp
-    // each mark's bottom to the stage's clip edge before comparing: what the player can SEE is what counts.
+    // A clipped nameplate is not "safe" merely because its invisible fragment cannot overlap the HUD:
+    // every enemy's name + condition bar must be fully painted INSIDE the stage. The g4f thorn-crawler
+    // grounded close to the camera at 1080p regressed here — its feet projected below the stage and the
+    // old below-foot mark fell entirely through `.enemy-stage { overflow:hidden }`.
     const cmd = await page.locator(".combat-command-zone").boundingBox();
     expect(cmd, "command zone must be laid out").toBeTruthy();
     const stage = await page.locator(".enemy-stage").boundingBox();
@@ -37,10 +36,17 @@ for (const vp of [
     for (const mark of marks) {
       const box = await mark.boundingBox();
       if (!box) continue;
-      const visibleBottom = Math.min(box.y + box.height, stageBottom); // overflow:hidden clips at the stage
       expect(
-        visibleBottom,
-        `an enemy mark (visible bottom ${Math.round(visibleBottom)}) overlaps the command band (top ${Math.round(cmd!.y)})`
+        box.y,
+        `an enemy mark begins above the stage (mark top ${Math.round(box.y)}, stage top ${Math.round(stage!.y)})`
+      ).toBeGreaterThanOrEqual(Math.floor(stage!.y) - 1);
+      expect(
+        box.y + box.height,
+        `an enemy mark is clipped by the stage (mark bottom ${Math.round(box.y + box.height)}, stage bottom ${Math.round(stageBottom)})`
+      ).toBeLessThanOrEqual(Math.ceil(stageBottom) + 1);
+      expect(
+        box.y + box.height,
+        `an enemy mark overlaps the command band (mark bottom ${Math.round(box.y + box.height)}, command top ${Math.round(cmd!.y)})`
       ).toBeLessThanOrEqual(Math.round(cmd!.y) + 1);
     }
 
@@ -49,5 +55,6 @@ for (const vp of [
     await expect(page.getByTestId("combat-back-row")).toContainText("後衛");
     await expect(page.getByTestId("combat-front-row").getByTestId("combat-actor")).toHaveCount(3);
     await expect(page.getByTestId("combat-back-row").getByTestId("combat-actor")).toHaveCount(3);
+    await page.screenshot({ path: `test-results/combat-nameplate-anchor/${vp.name}.png`, fullPage: false });
   });
 }

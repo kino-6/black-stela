@@ -69,6 +69,11 @@ const WALL_MID_Y = 1.5;
 const CEILING_Y = 3.1;
 
 const SHADOW_GEOMETRY_RADIUS = 1.22;
+// Enemy feet can project a few pixels below the clipped combat stage when a grounded figure stands
+// closest to the camera. This is a LABEL-only guardrail: the sprite, its measured feet, shadow, and
+// world-space z remain untouched. CSS hangs the mark above this point, so 98% leaves its full height
+// inside the stage at both supported combat viewports.
+const NAMEPLATE_MAX_STAGE_Y_PCT = 98;
 
 /** Where a group's figures stand on screen, as a % of the canvas box (0–100). */
 export interface EnemyAnchor {
@@ -392,7 +397,7 @@ export function buildDungeonScene(mount: HTMLDivElement, input: DungeonSceneInpu
         projected.push({
           groupId,
           xPct: ((point.x + 1) / 2) * 100,
-          yPct: ((1 - point.y) / 2) * 100
+          yPct: Math.min(NAMEPLATE_MAX_STAGE_Y_PCT, ((1 - point.y) / 2) * 100)
         });
       });
       input.onEnemyAnchors(projected);

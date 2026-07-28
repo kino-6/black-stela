@@ -3383,9 +3383,11 @@ textarea {
 
 .enemy-mark {
   position: absolute;
-  /* left/top come from the renderer (the group's feet). Centre the mark on them and hang
-     it just below the floor line. */
-  transform: translate(-50%, 0.35rem);
+  /* left/top come from the renderer's grounded feet. A low front enemy can put those feet right
+     against the stage clip edge, so the slim condition/nameplate sits immediately ABOVE the floor
+     line. This preserves the spatial attachment without letting the stage hide the only readable
+     identification cue. */
+  transform: translate(-50%, calc(-100% - 0.35rem));
   width: clamp(5rem, 12vw, 8rem);
   text-align: center;
 }
