@@ -634,7 +634,7 @@ func _party_row(row: String) -> HBoxContainer:
 func _party_slot(member: Dictionary) -> Control:
 	# The slot itself is built by the CombatPartyHud collaborator (IMP-052); the scene keeps the live-update
 	# refs so _refresh_member can drive the HP bar/label as the round plays.
-	var built := CombatPartyHud.slot(member, _acting_member_id(), _texture(_portrait_path(member)), _hp_text(member))
+	var built := CombatPartyHud.slot(member, _acting_member_id(), WorldResources.portrait_texture(String(member.get("portraitRef", "")), _portrait_path(member)), _hp_text(member))
 	_party_slots[member.get("id", "")] = {"bar": built["bar"], "label": built["label"], "mp": built["mp"]}
 	return built["control"]
 

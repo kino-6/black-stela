@@ -231,6 +231,7 @@ export const en = {
     editAccent: "Accent",
     editSave: "Save",
     editCancel: "Cancel",
+    importImage: "Import image",
     deposit: "Record to vault",
     vaultHeading: "Adventurer vault",
     vaultHint: "Vaulted adventurers can be imported into any expedition's guild.",

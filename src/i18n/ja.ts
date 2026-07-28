@@ -233,6 +233,7 @@ export const ja = {
     editAccent: "色",
     editSave: "保存",
     editCancel: "取消",
+    importImage: "画像を取り込む",
     deposit: "記録庫へ保管",
     vaultHeading: "冒険者記録庫",
     vaultHint: "記録庫の冒険者は、どのシナリオのギルドにも呼び出せます。",

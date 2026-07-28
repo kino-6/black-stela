@@ -19,7 +19,7 @@ export type Command =
   | { type: "retire_member"; characterId: string }
   | { type: "unretire_member"; characterId: string }
   | { type: "erase_member"; characterId: string }
-  | { type: "edit_member_identity"; characterId: string; name: string; title: string; notes: string; accentColor: string }
+  | { type: "edit_member_identity"; characterId: string; name: string; title: string; notes: string; accentColor: string; portraitRef?: string }
   | { type: "import_member"; adventurer: PortableAdventurer }
   | { type: "resume_at_checkpoint"; roomId: string }
   | { type: "move_forward" }

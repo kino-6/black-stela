@@ -443,7 +443,7 @@ function eraseMember(state: GameState, characterId: string): CommandResult {
 // their build. Town-only; the name is required.
 function editMemberIdentity(
   state: GameState,
-  patch: { characterId: string; name: string; title: string; notes: string; accentColor: string }
+  patch: { characterId: string; name: string; title: string; notes: string; accentColor: string; portraitRef?: string }
 ): CommandResult {
   if (state.phase !== "town") {
     return noChange(state);
@@ -458,7 +458,20 @@ function editMemberIdentity(
       return member;
     }
     editedName = name;
-    return { ...member, name, title: patch.title.trim(), notes: patch.notes.trim(), accentColor: patch.accentColor };
+    // An imported portrait (a data URL) rides in as an optional field, so renaming keeps its face and
+    // importing a face keeps its name; visualProfile.baseRef mirrors it exactly as the React import does.
+    const portrait = patch.portraitRef
+      ? {
+          portraitRef: patch.portraitRef,
+          visualProfile: {
+            focusX: member.visualProfile?.focusX ?? 50,
+            focusY: member.visualProfile?.focusY ?? 38,
+            ...member.visualProfile,
+            baseRef: patch.portraitRef
+          }
+        }
+      : {};
+    return { ...member, name, title: patch.title.trim(), notes: patch.notes.trim(), accentColor: patch.accentColor, ...portrait };
   };
   const next: GameState = {
     ...state,

@@ -218,7 +218,7 @@ func _preview_card() -> Control:
 		portrait.custom_minimum_size = Vector2(96, 116)
 		portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-		portrait.texture = _texture(_draft_portrait_path())
+		portrait.texture = WorldResources.portrait_texture(String(_draft.get("portraitRef", "")), _draft_portrait_path())
 		row.add_child(UI.card(portrait))
 	else:
 		var unknown := UI.label("？", 52, UI.DIM)
@@ -432,8 +432,11 @@ func _face_step() -> Control:
 	portrait.custom_minimum_size = Vector2(220, 260)
 	portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-	portrait.texture = _texture(_draft_portrait_path())
+	portrait.texture = WorldResources.portrait_texture(String(_draft.get("portraitRef", "")), _draft_portrait_path())
 	face.add_child(UI.card(portrait))
+	var import_btn := UI.button(I18n.t("party.importImage"), func(): _import_portrait(func(ref: String): _set_draft_portrait(ref)), Vector2(220, 38), 15)
+	_claim(import_btn, "face:import")
+	face.add_child(import_btn)
 	body.add_child(face)
 
 	var choices := UI.col(8)
@@ -657,9 +660,28 @@ func _hall_panel() -> Control:
 		col.add_child(picker)
 		var editing := _member_by_id(_roster_selected_id)
 		if not editing.is_empty():
-			col.add_child(_roster_field(I18n.t("party.editName"), String(_roster_draft.get("name", "")), I18n.t("party.namePlaceholder"), "name"))
-			col.add_child(_roster_field(I18n.t("party.editTitle"), String(_roster_draft.get("title", "")), I18n.t("party.titlePlaceholder"), "title"))
-			col.add_child(_roster_field(I18n.t("party.editNotes"), String(_roster_draft.get("notes", "")), I18n.t("party.notesPlaceholder"), "notes"))
+			var edit_row := UI.row()
+			var face := UI.col(6)
+			var portrait := TextureRect.new()
+			portrait.custom_minimum_size = Vector2(120, 146)
+			portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+			# Prefer the working draft's imported ref (a fresh pick), else the member's current portrait.
+			var preview_ref := String(_roster_draft.get("portraitRef", ""))
+			if preview_ref == "":
+				preview_ref = String(editing.get("portraitRef", ""))
+			portrait.texture = WorldResources.portrait_texture(preview_ref, _member_portrait_path(editing))
+			face.add_child(UI.card(portrait))
+			var import_btn := UI.button(I18n.t("party.importImage"), func(): _import_portrait(func(ref: String): _roster_draft["portraitRef"] = ref; _rebuild()), Vector2(180, 36), 14)
+			_claim(import_btn, "roster:import")
+			face.add_child(import_btn)
+			edit_row.add_child(face)
+			var fields := UI.col(4)
+			fields.add_child(_roster_field(I18n.t("party.editName"), String(_roster_draft.get("name", "")), I18n.t("party.namePlaceholder"), "name"))
+			fields.add_child(_roster_field(I18n.t("party.editTitle"), String(_roster_draft.get("title", "")), I18n.t("party.titlePlaceholder"), "title"))
+			fields.add_child(_roster_field(I18n.t("party.editNotes"), String(_roster_draft.get("notes", "")), I18n.t("party.notesPlaceholder"), "notes"))
+			edit_row.add_child(fields)
+			col.add_child(edit_row)
 			var save := UI.button(I18n.t("party.editSave"), func(): _save_roster_edit(), Vector2(200, 40), 16)
 			_claim(save, "roster:save")
 			col.add_child(save)
@@ -712,7 +734,21 @@ func _select_background(id: String) -> void:
 
 func _select_portrait(key: String) -> void:
 	_draft["portraitKey"] = key
+	# Picking a provided face overrides an imported image — the built-in face wins so the choice is honest.
+	_draft.erase("portraitRef")
+	_draft.erase("visualProfile")
 	_focus_key = "face:%s" % key
+	_rebuild()
+
+# Store an imported portrait on the draft as a data URL (+ its visualProfile.baseRef), exactly as React does.
+func _set_draft_portrait(ref: String) -> void:
+	_draft["portraitRef"] = ref
+	var vp: Dictionary = _draft.get("visualProfile", {}) if typeof(_draft.get("visualProfile", null)) == TYPE_DICTIONARY else {}
+	vp["focusX"] = vp.get("focusX", 50)
+	vp["focusY"] = vp.get("focusY", 38)
+	vp["baseRef"] = ref
+	_draft["visualProfile"] = vp
+	_focus_key = "face:import"
 	_rebuild()
 
 func _select_trait(id: String) -> void:
@@ -764,6 +800,16 @@ func _set_roster(open: bool) -> void:
 		_roster_selected_id = ""
 	_rebuild()
 
+# A member's built-in portrait PATH (fallback when they carry no imported data-URL portrait).
+func _member_portrait_path(member: Dictionary) -> String:
+	var ref := String(member.get("portraitRef", ""))
+	var key := "gate"
+	const BUILTIN := "builtin://portrait/"
+	if ref.begins_with(BUILTIN):
+		key = ref.substr(BUILTIN.length())
+	var path := _asset("portraits/%s.png" % key)
+	return path if FileAccess.file_exists(path) else _asset("portraits/gate.png")
+
 func _member_by_id(id: String) -> Dictionary:
 	if id == "":
 		return {}
@@ -779,11 +825,15 @@ func _member_by_id(id: String) -> Dictionary:
 func _roster_select(id: String) -> void:
 	_roster_selected_id = id
 	var m := _member_by_id(id)
+	# Seed an imported portrait so re-saving keeps the face; a built-in face leaves it blank (an empty
+	# portraitRef means "leave the portrait as it is", so renaming never clobbers a chosen face).
+	var existing_ref := String(m.get("portraitRef", ""))
 	_roster_draft = {
 		"name": String(m.get("name", "")),
 		"title": String(m.get("title", "")),
 		"notes": String(m.get("notes", "")),
-		"accentColor": String(m.get("accentColor", "#c9a765"))
+		"accentColor": String(m.get("accentColor", "#c9a765")),
+		"portraitRef": existing_ref if existing_ref.begins_with("data:image") else ""
 	}
 	_focus_key = "roster:%s" % id
 	_rebuild()
@@ -813,6 +863,10 @@ func _save_roster_edit() -> void:
 		"notes": String(_roster_draft.get("notes", "")),
 		"accentColor": String(_roster_draft.get("accentColor", "#c9a765"))
 	}
+	# Only carry a portrait when one was imported this session — an empty ref leaves the current face alone.
+	var ref := String(_roster_draft.get("portraitRef", ""))
+	if ref.begins_with("data:image"):
+		command["portraitRef"] = ref
 	var result: Dictionary = SliceRules.resolve(state(), command, _world, _engine())
 	var next: Dictionary = result.get("state", state())
 	if _run != null:
@@ -889,6 +943,10 @@ func _build_character() -> Dictionary:
 	character["title"] = title if title != "" else _class_label(String(_draft.get("classId", "")))
 	character["notes"] = notes if notes != "" else String(background.get("notes", {}).get("ja", ""))
 	character["traitId"] = String(_draft.get("traitId", "steady"))
+	# An imported portrait (data URL) overrides the built-in face key on the registered adventurer.
+	if String(_draft.get("portraitRef", "")).begins_with("data:image"):
+		character["portraitRef"] = String(_draft["portraitRef"])
+		character["visualProfile"] = _draft.get("visualProfile", {})
 	return character
 
 ## During calling selection the player needs an immediate visual difference. Background portraits are
@@ -1042,6 +1100,46 @@ func _asset(sub: String) -> String:
 
 func _texture(path: String) -> Texture2D:
 	return WorldResources.texture(path)   # export-safe load lives in WorldResources (IMP-053)
+
+# Image import (playtest: "画像取り込みもコンセプトなのにない"). Opens a native file picker, and hands the
+# chosen image back to `on_ref` as a data URL — the SAME storage the React build uses (the user's chosen
+# format). Re-encoded to a bounded PNG so the data URL, which rides into the save, stays a sane size.
+func _import_portrait(on_ref: Callable) -> void:
+	var dialog := FileDialog.new()
+	dialog.file_mode = FileDialog.FILE_MODE_OPEN_FILE
+	dialog.access = FileDialog.ACCESS_FILESYSTEM
+	dialog.filters = PackedStringArray(["*.png,*.jpg,*.jpeg,*.webp ; %s" % I18n.t("party.portrait")])
+	dialog.use_native_dialog = true
+	add_child(dialog)
+	dialog.file_selected.connect(func(path: String):
+		var data_url := _image_file_to_data_url(path)
+		dialog.queue_free()
+		if data_url != "":
+			on_ref.call(data_url))
+	dialog.canceled.connect(func(): dialog.queue_free())
+	dialog.popup_centered(Vector2i(920, 640))
+
+func _image_file_to_data_url(path: String) -> String:
+	var bytes := FileAccess.get_file_as_bytes(path)
+	if bytes.is_empty():
+		return ""
+	var ext := path.get_extension().to_lower()
+	var img := Image.new()
+	var err := ERR_FILE_UNRECOGNIZED
+	if ext == "png":
+		err = img.load_png_from_buffer(bytes)
+	elif ext == "jpg" or ext == "jpeg":
+		err = img.load_jpg_from_buffer(bytes)
+	elif ext == "webp":
+		err = img.load_webp_from_buffer(bytes)
+	if err != OK:
+		return ""
+	var max_dim := 512
+	var longest: int = max(img.get_width(), img.get_height())
+	if longest > max_dim:
+		var s := float(max_dim) / float(longest)
+		img.resize(int(img.get_width() * s), int(img.get_height() * s), Image.INTERPOLATE_LANCZOS)
+	return "data:image/png;base64,%s" % Marshalls.raw_to_base64(img.save_png_to_buffer())
 
 func _read_json(path: String) -> Dictionary:
 	if not FileAccess.file_exists(path):

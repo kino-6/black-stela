@@ -29,3 +29,45 @@ static func texture(path: String) -> Texture2D:
 static func world_asset(world_id: String, sub: String) -> String:
 	var path := "res://assets/worlds/%s/%s" % [world_id, sub]
 	return path if FileAccess.file_exists(path) else "res://assets/worlds/default/%s" % sub
+
+# Decoded imported portraits, cached by the data-URL's md5 so a scene rebuild never re-decodes.
+static var _portrait_cache: Dictionary = {}
+
+## Resolve an adventurer portrait to a Texture2D. A `data:image/...;base64,` portraitRef (an IMPORTED image,
+## stored as a data URL exactly like the React build) is decoded ONCE and cached; anything else falls back to
+## `fallback_path` (the art-pack portrait). This is the one place that understands imported portraits, so
+## every screen renders them identically.
+static func portrait_texture(portrait_ref: String, fallback_path: String) -> Texture2D:
+	if portrait_ref.begins_with("data:image"):
+		var key := portrait_ref.md5_text()
+		if _portrait_cache.has(key):
+			return _portrait_cache[key]
+		var tex := _decode_portrait_data_url(portrait_ref)
+		if tex != null:
+			_portrait_cache[key] = tex
+			return tex
+	return texture(fallback_path)
+
+static func _decode_portrait_data_url(data_url: String) -> Texture2D:
+	var comma := data_url.find(",")
+	if comma < 0:
+		return null
+	var header := data_url.substr(0, comma)
+	var bytes := Marshalls.base64_to_raw(data_url.substr(comma + 1))
+	if bytes.is_empty():
+		return null
+	var img := Image.new()
+	var err := ERR_FILE_UNRECOGNIZED
+	if header.contains("png"):
+		err = img.load_png_from_buffer(bytes)
+	elif header.contains("jpeg") or header.contains("jpg"):
+		err = img.load_jpg_from_buffer(bytes)
+	elif header.contains("webp"):
+		err = img.load_webp_from_buffer(bytes)
+	else:
+		err = img.load_png_from_buffer(bytes)
+		if err != OK:
+			err = img.load_jpg_from_buffer(bytes)
+	if err != OK:
+		return null
+	return ImageTexture.create_from_image(img)

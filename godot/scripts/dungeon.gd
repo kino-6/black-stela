@@ -383,7 +383,7 @@ func _rebuild_party_hud() -> void:
 			if String(member.get("row", "front")) == row:
 				members.append(member)
 	for member in members:
-		_party_hud.add_child(DungeonHud.party_token(member, _world, _texture(_portrait_path(member))))
+		_party_hud.add_child(DungeonHud.party_token(member, _world, WorldResources.portrait_texture(String(member.get("portraitRef", "")), _portrait_path(member))))
 
 func _portrait_path(member: Dictionary) -> String:
 	var portrait_ref := String(member.get("portraitRef", ""))

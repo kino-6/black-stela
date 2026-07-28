@@ -137,7 +137,7 @@ func _level_up_row(entry: Dictionary) -> Control:
 	portrait.custom_minimum_size = Vector2(64, 76)
 	portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-	portrait.texture = _texture(_asset("portraits/%s.png" % _portrait_key(member)))
+	portrait.texture = WorldResources.portrait_texture(String(member.get("portraitRef", "")), _asset("portraits/%s.png" % _portrait_key(member)))
 	row.add_child(UI.card(portrait, Color(String(member.get("accentColor", "#c9a765")))))
 
 	var copy := UI.col(2)

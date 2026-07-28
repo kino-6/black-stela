@@ -122,6 +122,16 @@ static func edit_member_identity(state: Dictionary, cmd: Dictionary) -> Dictiona
 				m["title"] = String(cmd.get("title", "")).strip_edges()
 				m["notes"] = String(cmd.get("notes", "")).strip_edges()
 				m["accentColor"] = cmd.get("accentColor", "")
+				# An imported portrait (data URL) rides in optionally, so renaming keeps the face and importing
+				# a face keeps the name; visualProfile.baseRef mirrors it exactly as the React import does.
+				var portrait_ref := String(cmd.get("portraitRef", ""))
+				if portrait_ref != "":
+					m["portraitRef"] = portrait_ref
+					var vp: Dictionary = m.get("visualProfile", {}) if typeof(m.get("visualProfile", null)) == TYPE_DICTIONARY else {}
+					vp["focusX"] = vp.get("focusX", 50)
+					vp["focusY"] = vp.get("focusY", 38)
+					vp["baseRef"] = portrait_ref
+					m["visualProfile"] = vp
 				edited = true
 	if not edited:
 		return {"state": state, "events": []}
