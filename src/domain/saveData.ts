@@ -252,7 +252,11 @@ const CombatStateSchema = z.object({
   pendingActions: z.array(CombatActionDeclarationSchema).default([]),
   selectedActorId: z.string().optional(),
   selectedTargetId: z.string().optional(),
-  surprise: z.enum(["party", "enemy"]).optional()
+  surprise: z.enum(["party", "enemy"]).optional(),
+  // The cell a retreat drops the party back onto. Inlined (DungeonPositionSchema is defined below).
+  retreatPosition: z
+    .object({ roomId: z.string().min(1), cellId: z.string().min(1).optional(), facing: DirectionSchema })
+    .optional()
 });
 
 const DungeonPositionSchema = z.object({

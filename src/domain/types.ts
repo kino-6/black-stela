@@ -571,6 +571,9 @@ export interface CombatState {
    * Per-fight by design: it lives here rather than on Character so a ward cannot ride home in a save.
    */
   effects?: ActiveEffect[];
+  /** The cell the party stepped IN FROM to trigger this fight — where 退却 (retreat) drops them back to, so
+   *  a fled fight cannot simply be walked past (playtest: retreat left the party on the fight cell). */
+  retreatPosition?: DungeonPosition;
 }
 
 export type CombatStatus = "poison" | "fear" | "silence" | "sleep" | "ward";

@@ -265,7 +265,7 @@ export function resolveCommand(state: GameState, world: ScenarioWorld, command: 
     case "continue_after_combat":
       return continueAfterCombat(state);
     case "retreat":
-      return retreat(state);
+      return retreat(state, world);
     case "recover_party":
       return recoverParty(state, world);
     case "return_to_town":
@@ -803,7 +803,9 @@ function moveForward(
     next = {
       ...next,
       phase: "combat",
-      combat: started.combat,
+      // Remember the cell the party came FROM (state.position is still the pre-move cell here), so a
+      // retreat drops them back onto it instead of leaving them standing where the fight was.
+      combat: { ...started.combat, retreatPosition: state.position ? { ...state.position } : undefined },
       stepsSinceEncounter: 0,
       enemyRecord: recordEncounters(next.enemyRecord, encounteredIds)
     };
@@ -1980,15 +1982,21 @@ function discardItem(state: GameState, itemId: string, plus?: number, affix?: st
 // Take a quest off the board. Only in town, and only once: an already-accepted quest keeps its
 // record (a repeatable one stays "active" across claims; a one-shot ends "done"), so getQuestProgress
 // being set blocks re-accepting either.
-function retreat(state: GameState): CommandResult {
+function retreat(state: GameState, world: ScenarioWorld): CommandResult {
   if (state.phase !== "combat") {
     return noChange(state);
   }
 
+  // 退却 pulls the party BACK to the cell they stepped in from — a fled fight can't be walked straight past
+  // (playtest: retreat left them on the fight cell, so retreating then advancing "broke through" for free).
+  const back = state.combat?.retreatPosition;
+  const movedBack = Boolean(back && back.cellId && back.cellId !== state.position?.cellId);
   const next: GameState = {
     ...state,
     phase: "dungeon",
     combat: null,
+    position: movedBack ? { ...back! } : state.position,
+    map: movedBack ? { ...state.map, currentRoomId: back!.roomId, currentCellId: back!.cellId ?? state.map.currentCellId } : state.map,
     party: state.party.map((member) => ({
       ...member,
       memory: { ...member.memory, retreats: member.memory.retreats + 1 }
@@ -1996,7 +2004,13 @@ function retreat(state: GameState): CommandResult {
     turn: state.turn + 1
   };
 
-  return withEvents(next, [{ type: "party_retreated" }]);
+  const events: GameEvent[] = [{ type: "party_retreated" }];
+  if (movedBack) {
+    const room = getRoom(world, back!.roomId);
+    // A backward step so the renderer moves the party and narrates the fall-back.
+    events.push({ type: "room_entered", roomId: room.id, roomName: room.name, motion: "backward" });
+  }
+  return withEvents(next, events);
 }
 
 // Under-strength descents are punished by numbers, not by a gate: a party below a

@@ -306,7 +306,13 @@ static func _move_forward(state: Dictionary, world: Dictionary, engine: Dictiona
 			if not encountered_ids.has(gid):
 				encountered_ids.append(gid)
 		next["phase"] = "combat"
-		next["combat"] = started["combat"]
+		# Remember the cell the party came FROM (state.position is still the pre-move cell) so a retreat
+		# drops them back onto it rather than leaving them on the fight cell.
+		var combat_state: Dictionary = started["combat"]
+		var prev_pos: Variant = state.get("position", null)
+		if typeof(prev_pos) == TYPE_DICTIONARY:
+			combat_state["retreatPosition"] = (prev_pos as Dictionary).duplicate(true)
+		next["combat"] = combat_state
 		next["stepsSinceEncounter"] = 0
 		next["enemyRecord"] = Encounters.record_encounters(next.get("enemyRecord", null), encountered_ids)
 		events.append(started["event"])

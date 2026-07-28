@@ -75,7 +75,7 @@ static func resolve(state: Dictionary, command: Dictionary, world: Dictionary = 
 		"debug_force_victory":
 			return CombatRound.debug_force_victory(state, world, engine)
 		"retreat":
-			return _retreat(state)
+			return _retreat(state, world)
 		"continue_after_combat":
 			return _continue_after_combat(state)
 		"declare_round":
@@ -134,12 +134,28 @@ static func resolve(state: Dictionary, command: Dictionary, world: Dictionary = 
 
 # --- combat exits -----------------------------------------------------------------------------------
 # Retreat: the fight is abandoned; every member remembers it (memory.retreats is part of who they are).
-static func _retreat(state: Dictionary) -> Dictionary:
+static func _retreat(state: Dictionary, world: Dictionary) -> Dictionary:
 	if state.get("phase", "") != "combat":
 		return {"state": state, "events": []}
 	var next: Dictionary = state.duplicate(true)
 	next["phase"] = "dungeon"
+	# 退却 pulls the party BACK to the cell they stepped in from, so a fled fight is not simply
+	# walked past (playtest: retreat left them on the fight cell).
+	var back: Variant = (state.get("combat", {}) as Dictionary).get("retreatPosition", null)
+	var cur_cell := ""
+	if typeof(state.get("position", null)) == TYPE_DICTIONARY:
+		cur_cell = String((state["position"] as Dictionary).get("cellId", ""))
+	var moved_back := false
+	if typeof(back) == TYPE_DICTIONARY:
+		var back_cell := String((back as Dictionary).get("cellId", ""))
+		moved_back = back_cell != "" and back_cell != cur_cell
 	next["combat"] = null
+	if moved_back:
+		next["position"] = (back as Dictionary).duplicate(true)
+		var map_next: Dictionary = (next.get("map", {}) as Dictionary).duplicate(true)
+		map_next["currentRoomId"] = (back as Dictionary).get("roomId", map_next.get("currentRoomId", null))
+		map_next["currentCellId"] = (back as Dictionary).get("cellId", map_next.get("currentCellId", null))
+		next["map"] = map_next
 	var party := []
 	for member in next.get("party", []):
 		var m: Dictionary = member.duplicate(true)
@@ -149,7 +165,16 @@ static func _retreat(state: Dictionary) -> Dictionary:
 		party.append(m)
 	next["party"] = party
 	next["turn"] = int(next.get("turn", 0)) + 1
-	return {"state": next, "events": [{"type": "party_retreated"}]}
+	var events: Array = [{"type": "party_retreated"}]
+	if moved_back:
+		var rid := String((back as Dictionary).get("roomId", ""))
+		var rname := rid
+		for dungeon in world.get("dungeons", []):
+			for room in dungeon.get("rooms", []):
+				if String(room.get("id", "")) == rid:
+					rname = String(room.get("name", rid))
+		events.append({"type": "room_entered", "roomId": rid, "roomName": rname, "motion": "backward"})
+	return {"state": next, "events": events}
 
 
 # The victory RESULT screen is a state: until it is dismissed, resolveCommand answers nothing else.
