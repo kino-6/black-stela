@@ -18,6 +18,7 @@ export function createInitialGameState(): GameState {
     expeditions: 0,
     resolvedTraps: [],
     discoveredSecrets: [],
+    openedDoors: [],
     inventory: [
       {
         id: "item.healing-draught",

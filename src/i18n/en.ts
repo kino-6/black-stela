@@ -785,6 +785,8 @@ export const en = {
     movementBlockedStairs: "A stair waits ahead. Choose Use stairs to descend.",
     movementBlockedWall: "A cold wall blocks the way.",
     movementBlockedLocked: "The way is locked. Something here must open it first.",
+    movementBlockedDoor: "A closed door bars the way. Open it before you can pass.",
+    doorOpened: "The door swings open — a room lies beyond.",
     shortcutOpened: "A shortcut opens nearby.",
     spinnerTriggered: "The floor turns underfoot; your sense of direction slips away.",
     teleported: "A hidden teleporter wrenches the party somewhere else.",

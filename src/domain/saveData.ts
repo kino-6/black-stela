@@ -314,6 +314,7 @@ export const GameStateSchema = z.object({
   expeditions: z.number().default(0),
   resolvedTraps: z.array(z.string()),
   discoveredSecrets: z.array(z.string()),
+  openedDoors: z.array(z.string()).default([]),
   inventory: z.array(InventoryItemSchema).default([]),
   partyGold: z.number().int().nonnegative().default(75),
   // Optional (no default) so a save that predates IMP-022C round-trips unchanged; code reads `?? 0`.

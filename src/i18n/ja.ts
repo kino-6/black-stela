@@ -787,6 +787,8 @@ export const ja = {
     movementBlockedStairs: "正面に階段がある。降りるなら階段を使う。",
     movementBlockedWall: "冷たい壁が行く手を塞いでいる。",
     movementBlockedLocked: "行く手は施錠されている。まず何かで開ける必要がある。",
+    movementBlockedDoor: "扉が閉ざされている。「開く」で開けねば先へは進めない。",
+    doorOpened: "扉を開けた。奥に部屋が開ける。",
     shortcutOpened: "近くで近道が開いた。",
     spinnerTriggered: "足元の床が回り、方角を見失う。",
     teleported: "隠れた転移床が、隊列を別の場所へ引きずり込む。",

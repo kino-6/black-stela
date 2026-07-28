@@ -86,7 +86,12 @@ export function projectEventToLog(event: GameEvent, locale: Locale = "en", world
       if (event.reason === "locked") {
         return { text: t("events.movementBlockedLocked"), tags: ["blocked", "locked"] };
       }
+      if (event.reason === "door") {
+        return { text: t("events.movementBlockedDoor"), tags: ["blocked", "door"] };
+      }
       return { text: t("events.movementBlockedWall"), tags: ["blocked"] };
+    case "door_opened":
+      return { text: t("events.doorOpened"), tags: ["door"] };
     case "shortcut_opened":
       return { text: t("events.shortcutOpened"), tags: ["shortcut"] };
     case "spinner_triggered":

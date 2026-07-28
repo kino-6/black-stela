@@ -905,6 +905,9 @@ func _event_line(e: Dictionary) -> String:
 				"wall": return "壁だ。先へは進めない。"
 				"stairs": return "階段だ。上れば町へ戻る。"
 				"locked": return "固く閉ざされている。"
+				"door": return "扉が閉ざされている。「開く」で開けねば先へは進めない。"
+		"door_opened":
+			return "扉を開けた。奥に部屋が開ける。"
 		"inspection_made":
 			return "耳をすます……乾いた風の音だけだ。"
 		"search_completed":

@@ -53,6 +53,7 @@ export function createDebugStateFromProgress(world: ScenarioWorld, progress: Deb
     stepsSinceEncounter: 0,
     resolvedTraps: [],
     discoveredSecrets: [],
+    openedDoors: [],
     partyGold: STARTING_PARTY_GOLD,
     claimedTreasures: [],
     floorClaimedTreasures: [],

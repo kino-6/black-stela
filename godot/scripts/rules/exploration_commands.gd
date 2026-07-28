@@ -172,6 +172,22 @@ static func _move_forward(state: Dictionary, world: Dictionary, engine: Dictiona
 		s["turn"] = int(s["turn"]) + 1
 		return {"state": s, "events": [{"type": "movement_blocked", "reason": "locked", "roomId": room_id, "facing": move_dir}]}
 
+	# A CLOSED door hides the room and does not let the party through (Wiz 玄室). Bump-to-open: the first step
+	# swings it open (revealing the room) but does not carry them in — the next step enters. Both sides
+	# recorded; re-closes on a fresh descent (openedDoors resets on floor change).
+	if typeof(forward_edge) == TYPE_DICTIONARY and String(forward_edge.get("kind", "")) == "door" and not (state.get("openedDoors", []) as Array).has("door:%s:%s" % [room_id, move_dir]):
+		var s: Dictionary = state.duplicate(true)
+		var opened: Array = (s.get("openedDoors", []) as Array).duplicate()
+		opened.append("door:%s:%s" % [room_id, move_dir])
+		var tgt := String(forward_edge.get("targetRoomId", ""))
+		if tgt != "":
+			var ok := "door:%s:%s" % [tgt, String(OPPOSITE_OF.get(move_dir, move_dir))]
+			if not opened.has(ok):
+				opened.append(ok)
+		s["openedDoors"] = opened
+		s["turn"] = int(s["turn"]) + 1
+		return {"state": s, "events": [{"type": "door_opened", "roomId": room_id, "facing": move_dir}]}
+
 	var discovered: Array = state.get("discoveredSecrets", [])
 	var secret_revealed: bool = (
 		typeof(forward_edge) == TYPE_DICTIONARY
@@ -572,6 +588,7 @@ static func _use_stairs(state: Dictionary, world: Dictionary) -> Dictionary:
 	# Changing floors REPOPULATES the one you arrive on: the floor-scoped clear state resets, so its
 	# chambers hold enemies and treasure again.
 	next["floorClearedEnemies"] = []
+	next["openedDoors"] = []
 	next["floorClaimedTreasures"] = []
 	next["chests"] = []
 	next["turn"] = int(next.get("turn", 0)) + 1
@@ -677,6 +694,7 @@ static func _enter_dungeon(state: Dictionary, world: Dictionary) -> Dictionary:
 	next["party"] = _mark_expedition_started(next.get("party", []), visit["map"].get("floorId", world.get("startDungeon", null)), int(state.get("turn", 0)) + 1)
 	next["map"] = visit["map"]
 	next["floorClearedEnemies"] = []
+	next["openedDoors"] = []
 	next["floorClaimedTreasures"] = []
 	next["chests"] = []
 	# The town greets a party differently once it has been below. Count the descents.
@@ -710,6 +728,7 @@ static func _resume_at_checkpoint(state: Dictionary, world: Dictionary, room_id:
 	next["party"] = _mark_expedition_started(next.get("party", []), visit["map"].get("floorId", world.get("startDungeon", null)), int(state.get("turn", 0)) + 1)
 	next["map"] = visit["map"]
 	next["floorClearedEnemies"] = []
+	next["openedDoors"] = []
 	next["floorClaimedTreasures"] = []
 	next["chests"] = []
 	next["turn"] = int(next.get("turn", 0)) + 1
@@ -719,6 +738,32 @@ static func _resume_at_checkpoint(state: Dictionary, world: Dictionary, room_id:
 
 
 # _find_by_id / _without_id moved to RosterUtil (roster_util.gd), shared with party_commands (IMP-050).
+
+# 開く — open the CLOSED door the party faces (Wiz 玄室). Records both sides so it reads open from either
+# approach; a fresh descent re-closes it (openedDoors resets on floor change).
+static func open_door(state: Dictionary, world: Dictionary) -> Dictionary:
+	if String(state.get("phase", "")) != "dungeon" or typeof(state.get("position", null)) != TYPE_DICTIONARY:
+		return {"state": state, "events": []}
+	var pos: Dictionary = state["position"]
+	var room_id := String(pos.get("roomId", ""))
+	var dir := String(pos.get("facing", ""))
+	var edge: Variant = _grid_edge(world, room_id, dir)
+	if typeof(edge) != TYPE_DICTIONARY or String(edge.get("kind", "")) != "door":
+		return RulesUtil.log_only(state, {"type": "inspection_made", "mode": "open_door"})
+	var key := "door:%s:%s" % [room_id, dir]
+	if (state.get("openedDoors", []) as Array).has(key):
+		return RulesUtil.log_only(state, {"type": "inspection_made", "mode": "open_door"})
+	var next: Dictionary = state.duplicate(true)
+	var opened: Array = (next.get("openedDoors", []) as Array).duplicate()
+	opened.append(key)
+	var target := String(edge.get("targetRoomId", ""))
+	if target != "":
+		var okey := "door:%s:%s" % [target, String(OPPOSITE_OF.get(dir, dir))]
+		if not opened.has(okey):
+			opened.append(okey)
+	next["openedDoors"] = opened
+	next["turn"] = int(next.get("turn", 0)) + 1
+	return {"state": next, "events": [{"type": "door_opened", "roomId": room_id, "facing": dir}]}
 
 static func _grid_edge(world: Dictionary, room_id: String, direction: String) -> Variant:
 	var cell: Variant = _grid_cell(world, room_id)

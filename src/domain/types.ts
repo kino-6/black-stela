@@ -397,7 +397,8 @@ export type GameEvent =
   | { type: "command_blocked"; reason: "party_required" | "town_return_unavailable" | "stairs_unavailable"; command: Command["type"] }
   | { type: "dungeon_entered"; roomId: string; facing: Direction }
   | { type: "party_turned"; side: "left" | "right"; facing: Direction }
-  | { type: "movement_blocked"; reason: "wall" | "stairs" | "locked"; roomId: string; facing: Direction }
+  | { type: "movement_blocked"; reason: "wall" | "stairs" | "locked" | "door"; roomId: string; facing: Direction }
+  | { type: "door_opened"; roomId: string; facing: Direction }
   | { type: "shortcut_opened" }
   | { type: "spinner_triggered"; facing: Direction }
   | { type: "teleported"; toRoomId: string; toRoomName: string }
@@ -714,6 +715,9 @@ export interface GameState {
   expeditions: number;
   resolvedTraps: string[];
   discoveredSecrets: string[];
+  /** Door edges the party has OPENED this floor visit (keys `roomId:direction`, both sides). A 玄室 door is
+   *  CLOSED until opened — it blocks the way and hides the room; a fresh descent re-closes it. */
+  openedDoors: string[];
   inventory: InventoryItem[];
   partyGold: number;
   /** IMP-022C — salvage materials from dismantling. Optional in the save schema (defaults to 0). */

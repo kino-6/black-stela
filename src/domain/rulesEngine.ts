@@ -106,6 +106,10 @@ const OPPOSITE_DIRECTION: Record<Direction, Direction> = {
   west: "east"
 };
 
+// A CLOSED door's state key (per floor visit). Opening a door records BOTH sides so it reads as open from
+// either approach. Reset on floor change, like the chambers it guards, so a fresh descent re-closes it.
+const doorKey = (roomId: string, direction: Direction): string => `door:${roomId}:${direction}`;
+
 const CRIT_MULTIPLIER = 1.5;
 
 // Element weakness multiplier applied to incoming damage of a given element
@@ -214,7 +218,7 @@ export function resolveCommand(state: GameState, world: ScenarioWorld, command: 
     case "search":
       return search(state, world, command.characterId, command.itemId);
     case "open_door":
-      return logOnly(state, { type: "inspection_made", mode: "open_door" });
+      return openDoor(state, world);
     case "disarm_trap":
       // §9.4d: the command has carried `characterId` / `itemId` since §9.2 and the handler IGNORED both.
       return disarmTrap(state, world, command.characterId, command.itemId);
@@ -521,6 +525,7 @@ function enterDungeon(state: GameState, world: ScenarioWorld): CommandResult {
     party: markExpeditionStarted(state.party, roomVisit.map.floorId ?? world.startDungeon, state.turn + 1),
     map: roomVisit.map,
     floorClearedEnemies: [],
+    openedDoors: [],
     floorClaimedTreasures: [],
     chests: [], // IMP-029 — chests are floor-scoped; a fresh descent re-arms the floor's chambers.
     // The town greets a party differently once it has been below. Count the descents.
@@ -583,6 +588,7 @@ function resumeAtCheckpoint(state: GameState, world: ScenarioWorld, roomId: stri
     party: markExpeditionStarted(state.party, roomVisit.map.floorId ?? world.startDungeon, state.turn + 1),
     map: roomVisit.map,
     floorClearedEnemies: [],
+    openedDoors: [],
     floorClaimedTreasures: [],
     chests: [], // IMP-029 — floor-scoped; re-arm on floor change.
     turn: state.turn + 1
@@ -657,6 +663,26 @@ function moveForward(
         facing: moveDirection
       }
     ]);
+  }
+
+  // A CLOSED door hides the room beyond and does not let the party through (Wiz 玄室). Bump-to-open: the
+  // first step SWINGS IT OPEN (revealing the room) but does not carry them in — the next step enters. Both
+  // sides are recorded; a fresh descent re-closes it (openedDoors resets on floor change). The explicit 開く
+  // command opens it the same way.
+  if (
+    forwardEdge?.kind === "door" &&
+    !state.openedDoors.includes(doorKey(state.position.roomId, moveDirection))
+  ) {
+    const keys = [doorKey(state.position.roomId, moveDirection)];
+    if (forwardEdge.targetRoomId) {
+      keys.push(doorKey(forwardEdge.targetRoomId, OPPOSITE_DIRECTION[moveDirection]));
+    }
+    const openedNext: GameState = {
+      ...state,
+      openedDoors: [...state.openedDoors, ...keys.filter((k) => !state.openedDoors.includes(k))],
+      turn: state.turn + 1
+    };
+    return withEvents(openedNext, [{ type: "door_opened", roomId: state.position.roomId, facing: moveDirection }]);
   }
 
   // An open gate lets the party through its otherwise-impassable edge (e.g. a
@@ -925,6 +951,7 @@ function useStairs(state: GameState, world: ScenarioWorld): CommandResult {
     // Changing floors repopulates the one you arrive on: the floor-scoped clear state
     // resets, so its chambers (玄室) hold enemies and treasure again.
     floorClearedEnemies: [],
+    openedDoors: [],
     floorClaimedTreasures: [],
     chests: [], // IMP-029 — floor-scoped; re-arm on floor change.
     turn: state.turn + 1
@@ -1982,6 +2009,34 @@ function discardItem(state: GameState, itemId: string, plus?: number, affix?: st
 // Take a quest off the board. Only in town, and only once: an already-accepted quest keeps its
 // record (a repeatable one stays "active" across claims; a one-shot ends "done"), so getQuestProgress
 // being set blocks re-accepting either.
+// 開く — open the CLOSED door the party faces (Wiz 玄室). Records both sides so it reads open from either
+// approach; a plain wall/passage ahead just gives the harmless "try the way" beat. Opened doors re-close on
+// a fresh descent (openedDoors resets on floor change).
+function openDoor(state: GameState, world: ScenarioWorld): CommandResult {
+  if (!state.position || state.phase !== "dungeon") {
+    return noChange(state);
+  }
+  const dir = state.position.facing;
+  const edge = getGridEdge(world, state.position.roomId, dir);
+  if (edge?.kind !== "door") {
+    return logOnly(state, { type: "inspection_made", mode: "open_door" });
+  }
+  const key = doorKey(state.position.roomId, dir);
+  if (state.openedDoors.includes(key)) {
+    return logOnly(state, { type: "inspection_made", mode: "open_door" });
+  }
+  const keys = [key];
+  if (edge.targetRoomId) {
+    keys.push(doorKey(edge.targetRoomId, OPPOSITE_DIRECTION[dir]));
+  }
+  const next: GameState = {
+    ...state,
+    openedDoors: [...state.openedDoors, ...keys.filter((k) => !state.openedDoors.includes(k))],
+    turn: state.turn + 1
+  };
+  return withEvents(next, [{ type: "door_opened", roomId: state.position.roomId, facing: dir }]);
+}
+
 function retreat(state: GameState, world: ScenarioWorld): CommandResult {
   if (state.phase !== "combat") {
     return noChange(state);

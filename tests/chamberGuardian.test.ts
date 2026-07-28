@@ -47,6 +47,13 @@ describe("玄室 chamber guardians", () => {
       const before = s.position?.roomId;
       s = { ...s, floorClearedEnemies: [...everyType] } as GameState;
       s = executeCommand(s, verdant, { type: "move_forward" });
+      // A 玄室 is entered through a CLOSED door: the first step opens it, the next enters.
+      const doorEv1 = s.log.at(-1)?.event;
+      if (doorEv1?.type === "door_opened") {
+        s = executeCommand(s, verdant, { type: "open_door" });
+        s = { ...s, floorClearedEnemies: [...everyType] } as GameState;
+        s = executeCommand(s, verdant, { type: "move_forward" });
+      }
       if (s.phase === "combat") {
         if (chambers.has(s.combat!.roomId)) foughtIn.add(s.combat!.roomId);
         // Shrug the fight off WITHOUT claiming the chest, and keep every type cleared.
@@ -73,6 +80,12 @@ describe("玄室 chamber guardians", () => {
       const before = s.position?.roomId;
       s = { ...s, floorClearedEnemies: [...everyType] } as GameState;
       s = executeCommand(s, verdant, { type: "move_forward" });
+      const doorEv2 = s.log.at(-1)?.event;
+      if (doorEv2?.type === "door_opened") {
+        s = executeCommand(s, verdant, { type: "open_door" });
+        s = { ...s, floorClearedEnemies: [...everyType] } as GameState;
+        s = executeCommand(s, verdant, { type: "move_forward" });
+      }
       if (s.phase === "combat" && chambers.has(s.combat!.roomId)) {
         chamberRoom = s.combat!.roomId;
         // Before the win, the chamber's chest is NOT sitting out (it is gated behind the fight).

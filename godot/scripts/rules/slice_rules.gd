@@ -44,7 +44,7 @@ static func resolve(state: Dictionary, command: Dictionary, world: Dictionary = 
 		"inspect_wall":
 			return RulesUtil.log_only(state, {"type": "inspection_made", "mode": "inspect_wall"})
 		"open_door":
-			return RulesUtil.log_only(state, {"type": "inspection_made", "mode": "open_door"})
+			return ExplorationCommands.open_door(state, world)
 		"use_stairs":
 			return ExplorationCommands._use_stairs(state, world)
 		"return_to_town":

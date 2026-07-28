@@ -18,7 +18,7 @@ const LATEST_SAVE_SCHEMA_VERSION := 1
 # changes the canonical state hash (that mistake is what this gate caught first).
 const STATE_DEFAULTS := {
 	"reserve": [], "retired": [], "floorClearedEnemies": [], "stepsSinceEncounter": 0,
-	"expeditions": 0, "inventory": [], "partyGold": 75,
+	"expeditions": 0, "inventory": [], "partyGold": 75, "openedDoors": [],
 	"claimedTreasures": [], "floorClaimedTreasures": [], "quests": [], "chests": []
 }
 const CHEST_DEFAULTS := {
