@@ -442,6 +442,23 @@ export const scenarioWorldSchema = z.object({
       // Wandering-encounter density, scenario-authored (IMP-041); omitted ⇒ engine defaults.
       wanderingEncounterPct: z.number().int().positive().optional(),
       wanderingCooldownSteps: z.number().int().nonnegative().optional(),
+      // Resource-scarcity / economy (docs/design/difficulty-design.md). Per-act arrays index by act
+      // (0 = Act I …); omitted ⇒ modern no-scarcity behaviour. Data receptacle — see difficulty-design.
+      economy: z
+        .object({
+          carryCap: z.array(z.number().int().positive()).optional(),
+          stackCap: z.number().int().positive().optional(),
+          priceScalar: z.array(z.number().positive()).optional(),
+          incomeScalar: z.array(z.number().positive()).optional(),
+          provisionKit: z
+            .object({
+              heals: z.number().int().nonnegative().optional(),
+              cures: z.number().int().nonnegative().optional(),
+              revives: z.number().int().nonnegative().optional(),
+            })
+            .optional(),
+        })
+        .optional(),
     })
     .optional(),
   assetPack: z.string().min(1).optional(),

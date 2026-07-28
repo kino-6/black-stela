@@ -858,6 +858,22 @@ export interface ScenarioWorld {
      *  (WANDERING_ENCOUNTER_PCT / WANDERING_COOLDOWN_STEPS). */
     wanderingEncounterPct?: number;
     wanderingCooldownSteps?: number;
+    /** Resource-scarcity / economy design (docs/design/difficulty-design.md). EO-leaning: a finite carry
+     *  budget + affordability turn consumables into a RATIONED kit, so attrition actually bites. Per-act
+     *  arrays are indexed by act (0 = Act I …), the last entry held for deeper acts; scalars default to 1,
+     *  caps to unlimited. All optional — a world that omits `economy` keeps modern no-scarcity behaviour. */
+    economy?: {
+      /** Total items the party may carry, per act (EO's ~60). Omitted ⇒ unlimited. */
+      carryCap?: number[];
+      /** Per-item stack limit. */
+      stackCap?: number;
+      /** Shop price multiplier, per act. */
+      priceScalar?: number[];
+      /** Gold-income (fight reward + loot sell) multiplier, per act. */
+      incomeScalar?: number[];
+      /** The affordable kit the PROVISIONED descent sim carries into an act — the scarcity design's input. */
+      provisionKit?: { heals?: number; cures?: number; revives?: number };
+    };
   };
   /** Art pack folder under content/worlds/<assetPack>/assets (defaults to "default").
    *  Lets a scenario ship its own atmosphere pack. */
