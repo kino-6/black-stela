@@ -4,6 +4,35 @@ Rapid-fire playtest backlog, to be completed one at a time with verification + a
 prevents recurrence. Ordered by the agreed priority (A first). Tick items as they land.
 
 ---
+## ▶▶ NEXT SESSION QUEUE — playtest 2026-07-28 (process sequentially)
+Build/run reminder: `npm run export:godot && npm run play` (godot/data is GITIGNORED — `npm run play` alone
+uses STALE data). Truth gate `npm run gate:final`. Self-build + verify before handoff (AGENTS.md rule).
+
+1. **勝利後に宝箱が出ない / 再戦バグ (#1+#7) — INVESTIGATED: rules are CORRECT.** A Godot probe (enter chamber
+   → win) gave `chests=1` for the chamber, and re-fight is gated on that chest. TS sim agrees. So the
+   implementation works at the rules level. MOST LIKELY the user's `godot/data` was stale (no `export:godot`).
+   NEXT: have the user run `export:godot`; if the chest still doesn't SHOW, the bug is in the UI/scene, not the
+   rules — check `dungeon.gd current_chest()` after victory→`_continue_after_combat` (resumePosition vs the
+   chest's cell) and the dock rebuild. Also: the chest may sit on the anchor cell while the party lands on a
+   different 2×2 cell.
+2. **玄室の囲い込みが緩い.** carveEnclosedChamber's BFS guard often leaves 2 open sides + 1 door (walling more
+   would disconnect), so the door is bypassable. NEXT: brace the maze harder near each chamber (more braiding)
+   OR force a single opening and re-braid on disconnect, so the door is the SOLE entrance.
+3. **罠処理 (盗賊).** Side-玄室 chests are `treasureTable` only (no trap); only the keep is trapped. NEXT: add
+   traps to some 玄室 chests so investigate/disarm (thief) matters. (The "no trap" report is partly a
+   consequence of #1 — no chest, no trap.)
+4. **全滅 with a member at HP 1 (#4) — INVESTIGATED: dead enemies do NOT act** (party resolves first, only
+   `livingGroups` with count>0 act — rulesEngine ~1454/1522). NEXT: check the WIPE condition — why 全滅 fired
+   with ルーク at HP 1/29 (injury status? last-member edge? display artifact?). Not a "HP0 acts" bug.
+5. **ランダム生成が Godot に無い (#5).** React has quick/random full-character generation; the Godot guild is
+   staged-only. NEXT: add a random-generate affordance to guild.gd (mirror React's quick-gen), ux-parity-safe.
+6. **encounter roll = groupsMin..groupsMax RANGE (scenario-tunable).** The roll fixes type-count at groupsMax
+   (2 types → always both). Stopgap shipped: 3rd types on g1/g2/g8 + a ≥3-types gate. PROPER fix: add
+   `groupsMin` to the schema/type + roll `[groupsMin, groupsMax]` in TS `resolveEncounterTable` AND Godot
+   `resolve_encounter_table` (a TODO marker is left in rulesEngine.ts); re-record parity. Then the ≥3 gate can
+   relax to ≥2.
+
+---
 ## ✅ 玄室 redesign COMPLETE (phases A–C) — enclosed 2×2 rooms + closed-door gimmick + cleared visual
 - A (`27c7b92`) — door gimmick: `door` is CLOSED, bump-to-open (first step opens+reveals, next enters) / 開く
   command; `openedDoors` per floor visit. B (`cc0207e`) — genVerdantFloors braids the maze + carves each 玄室
