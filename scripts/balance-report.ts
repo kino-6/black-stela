@@ -9,7 +9,7 @@
 //
 // Run: npm run sim:balance  (all worlds)  |  npm run sim:balance -- --world verdant --level 1 --sizes 6,3,1
 import { getWorldById, worldRegistry } from "../src/data/worldRegistry";
-import { partySizeValue, preparationValue, simulateDescent } from "../src/headless/descentSim";
+import { partySizeValue, preparationValue, provisionValue, simulateDescent } from "../src/headless/descentSim";
 import type { ScenarioWorld } from "../src/domain/types";
 
 // The act-curve targets (drpg-balance skill): `none`-model trough per floor, escalating by act.
@@ -49,10 +49,12 @@ function pct(n: number): string {
 function reportWorld(world: ScenarioWorld, level: number, sizes: number[]) {
   const prep = preparationValue(world);
   const psv = partySizeValue(world, "prepared");
+  const pv = provisionValue(world, "prepared");
   console.log(`\n=== ${world.title}  (${world.id}) ===`);
   console.log(`  balance knobs: threatScalar=${world.balance?.threatScalar ?? "—"}  counterplayBoost=${world.balance?.counterplayBoost ?? "—"}`);
   console.log(`  PREPARE-OR-WIPE : naive clears @Lv${prep.naiveMinLevel}, prepared @Lv${prep.preparedMinLevel}  →  levelsSaved=${prep.levelsSaved}  (target ~10)`);
   console.log(`  PARTY-SIZE      : full(${psv.fullSize}) clears @Lv${psv.fullMinLevel}, solo(${psv.soloSize}) @Lv${psv.soloMinLevel}  →  levelsCost=${psv.levelsCost}  (Wiz attrition: large, but a path remains)`);
+  console.log(`  PROVISION (kit) : bare clears @Lv${pv.bareMinLevel}, kitted @Lv${pv.kittedMinLevel}  →  levelsSaved=${pv.levelsSaved}  (>0 = the kit buys survival; too large = consumables faceroll)`);
 
   // Trough matrix: rows = floors, cols = (size × prepared) + full-naive, none-heal at `level`.
   const cols: { label: string; run: ReturnType<typeof simulateDescent> }[] = [];

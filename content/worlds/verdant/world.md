@@ -35,9 +35,11 @@ balance:
   economy:
     carryCap:    [24, 32, 48]        # total consumables carried — tight grove-shallows, loosening deep
     stackCap:    9
-    priceScalar: [1.0, 0.95, 0.85]   # shop prices ease as the town grows with your descent
-    incomeScalar: [0.8, 1.0, 1.25]   # dive income climbs — late floors pay out, early ones don't flood
-    provisionKit: { heals: 4, cures: 2 }  # the affordable kit a prepared party sets out with
+    priceScalar: [1.0, 0.95, 0.85]   # shop prices ease as the town grows with your descent (authored; not yet wired to live gold)
+    incomeScalar: [0.8, 1.0, 1.25]   # dive income climbs — late floors pay out, early ones don't flood (authored; not yet wired)
+    # The affordable kit a prepared party sets out with. Sized so a one-push RATIONS to the finale and
+    # runs dry at the deepest floor (the retreat trigger) — measured, see sim:balance RESOURCE-ECONOMY.
+    provisionKit: { heals: 3, cures: 1 }
 assetPack: verdant
 # The grove settlement does not talk like the ash town. Any key omitted here falls through to
 # the shared dictionary, so this file only says what Verdant says differently.

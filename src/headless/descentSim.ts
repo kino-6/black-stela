@@ -425,9 +425,11 @@ export function resolveFight(
   return { state: current, midFightLow, midFightMpLow };
 }
 
-// Default medic reflex when a run is provisioned without an explicit threshold: heal a member the
-// moment it drops below a third of max — a competent player's "don't let anyone die" line.
-const DEFAULT_HEAL_THRESHOLD = 0.34;
+// Default medic reflex when a run is provisioned without an explicit threshold: a competent player
+// tops a member up as it crosses HALF, before a spike can drop it — not the reckless "heal only at
+// near-death" line (which left the kit untouched and scarcity unmeasurable). 0.5 makes the kit
+// load-bearing at the floors that actually bite, so burn/exhaustion become real signals.
+const DEFAULT_HEAL_THRESHOLD = 0.5;
 
 const kitSize = (inventory: InventoryItem[]) =>
   inventory
@@ -546,7 +548,9 @@ export function simulateDescent(
       }
     }
 
-    if (provision && kitExhaustedFloor === null && kitSize(inventory) === 0) {
+    // The retreat trigger — but only for a world that actually authored a kit; an empty kit (no
+    // economy block) must not read as "ran dry on floor 1".
+    if (provision && kitExhaustedFloor === null && startingKit.inventory.length > 0 && kitSize(inventory) === 0) {
       kitExhaustedFloor = floorId;
     }
 
@@ -600,9 +604,10 @@ export function clearsAtLevel(
   startLevel: number,
   policy: SimPolicy,
   margin = 0.25,
-  partySize?: number
+  partySize?: number,
+  provision?: boolean
 ): boolean {
-  const result = simulateDescent(world, { heal: "none", policy, startLevel, partySize });
+  const result = simulateDescent(world, { heal: "none", policy, startLevel, partySize, provision });
   if (!result.survived) {
     return false;
   }
@@ -612,17 +617,19 @@ export function clearsAtLevel(
   return deepest >= margin;
 }
 
-// The lowest start level at which a party clears under `policy` (optionally under-strength). Monotonic in
-// level (more level never hurts), so a plain scan up to a cap is exact. Returns cap + 1 if it never clears.
+// The lowest start level at which a party clears under `policy` (optionally under-strength / provisioned).
+// Monotonic in level (more level never hurts), so a plain scan up to a cap is exact. Returns cap + 1 if it
+// never clears.
 export function minClearLevel(
   world: ScenarioWorld,
   policy: SimPolicy,
   cap = 24,
   margin = 0.25,
-  partySize?: number
+  partySize?: number,
+  provision?: boolean
 ): number {
   for (let level = 1; level <= cap; level += 1) {
-    if (clearsAtLevel(world, level, policy, margin, partySize)) {
+    if (clearsAtLevel(world, level, policy, margin, partySize, provision)) {
       return level;
     }
   }
@@ -666,4 +673,20 @@ export function partySizeValue(
   const fullMinLevel = minClearLevel(world, policy, cap, 0.25, fullSize);
   const soloMinLevel = minClearLevel(world, policy, cap, 0.25, soloSize);
   return { fullSize, fullMinLevel, soloSize, soloMinLevel, levelsCost: soloMinLevel - fullMinLevel };
+}
+
+// What the KIT is worth, in levels — the resource-economy counterpart of the other two axes. How many
+// levels lower a prepared party can start and still clear when it CARRIES and rations its consumables,
+// versus bare-handed. A kit worth ≥1 level means scarcity is a real lever (it buys survival); a kit worth
+// too MANY levels means the consumables trivialise the crawl (buy-99-heals-faceroll — the scarcity design
+// exists to prevent that). Measured under the prepared policy so it isolates the kit from the other axes.
+export interface ProvisionValue {
+  bareMinLevel: number;
+  kittedMinLevel: number;
+  levelsSaved: number;
+}
+export function provisionValue(world: ScenarioWorld, policy: SimPolicy = "prepared", cap = 24): ProvisionValue {
+  const bareMinLevel = minClearLevel(world, policy, cap);
+  const kittedMinLevel = minClearLevel(world, policy, cap, 0.25, undefined, true);
+  return { bareMinLevel, kittedMinLevel, levelsSaved: bareMinLevel - kittedMinLevel };
 }

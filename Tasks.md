@@ -30,9 +30,20 @@ EO/Galleria-refined; party-size = proportional attrition (`partySizeValue`); res
   `healsUsed`/`curesUsed`/`kitRemaining`/`goldEarned`. New `DescentSimResult`: `kitCost`/`totalGold`/
   `economyBalance`/`kitExhaustedFloor`. `sim:balance` prints a RESOURCE-ECONOMY block. Verdant authored an
   `economy` block (EO-leaning early→easing late). All 22 sim tests + tsc green.
-- **Slice 3 NEXT** (task #9): gate the targets in `descentSim.test.ts` (smooth act-curve band, **prepared party
-  never wipes**, party-size cost large-but-finite, scarcity: kit low by the act spike), then TUNE the authored
-  knobs against `sim:balance` and **browser-verify** (sim is a lower bound — tune slightly gentle).
+- **Slice 3 GATE INFRA DONE** (task #9): `tests/difficultyGate.test.ts` locks the two new axes per world —
+  party-size cost large-but-finite (`levelsCost` [4,18]), kit helps-but-never-facerolls (`provisionValue`
+  [0,4]), and for a world with `economy`: kit is priced, spent, and **rations dry in the final act** (retreat
+  trigger) with income covering a re-provision without flooding. Medic threshold → **0.5** (a competent player
+  pre-heals; 0.34 left the kit untouched). Verdant kit → `{heals:3,cures:1}` so a one-push runs dry at g8f.
+  `provisionValue` axis + report line added. **incomeScalar/priceScalar still authored-but-UNWIRED** (income =
+  enemy gold only). gate:final green (139/139, one flaky dungeon-dpad retry passed).
+- **Slice 3 OPEN TUNING** (task #10, needs user feel-in-the-loop): the PREPARED HP curve is **soft vs the
+  agreed act bands** — Verdant g1/g2≈100/97% (band ≤85%), mid≈61-79% (42-60%), g7/g8≈52/40% (28-38%); danger
+  is real only on the NAIVE path. Reshaping DOWN is per-floor threat work (global `threatScalar` can't reshape
+  a flat top) and FIGHTS the locked per-world gates (`preparedMinLevel≤3`, `g1f>0.7`), so it's a deliberate
+  re-tune. Also attrition lands LATE (kit used g7/g8), opposite the "序盤EO寄り" intent (one-push over-levels).
+  Levers: raise early-floor enemy damage, author `recommendedPartyLevel`/floor, add per-act telegraphed spikes
+  (Verdant has ONE in 8 floors). This is player-facing → browser-verify + user feel.
 - **Measured NOW by the slice-2 tool (before tuning):**
   - **Scarcity ≈ 0** (the "ヌルい" report, quantified): Verdant's 4-heal/2-cure kit runs 6→3 over 8 floors,
     NEVER dries out, dive income = **2.4× a full re-provision**. Tighten `provisionKit`/`carryCap`/`incomeScalar`.

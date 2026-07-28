@@ -94,8 +94,34 @@ balance:
 1. **Schema + applyBalance** — the `economy` receptacle (data only, behaviour unchanged). ✅
 2. **PROVISIONED sim model + burn/economy metrics** — the measurement; split trash vs spike; add MP/気力
    attrition to `FloorSimResult`. Report columns in `sim:balance`. ✅
-3. **Gates** — act-curve smoothness, no prepared-wipe, party-size cost, scarcity target. Then tune to hit
-   them and browser-verify.
+3. **Gates + tuning** — act-curve smoothness, no prepared-wipe, party-size cost, scarcity target. Then tune
+   to hit them and browser-verify. Gate infra ✅; curve-reshape to the bands is the open tuning (below).
+
+### Slice 3 — the gates that lock the axes (and what still needs tuning)
+
+- **`tests/difficultyGate.test.ts`** locks the two axes slice 2 made measurable, per world: party-size cost
+  is **large-but-finite** (`levelsCost` in [4,18], solo still clears under the cap), the kit **helps but never
+  facerolls** (`provisionValue.levelsSaved` in [0,4]), and — for any world that authors `economy` — the kit
+  is **priced, spent, and rations dry in the final act** (the retreat trigger) with **dive income covering a
+  re-provision without flooding**. The prepare-or-wipe + act-curve axes stay gated in
+  `descentSim.test.ts` / `verdantBalance.test.ts`; this file does not duplicate them.
+- **Medic model:** `DEFAULT_HEAL_THRESHOLD` is **0.5** — a competent player tops up crossing half, before a
+  spike drops a member (0.34 modelled a reckless player and left the kit untouched, so scarcity was
+  unmeasurable). This is what makes the kit load-bearing at the floors that bite.
+- **`incomeScalar`/`priceScalar` are authored but NOT yet wired** to live/sim gold (income is enemy-`gold`
+  only), so `economyBalance` responds to kit size/prices-as-listed, not to those scalars. Wiring them
+  (engine enemy-gold + shop prices) is a follow-up; until then they document intent.
+
+**Still soft vs the target bands (the open tuning, needs the user's feel-in-the-loop):** at the prepared
+clear level the HP curve sits *above* the act bands — Verdant g1/g2 ≈ 100/97% (band ≤85%), the mid ≈ 61-79%
+(band 42-60%), g7/g8 ≈ 52/40% (band 28-38%). The danger is real only on the **naive** path (g1/g6/g7 wipe or
+near-wipe). Pulling the *prepared* curve down into the bands is per-floor threat work (global `threatScalar`
+can't reshape a flat top without over-deepening the floor) and it **fights the currently-locked per-world
+gates** (`preparedMinLevel ≤3`, `g1f>0.7`), so it is a deliberate re-tune, not a mechanical nudge — and the
+attrition currently lands **late** (kit used only at g7/g8), the *opposite* of the "序盤EO寄り" intent, because
+a one-push over-levels. Levers: raise early-floor enemy damage (reshape the top), author
+`recommendedPartyLevel` per floor (proportional under-level danger), add per-act **telegraphed spikes**
+(`room.encounter`/`encounterSquad` — Verdant has ONE in eight floors).
 
 ### Slice 2 — what the measurement now shows (Verdant, startLv1, none-heal)
 
