@@ -20,7 +20,7 @@
 //            you would naturally have reached by then?
 //   "none" — carry HP across floors, healing only from level-ups (pessimistic
 //            one-push lower bound with no consumables).
-import { createCombatState, executeCommand } from "../domain/rulesEngine";
+import { createCombatState, executeCommand, scaledEncounterCount } from "../domain/rulesEngine";
 import { applyLevelUps, xpForLevel } from "../domain/leveling";
 import { createDebugStateFromProgress } from "../debug/debugStart";
 import { analyzeFloorGraph } from "../domain/floorGraph";
@@ -288,13 +288,21 @@ export function resolveFight(
 
 export function simulateDescent(
   world: ScenarioWorld,
-  options: { heal?: "town" | "none"; policy?: SimPolicy; startLevel?: number } = {}
+  options: { heal?: "town" | "none"; policy?: SimPolicy; startLevel?: number; partySize?: number } = {}
 ): DescentSimResult {
   const heal = options.heal ?? "town";
   const policy = options.policy ?? "naive";
 
   const base = createDebugStateFromProgress(world, "ready");
   let party = base.party.map((member) => ({ ...member }));
+  // The PARTY-SIZE axis (Wiz-style proportional attrition): an under-strength party keeps the front
+  // line first, so a solo run is the lead fighter alone — fewer actions per round → slower kills →
+  // deeper attrition. The engine's own scaledEncounterCount (below) swells each pack for the shortfall,
+  // so this measures the SAME under-strength danger the real crawl deals, not a toy.
+  if (options.partySize && options.partySize < party.length) {
+    const ordered = [...party].sort((a, b) => (a.row === "front" ? 0 : 1) - (b.row === "front" ? 0 : 1));
+    party = ordered.slice(0, Math.max(1, options.partySize));
+  }
   if (options.startLevel && options.startLevel > 1) {
     party = partyAtLevel(party, options.startLevel);
   }
@@ -321,11 +329,16 @@ export function simulateDescent(
     let lowest = arrivalHpPct;
     let wiped = false;
 
-    const floorRoom = world.dungeons.find((dungeon) => dungeon.id === floorId)?.startRoom ?? "sim";
+    const floor = world.dungeons.find((dungeon) => dungeon.id === floorId);
+    const floorRoom = floor?.startRoom ?? "sim";
     let workState: GameState = { ...base, phase: "dungeon", party, position: { roomId: floorRoom, facing: "north" } };
 
     for (const encounter of encounters) {
-      const outcome = resolveFight(workState, world, encounter, policy);
+      // Swell the pack for an under-strength/under-levelled party exactly as beginRoomEncounter does in
+      // play (the sim used the RAW count and so under-modelled a small party). With a floor that authors no
+      // recommendation this is a no-op, so the full-party curve — and its Gate — is unchanged.
+      const scaledCount = scaledEncounterCount(encounter.count, party, floor);
+      const outcome = resolveFight(workState, world, { ...encounter, count: scaledCount }, policy);
       workState = outcome.state;
       party = workState.party;
       lowest = Math.min(lowest, outcome.midFightLow);
@@ -364,8 +377,14 @@ export function simulateDescent(
 // Does a party STARTING at `startLevel` clear the whole descent (no wipe on any floor) under a
 // given policy? Uses the pessimistic `none` heal model so the answer is "can they actually take
 // it", not "with a town trip between every floor".
-export function clearsAtLevel(world: ScenarioWorld, startLevel: number, policy: SimPolicy, margin = 0.25): boolean {
-  const result = simulateDescent(world, { heal: "none", policy, startLevel });
+export function clearsAtLevel(
+  world: ScenarioWorld,
+  startLevel: number,
+  policy: SimPolicy,
+  margin = 0.25,
+  partySize?: number
+): boolean {
+  const result = simulateDescent(world, { heal: "none", policy, startLevel, partySize });
   if (!result.survived) {
     return false;
   }
@@ -375,11 +394,17 @@ export function clearsAtLevel(world: ScenarioWorld, startLevel: number, policy: 
   return deepest >= margin;
 }
 
-// The lowest start level at which a party clears under `policy`. Monotonic in level (more level
-// never hurts), so a plain scan up to a cap is exact. Returns cap + 1 if it never clears.
-export function minClearLevel(world: ScenarioWorld, policy: SimPolicy, cap = 24, margin = 0.25): number {
+// The lowest start level at which a party clears under `policy` (optionally under-strength). Monotonic in
+// level (more level never hurts), so a plain scan up to a cap is exact. Returns cap + 1 if it never clears.
+export function minClearLevel(
+  world: ScenarioWorld,
+  policy: SimPolicy,
+  cap = 24,
+  margin = 0.25,
+  partySize?: number
+): number {
   for (let level = 1; level <= cap; level += 1) {
-    if (clearsAtLevel(world, level, policy, margin)) {
+    if (clearsAtLevel(world, level, policy, margin, partySize)) {
       return level;
     }
   }
@@ -399,4 +424,28 @@ export function preparationValue(world: ScenarioWorld, cap = 24): PreparationVal
   const preparedMinLevel = minClearLevel(world, "prepared", cap);
   // levelsSaved = how many levels a prepared party can shave off and still clear comfortably.
   return { naiveMinLevel, preparedMinLevel, levelsSaved: naiveMinLevel - preparedMinLevel };
+}
+
+// What a FULL PARTY is worth, in levels — the party-size counterpart of preparationValue (the design the
+// user set: Wiz-style proportional attrition, "ソロ徒歩は危険、だが上級者には道が残る"). Measured under the
+// PREPARED policy by default so it isolates the size axis from the preparation axis: how many more levels a
+// solo (or `soloSize`) run needs to clear the same descent versus the full party. Positive & large = an
+// under-strength run is genuinely harder, but still has a path (more levels), not an impossible wall.
+export interface PartySizeValue {
+  fullSize: number;
+  fullMinLevel: number;
+  soloSize: number;
+  soloMinLevel: number;
+  levelsCost: number;
+}
+export function partySizeValue(
+  world: ScenarioWorld,
+  policy: SimPolicy = "prepared",
+  soloSize = 1,
+  cap = 24
+): PartySizeValue {
+  const fullSize = createDebugStateFromProgress(world, "ready").party.length;
+  const fullMinLevel = minClearLevel(world, policy, cap, 0.25, fullSize);
+  const soloMinLevel = minClearLevel(world, policy, cap, 0.25, soloSize);
+  return { fullSize, fullMinLevel, soloSize, soloMinLevel, levelsCost: soloMinLevel - fullMinLevel };
 }

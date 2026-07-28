@@ -19,6 +19,7 @@
     "headless:clear": "node scripts/run-vite-module.mjs scripts/headless-clear.ts",
     "headless:probes": "node scripts/run-vite-module.mjs scripts/headless-probes.ts",
     "headless:combat": "node scripts/run-vite-module.mjs scripts/combat-probes.ts",
+    "sim:balance": "node scripts/run-vite-module.mjs scripts/balance-report.ts",
     "sim:content": "node scripts/run-vite-module.mjs scripts/content-sim.ts",
     "sim:coverage": "node scripts/run-vite-module.mjs scripts/coverage-sim.ts",
     "export:packs": "node scripts/run-vite-module.mjs scripts/export-packs.ts",
