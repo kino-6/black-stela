@@ -121,12 +121,15 @@ func _initialize() -> void:
 		for i in 8:
 			await process_frame
 		var shown := _all_text(fresh_town)
-		if not shown.contains("初めて潜る前に"):
-			_fail("new game: town does not show the first-departure heading")
-		if shown.contains("帰還後の支度") or shown.contains("持ち帰った物"):
-			_fail("new game: town shows the post-return view (帰還後の支度 / 持ち帰った物) before the first descent")
+		# The town redesign dropped the first-departure/return HEADINGS for the world title; a fresh party is
+		# now one with no return line (no last-log subtitle, no wounds ledger), never a "帰還後" greeting. So the
+		# regression check is the NEGATIVE one that always mattered: a brand-new game must not read as post-return.
+		if not shown.contains("町の施設"):
+			_fail("new game: the town square did not render (no 町の施設 destinations)")
+		if shown.contains("帰還後の支度") or shown.contains("持ち帰った物") or shown.contains("帰還記録"):
+			_fail("new game: town shows a post-return view (帰還後の支度 / 持ち帰った物 / 帰還記録) before the first descent")
 		else:
-			print("[town-controller] new game reads as the first departure (no 帰還後 / 持ち帰った物)")
+			print("[town-controller] new game reads as a first departure (no 帰還後 / 持ち帰った物 / 帰還記録)")
 		fresh_town.queue_free()
 
 	print("")

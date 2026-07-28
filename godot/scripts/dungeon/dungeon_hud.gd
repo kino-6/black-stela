@@ -15,7 +15,9 @@ const OK := Color("9db06a")
 
 ## One adventurer's rail card: portrait, row, name/level, HP·MP, gauges, the judged combat numbers, and
 ## the conditions the player must act on.
-static func party_token(member: Dictionary, world: Dictionary, portrait_tex: Texture2D) -> Control:
+## `class_label` is optional: the crawl HUD leaves it empty (row + name is enough mid-move), the town square
+## passes the 職業 so the party can be planned by calling at a glance. Same card either way.
+static func party_token(member: Dictionary, world: Dictionary, portrait_tex: Texture2D, class_label: String = "") -> Control:
 	var stats: Dictionary = CharacterStats.effective(member, world)
 	var max_hp: int = maxi(1, int(stats.get("maxHp", member.get("maxHp", 1))))
 	# A DOWNED member is stored at hp:1 + injury; show 0 while wounded so it never reads as barely-alive.
@@ -32,7 +34,8 @@ static func party_token(member: Dictionary, world: Dictionary, portrait_tex: Tex
 	portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 	portrait.custom_minimum_size = Vector2(48, 76)
 	head.add_child(portrait)
-	head.add_child(UIKit.label(I18n.t("play.frontRow" if String(member.get("row", "front")) == "front" else "play.backRow"), 11, DIM))
+	var row_text := I18n.t("play.frontRow" if String(member.get("row", "front")) == "front" else "play.backRow")
+	head.add_child(UIKit.label(row_text if class_label == "" else "%s · %s" % [row_text, class_label], 11, DIM))
 	head.add_child(UIKit.grow(UIKit.label(String(member.get("name", "?")), 16, BAD if down else INK)))
 	head.add_child(UIKit.label("Lv %d" % int(member.get("level", 1)), 12, DIM))
 	body.add_child(head)

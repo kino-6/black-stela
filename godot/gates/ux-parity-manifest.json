@@ -35,23 +35,17 @@
         "play.resumeAt",
         "town.backToHub",
         "town.career",
-        "town.departureCopy",
-        "town.departureHeading",
-        "town.expeditionResult",
         "town.gold",
         "town.guild",
         "town.locArchive",
         "town.locGuildHall",
         "town.locMarket",
-        "town.noWounds",
         "town.quests",
         "town.records",
         "town.recovery",
         "town.reliquary",
         "town.servicesHeading",
         "town.shop",
-        "town.statusCopy",
-        "town.statusHeading",
         "town.workshop",
         "town.wounds"
       ],
@@ -157,6 +151,30 @@
         {
           "key": "town.readyToDescend",
           "reason": "Conditional fallback for 帰還記録 when the log is empty; not shown in the driven states after the 次の支度 row was removed (playtest)."
+        },
+        {
+          "key": "town.departureHeading",
+          "reason": "Dropped in the town redesign (playtest): the square now leads with the WORLD TITLE, not a first-departure/return heading, and carries only a wounds line when someone is hurt. The departure/status headings + copy, the labelled 帰還記録 row, and the noWounds fallback are no longer rendered in either React (TownEntryPanel) or the Godot port. Keys remain DEFINED for world-copy overrides, just unrendered here."
+        },
+        {
+          "key": "town.departureCopy",
+          "reason": "Dropped in the town redesign (playtest): the square now leads with the WORLD TITLE, not a first-departure/return heading, and carries only a wounds line when someone is hurt. The departure/status headings + copy, the labelled 帰還記録 row, and the noWounds fallback are no longer rendered in either React (TownEntryPanel) or the Godot port. Keys remain DEFINED for world-copy overrides, just unrendered here."
+        },
+        {
+          "key": "town.statusHeading",
+          "reason": "Dropped in the town redesign (playtest): the square now leads with the WORLD TITLE, not a first-departure/return heading, and carries only a wounds line when someone is hurt. The departure/status headings + copy, the labelled 帰還記録 row, and the noWounds fallback are no longer rendered in either React (TownEntryPanel) or the Godot port. Keys remain DEFINED for world-copy overrides, just unrendered here."
+        },
+        {
+          "key": "town.statusCopy",
+          "reason": "Dropped in the town redesign (playtest): the square now leads with the WORLD TITLE, not a first-departure/return heading, and carries only a wounds line when someone is hurt. The departure/status headings + copy, the labelled 帰還記録 row, and the noWounds fallback are no longer rendered in either React (TownEntryPanel) or the Godot port. Keys remain DEFINED for world-copy overrides, just unrendered here."
+        },
+        {
+          "key": "town.expeditionResult",
+          "reason": "Dropped in the town redesign (playtest): the square now leads with the WORLD TITLE, not a first-departure/return heading, and carries only a wounds line when someone is hurt. The departure/status headings + copy, the labelled 帰還記録 row, and the noWounds fallback are no longer rendered in either React (TownEntryPanel) or the Godot port. Keys remain DEFINED for world-copy overrides, just unrendered here."
+        },
+        {
+          "key": "town.noWounds",
+          "reason": "Dropped in the town redesign (playtest): the square now leads with the WORLD TITLE, not a first-departure/return heading, and carries only a wounds line when someone is hurt. The departure/status headings + copy, the labelled 帰還記録 row, and the noWounds fallback are no longer rendered in either React (TownEntryPanel) or the Godot port. Keys remain DEFINED for world-copy overrides, just unrendered here."
         }
       ]
     },
@@ -3528,23 +3546,17 @@
         "play.resumeAt",
         "town.backToHub",
         "town.career",
-        "town.departureCopy",
-        "town.departureHeading",
-        "town.expeditionResult",
         "town.gold",
         "town.guild",
         "town.locArchive",
         "town.locGuildHall",
         "town.locMarket",
-        "town.noWounds",
         "town.quests",
         "town.records",
         "town.recovery",
         "town.reliquary",
         "town.servicesHeading",
         "town.shop",
-        "town.statusCopy",
-        "town.statusHeading",
         "town.workshop",
         "town.wounds"
       ],
@@ -3650,6 +3662,30 @@
         {
           "key": "town.readyToDescend",
           "reason": "Conditional fallback for 帰還記録 when the log is empty; not shown in the driven states after the 次の支度 row was removed (playtest)."
+        },
+        {
+          "key": "town.departureHeading",
+          "reason": "Dropped in the town redesign (playtest): the square leads with the WORLD TITLE, not a first-departure/return heading, and carries only a wounds line when hurt. Keys remain DEFINED for world-copy overrides, just unrendered."
+        },
+        {
+          "key": "town.departureCopy",
+          "reason": "Dropped in the town redesign (playtest): the square leads with the WORLD TITLE, not a first-departure/return heading, and carries only a wounds line when hurt. Keys remain DEFINED for world-copy overrides, just unrendered."
+        },
+        {
+          "key": "town.statusHeading",
+          "reason": "Dropped in the town redesign (playtest): the square leads with the WORLD TITLE, not a first-departure/return heading, and carries only a wounds line when hurt. Keys remain DEFINED for world-copy overrides, just unrendered."
+        },
+        {
+          "key": "town.statusCopy",
+          "reason": "Dropped in the town redesign (playtest): the square leads with the WORLD TITLE, not a first-departure/return heading, and carries only a wounds line when hurt. Keys remain DEFINED for world-copy overrides, just unrendered."
+        },
+        {
+          "key": "town.expeditionResult",
+          "reason": "Dropped in the town redesign (playtest): the square leads with the WORLD TITLE, not a first-departure/return heading, and carries only a wounds line when hurt. Keys remain DEFINED for world-copy overrides, just unrendered."
+        },
+        {
+          "key": "town.noWounds",
+          "reason": "Dropped in the town redesign (playtest): the square leads with the WORLD TITLE, not a first-departure/return heading, and carries only a wounds line when hurt. Keys remain DEFINED for world-copy overrides, just unrendered."
         }
       ]
     },

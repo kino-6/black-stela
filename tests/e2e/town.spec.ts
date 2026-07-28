@@ -81,7 +81,10 @@ test("recovery costs gold and blocks free healing", async ({ page }) => {
   await page.getByRole("button", { name: "Use return marker" }).click();
   await expect(page.getByTestId("town-cockpit")).toBeVisible();
   await expect(page.getByRole("heading", { name: "Adventurer Registration" })).toHaveCount(0);
-  await expect(page.getByText("Return record")).toBeVisible();
+  // The party came back injured — the return note and the wounds ledger are both present (the labelled
+  // 帰還記録 row was dropped in the town redesign for the world-title heading + last-log note).
+  await expect(page.getByTestId("town-return-note")).toBeVisible();
+  await expect(page.getByTestId("town-return-ledger")).toBeVisible();
   await page.getByTestId("town-cockpit").getByRole("button", { name: "Recovery" }).click();
 
   await expect(page.getByText(/Recovery cost: [1-9]/)).toBeVisible();

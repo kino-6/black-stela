@@ -15,6 +15,8 @@ const I18n := preload("res://scripts/i18n.gd")
 const Fmt := preload("res://scripts/town_format.gd")
 const UI := preload("res://scripts/town/ui_kit.gd")
 const SliceRules := preload("res://scripts/rules/slice_rules.gd")
+const DungeonHud := preload("res://scripts/dungeon/dungeon_hud.gd")
+const ConfigPanel := preload("res://scripts/config_panel.gd")
 
 const RecoveryPanel := preload("res://scripts/town/recovery_panel.gd")
 const WorldResources := preload("res://scripts/world_resources.gd")
@@ -49,6 +51,7 @@ var _fallback_engine: Dictionary = {}
 
 var _location: String = ""        # "" = the square
 var _service: String = ""         # "" = no counter open
+var _menu_open: bool = false      # the settings/menu overlay (over the square)
 var _selected_id: String = ""     # the adventurer services act on
 var _shop_category: String = ""
 var _loot_filter: String = "all"
@@ -136,6 +139,48 @@ func _read_json(path: String) -> Dictionary:
 func _asset(sub: String) -> String:
 	return WorldResources.world_asset(_run.world_id if _run else _world_id, sub)
 
+## The world's own name — the town heading, so the square reads as a PLACE, not a tutorial step.
+func _world_title() -> String:
+	var ja: Dictionary = (_world.get("locales", {}) as Dictionary).get("ja", {})
+	var title := String(ja.get("title", _world.get("title", "")))
+	return title if title != "" else I18n.t("town.statusHeading")
+
+## The member's calling, localized — resolved through the same twelve-to-eight legacy map as the portrait,
+## so a legacy save reads its real current 職業. Empty if the class is somehow unknown (card just omits it).
+func _class_label(class_id: String) -> String:
+	var legacy: Dictionary = engine().get("legacyClassMapping", {})
+	var id := String(legacy.get(class_id, class_id))
+	for class_def in engine().get("classes", []):
+		if String((class_def as Dictionary).get("id", "")) == id:
+			var label: Variant = (class_def as Dictionary).get("label", {})
+			if typeof(label) == TYPE_DICTIONARY and (label as Dictionary).has("ja"):
+				return String((label as Dictionary)["ja"])
+	return ""
+
+## The portrait a member's card shows — a builtin/imported ref, else the class figure from the pack (the
+## Default eight-class library is the shared fallback). Mirrors dungeon.gd/_portrait_path so the town card
+## resolves the same face as the crawl. (The 4th copy of this — a future WorldResources extraction.)
+func _portrait_path(member: Dictionary) -> String:
+	var portrait_ref := String(member.get("portraitRef", ""))
+	const BUILTIN_PREFIX := "builtin://portrait/"
+	if portrait_ref.begins_with(BUILTIN_PREFIX):
+		var chosen := _asset("portraits/%s.png" % portrait_ref.trim_prefix(BUILTIN_PREFIX))
+		if FileAccess.file_exists(chosen):
+			return chosen
+	var class_id := String(member.get("classId", "warrior"))
+	var legacy: Dictionary = engine().get("legacyClassMapping", {})
+	class_id = String(legacy.get(class_id, class_id))
+	var known := false
+	for class_def in engine().get("classes", []):
+		if String((class_def as Dictionary).get("id", "")) == class_id:
+			known = true
+			break
+	if not known:
+		class_id = "warrior"
+	var sub := "characters/adventurer-%s-base.png" % class_id
+	var pack_path := _asset(sub)
+	return pack_path if FileAccess.file_exists(pack_path) else "res://assets/worlds/default/%s" % sub
+
 # --- the one mutation path: the ported rules, the same ones the parity gate proves ----------------
 func dispatch(command: Dictionary) -> Array:
 	var events: Array
@@ -178,9 +223,14 @@ func _build() -> void:
 	scrim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(scrim)
 
-	_menu_host = UI.col(14)
-	_menu_host.position = Vector2(72, 56)
-	_menu_host.custom_minimum_size = Vector2(1100, 0)
+	# The square spans the whole frame now (was a top-left column that piled every card into one corner and
+	# left the town art dead — playtest). Top bar up top, the party formation + destinations along the bottom.
+	_menu_host = UI.col(16)
+	_menu_host.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_menu_host.offset_left = 72
+	_menu_host.offset_top = 44
+	_menu_host.offset_right = -72
+	_menu_host.offset_bottom = -40
 	add_child(_menu_host)
 
 	_service_layer = Control.new()
@@ -210,32 +260,49 @@ func _build_square() -> void:
 	var expeditions := int(s.get("expeditions", 0))
 	var first_departure := expeditions == 0
 
-	# heading + purse
+	# --- TOP BAR: the PLACE (atmosphere), the purse, and the menu ---
+	# The heading is the LOCATION, not a tutorial. "初めて潜る前に / まだ誰も潜っていません" nagged and broke the
+	# mood even though a party was already formed (playtest); the world's own title reads as somewhere you ARE.
 	var head := UI.row()
 	var titles := UI.col(2)
-	titles.add_child(UI.label(I18n.t("town.departureHeading" if first_departure else "town.statusHeading"), 34, UI.GOLD))
-	titles.add_child(UI.prose(I18n.t("town.departureCopy" if first_departure else "town.statusCopy"), 16, UI.DIM, 760))
+	titles.add_child(UI.label(_world_title(), 34, UI.GOLD))
+	# One quiet line — what changed last trip — never the "編成してから出発" instruction.
+	var sub := "" if first_departure else _latest_log_text(s)
+	if sub != "":
+		titles.add_child(UI.label(sub, 15, UI.DIM))
 	head.add_child(UI.grow(titles))
 	head.add_child(UI.label(I18n.t("town.gold", {"gold": int(s.get("partyGold", 0))}), 22, UI.INK))
+	var menu_btn := UI.button(I18n.t("town.menu"), func(): _open_menu(), Vector2(120, 44), 16)
+	head.add_child(menu_btn)
 	_menu_host.add_child(head)
 
-	# --- THE STATUS LEDGER: what came back, and what to do about it ---
-	# Before the first descent the "初めて潜る前に" heading already says it all; the 一党 / 手持ち / 次の支度
-	# rows just restated it and read as clutter (playtest). So the ledger is the RETURN ledger only — what came
-	# back and what to do about it, which is genuinely new each trip.
-	# The return ledger is only what CHANGED this trip: the result and any wounds. 持ち帰った物 (the 聖遺物
-	# service shows it) and 次の支度 (a restatement of "you can dive again") were clutter (playtest).
-	if not first_departure:
-		var ledger := UI.col(4)
-		var result_text := _latest_log_text(s)
-		_ledger_row(ledger, I18n.t("town.expeditionResult"), result_text if result_text != "" else I18n.t("town.readyToDescend"))
-		_ledger_row(ledger, I18n.t("town.wounds"), _wounds_summary(party))
-		_menu_host.add_child(UI.card(ledger))
+	# The town art breathes in the middle; the party + destinations sit along the bottom (like the crawl HUD).
+	var spacer := Control.new()
+	spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_menu_host.add_child(spacer)
 
-	# The whole party's condition, always on the square — not only the wounded line in the ledger, and
-	# without opening a service (playtest #4). Compact so the destinations still fit.
+	# --- wounds, only when someone is actually hurt — actionable, not a permanent ledger row ---
+	if not party_empty and Fmt.party_recovery_cost(party) > 0:
+		var ledger := UI.col(4)
+		_ledger_row(ledger, I18n.t("town.wounds"), _wounds_summary(party))
+		_menu_host.add_child(UI.card(ledger, UI.BAD))
+
+	# --- PARTY FORMATION — the SAME card the crawl/combat HUD uses (portrait, 前衛/後衛, 職/Lv, HP·MP bars,
+	# the judged damage/armor/speed, conditions), so "who is ready and where they stand" reads at a glance and
+	# the party can actually be PREPARED here (playtest: the old name·HP·MP list was too thin to plan from). ---
 	if not party_empty:
-		_menu_host.add_child(_party_status_card(party))
+		_menu_host.add_child(UI.label(I18n.t("town.partyStatus"), 15, UI.GOLD))
+		var rail := UI.row()
+		rail.add_theme_constant_override("separation", 8)
+		var ordered := []
+		for row in ["front", "back"]:
+			for member in party:
+				if String(member.get("row", "front")) == row:
+					ordered.append(member)
+		for member in ordered:
+			var tex := WorldResources.portrait_texture(String(member.get("portraitRef", "")), _portrait_path(member))
+			rail.add_child(DungeonHud.party_token(member, _world, tex, _class_label(String(member.get("classId", "")))))
+		_menu_host.add_child(rail)
 
 	# --- the way back down to a rest point already reached ---
 	# A checkpoint is earned progress: once a rest point has been walked to, the party never has to walk
@@ -243,14 +310,14 @@ func _build_square() -> void:
 	# give it, so the progress was unreachable from the screen that is supposed to offer it.
 	var checkpoints := _unlocked_checkpoints(s)
 	if not checkpoints.is_empty():
-		var resume := UI.col(4)
-		resume.add_child(UI.label(I18n.t("play.checkpointsHeading"), 18, UI.GOLD))
+		var resume := UI.row()
+		resume.add_child(UI.label(I18n.t("play.checkpointsHeading"), 15, UI.DIM))
 		for checkpoint in checkpoints:
 			var room_id := String(checkpoint["roomId"])
-			var b := UI.button(I18n.t("play.resumeAt", {"place": String(checkpoint["name"])}), func(): _dispatch_resume(room_id), Vector2(320, 44), 16)
+			var b := UI.button(I18n.t("play.resumeAt", {"place": String(checkpoint["name"])}), func(): _dispatch_resume(room_id), Vector2(280, 40), 15)
 			b.disabled = party_empty
 			resume.add_child(b)
-		_menu_host.add_child(UI.card(resume))
+		_menu_host.add_child(resume)
 
 	# --- the destinations ---
 	_menu_host.add_child(UI.label(I18n.t("town.servicesHeading"), 16, UI.DIM))
@@ -317,21 +384,6 @@ func _latest_log_text(s: Dictionary) -> String:
 	# "もう一度潜れる" (that belongs to 次の支度, and reading it as a record was the playtest #16 "大嘘").
 	return I18n.t("town.noRecord")
 
-## Every member's condition at a glance — one compact line each (name · HP · MP for casters), HP in the
-## hurt colour when the infirmary would charge for them.
-func _party_status_card(party: Array) -> Control:
-	var col := UI.col(2)
-	col.add_child(UI.label(I18n.t("town.partyStatus"), 15, UI.GOLD))
-	for member in party:
-		var row := UI.row()
-		row.add_child(UI.grow(UI.label(String(member.get("name", "?")), 15, UI.INK)))
-		var hurt: bool = Fmt.member_recovery_cost(member) > 0
-		row.add_child(UI.label("HP %d/%d" % [int(member.get("hp", 0)), int(member.get("maxHp", 0))], 14, UI.BAD if hurt else UI.DIM))
-		if int(member.get("maxMp", 0)) > 0:
-			row.add_child(UI.label("MP %d/%d" % [int(member.get("mp", 0)), int(member.get("maxMp", 0))], 14, UI.DIM))
-		col.add_child(row)
-	return UI.card(col)
-
 func _wounds_summary(party: Array) -> String:
 	var parts := []
 	for member in party:
@@ -396,6 +448,44 @@ func _close_service() -> void:
 	_service = ""
 	_loot_pending = ""
 	_event_text = ""
+	_rebuild()
+
+# --- the town MENU: settings + leave-to-title, reachable from anywhere in the square (playtest: "メニュー
+# ボタンがない？"). An overlay over the square (cancel closes it back), NOT a scene change — so the run
+# is never lost by peeking at the options. Reuses the shared ConfigPanel the title/combat settings use.
+func _open_menu() -> void:
+	_menu_open = true
+	for child in _service_layer.get_children():
+		child.queue_free()
+	var scrim := ColorRect.new()
+	scrim.color = Color(0, 0, 0, 0.8)
+	scrim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_service_layer.add_child(scrim)
+
+	var panel := PanelContainer.new()
+	panel.add_theme_stylebox_override("panel", UI.panel_style(UI.PANEL_BG, UI.GOLD))
+	panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	panel.custom_minimum_size = Vector2(560, 0)
+	_service_layer.add_child(panel)
+
+	var col := UI.col(14)
+	col.add_child(UI.label(I18n.t("town.menu"), 26, UI.GOLD))
+	var built := ConfigPanel.build(ConfigPanel.load_settings(), func(): _open_menu())
+	col.add_child(built["control"])
+	col.add_child(UI.button(I18n.t("town.leaveToTitle"), func(): get_tree().change_scene_to_file("res://scenes/title.tscn"), Vector2(300, 46), 16))
+	var close := UI.button(I18n.t("town.closeMenu"), func(): _close_menu(), Vector2(300, 46), 16)
+	col.add_child(close)
+	panel.add_child(col)
+	_service_layer.visible = true
+	var focus: Control = built["first"] if built["first"] != null else close
+	if focus:
+		focus.call_deferred("grab_focus")
+
+func _close_menu() -> void:
+	_menu_open = false
+	_service_layer.visible = false
+	for child in _service_layer.get_children():
+		child.queue_free()
 	_rebuild()
 
 # Manual save (slot 3) from the 記録の間 — the town/stairs autosaves are 1 and 2.
@@ -465,7 +555,10 @@ func _build_service() -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if not event.is_action_pressed("cancel"):
 		return
-	if _service != "":
+	if _menu_open:
+		_close_menu()
+		get_viewport().set_input_as_handled()
+	elif _service != "":
 		if _service == "loot" and _loot_pending != "":
 			_loot_pending = ""
 			_rebuild()

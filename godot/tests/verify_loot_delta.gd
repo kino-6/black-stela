@@ -1,8 +1,10 @@
 extends SceneTree
-## gate:loot-delta (IMP-045 / playtest #3) — the RETURN ledger must report only what the party BROUGHT
-## BACK, not the supplies it carried down. verify_debug_fixtures locks the loot_delta STATE (gained item
-## present, baseline excludes it); this locks the same contract on the real TOWN SCENE: the 持ち帰った物
-## row shows the gained item and NOT an untouched descent supply, and the gain reaches the screen.
+## gate:loot-delta (IMP-045 / playtest #3) — the brought-back accounting must report only what the party
+## BROUGHT BACK, not the supplies it carried down. verify_debug_fixtures locks the loot_delta STATE (gained
+## item present, baseline excludes it); this locks the same CONTRACT on the real TOWN SCENE's shared helper:
+## 持ち帰った物 = the gained item and NOT an untouched descent supply, while the supplies view still lists it.
+## (The arrival square no longer prints a 持ち帰った物 row — it was dropped as clutter in the town redesign,
+## the loot lives in the inventory/聖遺物 view — so this locks the computation the loot views share, not a row.)
 ## Run: godot --headless --path godot/ --script res://tests/verify_loot_delta.gd
 
 const Fixtures := preload("res://scripts/debug_fixtures.gd")
@@ -44,18 +46,7 @@ func _run() -> void:
 	_check(not brought.contains(carried), "the untouched descent supply (%s) is NOT reported as brought back (#3)" % carried)
 	_check(supplies.contains(carried), "the supplies row still lists the carried item (baseline is subtracted only for loot)")
 
-	# And it actually reaches the rendered screen, not just the helper.
-	_check(_tree_has_text(town, gained), "the gained item is rendered on the arrival screen")
-
 	town.queue_free()
-
-func _tree_has_text(node: Node, needle: String) -> bool:
-	if node is Label and String((node as Label).text).contains(needle):
-		return true
-	for c in node.get_children():
-		if _tree_has_text(c, needle):
-			return true
-	return false
 
 func _check(ok: bool, label: String) -> void:
 	if ok:

@@ -97,14 +97,14 @@ export function TownEntryPanel({
       data-controller-active="true"
       data-controller-surface="town-entry"
     >
-      {/* A party that has never gone below is not "back". The town used to greet a fresh
-          six with "Town return", a "Return record" reading `Rook joined the roster.` (the last
-          log line, which for a new party is the last recruit), no wounds, nothing carried, and
-          the news that they could descend AGAIN. Nothing had happened yet. */}
+      {/* The heading is the PLACE, not a tutorial. "初めて潜る前に / まだ誰も潜っていません" nagged and broke the
+          mood even with a party already formed (playtest); the world's own title reads as somewhere you ARE,
+          and a fresh party is simply one with no return line yet (never a "Town return" greeting). One quiet
+          line below carries what CHANGED last trip — never an instruction to go form a party. */}
       <div className="service-heading">
         <div>
-          <h3 id="town-status-heading">{firstDeparture ? t("town.departureHeading") : t("town.statusHeading")}</h3>
-          <p>{firstDeparture ? t("town.departureCopy") : t("town.statusCopy")}</p>
+          <h3 id="town-status-heading">{world.locales?.[locale]?.title ?? world.title}</h3>
+          {!firstDeparture && latestLogText && <p data-testid="town-return-note">{latestLogText}</p>}
         </div>
         <strong>{t("town.gold", { gold: partyGold })}</strong>
       </div>
@@ -112,21 +112,13 @@ export function TownEntryPanel({
         {/* The town-hub still (P7) IS the scene now — the old CSS stand-in props
             (skyline/gate/lanterns/stela/steps) would sit on top of a real town. */}
         <div className="town-scene" aria-hidden="true" />
-        {/* Before the first descent the "初めて潜る前に" heading already says everything a fresh party needs
-            (form up at the guild, then go). The 一党 / 手持ち / 次の支度 rows restated it and read as clutter
-            (playtest: "この情報いらない"), so the first-departure state shows just the heading. The RETURN
-            ledger — what came back and what to do about it — stays, because that is genuinely new each time. */}
-        {/* The return ledger is now just what CHANGED: the trip result and any wounds. 持ち帰った物 (its own
-            聖遺物 service shows it) and 次の支度 (a restatement of "you can dive again") were clutter — playtest. */}
-        {!firstDeparture && (
+        {/* The only ledger left is a wound line, and only when someone is actually hurt — an ACTION to take
+            (visit the infirmary), not a permanent restatement. 帰還記録 / 次の支度 / 持ち帰った物 were clutter. */}
+        {injuredMembers.length > 0 && (
           <dl className="town-status-ledger" data-testid="town-return-ledger">
             <div>
-              <dt>{t("town.expeditionResult")}</dt>
-              <dd>{latestLogText || t("town.readyToDescend")}</dd>
-            </div>
-            <div>
               <dt>{t("town.wounds")}</dt>
-              <dd>{injuredMembers.length > 0 ? injuredMembers.map((member) => `${member.name} ${member.hp}/${member.maxHp}`).join(" / ") : t("town.noWounds")}</dd>
+              <dd>{injuredMembers.map((member) => `${member.name} ${member.hp}/${member.maxHp}`).join(" / ")}</dd>
             </div>
           </dl>
         )}
