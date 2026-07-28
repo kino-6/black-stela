@@ -5,15 +5,19 @@ encounterTables:
   - id: encounters.verdant.g1.pack
     floorId: dungeon.verdant.g1f
     groupsMax: 2
+    # 3+ types so a groupsMax:2 roll (which picks DISTINCT types) VARIES — with only 2 types it always drew
+    # both, so every fight was the same moss-mite+spore-gnat pair (playtest: "出てくる敵が全部同じ").
     entries:
       - { enemyId: enemy.verdant.g1.moss-mite, weight: 10, minCount: 2, maxCount: 3 }
-      - { enemyId: enemy.verdant.g1.spore-gnat, weight: 7, minCount: 1, maxCount: 2 }
+      - { enemyId: enemy.verdant.g1.spore-gnat, weight: 8, minCount: 1, maxCount: 2 }
+      - { enemyId: enemy.verdant.g2.thorn-crawler, weight: 4, minCount: 1, maxCount: 1 }
   - id: encounters.verdant.g2.pack
     floorId: dungeon.verdant.g2f
     groupsMax: 2
     entries:
       - { enemyId: enemy.verdant.g1.spore-gnat, weight: 8, minCount: 2, maxCount: 3 }
       - { enemyId: enemy.verdant.g2.thorn-crawler, weight: 10, minCount: 1, maxCount: 2 }
+      - { enemyId: enemy.verdant.g2.spore-caster, weight: 5, minCount: 1, maxCount: 1 }
   - id: encounters.verdant.g3.pack
     floorId: dungeon.verdant.g3f
     groupsMax: 2
@@ -56,6 +60,7 @@ encounterTables:
     entries:
       - { enemyId: enemy.verdant.g7.husk-spawn, weight: 10, minCount: 1, maxCount: 2 }
       - { enemyId: enemy.verdant.g6.thorn-cutter, weight: 6, minCount: 1, maxCount: 2 }
+      - { enemyId: enemy.verdant.g4.pollen-drifter, weight: 4, minCount: 1, maxCount: 1 }
   # ---- keep chokes (single miniboss/boss) ----
   - id: encounters.verdant.g3.keep
     floorId: dungeon.verdant.g3f

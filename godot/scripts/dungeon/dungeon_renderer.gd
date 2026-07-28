@@ -249,11 +249,7 @@ static func _add_chamber_landmarks(parent: Node, base: Vector3, floor_mat: Mater
 	centre.bottom_radius = 0.72
 	centre.height = 0.028
 	_add_mesh(parent, centre, floor_mat, base + Vector3(0, 0.083, 0))
-	var seal := CylinderMesh.new()
-	seal.top_radius = 0.22
-	seal.bottom_radius = 0.22
-	seal.height = 0.018
-	_add_mesh(parent, seal, _emissive_mat(accent.lightened(0.08), 0.08), base + Vector3(0, 0.106, 0))
+	# (No central emissive seal — it read as a "謎の黄色の点" floating in the room, playtest.)
 	# The raised ceiling is part of the room's promise, not empty vertical space. Its subdued root-crown
 	# echoes the floor seal overhead, so an approaching player reads the chamber before the floor mark is
 	# underfoot. It is architectural (flat to the ceiling), never a floating treasure prop.

@@ -850,7 +850,7 @@ func _rebuild_stage() -> void:
 	if ConfigPanel.spotlight_actor() and _stage in ["command", "skill", "spell", "item", "target-group", "target-ally"]:
 		var actor := _acting_member()
 		if not actor.is_empty():
-			_stage_layer.add_child(CombatStage.actor_figure(actor, _enemy_stage_rect, _texture(_portrait_path(actor))))
+			_stage_layer.add_child(CombatStage.actor_figure(actor, _enemy_stage_rect, WorldResources.portrait_texture(String(actor.get("portraitRef", "")), _portrait_path(actor))))
 
 	var groups: Array = _combat().get("enemyGroups", [])
 	if groups.is_empty():

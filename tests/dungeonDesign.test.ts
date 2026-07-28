@@ -192,19 +192,20 @@ describe("dungeon design gate", () => {
         });
       }
 
-      it("rule — a 玄室-dense floor's pack has ≥2 enemy types (playtest: chambers must not all be the same foe)", () => {
-        // With 6-8 玄室 sharing one pack table, a single-type table made EVERY chamber the same fight
-        // ("常時同じ敵"). Any floor carrying ≥2 chamberGuardian rooms must draw from ≥2 distinct enemy types
-        // so the chambers vary.
+      it("rule — a 玄室-dense floor's pack varies its foes (playtest: chambers must not all be the same fight)", () => {
+        // With 6-8 玄室 sharing one pack table, a samey table made EVERY chamber the same fight. A groupsMax≥2
+        // roll picks DISTINCT types, so a 2-type table ALWAYS drew both (identical pairs every time — playtest
+        // "出てくる敵が全部同じ"): such a table needs ≥3 types to vary. A single-pick table needs ≥2.
         for (const floor of world.dungeons) {
           const chambers = floor.rooms.filter((r) => (r as { chamberGuardian?: boolean }).chamberGuardian).length;
           if (chambers < 2) continue;
           const table = (world.encounterTables ?? []).find((t) => t.floorId === floor.id && (t.entries?.length ?? 0) > 0);
           const distinctTypes = new Set((table?.entries ?? []).map((e) => e.enemyId)).size;
+          const need = (table?.groupsMax ?? 1) >= 2 ? 3 : 2;
           expect(
             distinctTypes,
-            `${world.id} ${floor.id} has ${chambers} 玄室 but its pack table draws only ${distinctTypes} enemy type(s)`
-          ).toBeGreaterThanOrEqual(2);
+            `${world.id} ${floor.id} (${chambers} 玄室, groupsMax ${table?.groupsMax ?? 1}) draws only ${distinctTypes} type(s) — needs ${need}`
+          ).toBeGreaterThanOrEqual(need);
         }
       });
 

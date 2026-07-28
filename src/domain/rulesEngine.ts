@@ -2231,6 +2231,7 @@ export function resolveEncounterTable(world: ScenarioWorld, tableId: string, see
   // A designed multi-group table (groupsMax >= 2) reliably fields its full spread of
   // distinct types — with only ~one fight per floor under first contact, a coin-flip
   // group count would too often hide the mixed fight. Single tables field one group.
+  // TODO(next session): make this a groupsMin..groupsMax RANGE (scenario-tunable) so type-count varies.
   const groupCount = groupsMax;
 
   const remaining = [...table.entries];
