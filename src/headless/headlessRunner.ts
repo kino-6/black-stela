@@ -192,6 +192,16 @@ export function debugAutoExplore(initialState: GameState, world: ScenarioWorld, 
       }
       const next = executeCommand(current, world, decision.command);
       if (decision.command.type === "move_forward" && current.position && next.position?.roomId === current.position.roomId) {
+        // A closed 玄室 door swallows the FIRST step forward — it just opens, leaving the party in place —
+        // and admits it on the second. Recording that facing as a wall (as a genuinely blocked move is)
+        // would make auto-explore shun every door, stranding it in a door-sealed pocket. So on a door_opened
+        // we advance the state (the door is now open) and let the next pass re-pick this facing and step
+        // through; only a real dead-end (no door_opened) is remembered as blocked.
+        const openedDoor = next.log.at(-1)?.event?.type === "door_opened";
+        if (openedDoor) {
+          current = next;
+          continue;
+        }
         blockedMoves.add(`${current.position.roomId}:${current.position.facing}`);
       }
       if (next.discoveredSecrets.length !== current.discoveredSecrets.length) {

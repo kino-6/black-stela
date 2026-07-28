@@ -255,6 +255,7 @@ const encounterTableSchema = z.object({
   // How many distinct enemy groups a roll may field at once (FC-style multi-group
   // fights). Default 1 = single group. Capped at the number of distinct entries.
   groupsMax: z.number().int().positive().optional(),
+  groupsMin: z.number().int().positive().optional(),
   // When true, this table's rolls IGNORE the first-contact suppression (floorClearedEnemies), so its
   // enemy types keep appearing instead of the floor going silent once each has been met. Default
   // (omitted/false) = the deliberate first-contact model. Lets a scenario choose "always-populated"

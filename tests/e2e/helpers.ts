@@ -432,8 +432,13 @@ export async function advanceToB1fMarkerViaNeedle(page: Page) {
   await walkB1fPath(page, B1F_NEEDLE_TO_WARDEN);
 }
 
-/** Boot straight into a debug run (skips guild/town), optionally on a given floor/world. */
-export async function startDebugRun(page: Page, options: { progress?: string; world?: string } = {}) {
+/** Boot straight into a debug run (skips guild/town), optionally on a given floor/world.
+ *  `at`/`facing` start the party on an exact cell (App's withDebugStartCell override) — used to reach a
+ *  room that ordinary navigation can't reliably land on, e.g. a door-sealed guardpost off the main path. */
+export async function startDebugRun(
+  page: Page,
+  options: { progress?: string; world?: string; at?: string; facing?: string } = {}
+) {
   const params = new URLSearchParams({ debug: "1" });
   if (options.progress) {
     params.set("progress", options.progress);
@@ -441,11 +446,22 @@ export async function startDebugRun(page: Page, options: { progress?: string; wo
   if (options.world) {
     params.set("world", options.world);
   }
+  if (options.at) {
+    params.set("at", options.at);
+  }
+  if (options.facing) {
+    params.set("facing", options.facing);
+  }
   await page.goto(`/?${params.toString()}`);
   await expect(page.getByTestId("dungeon-canvas").first()).toBeVisible();
 }
 
-/** Walk the floor until something jumps us. Wandering encounters make this reliable. */
+/** Walk the floor until something jumps us. Wandering encounters make this reliable.
+ *  Doors are bump-to-open (玄室 redesign): a closed door swallows the first step forward (it just opens) and
+ *  admits the party only on the SECOND. So the walk leans hard on consecutive forwards — five ArrowUps, then
+ *  one turn — which opens-then-enters a door before it changes heading. Turning after every fourth (the pre-
+ *  door pattern) could pivot away in the gap between opening a door and stepping through it, stranding the
+ *  walker in a door-sealed pocket (Verdant g2f traps that walker in ~5 cells). */
 export async function walkUntilCombat(page: Page, maxSteps = 220) {
   for (let step = 0; step < maxSteps; step += 1) {
     if ((await page.getByTestId("combat-enemy-group").count()) > 0) {
@@ -454,7 +470,7 @@ export async function walkUntilCombat(page: Page, maxSteps = 220) {
     }
     // IMP-029 — a treasure/chamber chest holds the cell (arrows navigate it); Leave it so the walk moves on.
     await dismissChestIfPresent(page);
-    await page.keyboard.press(step % 5 === 4 ? "ArrowLeft" : "ArrowUp");
+    await page.keyboard.press(step % 6 === 5 ? "ArrowLeft" : "ArrowUp");
     await page.waitForTimeout(90);
   }
   throw new Error("walked the floor without meeting anything");

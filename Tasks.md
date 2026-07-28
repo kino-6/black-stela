@@ -4,33 +4,44 @@ Rapid-fire playtest backlog, to be completed one at a time with verification + a
 prevents recurrence. Ordered by the agreed priority (A first). Tick items as they land.
 
 ---
-## ▶▶ NEXT SESSION QUEUE — playtest 2026-07-28 (process sequentially)
+## ✅ NEXT SESSION QUEUE — playtest 2026-07-28 — ALL SIX DONE (gate:final GREEN: 687 unit + 139 e2e)
 Build/run reminder: `npm run export:godot && npm run play` (godot/data is GITIGNORED — `npm run play` alone
 uses STALE data). Truth gate `npm run gate:final`. Self-build + verify before handoff (AGENTS.md rule).
 
-1. **勝利後に宝箱が出ない / 再戦バグ (#1+#7) — INVESTIGATED: rules are CORRECT.** A Godot probe (enter chamber
-   → win) gave `chests=1` for the chamber, and re-fight is gated on that chest. TS sim agrees. So the
-   implementation works at the rules level. MOST LIKELY the user's `godot/data` was stale (no `export:godot`).
-   NEXT: have the user run `export:godot`; if the chest still doesn't SHOW, the bug is in the UI/scene, not the
-   rules — check `dungeon.gd current_chest()` after victory→`_continue_after_combat` (resumePosition vs the
-   chest's cell) and the dock rebuild. Also: the chest may sit on the anchor cell while the party lands on a
-   different 2×2 cell.
-2. **玄室の囲い込みが緩い.** carveEnclosedChamber's BFS guard often leaves 2 open sides + 1 door (walling more
-   would disconnect), so the door is bypassable. NEXT: brace the maze harder near each chamber (more braiding)
-   OR force a single opening and re-braid on disconnect, so the door is the SOLE entrance.
-3. **罠処理 (盗賊).** Side-玄室 chests are `treasureTable` only (no trap); only the keep is trapped. NEXT: add
-   traps to some 玄室 chests so investigate/disarm (thief) matters. (The "no trap" report is partly a
-   consequence of #1 — no chest, no trap.)
-4. **全滅 with a member at HP 1 (#4) — INVESTIGATED: dead enemies do NOT act** (party resolves first, only
-   `livingGroups` with count>0 act — rulesEngine ~1454/1522). NEXT: check the WIPE condition — why 全滅 fired
-   with ルーク at HP 1/29 (injury status? last-member edge? display artifact?). Not a "HP0 acts" bug.
-5. **ランダム生成が Godot に無い (#5).** React has quick/random full-character generation; the Godot guild is
-   staged-only. NEXT: add a random-generate affordance to guild.gd (mirror React's quick-gen), ux-parity-safe.
-6. **encounter roll = groupsMin..groupsMax RANGE (scenario-tunable).** The roll fixes type-count at groupsMax
-   (2 types → always both). Stopgap shipped: 3rd types on g1/g2/g8 + a ≥3-types gate. PROPER fix: add
-   `groupsMin` to the schema/type + roll `[groupsMin, groupsMax]` in TS `resolveEncounterTable` AND Godot
-   `resolve_encounter_table` (a TODO marker is left in rulesEngine.ts); re-record parity. Then the ≥3 gate can
-   relax to ≥2.
+1. **勝利後に宝箱が出ない / 再戦バグ (#1+#7) — DONE** (`b00c03e`): rules were correct; root cause was stale
+   `godot/data`. Locked with a regression test (chest on party cell after `continue_after_combat`).
+2. **玄室の囲い込みが緩い — DONE** (`b00c03e`): every remaining opening becomes a CLOSED DOOR (bypass=0 on
+   every floor) under the BFS connectivity guard.
+3. **罠処理 (盗賊) — DONE** (`74547fb`): ~half of plain-玄室 chests carry a snare trap (difficulty 11+n).
+4. **全滅 with a member at HP 1 (#4) — DONE** (`0b0aeda`): a downed member is stored at hp:1+injury but now
+   DISPLAYS HP 0 everywhere (React strip + Godot combat/dungeon HUDs). Dead enemies never act (confirmed).
+5. **ランダム生成が Godot に無い (#5) — DONE** (`3682788`): `Draft.randomize` deals a complete random adventurer
+   (class/来歴/気質/顔/name, full bonus pool spent → registerable); a 見繕う button on the guild briefing.
+6. **encounter roll = groupsMin..groupsMax RANGE (#6) — DONE** (`this commit`): `groupsMin` added to
+   schema/type + rolled in TS `resolveEncounterTable` AND Godot `resolve_encounter_table` (parity re-recorded,
+   PASS). groupsMin DEFAULTS TO groupsMax so the knob is INERT on existing balance — a scenario dials groupsMin
+   below groupsMax to opt into lone-foe variety (a naive default-1 dropped early-floor damage; the town-recovery
+   gate caught it). The variety gate now scales its type requirement to the roll shape.
+
+### Gate:final fallout from THIS session's earlier door/enclosure work (all fixed this commit)
+Running the FULL gate (not just changed specs) surfaced 9 e2e reds from earlier-session commits that shipped
+without a full `gate:final` — a live reminder of the truth-gate rule. Fixed:
+- **auto-explore treated every closed door as a wall** (`debugAutoExplore` blocklisted a non-advancing
+  move_forward — but a door swallows the first step). Real PLAYER-FACING bug (R/Space uses the same fn). Fixed
+  to step through on `door_opened`. THIS is why 玄室 floors felt sealed.
+- `walkUntilCombat` (e2e helper) wedged in door-sealed pockets → now 5-forward-then-turn so a bump-opened door
+  gets entered before the walker pivots away.
+- `combat-stall-verify` couldn't reach the door-sealed 番所 (auto-explore avoids squads; keep isn't a hard
+  choke) → starts ON the keep cell via debug `at=` and steps to re-trigger the guardian.
+- `selfplay` asserted the removed 次の支度 ledger row (`f0f616d` dropped it) → asserts the Wounds row now.
+- `combat-layout` @1920 flagged a mark's UNCLIPPED box; marks are `overflow:hidden`-clipped to the stage
+  (above the HUD) → test clamps to the stage's visible bottom.
+
+### ⤷ Open nit for CODEX (visual lane): 棘虫 nameplate clipped at 1080p on g4f
+On a 2-group g4f fight at 1920×1080 the big 棘虫 (thorn-crawler) grounds so low its nameplate + HP bar fall
+below the `.enemy-stage` clip (stageBottom ~616) and aren't painted, while the 花粉の靄 label shows fine. Not
+a HUD-overlap (nothing sits behind the command band) — a grounding/anchor polish for a large front-grounded
+foe. Codex owns combat-stage grounding/size (tune `size`/anchor in data, never re-order art).
 
 ---
 ## ✅ 玄室 redesign COMPLETE (phases A–C) — enclosed 2×2 rooms + closed-door gimmick + cleared visual

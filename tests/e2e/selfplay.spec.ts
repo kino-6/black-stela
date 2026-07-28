@@ -162,8 +162,11 @@ test("browser self-play completes the visible dungeon loop without headless shor
       await expect(page.getByText("The party returns to town.")).toBeVisible();
       await expect(page.getByTestId("town-cockpit")).toBeVisible();
       await expect(page.getByRole("heading", { name: "Adventurer Registration" })).toHaveCount(0);
+      // The return ledger is now just what CHANGED — the trip result and any wounds. The old
+      // 次の支度/持ち帰った物 ("Next preparation") rows were dropped as clutter (playtest), so assert the
+      // Wounds row that replaced them rather than the removed heading.
       await expect(page.getByText("Return record")).toBeVisible();
-      await expect(page.getByText("Next preparation", { exact: true })).toBeVisible();
+      await expect(page.getByTestId("town-return-ledger").getByText("Wounds")).toBeVisible();
       await capture("post-return-town");
 
       await openTownService(page, "Shop");

@@ -193,18 +193,25 @@ describe("dungeon design gate", () => {
       }
 
       it("rule — a 玄室-dense floor's pack varies its foes (playtest: chambers must not all be the same fight)", () => {
-        // With 6-8 玄室 sharing one pack table, a samey table made EVERY chamber the same fight. A groupsMax≥2
-        // roll picks DISTINCT types, so a 2-type table ALWAYS drew both (identical pairs every time — playtest
-        // "出てくる敵が全部同じ"): such a table needs ≥3 types to vary. A single-pick table needs ≥2.
+        // With 6-8 玄室 sharing one pack table, a samey table made EVERY chamber the same fight. The number of
+        // distinct types a fight fields is rolled in [groupsMin, groupsMax] (resolveEncounterTable); groupsMin
+        // defaults to groupsMax. So the floor must field enough types to actually VARY the composition:
+        //  · a range (groupsMin < groupsMax): the count varies → ≥2 types is enough (lone foe OR the pair);
+        //  · a PINNED pack (groupsMin === groupsMax === k, k≥2): the fight always draws k DISTINCT types, so it
+        //    only varies if there are MORE than k to choose from → needs k+1 (2 types + a 2-pick = same pair
+        //    every time = the "全部同じ" report);
+        //  · a single pick (groupsMax < 2): needs ≥2 types so which lone foe appears can differ.
         for (const floor of world.dungeons) {
           const chambers = floor.rooms.filter((r) => (r as { chamberGuardian?: boolean }).chamberGuardian).length;
           if (chambers < 2) continue;
           const table = (world.encounterTables ?? []).find((t) => t.floorId === floor.id && (t.entries?.length ?? 0) > 0);
           const distinctTypes = new Set((table?.entries ?? []).map((e) => e.enemyId)).size;
-          const need = (table?.groupsMax ?? 1) >= 2 ? 3 : 2;
+          const groupsMax = (table as { groupsMax?: number } | undefined)?.groupsMax ?? 1;
+          const groupsMin = (table as { groupsMin?: number } | undefined)?.groupsMin ?? groupsMax;
+          const need = groupsMax < 2 ? 2 : groupsMin >= groupsMax ? groupsMax + 1 : 2;
           expect(
             distinctTypes,
-            `${world.id} ${floor.id} (${chambers} 玄室, groupsMax ${table?.groupsMax ?? 1}) draws only ${distinctTypes} type(s) — needs ${need}`
+            `${world.id} ${floor.id} (${chambers} 玄室, groups ${groupsMin}..${groupsMax}) draws only ${distinctTypes} type(s) — needs ${need}`
           ).toBeGreaterThanOrEqual(need);
         }
       });

@@ -2228,11 +2228,14 @@ export function resolveEncounterTable(world: ScenarioWorld, tableId: string, see
   }
 
   const groupsMax = Math.min(Math.max(1, table.groupsMax ?? 1), table.entries.length);
-  // A designed multi-group table (groupsMax >= 2) reliably fields its full spread of
-  // distinct types — with only ~one fight per floor under first contact, a coin-flip
-  // group count would too often hide the mixed fight. Single tables field one group.
-  // TODO(next session): make this a groupsMin..groupsMax RANGE (scenario-tunable) so type-count varies.
-  const groupCount = groupsMax;
+  // The number of DISTINCT types a fight fields is ROLLED in [groupsMin, groupsMax], both scenario-tunable
+  // (playtest #6: "１〜３種の選択…調整可能"). groupsMin DEFAULTS TO groupsMax — a table fields its full spread
+  // unless it opts down — so this knob is inert on existing balance; drop groupsMin below groupsMax and a
+  // 2-type/groupsMax:2 pack starts rolling a lone stalker OR the pair. A dedicated `:groups` seed keeps the
+  // count independent of which types get picked. (groupsMax draws DISTINCT types, so a 2-of-3 table already
+  // varies WHICH pair without touching groupsMin — that alone answered the "全部同じ" report.)
+  const groupsMin = Math.min(Math.max(1, table.groupsMin ?? groupsMax), groupsMax);
+  const groupCount = groupsMin + (hashSeed(`${tableId}:${seed}:groups`) % (groupsMax - groupsMin + 1));
 
   const remaining = [...table.entries];
   const chosen: typeof table.entries = [];

@@ -134,9 +134,14 @@ static func resolve_encounter_table(world: Dictionary, table_id: String, seed_va
 
 	var entries: Array = table["entries"]
 	var groups_max := mini(maxi(1, int(_or(table, "groupsMax", 1))), entries.size())
+	# Distinct-type count is ROLLED in [groups_min, groups_max] (both scenario-tunable) — the mirror of
+	# rulesEngine.resolveEncounterTable. groups_min DEFAULTS TO groups_max (inert on existing balance); a
+	# table drops it below groups_max to roll a lone foe OR the pair.
+	var groups_min := mini(maxi(1, int(_or(table, "groupsMin", groups_max))), groups_max)
+	var group_count := groups_min + (CombatRng.hash_seed("%s:%d:groups" % [table_id, seed_value]) % (groups_max - groups_min + 1))
 	var remaining := entries.duplicate()
 	var chosen := []
-	for picked in range(groups_max):
+	for picked in range(group_count):
 		if remaining.is_empty():
 			break
 		var total_weight := 0

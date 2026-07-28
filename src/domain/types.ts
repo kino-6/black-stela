@@ -1079,7 +1079,12 @@ export interface ShopStockItem {
 export interface EncounterTable {
   id: string;
   floorId?: string;
+  /** How many DISTINCT enemy types a fight fields is rolled in [groupsMin, groupsMax] (both tunable per
+   *  scenario). groupsMax caps the spread; groupsMin FLOORS it and DEFAULTS TO groupsMax — a table fields
+   *  its full spread unless it opts down, so the knob is inert on existing balance. Set groupsMin below
+   *  groupsMax and a 2-type/groupsMax:2 table rolls a lone foe OR the pair. */
   groupsMax?: number;
+  groupsMin?: number;
   /** When true, rolls ignore first-contact suppression so this table's foes keep appearing instead of
    *  the floor going silent once each type has been met (playtest #20). Omitted/false = first-contact. */
   respawns?: boolean;
