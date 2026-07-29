@@ -80,6 +80,15 @@ func _initialize() -> void:
 	for i in 4:
 		await process_frame
 	_check(_valid(d.get("_party_menu")), "隊列 opens over the dungeon")
+	# playtest 2026-07-29: switching to the 装備 tab (or any tab) must never leave the controller with
+	# nothing focused. The safety net grabs the first usable control on every rebuild.
+	d.call("set", "_party_page", "equipment")
+	d.call("_refresh_party_menu")
+	for i in 4:
+		await process_frame
+	var focus_owner: Control = get_root().get_viewport().gui_get_focus_owner()
+	var menu: Node = d.get("_party_menu")
+	_check(_valid(menu) and focus_owner != null and menu.is_ancestor_of(focus_owner), "the 装備 tab keeps a focused control (no soft-lock)")
 	d.call("_input", _pressed("cancel"))
 	for i in 4:
 		await process_frame

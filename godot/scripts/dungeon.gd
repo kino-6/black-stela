@@ -722,6 +722,32 @@ func _toggle_party_menu() -> void:
 	_party_menu = layer
 	if focus_target:
 		focus_target.call_deferred("grab_focus")
+	# Focus safety net (playtest 2026-07-29): a tab switch rebuilds the panel, and if the new page's hint
+	# ever fails to land, the controller is left with nothing focused — a soft-lock. After the frame settles,
+	# guarantee SOME focusable control in the panel holds the cursor. "Every screen hands the cursor a place
+	# to land" (.claude/skills/controller-first-ui).
+	call_deferred("_ensure_focus_in", panel)
+
+# Guarantee the cursor is on a usable control inside `root` — if nothing focusable already holds it, grab
+# the first enabled, visible button. The backstop that keeps a rebuilt menu (a tab switch) operable.
+func _ensure_focus_in(root: Node) -> void:
+	if not is_instance_valid(root):
+		return
+	var owner: Control = get_viewport().gui_get_focus_owner()
+	if owner != null and is_instance_valid(owner) and root.is_ancestor_of(owner):
+		return
+	var first := _first_focusable(root)
+	if first != null:
+		first.grab_focus()
+
+func _first_focusable(node: Node) -> Control:
+	for c in node.get_children():
+		if c is Button and (c as Button).focus_mode != Control.FOCUS_NONE and not (c as Button).disabled and (c as Control).is_visible_in_tree():
+			return c
+		var deeper := _first_focusable(c)
+		if deeper != null:
+			return deeper
+	return null
 
 func _refresh_party_menu() -> void:
 	if _party_menu and is_instance_valid(_party_menu):
