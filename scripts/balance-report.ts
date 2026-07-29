@@ -56,12 +56,17 @@ function reportWorld(world: ScenarioWorld, level: number, sizes: number[]) {
   console.log(`  PARTY-SIZE      : full(${psv.fullSize}) clears @Lv${psv.fullMinLevel}, solo(${psv.soloSize}) @Lv${psv.soloMinLevel}  →  levelsCost=${psv.levelsCost}  (Wiz attrition: large, but a path remains)`);
   console.log(`  PROVISION (kit) : bare clears @Lv${pv.bareMinLevel}, kitted @Lv${pv.kittedMinLevel}  →  levelsSaved=${pv.levelsSaved}  (>0 = the kit buys survival; too large = consumables faceroll)`);
 
-  // Trough matrix: rows = floors, cols = (size × prepared) + full-naive, none-heal at `level`.
-  const cols: { label: string; run: ReturnType<typeof simulateDescent> }[] = [];
-  for (const size of sizes) {
-    cols.push({ label: `${size}p·prep`, run: simulateDescent(world, { heal: "none", policy: "prepared", startLevel: level, partySize: size }) });
+  // Trough matrix: the band is designed against MID (the party a player actually fields); naive and
+  // prepared bracket it as the wipe/clear bounds. Then the party-size sweep under mid.
+  const full = sizes[0];
+  const cols: { label: string; run: ReturnType<typeof simulateDescent> }[] = [
+    { label: `${full}p·mid`, run: simulateDescent(world, { heal: "none", policy: "mid", startLevel: level, partySize: full }) },
+    { label: `${full}p·naive`, run: simulateDescent(world, { heal: "none", policy: "naive", startLevel: level, partySize: full }) },
+    { label: `${full}p·prep`, run: simulateDescent(world, { heal: "none", policy: "prepared", startLevel: level, partySize: full }) }
+  ];
+  for (const size of sizes.slice(1)) {
+    cols.push({ label: `${size}p·mid`, run: simulateDescent(world, { heal: "none", policy: "mid", startLevel: level, partySize: size }) });
   }
-  cols.push({ label: `${sizes[0]}p·naive`, run: simulateDescent(world, { heal: "none", policy: "naive", startLevel: level, partySize: sizes[0] }) });
 
   const floors = world.dungeons.map((d) => d.id);
   console.log(`\n  TROUGH (lowest mid-fight HP%, none-heal, startLv=${level}) vs act target:`);
@@ -89,9 +94,9 @@ function reportEconomy(world: ScenarioWorld, level: number, floors: string[]) {
     console.log(`\n  RESOURCE-ECONOMY: (no balance.economy authored — modern no-scarcity)`);
     return;
   }
-  const run = simulateDescent(world, { heal: "none", policy: "prepared", startLevel: level, provision: true });
+  const run = simulateDescent(world, { heal: "none", policy: "mid", startLevel: level, provision: true });
   const cap = world.balance.economy.carryCap;
-  console.log(`\n  RESOURCE-ECONOMY (full prepared party, provisioned, none-heal, startLv=${level}):`);
+  console.log(`\n  RESOURCE-ECONOMY (full MID party, provisioned, none-heal, startLv=${level}):`);
   console.log(
     `    kit cost ${run.kitCost}g  ·  dive income ${run.totalGold}g  ·  economy balance ${
       Number.isFinite(run.economyBalance) ? `${run.economyBalance.toFixed(1)}× re-provision` : "n/a"

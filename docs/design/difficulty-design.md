@@ -35,6 +35,15 @@ so escaping the squeeze *is* the felt growth. Authored per act (see schema).
 
 ## The design axes and their sim metrics
 
+**Which party the bands target — the `mid` policy.** The sim runs three loadout policies. `naive` = no
+counterplay (the wipe lower bound). `prepared` = swaps the OPTIMAL counter weapon + resist for EVERY
+fight — an upper bound no human reaches, and with a high `counterplayBoost` it *facerolls* weak-to-counter
+foes (that faceroll IS where "preparation is worth ~N levels" comes from, so its early curve reads ~100%
+by design). Neither extreme is the party a player actually fields. `mid` = one fixed general loadout (the
+best raw weapon + body, chosen once, worn all descent, no per-fight element matching). **The act-curve
+bands are designed against `mid`**; `naive`/`prepared` stay the wipe/clear bounds the prepare-or-wipe gates
+read. `sim:balance`'s trough matrix leads with the `Np·mid` column for this reason.
+
 The sim runs the real first-contact descent through the real combat engine, `none`-heal (pessimistic
 one-push lower bound), and reports per floor. Three axes, each a measurable number the knobs target:
 

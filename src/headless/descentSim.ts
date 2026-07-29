@@ -217,7 +217,13 @@ function planFloor(world: ScenarioWorld, floorId: string, seen: Set<string>): Pl
 // Two ways to play a descent, so the Gate can measure what preparation is worth. The design the
 // user set: "対策装備・対策アイテムがあればLvが多少低くてもなんとかなる … 埋める差はLv10." So we run
 // the SAME descent two ways and compare the lowest level each can clear at.
-export type SimPolicy = "naive" | "prepared";
+// Three loadout policies bracket real play. naive = brought no counterplay (lower bound). prepared =
+// swaps the OPTIMAL counter weapon + resist for EVERY fight (an upper bound no human hits — this is
+// where "preparation is worth ~N levels" comes from, and why it facerolls weak-to-counter foes).
+// mid = a realistic geared party: the single best GENERAL weapon + body, chosen ONCE and worn all
+// descent, NOT swapped per enemy. The act-curve bands are designed against `mid` — the party a player
+// actually fields — while naive/prepared stay the wipe/clear bounds the prepare-or-wipe gates read.
+export type SimPolicy = "naive" | "mid" | "prepared";
 
 // Bring a party to a target level by granting the XP for it and applying the real level-ups, so
 // stats/HP grow exactly as they would in play.
@@ -261,15 +267,52 @@ function bestResistFor(world: ScenarioWorld, enemy: Enemy): string | undefined {
   )?.id;
 }
 
-// Kit the party for THIS enemy. Prepared: the counter weapon + the resisting armour where they
-// exist. Naive: a plain physical weapon, no resist — the loadout of a party that read nothing.
+// The single best GENERAL loadout a realistic player wears for the whole descent: the highest-attack
+// weapon and the highest-defense body the world offers, chosen ONCE (not per enemy). No element
+// matching — that is the `prepared` upper bound. Memoised per world so the scan is not repeated per fight.
+const generalLoadoutCache = new WeakMap<ScenarioWorld, { weapon?: string; body?: string }>();
+function generalLoadout(world: ScenarioWorld): { weapon?: string; body?: string } {
+  const cached = generalLoadoutCache.get(world);
+  if (cached) {
+    return cached;
+  }
+  const bestBy = (predicate: (slot: string) => boolean, score: (gear: (typeof world.equipment)[number]) => number) =>
+    world.equipment
+      .filter((gear) => predicate(gear.slot))
+      .sort((a, b) => score(b) - score(a))[0]?.id;
+  const loadout = {
+    weapon: bestBy((slot) => slot === "weapon", (gear) => gear.attackBonus ?? 0),
+    body: bestBy((slot) => slot === "body", (gear) => gear.defenseBonus ?? 0)
+  };
+  generalLoadoutCache.set(world, loadout);
+  return loadout;
+}
+
+// Kit the party for THIS enemy. Prepared: the counter weapon + the resisting armour where they exist,
+// swapped per fight. Mid: one fixed general loadout, worn all descent. Naive: the starter loadout, no
+// counterplay — the loadout of a party that read nothing.
 export function equipPartyForEnemy(party: Character[], world: ScenarioWorld, enemy: Enemy, policy: SimPolicy): Character[] {
   // Naive keeps the party's own starter loadout untouched — the point is only that it brought no
-  // COUNTERPLAY, so the existing (naive) balance curve is unchanged. Prepared layers the counter
-  // weapon and the resisting armour on top, per this enemy.
+  // COUNTERPLAY, so the existing (naive) balance curve is unchanged.
   if (policy === "naive") {
     return party;
   }
+  // Mid wears the best general weapon + body, chosen once — the party a real player fields.
+  if (policy === "mid") {
+    const { weapon, body } = generalLoadout(world);
+    if (!weapon && !body) {
+      return party;
+    }
+    return party.map((member) => ({
+      ...member,
+      equipment: {
+        ...member.equipment,
+        ...(weapon ? { weapon: { id: weapon } } : {}),
+        ...(body ? { body: { id: body } } : {})
+      }
+    }));
+  }
+  // Prepared layers the per-enemy counter weapon and the resisting armour on top.
   const weapon = bestWeaponFor(world, enemy);
   const resist = bestResistFor(world, enemy);
   if (!weapon && !resist) {
