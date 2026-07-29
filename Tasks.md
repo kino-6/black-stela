@@ -110,7 +110,15 @@ clamps only the display anchor. The browser regression now requires EVERY enemy 
 stage (not merely non-overlapping the HUD), at both 1280×720 and 1920×1080.
 
 ---
-## Proposed after Codex independent real play — 2026-07-28 (not yet accepted)
+## Codex independent real-play findings — 2026-07-28 → ALL THREE RESOLVED 2026-07-29
+- **IMP-055 DONE** (`0fc4d14`): ceiling is now world-owned + faintly self-lit (palette `ceiling` key; Verdant
+  `#4a5140`) so the overhead plane reads for depth/corners — code lane; final murk-vs-legibility pass = Codex.
+- **IMP-056 DONE** (`4f40a47`): floor schema/type gained `locales`; every Verdant floor authors `locales.ja.name`
+  (G1F・根の回廊 …); `floorName()` locale-aware; save summaries (TS + Godot) store the localized world title.
+- **IMP-057 DONE** (`c883548`): paired `verdant_chamber_closed`/`verdant_chamber_cleared` debug fixtures (panel +
+  boot flag) land a reviewer at G1F's guardian chamber; cleared opens the door + calms the landmark. Gate-locked.
+
+### (historical) Proposed after Codex independent real play — 2026-07-28
 
 **Route actually played:** native Godot, keyboard only: title → Verdant → six `見繕う` recruits → town →
 G1F → movement/turn/wall feedback → a two-group battle → 全員でかかる → victory → exploration → full map.
