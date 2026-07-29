@@ -20,7 +20,10 @@ const TOGGLES := [
 	{"key": "instantCombatLog", "label": "config.instantCombatLog", "default": false},
 	# #14 — feature the acting character during command select. Default ON; a player who wants the
 	# creatures unobstructed turns it off. The combat screen reads this via ConfigPanel.load_settings().
-	{"key": "spotlightActor", "label": "config.spotlightActor", "default": true}
+	{"key": "spotlightActor", "label": "config.spotlightActor", "default": true},
+	# Chiptune UI sound (決定 / キャンセル / カーソル移動). Default ON; the Sfx autoload reads this and the
+	# flip below live-toggles it.
+	{"key": "sfxEnabled", "label": "config.sfxEnabled", "default": true}
 ]
 
 ## The #14 preference, read wherever the fight is drawn: whether to feature the acting character's portrait
@@ -71,5 +74,11 @@ static func build(settings: Dictionary, on_change: Callable, heading: bool = tru
 static func _flip(settings: Dictionary, key: String, on_change: Callable) -> void:
 	settings[key] = not bool(settings.get(key, false))
 	save_settings(settings)
+	# Live-apply the SE toggle so muting is instant (and the flip itself still clicks or falls silent).
+	if key == "sfxEnabled":
+		var tree := Engine.get_main_loop() as SceneTree
+		var sfx: Node = tree.root.get_node_or_null("Sfx") if tree != null else null
+		if sfx != null:
+			sfx.set_enabled(bool(settings[key]))
 	if on_change.is_valid():
 		on_change.call()

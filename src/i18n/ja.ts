@@ -13,7 +13,8 @@ export const ja = {
     autoBattleSafety: "オートを危険時に停止する（ボス／低HP）",
     instantCombatLog: "戦闘ログを一気に表示（1手ずつの演出を省く）",
     confirmRound: "指示入力の完了後に実行を確認する",
-    spotlightActor: "行動選択中に手番のキャラを大きく映す"
+    spotlightActor: "行動選択中に手番のキャラを大きく映す",
+    sfxEnabled: "効果音（決定・キャンセル・カーソル）"
   },
   beat: {
     hit: "{actor}の攻撃！ {target}に{damage}のダメージ",

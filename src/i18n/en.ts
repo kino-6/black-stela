@@ -11,7 +11,8 @@ export const en = {
     autoBattleSafety: "Auto-battle stops at danger (boss / low HP)",
     instantCombatLog: "Show the combat log all at once (skip the blow-by-blow reveal)",
     confirmRound: "Confirm before resolving a round (after all orders are set)",
-    spotlightActor: "Spotlight the acting character during command select"
+    spotlightActor: "Spotlight the acting character during command select",
+    sfxEnabled: "Sound effects (confirm / cancel / cursor)"
   },
   beat: {
     hit: "{actor} strikes {target} for {damage}.",
