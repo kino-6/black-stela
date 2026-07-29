@@ -438,6 +438,7 @@ export const scenarioWorldSchema = z.object({
   balance: z
     .object({
       threatScalar: z.number().positive().optional(),
+      hpScalar: z.number().positive().optional(),
       counterplayBoost: z.number().positive().optional(),
       // Wandering-encounter density, scenario-authored (IMP-041); omitted ⇒ engine defaults.
       wanderingEncounterPct: z.number().int().positive().optional(),

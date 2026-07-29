@@ -6,15 +6,20 @@ import type { ScenarioWorld } from "./types";
 //
 //  · threatScalar     — multiplies enemy damage. Higher = a naive party (no counterplay, no grind)
 //                       genuinely wipes, so the game asks you to prepare or level.
+//  · hpScalar         — multiplies enemy HP. Higher = foes SURVIVE a round or two instead of being
+//                       one-rounded, so they actually get to act and the attrition lands. This is the
+//                       lever that reshapes a flat, too-easy early curve (foes dying before they hit)
+//                       into the act bands — the mid party takes real chip damage per fight.
 //  · counterplayBoost — pushes weaknesses further from 1 and deepens element resistances, so a
 //                       PREPARED party's advantage scales with the threat. This is what turns the
 //                       raised difficulty into "you can be ~10 levels under the curve and still
 //                       win, IF you brought the right tools" rather than a flat wall.
 //
 // The design target (user, 2026-07-15): preparation worth ≈10 levels, high difficulty, prepare-or-
-// grind. The knobs are searched against descentSim.preparationValue and the act curve.
+// grind. The knobs are searched against descentSim.preparationValue and the act curve (the mid party).
 export interface WorldBalance {
   threatScalar?: number;
+  hpScalar?: number;
   counterplayBoost?: number;
 }
 
@@ -37,17 +42,23 @@ const deepenResist = (multiplier: number, boost: number): number => Math.max(0.1
  */
 export function applyBalance(world: ScenarioWorld): ScenarioWorld {
   const knobs = world.balance;
-  if (!knobs || (!knobs.threatScalar && !knobs.counterplayBoost)) {
+  if (!knobs || (!knobs.threatScalar && !knobs.hpScalar && !knobs.counterplayBoost)) {
     return world;
   }
   const k = knobs.threatScalar ?? 1;
+  const h = knobs.hpScalar ?? 1;
   const c = knobs.counterplayBoost ?? 1;
 
   const scaleDamage = (value: number | undefined): number | undefined =>
     value == null ? value : Math.max(1, Math.round(value * k));
 
+  // hpScalar tightens TRASH attrition (foes that die before acting), NOT the hand-tuned
+  // minibosses/boss — scaling a boss's HP just turns it into a slog and inflates the clear level.
+  const isTuned = (enemy: (typeof world.enemies)[number]) => enemy.isBoss || enemy.role === "miniboss" || enemy.role === "boss";
+
   const enemies = world.enemies.map((enemy) => ({
     ...enemy,
+    hp: isTuned(enemy) ? enemy.hp : Math.max(1, Math.round(enemy.hp * h)),
     attack: Math.round(enemy.attack * k),
     damageMin: scaleDamage(enemy.damageMin),
     damageMax: scaleDamage(enemy.damageMax),

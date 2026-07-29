@@ -154,6 +154,24 @@ Findings the tool surfaced (the numbers, not a feel call):
 - **MP/気力 reads near-full** because the auto-attack sim never casts. The channel is wired; it only bites
   once spellcasting is modelled (a later lever, noted below).
 
+## Reshape status (task #10) — knobs ready, one sim fix blocks shipping
+
+The mid curve is soft vs the bands and the reshape lever now exists: **`balance.hpScalar`** (in
+`applyBalance`) multiplies TRASH HP only (not the hand-tuned minibosses/boss — scaling a boss just makes
+it an HP-sponge and inflates the clear level), so foes survive to act and the attrition lands. Measured on
+Verdant (`scripts` sweep, mid at clear level): `hpScalar≈1.8` moves the mid curve from
+`[100,97,89,91,91,85,69,33]` to **`[100,97,73,63,45,63,63,47]`** — g3–g8 bite 45–73% (real pressure), naive
+still wipes, kit still used. g1/g2 stay gentle (over-levelled weak intro trash — acceptable "teach" floors).
+
+**Blocker before it ships:** `hpScalar` exposes that the `prepared` policy swaps to the counter *element*
+even when that weapon has a weaker base than mid's best-raw weapon, so against tankier trash a "prepared"
+party can clear *worse* than `mid` (Verdant prepClear 2→7 at hp1.8). That corrupts `preparationValue` and
+the `preparedMinLevel≤3` gate. Fix first: **`prepared` must never be weaker than `mid`** — layer the counter
+swap on top of the general loadout only when the counter weapon is competitive. Then set Verdant `hpScalar`,
+re-point the per-world balance gates from `prepared` to `mid` where they mean "the party you field", add a
+`mid`-band gate, and **browser-verify + user feel** (player-facing). `hpScalar` is committed INERT (no world
+sets it) so nothing ships unverified.
+
 ## Candidate levers (backlog, data-authorable)
 
 - **Multi-hit techniques** (複数回攻撃): a `hits: N` on a technique effect — a martial answer that *sweeps

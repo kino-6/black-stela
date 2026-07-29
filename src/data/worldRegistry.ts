@@ -113,6 +113,17 @@ export function mergeBaseCatalog(world: ScenarioWorld): ScenarioWorld {
   };
 }
 
+// The parsed world BEFORE applyBalance (but with the shared base catalog merged, as the registry does).
+// A tooling seam for the balance sweep in scripts/ — lets a report re-apply applyBalance with different
+// knob values in-memory instead of editing world.md and reparsing per trial. Not used by the game.
+export function rawWorld(worldId: string): ScenarioWorld | undefined {
+  const raw = rawWorlds[worldId];
+  if (!raw) {
+    return undefined;
+  }
+  return worldId === DEFAULT_WORLD_ID ? raw : mergeBaseCatalog(raw);
+}
+
 export const worldRegistry: Record<string, ScenarioWorld> = Object.fromEntries(
   Object.entries(rawWorlds).map(([worldId, world]) => [
     worldId,

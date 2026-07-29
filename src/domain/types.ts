@@ -852,6 +852,9 @@ export interface ScenarioWorld {
    *  prepared party can clear ~10 levels under a naive one. Applied once when the world is loaded. */
   balance?: {
     threatScalar?: number;
+    /** Enemy-HP scalar (domain/balance.ts): foes survive longer and actually get to act, so the
+     *  attrition lands — the lever that reshapes a flat, too-easy early curve into the act bands. */
+    hpScalar?: number;
     counterplayBoost?: number;
     /** Wandering-encounter density, scenario-authored (IMP-041). % chance per eligible step once the
      *  cooldown has passed, and the safety window of steps after a fight. Omitted ⇒ the engine defaults
