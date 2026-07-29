@@ -126,7 +126,11 @@ static func _build_geometry(parent: Node, world: Dictionary, state: Dictionary, 
 			var chamber_deco := chamber_block.has(coord_key) if use_authored_chambers else shape_chamber
 			var landmark_chamber := chamber_anchor.has(coord_key) if use_authored_chambers else shape_chamber
 			var wall_height := WALL_H * 1.65 if chamber_deco else WALL_H
-			_add_plane(parent, chamber_floor_mat if chamber_deco else floor_mat, base, Vector3(0, 0, 0))
+			# A 玄室 is told apart by its SEALED DOOR and its taller walls — NOT by a recoloured floor. The old
+			# chamber floor tint read as a low-quality patch (playtest 2026-07-30: 玄室の床マテリアルは要らない,
+			# 閉扉で封じよ), so the floor stays the ordinary stone; the closed entrance carries the "a room to
+			# breach" read on its own.
+			_add_plane(parent, floor_mat, base, Vector3(0, 0, 0))
 			_add_plane(parent, ceil_mat, base + Vector3(0, wall_height, 0), Vector3(PI, 0, 0))
 			for dir in ["north", "south", "east", "west"]:
 				var edge: Variant = edges.get(dir, null)
