@@ -1620,11 +1620,12 @@
         "career.addToLoadout",
         "career.advanced",
         "career.advancedGroup",
+        "career.back",
         "career.basic",
         "career.basicGroup",
-        "career.changeTo",
         "career.current",
         "career.destinations",
+        "career.doReclass",
         "career.equips",
         "career.intro",
         "career.loadout",
@@ -1636,10 +1637,11 @@
         "career.member",
         "career.noShifts",
         "career.overview",
+        "career.pickPath",
+        "career.reclassPrompt",
         "career.removeFromLoadout",
         "career.reqLevel",
         "career.reqMastered",
-        "career.requires",
         "career.shifts",
         "career.slot.accessory",
         "career.slot.body",
@@ -1720,7 +1722,16 @@
                 "bulwark-blow",
                 "challenge"
               ],
-              "mastery": {},
+              "mastery": {
+                "warrior": 5,
+                "knight": 5,
+                "swordmaster": 5,
+                "thief": 5,
+                "priest": 5,
+                "chanter": 5,
+                "mage": 5,
+                "occultist": 5
+              },
               "progress": {}
             }
           }
@@ -1784,6 +1795,24 @@
               "progress": {}
             }
           }
+        },
+        {
+          "uiState": {
+            "career_preview": "warrior"
+          },
+          "note": "SFC preview+confirm view"
+        },
+        {
+          "uiState": {
+            "career_preview": "vocation.needle-dancer"
+          },
+          "note": "preview covers accuracy/attack/maxHp/speed + slots"
+        },
+        {
+          "uiState": {
+            "career_preview": "vocation.salt-warden"
+          },
+          "note": "preview covers armor/maxMp + remaining slots"
         }
       ],
       "derivedExclusions": [

@@ -2081,6 +2081,88 @@ textarea {
   color: #8f9188;
 }
 
+/* SFC list→preview flow: a lean NAME row per calling. The available ones are full-width buttons. */
+.career-pick-hint {
+  margin: 0 0 0.5rem;
+  font-size: 0.8rem;
+  color: #aa9d7c;
+}
+
+.career-row-button {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid #3a4326;
+  border-radius: 4px;
+  background: #171b10;
+  color: #f2e6c8;
+  text-align: left;
+  cursor: pointer;
+}
+
+.career-row-button strong {
+  flex: 1 1 auto;
+}
+
+.career-row-button:hover,
+.career-row-button:focus-visible {
+  border-color: #c9a765;
+  background: #20240f;
+  outline: none;
+}
+
+.career-row-locked,
+.career-row-current {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  padding: 0.5rem 0.7rem;
+}
+
+.career-row-locked strong {
+  color: #c7bfa6;
+}
+
+.career-row-locked .career-requires {
+  flex: 1 1 auto;
+}
+
+/* The chosen calling's preview + confirm, in place of the list. */
+.career-preview {
+  display: grid;
+  gap: 0.55rem;
+  padding: 0.7rem 0.8rem;
+  border: 1px solid #c9a765;
+  border-radius: 5px;
+  background: #17140c;
+}
+
+.career-transition {
+  margin: 0;
+  font-size: 0.86rem;
+  color: #d9cba6;
+}
+
+.career-keeps {
+  margin: 0;
+  font-size: 0.78rem;
+  color: #aa9d7c;
+}
+
+.career-confirm-prompt {
+  margin: 0.2rem 0 0;
+  font-size: 0.92rem;
+  color: #f2e6c8;
+}
+
+.career-preview-actions {
+  display: flex;
+  gap: 0.6rem;
+}
+
 .career-technique-list {
   display: grid;
   gap: 0.3rem;

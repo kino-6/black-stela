@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { GraduationCap } from "lucide-react";
 import type { Character, Command, EquipmentSlot, GameEvent, ScenarioWorld } from "../domain/types";
 import { SPELLS, type SpellId } from "../domain/spells";
@@ -37,11 +37,12 @@ interface CareerPanelProps {
   onClose: () => void;
 }
 
-// IMP-021C — the town CAREER service. An adventurer's build is the vocations they have mastered.
-// The left pane is who they are now (current vocation, mastery, learned techniques + the bounded
-// combat loadout); the right pane is where they can GO, each destination showing its role, the stat
-// shifts it brings, what it can equip, and what it teaches — so the player can judge a path BEFORE
-// committing. Controller-first; changing vocation never resets level (docs/design/vocation-mastery.md).
+// IMP-021C / SFC reclass flow — the town CAREER service (転職). An adventurer's build is the vocations
+// they have mastered. The left pane is who they are now (current vocation, mastery, learned techniques +
+// the bounded combat loadout). The right pane is the DQ3-Dharma idiom: a lean NAME list of 就ける道, and
+// when one is chosen it becomes that calling's 変化プレビュー + 確定 — one path's full sheet at a time, so
+// the player reads a decision, not a wall of cards. Controller-first; a reclass never resets level
+// (docs/design/vocation-mastery.md).
 export function CareerPanel({
   t,
   locale,
@@ -55,10 +56,15 @@ export function CareerPanel({
   onClose
 }: CareerPanelProps) {
   const firstActionRef = useRef<HTMLButtonElement | null>(null);
+  // Which destination is being previewed (null = the list). Reset whenever the adventurer changes.
+  const [previewId, setPreviewId] = useState<string | null>(null);
+  useEffect(() => {
+    setPreviewId(null);
+  }, [selectedMemberId]);
   useEffect(() => {
     const frame = window.requestAnimationFrame(() => firstActionRef.current?.focus());
     return () => window.cancelAnimationFrame(frame);
-  }, [selectedMemberId]);
+  }, [selectedMemberId, previewId]);
 
   const member = party.find((candidate) => candidate.id === selectedMemberId) ?? party[0];
   if (!member) {
@@ -80,25 +86,63 @@ export function CareerPanel({
   const statShifts = (mods: (typeof catalog)[number]["statModifiers"]) =>
     STAT_ORDER.filter((key) => mods?.[key]).map((key) => ({ key, value: mods![key]! }));
 
-  // Controller focus should land on the first real CHOICE — the first path they can take now.
-  const firstAdoptId = catalog.find((vocation) => vocation.id !== state.current && canAdoptVocation(member, vocation.id, world))?.id;
-
   const advanced = catalog.filter((vocation) => vocation.tier === "advanced");
   const basic = catalog.filter((vocation) => vocation.tier === "basic");
 
-  const renderVocation = (vocation: (typeof catalog)[number]) => {
+  // Controller focus should land on the first real CHOICE — the first path they can take now.
+  const firstAdoptId = catalog.find((vocation) => vocation.id !== state.current && canAdoptVocation(member, vocation.id, world))?.id;
+  const previewVocation = previewId ? catalog.find((vocation) => vocation.id === previewId) ?? null : null;
+
+  // --- list mode: one lean NAME row per calling -----------------------------------------------------
+  const renderVocationRow = (vocation: (typeof catalog)[number]) => {
     const isCurrent = vocation.id === state.current;
     const available = !isCurrent && canAdoptVocation(member, vocation.id, world);
     const rank = masteryRank(state, vocation.id);
-    const signature = localizedVocationSignature(world, vocation.id, locale);
-    const shifts = statShifts(vocation.statModifiers);
+    const name = localizedVocationName(world, vocation.id, locale);
+    const badge =
+      rank > 0 ? (isMastered(state, vocation.id) ? t("career.mastered") : t("career.masteryRank", { rank, max: MASTERED_RANK })) : null;
     return (
       <li className={`career-vocation career-${vocation.tier}${isCurrent ? " current" : ""}${available ? " available" : ""}`} key={vocation.id} data-testid={`career-vocation-${vocation.id}`}>
+        {isCurrent ? (
+          <span className="career-row-current">
+            {name} <span className="career-current-tag">（{t("career.current")}）</span>
+          </span>
+        ) : available ? (
+          // The row IS the choice: it opens this calling's preview+confirm, it never reclasses in one press.
+          <button
+            type="button"
+            className="career-row-button"
+            ref={vocation.id === firstAdoptId ? firstActionRef : undefined}
+            data-testid={`career-adopt-${vocation.id}`}
+            onClick={() => setPreviewId(vocation.id)}
+          >
+            <strong>{name}</strong>
+            {badge && <span className="career-rank">{badge}</span>}
+          </button>
+        ) : (
+          <span className="career-row-locked">
+            <strong>{name}</strong>
+            <span className="career-locked">{t("career.locked")}</span>
+            <span className="career-requires">{requirementText(vocation.requires)}</span>
+          </span>
+        )}
+      </li>
+    );
+  };
+
+  // --- preview mode: one calling's full sheet + the confirm -----------------------------------------
+  const renderPreview = (vocation: (typeof catalog)[number]) => {
+    const name = localizedVocationName(world, vocation.id, locale);
+    const signature = localizedVocationSignature(world, vocation.id, locale);
+    const shifts = statShifts(vocation.statModifiers);
+    const rank = masteryRank(state, vocation.id);
+    return (
+      <div className="career-preview" data-testid="career-preview">
         <div className="career-vocation-head">
           <span className={`quest-kind quest-kind-${vocation.tier === "advanced" ? "bounty" : "delivery"}`}>
             {vocation.tier === "advanced" ? t("career.advanced") : t("career.basic")}
           </span>
-          <strong>{localizedVocationName(world, vocation.id, locale)}</strong>
+          <strong>{name}</strong>
           {rank > 0 && (
             <span className="career-rank">
               {isMastered(state, vocation.id) ? t("career.mastered") : t("career.masteryRank", { rank, max: MASTERED_RANK })}
@@ -106,6 +150,9 @@ export function CareerPanel({
           )}
         </div>
 
+        <p className="career-transition">
+          {t("career.current")}: {currentName} → {name}
+        </p>
         {signature && <p className="career-signature">{signature}</p>}
 
         <dl className="career-vocation-facts">
@@ -145,28 +192,28 @@ export function CareerPanel({
           )}
         </dl>
 
-        {vocation.requires && !isCurrent && (
-          <p className="career-requires">{t("career.requires", { requirements: requirementText(vocation.requires) })}</p>
-        )}
+        {/* What the reclass KEEPS — the DQ3 "will I lose everything?" fear, answered before the confirm. */}
+        <p className="career-keeps">{t("career.intro")}</p>
 
-        <div className="career-vocation-actions">
-          {isCurrent ? (
-            <span className="career-current-tag">{t("career.current")}</span>
-          ) : available ? (
-            <button
-              type="button"
-              className="primary-action"
-              ref={vocation.id === firstAdoptId ? firstActionRef : undefined}
-              data-testid={`career-adopt-${vocation.id}`}
-              onClick={() => onCommand({ type: "change_vocation", characterId: member.id, vocationId: vocation.id })}
-            >
-              {t("career.changeTo", { vocation: localizedVocationName(world, vocation.id, locale) })}
-            </button>
-          ) : (
-            <span className="career-locked">{t("career.locked")}</span>
-          )}
+        <p className="career-confirm-prompt">{t("career.reclassPrompt", { vocation: name })}</p>
+        <div className="career-preview-actions">
+          <button
+            type="button"
+            className="primary-action"
+            ref={firstActionRef}
+            data-testid={`career-adopt-${vocation.id}`}
+            onClick={() => {
+              onCommand({ type: "change_vocation", characterId: member.id, vocationId: vocation.id });
+              setPreviewId(null);
+            }}
+          >
+            {t("career.doReclass")}
+          </button>
+          <button type="button" data-testid="career-preview-back" onClick={() => setPreviewId(null)}>
+            {t("career.back")}
+          </button>
         </div>
-      </li>
+      </div>
     );
   };
 
@@ -210,7 +257,7 @@ export function CareerPanel({
         </div>
 
         <div className="career-body">
-          {/* Left: who this adventurer is now. */}
+          {/* Left: who this adventurer is now + the combat-set editor for the CURRENT calling. */}
           <div className="career-overview">
             <h4 className="career-pane-title">{t("career.overview")}</h4>
             <dl className="career-current">
@@ -265,21 +312,28 @@ export function CareerPanel({
             </div>
           </div>
 
-          {/* Right: where they can go — grouped by tier, each destination judgeable at a glance. */}
+          {/* Right: 就ける道 — a lean NAME list; choosing one swaps this pane for its preview + confirm. */}
           <div className="career-destinations">
-            <h4 className="career-pane-title">{t("career.destinations")}</h4>
-            {advanced.length > 0 && (
+            {previewVocation ? (
+              renderPreview(previewVocation)
+            ) : (
               <>
-                <h5 className="career-group-title">{t("career.advancedGroup")}</h5>
-                <ul className="career-vocations" data-testid="career-vocations-advanced">
-                  {advanced.map(renderVocation)}
+                <h4 className="career-pane-title">{t("career.destinations")}</h4>
+                <p className="career-pick-hint">{t("career.pickPath")}</p>
+                {advanced.length > 0 && (
+                  <>
+                    <h5 className="career-group-title">{t("career.advancedGroup")}</h5>
+                    <ul className="career-vocations" data-testid="career-vocations-advanced">
+                      {advanced.map(renderVocationRow)}
+                    </ul>
+                  </>
+                )}
+                <h5 className="career-group-title">{t("career.basicGroup")}</h5>
+                <ul className="career-vocations" data-testid="career-vocations-basic">
+                  {basic.map(renderVocationRow)}
                 </ul>
               </>
             )}
-            <h5 className="career-group-title">{t("career.basicGroup")}</h5>
-            <ul className="career-vocations" data-testid="career-vocations-basic">
-              {basic.map(renderVocation)}
-            </ul>
           </div>
         </div>
 
@@ -288,7 +342,7 @@ export function CareerPanel({
             type="button"
             data-controller-cancel="true"
             data-testid="career-back"
-            ref={firstAdoptId ? undefined : firstActionRef}
+            ref={firstAdoptId && !previewVocation ? undefined : firstActionRef}
             onClick={onClose}
           >
             {t("town.serviceCancel")}

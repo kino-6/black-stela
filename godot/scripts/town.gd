@@ -59,6 +59,7 @@ var _loot_pending: String = ""
 var _party_page: String = "status"
 var _party_item: String = ""
 var _party_discard: bool = false
+var _career_preview: String = ""  # the 転職 destination being previewed (SFC list→preview→confirm); "" = the list
 var _event_text: String = ""      # the last thing that happened, shown at the open counter
 
 var _menu_host: VBoxContainer = null
@@ -105,6 +106,7 @@ func set_ui_state(ui: Dictionary) -> void:
 	if ui.has("party_page"): _party_page = String(ui["party_page"])
 	if ui.has("party_item"): _party_item = String(ui["party_item"])
 	if ui.has("party_discard"): _party_discard = bool(ui["party_discard"])
+	if ui.has("career_preview"): _career_preview = String(ui["career_preview"])
 	_rebuild()
 
 ## Test seam: drive the town from ANOTHER world's pack, proving the same scene code renders both.
@@ -469,6 +471,7 @@ func _open_service(service: String) -> void:
 func _close_service() -> void:
 	_service = ""
 	_loot_pending = ""
+	_career_preview = ""
 	_event_text = ""
 	_rebuild()
 
@@ -527,7 +530,9 @@ func _service_ctx() -> Dictionary:
 		"save_run": func(): _save_run(),
 		"close": func(): _close_service(),
 		"selected_member": func(): return selected_member(),
-		"set_selected": func(id): _selected_id = String(id); _rebuild(),
+		"set_selected": func(id): _selected_id = String(id); _career_preview = ""; _rebuild(),
+		"career_preview": _career_preview,
+		"set_career_preview": func(id): _career_preview = String(id); _rebuild(),
 		"focus_hint": func(control): _pending_focus = control,
 		"shop_category": _shop_category,
 		"set_shop_category": func(cat): _shop_category = String(cat); _rebuild(),

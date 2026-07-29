@@ -50,7 +50,12 @@ test.describe("Codex verification for IMP-021 / IMP-022", () => {
     await expectControllerFocus(page, "default career", { surface: "town-career", exclusive: true });
     await expectFitsViewport(page, "default career");
 
-    await activateByController(page, /Become Knight/);
+    // SFC flow: pick the calling from the 就ける道 list → its preview+confirm → 確定.
+    await activateByController(page, "Knight");
+    await expect(page.getByTestId("career-preview")).toBeVisible();
+    await expectControllerFocus(page, "career preview", { surface: "town-career", exclusive: true });
+    await expectFitsViewport(page, "career preview");
+    await activateByController(page, /Reclass to this calling/);
     await expect(page.getByTestId("career-current-vocation")).toContainText("Knight");
     await expectFitsViewport(page, "default career after vocation change");
     await page.screenshot({ path: `${evidenceDir}/default-career-1920.png`, fullPage: false });
