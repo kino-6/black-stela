@@ -130,7 +130,9 @@ static func _build_geometry(parent: Node, world: Dictionary, state: Dictionary, 
 			_add_plane(parent, ceil_mat, base + Vector3(0, wall_height, 0), Vector3(PI, 0, 0))
 			for dir in ["north", "south", "east", "west"]:
 				var edge: Variant = edges.get(dir, null)
-				if not _is_passage(edge):
+				# A DISCOVERED secret reads as an OPENING, not a wall — otherwise a found passage still looked
+				# solid and the player kept re-searching it (playtest 2026-07-29: "一度開通した隠し通路は再調査不要").
+				if not _is_passage(edge) and not _is_open_secret(edge, state, String(cell.get("roomId", "")), dir):
 					_add_wall(parent, chamber_wall_mat if chamber_deco else wall_mat, base, dir, wall_height)
 				elif _is_door(edge):
 					var door_key := _door_key(cx, cy, dir)
@@ -431,6 +433,13 @@ static func _emissive_mat(col: Color, energy: float) -> StandardMaterial3D:
 
 static func _is_passage(edge: Variant) -> bool:
 	return typeof(edge) == TYPE_DICTIONARY and edge.get("kind", "") in ["open", "door", "one_way"]
+
+# A secret edge that the party has already SEARCHED OUT — it is traversable in the rules
+# (rulesEngine.secretRevealed) and so must read as an opening, not a wall.
+static func _is_open_secret(edge: Variant, state: Dictionary, room_id: String, dir: String) -> bool:
+	if typeof(edge) != TYPE_DICTIONARY or String(edge.get("kind", "")) != "secret":
+		return false
+	return (state.get("discoveredSecrets", []) as Array).has("secret:%s:%s" % [room_id, dir])
 
 static func _current_floor_id(state: Dictionary, world: Dictionary) -> String:
 	var fid: Variant = (state.get("map", {}) as Dictionary).get("floorId", null)

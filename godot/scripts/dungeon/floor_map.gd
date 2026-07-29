@@ -125,10 +125,14 @@ static func _cell(cell: Dictionary, is_current: bool, world: Dictionary, state: 
 	style.bg_color = CURRENT_BG if is_current else VISITED_BG
 	style.border_color = WALL
 	var edges: Dictionary = cell.get("edges", {})
-	style.border_width_top = 0 if _is_passage(edges.get("north", null)) else 2
-	style.border_width_right = 0 if _is_passage(edges.get("east", null)) else 2
-	style.border_width_bottom = 0 if _is_passage(edges.get("south", null)) else 2
-	style.border_width_left = 0 if _is_passage(edges.get("west", null)) else 2
+	var rid := String(cell.get("roomId", ""))
+	# A DISCOVERED secret is a way through (rulesEngine.secretRevealed), so the map must drop its wall too —
+	# else a found passage still reads solid on the map (playtest 2026-07-29). Both minimap and full map share
+	# this, so they stay in agreement.
+	style.border_width_top = 0 if _is_way(edges.get("north", null), state, rid, "north") else 2
+	style.border_width_right = 0 if _is_way(edges.get("east", null), state, rid, "east") else 2
+	style.border_width_bottom = 0 if _is_way(edges.get("south", null), state, rid, "south") else 2
+	style.border_width_left = 0 if _is_way(edges.get("west", null), state, rid, "west") else 2
 	style.set_content_margin_all(0)
 	panel.add_theme_stylebox_override("panel", style)
 
@@ -262,6 +266,14 @@ static func _in_dark_zone(world: Dictionary, room_id: Variant, _state: Dictionar
 	for gate in _room(world, room_id).get("gates", []):
 		if typeof(gate) == TYPE_DICTIONARY and String(gate.get("kind", "")) == "dark_zone":
 			return true
+	return false
+
+# A way through THIS floor: an open/door/one_way edge, or a secret the party has already searched out.
+static func _is_way(edge: Variant, state: Dictionary, room_id: String, dir: String) -> bool:
+	if _is_passage(edge):
+		return true
+	if typeof(edge) == TYPE_DICTIONARY and String(edge.get("kind", "")) == "secret":
+		return (state.get("discoveredSecrets", []) as Array).has("secret:%s:%s" % [room_id, dir])
 	return false
 
 static func _is_passage(edge: Variant) -> bool:
