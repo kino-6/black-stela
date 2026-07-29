@@ -152,6 +152,20 @@ func _build() -> void:
 	_rebuild_command_menu()
 
 # F = 全員でかかる / All-out (matches the React All-out key). "confirm" needs no handling here — a
+# DIRECT target selection (playtest 2026-07-29, asked repeatedly): while aiming at an enemy, ←/→ move the
+# reticle straight onto the next creature — no tabbing to a ◀/▶ button and back. Focus stays on 攻撃, so
+# Enter fires at whatever the reticle is on. Handled in _input (before GUI focus nav) so the arrows move the
+# aim instead of moving focus between buttons.
+func _input(event: InputEvent) -> void:
+	if _busy or _resolved or _stage != "target-group":
+		return
+	if event.is_action_pressed("ui_left"):
+		_cycle_target(-1)
+		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("ui_right"):
+		_cycle_target(1)
+		get_viewport().set_input_as_handled()
+
 # focused Button fires its own `pressed` on ui_accept.
 func _unhandled_input(event: InputEvent) -> void:
 	if _busy or _resolved:

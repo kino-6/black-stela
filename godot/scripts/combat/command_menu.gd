@@ -131,6 +131,10 @@ static func _group_target_stage(root: VBoxContainer, ctx: Dictionary) -> Button:
 			current = group
 	# The creature under the reticle, named — the confirmation of what the stage is already showing.
 	root.add_child(UI.label("%s  ×%d" % [String(ctx["enemy_name"].call(current)), int(current.get("count", 0))], 20, UI.INK))
+	# ←/→ move the reticle DIRECTLY (combat.gd handles the keys); the button just confirms. No tab-to-arrow
+	# dance. The ◀ ▶ glyphs stay as a clickable/mouse affordance and a hint of what the arrow keys do.
+	if living.size() > 1:
+		root.add_child(UI.label("◀ ▶  " + I18n.t("play.chooseTarget"), 14, UI.DIM))
 	var row := UI.row()
 	if living.size() > 1:
 		row.add_child(UI.button("◀", func(): ctx["cycle_target"].call(-1), Vector2(56, 40), 17))
