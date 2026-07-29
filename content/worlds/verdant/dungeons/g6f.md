@@ -1,6 +1,9 @@
 ---
 id: dungeon.verdant.g6f
 name: G6F - Strangling Oaths
+locales:
+  ja:
+    name: G6F・絞めの誓い
 level: 6
 recommendedPartyLevel: 5
 tags:

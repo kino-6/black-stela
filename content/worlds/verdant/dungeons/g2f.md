@@ -1,6 +1,9 @@
 ---
 id: dungeon.verdant.g2f
 name: G2F - Spore Drift
+locales:
+  ja:
+    name: G2F・胞子溜まり
 level: 2
 recommendedPartyLevel: 1
 tags:

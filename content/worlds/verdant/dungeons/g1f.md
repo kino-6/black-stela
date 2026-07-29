@@ -1,6 +1,9 @@
 ---
 id: dungeon.verdant.g1f
 name: G1F - Root Gallery
+locales:
+  ja:
+    name: G1F・根の回廊
 level: 1
 recommendedPartyLevel: 1
 tags:

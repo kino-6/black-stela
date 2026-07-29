@@ -395,7 +395,9 @@ export function toSaveDataV1(
     savedAt: options.savedAt ?? new Date().toISOString(),
     scenario: {
       worldId: world.id,
-      title: world.title
+      // Store the localized world title so the title's Continue row reads 翠碑 — 沈む樹心, not the English
+      // authored name, on a JA save (IMP-056).
+      title: world.locales?.[options.locale ?? "en"]?.title ?? world.title
     },
     settings: {
       aiEnabled: state.aiEnabled,

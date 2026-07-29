@@ -28,10 +28,15 @@ const CHEST_DEFAULTS := {
 const QUEST_DEFAULTS := {"status": "active", "killCount": 0, "claims": 0}
 
 static func to_save_data(state: Dictionary, world: Dictionary, saved_at: String, locale: String = "ja") -> Dictionary:
+	# Store the LOCALIZED world title so the title screen's continue row reads 翠碑 — 沈む樹心, not the English
+	# authored name (IMP-056). Mirrors saveData.ts toSaveDataV1.
+	var world_locales: Dictionary = (world.get("locales", {}) as Dictionary) if typeof(world.get("locales", {})) == TYPE_DICTIONARY else {}
+	var locale_title := String((world_locales.get(locale, {}) as Dictionary).get("title", "")) if typeof(world_locales.get(locale, {})) == TYPE_DICTIONARY else ""
+	var scenario_title := locale_title if locale_title != "" else String(world.get("title", ""))
 	return {
 		"schemaVersion": LATEST_SAVE_SCHEMA_VERSION,
 		"savedAt": saved_at,
-		"scenario": {"worldId": world.get("id", ""), "title": world.get("title", "")},
+		"scenario": {"worldId": world.get("id", ""), "title": scenario_title},
 		"settings": {"aiEnabled": bool(state.get("aiEnabled", true)), "locale": locale},
 		"state": state.duplicate(true)
 	}

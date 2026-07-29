@@ -23,7 +23,7 @@ export function FloorMapOverlay({ state, world, locale, t, onClose }: FloorMapOv
       >
         <header className="floor-map-head">
           <h3>{t("play.fullMapTitle")}</h3>
-          <span>{floorName(world, state.map.floorId)}</span>
+          <span>{floorName(world, state.map.floorId, locale)}</span>
         </header>
         <div className="floor-map-scroll">
           <FloorMapView state={state} world={world} locale={locale} t={t} />

@@ -911,6 +911,9 @@ export interface AiPolicy {
 export interface DungeonFloor {
   id: string;
   name: string;
+  /** Per-locale floor name — a JA route shows `locales.ja.name` (e.g. 蔦の回廊) instead of the English
+   *  authored `name` (IMP-056). */
+  locales?: Record<string, { name?: string }>;
   startRoom: string;
   grid?: DungeonGrid;
   rooms: DungeonRoom[];

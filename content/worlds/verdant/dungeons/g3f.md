@@ -1,6 +1,9 @@
 ---
 id: dungeon.verdant.g3f
 name: G3F - Pollen Cistern
+locales:
+  ja:
+    name: G3F・花粉の水槽
 level: 3
 recommendedPartyLevel: 2
 tags:

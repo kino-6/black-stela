@@ -1,6 +1,9 @@
 ---
 id: dungeon.verdant.g4f
 name: G4F - Bark Wards
+locales:
+  ja:
+    name: G4F・樹皮の守り
 level: 4
 recommendedPartyLevel: 3
 tags:

@@ -50,7 +50,7 @@ export function MapPanel({ state, world, locale, t, debugMode = false }: MapPane
     <section className="map-panel" aria-labelledby="map-heading">
       <div className="section-title">
         <h3 id="map-heading">{t("map.heading")}</h3>
-        <span>{state.map.floorId ? floorName(world, state.map.floorId) : t("map.noFloor")}</span>
+        <span>{state.map.floorId ? floorName(world, state.map.floorId, locale) : t("map.noFloor")}</span>
       </div>
       <div className="map-current" data-testid="map-current">
         <small>{t("map.current")}</small>

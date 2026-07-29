@@ -1,6 +1,9 @@
 ---
 id: dungeon.verdant.g5f
 name: G5F - Toll of Sap
+locales:
+  ja:
+    name: G5F・樹液の関
 level: 5
 recommendedPartyLevel: 4
 tags:

@@ -1,6 +1,9 @@
 ---
 id: dungeon.verdant.g7f
 name: G7F - Heartwood Husks
+locales:
+  ja:
+    name: G7F・心材の殻
 level: 7
 recommendedPartyLevel: 6
 tags:

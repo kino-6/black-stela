@@ -1,6 +1,9 @@
 ---
 id: dungeon.verdant.g8f
 name: G8F - The Green Heart
+locales:
+  ja:
+    name: G8F・緑の心臓
 level: 8
 recommendedPartyLevel: 7
 tags:

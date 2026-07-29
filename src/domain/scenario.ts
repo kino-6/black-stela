@@ -397,6 +397,7 @@ const roomSchema = z.object({
 export const dungeonFloorSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
+  locales: z.record(z.object({ name: z.string().min(1).optional() })).optional(),
   startRoom: z.string().min(1),
   grid: z.object({ cells: z.array(gridCellSchema).min(1) }).optional(),
   level: z.number().int().positive().optional(),
@@ -690,13 +691,18 @@ export function getFloorIdForRoom(world: ScenarioWorld, roomId: string) {
   return getFloorForRoom(world, roomId)?.id ?? null;
 }
 
-// A player-facing floor name (e.g. "B2F - Split Dust") for a floor id, so the UI
-// shows the authored title instead of the raw "dungeon.b2f" implementation id.
-export function floorName(world: ScenarioWorld, floorId: string | null | undefined): string {
+// A player-facing floor name (e.g. "B2F - Split Dust") for a floor id, so the UI shows the authored
+// title instead of the raw "dungeon.b2f" implementation id. Locale-aware: a JA route reads the floor's
+// `locales.ja.name` (e.g. 蔦の回廊) instead of the English authored name (IMP-056).
+export function floorName(world: ScenarioWorld, floorId: string | null | undefined, locale?: string): string {
   if (!floorId) {
     return "";
   }
-  return world.dungeons.find((dungeon) => dungeon.id === floorId)?.name ?? floorId;
+  const floor = world.dungeons.find((dungeon) => dungeon.id === floorId);
+  if (!floor) {
+    return floorId;
+  }
+  return (locale ? floor.locales?.[locale]?.name : undefined) ?? floor.name;
 }
 
 export function getGridCellForRoom(world: ScenarioWorld, roomId: string) {
