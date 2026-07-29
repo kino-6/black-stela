@@ -68,9 +68,12 @@ static func build(ctx: Dictionary) -> Control:
 	var confirm := UI.button(I18n.t("town.recoverParty"), func(): ctx["dispatch"].call({"type": "recover_party"}), Vector2(240, 48), 19)
 	confirm.disabled = not can_treat
 	actions.add_child(confirm)
-	actions.add_child(UI.button(I18n.t("town.serviceCancel"), ctx["close"], Vector2(180, 48), 18))
+	var cancel := UI.button(I18n.t("town.serviceCancel"), ctx["close"], Vector2(180, 48), 18)
+	actions.add_child(cancel)
 	root.add_child(actions)
 
-	# The cursor starts on the command the player came here to give.
-	ctx["focus_hint"].call(confirm if can_treat else null)
+	# The cursor starts on the command the player came here to give — but when there is nothing to treat
+	# (治療は不要 / can't afford), 治療 is DISABLED and unfocusable, so the cursor must land on やめる instead,
+	# or the panel can't be operated by controller at all (playtest 2026-07-29 soft-lock).
+	ctx["focus_hint"].call(confirm if can_treat else cancel)
 	return root
