@@ -32,7 +32,15 @@ The dungeon is a DQ1-style command panel you must Tab into. User wants the SFC/�
 - Gate: `verify_dungeon_controller` + browser-verify; the command model change touches `dungeon.gd` input
   (`_toggle_auto`, the command dock at ~448-473, `_apply(SliceRules.resolve(... "search"))` at ~577).
 
-### QUEUE (all captured as tasks #14-#22; work order: #19 → #16/#17 → #15/#18 → #21 → #22 → #20)
+### ✅ QUEUE CLEARED 2026-07-29 — #14-#23 ALL DONE + pushed (gate:final 700 unit + 139 e2e, gate:migration green)
+Commits (newest last): `06c970e` #14 infirmary focus · `9ed925a` #19 dungeon direct-key UX · `5e6a3ae` #20
+party-menu focus net · `bfce3e2` #18/#16 secret-as-opening · `1ad9a94` #17 stairs grounded · `c6dab20`
+#15 玄室 no-re-fight · `3435e3c` #23 guild remove+grid · `a84b4f3` #21 per-location town stills · `eae3d28`
+#22 生業→転職 rename · `aaa5352` e2e follow. **Follow-ups still open:** #24 (React dungeon-dock reconcile +
+escape charm→メニュー; ux-parity bridged by derivedExclusions), #25 (転職 SFC-layout rebuild — label done,
+layout design-heavy), #10 (difficulty reshape — STILL STASHED `git stash` "difficulty-reshape-wip").
+
+### (historical) original QUEUE plan — tasks #14-#22; work order: #19 → #16/#17 → #15/#18 → #21 → #22 → #20
 - **#19** dungeon-UX redesign (above) — FIRST.
 - **#20** 装備タブ focus soft-lock (party_panel: switching to 装備 lands no focus) + 「隊列」→「メニュー」.
   Same class as the FIXED infirmary bug (`06c970e`: recovery_panel handed `null` focus when 治療 disabled →
