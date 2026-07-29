@@ -241,6 +241,14 @@ func _build() -> void:
 	_rebuild()
 
 func _rebuild() -> void:
+	# Per-location still: the square, each destination (hall/market/archive) and the infirmary each have their
+	# own prepared art — the town used to keep town-hub.jpg everywhere (playtest 2026-07-29). Falls back to the
+	# hub for any world that ships only the hub still.
+	if _backdrop:
+		var still := _texture(_asset(_location_still()))
+		if still == null:
+			still = _texture(_asset("ui/town-hub.jpg"))
+		_backdrop.texture = still
 	if _service != "":
 		_build_service()
 	else:
@@ -426,6 +434,20 @@ func _next_preparation(s: Dictionary, party: Array) -> String:
 		if item.get("kind", "") == "equipment":
 			return I18n.t("town.nextShop")
 	return I18n.t("town.readyToDescend")
+
+# The prepared still for where the party is standing: the infirmary counter, each destination, else the hub.
+func _location_still() -> String:
+	if _service == "recovery":
+		return "ui/infirmary.png"
+	match _location:
+		"hall":
+			return "ui/guild-hall.jpg"
+		"market":
+			return "ui/market-workshop.png"
+		"archive":
+			return "ui/archive-lodge.png"
+		_:
+			return "ui/town-hub.jpg"
 
 func _go_location(location: String) -> void:
 	_location = location
