@@ -42,6 +42,15 @@ func _initialize() -> void:
 	_check(scene.ends_with("combat.tscn"), "combat_victory lands in the combat scene")
 	_check(String(run.state.get("phase", "")) == "combat" and run.state.get("combat", null) != null, "combat_victory carries a live combat state")
 
+	# IMP-057: the paired Verdant chamber fixtures land in the dungeon on the Verdant world, at the chamber
+	# approach cell — `cleared` additionally opens the door and calms the landmark (floorClaimedTreasures).
+	for fx in ["verdant_chamber_closed", "verdant_chamber_cleared"]:
+		scene = String(Fixtures.load_into(run, fx))
+		_check(scene.ends_with("dungeon.tscn"), "%s lands in the dungeon" % fx)
+		_check(String(run.world_id) == "verdant" and String(run.state.get("map", {}).get("floorId", "")) == "dungeon.verdant.g1f", "%s is on the Verdant G1F chamber floor" % fx)
+	scene = String(Fixtures.load_into(run, "verdant_chamber_cleared"))
+	_check((run.state.get("floorClaimedTreasures", []) as Array).size() > 0, "verdant_chamber_cleared calms the chamber landmark (claimed)")
+
 	print("[fixtures] %s (%d failures)" % ["PASS" if _fail == 0 else "FAIL", _fail])
 	quit(_fail)
 
