@@ -299,7 +299,13 @@ static func begin_room_encounter(world: Dictionary, room: Variant, state: Dictio
 		if String(chest.get("roomId", "")) == room_id:
 			chest_out = true
 			break
-	var chamber_guardian: bool = bool(room.get("chamberGuardian", false)) and not chest_out and not (state.get("floorClaimedTreasures", []) as Array).has(room_id)
+	var chamber_beaten: bool = chest_out or (state.get("floorClaimedTreasures", []) as Array).has(room_id)
+	var chamber_guardian: bool = bool(room.get("chamberGuardian", false)) and not chamber_beaten
+
+	# A BEATEN chamberGuardian never fights again this floor visit — full stop. Without this it re-rolled its
+	# shared multi-type pack table and fought a not-yet-seen type on re-entry (玄室の再戦バグ). Mirrors rulesEngine.
+	if bool(room.get("chamberGuardian", false)) and chamber_beaten:
+		return null
 
 	var squad_ids: Variant = room.get("encounterSquad", null)
 	if typeof(squad_ids) == TYPE_ARRAY:

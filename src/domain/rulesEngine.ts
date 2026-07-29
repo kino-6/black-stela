@@ -2164,6 +2164,14 @@ function beginRoomEncounter(
     state.floorClaimedTreasures.includes(room.id);
   const chamberGuardian = Boolean(room.chamberGuardian) && !chamberBeaten;
 
+  // A chamberGuardian room, once BEATEN (guardian felled → chest released or claimed), never fights again
+  // this floor visit — full stop. Without this it re-rolled its shared multi-type pack table and fought a
+  // not-yet-seen type on re-entry: the "玄室の再戦バグ" the chest-based suppression alone did not cover, because
+  // turning the guardian gate off fell through to ordinary first-contact suppression, which a FRESH type beats.
+  if (Boolean(room.chamberGuardian) && chamberBeaten) {
+    return null;
+  }
+
   const squad = room.encounterSquad
     ?.map((enemyId) => world.enemies.find((enemy) => enemy.id === enemyId))
     .filter((enemy): enemy is Enemy => Boolean(enemy));

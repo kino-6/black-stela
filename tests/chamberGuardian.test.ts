@@ -120,4 +120,22 @@ describe("玄室 chamber guardians", () => {
     const chestHere = (s.chests ?? []).find((c) => c.cellId === s.position?.cellId);
     expect(chestHere?.roomId, "the chest sits on the party's cell after the fight").toBe(chamberRoom);
   });
+
+  it("a BEATEN 玄室 never re-fights on re-entry — not even a fresh pack type (#15 re-fight bug)", () => {
+    const chamber = [...chamberRoomIds("dungeon.verdant.g1f")]
+      .map((id) => ({ id, approach: chamberApproach("dungeon.verdant.g1f", id) }))
+      .find((c) => c.approach)!;
+    let s = party(4);
+    s = executeCommand(s, verdant, { type: "enter_dungeon" });
+    s = withDebugStartCell(s, verdant, chamber.approach!.outsideRoomId, chamber.approach!.facing);
+    // Mark the chamber BEATEN (its chest claimed) but leave floorClearedEnemies EMPTY — so the OLD logic
+    // would re-roll its 3-type pack and fight a not-yet-seen type. The fix must keep a beaten chamber silent.
+    s = { ...s, floorClaimedTreasures: [chamber.id], floorClearedEnemies: [] } as GameState;
+    s = executeCommand(s, verdant, { type: "move_forward" }); // one-step door: opens AND enters
+    if (s.phase === "dungeon" && s.position?.roomId !== chamber.id) {
+      s = executeCommand(s, verdant, { type: "move_forward" });
+    }
+    expect(s.position?.roomId, "the party actually entered the beaten chamber").toBe(chamber.id);
+    expect(s.phase, "a beaten 玄室 does not re-fight on re-entry").toBe("dungeon");
+  });
 });
