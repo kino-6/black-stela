@@ -4,7 +4,62 @@ Rapid-fire playtest backlog, to be completed one at a time with verification + a
 prevents recurrence. Ordered by the agreed priority (A first). Tick items as they land.
 
 ---
-## ▶▶ RESUME HERE — 2026-07-28 (session state, all pushed to main)
+## ▶▶▶ RESUME HERE — 2026-07-29 PLAYTEST MARATHON (read FIRST)
+Build/run: `npm run export:godot && npm run play` (godot/data GITIGNORED). Truth gate `npm run gate:final`;
+Godot gates `npm run gate:migration`. Self-build + verify before handoff (AGENTS.md). Read
+`.claude/skills/controller-first-ui` before ANY menu/focus work — the soft-locks below are its exact
+documented failure mode ("every screen hands the cursor a place to land").
+
+**Pushed this session (newest last):** `df2ed2d` softer SFC-style SE (sine, quieter, silent while walking) ·
+`06c970e` infirmary focus soft-lock fix · `d8693fa` FC/SFC chiptune SE (Sfx autoload) · `023339b` door
+embed-in-wall + 見繕う name vary · `b4f42d2` direct combat target selection (←/→ reticle, Enter fires) ·
+`9a41058` wiped-party can't wander + one-step doors + door-latch orb removed · `e31f66e` downed-block dual
+recovery msg + B-team test · `dcd3829` Codex IMP-055/056/057 all resolved · `c883548`/`0fc4d14`/`4f40a47`
+(the three IMPs). **User is on build `d8693fa`** — relaunch picks up `df2ed2d`+`06c970e` (audio + infirmary).
+
+### THE BIG ONE — #19 dungeon-UX redesign (user-directed, DECIDED — do FIRST as ONE coherent change)
+The dungeon is a DQ1-style command panel you must Tab into. User wants the SFC/世界樹 model. DECIDED spec:
+- **決定 (Enter/confirm)** = **探索** (search) — and it must **feed the AI-reaction concept** (探索 is the hook
+  the scenario AI responds to). When the party is ON a stairs cell, 決定 = **階段を使う** (context action).
+- **キャンセル (Esc/cancel)** = open the **メニュー** (camp: 装備/所持品/能力/隊列変更/設定).
+- **全体図 = M**, move = WASD/↑↓←→ + Q/E strafe (unchanged).
+- **REMOVE 聞く (listen)** and **オート (auto-explore)** from normal play. (`オート` = auto-walk the floor,
+  IMP-026 convenience, overlaps held-move — drop from UI, keep behind debug if wanted.)
+- The right **「迷宮コマンド」panel → a non-interactive KEY-HINT display** (never a Tab-into focus surface).
+- **Rename 「隊列」→「メニュー」** (user chose メニュー over キャンプ), both the dungeon command AND the
+  party-menu heading.
+- Apply a **systemic controller-focus safety net** so no panel can soft-lock (see #14/#20).
+- Gate: `verify_dungeon_controller` + browser-verify; the command model change touches `dungeon.gd` input
+  (`_toggle_auto`, the command dock at ~448-473, `_apply(SliceRules.resolve(... "search"))` at ~577).
+
+### QUEUE (all captured as tasks #14-#22; work order: #19 → #16/#17 → #15/#18 → #21 → #22 → #20)
+- **#19** dungeon-UX redesign (above) — FIRST.
+- **#20** 装備タブ focus soft-lock (party_panel: switching to 装備 lands no focus) + 「隊列」→「メニュー」.
+  Same class as the FIXED infirmary bug (`06c970e`: recovery_panel handed `null` focus when 治療 disabled →
+  now focuses やめる). Fix systemically: every panel/tab rebuild MUST land focus on an enabled control.
+- **#16** minimap shows walls where the 3D view is passable ("1Fバグりすぎ / 壁があるんだかないんだか").
+  Reconcile `floor_map` minimap wall logic with `dungeon_renderer` edge truth.
+- **#17** stairs billboard floats (階段浮きすぎ) + invisible when standing ON the stairs cell
+  (階段マスで見えない — "自分で検出してよ": the 階段を使う command DOES appear on the cell, but no visual).
+  Seat the billboard on the floor; give an on-cell visual/read.
+- **#15** 玄室 re-fight still reported. TS+Godot both mark a chamber "beaten" via chest_out || floorClaimed;
+  roomChest DOES emit a chest for `treasureTable`-only rooms, and Godot releases it on victory
+  (combat_round.gd:458 `_release_room_chest`). NEEDS a repro test (enter chamber → win → leave → re-enter →
+  assert no re-fight) to find the remaining gap before fixing.
+- **#18** discovered secret passage forces re-search (一度開通した隠し通路は再調査不要). `discoveredSecrets`
+  gates traversal (rulesEngine ~738); confirm it persists + gives "already open" feedback (no re-roll).
+- **#21** town per-facility stills not wired (商店/鑑定所/錬成所/広場 each should show its own still; today one bg).
+- **#22** 転職(生業) menu is "業務アプリ"-like; rename 「生業」(→ 転職/クラスチェンジ) + rebuild to SFC/世界樹
+  転職メニュー conventions (現職→就ける道→変化プレビュー→確定).
+- **#23** guild roster: **can't remove/bench a member**, and the 名簿を整える UI is **broken (layout overflow** —
+  the right roster panel + member buttons + 保存 clip off the right edge). Fix removal + the panel layout/focus.
+
+### Difficulty reshape — STASHED (git stash: "difficulty-reshape-wip"), NOT lost
+`descentSim` prepared-policy fix + Verdant `hpScalar 1.8` (mid curve `[100,97,73,63,45,63,63,47]`). Resume after
+the UX/bug queue: `git stash list` → pop, then finish slice-3 gate re-tuning (see the 2026-07-28 section below).
+
+---
+## ▶▶ RESUME HERE — 2026-07-28 (superseded by the 2026-07-29 section above; difficulty-design detail kept)
 Build/run: `npm run export:godot && npm run play` (godot/data GITIGNORED). Truth gate `npm run gate:final`;
 Godot gates `npm run gate:migration`. Self-build + verify before handoff (AGENTS.md).
 
