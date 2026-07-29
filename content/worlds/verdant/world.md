@@ -26,6 +26,13 @@ elements:
 # resist (defensive counterplay) would lift it further. Re-tune these two, not every enemy.
 balance:
   threatScalar: 2.2
+  # Trash foes survive a round or two instead of being one-rounded, so attrition actually lands and the
+  # mid-game stops reading "ヌルい". Measured (`npm run sim:balance`, mid column, startLv1): the shallows
+  # stay gentle (g1/g2 ~95-100%), the mid bites into its bands (g3=73%, g4/g5=50%), and the root-deep
+  # floors (g6-g8) turn the screws so hard a mid party without heals near-wipes — which is the point: the
+  # deep act DEMANDS provisioning (provisioned trough g6=34% g7=46% g8=20%), and levelsSaved holds at 11.
+  # Excludes minibosses/boss (they'd just become HP-sponges). See docs/design/difficulty-design.md.
+  hpScalar: 1.8
   counterplayBoost: 3.0
   # Resource-economy / scarcity (docs/design/difficulty-design.md). EO-leaning EARLY→MID (a rationed
   # kit, so attrition and "one more room vs turn back" actually bite), easing toward Act III (escaping
@@ -37,9 +44,11 @@ balance:
     stackCap:    9
     priceScalar: [1.0, 0.95, 0.85]   # shop prices ease as the town grows with your descent (authored; not yet wired to live gold)
     incomeScalar: [0.8, 1.0, 1.25]   # dive income climbs — late floors pay out, early ones don't flood (authored; not yet wired)
-    # The affordable kit a prepared party sets out with. Sized so a one-push RATIONS to the finale and
-    # runs dry at the deepest floor (the retreat trigger) — measured, see sim:balance RESOURCE-ECONOMY.
-    provisionKit: { heals: 3, cures: 1 }
+    # The affordable kit a prepared party sets out with. Two heals (down from three): with the longer
+    # hpScalar fights the party burns exactly this — cure at g3, heal at g5, heal at g8 — so the kit RATIONS
+    # to the finale and runs dry in the final act (the retreat trigger). Three left one heal unspent and the
+    # scarcity never bit. Measured against sim:balance RESOURCE-ECONOMY + tests/difficultyGate.
+    provisionKit: { heals: 2, cures: 1 }
 assetPack: verdant
 # The grove settlement does not talk like the ash town. Any key omitted here falls through to
 # the shared dictionary, so this file only says what Verdant says differently.

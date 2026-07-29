@@ -312,10 +312,17 @@ export function equipPartyForEnemy(party: Character[], world: ScenarioWorld, ene
       }
     }));
   }
-  // Prepared layers the per-enemy counter weapon and the resisting armour on top.
-  const weapon = bestWeaponFor(world, enemy);
+  // Prepared = the mid general loadout, UPGRADED per enemy — never weaker than mid, so preparation only
+  // ever adds. Take the counter weapon only when its base is at least the general weapon's (its weakness
+  // multiplier is then pure upside); otherwise keep the general weapon. Take the resisting body where one
+  // exists (worth more than raw defence vs an elemental threat), else keep the best-defence general body.
+  const general = generalLoadout(world);
+  const counterWeapon = bestWeaponFor(world, enemy);
+  const attackOf = (id?: string) => (id ? world.equipment.find((gear) => gear.id === id)?.attackBonus ?? 0 : -Infinity);
+  const weapon = attackOf(counterWeapon) >= attackOf(general.weapon) ? counterWeapon : general.weapon;
   const resist = bestResistFor(world, enemy);
-  if (!weapon && !resist) {
+  const body = resist ?? general.body;
+  if (!weapon && !body) {
     return party;
   }
   return party.map((member) => ({
@@ -323,7 +330,7 @@ export function equipPartyForEnemy(party: Character[], world: ScenarioWorld, ene
     equipment: {
       ...member.equipment,
       ...(weapon ? { weapon: { id: weapon } } : {}),
-      ...(resist ? { body: { id: resist } } : {})
+      ...(body ? { body: { id: body } } : {})
     }
   }));
 }

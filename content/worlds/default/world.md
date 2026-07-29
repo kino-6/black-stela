@@ -30,7 +30,13 @@ elements:
 # the SPREAD no benefit to a small/solo party and over-punishes early play. The invariants hold
 # (naive wipes, prepared clears near entry, deep floors bite); the gate asserts those, not a number.
 balance:
-  threatScalar: 2.4
+  # 2.4→2.5 (2026-07-30): once the descentSim measured a PREPARED party honestly (it used to under-equip
+  # them, understating deep-floor survival), the deepest floors read as a mild cakewalk — a prepared party
+  # held ~61% at b7/b8, above the "deep floors bite" line. 2.5 pulls the deep trough below 60% while the
+  # coverage/specialist ordering and prepare-or-wipe hold. NOTE: b7/b8 still sit above the Act III band
+  # (28-38%) — a global scalar cannot fix that (the party out-levels the deepest enemies as it descends);
+  # closing it needs per-floor deep-enemy authoring. Tracked in docs/design/difficulty-design.md.
+  threatScalar: 2.5
   counterplayBoost: 2.0
   # Wandering-encounter density is scenario-authored (IMP-041). Omit to keep the engine defaults
   # (~4% per eligible step, 8-step safety window after a fight ⇒ classic ~33-step DRPG cadence). A

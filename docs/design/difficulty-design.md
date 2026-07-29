@@ -172,6 +172,29 @@ re-point the per-world balance gates from `prepared` to `mid` where they mean "t
 `mid`-band gate, and **browser-verify + user feel** (player-facing). `hpScalar` is committed INERT (no world
 sets it) so nothing ships unverified.
 
+## Shipped (2026-07-30)
+
+The blocker above is fixed and the reshape is live and gate-green:
+
+- **`prepared` never weaker than `mid`** (`descentSim.equipPartyForEnemy`): prepared now = the general mid
+  loadout UPGRADED per enemy — the counter weapon only when its base ≥ the general weapon's, the resisting
+  body layered over (never under) the general body. This restores a valid `preparationValue`.
+- **Verdant `hpScalar: 1.8` + `provisionKit` 3→2**: mid-game bites into its bands (g3=73%, g4/g5=50%), the
+  root-deep floors demand provisioning (mid near-wipe; provisioned g6=34/g7=46/g8=20), the kit rations to the
+  finale and runs dry in the final act. `levelsSaved=11`. The "ヌルい" mid-game is gone.
+- **Default `threatScalar` 2.4→2.5**: with prepared measured honestly the deepest floors read as a mild
+  cakewalk (~61%); 2.5 pulls the deep trough below 60% while coverage/specialist ordering + prepare-or-wipe
+  hold.
+
+**Known gap (needs per-floor authoring, NOT a global knob):** the DEFAULT world's b7/b8 still sit ~61%,
+above the Act III band (28–38%). A prepared party out-levels the very deepest enemies as it descends, so a
+global `threatScalar`/`hpScalar` cannot make act3 strictly tenser than act2 (lifting the knob just drops act2
+in lockstep, and `hpScalar` there breaks the coverage "healer reaches further" ordering). The
+`descentSim.test` escalation assertion is therefore a bounded tolerance (`act3 ≤ act2 + 0.03`) guarding "the
+back half stays tense" while the sibling "not a cakewalk" test pins the deepest floor < 60%. Closing the last
+few % into the Act III band is a deep-enemy re-authoring pass on b7/b8 (and the Verdant g7/g8 mid near-wipe
+could be softened the same way if playtest calls it too punishing).
+
 ## Candidate levers (backlog, data-authorable)
 
 - **Multi-hit techniques** (複数回攻撃): a `hits: N` on a technique effect — a martial answer that *sweeps
