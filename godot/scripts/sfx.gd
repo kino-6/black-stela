@@ -21,7 +21,7 @@ func _ready() -> void:
 	for _i in 4:
 		var p := AudioStreamPlayer.new()
 		p.bus = "Master"
-		p.volume_db = -6.0
+		p.volume_db = -13.0
 		add_child(p)
 		_players.append(p)
 	build_clips()
@@ -31,15 +31,24 @@ func _ready() -> void:
 	if vp != null and not vp.gui_focus_changed.is_connected(_on_focus_changed):
 		vp.gui_focus_changed.connect(_on_focus_changed)
 
-# Pulse-wave blips: thin tick for the cursor, a rising two-note 決定, a falling two-note キャンセル.
-# Public + tree-free so a headless test can synthesise and inspect them without a running scene.
+# SOFT SINE blips (not harsh squares) for an SFC-natural feel: a quiet cursor tick, a gentle rising 決定,
+# a gentle falling キャンセル. Public + tree-free so a headless test can synthesise them without a scene.
 func build_clips() -> void:
-	_clips["move"] = _make([[1046.5, 26.0]], 0.25, 0.26)
-	_clips["confirm"] = _make([[784.0, 36.0], [1174.7, 70.0]], 0.5, 0.30)
-	_clips["cancel"] = _make([[466.2, 40.0], [349.2, 78.0]], 0.5, 0.28)
+	_clips["move"] = _make([[880.0, 20.0]], 0.11)
+	_clips["confirm"] = _make([[659.3, 30.0], [987.8, 46.0]], 0.16)
+	_clips["cancel"] = _make([[440.0, 32.0], [329.6, 54.0]], 0.15)
 
 func _on_focus_changed(_control: Control) -> void:
+	# In the dungeon the arrow keys WALK (and only incidentally nudge focus on the command panel), so a
+	# cursor tick per step read as noisy "ピコピコ" — keep the cursor sound to menu screens only.
+	if _in_dungeon():
+		return
 	play("move")
+
+func _in_dungeon() -> bool:
+	var tree := get_tree()
+	var scene: Node = tree.current_scene if tree != null else null
+	return scene != null and String(scene.scene_file_path).ends_with("dungeon.tscn")
 
 func _input(event: InputEvent) -> void:
 	if event.is_echo():
@@ -71,17 +80,18 @@ func set_enabled(on: bool) -> void:
 func clip_count() -> int:
 	return _clips.size()
 
-# Build one pulse-wave blip from [[freq_hz, ms], …] segments. Phase accumulates across segments so a note
-# change never clicks; a 2ms attack + 8ms release keep the on/off edges soft.
-func _make(segments: Array, duty: float, amp: float) -> AudioStreamWAV:
+# Build one SOFT SINE blip from [[freq_hz, ms], …] segments. Phase accumulates across segments so a note
+# change never clicks; a longer 6ms attack + 14ms release round the edges (no chiptune "click"), which is
+# what pulls it from harsh NES ピコ toward a gentler SFC boop.
+func _make(segments: Array, amp: float) -> AudioStreamWAV:
 	var total_ms := 0.0
 	for seg in segments:
 		total_ms += float(seg[1])
 	var n := int(RATE * total_ms / 1000.0)
 	var data := PackedByteArray()
 	data.resize(n * 2)
-	var attack := maxi(1, int(RATE * 0.002))
-	var release := maxi(1, int(RATE * 0.008))
+	var attack := maxi(1, int(RATE * 0.006))
+	var release := maxi(1, int(RATE * 0.014))
 	var seg_i := 0
 	var seg_end := int(RATE * float(segments[0][1]) / 1000.0)
 	var freq := float(segments[0][0])
@@ -92,13 +102,13 @@ func _make(segments: Array, duty: float, amp: float) -> AudioStreamWAV:
 			seg_end += int(RATE * float(segments[seg_i][1]) / 1000.0)
 			freq = float(segments[seg_i][0])
 		phase = fmod(phase + freq / float(RATE), 1.0)
-		var square := 1.0 if phase < duty else -1.0
+		var wave := sin(phase * TAU)
 		var env := 1.0
 		if i < attack:
 			env = float(i) / float(attack)
 		elif i > n - release:
 			env = float(n - i) / float(release)
-		var sample := int(clampf(square * env * amp, -1.0, 1.0) * 32767.0)
+		var sample := int(clampf(wave * env * amp, -1.0, 1.0) * 32767.0)
 		data.encode_s16(i * 2, sample)
 	var wav := AudioStreamWAV.new()
 	wav.format = AudioStreamWAV.FORMAT_16_BITS
