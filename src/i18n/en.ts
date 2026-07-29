@@ -849,7 +849,7 @@ export const en = {
     returnedToTown: "The party returns to town. The record is preserved.",
     partyWiped: "The party falls. Searchers drag them back to town — the rescue costs {gold} gold.",
     blockedPartyRequired: "A party is required before entering the labyrinth.",
-    blockedPartyDowned: "No one can stand. Heal at the infirmary first.",
+    blockedPartyDowned: "No one can stand. Heal them at the infirmary, or re-form the party.",
     blockedStairsUnavailable: "There is no stair in front of the party.",
     blockedNoReturn: "There is no stair or return seal here.",
     inspectWall: "The party studies the stonework without changing the route.",

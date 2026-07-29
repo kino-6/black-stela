@@ -851,7 +851,7 @@ export const ja = {
     returnedToTown: "隊列は街へ戻った。記録は残された。",
     partyWiped: "隊列は全滅した。捜索隊が街へ運び戻す — 救助に {gold} ゴールドを要した。",
     blockedPartyRequired: "迷宮に入るには隊列が必要だ。",
-    blockedPartyDowned: "動ける者がいない。まず癒やしの間で傷を癒せ。",
+    blockedPartyDowned: "動ける者がいない。癒やしの間で傷を癒すか、隊列を組み直せ。",
     blockedStairsUnavailable: "正面に使える階段はない。",
     blockedNoReturn: "ここには街へ戻る階段も帰還印もない。",
     inspectWall: "隊列は石組みを調べたが、進路は変わらない。",
