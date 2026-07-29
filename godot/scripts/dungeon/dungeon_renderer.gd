@@ -306,6 +306,15 @@ static func _add_door(parent: Node, door_mat: Material, frame_mat: Material, _ac
 	]:
 		_add_box(root, spec["size"], frame_mat, spec["pos"])
 
+	# Embed the door in the surrounding WALL so it does not read as a free-standing frame edge-on: fill the
+	# header (lintel → ceiling) and the two jamb strips (frame post → cell edge) with wall material, spanning
+	# the full cell so it meets the neighbouring walls. Without this the door edge is see-through above and
+	# beside the frame from an adjacent cell (playtest 2026-07-29).
+	var header_bottom := 2.42 # lintel underside
+	_add_box(root, Vector3(CELL, WALL_H - header_bottom, 0.16), frame_mat, Vector3(0, (header_bottom + WALL_H) / 2.0, 0))
+	for side in [-1.0, 1.0]:
+		_add_box(root, Vector3(CELL / 2.0 - 1.16, header_bottom, 0.16), frame_mat, Vector3(side * (1.16 + CELL / 2.0) / 2.0, header_bottom / 2.0, 0))
+
 	# CLOSED (玄室 not yet opened): the two leaves MEET in the centre and fill the threshold, hiding the room
 	# beyond — the Wiz "what's behind the door?" beat (bump-to-open swings them aside). OPENED: the leaves are
 	# pushed ajar so the cleared room reads as entered and passable.

@@ -63,6 +63,13 @@ static func randomize(draft: Dictionary, data: Dictionary, class_ids: Array, see
 	var faces := face_keys(data)
 	if not faces.is_empty():
 		draft["portraitKey"] = String(faces[int(abs(seed / 11)) % faces.size()])
+	# Deal the NAME/title/notes off the SAME varying seed as everything else — otherwise identitySeed stays
+	# at the draft's fixed origin seed and every 見繕う hands back the same name (playtest 2026-07-29). Clear
+	# the per-field seeds so suggest_identity falls through to this identitySeed.
+	draft["identitySeed"] = seed
+	draft.erase("nameSeed")
+	draft.erase("titleSeed")
+	draft.erase("notesSeed")
 	reroll_identity(draft, data) # a dealt name/title/notes
 	draft["bonusAptitude"] = empty_bonus()
 	var pool := int(draft.get("bonusPool", 0))
