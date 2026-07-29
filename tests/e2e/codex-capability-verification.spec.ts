@@ -43,7 +43,7 @@ test.describe("Codex verification for IMP-021 / IMP-022", () => {
     await reachTown(page, { locale: "en", scenario: /Black Stela|Gate of Ash/ });
 
     await activateByController(page, "Guild hall");
-    await activateByController(page, "Vocations");
+    await activateByController(page, "Reclass");
     await expect(page.getByTestId("career-panel")).toBeVisible();
     await expect(page.locator(".career-vocation.career-advanced")).toHaveCount(6);
     await expect(page.getByTestId("career-vocation-vocation.needle-dancer")).toContainText("Needle Dancer");
@@ -63,7 +63,7 @@ test.describe("Codex verification for IMP-021 / IMP-022", () => {
     await reachTown(page, { locale: "ja", scenario: /翠碑|沈む樹心/ });
 
     await activateByController(page, "ギルド館");
-    await activateByController(page, "生業");
+    await activateByController(page, "転職");
     await expect(page.getByTestId("career-panel")).toBeVisible();
     const advancedVocations = page.locator(".career-vocation.career-advanced");
     await expect(advancedVocations).toHaveCount(6);
