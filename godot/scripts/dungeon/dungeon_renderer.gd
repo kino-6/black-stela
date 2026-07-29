@@ -55,7 +55,18 @@ static func _build_geometry(parent: Node, world: Dictionary, state: Dictionary, 
 	var pal: Dictionary = world.get("palette", {}) if typeof(world.get("palette", null)) == TYPE_DICTIONARY else {}
 	var wall_mat := _textured_mat(block["wall"], Color(String(pal.get("wall", "8a8074"))))
 	var floor_mat := _textured_mat(block["floor"], Color(String(pal.get("floor", "6e675c"))))
-	var ceil_mat := _textured_mat(block["wall"], Color("3a352c"))
+	# The ceiling is part of the world-owned readability composition, not a fixed near-black mass: a scenario
+	# that authors a `ceiling` tone lifts the overhead plane off pure black so depth and corners read from the
+	# first-person frame (IMP-055). Falls back to the old dark tint for worlds that omit it.
+	var ceil_col := Color(String(pal.get("ceiling", "3a352c")))
+	var ceil_mat := _textured_mat(block["wall"], ceil_col)
+	# A faint self-lit ceiling reads as an overhead plane even where the floor-level torch doesn't reach — the
+	# depth/corner cue — without brightening the walls or floor. Only a scenario that authors `ceiling` opts in;
+	# the default keeps its old unlit dark ceiling.
+	if pal.has("ceiling"):
+		ceil_mat.emission_enabled = true
+		ceil_mat.emission = ceil_col
+		ceil_mat.emission_energy_multiplier = 0.2
 	var chamber_floor_mat := _textured_mat(block["floor"], Color(String(pal.get("chamberFloor", "9a8050"))))
 	var chamber_wall_mat := _textured_mat(block["wall"], Color(String(pal.get("chamberWall", "a18e62"))))
 	var chamber_accent := Color(String(pal.get("chamberAccent", "c9a765")))

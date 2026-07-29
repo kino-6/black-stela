@@ -68,6 +68,9 @@ palette:
   front: "#e4f7c9"
   wall: "#c2c7b5"
   floor: "#a49c85"
+  # IMP-055 readability: lift the ceiling off pure black so the overhead plane gives a depth/corner cue in
+  # the first-person frame — a dim mossy sage, clearly darker than the walls but no longer a black void.
+  ceiling: "#4a5140"
   # 玄室は「緑の置物」ではなく、番人と報酬のために根が磨いた儀式の床。濡れた石灰岩の
   # 基壇と暗い根の建築を、琥珀の埋め込み環だけで拾わせる。緑の環境光に染まっても用途が
   # 読めるよう、通常床より低彩度・暖色寄りに分離する。
