@@ -2556,7 +2556,7 @@
         },
         {
           "key": "play.useReturnCharm",
-          "reason": "Dungeon-UX redesign 2026-07-29: the escape charm left the direct-key dock; it moves to メニュー→所持品 (task #24). Temporary functional gap noted there."
+          "reason": "Dungeon-UX redesign 2026-07-29: the escape charm left the direct-key dock. RESOLVED 2026-07-30 — it is now used from メニュー→貴重品 in BOTH engines (React PartyMenuPanel + Godot party_panel), so it has a real reachable home; the dungeon DOCK simply no longer carries it. React still lists it in its own dock (dev-reference); trimming that is the remaining cosmetic dock reconcile."
         },
         {
           "key": "play.descentLockedShort",
