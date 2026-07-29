@@ -13,7 +13,7 @@ const UI := preload("res://scripts/town/ui_kit.gd")
 ## Returns { control, focus } — `focus` is the button the cursor must land on.
 ## `loot_line` is the "◯◯ を N 個見つけた。" text from the just-fired loot event, shown INSIDE the panel on
 ## open so the reward is visible where the player is looking (playtest: the panel only said "宝箱は開いた。").
-static func build(chest: Dictionary, on_command: Callable, on_leave: Callable, loot_line: String = "") -> Dictionary:
+static func build(chest: Dictionary, on_command: Callable, on_leave: Callable, loot_line: String = "", closed_tex: Texture2D = null, open_tex: Texture2D = null) -> Dictionary:
 	var opened := String(chest.get("phase", "")) == "opened"
 	var result := String(chest.get("investigateResult", "")) if chest.get("investigateResult", null) != null else ""
 	var known_trapped := result == "trapped"
@@ -30,6 +30,16 @@ static func build(chest: Dictionary, on_command: Callable, on_leave: Callable, l
 
 	var root := UI.col(8)
 	root.add_child(UI.label(I18n.t("play.chestHeading"), 20, UI.GOLD))
+	# The chest itself — the prepared still, sprung open once looted (playtest 2026-07-30: the panel used
+	# the art nowhere and read as a bare text prompt). Sits above the note so the player sees WHAT it is.
+	var chest_tex: Texture2D = open_tex if opened else closed_tex
+	if chest_tex != null:
+		var img := TextureRect.new()
+		img.texture = chest_tex
+		img.custom_minimum_size = Vector2(232, 150)
+		img.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		img.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		root.add_child(img)
 	root.add_child(UI.label(note, 17, UI.INK))
 	# The reward, shown right where the chest was opened — not only in the far-off message band.
 	if opened and loot_line != "":

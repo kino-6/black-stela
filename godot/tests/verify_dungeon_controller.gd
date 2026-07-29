@@ -101,6 +101,19 @@ func _initialize() -> void:
 	for kind in ["open", "door", "one_way", "stairs", "shortcut", "secret"]:
 		var e := {"kind": kind}
 		_check(bool(FloorMap._is_passage(e)) == bool(mm.call("_is_passage", e)), "full map and minimap agree whether a '%s' side is a wall" % kind)
+
+	# Floor scoping (playtest 2026-07-30: 徒歩で1Fに戻ると2FのMapと同じ). Floors share the (x,y) grid, so the
+	# minimap must draw ONLY the party's current floor — never another floor's cell that happens to sit at the
+	# same coordinate, even when it is in the cumulative visitedCells. Two floors, both with a cell at (5,5).
+	var two_floor := {"dungeons": [
+		{"id": "f1", "grid": {"cells": [{"id": "a", "x": 5, "y": 5, "roomId": "ra", "edges": {}}]}},
+		{"id": "f2", "grid": {"cells": [{"id": "z", "x": 5, "y": 5, "roomId": "rz", "edges": {}}]}},
+	]}
+	var on_f1 := {"map": {"floorId": "f1", "visitedCells": ["a", "z"]}, "position": {"cellId": "a", "facing": "north"}}
+	mm.call("setup", two_floor, on_f1)
+	var drawn: Array = mm.call("visible_cell_ids", on_f1)
+	_check(drawn.has("a") and not drawn.has("z"), "minimap draws only the CURRENT floor's cells, never 2F's on 1F")
+
 	if mm is Node:
 		(mm as Node).free()
 

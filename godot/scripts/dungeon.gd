@@ -210,6 +210,16 @@ func _input(event: InputEvent) -> void:
 			_toggle_party_menu()
 			get_viewport().set_input_as_handled()
 		return
+	# A chest HOLDS the cell (Wizardry prompt): while its panel is up the party can neither walk NOR turn.
+	# The arrows navigate the chest's own 調べる/罠を外す/開ける/立ち去る buttons, 決定 fires the focused one
+	# (both handled by the panel's focus ring — we consume nothing, so the keys fall through to it), and
+	# キャンセル leaves. Playtest 2026-07-30: you could rotate to face a wall mid-open — the still + the
+	# decision should hold the party's attention, not let them wander off the chest.
+	if not current_chest().is_empty():
+		if event.is_action_pressed("cancel"):
+			_leave_chest()
+			get_viewport().set_input_as_handled()
+		return
 	# The legend promises 移動 ↑↓ · 旋回 ←→ · 横歩き Q/E — every one MOVES the party, and every one
 	# auto-repeats while HELD (see _process), so walking a corridor is one press-and-hold, not a tap per cell.
 	for action in MOVE_COMMANDS:
@@ -433,7 +443,7 @@ func _rebuild_dock() -> void:
 	if not chest.is_empty():
 		# IMP-029: a chest HOLDS the cell — its actions replace the walk commands rather than sitting
 		# beside them, so Confirm can never walk the party off the chest by accident.
-		var built: Dictionary = ChestPanel.build(chest, func(cmd): _apply(SliceRules.resolve(_state, cmd, _world, _engine)), func(): _leave_chest(), _chest_loot_line)
+		var built: Dictionary = ChestPanel.build(chest, func(cmd): _apply(SliceRules.resolve(_state, cmd, _world, _engine)), func(): _leave_chest(), _chest_loot_line, _texture(_asset("dungeon/treasure-chest-closed.png")), _texture(_asset("dungeon/treasure-chest-open.png")))
 		_dock_host.add_child(built["control"])
 		if built["focus"] != null:
 			(built["focus"] as Control).call_deferred("grab_focus")

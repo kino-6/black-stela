@@ -23,39 +23,90 @@ const MARKER_COL := {
 
 var _world: Dictionary = {}
 var _state: Dictionary = {}
-var _cells_by_id: Dictionary = {}
+var _dungeons_by_id: Dictionary = {}
 
 func setup(world: Dictionary, state: Dictionary) -> void:
 	_world = world
 	_state = state
-	_cells_by_id.clear()
+	_dungeons_by_id.clear()
 	for dungeon in world.get("dungeons", []):
-		for cell in (dungeon.get("grid", {}) as Dictionary).get("cells", []):
-			_cells_by_id[cell.get("id", "")] = cell
+		_dungeons_by_id[String(dungeon.get("id", ""))] = dungeon
 	queue_redraw()
 
 func refresh(state: Dictionary) -> void:
 	_state = state
 	queue_redraw()
 
+# The current floor's cells ONLY — never the whole world. Floors share the same (x,y) coordinate space,
+# so mixing them (the old bug: iterate the global visitedCells across every dungeon) stamped 2F's rooms onto
+# the 1F minimap, and walking back to 1F showed 2F's map. Mirrors the full map's _floor_cells scoping.
+func _floor_cells() -> Array:
+	return _floor_cells_of(_state)
+
+func _floor_cells_of(state: Dictionary) -> Array:
+	var floor_id := String(state.get("map", {}).get("floorId", ""))
+	var dungeon: Variant = _dungeons_by_id.get(floor_id, null)
+	if typeof(dungeon) != TYPE_DICTIONARY:
+		return []
+	return (dungeon.get("grid", {}) as Dictionary).get("cells", [])
+
+## The cell ids the minimap will actually draw for `state`. Exposed so a gate can PROVE the map never bleeds
+## another floor's cells onto this one (playtest 2026-07-30: walking back to 1F showed 2F's map, because the
+## draw iterated the global visitedCells across every dungeon). The draw loop below uses the same predicate.
+func visible_cell_ids(state: Dictionary) -> Array:
+	var cells := _floor_cells_of(state)
+	if cells.is_empty():
+		return []
+	var by_id := {}
+	for cell in cells:
+		by_id[String(cell.get("id", ""))] = cell
+	var cur: Variant = by_id.get(String(state.get("position", {}).get("cellId", "")), null)
+	if typeof(cur) != TYPE_DICTIONARY:
+		return []
+	var cur_id := String(cur.get("id", ""))
+	var cx := int(cur.get("x", 0))
+	var cy := int(cur.get("y", 0))
+	var visited := {}
+	for vid in state.get("map", {}).get("visitedCells", []):
+		visited[String(vid)] = true
+	var out: Array = []
+	for cell in cells:
+		var cid := String(cell.get("id", ""))
+		if cid != cur_id and not visited.has(cid):
+			continue
+		if abs(int(cell.get("x", 0)) - cx) > RADIUS or abs(int(cell.get("y", 0)) - cy) > RADIUS:
+			continue
+		out.append(cid)
+	return out
+
 func _draw() -> void:
 	draw_rect(Rect2(Vector2.ZERO, size), BG_COL, true)
 	draw_rect(Rect2(Vector2.ZERO, size), BORDER_COL, false, 2.0)
-	if _cells_by_id.is_empty():
+
+	var cells := _floor_cells()
+	if cells.is_empty():
 		return
+	var by_id := {}
+	for cell in cells:
+		by_id[String(cell.get("id", ""))] = cell
 
 	var pos: Dictionary = _state.get("position", {})
-	var cur: Variant = _cells_by_id.get(pos.get("cellId", ""), null)
+	var cur: Variant = by_id.get(String(pos.get("cellId", "")), null)
 	if typeof(cur) != TYPE_DICTIONARY:
 		return
+	var cur_id := String(cur.get("id", ""))
 	var cx := int(cur.get("x", 0))
 	var cy := int(cur.get("y", 0))
 	var origin := size / 2.0 - Vector2(CELL, CELL) / 2.0
 
-	var visited: Array = _state.get("map", {}).get("visitedCells", [])
-	for cell_id in visited:
-		var cell: Variant = _cells_by_id.get(cell_id, null)
-		if typeof(cell) != TYPE_DICTIONARY:
+	var visited := {}
+	for vid in _state.get("map", {}).get("visitedCells", []):
+		visited[String(vid)] = true
+
+	# Only THIS floor's cells, and only ones the party has actually walked (or the cell they stand on).
+	for cell in cells:
+		var cell_id := String(cell.get("id", ""))
+		if cell_id != cur_id and not visited.has(cell_id):
 			continue
 		var dx := int(cell.get("x", 0)) - cx
 		var dy := int(cell.get("y", 0)) - cy

@@ -157,7 +157,7 @@ static func _build_geometry(parent: Node, world: Dictionary, state: Dictionary, 
 			# never rendered).
 			var stair_kind := _stairs_kind(cell, floor_dungeon)
 			if stair_kind != "":
-				_add_stairs(parent, base, _asset(world, run, "dungeon/stair-%s.png" % stair_kind))
+				_add_stairs(parent, base, _asset(world, run, "dungeon/stair-%s.png" % stair_kind), stair_kind)
 
 static func _is_chamber(edges: Dictionary) -> bool:
 	var openings := 0
@@ -183,29 +183,42 @@ static func _floor_depth(floor_id: String) -> int:
 	var m := re.search(floor_id)
 	return int(m.get_string(1)) if m else 0
 
-# A standing BILLBOARD sprite of the stairs, facing the camera. A flat floor decal read as a squashed
-# smear from the first-person angle (playtest); an upright sprite shows the art un-distorted.
-static func _add_stairs(parent: Node, base: Vector3, tex_path: String) -> void:
+# The stairs art, drawn to match what it depicts. A DESCENT is a hole in the ground (the art is a pit seen
+# from above) so it lies FLAT on the floor like a trapdoor; an ASCENT is a ladder climbing up, so it stands
+# UPRIGHT and turns to face the party. Rendering the pit as an upright billboard made a ground-hole stand up
+# like a signboard and read as floating (playtest 2026-07-30: 階段浮いている / 全く変わってない — the earlier
+# billboard tweak could not fix it because the whole ORIENTATION was wrong for a descent).
+static func _add_stairs(parent: Node, base: Vector3, tex_path: String, kind: String) -> void:
 	if not ResourceLoader.exists(tex_path):
 		return
 	var tex: Texture2D = load(tex_path)
 	if tex == null:
 		return
-	var m := MeshInstance3D.new()
-	var quad := QuadMesh.new()
-	var h := CELL * 0.8
-	quad.size = Vector2(h, h)
-	m.mesh = quad
 	var mat := StandardMaterial3D.new()
 	mat.albedo_texture = tex
 	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	# Y-FIXED billboard, not a full one: a full billboard tilts to face the camera and lifts its bottom edge
-	# off the floor, so the stair looked like it was floating (playtest 2026-07-29: 階段浮きすぎ). Y-fixed keeps
-	# it upright and grounded while still turning to face the party.
-	mat.billboard_mode = BaseMaterial3D.BILLBOARD_FIXED_Y
-	m.material_override = mat
-	m.position = base + Vector3(0, h / 2.0, 0)   # bottom edge on the floor, centred in the cell
+	var m := MeshInstance3D.new()
+	if kind == "down":
+		# Flat on the floor — a pit is PART of the ground, not an object standing on it. PlaneMesh already lies
+		# in the XZ plane (normal +Y); a round pit reads the same whichever way the party faces, so no billboard.
+		var plane := PlaneMesh.new()
+		var s := CELL * 0.92
+		plane.size = Vector2(s, s)
+		m.mesh = plane
+		mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+		m.material_override = mat
+		m.position = base + Vector3(0, 0.03, 0)   # a hair above the floor plane to avoid z-fighting
+	else:
+		# Upright, grounded at its base, turning to face the party (Y-fixed billboard, not a full one — a full
+		# billboard tilts and lifts its bottom edge off the floor, which floats it).
+		var quad := QuadMesh.new()
+		var h := CELL * 0.8
+		quad.size = Vector2(h, h)
+		m.mesh = quad
+		mat.billboard_mode = BaseMaterial3D.BILLBOARD_FIXED_Y
+		m.material_override = mat
+		m.position = base + Vector3(0, h / 2.0, 0)   # bottom edge on the floor, centred in the cell
 	parent.add_child(m)
 
 static func _add_plane(parent: Node, mat: Material, pos: Vector3, rot: Vector3) -> void:
