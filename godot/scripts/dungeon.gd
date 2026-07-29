@@ -690,6 +690,15 @@ func _apply(result: Dictionary) -> void:
 	_rebuild_dock()
 	_rebuild_party_hud()
 
+# Commands dispatched from the party MENU (メニュー). Most just mutate state in place, but using an escape
+# charm ends the descent — _apply returns early once phase leaves "dungeon" (it must not rebuild the maze
+# it is leaving), so the menu is the one that carries the party out to the town, exactly as the old dock
+# 'charm'/'return' handlers did.
+func _menu_dispatch(command: Dictionary) -> void:
+	_apply(SliceRules.resolve(_state, command, _world, _engine))
+	if String(_state.get("phase", "")) == "town":
+		get_tree().change_scene_to_file("res://scenes/town.tscn")
+
 # 隊列 opens the party menu OVER the dungeon — it must never leave the maze. (It used to change scene to
 # the town, and the town forces phase=town on entry, so pressing it silently ENDED the expedition and
 # yanked the party out of the dungeon.) In the dungeon the menu is read-only for equipment, which the
@@ -715,7 +724,7 @@ func _toggle_party_menu() -> void:
 	var focus_target: Control = null
 	var ctx := {
 		"state": _state, "world": _world, "engine": _engine, "event_text": "",
-		"dispatch": func(command): _apply(SliceRules.resolve(_state, command, _world, _engine)),
+		"dispatch": func(command): _menu_dispatch(command),
 		"close": func(): _toggle_party_menu(),
 		"selected_member": func(): return _party_selected(),
 		"set_selected": func(id): _party_member_id = String(id); _refresh_party_menu(),

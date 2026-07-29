@@ -264,8 +264,14 @@ static func _item_page(ctx: Dictionary, world: Dictionary, member: Dictionary, p
 		detail.add_child(UI.gap(6))
 
 		var actions := UI.row()
-		if USABLE_KINDS.has(String(selected.get("kind", ""))):
-			actions.add_child(UI.button(I18n.t("partyMenu.useOn", {"name": String(member.get("name", ""))}), func(): ctx["dispatch"].call({"type": "use_item", "itemId": selected.get("id", ""), "targetCharacterId": member.get("id", "")}), Vector2(220, 40), 16))
+		var kind := String(selected.get("kind", ""))
+		# An escape charm is USED from the menu — its reachable home now the dungeon dock is key-driven and no
+		# longer lists it (playtest 2026-07-30: 脱出アイテムに触れない). Only in the dungeon; town has nothing to
+		# escape. It reuses the return-charm label the dock used to carry.
+		var can_use_escape := kind == "escape" and not in_town
+		if USABLE_KINDS.has(kind) or can_use_escape:
+			var use_label: String = I18n.t("play.useReturnCharm") if can_use_escape else I18n.t("partyMenu.useOn", {"name": String(member.get("name", ""))})
+			actions.add_child(UI.button(use_label, func(): ctx["dispatch"].call({"type": "use_item", "itemId": selected.get("id", ""), "targetCharacterId": member.get("id", "")}), Vector2(220, 40), 16))
 		if is_equipment:
 			var equip: Variant = Fmt.find_equipment(world, selected.get("id", ""))
 			var usable: bool = typeof(equip) == TYPE_DICTIONARY and Fmt.is_usable_by(equip, member)

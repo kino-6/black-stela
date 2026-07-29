@@ -84,7 +84,10 @@ export function PartyMenuPanel({ state, world, locale, t, onCommand, onClose }: 
   const nextLevelXp = xpForLevel(member.level + 1);
   const selectedEquipment = selectedItem ? world.equipment.find((candidate) => candidate.id === selectedItem.id) : undefined;
   const canEquip = Boolean(selectedEquipment && isEquipmentUsableBy(selectedEquipment, member));
-  const canUse = Boolean(selectedItem && ["healing", "cure", "focus", "growth"].includes(selectedItem.kind));
+  // An escape charm is USED from the menu (its own reachable home now the dungeon dock is key-driven and no
+  // longer lists it) — but only in the dungeon; in town there is nothing to escape from.
+  const canUseEscape = Boolean(selectedItem && selectedItem.kind === "escape" && state.phase !== "town");
+  const canUse = Boolean(selectedItem && (["healing", "cure", "focus", "growth"].includes(selectedItem.kind) || canUseEscape));
   const equippedCount = selectedItem
     ? state.party.reduce(
         (count, candidate) =>
@@ -332,7 +335,7 @@ export function PartyMenuPanel({ state, world, locale, t, onCommand, onClose }: 
                     <div className="party-item-actions">
                       {canUse && (
                         <button type="button" onClick={() => onCommand({ type: "use_item", itemId: selectedItem.id, targetCharacterId: member.id })}>
-                          {t("partyMenu.useOn", { name: member.name })}
+                          {canUseEscape ? t("play.useReturnCharm") : t("partyMenu.useOn", { name: member.name })}
                         </button>
                       )}
                       {selectedEquipment && (
