@@ -18,8 +18,15 @@ func _initialize() -> void:
 	_check(String(state.get("phase", "")) == "dungeon", "scene enters the dungeon phase")
 	_check(String((state.get("position", {}) as Dictionary).get("cellId", "")) != "", "party has a landing cell")
 
-	# 1) A controller can reach a dock command (探索/聞く/全体図/隊列/オート).
-	_check(_has_focusable_button(d), "the dock offers a focusable command a controller can act on")
+	# 1) DIRECT dungeon controls (playtest 2026-07-29 redesign): the dungeon is driven by keys, not a command
+	#    panel you Tab into. 決定 runs the cell's CONTEXT action (探索 on a plain cell), キャンセル opens the
+	#    メニュー. The right panel is a non-interactive hint — there is no focus ring to navigate.
+	_check(String(d.call("_context_command")) == "search", "決定 = 探索 on a plain cell (context action)")
+	d.call("_input", _pressed("cancel"))
+	_check(_valid(d.get("_party_menu")), "キャンセル opens the メニュー")
+	d.call("_input", _pressed("cancel"))   # close it so the later menu checks start clean
+	for i in 2:
+		await process_frame
 
 	# 2) #13 — the full map opens and Cancel/Esc closes it (the bug: Esc did nothing, only 立ち去る closed).
 	d.call("_toggle_full_map")

@@ -2504,6 +2504,36 @@
       "reactPanel": "src/components/DungeonCommandDock.tsx",
       "scene": "res://scenes/dungeon.tscn",
       "evidence": "tests/_ux_dungeon-dock.png",
+      "derivedExclusions": [
+        {
+          "key": "play.dungeonView",
+          "reason": "React uses this only as the aria-label of the 3D view element (DungeonCockpit). Godot has no accessibility tree, and painting '一人称迷宮ビュー' onto the play screen would be implementation wording of the kind AGENTS.md bars from normal play. The view itself is ported; the label has no player-facing home."
+        },
+        {
+          "key": "play.descentLocked",
+          "reason": "The generic line is React's FALLBACK for a gate with no authored clue (stairGateClue ?? t(...)); all 14 authored gates ship a ja clue, so the fallback cannot render. The port keeps the same fallback — restore this requirement if a clue-less gate is ever authored."
+        },
+        {
+          "key": "play.listen",
+          "reason": "Dungeon-UX redesign 2026-07-29: 聞く removed per playtest. The dungeon is driven by direct keys (決定=探索/文脈, キャンセル=メニュー) not a command panel; React dock reconciliation queued (task #24)."
+        },
+        {
+          "key": "tempo.auto",
+          "reason": "Dungeon-UX redesign 2026-07-29: オート (auto-explore) removed from normal play per playtest; overlaps held-move. React reconciliation queued (#24)."
+        },
+        {
+          "key": "tempo.stop",
+          "reason": "Dungeon-UX redesign 2026-07-29: the auto-explore STATUS was removed with オート (tempo.auto). React reconciliation queued (#24)."
+        },
+        {
+          "key": "play.useReturnCharm",
+          "reason": "Dungeon-UX redesign 2026-07-29: the escape charm left the direct-key dock; it moves to メニュー→所持品 (task #24). Temporary functional gap noted there."
+        },
+        {
+          "key": "play.descentLockedShort",
+          "reason": "Dungeon-UX redesign 2026-07-29: the DISABLED 階段封鎖 button is replaced by the always-shown clue line (_stair_gate_clue / play.descentLocked), which is more informative for a controller player."
+        }
+      ],
       "requiredKeys": [
         "map.heading",
         "party.armor",
@@ -2511,22 +2541,17 @@
         "party.speed",
         "partyMenu.title",
         "play.backRow",
-        "play.descentLockedShort",
         "play.dungeonCommands",
         "play.frontRow",
         "play.fullMap",
-        "play.listen",
         "play.memberStatus",
         "play.moveHint",
         "play.mpShort",
         "play.partyStatus",
         "play.search",
-        "play.useReturnCharm",
         "play.useReturnMarker",
         "play.useReturnStairs",
-        "play.useStairs",
-        "tempo.auto",
-        "tempo.stop"
+        "play.useStairs"
       ],
       "notes": "The contextual dock: 探索/耳をすます always, the stair only where one is (and a DISABLED 階段封鎖 with its clue where the way down will not open yet), the way home as stairs or the planted marker, a charm when one is carried, and the auto-explore STATUS at the end. Each is driven, because 'contextual' means the screen is different in each place.",
       "states": [
@@ -2569,16 +2594,6 @@
           "uiState": {
             "auto": true
           }
-        }
-      ],
-      "derivedExclusions": [
-        {
-          "key": "play.dungeonView",
-          "reason": "React uses this only as the aria-label of the 3D view element (DungeonCockpit). Godot has no accessibility tree, and painting '一人称迷宮ビュー' onto the play screen would be implementation wording of the kind AGENTS.md bars from normal play. The view itself is ported; the label has no player-facing home."
-        },
-        {
-          "key": "play.descentLocked",
-          "reason": "The generic line is React's FALLBACK for a gate with no authored clue (stairGateClue ?? t(...)); all 14 authored gates ship a ja clue, so the fallback cannot render. The port keeps the same fallback — restore this requirement if a clue-less gate is ever authored."
         }
       ]
     },

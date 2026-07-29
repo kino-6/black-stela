@@ -252,7 +252,7 @@ export const ja = {
     luck: "運"
   },
   partyMenu: {
-    title: "隊列",
+    title: "メニュー",
     subtitleTown: "隊列の状態と装備を確認できます。",
     subtitleDungeon: "隊列の状態を確認し、手持ちの品を使えます。",
     pages: "隊列メニュー",
@@ -420,6 +420,9 @@ export const ja = {
     spellSapWeave: "樹液結び",
     mpShort: "MP",
     dungeonCommands: "迷宮コマンド",
+    keyConfirm: "決定",
+    keyCancel: "キャンセル",
+    keyMap: "M",
     dungeonView: "一人称迷宮ビュー",
     moveHint: "移動 ↑↓ · 旋回 ←→ · 横歩き Q/E",
     search: "探索",

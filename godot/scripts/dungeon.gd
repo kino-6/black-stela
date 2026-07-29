@@ -217,6 +217,19 @@ func _input(event: InputEvent) -> void:
 			_begin_move(action)
 			get_viewport().set_input_as_handled()
 			return
+	# DIRECT dungeon controls (playtest 2026-07-29 redesign — no DQ1 command panel, no Tab dance):
+	#   決定 = the CONTEXT action for this cell (探索, or 階段/帰還/罠 when the cell offers one);
+	#   キャンセル = open the メニュー (camp); M = full map. There is no focus ring — the scene owns the
+	#   keys, and the right panel is only a hint of what they do.
+	if event.is_action_pressed("confirm"):
+		if current_chest().is_empty():
+			_on_command(_context_command())
+			get_viewport().set_input_as_handled()
+		return
+	if event.is_action_pressed("cancel"):
+		_toggle_party_menu()
+		get_viewport().set_input_as_handled()
+		return
 	if event.is_action_pressed("full_map"):
 		_toggle_full_map()
 		get_viewport().set_input_as_handled()
@@ -426,35 +439,13 @@ func _rebuild_dock() -> void:
 			(built["focus"] as Control).call_deferred("grab_focus")
 		return
 
+	# A NON-INTERACTIVE key hint (playtest 2026-07-29): the dungeon is driven by direct keys, not a command
+	# panel you Tab into. 決定 does the CONTEXT action for this cell, キャンセル opens the メニュー, M the map.
 	var root: VBoxContainer = UIKit.col(6)
 	root.add_child(UIKit.label(I18n.t("play.dungeonCommands"), 16, GOLD))
-	var row := GridContainer.new()
-	row.columns = 2
-	row.add_theme_constant_override("h_separation", 6)
-	row.add_theme_constant_override("v_separation", 6)
-	var first: Button = null
-	for entry in _dock_commands():
-		var b: Button = _command_button(String(entry["label"]))
-		b.custom_minimum_size = Vector2(110, 34)
-		b.add_theme_font_size_override("font_size", 15)
-		var kind: String = String(entry["kind"])
-		b.disabled = bool(entry.get("disabled", false))
-		if not b.disabled:
-			b.pressed.connect(func(): _on_command(kind))
-		row.add_child(b)
-		if first == null and not b.disabled:
-			first = b
-
-	# IMP-026: auto-explore is a compact exploration STATUS with an immediate interrupt — it rides at the
-	# END of the dock, distinct from the current-cell decisions, and never becomes the first command in
-	# every room.
-	var tempo: Button = _command_button(I18n.t("tempo.stop") if _auto_running else I18n.t("tempo.auto"))
-	tempo.custom_minimum_size = Vector2(110, 34)
-	tempo.add_theme_font_size_override("font_size", 15)
-	tempo.add_theme_color_override("font_color", UIKit.OK if _auto_running else UIKit.DIM)
-	tempo.pressed.connect(func(): _toggle_auto())
-	row.add_child(tempo)
-	root.add_child(row)
+	root.add_child(_hint_row(I18n.t("play.keyConfirm"), _context_label()))
+	root.add_child(_hint_row(I18n.t("play.keyCancel"), I18n.t("partyMenu.title")))
+	root.add_child(_hint_row(I18n.t("play.keyMap"), I18n.t("play.fullMap")))
 
 	# The reason a way down will not open, in the player's own language. React hides it in a tooltip; a
 	# controller player has no pointer to hover with.
@@ -463,10 +454,42 @@ func _rebuild_dock() -> void:
 		root.add_child(UIKit.label(clue, 15, DIM))
 
 	_dock_host.add_child(root)
-	if first:
-		first.call_deferred("grab_focus")
-	elif _auto_running:
-		tempo.call_deferred("grab_focus")
+
+# One key-hint line: the key on the left (gold), what it does now on the right (ink). Non-interactive.
+func _hint_row(key: String, action: String) -> Control:
+	var row := UIKit.row()
+	var k := UIKit.label(key, 15, GOLD)
+	k.custom_minimum_size = Vector2(96, 0)
+	row.add_child(k)
+	row.add_child(UIKit.grow(UIKit.label(action, 15, INK)))
+	return row
+
+# What 決定 (confirm) DOES on this cell, in priority: use the way down/home if the party stands on it,
+# disarm a room trap that is armed, otherwise 探索 (search — the default, and the hook the scenario AI
+# reacts to). Charm/return-marker and the rest live in the メニュー; this is the one press-to-act.
+func _context_command() -> String:
+	var room: Variant = _current_room()
+	if _has_stairs_here() and typeof(_blocking_stair_gate()) != TYPE_DICTIONARY:
+		return "stairs"
+	if typeof(room) == TYPE_DICTIONARY and (bool(room.get("stairsToTown", false)) or bool(room.get("restPoint", false))):
+		return "return"
+	if typeof(room) == TYPE_DICTIONARY and typeof(room.get("trap", null)) == TYPE_DICTIONARY and not (_state.get("resolvedTraps", []) as Array).has(room["trap"].get("id", "")):
+		return "disarm"
+	return "search"
+
+# The label 決定 carries right now — mirrors _context_command so the hint reads what pressing it will do.
+func _context_label() -> String:
+	match _context_command():
+		"stairs":
+			return I18n.t("play.useStairs")
+		"return":
+			var room: Variant = _current_room()
+			var via_stairs := typeof(room) == TYPE_DICTIONARY and bool(room.get("stairsToTown", false))
+			return I18n.t("play.useReturnStairs" if via_stairs else "play.useReturnMarker")
+		"disarm":
+			return I18n.t("play.chestDisarm")
+		_:
+			return I18n.t("play.search")
 
 # The dock is CONTEXTUAL: stairs and the way home only appear where they actually answer.
 func _dock_commands() -> Array:

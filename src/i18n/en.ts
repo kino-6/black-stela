@@ -250,7 +250,7 @@ export const en = {
     luck: "Luck"
   },
   partyMenu: {
-    title: "Party",
+    title: "Menu",
     subtitleTown: "Review the company and prepare its equipment.",
     subtitleDungeon: "Review the company and share supplies.",
     pages: "Party menu pages",
@@ -418,6 +418,9 @@ export const en = {
     spellSapWeave: "Sap Weave",
     mpShort: "MP",
     dungeonCommands: "Dungeon commands",
+    keyConfirm: "Confirm",
+    keyCancel: "Cancel",
+    keyMap: "M",
     dungeonView: "First-person dungeon view",
     moveHint: "Move ↑↓ · Turn ←→ · Sidestep Q/E",
     search: "Search",
