@@ -37,13 +37,23 @@ EO/Galleria-refined; party-size = proportional attrition (`partySizeValue`); res
   pre-heals; 0.34 left the kit untouched). Verdant kit → `{heals:3,cures:1}` so a one-push runs dry at g8f.
   `provisionValue` axis + report line added. **incomeScalar/priceScalar still authored-but-UNWIRED** (income =
   enemy gold only). gate:final green (139/139, one flaky dungeon-dpad retry passed).
-- **Slice 3 OPEN TUNING** (task #10, needs user feel-in-the-loop): the PREPARED HP curve is **soft vs the
-  agreed act bands** — Verdant g1/g2≈100/97% (band ≤85%), mid≈61-79% (42-60%), g7/g8≈52/40% (28-38%); danger
-  is real only on the NAIVE path. Reshaping DOWN is per-floor threat work (global `threatScalar` can't reshape
-  a flat top) and FIGHTS the locked per-world gates (`preparedMinLevel≤3`, `g1f>0.7`), so it's a deliberate
-  re-tune. Also attrition lands LATE (kit used g7/g8), opposite the "序盤EO寄り" intent (one-push over-levels).
-  Levers: raise early-floor enemy damage, author `recommendedPartyLevel`/floor, add per-act telegraphed spikes
-  (Verdant has ONE in 8 floors). This is player-facing → browser-verify + user feel.
+- **Slice 3 RESHAPE (task #10) — knobs BUILT, one sim fix blocks shipping; NOT yet harder in-game.**
+  - **`mid` sim policy DONE + PUSHED (`5a29c41`):** the realistic party (one fixed general loadout, not
+    per-fight-optimal) — the bands are now designed against `mid`; naive/prepared stay wipe/clear bounds.
+    KEY finding: `prepared` (per-fight OPTIMAL counter swap) facerolls weak-to-counter early foes BY the
+    counterplay design → its early curve is ~100% by construction; that's why band-targeting it was guesswork.
+    `sim:balance` trough matrix now leads with `Np·mid`.
+  - **`hpScalar` trash-attrition knob DONE + PUSHED (`0851b2e`), INERT:** `applyBalance` scales TRASH hp
+    (not minibosses/boss — scaling a boss = HP-sponge + inflated clear). Sweep: Verdant `hpScalar≈1.8` moves
+    the mid curve `[100,97,89,91,91,85,69,33]`→`[100,97,73,63,45,63,63,47]` (g3-g8 bite 45-73%, naive wipes,
+    kit used, midClear@3). g1/g2 stay gentle (over-levelled intro trash — fine). `rawWorld()` seam added for
+    in-memory sweeps (`scripts/`).
+  - **BLOCKER before it ships:** `hpScalar` exposed that `prepared` swaps to the counter ELEMENT even when
+    that weapon is weaker than mid's best-raw → vs tankier trash prepared can clear WORSE than mid (prepClear
+    2→7), corrupting `preparationValue` + the `preparedMinLevel≤3` gate. **FIX FIRST:** `prepared` must never
+    be weaker than `mid` (layer counter swap on the general loadout only when the counter weapon is competitive).
+    THEN set Verdant `hpScalar`, re-point per-world gates from `prepared`→`mid`, add a mid-band gate,
+    **browser-verify + user feel**. Nothing player-facing has shipped — the knobs are inert.
 - **Measured NOW by the slice-2 tool (before tuning):**
   - **Scarcity ≈ 0** (the "ヌルい" report, quantified): Verdant's 4-heal/2-cure kit runs 6→3 over 8 floors,
     NEVER dries out, dive income = **2.4× a full re-provision**. Tighten `provisionKit`/`carryCap`/`incomeScalar`.
