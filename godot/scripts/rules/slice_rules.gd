@@ -22,9 +22,17 @@ const ItemCommands := preload("res://scripts/rules/item_commands.gd")
 const RulesUtil := preload("res://scripts/rules/rules_util.gd")
 const Leveling := preload("res://scripts/rules/leveling.gd")
 
+# Exploration commands that a downed party must never be able to issue (mirrors rulesEngine.ts).
+const DUNGEON_EXPLORE_COMMANDS := ["turn_left", "turn_right", "move_forward", "move_backward", "strafe_left", "strafe_right", "open_door", "search"]
+
 
 static func resolve(state: Dictionary, command: Dictionary, world: Dictionary = {}, engine: Dictionary = {}) -> Dictionary:
-	match command.get("type", ""):
+	var cmd_type := String(command.get("type", ""))
+	# Safety net (playtest 2026-07-29): a party with no able member can never explore — evacuate to town
+	# rather than let a wiped run wander the floor. Mirrors rulesEngine.ts resolveCommand.
+	if String(state.get("phase", "")) == "dungeon" and DUNGEON_EXPLORE_COMMANDS.has(cmd_type) and Exploration.able_members(state.get("party", [])).is_empty():
+		return _evacuate_downed_party(state)
+	match cmd_type:
 		"turn_left":
 			return ExplorationCommands._turn(state, "left")
 		"turn_right":
@@ -134,6 +142,21 @@ static func resolve(state: Dictionary, command: Dictionary, world: Dictionary = 
 
 # --- combat exits -----------------------------------------------------------------------------------
 # Retreat: the fight is abandoned; every member remembers it (memory.retreats is part of who they are).
+# Drag a fully-downed party out of the dungeon and back to town — the failed-expedition landing a combat
+# wipe produces, reused as a safety net for any explore command issued while every member is down. No extra
+# rescue fee (the combat wipe already charged it). Mirrors rulesEngine.ts evacuateDownedParty.
+static func _evacuate_downed_party(state: Dictionary) -> Dictionary:
+	var s: Dictionary = state.duplicate(true)
+	s["phase"] = "town"
+	s["position"] = null
+	s["combat"] = null
+	s["map"]["currentRoomId"] = null
+	s["map"]["currentCellId"] = null
+	s["map"]["currentFacing"] = null
+	s["turn"] = int(state.get("turn", 0)) + 1
+	return {"state": s, "events": [{"type": "party_wiped", "rescueFee": 0}]}
+
+
 static func _retreat(state: Dictionary, world: Dictionary) -> Dictionary:
 	if state.get("phase", "") != "combat":
 		return {"state": state, "events": []}

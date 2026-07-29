@@ -330,11 +330,14 @@ function resolveEnemyName(enemyId: string, fallback: string, world: ScenarioWorl
 }
 
 function projectBlockedCommand(
-  reason: "party_required" | "town_return_unavailable" | "stairs_unavailable",
+  reason: "party_required" | "party_downed" | "town_return_unavailable" | "stairs_unavailable",
   t: Translator
 ): LogProjection {
   if (reason === "party_required") {
     return { text: t("events.blockedPartyRequired"), tags: ["blocked"] };
+  }
+  if (reason === "party_downed") {
+    return { text: t("events.blockedPartyDowned"), tags: ["blocked"] };
   }
   if (reason === "stairs_unavailable") {
     return { text: t("events.blockedStairsUnavailable"), tags: ["blocked", "stairs"] };

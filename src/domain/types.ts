@@ -394,7 +394,7 @@ export type GameEvent =
   | { type: "party_member_erased"; characterName: string }
   | { type: "party_member_edited"; characterName: string }
   | { type: "party_member_imported"; characterName: string; adjustments: ImportAdjustmentKind[] }
-  | { type: "command_blocked"; reason: "party_required" | "town_return_unavailable" | "stairs_unavailable"; command: Command["type"] }
+  | { type: "command_blocked"; reason: "party_required" | "party_downed" | "town_return_unavailable" | "stairs_unavailable"; command: Command["type"] }
   | { type: "dungeon_entered"; roomId: string; facing: Direction }
   | { type: "party_turned"; side: "left" | "right"; facing: Direction }
   | { type: "movement_blocked"; reason: "wall" | "stairs" | "locked" | "door"; roomId: string; facing: Direction }

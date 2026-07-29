@@ -172,9 +172,26 @@ export function executeCommand(state: GameState, world: ScenarioWorld, command: 
   return resolveCommand(state, world, command).state;
 }
 
+const DUNGEON_EXPLORE_COMMANDS = new Set<Command["type"]>([
+  "turn_left",
+  "turn_right",
+  "move_forward",
+  "move_backward",
+  "strafe_left",
+  "strafe_right",
+  "open_door",
+  "search"
+]);
+
 export function resolveCommand(state: GameState, world: ScenarioWorld, command: Command): CommandResult {
   if (state.combatConclusion && command.type !== "continue_after_combat") {
     return noChange(state);
+  }
+  // Safety net: a party with no able member can never explore. Every path should have sent them to town
+  // already (combat wipe, blocked descent), but if one slips through, evacuate rather than let a wiped run
+  // wander the floor (playtest 2026-07-29).
+  if (state.phase === "dungeon" && DUNGEON_EXPLORE_COMMANDS.has(command.type) && !partyHasAbleMember(state.party)) {
+    return evacuateDownedParty(state);
   }
   switch (command.type) {
     case "enter_dungeon":
@@ -501,9 +518,35 @@ function importMember(state: GameState, world: ScenarioWorld, adventurer: Portab
   return withEvents(next, [{ type: "party_member_imported", characterName: character.name, adjustments }]);
 }
 
+// A member who can still act: not wounded and above 0 HP. A downed member is stored at hp:1 + injury.
+export function partyHasAbleMember(party: Character[]): boolean {
+  return party.some((member) => !member.injury && member.hp > 0);
+}
+
+// Drag a fully-downed party out of the dungeon and back to town — the same failed-expedition landing a
+// combat wipe produces, reused as a safety net for any dungeon command issued while every member is down
+// (so a wiped run can never keep wandering). No extra rescue fee: the combat wipe already charged it.
+function evacuateDownedParty(state: GameState): CommandResult {
+  const evacuated: GameState = {
+    ...state,
+    phase: "town",
+    position: null,
+    combat: null,
+    map: { ...state.map, currentRoomId: null, currentCellId: null, currentFacing: null },
+    turn: state.turn + 1
+  };
+  return withEvents(evacuated, [{ type: "party_wiped", rescueFee: 0 }]);
+}
+
 function enterDungeon(state: GameState, world: ScenarioWorld): CommandResult {
   if (state.party.length === 0) {
     return logOnly(state, { type: "command_blocked", reason: "party_required", command: "enter_dungeon" });
+  }
+  // A party with NO member who can act (all wounded / at 0 HP) must not descend — otherwise a wiped run
+  // could walk straight back underground and wander a floor it can never fight through (playtest 2026-07-29).
+  // Recover at the infirmary first.
+  if (!partyHasAbleMember(state.party)) {
+    return logOnly(state, { type: "command_blocked", reason: "party_downed", command: "enter_dungeon" });
   }
 
   // Face the party into the dungeon: toward the entrance's actual open exit, not
@@ -566,6 +609,9 @@ export function listUnlockedCheckpoints(state: GameState, world: ScenarioWorld):
 function resumeAtCheckpoint(state: GameState, world: ScenarioWorld, roomId: string): CommandResult {
   if (state.party.length === 0) {
     return logOnly(state, { type: "command_blocked", reason: "party_required", command: "enter_dungeon" });
+  }
+  if (!partyHasAbleMember(state.party)) {
+    return logOnly(state, { type: "command_blocked", reason: "party_downed", command: "enter_dungeon" });
   }
 
   const room = getRoom(world, roomId);
@@ -665,10 +711,10 @@ function moveForward(
     ]);
   }
 
-  // A CLOSED door hides the room beyond and does not let the party through (Wiz 玄室). Bump-to-open: the
-  // first step SWINGS IT OPEN (revealing the room) but does not carry them in — the next step enters. Both
-  // sides are recorded; a fresh descent re-closes it (openedDoors resets on floor change). The explicit 開く
-  // command opens it the same way.
+  // A CLOSED door hides the room beyond (Wiz 玄室). Bumping it SWINGS IT OPEN and steps through in the SAME
+  // move — no stop, no "door opened" log line (playtest 2026-07-29: the two-step + log read as a jarring
+  // pause). Both sides are recorded; a fresh descent re-closes it (openedDoors resets on floor change). The
+  // explicit 開く command still opens-in-place without advancing.
   if (
     forwardEdge?.kind === "door" &&
     !state.openedDoors.includes(doorKey(state.position.roomId, moveDirection))
@@ -677,12 +723,13 @@ function moveForward(
     if (forwardEdge.targetRoomId) {
       keys.push(doorKey(forwardEdge.targetRoomId, OPPOSITE_DIRECTION[moveDirection]));
     }
-    const openedNext: GameState = {
+    // Mark the door open (no turn tick here — the recursed move counts the single step) and re-enter the
+    // move: the door is now open, so this falls through to normal movement and the party walks in.
+    const openedState: GameState = {
       ...state,
-      openedDoors: [...state.openedDoors, ...keys.filter((k) => !state.openedDoors.includes(k))],
-      turn: state.turn + 1
+      openedDoors: [...state.openedDoors, ...keys.filter((k) => !state.openedDoors.includes(k))]
     };
-    return withEvents(openedNext, [{ type: "door_opened", roomId: state.position.roomId, facing: moveDirection }]);
+    return moveForward(openedState, world, moveDirection, motion);
   }
 
   // An open gate lets the party through its otherwise-impassable edge (e.g. a

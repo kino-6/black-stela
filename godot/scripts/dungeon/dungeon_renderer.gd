@@ -278,7 +278,7 @@ static func _add_chamber_landmarks(parent: Node, base: Vector3, floor_mat: Mater
 		cap.height = 0.035
 		_add_mesh(parent, cap, _emissive_mat(accent.darkened(0.18), 0.04), base + offset + Vector3(0, cairn.height + cap.height / 2.0, 0))
 
-static func _add_door(parent: Node, door_mat: Material, frame_mat: Material, accent: Color, base: Vector3, dir: String, opened: bool = true) -> void:
+static func _add_door(parent: Node, door_mat: Material, frame_mat: Material, _accent: Color, base: Vector3, dir: String, opened: bool = true) -> void:
 	# A door edge is still traversable by the rules, so draw the two living leaves already pushed aside.
 	# The player sees an intentional threshold and can pass through its centre; no state or collision rule is
 	# changed here. This is the Godot counterpart of the Web renderer's wood-door material and frame.
@@ -324,11 +324,8 @@ static func _add_door(parent: Node, door_mat: Material, frame_mat: Material, acc
 			leaf.material_override = door_mat
 			leaf.position = Vector3(side * 0.54, 1.18, 0.0)
 		root.add_child(leaf)
-	var latch := CylinderMesh.new()
-	latch.top_radius = 0.055
-	latch.bottom_radius = 0.055
-	latch.height = 0.06
-	_add_mesh(root, latch, _emissive_mat(accent, 0.08), Vector3(0, 1.22, 0.06), Vector3(PI / 2, 0, 0))
+	# (No centre latch: the emissive amber knob read as a floating yellow orb on the door from the
+	#  close first-person camera — removed per playtest. The frame + leaves carry the door read.)
 
 static func _door_key(cx: int, cy: int, dir: String) -> String:
 	# Mirror edges describe the same physical threshold. Canonicalising its boundary prevents a doubled

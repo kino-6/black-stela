@@ -172,9 +172,9 @@ static func _move_forward(state: Dictionary, world: Dictionary, engine: Dictiona
 		s["turn"] = int(s["turn"]) + 1
 		return {"state": s, "events": [{"type": "movement_blocked", "reason": "locked", "roomId": room_id, "facing": move_dir}]}
 
-	# A CLOSED door hides the room and does not let the party through (Wiz 玄室). Bump-to-open: the first step
-	# swings it open (revealing the room) but does not carry them in — the next step enters. Both sides
-	# recorded; re-closes on a fresh descent (openedDoors resets on floor change).
+	# A CLOSED door hides the room (Wiz 玄室). Bumping it swings it open and steps through in the SAME move —
+	# no stop, no door_opened log (playtest 2026-07-29). Both sides recorded; re-closes on a fresh descent.
+	# No turn tick here; the recursed move counts the single step. Mirrors rulesEngine.ts moveForward.
 	if typeof(forward_edge) == TYPE_DICTIONARY and String(forward_edge.get("kind", "")) == "door" and not (state.get("openedDoors", []) as Array).has("door:%s:%s" % [room_id, move_dir]):
 		var s: Dictionary = state.duplicate(true)
 		var opened: Array = (s.get("openedDoors", []) as Array).duplicate()
@@ -185,8 +185,7 @@ static func _move_forward(state: Dictionary, world: Dictionary, engine: Dictiona
 			if not opened.has(ok):
 				opened.append(ok)
 		s["openedDoors"] = opened
-		s["turn"] = int(s["turn"]) + 1
-		return {"state": s, "events": [{"type": "door_opened", "roomId": room_id, "facing": move_dir}]}
+		return _move_forward(s, world, engine, move_dir, motion)
 
 	var discovered: Array = state.get("discoveredSecrets", [])
 	var secret_revealed: bool = (
@@ -677,6 +676,10 @@ static func _mark_expedition_started(party: Array, floor_id: Variant, turn: int)
 static func _enter_dungeon(state: Dictionary, world: Dictionary) -> Dictionary:
 	if (state.get("party", []) as Array).is_empty():
 		return RulesUtil.log_only(state, {"type": "command_blocked", "reason": "party_required", "command": "enter_dungeon"})
+	# A party with NO able member (all wounded / at 0 HP) must not descend — recover at the infirmary first
+	# (playtest 2026-07-29). Mirrors rulesEngine.ts enterDungeon.
+	if Exploration.able_members(state.get("party", [])).is_empty():
+		return RulesUtil.log_only(state, {"type": "command_blocked", "reason": "party_downed", "command": "enter_dungeon"})
 	var start_room_id := String(world.get("startRoom", ""))
 	var start_room: Variant = _room(world, start_room_id)
 	var exits: Dictionary = start_room.get("exits", {}) if typeof(start_room) == TYPE_DICTIONARY else {}
@@ -714,6 +717,8 @@ static func _enter_dungeon(state: Dictionary, world: Dictionary) -> Dictionary:
 static func _resume_at_checkpoint(state: Dictionary, world: Dictionary, room_id: String) -> Dictionary:
 	if (state.get("party", []) as Array).is_empty():
 		return RulesUtil.log_only(state, {"type": "command_blocked", "reason": "party_required", "command": "enter_dungeon"})
+	if Exploration.able_members(state.get("party", [])).is_empty():
+		return RulesUtil.log_only(state, {"type": "command_blocked", "reason": "party_downed", "command": "enter_dungeon"})
 	var room: Variant = _room(world, room_id)
 	var visited: Array = (state.get("map", {}) as Dictionary).get("visitedRooms", [])
 	if typeof(room) != TYPE_DICTIONARY or not bool(room.get("restPoint", false)) or not visited.has(room_id):

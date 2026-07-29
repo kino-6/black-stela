@@ -3,6 +3,7 @@ import { worldRegistry } from "../src/data/worldRegistry";
 import { defaultWorld } from "../src/data/defaultWorld";
 import { addCharacter, createCharacter, createInitialGameState } from "../src/domain/gameState";
 import { executeCommand } from "../src/domain/rulesEngine";
+import { getGridEdge } from "../src/domain/scenario";
 import type { GameState, ScenarioWorld } from "../src/domain/types";
 
 // Before this, the dungeon was FINITE and FIXED: a defeated enemy TYPE was suppressed
@@ -22,11 +23,14 @@ function party(size: number): GameState {
 function corridorStep(s: GameState, world: ScenarioWorld): GameState {
   for (let t = 0; t < 4; t += 1) {
     const before = s.position?.cellId;
-    const next = executeCommand(s, world, { type: "move_forward" });
-    if (next.log.at(-1)?.event?.type === "door_opened") {
-      s = executeCommand(s, world, { type: "turn_right" }); // a 玄室 door — turn away, don't enter
+    // Doors now open-AND-enter in one step, so peek the forward edge and turn away from a 玄室 door
+    // BEFORE stepping, to keep the walk in the corridors (where wandering packs roll).
+    const forwardEdge = s.position ? getGridEdge(world, s.position.roomId, s.position.facing) : undefined;
+    if (forwardEdge?.kind === "door") {
+      s = executeCommand(s, world, { type: "turn_right" });
       continue;
     }
+    const next = executeCommand(s, world, { type: "move_forward" });
     if (next.phase === "combat" || next.position?.cellId !== before) return next;
     s = executeCommand(s, world, { type: "turn_right" });
   }
