@@ -654,7 +654,12 @@ func _hall_panel() -> Control:
 		everyone.append_array(state().get("reserve", []))
 		if everyone.is_empty():
 			col.add_child(UI.label("—", 15, UI.DIM))
-		var picker := UI.row()
+		# A 3-column grid, not a single row — six 150px buttons overflowed the panel's right edge and the
+		# last names + 保存 were clipped off-screen (playtest 2026-07-29 "名簿UIが破損").
+		var picker := GridContainer.new()
+		picker.columns = 3
+		picker.add_theme_constant_override("h_separation", 6)
+		picker.add_theme_constant_override("v_separation", 6)
 		for member in everyone:
 			var mid := String(member.get("id", ""))
 			var pick := UI.button(String(member.get("name", "?")), func(): _roster_select(mid), Vector2(150, 34), 14)
@@ -687,9 +692,19 @@ func _hall_panel() -> Control:
 			fields.add_child(_roster_field(I18n.t("party.editNotes"), String(_roster_draft.get("notes", "")), I18n.t("party.notesPlaceholder"), "notes"))
 			edit_row.add_child(fields)
 			col.add_child(edit_row)
+			var edit_actions := UI.row()
 			var save := UI.button(I18n.t("party.editSave"), func(): _save_roster_edit(), Vector2(200, 40), 16)
 			_claim(save, "roster:save")
-			col.add_child(save)
+			edit_actions.add_child(save)
+			# 外す — remove this adventurer from the party (retire, reversible at the town counter). Playtest
+			# 2026-07-29: the roster editor could rename but not REMOVE a member. Never let the roster go empty.
+			var total := int(state().get("party", []).size()) + int(state().get("reserve", []).size())
+			var remove := UI.button(I18n.t("party.removeMember"), func(): _remove_roster_member(_roster_selected_id), Vector2(160, 40), 16)
+			remove.disabled = total <= 1
+			remove.add_theme_color_override("font_color", UI.BAD if not remove.disabled else UI.DIM)
+			_claim(remove, "roster:remove")
+			edit_actions.add_child(remove)
+			col.add_child(edit_actions)
 		col.add_child(UI.button(I18n.t("party.rosterDone"), func(): _set_roster(false), Vector2(200, 40), 16))
 	else:
 		col.add_child(UI.button(I18n.t("party.manageRoster"), func(): _set_roster(true), Vector2(220, 40), 16))
@@ -880,6 +895,24 @@ func _save_roster_edit() -> void:
 		_fallback_state = next
 	_event_text = "%s: %s" % [I18n.t("party.review"), String(_roster_draft.get("name", ""))]
 	_focus_key = "roster:%s" % _roster_selected_id
+	_rebuild()
+
+# 外す — retire this adventurer out of the active roster (reversible at the town guild counter). Frees a
+# party slot so a different member can be built. Never invoked on the last one (the button disables).
+func _remove_roster_member(mid: String) -> void:
+	if mid == "":
+		return
+	var result: Dictionary = SliceRules.resolve(state(), {"type": "retire_member", "characterId": mid}, _world, _engine())
+	var next: Dictionary = result.get("state", state())
+	if _run != null:
+		_run.state = next
+	else:
+		_fallback_state = next
+	if _roster_selected_id == mid:
+		_roster_selected_id = ""
+		_roster_draft = {}
+	_event_text = I18n.t("party.removeMember")
+	_focus_key = "roster:done"
 	_rebuild()
 
 func _register() -> void:

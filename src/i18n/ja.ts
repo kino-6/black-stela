@@ -233,6 +233,7 @@ export const ja = {
     editNotes: "記録",
     editAccent: "色",
     editSave: "保存",
+    removeMember: "外す",
     editCancel: "取消",
     importImage: "画像を取り込む",
     deposit: "記録庫へ保管",

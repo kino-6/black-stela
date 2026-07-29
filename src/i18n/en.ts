@@ -231,6 +231,7 @@ export const en = {
     editNotes: "Record",
     editAccent: "Accent",
     editSave: "Save",
+    removeMember: "Remove",
     editCancel: "Cancel",
     importImage: "Import image",
     deposit: "Record to vault",
