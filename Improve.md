@@ -551,17 +551,32 @@ centered creature.
 
 ### Implementation Slices
 
-- [ ] Visually separate the per-actor menu from the round-level commands (group
-  box / divider / heading weight), and demote the status prose so it does not sit
-  between buttons as if it were one.
-- [ ] Tune stage framing so a small pack does not float in a large black void
-  (background/vignette or creature scale), without re-ordering art (engine owns
-  grounding + size — see `combat-ui-drpg`).
+- [x] **Command-panel hierarchy (done).** Root cause: `_command_button` had NO
+  stylebox, so the round commands rendered as borderless text indistinguishable
+  from the DIM hint lines, and they were dumped flat into the same VBox as the
+  per-actor menu. Now: (1) `_command_button` gets subdued button chrome (thin
+  neutral border, gold focus ring) so round commands read as buttons but stay
+  secondary; (2) an `HSeparator` + a bordered sub-panel with a 戦闘コマンド heading
+  groups the round commands apart from the per-actor menu; (3) each hint is a
+  wrapped `_caption` under its button, and the リピート hint is hidden while the
+  action is unavailable — so prose never sits between buttons as an equal line.
+  Verified in `_ux_combat-command.png`; combat-controller / combat-geometry /
+  ux-parity all green.
+- [ ] **Stage framing (open).** A single small pack still floats in a large black
+  void inside a hard-bordered box, and the creature is drawn once as a sprite AND
+  again as a name/HP/×N card below it (the duplication `combat-ui-drpg` warns
+  against). Options for the next pass (needs a direction call): soften/remove the
+  box border into a vignette; scale the creature up via its data `size` class
+  (never re-order art); fold the name/×N into a floating cue on the sprite. This
+  is a subjective feel change — bring screenshots and pick a direction with the
+  user before committing.
 
 ### Acceptance / Gate
 
-- [ ] Controller focus order still reads top-to-bottom with one clear cursor; the
-  round commands are visibly a distinct group from the actor commands.
+- [x] Controller focus order reads top-to-bottom with one clear gold cursor; the
+  round commands are a visibly distinct, bordered group under their own heading.
+- [ ] (stage) The enemy reads large and central with no dead black band, and is
+  represented once, at 1280×720 and 1920×1080.
 
 ## IMP-058: Default-biome dungeon ceiling renders as a black void
 

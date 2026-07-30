@@ -262,26 +262,38 @@ func _rebuild_command_menu() -> void:
 	})
 	_cmd_box.add_child(built["control"])
 
+	# The round-level commands act for the WHOLE PARTY, not the actor whose turn it is — a different scope
+	# from the per-actor menu above. A divider plus their own subdued sub-panel keeps the two from reading
+	# as one flat list (playtest 2026-07-31 IMP-057), and each button's hint sits UNDER it as a caption
+	# rather than between buttons as an equal-weight line.
+	_cmd_box.add_child(HSeparator.new())
+	var round_box := VBoxContainer.new()
+	round_box.add_theme_constant_override("separation", 3)
 	# 全員でかかる stays reachable: the one-press round for when there is nothing to decide.
-	_cmd_box.add_child(UIKit.label(I18n.t("play.combatCommands"), 15, GOLD))
+	round_box.add_child(UIKit.label(I18n.t("play.combatCommands"), 13, DIM))
 	var allout := _command_button(I18n.t("tempo.allOut"))
 	allout.pressed.connect(_on_attack_pressed)
-	_cmd_box.add_child(allout)
-	_cmd_box.add_child(UIKit.label(I18n.t("tempo.allOutHint"), 12, DIM))
+	round_box.add_child(allout)
+	round_box.add_child(_caption(I18n.t("tempo.allOutHint")))
 	# リピート — repeat the LAST declared round. Unavailable until one has been given, and it says so
 	# rather than sitting dead (tempo.repeatRoundUnavailable).
 	var repeat := _command_button(I18n.t("tempo.repeatRound") if not _last_round.is_empty() else I18n.t("tempo.repeatRoundUnavailable"))
 	repeat.disabled = _last_round.is_empty()
 	repeat.pressed.connect(_on_repeat)
-	_cmd_box.add_child(repeat)
-	_cmd_box.add_child(UIKit.label(I18n.t("tempo.repeatRoundHint"), 12, DIM))
+	round_box.add_child(repeat)
+	if not _last_round.is_empty():
+		round_box.add_child(_caption(I18n.t("tempo.repeatRoundHint")))
 	# オート — keep resolving rounds until the fight ends or the party is in danger.
 	var auto := _command_button(I18n.t("tempo.stop") if _auto else I18n.t("tempo.auto"))
 	auto.pressed.connect(_on_toggle_auto)
-	_cmd_box.add_child(auto)
+	round_box.add_child(auto)
 	var retreat := _command_button(I18n.t("play.retreat"))
 	retreat.pressed.connect(_on_retreat)
-	_cmd_box.add_child(retreat)
+	round_box.add_child(retreat)
+	var round_panel := PanelContainer.new()
+	round_panel.add_theme_stylebox_override("panel", _panel_style(Color("0f120bcc"), Color("32391f")))
+	round_panel.add_child(round_box)
+	_cmd_box.add_child(round_panel)
 
 	var focus: Variant = built["focus"]
 	if focus != null:
@@ -809,9 +821,19 @@ func _centered(control: Control) -> Control:
 func _command_button(text: String) -> Button:
 	var b := Button.new()
 	b.text = text
-	b.custom_minimum_size = Vector2(420, 44)
+	b.custom_minimum_size = Vector2(420, 40)
 	b.alignment = HORIZONTAL_ALIGNMENT_LEFT
-	b.add_theme_font_size_override("font_size", 22)
+	b.add_theme_font_size_override("font_size", 19)
+	# Round-level commands used to be BORDERLESS text — indistinguishable from the DIM hint lines beside
+	# them (playtest 2026-07-31 IMP-057). Give them real button chrome so they read as buttons, but keep it
+	# SUBDUED (thin neutral border, no green fill) so they stay secondary to the turn's primary per-actor
+	# menu above; the focus ring still turns gold so the cursor is unambiguous.
+	b.add_theme_stylebox_override("normal", _panel_style(Color("14170fd0"), Color("2f381f")))
+	b.add_theme_stylebox_override("hover", _panel_style(Color("1c2314e0"), Color("5a6a3a")))
+	b.add_theme_stylebox_override("focus", _panel_style(Color("22301aef"), GOLD))
+	b.add_theme_stylebox_override("pressed", _panel_style(Color("22301aef"), GOLD))
+	b.add_theme_stylebox_override("disabled", _panel_style(Color("101109c0"), Color("241a1a")))
+	b.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	return b
 
 func _asset(sub: String) -> String:
@@ -829,6 +851,14 @@ func _label(text: String, sz: int, col: Color) -> Label:
 
 func _row_label(text: String) -> Label:
 	return _label(text, 14, GOLD)
+
+# A caption under a round command — a small, dim, wrapped gloss of what the button does. Wrapped so a long
+# hint never runs off the command panel's right edge.
+func _caption(text: String) -> Label:
+	var l := _label(text, 12, DIM)
+	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	l.custom_minimum_size = Vector2(420, 0)
+	return l
 
 func _set_log(text: String) -> void:
 	if _log_label:
