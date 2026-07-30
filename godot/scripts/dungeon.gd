@@ -50,6 +50,7 @@ var _dock_host: PanelContainer = null
 var _full_map: Control = null
 var _party_menu: Control = null
 var _config_overlay: Control = null
+var _chest_overlay: Control = null
 var _party_member_id: String = ""
 var _party_page: String = "status"
 var _party_item: String = ""
@@ -448,15 +449,14 @@ func _rebuild_dock() -> void:
 	for child in _dock_host.get_children():
 		child.queue_free()
 
+	# A chest HOLDS the cell and the party's attention — it is a decision, so it opens CENTRED on the stage
+	# (playtest 2026-07-30: 端っこではなく真ん中に置いて選択させるべき), not tucked into the right dock. The
+	# right dock keeps showing the key hints beneath it.
 	var chest: Dictionary = current_chest()
 	if not chest.is_empty():
-		# IMP-029: a chest HOLDS the cell — its actions replace the walk commands rather than sitting
-		# beside them, so Confirm can never walk the party off the chest by accident.
-		var built: Dictionary = ChestPanel.build(chest, func(cmd): _apply(SliceRules.resolve(_state, cmd, _world, _engine)), func(): _leave_chest(), _chest_loot_line, _texture(_asset("dungeon/treasure-chest-closed.png")), _texture(_asset("dungeon/treasure-chest-open.png")))
-		_dock_host.add_child(built["control"])
-		if built["focus"] != null:
-			(built["focus"] as Control).call_deferred("grab_focus")
-		return
+		_show_chest_overlay(chest)
+	else:
+		_hide_chest_overlay()
 
 	# A NON-INTERACTIVE key hint (playtest 2026-07-29): the dungeon is driven by direct keys, not a command
 	# panel you Tab into. 決定 does the CONTEXT action for this cell, キャンセル opens the メニュー, M the map.
@@ -743,6 +743,33 @@ func _close_config_overlay() -> void:
 	_config_overlay = null
 	if _party_menu and is_instance_valid(_party_menu):
 		call_deferred("_ensure_focus_in", _party_menu)
+
+# The chest prompt, CENTRED on the stage over a dimming scrim — a decision the party stops for, not a
+# corner widget. Rebuilt in place as the chest walks its stages (調べる→開ける→opened); the move-guard in
+# _input keeps arrows on its buttons and キャンセル leaves. current_chest() empty tears it down.
+func _show_chest_overlay(chest: Dictionary) -> void:
+	if _chest_overlay and is_instance_valid(_chest_overlay):
+		_chest_overlay.queue_free()
+	var layer := Control.new()
+	layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	var scrim := ColorRect.new()
+	scrim.color = Color(0, 0, 0, 0.5)
+	scrim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	layer.add_child(scrim)
+	var center := CenterContainer.new()
+	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	layer.add_child(center)
+	var built: Dictionary = ChestPanel.build(chest, func(cmd): _apply(SliceRules.resolve(_state, cmd, _world, _engine)), func(): _leave_chest(), _chest_loot_line, _texture(_asset("dungeon/treasure-chest-closed.png")), _texture(_asset("dungeon/treasure-chest-open.png")))
+	center.add_child(built["control"])
+	add_child(layer)
+	_chest_overlay = layer
+	if built["focus"] != null:
+		(built["focus"] as Control).call_deferred("grab_focus")
+
+func _hide_chest_overlay() -> void:
+	if _chest_overlay and is_instance_valid(_chest_overlay):
+		_chest_overlay.queue_free()
+	_chest_overlay = null
 
 # 隊列 opens the party menu OVER the dungeon — it must never leave the maze. (It used to change scene to
 # the town, and the town forces phase=town on entry, so pressing it silently ENDED the expedition and
