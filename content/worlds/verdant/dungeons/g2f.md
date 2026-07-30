@@ -133,18 +133,18 @@ rooms:
         name: 根の踊り場
         description: 根の絡む踊り場。階段が上の階へと登っていく。
   - id: room.verdant.g2f.02
-    name: Green Chamber 1
-    description: A chamber where the canopy-light pools green on standing water.
+    name: Standing Pool
+    description: Green canopy-light pools on black standing water; the air is thick with drifting spores.
     chamberGuardian: true
     encounterTable: encounters.verdant.g2.pack
     treasureTable: treasure.verdant.g2.side
     locales:
       ja:
-        name: 翠の間 1
-        description: 樹冠の光が水面に翠色を落とす間。
+        name: 淀みの間
+        description: 黒い溜まり水に樹冠の翠光が落ち、胞子が濃く漂う間。
   - id: room.verdant.g2f.03
-    name: Green Chamber 2
-    description: A chamber where the canopy-light pools green on standing water.
+    name: Spore Bed
+    description: A soft floor of packed fungus — every step puffs a cloud that stings the eyes.
     chamberGuardian: true
     encounterTable: encounters.verdant.g2.pack
     chest:
@@ -155,21 +155,21 @@ rooms:
         damage: 5
     locales:
       ja:
-        name: 翠の間 2
-        description: 樹冠の光が水面に翠色を落とす間。
+        name: 胞子の苗床
+        description: 菌糸が敷き詰まった柔らかな床。踏むたび目を刺す胞子が舞う。
   - id: room.verdant.g2f.04
-    name: Green Chamber 3
-    description: A chamber where the canopy-light pools green on standing water.
+    name: Root Arch
+    description: Buttress roots vault overhead like ribs; the drift thins where they drink the damp.
     chamberGuardian: true
     encounterTable: encounters.verdant.g2.pack
     treasureTable: treasure.verdant.g2.side
     locales:
       ja:
-        name: 翠の間 3
-        description: 樹冠の光が水面に翠色を落とす間。
+        name: 梁根の拱廊
+        description: 梁のような支根が頭上に架かり、湿気を吸う根元だけ靄が薄い。
   - id: room.verdant.g2f.05
-    name: Green Chamber 4
-    description: A chamber where the canopy-light pools green on standing water.
+    name: Sunken Cistern
+    description: A collapsed cistern half-full of green water; something bright glints under the surface.
     chamberGuardian: true
     encounterTable: encounters.verdant.g2.pack
     chest:
@@ -180,21 +180,21 @@ rooms:
         damage: 5
     locales:
       ja:
-        name: 翠の間 4
-        description: 樹冠の光が水面に翠色を落とす間。
+        name: 沈み水槽
+        description: 崩れた水槽に翠水が半ば満ち、水面下で何かが光る。
   - id: room.verdant.g2f.06
-    name: Green Chamber 5
-    description: A chamber where the canopy-light pools green on standing water.
+    name: Haze Hall
+    description: The spore-haze hangs so still it seems solid; sound dies a pace from your mouth.
     chamberGuardian: true
     encounterTable: encounters.verdant.g2.pack
     treasureTable: treasure.verdant.g2.side
     locales:
       ja:
-        name: 翠の間 5
-        description: 樹冠の光が水面に翠色を落とす間。
+        name: 靄籠りの広間
+        description: 胞子の靄が固まって見えるほど淀み、声は一歩で消える。
   - id: room.verdant.g2f.07
-    name: Green Chamber 6
-    description: A chamber where the canopy-light pools green on standing water.
+    name: Fungal Vault
+    description: Shelf-fungus tiers the walls to the ceiling; a dry cache sits at the top shelf.
     chamberGuardian: true
     encounterTable: encounters.verdant.g2.pack
     chest:
@@ -205,18 +205,18 @@ rooms:
         damage: 5
     locales:
       ja:
-        name: 翠の間 6
-        description: 樹冠の光が水面に翠色を落とす間。
+        name: 茸棚の蔵
+        description: 棚茸が壁を天井まで段に覆い、最上段に乾いた隠し物がある。
   - id: room.verdant.g2f.08
-    name: Green Chamber 7
-    description: A chamber where the canopy-light pools green on standing water.
+    name: Still Water
+    description: No drift here — only mirror-flat water and the drip that measures the dark.
     chamberGuardian: true
     encounterTable: encounters.verdant.g2.pack
     treasureTable: treasure.verdant.g2.side
     locales:
       ja:
-        name: 翠の間 7
-        description: 樹冠の光が水面に翠色を落とす間。
+        name: 静水の間
+        description: 靄はなく、鏡のような水面と闇を刻む滴だけがある間。
   - id: room.verdant.g2f.keep
     name: Bramble Warden
     description: A close, root-walled keep; the only way deeper passes through it.
