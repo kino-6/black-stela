@@ -2,28 +2,31 @@
 # Verdant encounter tables. `pack` = chamber/corridor trash per floor (first-contact:
 # each type fought once/run); `keep` = the single miniboss/boss choke (G3-G8).
 encounterTables:
+  # ACT I now BITES (design change 2026-07-30, user-directed): the shallows are no longer a gentle teach —
+  # g1-g3 are tuned into real pressure (swarm counts climb, a 茨の盾 blocker anchors g2/g3 so fights are a
+  # formation problem), escalating into the mid. `groupsMax:2` picks DISTINCT types so the roll varies.
   - id: encounters.verdant.g1.pack
     floorId: dungeon.verdant.g1f
     groupsMax: 2
-    # 3+ types so a groupsMax:2 roll (which picks DISTINCT types) VARIES — with only 2 types it always drew
-    # both, so every fight was the same moss-mite+spore-gnat pair (playtest: "出てくる敵が全部同じ").
     entries:
-      - { enemyId: enemy.verdant.g1.moss-mite, weight: 10, minCount: 2, maxCount: 3 }
-      - { enemyId: enemy.verdant.g1.spore-gnat, weight: 8, minCount: 1, maxCount: 2 }
-      - { enemyId: enemy.verdant.g2.thorn-crawler, weight: 4, minCount: 1, maxCount: 1 }
+      - { enemyId: enemy.verdant.g1.moss-mite, weight: 10, minCount: 2, maxCount: 4 }
+      - { enemyId: enemy.verdant.g1.spore-gnat, weight: 8, minCount: 2, maxCount: 3 }
+      - { enemyId: enemy.verdant.g2.thorn-crawler, weight: 5, minCount: 1, maxCount: 2 }
   - id: encounters.verdant.g2.pack
     floorId: dungeon.verdant.g2f
     groupsMax: 2
     entries:
       - { enemyId: enemy.verdant.g1.spore-gnat, weight: 8, minCount: 2, maxCount: 3 }
-      - { enemyId: enemy.verdant.g2.thorn-crawler, weight: 10, minCount: 1, maxCount: 2 }
-      - { enemyId: enemy.verdant.g2.spore-caster, weight: 5, minCount: 1, maxCount: 1 }
+      - { enemyId: enemy.verdant.g2.thorn-crawler, weight: 10, minCount: 2, maxCount: 3 }
+      - { enemyId: enemy.verdant.g2.spore-caster, weight: 6, minCount: 1, maxCount: 2 }
+      - { enemyId: enemy.verdant.g2.bramble-shield, weight: 5, minCount: 1, maxCount: 1 }
   - id: encounters.verdant.g3.pack
     floorId: dungeon.verdant.g3f
     groupsMax: 2
     entries:
       - { enemyId: enemy.verdant.g2.thorn-crawler, weight: 10, minCount: 2, maxCount: 3 }
       - { enemyId: enemy.verdant.g2.spore-caster, weight: 6, minCount: 1, maxCount: 2 }
+      - { enemyId: enemy.verdant.g2.bramble-shield, weight: 5, minCount: 1, maxCount: 1 }
       - { enemyId: enemy.verdant.g1.moss-mite, weight: 4, minCount: 2, maxCount: 3 }
   - id: encounters.verdant.g4.pack
     floorId: dungeon.verdant.g4f
@@ -40,26 +43,30 @@ encounterTables:
       - { enemyId: enemy.verdant.g4.pollen-drifter, weight: 10, minCount: 1, maxCount: 2 }
       - { enemyId: enemy.verdant.g6.thorn-cutter, weight: 6, minCount: 1, maxCount: 1 }
       - { enemyId: enemy.verdant.g2.spore-caster, weight: 4, minCount: 1, maxCount: 2 }
+  # Deep floors EASED a step (2026-07-30, paired with the harder Act I): they were a Lv1 near-wipe that
+  # forced the whole descent's clear level up, which over-levelled the party and trivialised the mid/economy.
+  # Trimming the deep counts pulls the clear level back down, so the party meets the finale at the RIGHT level
+  # (tense, not a wall) and the ration economy bites again. The escalate-by-act curve is intact.
   - id: encounters.verdant.g6.pack
     floorId: dungeon.verdant.g6f
     groupsMax: 2
     entries:
       - { enemyId: enemy.verdant.g6.thorn-cutter, weight: 10, minCount: 1, maxCount: 2 }
       - { enemyId: enemy.verdant.g7.husk-spawn, weight: 6, minCount: 1, maxCount: 1 }
-      - { enemyId: enemy.verdant.g4.pollen-drifter, weight: 4, minCount: 1, maxCount: 2 }
+      - { enemyId: enemy.verdant.g4.pollen-drifter, weight: 4, minCount: 1, maxCount: 1 }
   - id: encounters.verdant.g7.pack
     floorId: dungeon.verdant.g7f
     groupsMax: 2
     entries:
-      - { enemyId: enemy.verdant.g7.husk-spawn, weight: 10, minCount: 1, maxCount: 2 }
-      - { enemyId: enemy.verdant.g6.thorn-cutter, weight: 6, minCount: 1, maxCount: 2 }
+      - { enemyId: enemy.verdant.g7.husk-spawn, weight: 10, minCount: 1, maxCount: 1 }
+      - { enemyId: enemy.verdant.g6.thorn-cutter, weight: 6, minCount: 1, maxCount: 1 }
       - { enemyId: enemy.verdant.g4.pollen-drifter, weight: 4, minCount: 1, maxCount: 1 }
   - id: encounters.verdant.g8.pack
     floorId: dungeon.verdant.g8f
     groupsMax: 2
     entries:
       - { enemyId: enemy.verdant.g7.husk-spawn, weight: 10, minCount: 1, maxCount: 2 }
-      - { enemyId: enemy.verdant.g6.thorn-cutter, weight: 6, minCount: 1, maxCount: 2 }
+      - { enemyId: enemy.verdant.g6.thorn-cutter, weight: 6, minCount: 1, maxCount: 1 }
       - { enemyId: enemy.verdant.g4.pollen-drifter, weight: 4, minCount: 1, maxCount: 1 }
   # ---- keep chokes (single miniboss/boss) ----
   - id: encounters.verdant.g3.keep

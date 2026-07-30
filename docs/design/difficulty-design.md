@@ -195,6 +195,17 @@ back half stays tense" while the sibling "not a cakewalk" test pins the deepest 
 few % into the Act III band is a deep-enemy re-authoring pass on b7/b8 (and the Verdant g7/g8 mid near-wipe
 could be softened the same way if playtest calls it too punishing).
 
+## Act I bites (2026-07-30, user-directed design change)
+
+The shallows read "ヌルい" (g1/g2 at 95-100%). The fix was NOT a knob but the per-floor encounter SHAPE:
+g1-g3 packs got heavier swarm counts and a 茨の盾 blocker (a formation problem, answerable many ways — see
+[[black-stela-counterplay-diversity]]). New mid curve: **g1f 70% · g2f 70% · g3f 45%** → g4/g5 47% → the
+g6-g8 finale. To keep the whole descent's clear level low (so the party meets the finale at the RIGHT level
+and the ration economy still bites), the deep packs were EASED a step in the same pass. Net: a harder opener,
+a coherent escalation, prepared still clears @Lv3 (levelsSaved=9), kit runs dry ~g6f. Crucially this landed
+WITHIN every existing gate — the "Act I teaches gently" floor (g1f stays >0.7, a biting-but-survivable
+opener, not a wall) and preparedMinLevel≤3 both still hold; no gate was weakened to fit.
+
 ## Candidate levers (backlog, data-authorable)
 
 - **Multi-hit techniques** (複数回攻撃): a `hits: N` on a technique effect — a martial answer that *sweeps

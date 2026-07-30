@@ -26,11 +26,13 @@ elements:
 # resist (defensive counterplay) would lift it further. Re-tune these two, not every enemy.
 balance:
   threatScalar: 2.2
-  # Trash foes survive a round or two instead of being one-rounded, so attrition actually lands and the
-  # mid-game stops reading "ヌルい". Measured (`npm run sim:balance`, mid column, startLv1): the shallows
-  # stay gentle (g1/g2 ~95-100%), the mid bites into its bands (g3=73%, g4/g5=50%), and the root-deep
-  # floors (g6-g8) turn the screws so hard a mid party without heals near-wipes — which is the point: the
-  # deep act DEMANDS provisioning (provisioned trough g6=34% g7=46% g8=20%), and levelsSaved holds at 11.
+  # Trash foes survive a round or two instead of being one-rounded, so attrition actually lands. hpScalar is
+  # the world knob; the per-floor SHAPE lives in the encounter packs (swarm counts + a 茨の盾 blocker in the
+  # Act I packs). ACT I now BITES (user-directed 2026-07-30 — it used to read "ヌルい"): measured (sim:balance
+  # mid, startLv1) g1f=70% g2f=70% g3f=45%, escalating to g4/g5=47%, g6-g8 the tense finale. The deep floors
+  # were EASED a step so the whole descent's clear level stays low (prepared clears @Lv3, levelsSaved=9) and
+  # the ration economy still bites (kit runs dry at g6f). A mid party with NO counter still clears — the
+  # danger is answered by many tactics (formation, focus-fire, AoE, heal, level), never one required item.
   # Excludes minibosses/boss (they'd just become HP-sponges). See docs/design/difficulty-design.md.
   hpScalar: 1.8
   counterplayBoost: 3.0
@@ -44,10 +46,10 @@ balance:
     stackCap:    9
     priceScalar: [1.0, 0.95, 0.85]   # shop prices ease as the town grows with your descent (authored; not yet wired to live gold)
     incomeScalar: [0.8, 1.0, 1.25]   # dive income climbs — late floors pay out, early ones don't flood (authored; not yet wired)
-    # The affordable kit a prepared party sets out with. Two heals (down from three): with the longer
-    # hpScalar fights the party burns exactly this — cure at g3, heal at g5, heal at g8 — so the kit RATIONS
-    # to the finale and runs dry in the final act (the retreat trigger). Three left one heal unspent and the
-    # scarcity never bit. Measured against sim:balance RESOURCE-ECONOMY + tests/difficultyGate.
+    # The affordable kit a prepared party sets out with. Two heals: with the biting Act I + longer hpScalar
+    # fights the party burns through them across the descent so the kit RATIONS to the finale and runs dry in
+    # the final act (kit runs dry ~g6f — the retreat trigger). Measured against sim:balance RESOURCE-ECONOMY
+    # + tests/difficultyGate.
     provisionKit: { heals: 2, cures: 1 }
 assetPack: verdant
 # The grove settlement does not talk like the ash town. Any key omitted here falls through to
