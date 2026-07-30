@@ -76,6 +76,16 @@ static func randomize(draft: Dictionary, data: Dictionary, class_ids: Array, see
 	for i in range(pool):
 		adjust(draft, String(APTITUDE_KEYS[int(abs(seed + i * 7)) % APTITUDE_KEYS.size()]), 1)
 
+## What randomize() WOULD deal for a given seed — the calling and the suggested NAME — WITHOUT dealing it, so
+## the guild can search for a seed whose name/class is not already in the party (前衛3・後衛3, no doubled names).
+## Mirrors randomize's own offsets exactly: the class is picked off `seed`, and the name off `seed + 1` because
+## randomize sets identitySeed=seed and reroll_identity bumps it by one before naming.
+static func preview_deal(class_ids: Array, seed: int) -> Dictionary:
+	var class_id := ""
+	if not class_ids.is_empty():
+		class_id = String(class_ids[int(abs(seed)) % class_ids.size()])
+	return {"classId": class_id, "name": _name_for(seed + 1)}
+
 ## 4..8 points, from the draft's seed — the same roll React makes, so a Godot recruit is built from the
 ## same size of pool as the React one it replaces.
 static func roll_bonus_pool(seed: int) -> int:

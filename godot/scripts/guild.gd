@@ -936,18 +936,63 @@ func _register() -> void:
 
 # 見繕う — fill the draft with a complete RANDOM adventurer and register it in one press. Lands back on the
 # briefing so the player can deal another or start building one by hand.
+#
+# Two playtest fixes live here (2026-07-31):
+#   • 前衛3・後衛3 — the deal is confined to the row the party still needs (_eligible_class_ids), so pressing
+#     見繕う six times always lands a balanced 3-front / 3-back party instead of whatever the seed happened to
+#     roll.  A row drops out of the pool the moment it is full, which forces the remainder onto the other row.
+#   • no doubled メンツ — the seed is advanced until the dealt NAME (and, while the needed row still has spare
+#     callings, the CLASS) is not already in the party, so a full 見繕う never repeats a name and rarely
+#     repeats a calling.  bonusSeed is run-unique (randi() at _ready), so the party also differs run to run.
 func _random_recruit() -> void:
 	if _party().size() >= PARTY_MAX:
 		return
-	var class_ids := []
-	for c in _data.get("classes", []):
-		class_ids.append(String(c.get("id", "")))
-	var seed := int(_draft.get("bonusSeed", 1)) * 31 + _party().size() * 101 + 7
-	Draft.randomize(_draft, _data, class_ids, seed)
+	var eligible := _eligible_class_ids()
+	var used_names := {}
+	var used_classes := {}
+	for member in _party():
+		used_names[String(member.get("name", ""))] = true
+		used_classes[String(member.get("classId", ""))] = true
+	var base := int(_draft.get("bonusSeed", 1)) * 31 + _party().size() * 101 + 7
+	var chosen := base
+	for attempt in range(96):
+		var s := base + attempt * 17
+		chosen = s
+		var deal := Draft.preview_deal(eligible, s)
+		var fresh_name: bool = not used_names.has(String(deal.get("name", "")))
+		# Insist on a fresh name; prefer a fresh class but give it up after a while so a small eligible pool
+		# (a nearly-full row) can never spin forever.
+		var fresh_class: bool = not used_classes.has(String(deal.get("classId", "")))
+		if fresh_name and (fresh_class or attempt >= 48):
+			break
+	Draft.randomize(_draft, _data, eligible, chosen)
 	_register()
 	if _party().size() < PARTY_MAX:
 		_enter_step("briefing")
 		_rebuild()
+
+## The callings 見繕う may deal RIGHT NOW: the whole catalog, minus any row that is already full, so a full
+## 見繕う converges on 前衛3・後衛3. If the needed row somehow has no calling (or the party is past 3/3), every
+## calling is eligible again rather than dealing nothing.
+func _eligible_class_ids() -> Array:
+	var front := 0
+	var back := 0
+	for member in _party():
+		if String(member.get("row", "front")) == "front":
+			front += 1
+		else:
+			back += 1
+	var need_front: bool = front < 3
+	var need_back: bool = back < 3
+	var eligible := []
+	var all_ids := []
+	for c in _data.get("classes", []):
+		var id := String(c.get("id", ""))
+		all_ids.append(id)
+		var is_front: bool = String(c.get("rowPreference", "front")) == "front"
+		if (is_front and need_front) or (not is_front and need_back):
+			eligible.append(id)
+	return eligible if not eligible.is_empty() else all_ids
 
 func _depart() -> void:
 	get_tree().change_scene_to_file("res://scenes/town.tscn")
