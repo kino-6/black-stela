@@ -259,10 +259,15 @@ export const ja = {
     pages: "隊列メニュー",
     tabs: {
       status: "能力",
+      spells: "呪文/特技",
       equipment: "装備",
       items: "所持品",
       valuables: "貴重品"
     },
+    noSpells: "覚えている呪文・特技はない。",
+    spellsGroup: "呪文",
+    skillsGroup: "特技",
+    config: "設定",
     members: "隊列",
     level: "レベル",
     xpToNext: "次のレベルまで",

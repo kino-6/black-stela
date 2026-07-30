@@ -257,10 +257,15 @@ export const en = {
     pages: "Party menu pages",
     tabs: {
       status: "Status",
+      spells: "Spells/Skills",
       equipment: "Equipment",
       items: "Items",
       valuables: "Valuables"
     },
+    noSpells: "No spells or skills learned yet.",
+    spellsGroup: "Spells",
+    skillsGroup: "Skills",
+    config: "Settings",
     members: "Formation",
     level: "Level",
     xpToNext: "To next level",

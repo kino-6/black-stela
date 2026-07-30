@@ -12,6 +12,8 @@ const UI := preload("res://scripts/town/ui_kit.gd")
 const CharacterStats := preload("res://scripts/rules/character_stats.gd")
 const Leveling := preload("res://scripts/rules/leveling.gd")
 const Helpers := preload("res://scripts/rules/combat_helpers.gd")
+const Vocations := preload("res://scripts/rules/vocations.gd")
+const Techniques := preload("res://scripts/rules/techniques.gd")
 
 const APTITUDES := ["might", "agility", "spirit", "wit", "luck"]
 
@@ -40,14 +42,20 @@ static func build(ctx: Dictionary) -> Control:
 		return root
 
 	# --- tabs ---
+	var engine: Dictionary = ctx.get("engine", {})
 	var page: String = ctx.get("party_page", "status")
 	var tabs := UI.row()
-	for entry in [["status", "partyMenu.tabs.status"], ["equipment", "partyMenu.tabs.equipment"], ["items", "partyMenu.tabs.items"], ["valuables", "partyMenu.tabs.valuables"]]:
+	for entry in [["status", "partyMenu.tabs.status"], ["spells", "partyMenu.tabs.spells"], ["equipment", "partyMenu.tabs.equipment"], ["items", "partyMenu.tabs.items"], ["valuables", "partyMenu.tabs.valuables"]]:
 		var key := String(entry[0])
 		var tb := UI.button(I18n.t(String(entry[1])), func(): ctx["set_party_page"].call(key), Vector2(130, 36), 15)
 		if key == page:
 			tb.add_theme_color_override("font_color", UI.GOLD)
 		tabs.add_child(tb)
+	# コンフィグ from inside the camp menu — the classic "settings while you rest" slot. Only when the host
+	# offers it (the dungeon does; the town already has its own メニュー button), so it is not doubled in town.
+	if ctx.has("open_config"):
+		tabs.add_child(UI.grow(Control.new()))
+		tabs.add_child(UI.button(I18n.t("partyMenu.config"), func(): ctx["open_config"].call(), Vector2(130, 36), 15))
 	root.add_child(tabs)
 
 	if page == "items" or page == "valuables":
@@ -61,6 +69,30 @@ static func build(ctx: Dictionary) -> Control:
 		# on the tab strip it just came through. Gold must mean focus and nothing else, so the active tab
 		# is marked by its own state, never by borrowing the focus ring.
 		ctx["focus_hint"].call(built["focus"] if built["focus"] != null else item_back)
+		return root
+
+	# 呪文/特技 — the classic camp "spells" page: a READ-ONLY reference of what the chosen adventurer knows,
+	# split 呪文 (spells) / 特技 (skills), each with its MP cost and what it does. Pick a member on the left.
+	if page == "spells":
+		var sbody := UI.row()
+		sbody.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		root.add_child(sbody)
+		var sroster := UI.col(6)
+		sroster.custom_minimum_size = Vector2(430, 0)
+		sroster.add_child(UI.label(I18n.t("partyMenu.members"), 19, UI.GOLD))
+		var sfocus: Control = null
+		for candidate in party:
+			var rr := _roster_row(ctx, candidate, member, true)
+			sroster.add_child(rr)
+			if sfocus == null:
+				sfocus = _first_button(rr)
+		sbody.add_child(UI.card(sroster))
+		sbody.add_child(_spells_page(engine, member))
+		var sfoot := UI.row()
+		var sback := UI.button(I18n.t("partyMenu.close"), ctx["close"], Vector2(180, 44), 18)
+		sfoot.add_child(sback)
+		root.add_child(sfoot)
+		ctx["focus_hint"].call(sfocus if sfocus != null else sback)
 		return root
 
 	var body := UI.row()
@@ -338,3 +370,48 @@ static func _describe_consumable(item: Dictionary) -> String:
 			names.append(I18n.t("partyMenu.status.%s" % String(status)))
 		parts.append(I18n.t("partyMenu.cures", {"statuses": "・".join(PackedStringArray(names))}))
 	return " / ".join(PackedStringArray(parts)) if not parts.is_empty() else I18n.t("partyMenu.noDescription")
+
+# --- 呪文/特技 page (read-only reference) -----------------------------------------------------------
+static func _spells_page(engine: Dictionary, member: Dictionary) -> Control:
+	var col := UI.col(6)
+	col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	col.add_child(UI.label("%s — %s" % [String(member.get("name", "")), I18n.t("partyMenu.tabs.spells")], 19, UI.GOLD))
+	var voc: Dictionary = Vocations.resolve_vocation_state(member, engine)
+	var learned: Array = voc.get("learned", [])
+	if learned.is_empty():
+		col.add_child(UI.label(I18n.t("partyMenu.noSpells"), 15, UI.DIM))
+		return col
+	var spells := []
+	var skills := []
+	for tid in learned:
+		if Techniques.is_skill(String(tid), engine):
+			skills.append(String(tid))
+		else:
+			spells.append(String(tid))
+	_tech_group(col, I18n.t("partyMenu.spellsGroup"), spells, engine)
+	_tech_group(col, I18n.t("partyMenu.skillsGroup"), skills, engine)
+	return col
+
+static func _tech_group(host: Control, title: String, ids: Array, engine: Dictionary) -> void:
+	if ids.is_empty():
+		return
+	host.add_child(UI.label(title, 16, UI.DIM))
+	for id in ids:
+		var row := UI.row()
+		row.add_child(UI.grow(UI.label(Techniques.label(String(id), engine), 16, UI.INK)))
+		var mp := Techniques.cost(String(id), engine)
+		if mp > 0:
+			row.add_child(UI.label("MP %d" % mp, 14, UI.DIM))
+		host.add_child(row)
+		var summary := Techniques.summary(String(id), engine)
+		if summary != "":
+			host.add_child(UI.label("　%s" % summary, 13, UI.DIM))
+
+static func _first_button(node: Node) -> Control:
+	if node is Button:
+		return node
+	for c in node.get_children():
+		var b := _first_button(c)
+		if b != null:
+			return b
+	return null

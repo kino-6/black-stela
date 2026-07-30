@@ -16,6 +16,7 @@ const DungeonRenderer := preload("res://scripts/dungeon/dungeon_renderer.gd")
 const DungeonHud := preload("res://scripts/dungeon/dungeon_hud.gd")
 const DungeonInput := preload("res://scripts/dungeon/dungeon_input.gd")
 const PartyPanel := preload("res://scripts/town/party_panel.gd")
+const ConfigPanel := preload("res://scripts/config_panel.gd")
 const CharacterStats := preload("res://scripts/rules/character_stats.gd")
 const Chests := preload("res://scripts/rules/chests.gd")
 const Fmt := preload("res://scripts/town_format.gd")
@@ -48,6 +49,7 @@ var _engine: Dictionary = {}
 var _dock_host: PanelContainer = null
 var _full_map: Control = null
 var _party_menu: Control = null
+var _config_overlay: Control = null
 var _party_member_id: String = ""
 var _party_page: String = "status"
 var _party_item: String = ""
@@ -193,6 +195,13 @@ var _hold := DungeonInput.new()   # held-key auto-repeat collaborator (IMP-051)
 
 func _input(event: InputEvent) -> void:
 	if _busy:
+		return
+	# 設定 overlay (メニュー→設定) is modal on top of the party menu: Cancel closes it back, everything else
+	# is swallowed so nothing leaks to the menu or the maze beneath.
+	if _config_overlay and is_instance_valid(_config_overlay):
+		if event.is_action_pressed("cancel"):
+			_close_config_overlay()
+			get_viewport().set_input_as_handled()
 		return
 	# The full-floor map is a MODAL overlay: Cancel (Esc) or M closes it, and it swallows every other key
 	# so the party never walks while the player is reading the map. Esc did nothing here before —
@@ -699,6 +708,42 @@ func _menu_dispatch(command: Dictionary) -> void:
 	if String(_state.get("phase", "")) == "town":
 		get_tree().change_scene_to_file("res://scenes/town.tscn")
 
+# 設定 opened from INSIDE the camp menu (メニュー→設定) — the classic "adjust options while you rest" slot,
+# reusing the shared ConfigPanel the title/town use. Rebuild-safe: a toggle's on_change re-opens it so the
+# flipped setting shows. Cancel (handled in _input) closes it back to the party menu beneath.
+func _open_config_overlay() -> void:
+	if _config_overlay and is_instance_valid(_config_overlay):
+		_config_overlay.queue_free()
+	var layer := Control.new()
+	layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	var scrim := ColorRect.new()
+	scrim.color = Color(0, 0, 0, 0.85)
+	scrim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	layer.add_child(scrim)
+	var panel := PanelContainer.new()
+	panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	panel.custom_minimum_size = Vector2(560, 0)
+	panel.add_theme_stylebox_override("panel", _panel_style(Color("14180df9"), GOLD))
+	layer.add_child(panel)
+	var col := UIKit.col(14)
+	col.add_child(UIKit.label(I18n.t("partyMenu.config"), 24, GOLD))
+	var built := ConfigPanel.build(ConfigPanel.load_settings(), func(): _open_config_overlay())
+	col.add_child(built["control"])
+	col.add_child(UIKit.button(I18n.t("partyMenu.close"), func(): _close_config_overlay(), Vector2(260, 44), 16))
+	panel.add_child(col)
+	add_child(layer)
+	_config_overlay = layer
+	var focus: Variant = built.get("first", null)
+	if focus != null and is_instance_valid(focus):
+		(focus as Control).call_deferred("grab_focus")
+
+func _close_config_overlay() -> void:
+	if _config_overlay and is_instance_valid(_config_overlay):
+		_config_overlay.queue_free()
+	_config_overlay = null
+	if _party_menu and is_instance_valid(_party_menu):
+		call_deferred("_ensure_focus_in", _party_menu)
+
 # 隊列 opens the party menu OVER the dungeon — it must never leave the maze. (It used to change scene to
 # the town, and the town forces phase=town on entry, so pressing it silently ENDED the expedition and
 # yanked the party out of the dungeon.) In the dungeon the menu is read-only for equipment, which the
@@ -726,6 +771,7 @@ func _toggle_party_menu() -> void:
 		"state": _state, "world": _world, "engine": _engine, "event_text": "",
 		"dispatch": func(command): _menu_dispatch(command),
 		"close": func(): _toggle_party_menu(),
+		"open_config": func(): _open_config_overlay(),
 		"selected_member": func(): return _party_selected(),
 		"set_selected": func(id): _party_member_id = String(id); _refresh_party_menu(),
 		"focus_hint": func(control): focus_target = control,
