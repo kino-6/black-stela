@@ -61,7 +61,11 @@ var _engine_cache: Dictionary = {}
 func _ready() -> void:
 	await get_tree().process_frame
 	_acquire_state()
-	_draft = Draft.fresh(1)
+	# Seed the first draft from a RUN-UNIQUE value, mirroring React's `overrides.bonusSeed ?? Date.now()`.
+	# A fixed `fresh(1)` made every 見繕う deal the identical six adventurers on every new game (playtest:
+	# "毎回同じメンツ"). randi() is randomised at startup, so the whole recruit sequence varies per run; the
+	# per-recruit seed still folds in party size so the six differ from each other within a run.
+	_draft = Draft.fresh(randi())
 	_rebuild()
 
 func _acquire_state() -> void:
