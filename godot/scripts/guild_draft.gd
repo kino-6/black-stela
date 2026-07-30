@@ -129,7 +129,13 @@ static func reroll_face(draft: Dictionary, data: Dictionary) -> void:
 		return
 	var s := int(draft.get("faceSeed", draft.get("originSeed", 1))) + 1
 	draft["faceSeed"] = s
-	draft["portraitKey"] = String(keys[absi(s) % keys.size()])
+	var next := absi(s) % keys.size()
+	# A visible "reroll" that redraws the same portrait is indistinguishable from
+	# a broken control.  Seed wrapping is fine, but advance one face when it would
+	# otherwise reproduce the player's current choice.
+	if keys.size() > 1 and String(keys[next]) == String(draft.get("portraitKey", "")):
+		next = (next + 1) % keys.size()
+	draft["portraitKey"] = String(keys[next])
 
 static func reroll_background(draft: Dictionary, data: Dictionary) -> void:
 	var backgrounds: Array = data.get("backgrounds", [])

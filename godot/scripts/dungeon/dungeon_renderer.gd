@@ -22,16 +22,17 @@ static func build(world: Dictionary, state: Dictionary, run: Object, view_size: 
 	container.add_child(vp)
 
 	var pal: Dictionary = world.get("palette", {}) if typeof(world.get("palette", null)) == TYPE_DICTIONARY else {}
+	var intro_ash := _current_floor_id(state, world) == "dungeon.b1f" and String(world.get("id", "")).trim_prefix("world.") == "default"
 	var env := WorldEnvironment.new()
 	var e := Environment.new()
 	e.background_mode = Environment.BG_COLOR
-	e.background_color = Color("06070500")
+	e.background_color = Color("15120d") if intro_ash else Color("06070500")
 	e.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	e.ambient_light_color = Color(String(pal.get("ambient", "2a2620")))
-	e.ambient_light_energy = float(pal.get("ambientEnergy", 0.55))
+	e.ambient_light_color = Color("554834") if intro_ash else Color(String(pal.get("ambient", "2a2620")))
+	e.ambient_light_energy = maxf(0.82, float(pal.get("ambientEnergy", 0.55))) if intro_ash else float(pal.get("ambientEnergy", 0.55))
 	e.fog_enabled = true
-	e.fog_light_color = Color(String(pal.get("fog", "0a0b07")))
-	e.fog_density = float(pal.get("fogDensity", 0.10))
+	e.fog_light_color = Color("201a11") if intro_ash else Color(String(pal.get("fog", "0a0b07")))
+	e.fog_density = minf(0.035, float(pal.get("fogDensity", 0.10))) if intro_ash else float(pal.get("fogDensity", 0.10))
 	env.environment = e
 	vp.add_child(env)
 
@@ -42,8 +43,8 @@ static func build(world: Dictionary, state: Dictionary, run: Object, view_size: 
 
 	var torch := OmniLight3D.new()
 	torch.light_color = Color(String(pal.get("torch", "ffd9a0")))
-	torch.light_energy = 3.2
-	torch.omni_range = float(pal.get("torchRange", 8.5))
+	torch.light_energy = 4.4 if intro_ash else 3.2
+	torch.omni_range = maxf(11.0, float(pal.get("torchRange", 8.5))) if intro_ash else float(pal.get("torchRange", 8.5))
 	torch.omni_attenuation = 1.4
 	vp.add_child(torch)
 
@@ -409,6 +410,17 @@ static func _block_textures(state: Dictionary, world: Dictionary, run: Object) -
 		suffix = "-block3"
 	elif depth >= 4:
 		suffix = "-block2"
+	# The opening Ash floor needs to sell "ancient stone" before the player ever
+	# reaches its first fight.  The previous block texture was a coloured checker
+	# grid, which turned the first-person view into an editor-like box.  Keep later
+	# floor variants and other worlds data-driven; only the shipped B1F introduction
+	# opts into the authored ash-stone material.
+	var world_id := String(world.get("id", "default")).trim_prefix("world.")
+	if depth == 1 and world_id == "default":
+		return {
+			"wall": _asset(world, run, "dungeon/ash-stone-wall-v2.png"),
+			"floor": _asset(world, run, "dungeon/ash-stone-floor-v2.png"),
+		}
 	return {
 		"wall": _asset(world, run, "dungeon/stone-wall%s.jpg" % suffix),
 		"floor": _asset(world, run, "dungeon/stone-floor%s.jpg" % suffix)

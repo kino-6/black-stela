@@ -10,14 +10,37 @@ func _initialize() -> void:
 	get_root().add_child(dungeon)
 	for i in 8:
 		await process_frame
+	# The exploration trace begins after the tutorial encounter, so make this
+	# visual harness explicitly stand on the real stair landing.  A capture that
+	# calls one move from the trace position walks to the gate instead of combat,
+	# then falsely saves a dungeon screenshot as `_flow_combat.png`.
+	var state: Dictionary = dungeon.get("_state")
+	state["phase"] = "dungeon"
+	state["combat"] = null
+	state["position"] = {"cellId": "cell.b1f.001", "roomId": "room.b1f.001", "facing": "south"}
+	state["map"] = {
+		"floorId": "dungeon.b1f", "currentCellId": "cell.b1f.001", "currentRoomId": "room.b1f.001",
+		"currentFacing": "south", "visitedCells": ["cell.b1f.001"], "visitedRooms": ["room.b1f.001"],
+		"knownExits": {}, "secretCandidates": {}, "blockedExits": {},
+	}
+	dungeon.set("_state", state)
+	dungeon.call("_update_view", false)
+	for i in 4:
+		await process_frame
 	_shot("res://tests/_flow_dungeon.png")
 
-	if dungeon.has_method("step_forward"):
-		dungeon.step_forward()   # walks into room.002 -> phase=combat -> change_scene_to_file(combat)
-	else:
+	if not dungeon.has_method("step_forward"):
 		push_error("[capture_flow] dungeon has no step_forward()")
-	for i in 40:                 # wait out the 0.35s read-delay + the scene change
+		quit(1)
+		return
+	await dungeon.step_forward() # room.001 -> room.002 -> authored ash-slime -> combat scene
+	for i in 12:
 		await process_frame
+	var current: Node = current_scene
+	if current == null or not String(current.scene_file_path).ends_with("combat.tscn"):
+		push_error("[capture_flow] expected the live combat scene after the tutorial step, got %s" % ("none" if current == null else current.scene_file_path))
+		quit(1)
+		return
 	_shot("res://tests/_flow_combat.png")
 	quit(0)
 

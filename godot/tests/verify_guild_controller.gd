@@ -12,6 +12,7 @@ extends SceneTree
 
 const STEPS := ["briefing", "class", "face", "background", "trait", "bonus", "name"]
 const I18n := preload("res://scripts/i18n.gd")
+const Draft := preload("res://scripts/guild_draft.gd")
 
 var _failures := 0
 
@@ -30,6 +31,17 @@ func _all_text(node: Node) -> String:
 	return out
 
 func _initialize() -> void:
+	# A reroll is a player-visible promise, not merely a seed increment.  The previous
+	# implementation could land on the current portrait whenever the fallback seed
+	# wrapped the face list, so pressing 見繕う visibly did nothing.
+	var face_data := {"backgrounds": [
+		{"portraitKey": "gate"}, {"portraitKey": "ruin"}, {"portraitKey": "vial"},
+	]}
+	var face_draft := {"portraitKey": "gate", "originSeed": 2}
+	Draft.reroll_face(face_draft, face_data)
+	if String(face_draft.get("portraitKey", "")) == "gate":
+		_fail("face reroll: a visible reroll must never return the currently selected face")
+
 	# A NEW game starts the guild with an empty roster (the scenario picker clears it); the guild no longer
 	# wipes on _ready (that deleted everyone when you re-entered mid-registration). The gate establishes the
 	# same clean precondition itself instead of relying on that destructive wipe.
