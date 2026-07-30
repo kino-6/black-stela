@@ -71,6 +71,14 @@ export function trapSkill(member: Character): number {
   return member.level + (apt.agility ?? 0) * 2 + (apt.wit ?? 0) + (apt.luck ?? 0) + Math.max(declared, legacyTag);
 }
 
+/** Lockpicking uses the same aptitude spine as trap work, but reads the explicit unlock proficiency. */
+export function unlockSkill(member: Character): number {
+  const apt = member.aptitude;
+  const declared = proficiencyBonus(characterProficiency(member, "unlock"));
+  const legacyTag = member.roleTags?.includes("trap_handling") ? proficiencyBonus("specialist") : 0;
+  return member.level + (apt.agility ?? 0) * 2 + (apt.wit ?? 0) + (apt.luck ?? 0) + Math.max(declared, legacyTag);
+}
+
 /** The best standing (un-injured) handler the rules pick automatically, or null if nobody can act. */
 export function selectTrapHandler(party: Character[]): Character | null {
   const able = party.filter((member) => member.hp > 0 && !member.injury);
@@ -100,11 +108,14 @@ export function makeChest(cellId: string, roomId: string, chest: ScenarioChest):
     roomId,
     treasureTable: chest.treasureTable,
     trap: chest.trap ? { ...chest.trap } : null,
+    lock: chest.lock ? { ...chest.lock } : null,
     phase: "closed",
     investigated: false,
     investigateResult: null,
     disarmAttempted: false,
     disarmed: false,
+    unlockAttempted: false,
+    unlocked: !chest.lock,
     sprung: false
   };
 }
@@ -139,12 +150,21 @@ export function disarmChest(chest: ChestState, handler: Character | null, seed: 
   return { ...chest, disarmAttempted: true, disarmed: success };
 }
 
+/** Unlock ONCE. A failed pick leaves the chest shut; opening never silently bypasses a real lock. */
+export function unlockChest(chest: ChestState, handler: Character | null, seed: string, aidBonus = 0): ChestState {
+  if (chest.unlockAttempted || chest.phase === "opened" || !chest.lock || chest.unlocked) return chest;
+  const skill = (handler ? unlockSkill(handler) : 0) + aidBonus;
+  const success = rollPercent(`${seed}:unlock`) < successChance(skill, chest.lock.difficulty, 45);
+  return { ...chest, unlockAttempted: true, unlocked: success };
+}
+
 /** Open the chest. If the trap is present and not disarmed it TRIPS (returns damage) — but the reward is
  *  never destroyed; the caller still grants it. The chest becomes opened (reward can be taken once). */
-export function openChest(chest: ChestState): { chest: ChestState; trapSprung: boolean; damage: number } {
+export function openChest(chest: ChestState): { chest: ChestState; trapSprung: boolean; damage: number; blocked?: "locked" } {
   if (chest.phase === "opened") {
     return { chest, trapSprung: false, damage: 0 };
   }
+  if (chest.lock && !chest.unlocked) return { chest, trapSprung: false, damage: 0, blocked: "locked" };
   const trapSprung = Boolean(chest.trap) && !chest.disarmed && !chest.sprung;
   const damage = trapSprung ? chest.trap!.damage : 0;
   return {

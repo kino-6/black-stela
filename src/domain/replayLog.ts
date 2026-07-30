@@ -281,6 +281,10 @@ export function projectEventToLog(event: GameEvent, locale: Locale = "en", world
         tags: ["dungeon", "chest"]
       };
     }
+    case "chest_unlocked": {
+      const name = event.handlerName ?? (locale === "ja" ? "隊列" : "The party");
+      return { text: t(event.success ? "events.chestUnlockedSuccess" : "events.chestUnlockedFail", { name }), tags: ["dungeon", "chest", "lock"] };
+    }
     case "chest_trap_sprung":
       return { text: t("events.chestTrapSprung"), tags: ["dungeon", "chest", "trap"] };
     case "chest_opened":

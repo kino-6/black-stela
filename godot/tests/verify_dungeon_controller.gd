@@ -15,6 +15,7 @@ func _initialize() -> void:
 
 	# 0) The scene builds headless and the party stands in the dungeon at its landing.
 	var state: Dictionary = d.get("_state")
+	var initial_party: Array = (state.get("party", []) as Array).duplicate(true)
 	_check(String(state.get("phase", "")) == "dungeon", "scene enters the dungeon phase")
 	_check(String((state.get("position", {}) as Dictionary).get("cellId", "")) != "", "party has a landing cell")
 
@@ -64,8 +65,42 @@ func _initialize() -> void:
 	d.set("_state", {
 		"phase": "dungeon",
 		"position": {"cellId": "cell.b1f.002", "roomId": "room.b1f.002", "facing": "south"},
-		"map": {"floorId": "dungeon.b1f", "currentCellId": "cell.b1f.002", "visitedCells": ["cell.b1f.002"]}
+		"map": {"floorId": "dungeon.b1f", "currentCellId": "cell.b1f.002", "visitedCells": ["cell.b1f.002"]},
+		"party": initial_party
 	})
+	# Chest operator choice — Confirm on a closed chest enters investigation, then the cursor starts on the
+	# standing member with the largest displayed chance. This protects the requested no-mouse flow: select
+	# action → suggested specialist → Confirm, while still allowing deliberate choice of another member.
+	d.call("set_ui_state", {"chest": true, "chest_locked": true})
+	for i in 3:
+		await process_frame
+	var chest_focus: Control = get_root().get_viewport().gui_get_focus_owner()
+	_check(chest_focus is Button and (chest_focus as Button).text == "調べる", "closed chest focuses 調べる before lockwork")
+	d.set("_chest_pending_action", "investigate")
+	d.call("_rebuild_dock")
+	for i in 3:
+		await process_frame
+	var handler_focus: Control = get_root().get_viewport().gui_get_focus_owner()
+	var Exploration := preload("res://scripts/rules/exploration.gd")
+	var Chests := preload("res://scripts/rules/chests.gd")
+	var best_name := ""
+	var best_chance := -1
+	var scripted_chest: Dictionary = d.call("current_chest")
+	for member in initial_party:
+		if int(member.get("hp", 0)) <= 0 or member.get("injury", null) != null:
+			continue
+		var chance: int = Chests.success_chance(Exploration.attempt_skill(member, d.get("_engine"), "investigate"), int((scripted_chest.get("trap", {}) as Dictionary).get("difficulty", 0)), 55)
+		if chance > best_chance:
+			best_chance = chance
+			best_name = String(member.get("name", ""))
+	_check(handler_focus is Button and (handler_focus as Button).text.begins_with(best_name + "　") and (handler_focus as Button).text.contains("成功率"), "handler choice focuses the highest investigation chance")
+	# A successful discovery must not make the player navigate back to a distant option: the trap action is
+	# focused on the next panel and Confirm can immediately continue to the recommended handler.
+	d.call("set_ui_state", {"chest": true, "chest_result": "trapped"})
+	for i in 3:
+		await process_frame
+	chest_focus = get_root().get_viewport().gui_get_focus_owner()
+	_check(chest_focus is Button and (chest_focus as Button).text == "罠を外す", "found trap focuses 罠を外す for Confirm")
 	d.call("set_ui_state", {"chest": true, "chest_opened": true})
 	for i in 3:
 		await process_frame

@@ -23,7 +23,8 @@ const STATE_DEFAULTS := {
 }
 const CHEST_DEFAULTS := {
 	"trap": null, "phase": "closed", "investigated": false, "investigateResult": null,
-	"disarmAttempted": false, "disarmed": false, "sprung": false
+	"disarmAttempted": false, "disarmed": false, "lock": null, "unlockAttempted": false, "unlocked": true,
+	"sprung": false
 }
 const QUEST_DEFAULTS := {"status": "active", "killCount": 0, "claims": 0}
 

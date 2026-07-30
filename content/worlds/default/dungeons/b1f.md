@@ -109,6 +109,8 @@ rooms:
     # IMP-029 — a trapped chamber: clear the slime, then a needle-trapped strongbox remains on the cell.
     chest:
       treasureTable: treasure.b1f.safe
+      lock:
+        difficulty: 8
       trap:
         kind: needle
         difficulty: 12

@@ -2648,7 +2648,7 @@
         "play.chestTrappedNote",
         "play.chestUncertainNote"
       ],
-      "notes": "A chest HOLDS the cell (Wizardry prompt model): while it is here the panel owns the command region. It shows only what the party can SEE — closed, a trap found, 'cannot tell', no trap, opened — never a success rate, and 罠を外す appears ONLY once an investigation detected a trap. Every stage is driven, because the whole point of the panel is that the stages read differently.",
+      "notes": "A chest HOLDS the cell (Wizardry prompt model): while it is here the panel owns the command region. It shows only what the party can SEE — closed, a trap found, 'cannot tell', no trap, opened. A risky operation opens a formation-order handler list with visible success rates and initial focus on its best standing member; after a found trap, focus moves straight to 罠を外す. Every stage is driven, because the whole point of the panel is that the stages read differently.",
       "states": [
         {
           "uiState": {
@@ -2671,6 +2671,19 @@
           "uiState": {
             "chest": true,
             "chest_result": "clear"
+          }
+        },
+        {
+          "uiState": {
+            "chest": true,
+            "chest_locked": true
+          }
+        },
+        {
+          "uiState": {
+            "chest": true,
+            "chest_locked": true,
+            "chest_pending_action": "investigate"
           }
         },
         {

@@ -281,9 +281,12 @@ const chestTrapSchema = z.object({
   damage: z.number().int().nonnegative()
 });
 
+const chestLockSchema = z.object({ difficulty: z.number().int().positive() });
+
 const chestSchema = z.object({
   treasureTable: z.string().min(1),
-  trap: chestTrapSchema.optional()
+  trap: chestTrapSchema.optional(),
+  lock: chestLockSchema.optional()
 });
 
 const treasureTableSchema = z.object({

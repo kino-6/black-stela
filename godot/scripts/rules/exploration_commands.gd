@@ -519,11 +519,14 @@ static func _ensure_chest_for_room(state: Dictionary, room: Dictionary, cell_id:
 		"roomId": room_id,
 		"treasureTable": authored.get("treasureTable", null),
 		"trap": (authored["trap"] as Dictionary).duplicate(true) if typeof(authored.get("trap", null)) == TYPE_DICTIONARY else null,
+		"lock": (authored["lock"] as Dictionary).duplicate(true) if typeof(authored.get("lock", null)) == TYPE_DICTIONARY else null,
 		"phase": "closed",
 		"investigated": false,
 		"investigateResult": null,
 		"disarmAttempted": false,
 		"disarmed": false,
+		"unlockAttempted": false,
+		"unlocked": not (typeof(authored.get("lock", null)) == TYPE_DICTIONARY),
 		"sprung": false
 	}
 	var next: Dictionary = state.duplicate(true)

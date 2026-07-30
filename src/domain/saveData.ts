@@ -356,11 +356,14 @@ export const GameStateSchema = z.object({
           })
           .nullable()
           .default(null),
+        lock: z.object({ difficulty: z.number().int().positive() }).nullable().default(null),
         phase: z.enum(["closed", "opened"]).default("closed"),
         investigated: z.boolean().default(false),
         investigateResult: z.enum(["clear", "trapped", "uncertain"]).nullable().default(null),
         disarmAttempted: z.boolean().default(false),
         disarmed: z.boolean().default(false),
+        unlockAttempted: z.boolean().default(false),
+        unlocked: z.boolean().default(true),
         sprung: z.boolean().default(false)
       })
     )

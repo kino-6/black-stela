@@ -45,6 +45,7 @@ var _header: Label
 var _busy: bool = false
 # The loot text from the most recent command's chest/reward pickup, surfaced in the chest panel on open.
 var _chest_loot_line: String = ""
+var _chest_pending_action: String = ""
 var _engine: Dictionary = {}
 var _dock_host: PanelContainer = null
 var _full_map: Control = null
@@ -227,7 +228,11 @@ func _input(event: InputEvent) -> void:
 	# decision should hold the party's attention, not let them wander off the chest.
 	if not current_chest().is_empty():
 		if event.is_action_pressed("cancel"):
-			_leave_chest()
+			if _chest_pending_action != "":
+				_chest_pending_action = ""
+				_rebuild_dock()
+			else:
+				_leave_chest()
 			get_viewport().set_input_as_handled()
 		return
 	# The legend promises 移動 ↑↓ · 旋回 ←→ · 横歩き Q/E — every one MOVES the party, and every one
@@ -306,8 +311,11 @@ func set_ui_state(ui: Dictionary) -> void:
 				"trap": {"kind": "needle", "difficulty": 12, "damage": 4},
 				"phase": "opened" if opened else "closed",
 				"investigated": result != null, "investigateResult": result, "disarmAttempted": false,
-				"disarmed": false, "sprung": false
+				"disarmed": false, "sprung": false,
+				"lock": {"difficulty": 8} if bool(ui.get("chest_locked", false)) else null,
+				"unlockAttempted": false, "unlocked": not bool(ui.get("chest_locked", false))
 			}]
+			_chest_pending_action = String(ui.get("chest_pending_action", ""))
 			_left_chest_cell = ""
 			_rebuild_dock()
 	# The dock is contextual, so its states are PLACES. Each of these stands the party in a real room of
@@ -607,6 +615,7 @@ func _has_stairs_here() -> bool:
 
 # Leaving a chest does NOT consume it — the party simply stops standing on the prompt.
 func _leave_chest() -> void:
+	_chest_pending_action = ""
 	_left_chest_cell = String(_state["position"].get("cellId", "")) if _state.get("position", null) != null else ""
 	_rebuild_dock()
 
@@ -759,7 +768,14 @@ func _show_chest_overlay(chest: Dictionary) -> void:
 	var center := CenterContainer.new()
 	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	layer.add_child(center)
-	var built: Dictionary = ChestPanel.build(chest, func(cmd): _apply(SliceRules.resolve(_state, cmd, _world, _engine)), func(): _leave_chest(), _chest_loot_line, _texture(_asset("dungeon/treasure-chest-closed.png")), _texture(_asset("dungeon/treasure-chest-open.png")))
+	var built: Dictionary = ChestPanel.build(
+		chest, _state.get("party", []), _engine, _chest_pending_action,
+		func(action): _chest_pending_action = String(action); _show_chest_overlay(chest),
+		func(cmd): _chest_pending_action = ""; _apply(SliceRules.resolve(_state, cmd, _world, _engine)),
+		func(): _chest_pending_action = ""; _rebuild_dock(),
+		func(): _leave_chest(), _chest_loot_line,
+		_texture(_asset("dungeon/treasure-chest-closed.png")), _texture(_asset("dungeon/treasure-chest-open.png"))
+	)
 	center.add_child(built["control"])
 	add_child(layer)
 	_chest_overlay = layer
@@ -770,6 +786,7 @@ func _hide_chest_overlay() -> void:
 	if _chest_overlay and is_instance_valid(_chest_overlay):
 		_chest_overlay.queue_free()
 	_chest_overlay = null
+	_chest_pending_action = ""
 
 # 隊列 opens the party menu OVER the dungeon — it must never leave the maze. (It used to change scene to
 # the town, and the town forces phase=town on entry, so pressing it silently ENDED the expedition and
@@ -1055,6 +1072,19 @@ func _event_line(e: Dictionary) -> String:
 			return "あたりを探ったが、何も見つからない。"
 		"secret_found":
 			return "隠された継ぎ目を見つけた！"
+		"chest_investigated":
+			var investigate_key := "events.chestInvestigated%s" % ({"clear": "Clear", "trapped": "Trapped", "uncertain": "Uncertain"}.get(String(e.get("result", "")), "Uncertain"))
+			return I18n.t(investigate_key, {"name": String(e.get("handlerName", "隊列"))})
+		"chest_disarmed":
+			return I18n.t("events.chestDisarmed%s" % ("Success" if bool(e.get("success", false)) else "Fail"), {"name": String(e.get("handlerName", "隊列"))})
+		"chest_unlocked":
+			return I18n.t("events.chestUnlocked%s" % ("Success" if bool(e.get("success", false)) else "Fail"), {"name": String(e.get("handlerName", "隊列"))})
+		"chest_trap_sprung":
+			return I18n.t("events.chestTrapSprung")
+		"chest_opened":
+			return I18n.t("events.chestOpened")
+		"command_blocked_chest":
+			if String(e.get("reason", "")) == "locked": return I18n.t("play.chestLockedNote")
 		"inventory_item_gained":
 			# The loot from a chest / reward — logged so the player SEES what they got (playtest: opening a
 			# chest said only "宝箱は開いた。"). Mirrors React's events.inventoryItemGained line.

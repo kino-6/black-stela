@@ -14,7 +14,8 @@ import {
   openChest,
   roomChest,
   selectTrapHandler,
-  trapSkill
+  trapSkill,
+  unlockChest
 } from "../src/domain/chests";
 import type { Character, GameState, ScenarioChest } from "../src/domain/types";
 
@@ -52,8 +53,9 @@ function chamberVictoryState(): GameState {
 }
 
 describe("IMP-029 chest state machine (pure)", () => {
-  const trapped: ScenarioChest = { treasureTable: "treasure.b1f.safe", trap: { kind: "needle", difficulty: 12, damage: 4 } };
-  const plain: ScenarioChest = { treasureTable: "treasure.b1f.safe" };
+	const trapped: ScenarioChest = { treasureTable: "treasure.b1f.safe", trap: { kind: "needle", difficulty: 12, damage: 4 } };
+	const plain: ScenarioChest = { treasureTable: "treasure.b1f.safe" };
+	const locked: ScenarioChest = { treasureTable: "treasure.b1f.safe", lock: { difficulty: 8 } };
 
   it("a trapped-chest investigation never reports a false 'clear'", () => {
     const chest = makeChest(CHAMBER_CELL, CHAMBER_ROOM, trapped);
@@ -84,7 +86,7 @@ describe("IMP-029 chest state machine (pure)", () => {
     expect(chest.disarmAttempted).toBe(true);
   });
 
-  it("opening an undisarmed trapped chest springs the trap but keeps the reward; opening a disarmed one does not", () => {
+	it("opening an undisarmed trapped chest springs the trap but keeps the reward; opening a disarmed one does not", () => {
     const chest = makeChest(CHAMBER_CELL, CHAMBER_ROOM, trapped);
     const undisarmed = openChest(chest);
     expect(undisarmed.trapSprung).toBe(true);
@@ -94,7 +96,20 @@ describe("IMP-029 chest state machine (pure)", () => {
     const disarmed = openChest({ ...chest, disarmed: true });
     expect(disarmed.trapSprung).toBe(false);
     expect(disarmed.damage).toBe(0);
-  });
+	});
+
+	it("a locked chest cannot open until the declared lockpicker succeeds, and spends only one attempt", () => {
+		const lockpicker: Character = { ...createGuildCharacter({ name: "Nim", classId: "thief", seed: "lock" }), level: 20 };
+		let chest = makeChest(CHAMBER_CELL, CHAMBER_ROOM, locked);
+		expect(openChest(chest).blocked).toBe("locked");
+
+		chest = unlockChest(chest, lockpicker, "locked-seed");
+		expect(chest.unlockAttempted).toBe(true);
+		expect(chest.unlocked).toBe(true);
+		const spent = { ...chest };
+		expect(unlockChest(chest, lockpicker, "locked-seed")).toEqual(spent);
+		expect(openChest(chest).blocked).toBeUndefined();
+	});
 
   it("selectTrapHandler prefers a trap-handling vocation over a plain fighter", () => {
     const cutpurse = createGuildCharacter({ name: "Nim", classId: "thief", seed: "a" });
@@ -148,11 +163,13 @@ describe("IMP-029 integration (default world)", () => {
     expect(won.floorClaimedTreasures).not.toContain(CHAMBER_ROOM);
   });
 
-  it("opening springs the trap yet grants the reward exactly once — no double-claim", () => {
-    const won = chamberVictoryState();
-    const hpBefore = won.party[0].hp;
+	it("opening springs the trap yet grants the reward exactly once — no double-claim", () => {
+		const won = chamberVictoryState();
+		// This assertion is about trap/reward resolution, not the separate lock gate.
+		const primed: GameState = { ...won, chests: (won.chests ?? []).map((chest) => ({ ...chest, unlocked: true })) };
+		const hpBefore = primed.party[0].hp;
 
-    const opened = resolveCommand(won, defaultWorld, { type: "open_chest" });
+		const opened = resolveCommand(primed, defaultWorld, { type: "open_chest" });
     expect(opened.events).toContainEqual(expect.objectContaining({ type: "chest_trap_sprung", trapKind: "needle" }));
     expect(opened.events.some((e) => e.type === "inventory_item_gained")).toBe(true);
     expect(opened.state.party[0].hp).toBeLessThan(hpBefore); // trap bit, but…

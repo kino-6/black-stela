@@ -45,7 +45,7 @@ static func select_trap_handler(party: Array) -> Variant:
 	return best
 
 static func success_chance(skill: int, difficulty: int, base: int) -> int:
-	return _clamp_int(base + skill * 3 - difficulty, 5, 95)
+	return _clamp_int(base + skill * 3 - difficulty * 3, 5, 95)
 
 static func chest_at(state: Dictionary, cell_id: Variant) -> Variant:
 	for chest in state.get("chests", []):
@@ -144,12 +144,44 @@ static func disarm(state: Dictionary, world: Dictionary = {}, engine: Dictionary
 	Exploration.stamp_event(event, attempt)
 	return {"state": next, "events": [event]}
 
+static func unlock(state: Dictionary, world: Dictionary = {}, engine: Dictionary = {}, character_id: String = "", item_id: String = "") -> Dictionary:
+	var chest: Variant = current_chest(state)
+	if typeof(chest) != TYPE_DICTIONARY:
+		return _blocked(state, "no_chest")
+	if chest.get("phase", "") == "opened":
+		return _blocked(state, "already_open")
+	if typeof(chest.get("lock", null)) != TYPE_DICTIONARY or bool(chest.get("unlocked", true)):
+		return _blocked(state, "no_trap")
+	if bool(chest.get("unlockAttempted", false)):
+		return _blocked(state, "already_tried")
+
+	var difficulty := int((chest["lock"] as Dictionary).get("difficulty", 0))
+	var attempt := Exploration.resolve_attempt(state, world, engine, "unlock", difficulty, character_id, item_id)
+	if String(attempt.get("refused", "")) != "":
+		return _blocked(state, String(attempt["refused"]))
+	var handler: Variant = attempt.get("actor", null)
+	var seed_text := "%s:%s" % [String(chest.get("cellId", "")), String(chest.get("roomId", ""))]
+	var success := roll_percent("%s:unlock" % seed_text) < success_chance(int(attempt.get("skill", 0)), difficulty, 45)
+	var updated: Dictionary = chest.duplicate(true)
+	updated["unlockAttempted"] = true
+	updated["unlocked"] = success
+	var next := _replace_chest(state, updated)
+	next["turn"] = int(next.get("turn", 0)) + 1
+	next["inventory"] = attempt.get("inventory", next.get("inventory", []))
+	var event := {"type": "chest_unlocked", "success": success}
+	if typeof(handler) == TYPE_DICTIONARY:
+		event["handlerName"] = handler.get("name", "")
+	Exploration.stamp_event(event, attempt)
+	return {"state": next, "events": [event]}
+
 static func open_chest(state: Dictionary, world: Dictionary, engine: Dictionary) -> Dictionary:
 	var chest: Variant = current_chest(state)
 	if typeof(chest) != TYPE_DICTIONARY:
 		return _blocked(state, "no_chest")
 	if chest.get("phase", "") == "opened":
 		return _blocked(state, "already_open")
+	if typeof(chest.get("lock", null)) == TYPE_DICTIONARY and not bool(chest.get("unlocked", false)):
+		return _blocked(state, "locked")
 
 	var has_trap: bool = typeof(chest.get("trap", null)) == TYPE_DICTIONARY
 	var trap_sprung: bool = has_trap and not bool(chest.get("disarmed", false)) and not bool(chest.get("sprung", false))

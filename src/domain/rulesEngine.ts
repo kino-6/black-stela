@@ -20,7 +20,7 @@ import { TECHNIQUES, type Technique } from "./techniques";
 import { applyLastingEffects, coveringMemberId, statModifier, tickEffects, type ActiveEffect } from "./combatEffects";
 import { getCriticalChance, getEvasionChance, getInitiativeScore, getSpellPowerBonus, getStatusSpellChance } from "./combatMath";
 import { FEAR_ACCURACY_PENALTY, POISON_DAMAGE, STATUS_WEAR_OFF, statusResistPct } from "./status";
-import { chestAt, disarmChest, investigateChest, makeChest, openChest, roomChest, successChance } from "./chests";
+import { chestAt, disarmChest, investigateChest, makeChest, openChest, roomChest, successChance, unlockChest } from "./chests";
 import { resolveClassId } from "./characterCreation";
 import { consumeAid, resolveAttempt, type AttemptRecord, type ExplorationAid } from "./exploration";
 import {
@@ -243,6 +243,8 @@ export function resolveCommand(state: GameState, world: ScenarioWorld, command: 
       return investigateChestCommand(state, world, command.characterId, command.itemId);
     case "disarm_chest":
       return disarmChestCommand(state, world, command.characterId, command.itemId);
+    case "unlock_chest":
+      return unlockChestCommand(state, world, command.characterId, command.itemId);
     case "open_chest":
       return openChestCommand(state, world);
     case "attack":
@@ -2529,6 +2531,22 @@ function disarmChestCommand(state: GameState, world: ScenarioWorld, characterId?
   ]);
 }
 
+function unlockChestCommand(state: GameState, world: ScenarioWorld, characterId?: string, itemId?: string): CommandResult {
+  const chest = currentChest(state);
+  if (!chest) return withEvents(state, [{ type: "command_blocked_chest", reason: "no_chest" }]);
+  if (chest.phase === "opened") return withEvents(state, [{ type: "command_blocked_chest", reason: "already_open" }]);
+  if (!chest.lock || chest.unlocked) return withEvents(state, [{ type: "command_blocked_chest", reason: "no_trap" }]);
+  if (chest.unlockAttempted) return withEvents(state, [{ type: "command_blocked_chest", reason: "already_tried" }]);
+  const attempt = resolveAttempt(state, { action: "unlock", difficulty: chest.lock.difficulty, declaredActorId: characterId, itemId }, explorationAids(world));
+  if (attempt.refused) return withEvents(state, [{ type: "command_blocked_chest", reason: attempt.refused }]);
+  const actor = state.party.find((member) => member.id === attempt.record.actorId) ?? null;
+  const updated = unlockChest(chest, actor, `${chest.cellId}:${chest.roomId}`, attempt.aid?.bonus ?? 0);
+  const inventory = attempt.aid ? consumeAid(state.inventory, attempt.aid.itemId) : state.inventory;
+  return withEvents({ ...replaceChest({ ...state, inventory }, updated), turn: state.turn + 1 }, [
+    { type: "chest_unlocked", success: updated.unlocked, handlerName: actor?.name, ...attemptFields(attempt.record) }
+  ]);
+}
+
 // IMP-029 — open the current chest. An armed, undisarmed trap TRIPS (wounds the party toward 1 HP) but
 // the reward is NEVER destroyed; it is granted exactly once, then the chest cannot be claimed again.
 function openChestCommand(state: GameState, world: ScenarioWorld): CommandResult {
@@ -2536,7 +2554,8 @@ function openChestCommand(state: GameState, world: ScenarioWorld): CommandResult
   if (!chest) return withEvents(state, [{ type: "command_blocked_chest", reason: "no_chest" }]);
   if (chest.phase === "opened") return withEvents(state, [{ type: "command_blocked_chest", reason: "already_open" }]);
 
-  const { chest: opened, trapSprung, damage } = openChest(chest);
+  const { chest: opened, trapSprung, damage, blocked } = openChest(chest);
+  if (blocked) return withEvents(state, [{ type: "command_blocked_chest", reason: blocked }]);
   let next = replaceChest(state, opened);
   const events: GameEvent[] = [];
   if (trapSprung) {

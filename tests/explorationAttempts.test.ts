@@ -33,11 +33,14 @@ function stateWithChest(party: Character[], options: { difficulty?: number; inve
         roomId: "room.test",
         treasureTable: "treasure.b1f.common",
         trap: { kind: "needle", difficulty: options.difficulty ?? 12, damage: 4 },
+        lock: null,
         phase: "closed",
         investigated: false,
         investigateResult: null,
         disarmAttempted: false,
         disarmed: false,
+        unlockAttempted: false,
+        unlocked: true,
         sprung: false
       }
     ]

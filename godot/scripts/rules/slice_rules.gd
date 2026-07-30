@@ -64,6 +64,8 @@ static func resolve(state: Dictionary, command: Dictionary, world: Dictionary = 
 			return Chests.investigate(state, world, engine, String(command.get("characterId", "")), String(command.get("itemId", "")))
 		"disarm_chest":
 			return Chests.disarm(state, world, engine, String(command.get("characterId", "")), String(command.get("itemId", "")))
+		"unlock_chest":
+			return Chests.unlock(state, world, engine, String(command.get("characterId", "")), String(command.get("itemId", "")))
 		"open_chest":
 			return Chests.open_chest(state, world, engine)
 		"enter_dungeon":

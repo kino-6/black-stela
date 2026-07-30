@@ -39,6 +39,7 @@ export type Command =
   // the automatic pick, which the event then reports AS automatic rather than as the player's choice.
   | { type: "investigate_chest"; characterId?: string; itemId?: string }
   | { type: "disarm_chest"; characterId?: string; itemId?: string }
+  | { type: "unlock_chest"; characterId?: string; itemId?: string }
   | { type: "open_chest"; characterId?: string }
   | { type: "attack" }
   | { type: "defend" }
@@ -455,9 +456,20 @@ export type GameEvent =
       difficultyBand?: DifficultyBandName;
       itemConsumed?: string;
     }
+  | {
+      type: "chest_unlocked";
+      success: boolean;
+      handlerName?: string;
+      actorId?: string;
+      action?: ExplorationActionName;
+      selection?: "declared" | "automatic";
+      proficiency?: ProficiencyName;
+      difficultyBand?: DifficultyBandName;
+      itemConsumed?: string;
+    }
   | { type: "chest_trap_sprung"; trapKind: ChestTrapKind; damage: number }
   | { type: "chest_opened" }
-  | { type: "command_blocked_chest"; reason: "no_chest" | "guarded" | "already_open" | "already_tried" | "no_trap" | "actor_unavailable" }
+  | { type: "command_blocked_chest"; reason: "no_chest" | "guarded" | "already_open" | "already_tried" | "no_trap" | "locked" | "actor_unavailable" }
   | { type: "room_event_triggered"; roomId: string; text: string }
   | { type: "enemy_encountered"; enemyId: string; enemyName: string; roomId: string }
   | { type: "inspection_made"; mode: "inspect_wall" | "listen" | "open_door" }
@@ -752,6 +764,8 @@ export type ChestTrapKind = "needle" | "gas" | "rune" | "snare";
 export interface ScenarioChest {
   treasureTable: string;
   trap?: { kind: ChestTrapKind; difficulty: number; damage: number };
+  /** A physical lock is independent of a trap: it requires an unlock attempt before the lid opens. */
+  lock?: { difficulty: number };
 }
 
 export type ChestPhase = "closed" | "opened";
@@ -764,6 +778,7 @@ export interface ChestState {
   treasureTable: string;
   /** The authored trap, or null for a plain chest. `sprung`/`disarmed` track its resolution. */
   trap: { kind: ChestTrapKind; difficulty: number; damage: number } | null;
+  lock: { difficulty: number } | null;
   phase: ChestPhase;
   /** Whether an investigation has been spent, and what it concluded. "uncertain" never lies "clear". */
   investigated: boolean;
@@ -771,6 +786,9 @@ export interface ChestState {
   /** Whether a disarm attempt has been spent, and whether it removed the trap. */
   disarmAttempted: boolean;
   disarmed: boolean;
+  /** A lock receives one deterministic unlock attempt, just like a trap receives one disarm attempt. */
+  unlockAttempted: boolean;
+  unlocked: boolean;
   /** Set once the trap has fired (on a bad open) so it cannot bite twice. */
   sprung: boolean;
 }
