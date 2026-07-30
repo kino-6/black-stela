@@ -1926,7 +1926,6 @@
         "partyMenu.discard",
         "partyMenu.equipOn",
         "partyMenu.equipmentDungeon",
-        "partyMenu.equipmentDungeonShort",
         "partyMenu.equipmentTown",
         "partyMenu.equipped",
         "partyMenu.evasion",
@@ -1953,11 +1952,30 @@
         "partyMenu.valuablesEmpty",
         "partyMenu.wounded",
         "partyMenu.xpToNext",
+        "play.useReturnCharm",
         "play.backRow",
         "play.frontRow"
       ],
-      "notes": "The party menu across its four pages and every state a decision needs: the derived combat numbers and resistances, an afflicted party, the equipment slots, an item that heals / restores 気力 / cures, a piece this adventurer cannot wear, the discard CONFIRM stage, a protected valuable, both empty lists, and the dungeon context where equipment can be read but not changed.",
+      "notes": "The party menu across its pages and every state a decision needs: derived combat numbers and resistances, formation, equipment slots, a carried piece that can be equipped in town or the dungeon, items that heal / restore 気力 / cure, an ineligible piece, discard confirmation, protected valuables, and empty lists.",
       "states": [
+        {
+          "fixture": {
+            "partyGold": 200,
+            "inventory": [
+              {
+                "id": "item.return-charm",
+                "name": "Return Charm",
+                "kind": "escape",
+                "quantity": 1
+              }
+            ],
+            "phase": "dungeon"
+          },
+          "uiState": {
+            "party_page": "valuables",
+            "party_item": "item.return-charm||"
+          }
+        },
         {
           "fixture": {
             "partyGold": 200,
@@ -2985,7 +3003,6 @@
         "partyMenu.discard",
         "partyMenu.equipOn",
         "partyMenu.equipmentDungeon",
-        "partyMenu.equipmentDungeonShort",
         "partyMenu.equipmentTown",
         "partyMenu.equipped",
         "partyMenu.evasion",
@@ -3012,11 +3029,30 @@
         "partyMenu.valuablesEmpty",
         "partyMenu.wounded",
         "partyMenu.xpToNext",
+        "play.useReturnCharm",
         "play.backRow",
         "play.frontRow"
       ],
-      "notes": "The party menu across its four pages and every state a decision needs: the derived combat numbers and resistances, an afflicted party, the equipment slots, an item that heals / restores 気力 / cures, a piece this adventurer cannot wear, the discard CONFIRM stage, a protected valuable, both empty lists, and the dungeon context where equipment can be read but not changed.",
+      "notes": "The party menu across its pages and every state a decision needs: derived combat numbers and resistances, formation, equipment slots, a carried piece that can be equipped in town or the dungeon, items that heal / restore 気力 / cure, an ineligible piece, discard confirmation, protected valuables, and empty lists.",
       "states": [
+        {
+          "fixture": {
+            "partyGold": 200,
+            "inventory": [
+              {
+                "id": "item.return-charm",
+                "name": "Return Charm",
+                "kind": "escape",
+                "quantity": 1
+              }
+            ],
+            "phase": "dungeon"
+          },
+          "uiState": {
+            "party_page": "valuables",
+            "party_item": "item.return-charm||"
+          }
+        },
         {
           "fixture": {
             "partyGold": 200,

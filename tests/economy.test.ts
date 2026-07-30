@@ -48,6 +48,24 @@ describe("economy and equipment", () => {
     expect(sellEquipped.party[0].equipment.weapon?.id).toBe("equip.militia-sabre");
   });
 
+  it("allows a carried piece to be equipped while exploring", () => {
+    const state = stateWithParty();
+    const bought = executeCommand(state, defaultWorld, {
+      type: "buy_item",
+      shopId: "shop.stela-general",
+      itemId: "equip.militia-sabre"
+    });
+    const exploring = { ...bought, phase: "dungeon" as const };
+    const equipped = resolveCommand(exploring, defaultWorld, {
+      type: "equip_item",
+      characterId: exploring.party[0].id,
+      equipmentId: "equip.militia-sabre"
+    });
+
+    expect(equipped.events).toContainEqual(expect.objectContaining({ type: "equipment_changed" }));
+    expect(equipped.state.party[0].equipment.weapon?.id).toBe("equip.militia-sabre");
+  });
+
   it("supports DRPG equipment slots, stat tradeoffs, and class restrictions", () => {
     const state = stateWithParty();
     const withBuckler = executeCommand(

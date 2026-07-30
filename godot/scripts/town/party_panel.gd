@@ -1,8 +1,7 @@
 extends RefCounted
 ## Port of src/components/PartyMenuPanel.tsx (roster/party menu) — the six-person formation screen.
 ##
-## The four tabs of the React panel: 能力 (condition, combat stats, resistances, aptitudes, level/xp),
-## 装備 (the six slots), 所持品 (usable items + spare gear) and 貴重品 (keys, treasure, escape charms).
+## The tabs separate 編成 from 能力: status browsing never repeats formation controls six times.
 ## An item's detail says what it DOES before any action is offered, discarding is a two-press CONFIRM,
 ## and a valuable that may not be discarded says so rather than showing a dead button.
 
@@ -45,7 +44,7 @@ static func build(ctx: Dictionary) -> Control:
 	var engine: Dictionary = ctx.get("engine", {})
 	var page: String = ctx.get("party_page", "status")
 	var tabs := UI.row()
-	for entry in [["status", "partyMenu.tabs.status"], ["spells", "partyMenu.tabs.spells"], ["equipment", "partyMenu.tabs.equipment"], ["items", "partyMenu.tabs.items"], ["valuables", "partyMenu.tabs.valuables"]]:
+	for entry in [["status", "partyMenu.tabs.status"], ["formation", "partyMenu.tabs.formation"], ["spells", "partyMenu.tabs.spells"], ["equipment", "partyMenu.tabs.equipment"], ["items", "partyMenu.tabs.items"], ["valuables", "partyMenu.tabs.valuables"]]:
 		var key := String(entry[0])
 		var tb := UI.button(I18n.t(String(entry[1])), func(): ctx["set_party_page"].call(key), Vector2(130, 36), 15)
 		if key == page:
@@ -82,7 +81,7 @@ static func build(ctx: Dictionary) -> Control:
 		sroster.add_child(UI.label(I18n.t("partyMenu.members"), 19, UI.GOLD))
 		var sfocus: Control = null
 		for candidate in party:
-			var rr := _roster_row(ctx, candidate, member, true)
+			var rr := _roster_row(ctx, candidate, member)
 			sroster.add_child(rr)
 			if sfocus == null:
 				sfocus = _first_button(rr)
@@ -95,6 +94,30 @@ static func build(ctx: Dictionary) -> Control:
 		ctx["focus_hint"].call(sfocus if sfocus != null else sback)
 		return root
 
+	# 編成 is its own decision surface. The status page is for reading one adventurer, not for six repeated
+	# 前衛/後衛 buttons (and never shows the dungeon-no-op bench action as 「閉じる」).
+	if page == "formation":
+		var formation := _formation_page(ctx, party, member)
+		root.add_child(formation["control"])
+		var formation_foot := UI.row()
+		var formation_back := UI.button(I18n.t("partyMenu.close"), ctx["close"], Vector2(180, 44), 18)
+		formation_foot.add_child(formation_back)
+		root.add_child(formation_foot)
+		ctx["focus_hint"].call(formation["focus"] if formation["focus"] != null else formation_back)
+		return root
+
+	# 装備 is an action surface, not a read-only ledger. The player sees the six worn slots beside every
+	# carried piece this adventurer can use, and Confirm equips it immediately in town or while exploring.
+	if page == "equipment":
+		var equipment_page := _equipment_page(ctx, world, party, member)
+		root.add_child(equipment_page["control"])
+		var equipment_foot := UI.row()
+		var equipment_back := UI.button(I18n.t("partyMenu.close"), ctx["close"], Vector2(180, 44), 18)
+		equipment_foot.add_child(equipment_back)
+		root.add_child(equipment_foot)
+		ctx["focus_hint"].call(equipment_page["focus"] if equipment_page["focus"] != null else equipment_back)
+		return root
+
 	var body := UI.row()
 	body.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	root.add_child(body)
@@ -104,11 +127,11 @@ static func build(ctx: Dictionary) -> Control:
 	roster.custom_minimum_size = Vector2(430, 0)
 	roster.add_child(UI.label(I18n.t("partyMenu.members"), 19, UI.GOLD))
 	for candidate in party:
-		roster.add_child(_roster_row(ctx, candidate, member, true))
+		roster.add_child(_roster_row(ctx, candidate, member))
 	if not reserve.is_empty():
 		roster.add_child(UI.label(I18n.t("town.reserve") if I18n.has("town.reserve") else I18n.t("partyMenu.members"), 16, UI.DIM))
 		for candidate in reserve:
-			roster.add_child(_roster_row(ctx, candidate, member, false))
+			roster.add_child(_roster_row(ctx, candidate, member))
 	body.add_child(UI.card(roster))
 
 	# RIGHT: the selected adventurer in full — condition, combat stats, resistances, aptitudes, gear.
@@ -214,7 +237,7 @@ static func _stat_row(host: VBoxContainer, term: String, value: String) -> void:
 	row.add_child(UI.grow(UI.label(value, 16, UI.INK)))
 	host.add_child(row)
 
-static func _roster_row(ctx: Dictionary, candidate: Dictionary, selected: Dictionary, active: bool) -> Control:
+static func _roster_row(ctx: Dictionary, candidate: Dictionary, selected: Dictionary) -> Control:
 	var cid := String(candidate.get("id", ""))
 	var is_selected := cid == String(selected.get("id", ""))
 	var body := UI.col(3)
@@ -225,19 +248,84 @@ static func _roster_row(ctx: Dictionary, candidate: Dictionary, selected: Dictio
 	head.add_child(name_btn)
 	head.add_child(UI.label("Lv.%d" % int(candidate.get("level", 1)), 14, UI.DIM))
 	head.add_child(UI.grow(UI.label("HP %d/%d" % [int(candidate.get("hp", 0)), int(candidate.get("maxHp", 0))], 14, UI.INK)))
-	if active:
-		head.add_child(UI.label(I18n.t("play.frontRow") if String(candidate.get("row", "front")) == "front" else I18n.t("play.backRow"), 14, UI.DIM))
 	body.add_child(head)
-
-	var acts := UI.row()
-	if active:
-		var to_row := "back" if String(candidate.get("row", "front")) == "front" else "front"
-		acts.add_child(UI.button(I18n.t("play.backRow") if to_row == "back" else I18n.t("play.frontRow"), func(): ctx["dispatch"].call({"type": "set_member_row", "characterId": cid, "row": to_row}), Vector2(110, 32), 13))
-		acts.add_child(UI.button(I18n.t("town.bench") if I18n.has("town.bench") else I18n.t("partyMenu.close"), func(): ctx["dispatch"].call({"type": "bench_member", "characterId": cid}), Vector2(110, 32), 13))
-	else:
-		acts.add_child(UI.button(I18n.t("town.recall") if I18n.has("town.recall") else I18n.t("partyMenu.members"), func(): ctx["dispatch"].call({"type": "recall_member", "characterId": cid}), Vector2(110, 32), 13))
-	body.add_child(acts)
 	return UI.card(body, UI.GOLD if is_selected else Color("3a4326"))
+
+static func _formation_page(ctx: Dictionary, party: Array, selected: Dictionary) -> Dictionary:
+	var root := UI.col(10)
+	root.add_child(UI.label(I18n.t("partyMenu.formationHeading"), 20, UI.GOLD))
+	root.add_child(UI.label(I18n.t("partyMenu.formationHint"), 16, UI.DIM))
+	var rows := UI.row()
+	var focus: Button = null
+	for row_id in ["front", "back"]:
+		var column := UI.col(6)
+		column.custom_minimum_size = Vector2(360, 0)
+		column.add_child(UI.label(I18n.t("play.frontRow") if row_id == "front" else I18n.t("play.backRow"), 18, UI.GOLD))
+		for candidate in party.filter(func(entry): return String(entry.get("row", "front")) == row_id):
+			var cid := String(candidate.get("id", ""))
+			var b := UI.button(String(candidate.get("name", "?")), func(): ctx["set_selected"].call(cid), Vector2(300, 38), 16)
+			if cid == String(selected.get("id", "")):
+				b.add_theme_color_override("font_color", UI.GOLD)
+			if focus == null: focus = b
+			column.add_child(b)
+		rows.add_child(UI.card(column))
+	root.add_child(rows)
+	var actions := UI.row()
+	for row_id in ["front", "back"]:
+		var label := I18n.t("partyMenu.placeFront") if row_id == "front" else I18n.t("partyMenu.placeBack")
+		var b := UI.button(label, func(): ctx["dispatch"].call({"type": "set_member_row", "characterId": selected.get("id", ""), "row": row_id}), Vector2(220, 44), 17)
+		b.disabled = String(selected.get("row", "front")) == row_id
+		actions.add_child(b)
+		if focus == null and not b.disabled: focus = b
+	root.add_child(actions)
+	return {"control": UI.card(root), "focus": focus}
+
+static func _equipment_page(ctx: Dictionary, world: Dictionary, party: Array, member: Dictionary) -> Dictionary:
+	var state: Dictionary = ctx["state"]
+	var body := UI.row()
+	body.size_flags_vertical = Control.SIZE_EXPAND_FILL
+
+	var roster := UI.col(6)
+	roster.custom_minimum_size = Vector2(430, 0)
+	roster.add_child(UI.label(I18n.t("partyMenu.members"), 19, UI.GOLD))
+	for candidate in party:
+		roster.add_child(_roster_row(ctx, candidate, member))
+	body.add_child(UI.card(roster))
+
+	var detail := UI.col(8)
+	detail.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	detail.add_child(UI.label("%s — %s" % [String(member.get("name", "")), I18n.t("partyMenu.equipped")], 20, UI.GOLD))
+	detail.add_child(UI.label(I18n.t("partyMenu.equipmentDungeon"), 15, UI.DIM))
+	var slots := UI.col(3)
+	for slot in Fmt.EQUIPMENT_SLOT_ORDER:
+		var line := UI.row()
+		line.add_child(UI.label(Fmt.format_equipment_slot(String(slot)), 15, UI.DIM))
+		line.add_child(UI.grow(UI.label(Fmt.equipped_name(world, (member.get("equipment", {}) as Dictionary).get(slot, null)), 16, UI.INK)))
+		slots.add_child(line)
+	detail.add_child(UI.card(slots))
+	detail.add_child(UI.label(I18n.t("partyMenu.tabs.items"), 18, UI.GOLD))
+	var candidates := UI.col(4)
+	var focus: Control = null
+	var found := false
+	for item in state.get("inventory", []):
+		if String(item.get("kind", "")) != "equipment":
+			continue
+		var catalog: Variant = Fmt.find_equipment(world, item.get("id", ""))
+		if typeof(catalog) != TYPE_DICTIONARY or not Fmt.is_usable_by(catalog, member):
+			continue
+		found = true
+		var row := UI.row()
+		var b := UI.button(Fmt.describe_equipment_instance(world, item.get("id", ""), item.get("plus", null), item.get("affix", null)), func(): ctx["dispatch"].call({"type": "equip_item", "characterId": member.get("id", ""), "equipmentId": item.get("id", ""), "plus": item.get("plus", null), "affix": item.get("affix", null)}), Vector2(330, 38), 16)
+		row.add_child(b)
+		row.add_child(UI.grow(UI.label(Fmt.format_inventory_effect(item), 14, UI.DIM)))
+		candidates.add_child(row)
+		if focus == null:
+			focus = b
+	if not found:
+		candidates.add_child(UI.label(I18n.t("partyMenu.inventoryEmpty"), 15, UI.DIM))
+	detail.add_child(UI.scroller(candidates, Vector2(900, 300)))
+	body.add_child(UI.card(detail))
+	return {"control": body, "focus": focus}
 
 
 const VALUABLE_KINDS := ["key", "treasure", "escape"]
@@ -307,15 +395,13 @@ static func _item_page(ctx: Dictionary, world: Dictionary, member: Dictionary, p
 		if is_equipment:
 			var equip: Variant = Fmt.find_equipment(world, selected.get("id", ""))
 			var usable: bool = typeof(equip) == TYPE_DICTIONARY and Fmt.is_usable_by(equip, member)
-			# Three answers, never one dead button: change it here, this adventurer cannot wear it, or
-			# gear is changed in town — a player refused an action is owed the reason.
+			# A carried piece may be equipped from this detail too. Ineligible gear states the reason rather
+			# than offering a dead command; the same action is legal in town and while exploring.
 			var label := I18n.t("partyMenu.equipOn", {"name": String(member.get("name", ""))})
-			if not in_town:
-				label = I18n.t("partyMenu.equipmentDungeonShort")
-			elif not usable:
+			if not usable:
 				label = I18n.t("partyMenu.cannotEquip")
 			var eb := UI.button(label, func(): ctx["dispatch"].call({"type": "equip_item", "characterId": member.get("id", ""), "equipmentId": selected.get("id", ""), "plus": selected.get("plus", null), "affix": selected.get("affix", null)}), Vector2(220, 40), 16)
-			eb.disabled = not usable or not in_town
+			eb.disabled = not usable
 			actions.add_child(eb)
 		# Discarding is a TWO-PRESS confirm — one press can never destroy a carried item.
 		if not VALUABLE_KINDS.has(String(selected.get("kind", ""))):

@@ -246,7 +246,9 @@ export function equipItem(
   plus?: number,
   affix?: string
 ): CommandResult {
-  if (state.phase !== "town") {
+  // Gear belongs to the expedition kit: it may be changed at the camp menu in town or in the maze.
+  // Combat alone locks the loadout once actions can be queued.
+  if (state.phase === "combat") {
     return noChange(state);
   }
 

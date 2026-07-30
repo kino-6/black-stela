@@ -188,7 +188,9 @@ static func sell(state: Dictionary, world: Dictionary, item_id: String, plus: Va
 	return {"state": next, "events": [{"type": "item_sold", "itemId": item_id, "itemName": item.get("name", ""), "gold": value}]}
 
 static func equip(state: Dictionary, world: Dictionary, char_id: String, equip_id: String, plus: Variant, affix: Variant) -> Dictionary:
-	if state.get("phase", "") != "town":
+	# Gear is changed from the camp menu in town AND in the dungeon. Only combat locks the loadout,
+	# because a declared round must not change underneath its queued actions.
+	if state.get("phase", "") == "combat":
 		return {"state": state, "events": []}
 	var key := equipment_instance_key(equip_id, plus, affix)
 	var item: Variant = _find_inv(state.get("inventory", []), key)

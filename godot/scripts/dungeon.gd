@@ -711,6 +711,10 @@ func _menu_dispatch(command: Dictionary) -> void:
 	_apply(SliceRules.resolve(_state, command, _world, _engine))
 	if String(_state.get("phase", "")) == "town":
 		get_tree().change_scene_to_file("res://scenes/town.tscn")
+	elif _party_menu and is_instance_valid(_party_menu):
+		# Menu commands mutate the shared run state. Rebuild this overlay too so a successful equip visibly
+		# changes the slot and derived stats instead of looking like a button with no effect.
+		_refresh_party_menu()
 
 # 設定 opened from INSIDE the camp menu (メニュー→設定) — the classic "adjust options while you rest" slot,
 # reusing the shared ConfigPanel the title/town use. Rebuild-safe: a toggle's on_change re-opens it so the
@@ -784,8 +788,7 @@ func _hide_chest_overlay() -> void:
 
 # 隊列 opens the party menu OVER the dungeon — it must never leave the maze. (It used to change scene to
 # the town, and the town forces phase=town on entry, so pressing it silently ENDED the expedition and
-# yanked the party out of the dungeon.) In the dungeon the menu is read-only for equipment, which the
-# panel states outright (partyMenu.equipmentDungeon).
+# yanked the party out of the dungeon.) Camp equipment changes stay in this overlay and never end a run.
 func _toggle_party_menu() -> void:
 	if _party_menu and is_instance_valid(_party_menu):
 		_party_menu.queue_free()

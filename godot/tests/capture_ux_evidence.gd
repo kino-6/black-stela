@@ -23,44 +23,38 @@ func _initialize() -> void:
 		var evidence: String = entry.get("evidence", "")
 		if evidence == "":
 			continue
-		var packed: Variant = load(entry.get("scene", ""))
-		if packed == null:
-			push_error("[ux-evidence] %s: missing scene" % id)
-			continue
-		var root: Node = (packed as PackedScene).instantiate()
-		get_root().add_child(root)
-		for i in 8:
-			await process_frame
-		var world_id: String = entry.get("worldId", "")
-		if world_id != "" and root.has_method("set_world_override"):
-			root.call("set_world_override", world_id)
-			for i in 3:
-				await process_frame
-
-		# same fixture + ui state the gate asserts against, so the shot IS the asserted screen (both build
-		# it through tests/ux_fixture.gd — this file used to know only __woundParty, so the evidence for an
-		# afflicted party showed a healthy one).
-		var fixture: Dictionary = entry.get("fixture", {})
-		if not fixture.is_empty() and root.has_method("set_state_override"):
-			root.call("set_state_override", UxFixture.build(fixture))
-			for i in 4:
-				await process_frame
-
-		var service: String = entry.get("service", "")
-		if service != "" and root.has_method("_open_service"):
-			root.call("_open_service", service)
-			for i in 6:
-				await process_frame
-
-		# A screen's contract is measured across its declared STATES, so the evidence has to cover them
-		# too — one shot of the happy path is not evidence for the confirm / failure / opened states the
-		# gate asserts. The first state keeps the manifest's filename; the rest get a suffix.
 		var states: Array = entry.get("states", [])
 		if states.is_empty():
-			states = [{"uiState": entry.get("uiState", {})}]
+			states = [{"fixture": entry.get("fixture", {}), "uiState": entry.get("uiState", {})}]
 
 		var index := 0
 		for state in states:
+			# Mirror verify_ux_parity exactly: every declared state gets a fresh scene, its own fixture,
+			# then its service and UI state. Reusing one scene here used the entry fixture for every PNG,
+			# producing evidence that did not depict the conditional state the gate actually asserted.
+			var packed: Variant = load(entry.get("scene", ""))
+			if packed == null:
+				push_error("[ux-evidence] %s: missing scene" % id)
+				break
+			var root: Node = (packed as PackedScene).instantiate()
+			get_root().add_child(root)
+			for i in 8:
+				await process_frame
+			var world_id: String = entry.get("worldId", "")
+			if world_id != "" and root.has_method("set_world_override"):
+				root.call("set_world_override", world_id)
+				for i in 3:
+					await process_frame
+			var fixture: Dictionary = state.get("fixture", {})
+			if not fixture.is_empty() and root.has_method("set_state_override"):
+				root.call("set_state_override", UxFixture.build(fixture))
+				for i in 4:
+					await process_frame
+			var service: String = entry.get("service", "")
+			if service != "" and root.has_method("_open_service"):
+				root.call("_open_service", service)
+				for i in 6:
+					await process_frame
 			var ui_state: Dictionary = state.get("uiState", {})
 			if not ui_state.is_empty() and root.has_method("set_ui_state"):
 				root.call("set_ui_state", ui_state)
@@ -76,10 +70,9 @@ func _initialize() -> void:
 			print("[ux-evidence] %s -> godot/%s (%dx%d)" % [id, path, img.get_width(), img.get_height()])
 			written += 1
 			index += 1
-
-		root.queue_free()
-		for i in 3:
-			await process_frame
+			root.queue_free()
+			for i in 3:
+				await process_frame
 
 	print("[ux-evidence] wrote %d screenshot(s)" % written)
 	quit(0)

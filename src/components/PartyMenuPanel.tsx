@@ -84,6 +84,11 @@ export function PartyMenuPanel({ state, world, locale, t, onCommand, onClose }: 
   const nextLevelXp = xpForLevel(member.level + 1);
   const selectedEquipment = selectedItem ? world.equipment.find((candidate) => candidate.id === selectedItem.id) : undefined;
   const canEquip = Boolean(selectedEquipment && isEquipmentUsableBy(selectedEquipment, member));
+  const carriedEquipment = items.filter((item) => {
+    if (item.kind !== "equipment") return false;
+    const equipment = world.equipment.find((candidate) => candidate.id === item.id);
+    return Boolean(equipment && isEquipmentUsableBy(equipment, member));
+  });
   // An escape charm is USED from the menu (its own reachable home now the dungeon dock is key-driven and no
   // longer lists it) — but only in the dungeon; in town there is nothing to escape from.
   const canUseEscape = Boolean(selectedItem && selectedItem.kind === "escape" && state.phase !== "town");
@@ -303,6 +308,21 @@ export function PartyMenuPanel({ state, world, locale, t, onCommand, onClose }: 
                 </dl>
               </div>
               <p className="party-menu-note">{state.phase === "town" ? t("partyMenu.equipmentTown") : t("partyMenu.equipmentDungeon")}</p>
+              <div className="party-menu-section" data-testid="party-menu-equipment-candidates">
+                <h3>{t("partyMenu.tabs.items")}</h3>
+                {carriedEquipment.length === 0 && <p>{t("partyMenu.inventoryEmpty")}</p>}
+                <div className="party-item-actions">
+                  {carriedEquipment.map((item) => (
+                    <button
+                      type="button"
+                      key={itemKey(item)}
+                      onClick={() => onCommand({ type: "equip_item", characterId: member.id, equipmentId: item.id, plus: item.plus, affix: item.affix })}
+                    >
+                      {describeEquipmentInstance(item.id, locale, t, item.plus, item.affix)} — {formatInventoryEffect(item, t)}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </section>
           )}
 
@@ -341,10 +361,10 @@ export function PartyMenuPanel({ state, world, locale, t, onCommand, onClose }: 
                       {selectedEquipment && (
                         <button
                           type="button"
-                          disabled={state.phase !== "town" || !canEquip}
+                          disabled={!canEquip}
                           onClick={() => onCommand({ type: "equip_item", characterId: member.id, equipmentId: selectedItem.id, plus: selectedItem.plus, affix: selectedItem.affix })}
                         >
-                          {state.phase !== "town" ? t("partyMenu.equipmentDungeonShort") : canEquip ? t("partyMenu.equipOn", { name: member.name }) : t("partyMenu.cannotEquip")}
+                          {canEquip ? t("partyMenu.equipOn", { name: member.name }) : t("partyMenu.cannotEquip")}
                         </button>
                       )}
                       {canDiscard && (

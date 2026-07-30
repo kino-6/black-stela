@@ -123,6 +123,38 @@ func _initialize() -> void:
 	var focus_owner: Control = get_root().get_viewport().gui_get_focus_owner()
 	var menu: Node = d.get("_party_menu")
 	_check(_valid(menu) and focus_owner != null and menu.is_ancestor_of(focus_owner), "the 装備 tab keeps a focused control (no soft-lock)")
+	# Camp gear must work while exploring. Give a compatible active adventurer an iron cap, activate the
+	# same command the equipment list emits, and require both the state and the rebuilt menu to reflect it.
+	var Economy := preload("res://scripts/rules/economy.gd")
+	var cap: Variant = Economy.create_inventory_item(d.get("_world"), "equip.iron-cap", 1)
+	var cap_wearer: Dictionary = {}
+	var cap_catalog: Variant = Economy.find_equipment(d.get("_world"), "equip.iron-cap")
+	for candidate in initial_party:
+		if typeof(cap_catalog) == TYPE_DICTIONARY and Economy.is_equipment_usable_by(cap_catalog, candidate):
+			cap_wearer = candidate
+			break
+	var equip_state: Dictionary = (d.get("_state") as Dictionary).duplicate(true)
+	equip_state["party"] = initial_party.duplicate(true)
+	equip_state["inventory"] = [cap]
+	d.set("_state", equip_state)
+	d.set("_party_member_id", String(cap_wearer.get("id", "")))
+	d.call("_refresh_party_menu")
+	for i in 4:
+		await process_frame
+	menu = d.get("_party_menu")
+	var equip_button := _button_with_text(menu, "凹み鉄帽")
+	_check(equip_button != null, "装備 tab lists a compatible carried piece as a controller command")
+	if equip_button != null:
+		equip_button.emit_signal("pressed")
+	for i in 4:
+		await process_frame
+	var after_equip: Dictionary = d.call("_party_selected")
+	var after_gear: Dictionary = after_equip.get("equipment", {})
+	var after_head: Dictionary = after_gear.get("head", {})
+	_check(String(after_head.get("id", "")) == "equip.iron-cap", "迷宮の装備 command changes the selected adventurer")
+	menu = d.get("_party_menu")
+	focus_owner = get_root().get_viewport().gui_get_focus_owner()
+	_check(_valid(menu) and focus_owner != null and menu.is_ancestor_of(focus_owner), "装備後も menu rebuild keeps controller focus")
 	d.call("_input", _pressed("cancel"))
 	for i in 4:
 		await process_frame
@@ -173,6 +205,15 @@ func _has_focusable_button(node: Node) -> bool:
 
 func _valid(v: Variant) -> bool:
 	return v != null and is_instance_valid(v)
+
+func _button_with_text(node: Node, text: String) -> Button:
+	if node is Button and (node as Button).text == text:
+		return node as Button
+	for child in node.get_children():
+		var found := _button_with_text(child, text)
+		if found != null:
+			return found
+	return null
 
 func _check(ok: bool, label: String) -> void:
 	if ok:
