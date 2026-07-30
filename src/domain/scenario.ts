@@ -476,6 +476,11 @@ export const scenarioWorldSchema = z.object({
       front: z.string().min(1).optional(),
       wall: z.string().min(1).optional(),
       floor: z.string().min(1).optional(),
+      // The overhead plane's tone. Omitted → the renderer's near-black ash default; authoring it lifts the
+      // ceiling off pure black (and opts into a faint self-lit emission) so depth/corners read in the
+      // first-person frame. Without this key here Zod stripped it, so no world's authored ceiling ever
+      // reached Godot (IMP-058, 2026-07-31).
+      ceiling: z.string().min(1).optional(),
       // The chamber is a deliberately authored combat-and-reward space, not a green prop placed on
       // the normal floor. These stay in the scenario palette so Godot can render that distinction
       // without baking a Verdant-only colour into its shared renderer.

@@ -843,6 +843,9 @@ export interface ScenePalette {
   front?: string;
   wall?: string;
   floor?: string;
+  /** The overhead plane's tone. Omitted → the renderer's near-black ash default; authored, it lifts the
+   *  ceiling off pure black (and opts into a faint self-lit emission) so depth/corners read in-frame. */
+  ceiling?: string;
   /** Per-scenario chamber treatment: a distinct combat/reward floor, architecture, and inlay. */
   chamberFloor?: string;
   chamberWall?: string;

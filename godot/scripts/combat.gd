@@ -21,6 +21,7 @@ const WorldResources := preload("res://scripts/world_resources.gd")
 const CombatPartyHud := preload("res://scripts/combat/combat_party_hud.gd")
 const CombatPlayback := preload("res://scripts/combat/combat_playback.gd")
 const CombatStage := preload("res://scripts/combat/combat_stage.gd")
+const Fmt := preload("res://scripts/town_format.gd")
 
 const BG := Color("0b0d09")
 const GOLD := Color("c9a765")
@@ -253,7 +254,11 @@ func _rebuild_command_menu() -> void:
 		"back": func(): _menu_back(),
 		"target_group_id": _target_group_id(),
 		"cycle_target": func(delta): _cycle_target(delta),
-		"enemy_name": func(group): return _enemy_ja(group)
+		"enemy_name": func(group): return _enemy_ja(group),
+		# Inventory items carry their BASE (English) name; every screen localizes via item id (the market
+		# does). The 道具 menu used item.name directly and leaked "Healing Draught" into JA combat — resolve
+		# it through the same catalog helper so the flask reads 治癒の水薬 here too (playtest 2026-07-31).
+		"item_name": func(item_id): return Fmt.localized_catalog_name(_world, item_id)
 	})
 	_cmd_box.add_child(built["control"])
 

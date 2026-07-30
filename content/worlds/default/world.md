@@ -45,6 +45,12 @@ balance:
   #   wanderingCooldownSteps: 8
 startDungeon: dungeon.b1f
 startRoom: room.b1f.001
+# IMP-058 readability (2026-07-31): the ashen dungeon rendered its overhead plane as a near-black void at
+# the dock camera while Verdant (which authored a `ceiling` tone) read fine. Lift it off pure black — a dim
+# warm ash, clearly darker than the walls but no longer a void — so depth and corners read in the
+# first-person frame. Authoring `ceiling` also opts the plane into the renderer's faint self-lit emission.
+palette:
+  ceiling: "#463f33"
 aiPolicy:
   allowed:
     - environment_flavor

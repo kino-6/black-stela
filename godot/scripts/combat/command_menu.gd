@@ -105,7 +105,9 @@ static func _item_stage(root: VBoxContainer, ctx: Dictionary) -> Button:
 		if int(item.get("quantity", 0)) <= 0:
 			continue
 		var item_id := String(item.get("id", ""))
-		var b := UI.button("%s ×%d" % [String(item.get("name", "")), int(item.get("quantity", 0))], func(): ctx["choose"].call("item", {"itemId": item_id}), Vector2(280, 40), 16)
+		# Localize by id, never the item's base (English) name — see combat.gd's item_name resolver.
+		var item_label := String(ctx["item_name"].call(item_id)) if ctx.has("item_name") else String(item.get("name", ""))
+		var b := UI.button("%s ×%d" % [item_label, int(item.get("quantity", 0))], func(): ctx["choose"].call("item", {"itemId": item_id}), Vector2(280, 40), 16)
 		root.add_child(b)
 		if first == null:
 			first = b

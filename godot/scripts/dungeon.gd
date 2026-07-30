@@ -479,7 +479,9 @@ func _rebuild_dock() -> void:
 	# controller player has no pointer to hover with.
 	var clue := _stair_gate_clue()
 	if clue != "":
-		root.add_child(UIKit.label(clue, 15, DIM))
+		# Wrap to the dock width — a plain label ran the clue off the panel's right edge (playtest 2026-07-31:
+		# "竪坑の落とし戸は閂で塞がれている。それ…" was clipped). The dock is 260px with ~16px content margins.
+		root.add_child(UIKit.prose(clue, 15, DIM, 228))
 
 	_dock_host.add_child(root)
 

@@ -100,6 +100,9 @@ export function buildDungeonScene(mount: HTMLDivElement, input: DungeonSceneInpu
     front: "#ffe0a0",
     wall: "#59615a",
     floor: "#2a2418",
+    // The overhead plane's tone (Godot lifts it off pure black and self-lights it faintly). The reference
+    // Three.js scene keeps its own ceiling look; this only completes the palette contract.
+    ceiling: "#463f33",
     // Godot uses these only when it renders an authored guardian chamber. Keep the reference scene's
     // palette contract complete without adding a Web-only chamber treatment.
     chamberFloor: "#9a8050",

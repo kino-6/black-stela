@@ -481,6 +481,127 @@ mounted in normal play.
 **Non-goals:** replacing deterministic TS/Godot parity, making debug controls
 player-visible, or treating fixture playback as the title-to-town full route.
 
+## 2026-07-31 — screenshot playthrough (Claude, native Godot `ux:evidence`)
+
+Regenerated the full 123-shot `_ux_*` set from the shipped Godot build and read
+every core-loop screen (title → guild → town → dungeon → chest → combat →
+result → market → career → party menu → quests → infirmary → verdant floor).
+Confirmed already-fixed: floating stairs (now floor-embedded), sealed 玄室
+(closed double-door), centered chest modal, balanced 見繕う party. New items
+`IMP-055..IMP-059` below. `IMP-055` is a real JA gate leak found in normal
+combat, not a fixture artifact.
+
+## IMP-055: 治癒の水薬 leaks as "Healing Draught" in the combat 道具 menu
+
+**Category:** Japanese-text gate / native combat UI — **confirmed player-facing bug**
+
+**Evidence:** `_ux_combat-command--3.png` (2026-07-31) shows the 道具を選ぶ
+submenu rendering `Healing Draught ×1`. Inventory items carry their BASE
+(English) `name`; every other screen localizes by item id (the market shows
+治癒の水薬 via `Fmt.localized_catalog_name`). `command_menu.gd:_item_stage`
+used `item.get("name")` directly, so the combat item menu is the one screen that
+leaked the English base name — a `japanese-dialogue-gate` violation reachable in
+normal play.
+
+### Implementation Slices
+
+- [x] `combat.gd` passes an `item_name` resolver into the command-menu ctx
+  (`Fmt.localized_catalog_name(_world, item_id)`), mirroring `enemy_name`.
+- [x] `command_menu.gd` renders the item label from `item_name`, falling back to
+  the base name only when the resolver is absent.
+- [x] Regenerated `_ux_combat` evidence: `_ux_combat-command--3.png` now shows
+  `治癒の水薬 ×1`.
+
+### Acceptance / Gate — DONE
+
+- [x] The combat 道具 menu shows the JA catalog name for every consumable.
+- [x] `tests/verify_combat_item_label.gd` drives the item stage and forbids a raw
+  base/English item name (proven to FAIL on the pre-fix code, PASS after). Wired
+  into `gate:migration`.
+
+## IMP-056: Dungeon command-panel event line clips at the right edge
+
+**Category:** Native dungeon UI / Japanese line layout
+
+**Evidence:** `_ux_dungeon-chest.png` — the 迷宮コマンド panel's event line
+(`竪坑の落とし戸は閂で塞がれている。それ…`) is cut off at the panel's right edge
+instead of wrapping. The hint dock has a fixed width but the event prose is not
+constrained/wrapped to it.
+
+### Implementation Slices — DONE
+
+- [x] The stair-gate clue now renders via `UIKit.prose(clue, 15, DIM, 228)`
+  (autowrap to the 260px dock), replacing the unbounded `UIKit.label`.
+
+### Acceptance / Gate
+
+- [x] `_ux_dungeon-chest.png` re-render shows the clue wrapping to three lines
+  inside the panel (`…鉤の巣の奥にある。`), no right-edge clip.
+
+## IMP-057: Combat command panel — muddy hierarchy, dead stage space (FEEL)
+
+**Category:** Combat feel / layout (the flagged pre-balance FEEL item)
+
+**Evidence:** `_ux_combat-command.png` — the right panel stacks per-actor
+commands (攻撃 / 防御 / 特技 / 道具) and round commands (全員でかかる / オート /
+退却) with interleaved status prose (`まだ指示を実行していません。` /
+`直前の指示をもう一度`), so the two command scopes and the status text read as one
+flat list. The enemy stage also leaves large black margins around a single
+centered creature.
+
+### Implementation Slices
+
+- [ ] Visually separate the per-actor menu from the round-level commands (group
+  box / divider / heading weight), and demote the status prose so it does not sit
+  between buttons as if it were one.
+- [ ] Tune stage framing so a small pack does not float in a large black void
+  (background/vignette or creature scale), without re-ordering art (engine owns
+  grounding + size — see `combat-ui-drpg`).
+
+### Acceptance / Gate
+
+- [ ] Controller focus order still reads top-to-bottom with one clear cursor; the
+  round commands are visibly a distinct group from the actor commands.
+
+## IMP-058: Default-biome dungeon ceiling renders as a black void
+
+**Category:** Native dungeon rendering / biome parity
+
+**Evidence:** `_ux_dungeon-dock.png` (default biome) shows a large flat black band
+across the top where the ceiling should be, while `_ux_stairs-down.png` /
+`_ux_chamber-sealed.png` (verdant) render a textured ceiling. Suggests the default
+floor's ceiling material is missing/too dark or not drawn at the dock camera.
+
+### Implementation Slices — DONE
+
+- [x] Root cause was the exporter, not the renderer: Zod's palette schema
+  (`scenario.ts`) had no `ceiling` key, so it silently STRIPPED the field —
+  meaning even Verdant's authored `ceiling` never reached Godot (its readable
+  ceiling came from brighter lighting). Added `ceiling` to the Zod schema and the
+  `ScenePalette` type (+ the reference Three.js `Required<ScenePalette>` default).
+- [x] Authored `palette.ceiling: "#463f33"` on the default world; re-export lands
+  it in `godot/data/worlds/default.json` (and Verdant's `#4a5140` now lands too).
+
+### Acceptance / Gate
+
+- [x] `_ux_dungeon-dock.png` re-render shows a textured warm-ash ceiling plane
+  with depth, no longer a black void; both biomes now emit their authored tone.
+
+## IMP-059: 施療院 is a near-empty panel when no one is wounded — CLOSED (by design)
+
+**Category:** Town content density (minor)
+
+**Evidence:** `_ux_town-infirmary.png` — with a full-HP party the screen shows one
+`治療は不要。` line in a large frame.
+
+**Resolution — won't fix:** this is the deliberate React design, not a defect.
+`RecoveryPanel.tsx` / `recovery_panel.gd` state it outright: "Healthy members are
+deliberately NOT listed (six cards saying 'no treatment' is not information — one
+line is)." The panel already shows exactly what a recovery counter needs (who is
+hurt, before/after, cost, affordability, yes/no). Listing a healthy roster here
+would contradict the oracle we are keeping as the standard. The empty area is the
+shared town-service frame, not missing content. No change.
+
 ## Archive
 
 - `IMP-001` to `IMP-008`:
