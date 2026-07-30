@@ -113,6 +113,11 @@ to keep restating them.
   display-specific variant in scenario/localization data.
 - Do not let logs or messages push commands around. Command areas, party rows,
   minimap, and core combat/town controls must remain stable within one screen.
+- **Never use a strong full-screen flash anywhere in the game.** Scene changes
+  and encounter handoffs may use only a short, low-luminance fade to black;
+  they must never cut through white or another high-brightness full-screen
+  color. Keep combat hit feedback local to the struck subject rather than
+  flashing the whole display.
 - Do not call town services done if they are just lists. Returning to town must
   show expedition result, wounds, gold, loot, and the next preparation choices.
   Shops must show who can use equipment and what changes. Recovery must show

@@ -696,8 +696,9 @@ func _apply(result: Dictionary) -> void:
 
 	if _state.get("phase", "") == "combat":
 		_busy = true
-		await get_tree().create_timer(0.35).timeout   # let the encounter line read before the cut
-		get_tree().change_scene_to_file("res://scenes/combat.tscn")
+		# A dark fade carries the encounter line into the battle scene. There is no bright flash and no
+		# unexplained empty frame between the dungeon and the first combat command.
+		await SceneManager.fade_to_dark("res://scenes/combat.tscn")
 		return
 	# A return-to-town command nulls the position; its caller changes scene to the town right after this.
 	# Do NOT rebuild the dungeon we are leaving — _update_view reads the now-null position and crashed
