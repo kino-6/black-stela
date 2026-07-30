@@ -2,11 +2,9 @@ import { expect, test } from "@playwright/test";
 import type { Page } from "@playwright/test";
 import { registerAdventurer, resolveVisibleCombat, startNewExpedition } from "./helpers";
 
-// IMP-029 browser Gate — the controller-only chamber → fight → chest loop. Town → B1F chamber
-// (Hall of Old Dust) → fight the ash-slime → a closed chest appears on the cell → investigate →
-// (disarm) → open → resume. Proves grounding, current-cell integrity, closed/open display, controller
-// focus/confirm, and no overlap (the parts headless cannot show). While a chest sits on the cell it
-// OWNS the command region: arrows navigate its actions, Confirm acts, Leave hands the cell back.
+// IMP-029 browser Gate — the controller-only current-cell chest loop. A closed chest owns the command
+// region; opening it restores exploration at once. The deeper chamber also proves that the player can
+// select its best thief handler for traps and locks without a mouse.
 
 // Grab the controller cursor onto a chest action and confirm it — directional keys navigate the chest
 // ring (they no longer walk the party while a chest holds the cell).
@@ -19,9 +17,9 @@ async function confirmChestAction(page: Page, testid: string) {
   await page.keyboard.press("Enter");
 }
 
-async function reachChamberChest(page: Page) {
+async function reachChamberChest(page: Page, classId = "warrior") {
   await startNewExpedition(page);
-  await registerAdventurer(page, { name: "Nim" });
+  await registerAdventurer(page, { name: "Nim", classId });
   await page.getByRole("button", { name: "Enter dungeon" }).click();
   // The entrance landing has its own reward chest now — Leave it before descending.
   if ((await page.getByTestId("chest-leave").count()) > 0) {
@@ -34,36 +32,35 @@ async function reachChamberChest(page: Page) {
   await expect(page.getByTestId("chest-panel")).toBeVisible();
 }
 
-test("a chamber chest is investigated, (disarmed), and opened by controller only", async ({ page }) => {
-  await reachChamberChest(page);
+async function confirmRecommendedHandler(page: Page) {
+  await expect(page.locator('[data-testid="chest-handler"]:focus')).toHaveCount(1);
+  await page.keyboard.press("Enter");
+}
 
-  // Closed, on the current cell, grounded in the first-person view.
+test("opening a chest returns to exploration without a second confirmation", async ({ page }) => {
+  await reachChamberChest(page, "thief");
+
+  // The trapped and locked chest is closed, on the current cell, and grounded in the first-person view.
   await expect(page.getByTestId("chest-investigate")).toBeVisible();
   await expect(page.locator("[data-testid='dungeon-canvas']").first()).toHaveAttribute("data-chest-visual", "closed");
   await page.setViewportSize({ width: 1280, height: 720 });
   await page.screenshot({ path: "test-results/imp029/chest-closed-720.png" });
 
-  // Investigate — a result note appears; success rates / difficulty are never shown.
   await confirmChestAction(page, "chest-investigate");
-  await expect(page.getByTestId("chest-note")).not.toHaveText("");
-
-  // If the trap was detected, disarm it; then open. Every step is directional + Confirm.
+  await confirmRecommendedHandler(page);
   if ((await page.getByTestId("chest-disarm").count()) > 0) {
     await confirmChestAction(page, "chest-disarm");
+    await confirmRecommendedHandler(page);
   }
+  await confirmChestAction(page, "chest-unlock");
+  await confirmRecommendedHandler(page);
   await confirmChestAction(page, "chest-open");
 
-  // Opened: the sprite swaps to open and a resume action returns to exploring.
-  await expect(page.getByTestId("chest-resume")).toBeVisible();
+  // Opening is final: no acknowledgement panel steals focus. The opened sprite remains in the scene,
+  // while the normal dock and movement return immediately.
+  await expect(page.getByTestId("chest-panel")).toHaveCount(0);
   await expect(page.locator("[data-testid='dungeon-canvas']").first()).toHaveAttribute("data-chest-visual", "open");
   await page.screenshot({ path: "test-results/imp029/chest-open-720.png" });
-
-  // Chest, message, and command regions must not overlap.
-  const chestBox = await page.getByTestId("chest-panel").boundingBox();
-  const messageBox = await page.locator(".cockpit-message").boundingBox();
-  expect(chestBox && messageBox && chestBox.y >= messageBox.y + messageBox.height - 1).toBeTruthy();
-
-  await confirmChestAction(page, "chest-resume"); // resume → movement dock returns
   await expect(page.getByTestId("dungeon-command-window")).toBeVisible();
 });
 

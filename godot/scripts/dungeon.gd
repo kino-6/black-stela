@@ -43,8 +43,7 @@ var _party_hud: HBoxContainer = null
 var _log_label: Label
 var _header: Label
 var _busy: bool = false
-# The loot text from the most recent command's chest/reward pickup, surfaced in the chest panel on open.
-var _chest_loot_line: String = ""
+# The risky chest operation currently awaiting a party member (investigate / disarm / unlock).
 var _chest_pending_action: String = ""
 var _engine: Dictionary = {}
 var _dock_host: PanelContainer = null
@@ -301,9 +300,8 @@ func set_ui_state(ui: Dictionary) -> void:
 	if bool(ui.get("chest", false)) and _state.get("position", null) != null:
 		var cell_id: Variant = (_state["position"] as Dictionary).get("cellId", null)
 		if typeof(cell_id) == TYPE_STRING:
-			# A chest is only ever ONE of its stages on screen, and each stage says something different to
-			# the player: closed, "a trap is set", "cannot tell", "no trap found", opened. Driving the
-			# stage is how the gate proves the panel HAS them rather than assuming the closed one covers it.
+			# A chest prompt only exists before opening. The opened state is still fed through the test seam
+			# so the controller gate can prove it immediately gives the cell back to exploration.
 			var result: Variant = ui.get("chest_result", null)
 			var opened := bool(ui.get("chest_opened", false))
 			_state["chests"] = [{
@@ -393,7 +391,8 @@ func _gate_blocking(room: Dictionary) -> Variant:
 			return gate
 	return null
 
-# The chest sitting on the party's cell, or {} — while one is here it OWNS the command region.
+# The unresolved chest sitting on the party's cell, or {}. A closed chest owns the command region;
+# an opened chest is history and must never make the player dismiss a second event.
 func current_chest() -> Dictionary:
 	# 探索へ戻る steps off the prompt WITHOUT consuming the chest — so while the party has chosen to leave the
 	# chest on THIS cell it is not "current" (or the dock would re-raise the panel and the move-guard would
@@ -404,7 +403,9 @@ func current_chest() -> Dictionary:
 	if _left_chest_cell != "" and here == _left_chest_cell:
 		return {}
 	var chest: Variant = Chests.current_chest(_state)
-	return chest if typeof(chest) == TYPE_DICTIONARY else {}
+	if typeof(chest) != TYPE_DICTIONARY or String((chest as Dictionary).get("phase", "")) == "opened":
+		return {}
+	return chest
 
 # Port of DungeonCockpit's party-hud: front/back rows, each adventurer with portrait, name, level,
 # HP/MP with gauges, and the combat numbers the player judges an encounter by.
@@ -687,13 +688,6 @@ func _apply(result: Dictionary) -> void:
 		_run.state = _state
 	var events: Array = result.get("events", [])
 	_log_events(events)
-	# Capture this command's loot line (if any) so an opened chest can show WHAT it held, in the panel; a
-	# command with no pickup clears it, so a later opened chest never shows a stale reward.
-	_chest_loot_line = ""
-	for e in events:
-		if String((e as Dictionary).get("type", "")) == "inventory_item_gained":
-			_chest_loot_line = _event_line(e)
-
 	if _state.get("phase", "") == "combat":
 		_busy = true
 		# A dark fade carries the encounter line into the battle scene. There is no bright flash and no
@@ -754,9 +748,9 @@ func _close_config_overlay() -> void:
 	if _party_menu and is_instance_valid(_party_menu):
 		call_deferred("_ensure_focus_in", _party_menu)
 
-# The chest prompt, CENTRED on the stage over a dimming scrim — a decision the party stops for, not a
-# corner widget. Rebuilt in place as the chest walks its stages (調べる→開ける→opened); the move-guard in
-# _input keeps arrows on its buttons and キャンセル leaves. current_chest() empty tears it down.
+# The unresolved chest prompt, CENTRED on the stage over a dimming scrim — a decision the party stops
+# for, not a corner widget. Rebuilt through 調べる→開ける; opening makes current_chest() empty immediately,
+# tears this down, and restores movement without an extra Confirm.
 func _show_chest_overlay(chest: Dictionary) -> void:
 	if _chest_overlay and is_instance_valid(_chest_overlay):
 		_chest_overlay.queue_free()
@@ -774,8 +768,7 @@ func _show_chest_overlay(chest: Dictionary) -> void:
 		func(action): _chest_pending_action = String(action); _show_chest_overlay(chest),
 		func(cmd): _chest_pending_action = ""; _apply(SliceRules.resolve(_state, cmd, _world, _engine)),
 		func(): _chest_pending_action = ""; _rebuild_dock(),
-		func(): _leave_chest(), _chest_loot_line,
-		_texture(_asset("dungeon/treasure-chest-closed.png")), _texture(_asset("dungeon/treasure-chest-open.png"))
+		func(): _leave_chest(), _texture(_asset("dungeon/treasure-chest-closed.png"))
 	)
 	center.add_child(built["control"])
 	add_child(layer)
@@ -1082,8 +1075,6 @@ func _event_line(e: Dictionary) -> String:
 			return I18n.t("events.chestUnlocked%s" % ("Success" if bool(e.get("success", false)) else "Fail"), {"name": String(e.get("handlerName", "隊列"))})
 		"chest_trap_sprung":
 			return I18n.t("events.chestTrapSprung")
-		"chest_opened":
-			return I18n.t("events.chestOpened")
 		"command_blocked_chest":
 			if String(e.get("reason", "")) == "locked": return I18n.t("play.chestLockedNote")
 		"inventory_item_gained":

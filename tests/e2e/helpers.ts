@@ -153,7 +153,7 @@ async function getActiveElementLabel(page: Page) {
 
 export async function registerAdventurer(
   page: Page,
-  options: { locale?: "en" | "ja"; name?: string; title?: string; notes?: string; portrait?: { name: string; mimeType: string; buffer: Buffer } } = {}
+  options: { locale?: "en" | "ja"; name?: string; classId?: string; title?: string; notes?: string; portrait?: { name: string; mimeType: string; buffer: Buffer } } = {}
 ) {
   const locale = options.locale ?? "en";
   const labels = locale === "ja"
@@ -178,7 +178,7 @@ export async function registerAdventurer(
 
   await page.getByRole("button", { name: labels.skip }).click();
   // The class step advances on SELECTION now (no 次へ) — click a calling to confirm and move on.
-  await page.getByTestId("guild-class-warrior").click();
+  await page.getByTestId(`guild-class-${options.classId ?? "warrior"}`).click();
   if (options.portrait) {
     await page.getByTestId("portrait-input").setInputFiles(options.portrait);
   }

@@ -2637,18 +2637,21 @@
       },
       "requiredKeys": [
         "play.chestClearNote",
+        "play.chestBack",
+        "play.chestChance",
+        "play.chestChooseHandler",
         "play.chestClosedNote",
         "play.chestDisarm",
         "play.chestHeading",
         "play.chestInvestigate",
         "play.chestLeave",
+        "play.chestLockedNote",
         "play.chestOpen",
-        "play.chestOpenedNote",
-        "play.chestResume",
         "play.chestTrappedNote",
+        "play.chestUnlock",
         "play.chestUncertainNote"
       ],
-      "notes": "A chest HOLDS the cell (Wizardry prompt model): while it is here the panel owns the command region. It shows only what the party can SEE — closed, a trap found, 'cannot tell', no trap, opened. A risky operation opens a formation-order handler list with visible success rates and initial focus on its best standing member; after a found trap, focus moves straight to 罠を外す. Every stage is driven, because the whole point of the panel is that the stages read differently.",
+      "notes": "An unresolved chest HOLDS the cell (Wizardry prompt model): while closed, its panel owns the command region. It shows only what the party can SEE — closed, a trap found, 'cannot tell', or no trap. A risky operation opens a formation-order handler list with visible success rates and initial focus on its best standing member; after a found trap, focus moves straight to 罠を外す. Once opened, the canonical chest state remains for the map/save, but the panel immediately clears and exploration continues without a second confirm.",
       "states": [
         {
           "uiState": {
@@ -2683,13 +2686,7 @@
           "uiState": {
             "chest": true,
             "chest_locked": true,
-            "chest_pending_action": "investigate"
-          }
-        },
-        {
-          "uiState": {
-            "chest": true,
-            "chest_opened": true
+            "chest_pending_action": "unlock"
           }
         }
       ]

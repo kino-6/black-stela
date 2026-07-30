@@ -287,8 +287,10 @@ export function projectEventToLog(event: GameEvent, locale: Locale = "en", world
     }
     case "chest_trap_sprung":
       return { text: t("events.chestTrapSprung"), tags: ["dungeon", "chest", "trap"] };
+    // Opening is the state transition behind the loot event, not a separate player-facing beat. Keeping
+    // it out of the visible log lets the acquired item remain the result the player sees.
     case "chest_opened":
-      return { text: t("events.chestOpened"), tags: ["dungeon", "chest"] };
+      return null;
     case "command_blocked_chest":
       return null;
   }

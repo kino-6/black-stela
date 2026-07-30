@@ -101,14 +101,13 @@ func _initialize() -> void:
 		await process_frame
 	chest_focus = get_root().get_viewport().gui_get_focus_owner()
 	_check(chest_focus is Button and (chest_focus as Button).text == "罠を外す", "found trap focuses 罠を外す for Confirm")
+	# An opened chest is history, not a second event. It never retakes focus or asks the player to dismiss it.
 	d.call("set_ui_state", {"chest": true, "chest_opened": true})
 	for i in 3:
 		await process_frame
-	_check(not (d.call("current_chest") as Dictionary).is_empty(), "an opened chest on the cell raises the panel")
-	d.call("_leave_chest")
-	for i in 3:
-		await process_frame
-	_check((d.call("current_chest") as Dictionary).is_empty(), "探索へ戻る releases the chest — movement is not frozen")
+	_check((d.call("current_chest") as Dictionary).is_empty(), "an opened chest no longer raises a panel or takes focus")
+	_check(not _valid(d.get("_chest_overlay")), "opened chest leaves the dungeon controls immediately usable")
+	_check(String(d.call("_event_line", {"type": "chest_opened"})) == "", "opened chest does not overwrite its loot message")
 
 	# party-menu Esc (playtest) — the 隊列 overlay must close on Cancel, not only via its 閉じる button.
 	d.call("_toggle_party_menu")

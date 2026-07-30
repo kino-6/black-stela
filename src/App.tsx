@@ -274,7 +274,7 @@ export function App() {
     return getLocalizedRoomText(activeWorld, state.position.roomId, locale);
   }, [locale, state.position]);
   const currentRoom = useMemo(() => (state.position ? getRoom(activeWorld, state.position.roomId) : null), [state.position]);
-  // IMP-029 — the chest on the party's current cell (dungeon only), unless they walked away from it.
+  // IMP-029 — an unresolved chest on the party's current cell (dungeon only), unless they walked away.
   const currentChest = useMemo(() => {
     // The victory RESULT screen (combatConclusion) owns the screen first; the chamber's chest surfaces
     // only once the party dismisses the result and is back to exploring.
@@ -283,7 +283,9 @@ export function App() {
     }
     return state.chests?.find((chest) => chest.cellId === state.position!.cellId) ?? null;
   }, [state.phase, state.combatConclusion, state.position?.cellId, state.chests]);
-  const activeChest = currentChest && currentChest.cellId !== dismissedChestCellId ? currentChest : null;
+  // Opening is final. Keep the canonical chest state for maps/saves, but do not turn its opened sprite
+  // into a second controller event that the player must dismiss.
+  const activeChest = currentChest && currentChest.phase !== "opened" && currentChest.cellId !== dismissedChestCellId ? currentChest : null;
   const canReturnToTown = Boolean(currentRoom?.stairsToTown || currentRoom?.restPoint);
   const escapeItem = state.inventory.find((item) => item.kind === "escape" && item.quantity > 0);
   const canUseEscapeItem =
@@ -1263,7 +1265,7 @@ export function App() {
         return;
       }
 
-      // IMP-029 — while a chest sits on the current cell it OWNS the command region: arrows navigate
+      // While an unresolved chest sits on the current cell it owns the command region: arrows navigate
       // its actions and Confirm/Space act on them, instead of the party walking off the chest.
       const chestActive = Boolean(activeChest);
 
@@ -1410,7 +1412,7 @@ export function App() {
     });
 
     return () => window.cancelAnimationFrame(frame);
-    // IMP-029 — also rescue the cursor when a chest appears/opens (it swaps the command surface).
+    // IMP-029 — also rescue the cursor when an unresolved chest appears (it swaps the command surface).
   }, [guildCreationStep, guildOfferState, partyMenuOpen, screen, state.combat?.round, state.party.length, state.phase, townMode, activeChest?.cellId, activeChest?.phase]);
 
   function cycleSelectedTarget(step: number) {
@@ -2727,7 +2729,6 @@ export function App() {
                     run({ type: "use_item", itemId: escapeItem.id, targetCharacterId: state.party[0]?.id ?? "" })
                   }
                   chest={activeChest}
-                  chestLootLine={latestEventType === "inventory_item_gained" ? latestLogText : ""}
                   onLeaveChest={() => setDismissedChestCellId(activeChest?.cellId ?? null)}
                 />
               ) : (

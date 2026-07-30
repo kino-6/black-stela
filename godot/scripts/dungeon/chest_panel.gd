@@ -7,30 +7,24 @@ const UI := preload("res://scripts/town/ui_kit.gd")
 const Chests := preload("res://scripts/rules/chests.gd")
 const Exploration := preload("res://scripts/rules/exploration.gd")
 
-static func build(chest: Dictionary, party: Array, engine: Dictionary, pending_action: String, on_begin: Callable, on_command: Callable, on_back: Callable, on_leave: Callable, loot_line: String = "", closed_tex: Texture2D = null, open_tex: Texture2D = null) -> Dictionary:
-	var opened := String(chest.get("phase", "")) == "opened"
+static func build(chest: Dictionary, party: Array, engine: Dictionary, pending_action: String, on_begin: Callable, on_command: Callable, on_back: Callable, on_leave: Callable, closed_tex: Texture2D = null) -> Dictionary:
 	var result := String(chest.get("investigateResult", "")) if chest.get("investigateResult", null) != null else ""
 	var known_trapped := result == "trapped"
 	var locked := typeof(chest.get("lock", null)) == TYPE_DICTIONARY and not bool(chest.get("unlocked", false))
 	var root := UI.col(8)
 	root.add_child(UI.label(I18n.t("play.chestHeading"), 20, UI.GOLD))
-	var chest_tex: Texture2D = open_tex if opened else closed_tex
-	if chest_tex != null:
+	if closed_tex != null:
 		var img := TextureRect.new()
-		img.texture = chest_tex
+		img.texture = closed_tex
 		img.custom_minimum_size = Vector2(232, 150)
 		img.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		img.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		root.add_child(img)
-	root.add_child(UI.label(_note(opened, result, locked), 17, UI.INK))
-	if opened and loot_line != "": root.add_child(UI.label(loot_line, 16, UI.GOLD))
+	root.add_child(UI.label(_note(result, locked), 17, UI.INK))
 
 	var actions := UI.col(6)
 	var focus: Button = null
-	if opened:
-		focus = UI.button(I18n.t("play.chestResume"), on_leave, Vector2(300, 42), 17)
-		actions.add_child(focus)
-	elif pending_action != "":
+	if pending_action != "":
 		root.add_child(UI.label(I18n.t("play.chestChooseHandler", {"action": _action_label(pending_action)}), 17, UI.GOLD))
 		var best: Button = null
 		var best_chance := -1
@@ -90,8 +84,7 @@ static func _difficulty(chest: Dictionary, action: String) -> int:
 static func _chance(member: Dictionary, engine: Dictionary, chest: Dictionary, action: String) -> int:
 	return Chests.success_chance(Exploration.attempt_skill(member, engine, action), _difficulty(chest, action), 55 if action == "investigate" else 45)
 
-static func _note(opened: bool, result: String, locked: bool) -> String:
-	if opened: return I18n.t("play.chestOpenedNote")
+static func _note(result: String, locked: bool) -> String:
 	if result == "trapped": return I18n.t("play.chestTrappedNote")
 	if result == "uncertain": return I18n.t("play.chestUncertainNote")
 	if result == "clear": return I18n.t("play.chestClearNote")
