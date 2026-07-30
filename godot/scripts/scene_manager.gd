@@ -28,9 +28,7 @@ func fade_to_dark(scene_path: String) -> void:
 	layer.add_child(veil)
 	add_child(layer)
 	await get_tree().process_frame
-	var fade_in := create_tween()
-	fade_in.tween_property(veil, "color:a", 1.0, FADE_IN_SECONDS)
-	await fade_in.finished
+	await _fade_alpha(veil, 1.0, FADE_IN_SECONDS)
 	var err := get_tree().change_scene_to_file(scene_path)
 	if err != OK:
 		push_error("scene change failed (%d): %s" % [err, scene_path])
@@ -41,8 +39,11 @@ func fade_to_dark(scene_path: String) -> void:
 	# complete frame exists. This prevents the old one-frame void from bleeding through.
 	await get_tree().process_frame
 	await get_tree().process_frame
-	var fade_out := create_tween()
-	fade_out.tween_property(veil, "color:a", 0.0, FADE_OUT_SECONDS)
-	await fade_out.finished
+	await _fade_alpha(veil, 0.0, FADE_OUT_SECONDS)
 	layer.queue_free()
 	_transitioning = false
+
+func _fade_alpha(veil: ColorRect, alpha: float, duration: float) -> void:
+	var tween := create_tween()
+	tween.tween_property(veil, "color:a", alpha, duration)
+	await tween.finished
