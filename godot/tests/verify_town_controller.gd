@@ -97,6 +97,25 @@ func _initialize() -> void:
 	else:
 		print("[town-controller] loot confirm: Cancel returned to the counter, not out of it")
 
+	# A shop is a decision surface, not a name-and-price table. The controller route must expose one
+	# explicit purchase target before Confirm reaches 買う. This catches the old market layout where each
+	# row had an immediate Buy button but no selected-item board.
+	town.call("set_ui_state", {"service": "shop", "shop_category": "weapon", "shop_item_id": "equip.rusted-dirk"})
+	for i in 3:
+		await process_frame
+	var shop_text := _all_text(town)
+	if not shop_text.contains("選んだ品"):
+		_fail("shop: no selected-item board — the player cannot review a purchase before buying")
+	if not shop_text.contains("詳しく見る"):
+		_fail("shop: stock has no controller-visible inspect command")
+	if _focused() == null:
+		_fail("shop: selected-item board has no controller focus route")
+	else:
+		print("[town-controller] shop: selected-item board is visible and focusable")
+	_press_cancel(town)
+	for i in 3:
+		await process_frame
+
 	# REGRESSION (playtest #4): a BRAND-NEW game has never descended — town must read as a FIRST departure
 	# (初めて潜る前に / 手持ち), never a post-return state (帰還後の支度 / 持ち帰った物). The shared state seeds
 	# from a debug mid-dungeon fixture; start_guild() must zero the expedition history, or the first town

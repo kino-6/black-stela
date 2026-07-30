@@ -557,6 +557,9 @@ export const ja = {
     gold: "{gold}G",
     recoveryCost: "回復費: {gold}G",
     shopStock: "品揃え",
+    shopGuide: "品を選び、渡す相手と装備の変化を確かめてから買う。",
+    selectedItem: "選んだ品",
+    inspect: "詳しく見る",
     category: {
       weapon: "武器",
       armor: "防具",

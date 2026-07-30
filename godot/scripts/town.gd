@@ -54,6 +54,7 @@ var _service: String = ""         # "" = no counter open
 var _menu_open: bool = false      # the settings/menu overlay (over the square)
 var _selected_id: String = ""     # the adventurer services act on
 var _shop_category: String = ""
+var _shop_item_id: String = ""    # stock currently being examined; buying is a deliberate second step
 var _loot_filter: String = "all"
 var _loot_pending: String = ""
 var _party_page: String = "status"
@@ -103,6 +104,7 @@ func set_ui_state(ui: Dictionary) -> void:
 	if ui.has("loot_pending"): _loot_pending = String(ui["loot_pending"])
 	if ui.has("loot_filter"): _loot_filter = String(ui["loot_filter"])
 	if ui.has("shop_category"): _shop_category = String(ui["shop_category"])
+	if ui.has("shop_item_id"): _shop_item_id = String(ui["shop_item_id"])
 	if ui.has("party_page"): _party_page = String(ui["party_page"])
 	if ui.has("party_item"): _party_item = String(ui["party_item"])
 	if ui.has("party_discard"): _party_discard = bool(ui["party_discard"])
@@ -536,6 +538,8 @@ func _service_ctx() -> Dictionary:
 		"focus_hint": func(control): _pending_focus = control,
 		"shop_category": _shop_category,
 		"set_shop_category": func(cat): _shop_category = String(cat); _rebuild(),
+		"shop_item_id": _shop_item_id,
+		"set_shop_item": func(id): _shop_item_id = String(id); _rebuild(),
 		"loot_filter": _loot_filter,
 		"set_loot_filter": func(f): _loot_filter = String(f); _rebuild(),
 		"party_page": _party_page,

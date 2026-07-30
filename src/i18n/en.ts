@@ -555,6 +555,9 @@ export const en = {
     gold: "{gold} gold",
     recoveryCost: "Recovery cost: {gold}",
     shopStock: "Stock",
+    shopGuide: "Choose an item, check its bearer and stat change, then buy.",
+    selectedItem: "Selected item",
+    inspect: "Inspect",
     category: {
       weapon: "Weapons",
       armor: "Armor",

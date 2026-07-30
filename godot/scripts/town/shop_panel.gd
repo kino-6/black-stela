@@ -51,7 +51,9 @@ static func build(ctx: Dictionary) -> Control:
 	who.add_child(picker)
 	root.add_child(UI.card(who))
 
-	# --- stock | inventory (React: shop-grid, two columns) ---
+	# --- stock | decision board ---
+	# A counter is not a spreadsheet: first choose one item from stock, then the opposite panel gives the
+	# player its bearer, fit, stat change and remaining purse together. Only that board owns the Buy command.
 	var cols := UI.row()
 	cols.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	root.add_child(cols)
@@ -76,14 +78,24 @@ static func build(ctx: Dictionary) -> Control:
 	left.add_child(tabs)
 
 	var stock_list := UI.col(6)
-	var focus_target: Button = null
+	var visible_stock: Array = []
 	for entry in shop.get("stock", []):
 		var item_id := String(entry.get("itemId", ""))
-		if not _stock_available(entry, state):
-			continue
-		if Fmt.shop_category_for(world, item_id) != active:
-			continue
-		var built := _stock_row(ctx, world, state, entry, item_id, selected, selected_stats, party_gold)
+		if _stock_available(entry, state) and Fmt.shop_category_for(world, item_id) == active:
+			visible_stock.append(entry)
+	var selected_item_id: String = String(ctx.get("shop_item_id", ""))
+	var selected_entry: Dictionary = {}
+	for entry in visible_stock:
+		if String((entry as Dictionary).get("itemId", "")) == selected_item_id:
+			selected_entry = entry
+			break
+	if selected_entry.is_empty() and not visible_stock.is_empty():
+		selected_entry = visible_stock[0]
+		selected_item_id = String(selected_entry.get("itemId", ""))
+	var focus_target: Button = null
+	for entry in visible_stock:
+		var item_id := String((entry as Dictionary).get("itemId", ""))
+		var built := _stock_row(ctx, world, entry, item_id, selected, item_id == selected_item_id)
 		stock_list.add_child(built)
 		if focus_target == null:
 			var candidate := UI.first_focusable(built)
@@ -91,52 +103,30 @@ static func build(ctx: Dictionary) -> Control:
 				focus_target = candidate
 	if stock_list.get_child_count() == 0:
 		stock_list.add_child(UI.label(I18n.t("town.inventoryEmpty"), 15, UI.DIM))
-	left.add_child(UI.scroller(stock_list, Vector2(560, 300)))
+	left.add_child(UI.scroller(stock_list, Vector2(820, 560)))
 
 	var right := UI.col(6)
 	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	cols.add_child(right)
-	right.add_child(UI.label(I18n.t("town.inventory"), 20, UI.GOLD))
+	var decision := UI.col(6)
+	decision.add_child(UI.prose(I18n.t("town.shopGuide"), 15, UI.DIM, 700))
+	decision.add_child(UI.label(I18n.t("town.selectedItem"), 20, UI.GOLD))
+	if selected_entry.is_empty():
+		decision.add_child(UI.label(I18n.t("town.inventoryEmpty"), 16, UI.DIM))
+	else:
+		decision.add_child(_selected_item_board(ctx, world, selected_entry, selected, selected_stats, party_gold))
+	decision.add_child(UI.hsep())
+	decision.add_child(UI.label(I18n.t("town.inventory"), 20, UI.GOLD))
 	var inv_list := UI.col(6)
 	if inventory.is_empty():
 		inv_list.add_child(UI.label(I18n.t("town.inventoryEmpty"), 15, UI.DIM))
 	for item in inventory:
 		inv_list.add_child(_inventory_row(ctx, world, item, party))
-	right.add_child(UI.scroller(inv_list, Vector2(520, 300)))
-
-	# --- equipment board: the six slots + what can go in them ---
-	root.add_child(UI.hsep())
-	root.add_child(UI.label(I18n.t("town.equipment"), 20, UI.GOLD))
-	var board := UI.row()
-	var slots := UI.col(3)
-	slots.add_child(UI.label(String(selected.get("name", "")), 18, UI.INK))
-	slots.add_child(UI.label(_summary(selected_stats), 15, UI.DIM))
-	for slot in Fmt.EQUIPMENT_SLOT_ORDER:
-		var line := UI.row()
-		line.add_child(UI.label(Fmt.format_equipment_slot(String(slot)), 15, UI.DIM))
-		line.add_child(UI.grow(UI.label(Fmt.equipped_name(world, (selected.get("equipment", {}) as Dictionary).get(slot, null)), 15, UI.INK)))
-		slots.add_child(line)
-	board.add_child(UI.card(slots))
-
-	var equips := UI.col(4)
-	equips.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	for item in inventory:
-		if item.get("kind", "") != "equipment":
-			continue
-		var eq: Variant = Fmt.find_equipment(world, item.get("id", ""))
-		var usable: bool = typeof(eq) == TYPE_DICTIONARY and Fmt.is_usable_by(eq, selected)
-		var line := UI.row()
-		line.add_child(UI.grow(UI.label(Fmt.describe_equipment_instance(world, item.get("id", ""), item.get("plus", null), item.get("affix", null)), 15, UI.INK if usable else UI.DIM)))
-		line.add_child(UI.label(I18n.t("town.allowed") if usable else I18n.t("town.ineligible"), 14, UI.OK if usable else UI.BAD))
-		var eb := UI.button(I18n.t("town.equip"), func(): ctx["dispatch"].call({"type": "equip_item", "characterId": selected.get("id", ""), "equipmentId": item.get("id", ""), "plus": item.get("plus", null), "affix": item.get("affix", null)}), Vector2(96, 34), 14)
-		eb.disabled = not usable
-		line.add_child(eb)
-		equips.add_child(line)
-	if equips.get_child_count() == 0:
-		# React renders no actions here; name the actual condition rather than reusing the inventory's line.
-		equips.add_child(UI.label(I18n.t("partyMenu.inventoryEmpty"), 15, UI.DIM))
-	board.add_child(UI.scroller(equips, Vector2(560, 180)))
-	root.add_child(board)
+	decision.add_child(UI.scroller(inv_list, Vector2(720, 170)))
+	decision.add_child(UI.hsep())
+	decision.add_child(UI.label(I18n.t("town.equipment"), 20, UI.GOLD))
+	decision.add_child(_equipment_board(ctx, world, inventory, selected, selected_stats))
+	right.add_child(UI.scroller(decision, Vector2(720, 560)))
 
 	var back := UI.button(I18n.t("town.serviceCancel"), ctx["close"], Vector2(180, 44), 18)
 	var foot := UI.row()
@@ -171,9 +161,8 @@ static func _available_categories(world: Dictionary, shop: Dictionary, state: Di
 			out.append(cat)
 	return out
 
-static func _stock_row(ctx: Dictionary, world: Dictionary, state: Dictionary, entry: Dictionary, item_id: String, selected: Dictionary, selected_stats: Dictionary, party_gold: int) -> Control:
+static func _stock_row(ctx: Dictionary, world: Dictionary, entry: Dictionary, item_id: String, member: Dictionary, is_selected: bool) -> Control:
 	var price := int(entry.get("price", 0))
-	var afford := party_gold >= price
 	var eq: Variant = Fmt.find_equipment(world, item_id)
 	var body := UI.col(2)
 	body.add_child(UI.label(Fmt.localized_catalog_name(world, item_id), 17, UI.INK))
@@ -185,22 +174,66 @@ static func _stock_row(ctx: Dictionary, world: Dictionary, state: Dictionary, en
 
 	if typeof(eq) == TYPE_DICTIONARY:
 		body.add_child(UI.label("%s · %s" % [Fmt.format_equipment_slot(String(eq.get("slot", ""))), Fmt.format_equipment_effect(eq)], 14, UI.DIM))
-		# WHO CAN USE IT + WHAT IT CHANGES — the two things AGENTS.md requires of a shop.
+		# The compact list is the first filter: show whether the currently selected adventurer may use a
+		# piece before they spend a Confirm opening its board. The board then supplies the exact stat delta.
+		var usable := Fmt.is_usable_by(eq, member)
+		body.add_child(UI.label(I18n.t("town.canEquip" if usable else "town.cannotEquip", {"member": String(member.get("name", ""))}), 14, UI.OK if usable else UI.BAD))
+	body.add_child(UI.label(I18n.t("town.price", {"gold": price}), 15, UI.INK))
+
+	var line := UI.row()
+	line.add_child(UI.grow(body))
+	var inspect := UI.button(I18n.t("town.inspect"), func(): ctx["set_shop_item"].call(item_id), Vector2(132, 40), 15)
+	if is_selected:
+		inspect.add_theme_color_override("font_color", UI.GOLD)
+	line.add_child(inspect)
+	return UI.card(line, UI.GOLD if is_selected else Color("3a4326"))
+
+static func _selected_item_board(ctx: Dictionary, world: Dictionary, entry: Dictionary, selected: Dictionary, selected_stats: Dictionary, party_gold: int) -> Control:
+	var item_id := String(entry.get("itemId", ""))
+	var price := int(entry.get("price", 0))
+	var afford := party_gold >= price
+	var eq: Variant = Fmt.find_equipment(world, item_id)
+	var body := UI.col(4)
+	body.add_child(UI.label(Fmt.localized_catalog_name(world, item_id), 22, UI.INK))
+	var desc := Fmt.localized_catalog_description(world, item_id)
+	if desc != "":
+		body.add_child(UI.prose(desc, 15, UI.DIM, 650))
+	if typeof(eq) == TYPE_DICTIONARY:
+		body.add_child(UI.label("%s · %s" % [Fmt.format_equipment_slot(String(eq.get("slot", ""))), Fmt.format_equipment_effect(eq)], 15, UI.DIM))
 		var usable: bool = Fmt.is_usable_by(eq, selected)
 		var fit := I18n.t("town.canEquip" if usable else "town.cannotEquip", {"member": String(selected.get("name", ""))})
 		if usable:
 			var preview: Dictionary = Fmt.preview_equipment_stats(selected, eq, world)
 			fit += " · " + Fmt.format_stat_delta(selected_stats, preview)
-		body.add_child(UI.label(fit, 14, UI.OK if usable else UI.BAD))
-	body.add_child(UI.label(I18n.t("town.price", {"gold": price}), 15, UI.INK))
-	body.add_child(UI.label(I18n.t("town.remainingGold", {"gold": maxi(0, party_gold - price)}), 13, UI.DIM if afford else UI.BAD))
-
+		body.add_child(UI.label(fit, 16, UI.OK if usable else UI.BAD))
+	body.add_child(UI.label(I18n.t("town.price", {"gold": price}) + "　" + I18n.t("town.remainingGold", {"gold": maxi(0, party_gold - price)}), 16, UI.INK if afford else UI.BAD))
 	var line := UI.row()
 	line.add_child(UI.grow(body))
-	var buy := UI.button(I18n.t("town.buy"), func(): ctx["dispatch"].call({"type": "buy_item", "shopId": ctx["world"].get("shops", [{}])[0].get("id", ""), "itemId": item_id}), Vector2(96, 40), 15)
+	var buy := UI.button(I18n.t("town.buy"), func(): ctx["dispatch"].call({"type": "buy_item", "shopId": ctx["world"].get("shops", [{}])[0].get("id", ""), "itemId": item_id}), Vector2(130, 46), 17)
 	buy.disabled = not afford
 	line.add_child(buy)
-	return UI.card(line)
+	return UI.card(line, UI.GOLD)
+
+static func _equipment_board(ctx: Dictionary, world: Dictionary, inventory: Array, selected: Dictionary, selected_stats: Dictionary) -> Control:
+	var board := UI.col(4)
+	board.add_child(UI.label("%s　%s" % [String(selected.get("name", "")), _summary(selected_stats)], 16, UI.INK))
+	var slots := []
+	for slot in Fmt.EQUIPMENT_SLOT_ORDER:
+		slots.append("%s: %s" % [Fmt.format_equipment_slot(String(slot)), Fmt.equipped_name(world, (selected.get("equipment", {}) as Dictionary).get(slot, null))])
+	board.add_child(UI.prose("　".join(PackedStringArray(slots)), 14, UI.DIM, 650))
+	for item in inventory:
+		if item.get("kind", "") != "equipment":
+			continue
+		var eq: Variant = Fmt.find_equipment(world, item.get("id", ""))
+		var usable: bool = typeof(eq) == TYPE_DICTIONARY and Fmt.is_usable_by(eq, selected)
+		var line := UI.row()
+		line.add_child(UI.grow(UI.label(Fmt.describe_equipment_instance(world, item.get("id", ""), item.get("plus", null), item.get("affix", null)), 15, UI.INK if usable else UI.DIM)))
+		line.add_child(UI.label(I18n.t("town.allowed") if usable else I18n.t("town.ineligible"), 14, UI.OK if usable else UI.BAD))
+		var equip := UI.button(I18n.t("town.equip"), func(): ctx["dispatch"].call({"type": "equip_item", "characterId": selected.get("id", ""), "equipmentId": item.get("id", ""), "plus": item.get("plus", null), "affix": item.get("affix", null)}), Vector2(96, 34), 14)
+		equip.disabled = not usable
+		line.add_child(equip)
+		board.add_child(line)
+	return UI.card(board)
 
 static func _inventory_row(ctx: Dictionary, world: Dictionary, item: Dictionary, party: Array) -> Control:
 	var body := UI.col(2)
