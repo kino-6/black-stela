@@ -7,6 +7,7 @@ extends SceneTree
 ## Run: godot --headless --path godot/ --script res://tests/verify_combat_geometry.gd
 
 const StateHash := preload("res://scripts/rules/state_hash.gd")
+const CombatStage := preload("res://scripts/combat/combat_stage.gd")
 
 var _fail := 0
 
@@ -62,6 +63,21 @@ func _run() -> void:
 		for h in hud:
 			var hr: Rect2 = h["rect"]
 			_check(not mr.intersects(hr), "enemy mark %s clears the %s" % [str(mr), h["name"]])
+
+	# A selected target used to spawn a `set_loops()` tween. Build that exact pure stage fragment rather than
+	# relying on the fixture's current combat phase to happen to select an enemy.
+	var tween_baseline := get_processed_tweens().size()
+	var reticle_host := Control.new()
+	get_root().add_child(reticle_host)
+	reticle_host.add_child(CombatStage.enemy_mark(reticle_host, {"count": 1}, 300.0, 240.0, Rect2(0, 0, 900, 540), true, null, "検証標的", 10, 10))
+	# The old loop is 1.2 seconds (fade out + fade in). Past one whole cycle it remains alive, while a
+	# static reticle leaves the tree with no presentation tween to leak or trigger Godot's warning.
+	await create_timer(1.3).timeout
+	# Godot 4.7 warns about that unbounded tween during normal play, so the target marker must be
+	# self-contained and leave no infinite tween behind.
+	var stage_tweens := get_processed_tweens().size()
+	_check(stage_tweens == tween_baseline, "the combat stage leaves no persistent tweens (%d, baseline %d)" % [stage_tweens, tween_baseline])
+	reticle_host.queue_free()
 
 	combat.queue_free()
 

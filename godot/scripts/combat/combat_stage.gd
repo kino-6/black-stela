@@ -124,11 +124,11 @@ static func enemy_mark(host: Node, group: Dictionary, centre_x: float, slot_w: f
 	mark.add_child(caption)
 	return mark
 
-static func _reticle_pulse(host: Node, node: Control) -> void:
-	node.modulate.a = 1.0   # never start faded — a screenshot mid-fade would show no reticle
-	var tween := host.create_tween().set_loops()
-	tween.tween_property(node, "modulate:a", 0.45, 0.6)
-	tween.tween_property(node, "modulate:a", 1.0, 0.6)
+static func _reticle_pulse(_host: Node, node: Control) -> void:
+	# A static gold frame is clearer than a fading one and, unlike the old unbounded Tween, cannot make
+	# Godot 4.7 emit "Infinite loop detected" during normal play. The arrow and selected caption still make
+	# the current target unambiguous without an animation that outlives the rebuilt stage.
+	node.modulate.a = 1.0
 
 static func _label(text: String, sz: int, col: Color) -> Label:
 	var l := Label.new()
