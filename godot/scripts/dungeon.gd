@@ -881,7 +881,9 @@ func _toggle_party_menu() -> void:
 		"close": func(): _toggle_party_menu(),
 		"open_config": func(): _open_config_overlay(),
 		"selected_member": func(): return _party_selected(),
-		"set_selected": func(id): _select_party_member(String(id), false),
+		# Character selection always remains on the roster. Other menu actions may choose their own return
+		# focus, but inspecting a different party member must never reset the player to the menu's first tab.
+		"select_party_member": func(id): _select_party_member(String(id), true),
 		"focus_selected": func(id): _select_party_member(String(id), true),
 		"party_focus_member_id": _party_focus_member_id,
 		"focus_hint": func(control): focus_target["control"] = control,

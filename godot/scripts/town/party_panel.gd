@@ -251,7 +251,7 @@ static func _roster_row(ctx: Dictionary, candidate: Dictionary, selected: Dictio
 	var is_selected := cid == String(selected.get("id", ""))
 	var body := UI.col(3)
 	var head := UI.row()
-	var name_btn := UI.button(String(candidate.get("name", "?")), func(): ctx["set_selected"].call(cid), Vector2(150, 34), 15)
+	var name_btn := UI.button(String(candidate.get("name", "?")), func(): ctx["select_party_member"].call(cid), Vector2(150, 34), 15)
 	# Selecting a member is an inspection operation, not a two-step command. Button focus is the source of
 	# truth for controller/keyboard browsing; Confirm remains available without being required to refresh.
 	if ctx.has("focus_selected"):
@@ -277,7 +277,7 @@ static func _formation_page(ctx: Dictionary, party: Array, selected: Dictionary)
 		column.add_child(UI.label(I18n.t("play.frontRow") if row_id == "front" else I18n.t("play.backRow"), 18, UI.GOLD))
 		for candidate in party.filter(func(entry): return String(entry.get("row", "front")) == row_id):
 			var cid := String(candidate.get("id", ""))
-			var b := UI.button(String(candidate.get("name", "?")), func(): ctx["set_selected"].call(cid), Vector2(300, 38), 16)
+			var b := UI.button(String(candidate.get("name", "?")), func(): ctx["select_party_member"].call(cid), Vector2(300, 38), 16)
 			if ctx.has("focus_selected"):
 				b.focus_entered.connect(func(): ctx["focus_selected"].call(cid))
 			if cid == String(selected.get("id", "")):

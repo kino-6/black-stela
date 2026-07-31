@@ -541,7 +541,9 @@ func _service_ctx() -> Dictionary:
 		"save_run": func(): _save_run(),
 		"close": func(): _close_service(),
 		"selected_member": func(): return selected_member(),
-		"set_selected": func(id): _select_party_member(String(id), false),
+		# Keep party inspection separate from the shared service-selection callback: roster selection retains
+		# its current row, while shop/workshop/career selections retain their own intended focus.
+		"select_party_member": func(id): _select_party_member(String(id), true),
 		"focus_selected": func(id): _select_party_member(String(id), true),
 		"party_focus_member_id": _party_focus_member_id,
 		"career_preview": _career_preview,

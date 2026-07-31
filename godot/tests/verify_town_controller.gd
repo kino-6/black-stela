@@ -67,26 +67,19 @@ func _initialize() -> void:
 				# The town and dungeon share this party panel. Focus is sufficient to inspect a different
 				# adventurer; Confirm must not be a required second step just to refresh their sheet.
 				var current: Dictionary = town.call("selected_member")
-				var alternate: Dictionary = {}
-				for candidate in town.call("state").get("party", []):
-					if String(candidate.get("id", "")) != String(current.get("id", "")):
-						alternate = candidate
-						break
-				var roster_button := _button_with_text(town.get("_service_layer"), String(alternate.get("name", "")))
-				if roster_button == null:
-					_fail("party: no alternate roster entry to browse")
+				var start_party_focus := _focused()
+				get_root().push_input(_action("ui_down"))
+				for i in 4:
+					await process_frame
+				var browsed: Dictionary = town.call("selected_member")
+				var browsed_focus := _focused()
+				var party: Array = town.call("state").get("party", [])
+				if not (browsed_focus is Button and browsed_focus != start_party_focus and _party_member_named(party, (browsed_focus as Button).text)):
+					_fail("party: Down did not move to another roster entry")
+				elif String(browsed.get("id", "")) == String(current.get("id", "")) or String(browsed.get("name", "")) != (browsed_focus as Button).text:
+					_fail("party: roster focus did not refresh and retain the inspected adventurer")
 				else:
-					roster_button.grab_focus()
-					for i in 4:
-						await process_frame
-					var browsed: Dictionary = town.call("selected_member")
-					var browsed_focus := _focused()
-					if String(browsed.get("id", "")) != String(alternate.get("id", "")):
-						_fail("party: roster focus did not refresh the selected adventurer")
-					elif not (browsed_focus is Button and (browsed_focus as Button).text == String(alternate.get("name", ""))):
-						_fail("party: roster refresh did not keep the cursor on the inspected adventurer")
-					else:
-						print("[town-controller] party: focus refreshes %s without Confirm" % String(alternate.get("name", "")))
+					print("[town-controller] party: Down refreshes %s without Confirm" % String(browsed.get("name", "")))
 
 			# Cancel must resolve one step back: counter -> the location's service menu.
 			_press_cancel(town)
@@ -192,14 +185,17 @@ func _press_cancel(town: Node) -> void:
 func _focused() -> Control:
 	return get_root().gui_get_focus_owner()
 
-func _button_with_text(node: Node, text: String) -> Button:
-	if node is Button and (node as Button).text == text:
-		return node as Button
-	for child in node.get_children():
-		var found := _button_with_text(child, text)
-		if found != null:
-			return found
-	return null
+func _action(name: String) -> InputEventAction:
+	var event := InputEventAction.new()
+	event.action = name
+	event.pressed = true
+	return event
+
+func _party_member_named(party: Array, name: String) -> bool:
+	for member in party:
+		if String(member.get("name", "")) == name:
+			return true
+	return false
 
 func _fail(message: String) -> void:
 	_failures += 1

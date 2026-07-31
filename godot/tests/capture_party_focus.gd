@@ -12,34 +12,25 @@ func _initialize() -> void:
 	dungeon.call("_toggle_party_menu")
 	for i in 4:
 		await process_frame
-	var selected: Dictionary = dungeon.call("_party_selected")
-	var target: Dictionary = {}
-	for candidate in dungeon.get("_state").get("party", []):
-		if String(candidate.get("id", "")) != String(selected.get("id", "")):
-			target = candidate
-			break
-	var roster_button := _button_with_text(dungeon.get("_party_menu"), String(target.get("name", "")))
-	if roster_button == null:
-		push_error("[party-focus] no alternate roster entry")
-		quit(1)
-		return
-	roster_button.grab_focus()
+	get_root().push_input(_action("ui_down"))
 	for i in 8:
 		await process_frame
+	var focused: Control = get_root().gui_get_focus_owner()
+	if not (focused is Button):
+		push_error("[party-focus] controller focus did not land on a roster member")
+		quit(1)
+		return
 	var image := get_root().get_texture().get_image()
 	if image == null:
 		push_error("[party-focus] NULL image — re-run WITHOUT --headless")
 		quit(1)
 		return
 	image.save_png("res://tests/_ux_party-focus.png")
-	print("[party-focus] wrote tests/_ux_party-focus.png for %s" % String(target.get("name", "?")))
+	print("[party-focus] wrote tests/_ux_party-focus.png for %s" % (focused as Button).text)
 	quit(0)
 
-func _button_with_text(node: Node, text: String) -> Button:
-	if node is Button and (node as Button).text == text:
-		return node as Button
-	for child in node.get_children():
-		var found := _button_with_text(child, text)
-		if found != null:
-			return found
-	return null
+func _action(name: String) -> InputEventAction:
+	var event := InputEventAction.new()
+	event.action = name
+	event.pressed = true
+	return event
