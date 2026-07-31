@@ -66,7 +66,8 @@ func _initialize() -> void:
 		"phase": "dungeon",
 		"position": {"cellId": "cell.b1f.002", "roomId": "room.b1f.002", "facing": "south"},
 		"map": {"floorId": "dungeon.b1f", "currentCellId": "cell.b1f.002", "visitedCells": ["cell.b1f.002"]},
-		"party": initial_party
+		"party": initial_party,
+		"inventory": [{"id": "item.lock-picks", "name": "Ashwire Picks", "kind": "utility", "quantity": 1}]
 	})
 	# Chest operator choice — Confirm on a closed chest enters investigation, then the cursor starts on the
 	# standing member with the largest displayed chance. This protects the requested no-mouse flow: select
@@ -94,6 +95,14 @@ func _initialize() -> void:
 			best_chance = chance
 			best_name = String(member.get("name", ""))
 	_check(handler_focus is Button and (handler_focus as Button).text.begins_with(best_name + "　") and (handler_focus as Button).text.contains("成功率"), "handler choice focuses the highest investigation chance")
+	# An exploration tool is a visible, optional alternative on the relevant chest action. It names the
+	# tool, shows the improved chance, and sends its item id only if the player confirms that command.
+	d.set("_chest_pending_action", "unlock")
+	d.call("_rebuild_dock")
+	for i in 3:
+		await process_frame
+	var picks := _button_with_prefix(d.get("_chest_overlay"), "灰線の合鍵で試す")
+	_check(picks != null and not picks.disabled and picks.text.contains("成功率"), "unlock tools are visible optional commands with their own chance")
 	# A successful discovery must not make the player navigate back to a distant option: the trap action is
 	# focused on the next panel and Confirm can immediately continue to the recommended handler.
 	d.call("set_ui_state", {"chest": true, "chest_result": "trapped"})
@@ -237,6 +246,64 @@ func _initialize() -> void:
 		d.call("_input", _pressed("cancel"))
 		for i in 4:
 			await process_frame
+	# Item use has the same safe staging as equipment: selecting a carried remedy does not spend it;
+	# selecting a valid recipient only previews the capped result; Confirm is the single mutation point.
+	var item_state: Dictionary = (d.get("_state") as Dictionary).duplicate(true)
+	var wounded_party: Array = initial_party.duplicate(true)
+	var item_target: Dictionary = (wounded_party[0] as Dictionary).duplicate(true)
+	item_target["hp"] = maxi(1, int(item_target.get("maxHp", 1)) - 7)
+	wounded_party[0] = item_target
+	item_state["party"] = wounded_party
+	item_state["inventory"] = [{"id": "item.healing-draught", "name": "Healing Draught", "kind": "healing", "quantity": 1, "healAmount": 11}]
+	d.set("_state", item_state)
+	d.set("_party_member_id", String(item_target.get("id", "")))
+	d.set("_party_page", "items")
+	d.set("_party_item", "")
+	d.set("_party_item_target_id", "")
+	d.call("_refresh_party_menu")
+	for i in 4:
+		await process_frame
+	menu = d.get("_party_menu")
+	var remedy := _button_with_text(menu, "治癒の水薬")
+	_check(remedy != null, "所持品 tab exposes the carried remedy as a controller command")
+	if remedy != null:
+		remedy.emit_signal("pressed")
+	for i in 4:
+		await process_frame
+	menu = d.get("_party_menu")
+	_check(_has_text(menu, "対象を選ぶ"), "selecting an item opens target selection without using it")
+	_check(int(((d.get("_state") as Dictionary).get("inventory", [])[0] as Dictionary).get("quantity", 0)) == 1, "selecting an item does not consume it")
+	var item_target_button := _button_with_prefix(menu, "%sに使う　使用できる" % String(item_target.get("name", "")))
+	_check(item_target_button != null, "a member who benefits from the remedy is an enabled target")
+	if item_target_button != null:
+		item_target_button.emit_signal("pressed")
+	for i in 4:
+		await process_frame
+	menu = d.get("_party_menu")
+	_check(_has_text(menu, "使用後の変化") and _has_text(menu, "所持数　×1 → ×0"), "target selection previews the effect and remaining count before confirmation")
+	_check(int(((d.get("_state") as Dictionary).get("inventory", [])[0] as Dictionary).get("quantity", 0)) == 1, "previewing a target still does not consume the remedy")
+	d.call("_input", _pressed("cancel"))
+	for i in 4:
+		await process_frame
+	menu = d.get("_party_menu")
+	_check(not _has_text(menu, "使用後の変化"), "Cancel returns from item confirmation to target selection")
+	item_target_button = _button_with_prefix(menu, "%sに使う　使用できる" % String(item_target.get("name", "")))
+	if item_target_button != null:
+		item_target_button.emit_signal("pressed")
+	for i in 4:
+		await process_frame
+	menu = d.get("_party_menu")
+	var confirm_item := _button_with_text(menu, "%sに使う" % String(item_target.get("name", "")))
+	_check(confirm_item != null, "item preview exposes an explicit use confirmation")
+	if confirm_item != null:
+		confirm_item.emit_signal("pressed")
+	for i in 4:
+		await process_frame
+	var used_target: Dictionary = d.call("_party_selected")
+	_check(int(used_target.get("hp", 0)) > int(item_target.get("hp", 0)) and int(((d.get("_state") as Dictionary).get("inventory", [])[0] as Dictionary).get("quantity", 0)) == 0, "only item confirmation heals and spends one remedy")
+	menu = d.get("_party_menu")
+	focus_owner = get_root().get_viewport().gui_get_focus_owner()
+	_check(focus_owner != null and menu != null and menu.is_ancestor_of(focus_owner), "item use rebuild keeps controller focus inside the menu")
 	d.call("_input", _pressed("cancel"))
 	for i in 4:
 		await process_frame

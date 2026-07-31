@@ -6,6 +6,7 @@ extends RefCounted
 
 const RosterUtil := preload("res://scripts/rules/roster_util.gd")
 const CombatRound := preload("res://scripts/rules/combat_round.gd")
+const CharacterStats := preload("res://scripts/rules/character_stats.gd")
 const Leveling := preload("res://scripts/rules/leveling.gd")
 const RulesUtil := preload("res://scripts/rules/rules_util.gd")
 
@@ -38,6 +39,11 @@ static func use_item(state: Dictionary, world: Dictionary, item_id: String, targ
 
 	var target := RosterUtil.find_by_id(state.get("party", []), target_id)
 	if target.is_empty() or not (kind == "healing" or kind == "cure" or kind == "focus"):
+		return {"state": state, "events": []}
+	# Outside combat every target is previewed before the player confirms. A remedy with no possible
+	# effect is a refused action, not a silent loss of inventory or exploration time. Combat deliberately
+	# resolves its queued item at round time and retains its separate semantics in CombatRound.
+	if not _helps_target(item, target, world):
 		return {"state": state, "events": []}
 	var applied := CombatRound._apply_healing_item(state.get("party", []), state.get("inventory", []), item_id, target_id, world)
 	var next: Dictionary = state.duplicate(true)
@@ -95,6 +101,19 @@ static func _find_inventory_item(state: Dictionary, item_id: String) -> Variant:
 		if candidate.get("id", "") == item_id and int(candidate.get("quantity", 0)) > 0:
 			return candidate
 	return null
+
+static func _helps_target(item: Dictionary, target: Dictionary, world: Dictionary) -> bool:
+	var stats := CharacterStats.effective(target, world)
+	if int(item.get("healAmount", 0)) > 0 and int(target.get("hp", 0)) < int(stats.get("maxHp", target.get("maxHp", 0))):
+		return true
+	if int(item.get("restoreMp", 0)) > 0 and int(target.get("mp", 0)) < int(stats.get("maxMp", target.get("maxMp", 0))):
+		return true
+	var cures: Variant = item.get("curesStatuses", [])
+	if typeof(cures) == TYPE_ARRAY:
+		for status in target.get("status", []):
+			if (cures as Array).has(status):
+				return true
+	return false
 
 static func _spend_one(inventory: Array, item_id: String) -> Array:
 	var out := []

@@ -60,6 +60,7 @@ var _party_member_id: String = ""
 var _party_focus_member_id: String = ""
 var _party_page: String = "status"
 var _party_item: String = ""
+var _party_item_target_id: String = ""
 var _party_technique_id: String = ""
 var _party_equipment_slot: String = "weapon"
 var _party_equipment_candidate: String = ""
@@ -228,6 +229,9 @@ func _input(event: InputEvent) -> void:
 		if event.is_action_pressed("cancel"):
 			if _party_page == "spells" and _party_technique_id != "":
 				_party_technique_id = ""
+				_refresh_party_menu()
+			elif (_party_page == "items" or _party_page == "valuables") and _party_item_target_id != "":
+				_party_item_target_id = ""
 				_refresh_party_menu()
 			elif _party_page == "equipment" and _party_equipment_candidate != "":
 				_party_equipment_candidate = ""
@@ -748,7 +752,8 @@ func _menu_dispatch(command: Dictionary) -> void:
 	for event in events:
 		if String((event as Dictionary).get("type", "")) == "equipment_changed":
 			_party_equipment_candidate = ""
-			break
+		if String((event as Dictionary).get("type", "")) == "item_used":
+			_party_item_target_id = ""
 	_apply(result)
 	if String(_state.get("phase", "")) == "town":
 		get_tree().change_scene_to_file("res://scenes/town.tscn")
@@ -809,7 +814,7 @@ func _show_chest_overlay(chest: Dictionary) -> void:
 	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	layer.add_child(center)
 	var built: Dictionary = ChestPanel.build(
-		chest, _state.get("party", []), _engine, _chest_pending_action,
+		chest, _state.get("party", []), _state.get("inventory", []), _world, _engine, _chest_pending_action,
 		func(action): _chest_pending_action = String(action); _show_chest_overlay(chest),
 		func(cmd): _chest_pending_action = ""; _apply(SliceRules.resolve(_state, cmd, _world, _engine)),
 		func(): _chest_pending_action = ""; _rebuild_dock(),
@@ -904,11 +909,13 @@ func _toggle_party_menu() -> void:
 		"party_focus_member_id": _party_focus_member_id,
 		"focus_hint": func(control): focus_target["control"] = control,
 		"party_page": _party_page,
-		"set_party_page": func(page): _party_page = String(page); _party_technique_id = ""; _refresh_party_menu(),
+		"set_party_page": func(page): _party_page = String(page); _party_technique_id = ""; _party_item_target_id = ""; _refresh_party_menu(),
 		"party_technique_id": _party_technique_id,
 		"set_party_technique": func(id): _party_technique_id = String(id); _refresh_party_menu(),
 		"party_item": _party_item,
-		"set_party_item": func(key): _party_item = String(key); _refresh_party_menu(),
+		"set_party_item": func(key): _party_item = String(key); _party_item_target_id = ""; _refresh_party_menu(),
+		"party_item_target_id": _party_item_target_id,
+		"set_party_item_target": func(id): _party_item_target_id = String(id); _refresh_party_menu(),
 		"party_equipment_slot": _party_equipment_slot,
 		"set_party_equipment_slot": func(slot): _party_equipment_slot = String(slot); _party_equipment_candidate = ""; _refresh_party_menu(),
 		"party_equipment_candidate": _party_equipment_candidate,

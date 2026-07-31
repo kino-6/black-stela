@@ -1940,6 +1940,17 @@ function useItem(state: GameState, world: ScenarioWorld, itemId: string, targetC
     return noChange(state);
   }
 
+  // Outside combat the player has a complete target preview. Spending a scarce remedy on a full or
+  // unaffected member is therefore never an intentional tactical cost: refuse it without consuming a
+  // turn or an item. Combat keeps its round-resolution semantics in applyHealingItemToParty.
+  const helpsTarget =
+    ((item.healAmount ?? 0) > 0 && target.hp < effectiveMaxHp(target, world)) ||
+    ((item.restoreMp ?? 0) > 0 && target.mp < effectiveMaxMp(target, world)) ||
+    (item.curesStatuses ?? []).some((status) => target.status?.includes(status));
+  if (!helpsTarget) {
+    return noChange(state);
+  }
+
   const applied = applyHealingItemToParty(state.party, state.inventory, itemId, targetCharacterId, world);
   const next: GameState = {
     ...state,

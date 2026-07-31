@@ -36,4 +36,22 @@ describe("consumables", () => {
     expect(after.party[0].mp).toBeGreaterThan(0);
     expect(after.party[0].mp).toBeLessThanOrEqual(after.party[0].maxMp);
   });
+
+  it("does not spend an out-of-combat remedy that cannot help its selected target", () => {
+    const full = stateWith("item.healing-draught", (m) => ({ ...m, hp: m.maxHp }));
+    const target = full.party[0];
+    const after = executeCommand(full, defaultWorld, { type: "use_item", itemId: "item.healing-draught", targetCharacterId: target.id });
+
+    expect(after).toBe(full);
+    expect(after.inventory.find((item) => item.id === "item.healing-draught")?.quantity).toBe(1);
+  });
+
+  it("does not spend a cure when the selected member lacks its named condition", () => {
+    const healthy = stateWith("item.antidote", (m) => ({ ...m, status: [] }));
+    const target = healthy.party[0];
+    const after = executeCommand(healthy, defaultWorld, { type: "use_item", itemId: "item.antidote", targetCharacterId: target.id });
+
+    expect(after).toBe(healthy);
+    expect(after.inventory.find((item) => item.id === "item.antidote")?.quantity).toBe(1);
+  });
 });

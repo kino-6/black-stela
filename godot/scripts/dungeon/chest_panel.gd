@@ -3,11 +3,12 @@ extends RefCounted
 ## is focused first, but another standing member can deliberately be sent instead.
 
 const I18n := preload("res://scripts/i18n.gd")
+const Fmt := preload("res://scripts/town_format.gd")
 const UI := preload("res://scripts/town/ui_kit.gd")
 const Chests := preload("res://scripts/rules/chests.gd")
 const Exploration := preload("res://scripts/rules/exploration.gd")
 
-static func build(chest: Dictionary, party: Array, engine: Dictionary, pending_action: String, on_begin: Callable, on_command: Callable, on_back: Callable, on_leave: Callable, closed_tex: Texture2D = null) -> Dictionary:
+static func build(chest: Dictionary, party: Array, inventory: Array, world: Dictionary, engine: Dictionary, pending_action: String, on_begin: Callable, on_command: Callable, on_back: Callable, on_leave: Callable, closed_tex: Texture2D = null) -> Dictionary:
 	var result := String(chest.get("investigateResult", "")) if chest.get("investigateResult", null) != null else ""
 	var known_trapped := result == "trapped"
 	var locked := typeof(chest.get("lock", null)) == TYPE_DICTIONARY and not bool(chest.get("unlocked", false))
@@ -28,6 +29,7 @@ static func build(chest: Dictionary, party: Array, engine: Dictionary, pending_a
 		root.add_child(UI.label(I18n.t("play.chestChooseHandler", {"action": _action_label(pending_action)}), 17, UI.GOLD))
 		var best: Button = null
 		var best_chance := -1
+		var aids := _aids_for_action(inventory, world, pending_action)
 		for member in party:
 			var able := int(member.get("hp", 0)) > 0 and member.get("injury", null) == null
 			var chance := _chance(member, engine, chest, pending_action) if able else 0
@@ -35,6 +37,17 @@ static func build(chest: Dictionary, party: Array, engine: Dictionary, pending_a
 			var button := UI.button("%s　%s %d%%" % [String(member.get("name", "?")), I18n.t("play.chestChance"), chance], func(): on_command.call({"type": _command_for(pending_action), "characterId": member_id}), Vector2(360, 40), 16)
 			button.disabled = not able
 			actions.add_child(button)
+			# Tools are alternatives to a specialist, not an invisible bonus. The normal handler remains first
+			# and focused; each carried aid exposes its own improved chance and is spent only when chosen.
+			for aid in aids:
+				var bonus := int(aid.get("bonus", 0))
+				var aided_chance := _chance(member, engine, chest, pending_action, bonus) if able else 0
+				var aid_name := Fmt.localized_catalog_name(world, String(aid.get("id", "")))
+				var aid_command := {"type": _command_for(pending_action), "characterId": member_id, "itemId": String(aid.get("id", ""))}
+				var aid_label := I18n.t("play.chestUseAid", {"item": aid_name, "chance": I18n.t("play.chestChance"), "rate": aided_chance})
+				var aid_button := UI.button(aid_label, func(): on_command.call(aid_command), Vector2(420, 34), 14)
+				aid_button.disabled = not able
+				actions.add_child(aid_button)
 			if able and chance > best_chance:
 				best_chance = chance
 				best = button
@@ -106,8 +119,23 @@ static func _difficulty(chest: Dictionary, action: String) -> int:
 	var source: Variant = chest.get("lock", {}) if action == "unlock" else chest.get("trap", {})
 	return int((source as Dictionary).get("difficulty", 0)) if typeof(source) == TYPE_DICTIONARY else 0
 
-static func _chance(member: Dictionary, engine: Dictionary, chest: Dictionary, action: String) -> int:
-	return Chests.success_chance(Exploration.attempt_skill(member, engine, action), _difficulty(chest, action), 55 if action == "investigate" else 45)
+static func _chance(member: Dictionary, engine: Dictionary, chest: Dictionary, action: String, bonus: int = 0) -> int:
+	return Chests.success_chance(Exploration.attempt_skill(member, engine, action) + bonus, _difficulty(chest, action), 55 if action == "investigate" else 45)
+
+static func _aids_for_action(inventory: Array, world: Dictionary, action: String) -> Array:
+	var found := []
+	for carried in inventory:
+		if int((carried as Dictionary).get("quantity", 0)) <= 0:
+			continue
+		var id := String((carried as Dictionary).get("id", ""))
+		for catalog in world.get("items", []):
+			if String((catalog as Dictionary).get("id", "")) != id:
+				continue
+			var aid: Variant = (catalog as Dictionary).get("explorationAid", null)
+			if typeof(aid) == TYPE_DICTIONARY and (aid as Dictionary).get("actions", []).has(action):
+				found.append({"id": id, "bonus": int((aid as Dictionary).get("bonus", 0))})
+			break
+	return found
 
 static func _note(result: String, locked: bool) -> String:
 	if result == "trapped": return I18n.t("play.chestTrappedNote")

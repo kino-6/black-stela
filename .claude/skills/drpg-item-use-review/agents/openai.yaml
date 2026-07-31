@@ -1,0 +1,4 @@
+interface:
+  display_name: "DRPG Item Use Review"
+  short_description: "Audit and improve controller-first item use"
+  default_prompt: "Use $drpg-item-use-review to improve carried-item use in this DRPG."

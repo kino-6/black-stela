@@ -59,6 +59,7 @@ var _loot_filter: String = "all"
 var _loot_pending: String = ""
 var _party_page: String = "status"
 var _party_item: String = ""
+var _party_item_target_id: String = ""
 var _party_technique_id: String = ""
 var _party_equipment_slot: String = "weapon"
 var _party_equipment_candidate: String = ""
@@ -112,6 +113,7 @@ func set_ui_state(ui: Dictionary) -> void:
 	if ui.has("party_page"): _party_page = String(ui["party_page"])
 	if ui.has("party_member_id"): _selected_id = String(ui["party_member_id"])
 	if ui.has("party_item"): _party_item = String(ui["party_item"])
+	if ui.has("party_item_target_id"): _party_item_target_id = String(ui["party_item_target_id"])
 	if ui.has("party_technique_id"): _party_technique_id = String(ui["party_technique_id"])
 	if ui.has("party_equipment_slot"): _party_equipment_slot = String(ui["party_equipment_slot"])
 	if ui.has("party_equipment_candidate"): _party_equipment_candidate = String(ui["party_equipment_candidate"])
@@ -215,6 +217,9 @@ func _dispatch_service_command(command: Dictionary) -> Array:
 				_party_equipment_candidate = ""
 				_rebuild()
 				break
+	if String(command.get("type", "")) == "use_item" and not events.is_empty():
+		_party_item_target_id = ""
+		_rebuild()
 	return events
 
 func selected_member() -> Dictionary:
@@ -508,6 +513,10 @@ func _back_from_party_equipment() -> bool:
 		_party_technique_id = ""
 		_rebuild()
 		return true
+	if (_party_page == "items" or _party_page == "valuables") and _party_item_target_id != "":
+		_party_item_target_id = ""
+		_rebuild()
+		return true
 	if _party_page != "equipment" or _party_equipment_candidate == "":
 		return false
 	_party_equipment_candidate = ""
@@ -584,11 +593,13 @@ func _service_ctx() -> Dictionary:
 		"loot_filter": _loot_filter,
 		"set_loot_filter": func(f): _loot_filter = String(f); _rebuild(),
 		"party_page": _party_page,
-		"set_party_page": func(page): _party_page = String(page); _party_technique_id = ""; _party_discard = false; _rebuild(),
+		"set_party_page": func(page): _party_page = String(page); _party_technique_id = ""; _party_item_target_id = ""; _party_discard = false; _rebuild(),
 		"party_technique_id": _party_technique_id,
 		"set_party_technique": func(id): _party_technique_id = String(id); _rebuild(),
 		"party_item": _party_item,
-		"set_party_item": func(key): _party_item = String(key); _party_discard = false; _rebuild(),
+		"set_party_item": func(key): _party_item = String(key); _party_item_target_id = ""; _party_discard = false; _rebuild(),
+		"party_item_target_id": _party_item_target_id,
+		"set_party_item_target": func(id): _party_item_target_id = String(id); _party_discard = false; _rebuild(),
 		"party_equipment_slot": _party_equipment_slot,
 		"set_party_equipment_slot": func(slot): _party_equipment_slot = String(slot); _party_equipment_candidate = ""; _rebuild(),
 		"party_equipment_candidate": _party_equipment_candidate,

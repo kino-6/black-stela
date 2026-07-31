@@ -463,15 +463,62 @@ static func _item_page(ctx: Dictionary, world: Dictionary, member: Dictionary, p
 			detail.add_child(UI.label(Fmt.format_inventory_effect(selected), 15, UI.INK))
 		detail.add_child(UI.gap(6))
 
-		var actions := UI.row()
 		var kind := String(selected.get("kind", ""))
 		# An escape charm is USED from the menu — its reachable home now the dungeon dock is key-driven and no
 		# longer lists it (playtest 2026-07-30: 脱出アイテムに触れない). Only in the dungeon; town has nothing to
 		# escape. It reuses the return-charm label the dock used to carry.
 		var can_use_escape := kind == "escape" and not in_town
-		if USABLE_KINDS.has(kind) or can_use_escape:
-			var use_label: String = I18n.t("play.useReturnCharm") if can_use_escape else I18n.t("partyMenu.useOn", {"name": String(member.get("name", ""))})
-			actions.add_child(UI.button(use_label, func(): ctx["dispatch"].call({"type": "use_item", "itemId": selected.get("id", ""), "targetCharacterId": member.get("id", "")}), Vector2(220, 40), 16))
+		if USABLE_KINDS.has(kind):
+			# Item → target → preview → confirmation. Looking at an item or selecting a recipient is safe;
+			# only this final command may spend inventory or advance exploration time.
+			var chosen_target_id: String = ctx.get("party_item_target_id", "")
+			var chosen_target: Dictionary = {}
+			for candidate in state.get("party", []):
+				if String(candidate.get("id", "")) == chosen_target_id:
+					chosen_target = candidate
+			detail.add_child(UI.label(I18n.t("partyMenu.itemChooseTarget"), 17, UI.GOLD))
+			var target_rows := UI.col(4)
+			for candidate in state.get("party", []):
+				var preview := _item_use_preview(selected, candidate, world)
+				var target_label := "%s　%s" % [I18n.t("partyMenu.useOn", {"name": String(candidate.get("name", ""))}), String(preview.get("short", ""))]
+				var target_button := UI.button(target_label, func(): ctx["set_party_item_target"].call(String(candidate.get("id", ""))), Vector2(430, 34), 15)
+				target_button.disabled = not bool(preview.get("eligible", false))
+				if String(candidate.get("id", "")) == chosen_target_id:
+					target_button.add_theme_color_override("font_color", UI.GOLD)
+				target_rows.add_child(target_button)
+			detail.add_child(UI.scroller(target_rows, Vector2(460, 230)))
+			if not chosen_target.is_empty():
+				var chosen_preview := _item_use_preview(selected, chosen_target, world)
+				if bool(chosen_preview.get("eligible", false)):
+					var preview_card := UI.col(4)
+					preview_card.add_child(UI.label(I18n.t("partyMenu.itemAfterUse"), 17, UI.GOLD))
+					for line in chosen_preview.get("lines", []):
+						preview_card.add_child(UI.label(String(line), 15, UI.INK))
+					preview_card.add_child(UI.label(I18n.t("partyMenu.itemQuantityAfter", {"before": int(selected.get("quantity", 1)), "after": maxi(0, int(selected.get("quantity", 1)) - 1)}), 15, UI.BAD))
+					if not in_town:
+						preview_card.add_child(UI.label(I18n.t("partyMenu.itemCostsExploreAction"), 14, UI.DIM))
+					var use_label := I18n.t("partyMenu.useOn", {"name": String(chosen_target.get("name", ""))})
+					preview_card.add_child(UI.button(use_label, func(): ctx["dispatch"].call({"type": "use_item", "itemId": selected.get("id", ""), "targetCharacterId": chosen_target.get("id", "")}), Vector2(250, 40), 16))
+					detail.add_child(UI.card(preview_card))
+		elif can_use_escape:
+			var escape_card := UI.col(4)
+			escape_card.add_child(UI.label(I18n.t("partyMenu.itemAfterUse"), 17, UI.GOLD))
+			escape_card.add_child(UI.label(I18n.t("partyMenu.itemReturnTown"), 15, UI.INK))
+			escape_card.add_child(UI.label(I18n.t("partyMenu.itemQuantityAfter", {"before": int(selected.get("quantity", 1)), "after": maxi(0, int(selected.get("quantity", 1)) - 1)}), 15, UI.BAD))
+			escape_card.add_child(UI.label(I18n.t("partyMenu.itemCostsExploreAction"), 14, UI.DIM))
+			escape_card.add_child(UI.button(I18n.t("play.useReturnCharm"), func(): ctx["dispatch"].call({"type": "use_item", "itemId": selected.get("id", ""), "targetCharacterId": ""}), Vector2(250, 40), 16))
+			detail.add_child(UI.card(escape_card))
+		elif kind == "escape":
+			detail.add_child(UI.label(I18n.t("partyMenu.itemDungeonOnly"), 15, UI.DIM))
+		elif kind == "utility":
+			var aid := _exploration_aid(world, String(selected.get("id", "")))
+			if not aid.is_empty():
+				detail.add_child(UI.label(I18n.t("partyMenu.itemUtilityUse", {"actions": _exploration_aid_label(aid.get("actions", [])), "bonus": int(aid.get("bonus", 0))}), 15, UI.INK))
+				detail.add_child(UI.label(I18n.t("partyMenu.itemUtilityHint"), 14, UI.DIM))
+		elif kind == "ward" or kind == "throwable" or kind == "scroll":
+			detail.add_child(UI.label(I18n.t("partyMenu.itemCombatOnly"), 15, UI.DIM))
+
+		var actions := UI.row()
 		if is_equipment:
 			var equip: Variant = Fmt.find_equipment(world, selected.get("id", ""))
 			var usable: bool = typeof(equip) == TYPE_DICTIONARY and Fmt.is_usable_by(equip, member)
@@ -497,7 +544,8 @@ static func _item_page(ctx: Dictionary, world: Dictionary, member: Dictionary, p
 			actions.add_child(db)
 		else:
 			detail.add_child(UI.label(I18n.t("partyMenu.protectedItem"), 15, UI.DIM))
-		detail.add_child(actions)
+		if actions.get_child_count() > 0:
+			detail.add_child(actions)
 	cols.add_child(detail)
 	return {"control": cols, "focus": focus}
 
@@ -536,6 +584,73 @@ static func _describe_consumable(item: Dictionary) -> String:
 			names.append(I18n.t("partyMenu.status.%s" % String(status)))
 		parts.append(I18n.t("partyMenu.cures", {"statuses": "・".join(PackedStringArray(names))}))
 	return " / ".join(PackedStringArray(parts)) if not parts.is_empty() else I18n.t("partyMenu.noDescription")
+
+# The UI preview deliberately mirrors ItemCommands' outside-combat eligibility and caps. It is a display
+# projection only; the canonical resolver refuses a no-benefit command again before changing state.
+static func _item_use_preview(item: Dictionary, target: Dictionary, world: Dictionary) -> Dictionary:
+	var lines := []
+	var kind := String(item.get("kind", ""))
+	if kind == "growth":
+		var grants: Dictionary = item.get("grants", {})
+		for entry in [["maxHp", "最大HP"], ["maxMp", "最大MP"], ["attack", "攻撃"], ["might", "筋力"], ["agility", "敏捷"], ["spirit", "精神"], ["wit", "知恵"], ["luck", "運"]]:
+			var key := String(entry[0])
+			var amount := int(grants.get(key, 0))
+			if amount == 0:
+				continue
+			var before := int(target.get(key, 0)) if key == "maxHp" or key == "maxMp" or key == "attack" else int((target.get("aptitude", {}) as Dictionary).get(key, 0))
+			lines.append("%s　%d → %d" % [String(entry[1]), before, before + amount])
+		if int(grants.get("xp", 0)) != 0:
+			var xp_before := int(target.get("xp", 0))
+			var grown := target.duplicate(true)
+			grown["xp"] = xp_before + int(grants["xp"])
+			var leveled: Dictionary = Leveling.apply_level_ups(grown)
+			var level_after := int((leveled.get("character", {}) as Dictionary).get("level", target.get("level", 1)))
+			lines.append("経験値　%d → %d" % [xp_before, xp_before + int(grants["xp"])])
+			if level_after != int(target.get("level", 1)):
+				lines.append("レベル　%d → %d" % [int(target.get("level", 1)), level_after])
+		return {"eligible": true, "short": I18n.t("partyMenu.itemGrowth"), "lines": lines}
+
+	var stats := CharacterStats.effective(target, world)
+	var eligible := false
+	if int(item.get("healAmount", 0)) > 0:
+		var hp_before := int(target.get("hp", 0))
+		var hp_after := mini(int(stats.get("maxHp", target.get("maxHp", 0))), hp_before + int(item["healAmount"]))
+		if hp_after > hp_before:
+			eligible = true
+			lines.append("HP　%d → %d" % [hp_before, hp_after])
+	if int(item.get("restoreMp", 0)) > 0:
+		var mp_before := int(target.get("mp", 0))
+		var mp_after := mini(int(stats.get("maxMp", target.get("maxMp", 0))), mp_before + int(item["restoreMp"]))
+		if mp_after > mp_before:
+			eligible = true
+			lines.append("MP　%d → %d" % [mp_before, mp_after])
+	var cures: Variant = item.get("curesStatuses", [])
+	var cured_names := []
+	if typeof(cures) == TYPE_ARRAY:
+		for status in target.get("status", []):
+			if (cures as Array).has(status):
+				eligible = true
+				cured_names.append(I18n.t("partyMenu.status.%s" % String(status)))
+	if not cured_names.is_empty():
+		lines.append(I18n.t("partyMenu.itemCured", {"statuses": "・".join(PackedStringArray(cured_names))}))
+	var short := I18n.t("partyMenu.itemCanUse") if eligible else I18n.t("partyMenu.itemNoEffect")
+	return {"eligible": eligible, "short": short, "lines": lines}
+
+static func _exploration_aid(world: Dictionary, item_id: String) -> Dictionary:
+	for catalog in world.get("items", []):
+		if String(catalog.get("id", "")) == item_id and typeof(catalog.get("explorationAid", null)) == TYPE_DICTIONARY:
+			return catalog.get("explorationAid", {})
+	return {}
+
+static func _exploration_aid_label(actions: Variant) -> String:
+	var names := []
+	for action in (actions if typeof(actions) == TYPE_ARRAY else []):
+		match String(action):
+			"unlock": names.append("解錠")
+			"disarm": names.append("罠の解除")
+			"detectSecret": names.append("隠し通路の発見")
+			_: names.append("探索")
+	return "・".join(PackedStringArray(names))
 
 # --- 呪文/特技 page -------------------------------------------------------------------------------
 # Recovery and cure arts have a deterministic exploration meaning, so they are usable from this menu.
