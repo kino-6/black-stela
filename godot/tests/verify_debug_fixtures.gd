@@ -51,6 +51,21 @@ func _initialize() -> void:
 	scene = String(Fixtures.load_into(run, "verdant_chamber_cleared"))
 	_check((run.state.get("floorClaimedTreasures", []) as Array).size() > 0, "verdant_chamber_cleared calms the chamber landmark (claimed)")
 
+	# IMP-062: the deep-floor review starts stand a LEVELLED party on floor N of the CURRENT world with the
+	# whole floor revealed on the map — the mid/late-game states a reviewer otherwise never reaches. Without
+	# these, floor_5..floor_8 silently fell back to B1F.
+	run.world_id = "default"
+	run.reset()
+	scene = String(Fixtures.load_into(run, "floor_5"))
+	var m5: Dictionary = run.state.get("map", {})
+	_check(scene.ends_with("dungeon.tscn") and String(m5.get("floorId", "")) == "dungeon.b5f", "floor_5 lands on default B5F (not the B1F fallback)")
+	_check(int((run.state.get("party", [])[0] as Dictionary).get("level", 1)) > 1, "floor_5 levels the review party past 1")
+	_check((m5.get("visitedCells", []) as Array).size() > 10, "floor_5 reveals the whole floor on the map (%d cells)" % (m5.get("visitedCells", []) as Array).size())
+	run.world_id = "verdant"
+	run.reset()
+	scene = String(Fixtures.load_into(run, "floor_2"))
+	_check(scene.ends_with("dungeon.tscn") and String(run.state.get("map", {}).get("floorId", "")) == "dungeon.verdant.g2f", "floor_2 is world-parametrized (Verdant G2F when the world is Verdant)")
+
 	print("[fixtures] %s (%d failures)" % ["PASS" if _fail == 0 else "FAIL", _fail])
 	quit(_fail)
 

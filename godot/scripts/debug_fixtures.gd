@@ -6,6 +6,8 @@ extends RefCounted
 ##
 ## The fixtures reuse the parity traces the oracle already agreed with, so a jump lands on a real state.
 
+const Leveling := preload("res://scripts/rules/leveling.gd")
+
 const TRACES := {
 	"ready": "expedition",
 	"return_ready": "b1f-return",      # party at the B1F return stair — return-loop / no-crash review (#44)
@@ -13,9 +15,6 @@ const TRACES := {
 	"combat_victory": "b1f-combat-victory",  # mid-fight vs the ash slime — command flow / victory review (#46)
 	"loot_delta": "b1f-return",        # the return stair + a gained item on top of the descent supply (#3)
 	"shop_description": "economy",      # a town with a full purse — the market shows what a piece DOES (#46)
-	"floor_2": "b2f-hazard",
-	"floor_3": "b3f-gather",
-	"floor_4": "b4f-spinner",
 }
 
 # IMP-057: constructed (non-trace) fixtures that land a reviewer at a Verdant 玄室 — one facing its CLOSED
@@ -28,6 +27,8 @@ const VERDANT_CHAMBER_FLOOR := "dungeon.verdant.g1f"
 static func names() -> Array:
 	var all := TRACES.keys()
 	all.append_array(VERDANT_CHAMBER_FIXTURES)
+	for n in range(2, 9):
+		all.append("floor_%d" % n)   # deep-floor review starts (IMP-062)
 	return all
 
 ## Load `name` into the run and return the scene to show ("" if the run is unavailable). The run is
@@ -38,6 +39,8 @@ static func load_into(run: Object, name: String) -> String:
 		return ""
 	if name in VERDANT_CHAMBER_FIXTURES:
 		return _load_verdant_chamber(run, name)
+	if name.begins_with("floor_"):
+		return _load_deep_floor(run, name)
 	run.ensure_loaded()
 	var trace: String = TRACES.get(name, "b1f-exploration")
 	var path := "res://data/traces/%s.json" % trace
@@ -111,6 +114,84 @@ static func _load_verdant_chamber(run: Object, name: String) -> String:
 		state["floorClaimedTreasures"] = claimed
 	run.state = state
 	return "res://scenes/dungeon.tscn"
+
+## floor_N (N=2..8): stand a DEPTH-APPROPRIATE party on floor N of the CURRENT world so a reviewer can
+## actually see mid/late floor geometry, the full map (M), and encounters — not just B1F (IMP-062, the user's
+## "中盤・終盤のセーブがないので1Fしか確認できてない"). World-parametrized: pick the world in the debug panel
+## first (default or verdant), then the floor. The generic review party is levelled via the ported Leveling so
+## it survives the walk-through instead of being one-shot at depth. Never mounted in normal play.
+static func _load_deep_floor(run: Object, name: String) -> String:
+	var n := int(name.trim_prefix("floor_"))
+	if n < 1:
+		return ""
+	run.ensure_loaded()
+	var dungeons: Array = run.world.get("dungeons", [])
+	if n - 1 < 0 or n - 1 >= dungeons.size():
+		return ""
+	var dungeon: Dictionary = dungeons[n - 1]
+	var landing := _floor_landing(dungeon)
+	if landing.is_empty():
+		return ""
+	var level := clampi(n + 2, 4, 12)   # a rough depth curve: floor 2 → Lv4 … floor 8 → Lv10
+	var state: Dictionary = (run.state as Dictionary).duplicate(true)
+	state["phase"] = "dungeon"
+	state["combat"] = null
+	var party := []
+	for m in state.get("party", []):
+		var lm: Dictionary = (m as Dictionary).duplicate(true)
+		lm["xp"] = Leveling.xp_for_level(level)
+		lm = Leveling.apply_level_ups(lm)["character"]
+		lm["hp"] = int(lm.get("maxHp", 1))   # walk in at full so a review isn't cut short by attrition
+		lm["mp"] = int(lm.get("maxMp", 0))
+		party.append(lm)
+	state["party"] = party
+	state["position"] = {"cellId": landing["cellId"], "roomId": landing["roomId"], "facing": landing["facing"]}
+	# REVEAL the whole floor on the map — the review needs to see the entire layout at once (the user's
+	# "Map含め評価"), not a 1%-explored fog. The party still stands at the landing in the first-person view;
+	# this only fills the automap's visited sets so the full map (M) shows the complete floor.
+	var all_cells := []
+	var all_rooms := {}
+	for c in (dungeon.get("grid", {}) as Dictionary).get("cells", []):
+		all_cells.append(String((c as Dictionary).get("id", "")))
+		var rid := String((c as Dictionary).get("roomId", ""))
+		if rid != "":
+			all_rooms[rid] = true
+	state["map"] = {
+		"floorId": String(dungeon.get("id", "")),
+		"currentCellId": landing["cellId"],
+		"currentRoomId": landing["roomId"],
+		"currentFacing": landing["facing"],
+		"visitedCells": all_cells,
+		"visitedRooms": all_rooms.keys(),
+		"knownExits": {},
+	}
+	run.state = state
+	return "res://scenes/dungeon.tscn"
+
+## The floor's landing: its `.001` cell (else the first cell), faced toward an actual opening so the
+## first-person view isn't a blank wall (the reviewer can still turn to inspect every side).
+static func _floor_landing(dungeon: Dictionary) -> Dictionary:
+	var cells: Array = (dungeon.get("grid", {}) as Dictionary).get("cells", [])
+	var chosen: Dictionary = {}
+	for c in cells:
+		if String((c as Dictionary).get("id", "")).ends_with(".001"):
+			chosen = c
+			break
+	if chosen.is_empty() and not cells.is_empty():
+		chosen = cells[0]
+	if chosen.is_empty():
+		return {}
+	var facing := "south"
+	for d in ["south", "east", "north", "west"]:
+		if _is_passage((chosen.get("edges", {}) as Dictionary).get(d, null)):
+			facing = d
+			break
+	return {"cellId": String(chosen.get("id", "")), "roomId": String(chosen.get("roomId", "")), "facing": facing}
+
+static func _is_passage(edge: Variant) -> bool:
+	if typeof(edge) != TYPE_DICTIONARY:
+		return false
+	return String((edge as Dictionary).get("kind", "")) in ["open", "door", "one_way", "stairs", "shortcut", "secret"]
 
 ## The committed G1F approach: cell c9_10 facing north into the centre guardian chamber (same framing as
 ## capture_verdant_chamber_visual.gd), plus the chamber room + door key derived from that cell's north edge.

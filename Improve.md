@@ -673,16 +673,40 @@ cells, but there is no quick way to put a LEVELLED party on B5F/B8F or a deep Ve
 floor, so deeper floor layouts, maps, encounter balance, and chamber content are
 almost never seen in the real build. Every "green gate" so far proves B1F-ish reach.
 
+### Implementation Slices — DONE (2026-07-31)
+
+- [x] `debug_fixtures.gd`: `floor_2..floor_8` are now real, **world-parametrized**,
+  **levelled** deep-floor starts (were silently falling back to B1F for floor_5-8).
+  Each stands the generic review party — levelled to a depth curve via the ported
+  `Leveling.apply_level_ups` — on floor N of the CURRENTLY-selected world (pick
+  default/verdant in the panel first), and REVEALS the whole floor on the automap
+  so the M view shows the complete layout, not a 1% fog. Reuses `Run`/dungeon.tscn
+  like normal play. Locked by `verify_debug_fixtures.gd` (B5F/Verdant-G2F, levelled,
+  full-map).
+- [x] `capture_deep_floors.gd`: sweeps default B5F/B8F + Verdant g2f/g3f, first-person
+  AND full map (M). Ran it — the leveled party, floor geometry, and full maps all
+  render correctly for both worlds.
+- [x] Deep-floor sweep filed its finding as **IMP-063** (below).
+
+## IMP-063: Deep floors are visually indistinguishable from B1F
+
+**Category:** Dungeon art / descent identity
+
+**Evidence:** The 2026-07-31 deep-floor sweep (now reachable via IMP-062) shows
+default **B8F** ("灰門の前庭") rendering the SAME ash-stone walls/floor as B1F — no
+escalating visual identity as the party nears the black stela's root eight floors
+down, which the world's own fiction ("八層の底で、黒い碑が根を張っている") sets up.
+Both worlds tint every floor from ONE per-world palette + texture pack, so B1F and
+B8F read identically apart from the map name. The descent has no visual arc.
+
 ### Implementation Slices
 
-- [ ] Add named QA/debug starts (or seed saves) that stand a level-appropriate party
-  on representative MID and LATE floors of both worlds (e.g. default B5F & B8F,
-  Verdant g2f & g3f), reachable in the debug build and covered by the played-build
-  gate — reusing the same `Run`/scenes as normal play (per IMP-046's contract).
-- [ ] Include the full-map (M) view for those floors in the visual review set, so
-  deep-floor map/geometry regressions are actually looked at, not assumed.
-- [ ] Once reachable, do a deep-floor screenshot sweep (like the 2026-07-31 B1F one)
-  and file what it finds.
+- [ ] Give the descent a per-act (or per-floor-band) visual shift — palette/texture/
+  lighting that darkens/corrupts toward the deepest floors — authored in world data
+  (a `palette` per floor band, or an act tint), never a code branch. Keep it data so
+  a new scenario sets its own arc.
+- [ ] Verify at B1F / mid / B8F that the floors read as a progression, using the
+  IMP-062 deep-floor sweep.
 
 ## Archive
 
