@@ -860,7 +860,7 @@ func _show_chest_result(events: Array) -> void:
 	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	layer.add_child(center)
 	var built: Dictionary = ChestPanel.build_opened_result(
-		opened, events, func(): _dismiss_chest_result(), _texture(_asset("dungeon/treasure-chest-open.png"))
+		opened, events, func(): _dismiss_chest_result(), _texture(_asset("dungeon/treasure-chest-open.png")), _world
 	)
 	center.add_child(built["control"])
 	add_child(layer)

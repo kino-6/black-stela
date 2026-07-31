@@ -77,7 +77,7 @@ static func build(chest: Dictionary, party: Array, inventory: Array, world: Dict
 
 ## The opening result remains in the centre of the stage long enough to be read. It is not a second chest
 ## interaction: the only command is to acknowledge the clearly shown reward and return to exploration.
-static func build_opened_result(chest: Dictionary, events: Array, on_dismiss: Callable, opened_tex: Texture2D = null) -> Dictionary:
+static func build_opened_result(chest: Dictionary, events: Array, on_dismiss: Callable, opened_tex: Texture2D = null, world: Dictionary = {}) -> Dictionary:
 	var root := UI.col(10)
 	root.add_child(UI.label(I18n.t("play.chestHeading"), 20, UI.GOLD))
 	if opened_tex != null:
@@ -95,7 +95,7 @@ static func build_opened_result(chest: Dictionary, events: Array, on_dismiss: Ca
 	else:
 		root.add_child(UI.label(I18n.t("play.chestLootHeading"), 17, UI.GOLD))
 		for gained in loot:
-			root.add_child(UI.label("・%s" % _loot_name(gained), 18, UI.INK))
+			root.add_child(UI.label("・%s" % _loot_name(gained, world), 18, UI.INK))
 	var dismiss := UI.button(I18n.t("play.chestResume"), on_dismiss, Vector2(300, 42), 17)
 	root.add_child(dismiss)
 	return {"control": UI.card(root, UI.GOLD), "focus": dismiss}
@@ -161,8 +161,11 @@ static func _loot_events(events: Array) -> Array:
 			loot.append(event)
 	return loot
 
-static func _loot_name(gained: Dictionary) -> String:
-	var item := String(gained.get("itemName", ""))
+static func _loot_name(gained: Dictionary, world: Dictionary = {}) -> String:
+	# Localize by item id (the dungeon log already does) so the reward never leaks the base English name
+	# like "Sap Draught" (playtest 2026-07-31 IMP-060; same class as the combat 道具 leak IMP-055).
+	var item_id := String(gained.get("itemId", ""))
+	var item := Fmt.localized_catalog_name(world, item_id) if item_id != "" and not world.is_empty() else String(gained.get("itemName", ""))
 	if gained.get("affix", null) != null:
 		item = "%s %s" % [I18n.t("affix.%s" % String(gained.get("affix", ""))), item]
 	if gained.get("plus", null) != null:

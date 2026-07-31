@@ -622,6 +622,68 @@ hurt, before/after, cost, affordability, yes/no). Listing a healthy roster here
 would contradict the oracle we are keeping as the standard. The empty area is the
 shared town-service frame, not missing content. No change.
 
+## 2026-07-31 — playtest notes (user, native Godot `c4fd7fa`)
+
+Three observations from live play; recorded now, to fix next.
+
+## IMP-060: Chest reward panel leaks the English item name ("Sap Draught")
+
+**Category:** Japanese-text gate / native dungeon UI — **confirmed player-facing bug**
+
+**Evidence:** Screenshot (2026-07-31, 翠の間2): the opened-chest 獲得 line reads
+`・Sap Draught ×1` while the bottom-left dungeon log correctly says
+`樹液の水薬 を 1 個見つけた。`. `chest_panel.gd:_loot_name` builds the label from
+`gained.itemName` (the item's BASE English name), not the localized catalog name —
+the SAME class of leak as IMP-055 (combat 道具 menu), on a different screen.
+
+### Implementation Slices — DONE (2026-07-31)
+
+- [x] `chest_panel.gd:_loot_name` now resolves via `Fmt.localized_catalog_name(world,
+  itemId)` (world threaded through `build_opened_result`), falling back to `itemName`
+  only when no id/world is present. The reward reads 樹液の水薬, not "Sap Draught".
+- [x] `tests/verify_chest_loot_label.gd` locks it (proven to FAIL on the pre-fix code,
+  PASS after) and is wired into `gate:migration`.
+
+## IMP-061: Chest trap gives no type and no legible outcome (and maybe no bite)
+
+**Category:** Dungeon feedback / trap design
+
+**Evidence:** Same screenshot — the opened chest says only
+`罠が作動したが、宝箱を開けた。`. It never NAMES the trap (needle / poison / gas /
+…), so the player cannot tell what sprang, what it did, or whether it cost anything.
+The party shows one wounded member (ガルト HP 7/18) but it is unclear if that came
+from the trap or a prior fight — i.e. the trap may apply no visible penalty at all.
+
+### Implementation Slices
+
+- [ ] Name the trap kind and its effect in the sprung-trap line (e.g. "毒針の罠が
+  作動——ガルトに N ダメージ / 毒"), so a triggered trap reads as a consequence.
+- [ ] Confirm a sprung trap actually applies its authored penalty (damage/status)
+  and that the message reflects it; if trapped-open currently costs nothing, that is
+  a rules gap, not just copy. Cross-check `chests.gd` / the React chest rules.
+
+## IMP-062: No mid/late-game save or QA start — only B1F is ever reviewed
+
+**Category:** QA infrastructure / played-build coverage — **process gap the user raised**
+
+**Evidence:** User (2026-07-31): "中盤・終盤のセーブがないので正直1Fくらいしか
+確認できてない。Map含め評価できている？その環境構築できている？" Honest answer:
+**no** — the debug starts (IMP-046) and fixtures stand the party on B1F/authored
+cells, but there is no quick way to put a LEVELLED party on B5F/B8F or a deep Verdant
+floor, so deeper floor layouts, maps, encounter balance, and chamber content are
+almost never seen in the real build. Every "green gate" so far proves B1F-ish reach.
+
+### Implementation Slices
+
+- [ ] Add named QA/debug starts (or seed saves) that stand a level-appropriate party
+  on representative MID and LATE floors of both worlds (e.g. default B5F & B8F,
+  Verdant g2f & g3f), reachable in the debug build and covered by the played-build
+  gate — reusing the same `Run`/scenes as normal play (per IMP-046's contract).
+- [ ] Include the full-map (M) view for those floors in the visual review set, so
+  deep-floor map/geometry regressions are actually looked at, not assumed.
+- [ ] Once reachable, do a deep-floor screenshot sweep (like the 2026-07-31 B1F one)
+  and file what it finds.
+
 ## Archive
 
 - `IMP-001` to `IMP-008`:
