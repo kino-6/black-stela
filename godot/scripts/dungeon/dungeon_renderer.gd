@@ -68,9 +68,9 @@ static func _build_geometry(parent: Node, world: Dictionary, state: Dictionary, 
 		ceil_mat.emission_enabled = true
 		ceil_mat.emission = ceil_col
 		ceil_mat.emission_energy_multiplier = 0.2
-	var chamber_floor_mat := _textured_mat(block["floor"], Color(String(pal.get("chamberFloor", "9a8050"))))
 	var chamber_wall_mat := _textured_mat(block["wall"], Color(String(pal.get("chamberWall", "a18e62"))))
 	var chamber_accent := Color(String(pal.get("chamberAccent", "c9a765")))
+	var chamber_seal_path := _asset(world, run, "dungeon/chamber-floor-seal.png")
 	# `door` remains a walkable edge in the rules. Its visual is a rooted, opened threshold: enough to
 	# announce a room boundary without pretending that the player is blocked by a collision the rules do
 	# not have. The scenario pack owns the texture; the shared renderer only places it.
@@ -156,7 +156,7 @@ static func _build_geometry(parent: Node, world: Dictionary, state: Dictionary, 
 						if String((ch as Dictionary).get("roomId", "")) == rid:
 							cleared = true
 							break
-				_add_chamber_landmarks(parent, base, chamber_floor_mat, chamber_wall_mat, chamber_accent, wall_height, cleared)
+				_add_chamber_landmarks(parent, base, chamber_wall_mat, chamber_accent, wall_height, cleared, chamber_seal_path)
 			# The pack ships stair-up/stair-down art; draw it so a stair cell is VISIBLE in the first-person
 			# view instead of a plain dead-end the 階段を使う command only hints at (playtest: asset delivered,
 			# never rendered).
@@ -256,37 +256,14 @@ static func _add_wall(parent: Node, mat: Material, base: Vector3, dir: String, h
 		"west": m.rotation.y = PI / 2
 	parent.add_child(m)
 
-static func _add_chamber_landmarks(parent: Node, base: Vector3, floor_mat: Material, wall_mat: Material, accent: Color, height: float, cleared: bool = false) -> void:
-	# A CLEARED 玄室 dims to a spent grey — the sap-amber ring goes cold once its guardian is beaten, so a
-	# room already dealt with reads differently from one still holding a fight (playtest #10A).
-	if cleared:
-		accent = accent.darkened(0.55)
-	# The old treatment was a thin coloured coin plus four full-height columns. Because geometry for every
-	# room is visible through open hallways, it read as a forest of green props rather than one special
-	# place. A low, constructed floor treatment keeps sightlines open and says "arena / reward room" before
-	# the guardian or chest ever appears (the chest itself must remain a post-victory state).
-	var foundation := CylinderMesh.new()
-	foundation.top_radius = 1.14
-	foundation.bottom_radius = 1.18
-	foundation.height = 0.055
-	_add_mesh(parent, foundation, wall_mat, base + Vector3(0, 0.028, 0))
-
-	# Two flat layers make the accent a SET-IN ring, not a freestanding green disc. A little emission keeps
-	# the sap-amber readable under Verdant's canopy light without becoming a glowing pickup or a treasure.
-	var inlay := CylinderMesh.new()
-	inlay.top_radius = 0.93
-	inlay.bottom_radius = 0.93
-	inlay.height = 0.024
-	_add_mesh(parent, inlay, _emissive_mat(accent, 0.0 if cleared else 0.06), base + Vector3(0, 0.068, 0))
-	var centre := CylinderMesh.new()
-	centre.top_radius = 0.72
-	centre.bottom_radius = 0.72
-	centre.height = 0.028
-	_add_mesh(parent, centre, floor_mat, base + Vector3(0, 0.083, 0))
-	# (No central emissive seal — it read as a "謎の黄色の点" floating in the room, playtest.)
+static func _add_chamber_landmarks(parent: Node, base: Vector3, wall_mat: Material, accent: Color, height: float, cleared: bool = false, seal_path: String = "") -> void:
+	# The old three-cylinder treatment made an oversized, luminous "magic circle" that floated at the bottom
+	# of the first-person view. A chamber now has one small, textured stone seal set into its floor: material
+	# detail and shallow relief sell an authored architectural place without a portal-like glow.
+	_add_chamber_floor_seal(parent, base, seal_path, cleared)
 	# The raised ceiling is part of the room's promise, not empty vertical space. Its subdued root-crown
-	# echoes the floor seal overhead, so an approaching player reads the chamber before the floor mark is
-	# underfoot. It is architectural (flat to the ceiling), never a floating treasure prop.
+	# echoes the chamber's stonework overhead, so an approaching player reads the room before the floor mark
+	# is underfoot. It is architectural (flat to the ceiling), never a floating treasure prop.
 	var crown := CylinderMesh.new()
 	crown.top_radius = 0.98
 	crown.bottom_radius = 0.98
@@ -311,6 +288,30 @@ static func _add_chamber_landmarks(parent: Node, base: Vector3, floor_mat: Mater
 		cap.bottom_radius = 0.13
 		cap.height = 0.035
 		_add_mesh(parent, cap, _emissive_mat(accent.darkened(0.18), 0.04), base + offset + Vector3(0, cairn.height + cap.height / 2.0, 0))
+
+static func _add_chamber_floor_seal(parent: Node, base: Vector3, seal_path: String, cleared: bool) -> void:
+	if seal_path == "":
+		return
+	# Use the shared loader: an exported build has an imported Texture2D, while a local freshly staged
+	# asset may still need the raw-PNG fallback. Checking ResourceLoader here made the seal disappear locally.
+	var seal: Texture2D = _texture(seal_path)
+	if seal == null:
+		return
+	var mat := StandardMaterial3D.new()
+	mat.albedo_texture = seal
+	mat.albedo_color = Color(0.62, 0.62, 0.62, 0.60 if cleared else 0.88)
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	mat.roughness = 1.0
+	var decal := MeshInstance3D.new()
+	var plane := PlaneMesh.new()
+	# Stay inside one cell and almost flush with the ordinary floor: this is an inlaid construction detail,
+	# not a raised ritual platform or a floor-sized portal.
+	plane.size = Vector2(CELL * 0.72, CELL * 0.72)
+	decal.mesh = plane
+	decal.material_override = mat
+	decal.position = base + Vector3(0, 0.012, 0)
+	parent.add_child(decal)
 
 static func _add_door(parent: Node, door_mat: Material, frame_mat: Material, _accent: Color, base: Vector3, dir: String, opened: bool = true) -> void:
 	# A door edge is still traversable by the rules, so draw the two living leaves already pushed aside.
