@@ -2669,7 +2669,7 @@
         "play.chestUnlock",
         "play.chestUncertainNote"
       ],
-      "notes": "An unresolved chest HOLDS the cell (Wizardry prompt model): while closed, its panel owns the command region. It shows only what the party can SEE — closed, a trap found, 'cannot tell', or no trap. A risky operation opens a formation-order handler list with visible success rates and initial focus on its best standing member; after a found trap, focus moves straight to 罠を外す. Once opened, the canonical chest state remains for the map/save, but the panel immediately clears and exploration continues without a second confirm.",
+      "notes": "An unresolved chest HOLDS the cell (Wizardry prompt model): while closed, its panel owns the command region. It shows only what the party can SEE — closed, a trap found, 'cannot tell', or no trap. A risky operation opens a formation-order handler list with visible success rates and initial focus on its best standing member; after a found trap, focus moves straight to 罠を外す. A successful disarm or lockpick opens the chest in the same field action. Its opened art and acquired treasure stay centred until one focused 探索へ戻る acknowledgement; only then does exploration resume.",
       "states": [
         {
           "uiState": {
@@ -2705,6 +2705,12 @@
             "chest": true,
             "chest_locked": true,
             "chest_pending_action": "unlock"
+          }
+        },
+        {
+          "uiState": {
+            "chest": true,
+            "chest_opened": true
           }
         }
       ]

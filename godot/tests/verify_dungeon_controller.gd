@@ -101,12 +101,21 @@ func _initialize() -> void:
 		await process_frame
 	chest_focus = get_root().get_viewport().gui_get_focus_owner()
 	_check(chest_focus is Button and (chest_focus as Button).text == "罠を外す", "found trap focuses 罠を外す for Confirm")
-	# An opened chest is history, not a second event. It never retakes focus or asks the player to dismiss it.
+	# Opening is an outcome, not another chest command: show the opened art and the gained item in the centre,
+	# focus its single acknowledgement, then give input back to the maze only after Confirm/Cancel.
 	d.call("set_ui_state", {"chest": true, "chest_opened": true})
 	for i in 3:
 		await process_frame
 	_check((d.call("current_chest") as Dictionary).is_empty(), "an opened chest no longer raises a panel or takes focus")
-	_check(not _valid(d.get("_chest_overlay")), "opened chest leaves the dungeon controls immediately usable")
+	_check(_valid(d.get("_chest_overlay")), "opened chest holds a centred reward result instead of dropping it into the log")
+	chest_focus = get_root().get_viewport().gui_get_focus_owner()
+	_check(chest_focus is Button and (chest_focus as Button).text == "探索へ戻る", "opened reward focuses 探索へ戻る")
+	_check(_has_text(d.get("_chest_overlay"), "灰木の杖"), "opened result names the acquired treasure")
+	if chest_focus is Button:
+		(chest_focus as Button).emit_signal("pressed")
+	for i in 2:
+		await process_frame
+	_check(not _valid(d.get("_chest_overlay")), "Confirm on the reward acknowledgement restores dungeon input")
 	_check(String(d.call("_event_line", {"type": "chest_opened"})) == "", "opened chest does not overwrite its loot message")
 
 	# party-menu Esc (playtest) — the 隊列 overlay must close on Cancel, not only via its 閉じる button.
@@ -214,6 +223,16 @@ func _button_with_text(node: Node, text: String) -> Button:
 		if found != null:
 			return found
 	return null
+
+func _has_text(node: Node, fragment: String) -> bool:
+	if node is Label and (node as Label).text.contains(fragment):
+		return true
+	if node is Button and (node as Button).text.contains(fragment):
+		return true
+	for child in node.get_children():
+		if _has_text(child, fragment):
+			return true
+	return false
 
 func _check(ok: bool, label: String) -> void:
 	if ok:

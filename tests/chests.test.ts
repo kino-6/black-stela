@@ -180,6 +180,26 @@ describe("IMP-029 integration (default world)", () => {
     const again = resolveCommand(opened.state, defaultWorld, { type: "open_chest" });
     expect(again.events).toContainEqual({ type: "command_blocked_chest", reason: "already_open" });
     expect(again.state.inventory.length).toBe(1); // still one — no duplicate
+	});
+
+  it("opens and grants the reward as part of a successful disarm, with no redundant open command", () => {
+    const won = chamberVictoryState();
+    const specialist = { ...won.party[0], classId: "thief" as const, level: 20 };
+    // This covers the common trapped-but-unlocked chest flow. A separate real lock still requires the
+    // lockpick step before it can open.
+    const primed: GameState = {
+      ...won,
+      party: [specialist],
+      chests: (won.chests ?? []).map((chest) => ({ ...chest, lock: null, unlocked: true }))
+    };
+
+    const disarmed = resolveCommand(primed, defaultWorld, { type: "disarm_chest", characterId: specialist.id });
+    expect(disarmed.events).toContainEqual(expect.objectContaining({ type: "chest_disarmed", success: true }));
+    expect(disarmed.events).toContainEqual(expect.objectContaining({ type: "inventory_item_gained", source: "treasure" }));
+    expect(disarmed.events).toContainEqual({ type: "chest_opened" });
+    expect((disarmed.state.chests ?? []).find((chest) => chest.cellId === CHAMBER_CELL)?.phase).toBe("opened");
+    expect(disarmed.state.floorClaimedTreasures).toContain(CHAMBER_ROOM);
+    expect(disarmed.state.turn).toBe(primed.turn + 1);
   });
 
   it("chest state persists while the party is on the floor (leave and it is still there)", () => {

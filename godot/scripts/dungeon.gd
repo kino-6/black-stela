@@ -51,6 +51,9 @@ var _full_map: Control = null
 var _party_menu: Control = null
 var _config_overlay: Control = null
 var _chest_overlay: Control = null
+# The opened chest stays in canonical state/map history. This transient value only holds its result on
+# screen until the player has read the acquired item.
+var _chest_result: Dictionary = {}
 var _party_member_id: String = ""
 var _party_page: String = "status"
 var _party_item: String = ""
@@ -220,6 +223,13 @@ func _input(event: InputEvent) -> void:
 			_toggle_party_menu()
 			get_viewport().set_input_as_handled()
 		return
+	# The opening result remains modal: Confirm reaches its focused 「探索へ戻る」 command, Cancel accepts
+	# it too, and no maze input leaks past the central result surface.
+	if not _chest_result.is_empty():
+		if event.is_action_pressed("cancel"):
+			_dismiss_chest_result()
+			get_viewport().set_input_as_handled()
+		return
 	# A chest HOLDS the cell (Wizardry prompt): while its panel is up the party can neither walk NOR turn.
 	# The arrows navigate the chest's own 調べる/罠を外す/開ける/立ち去る buttons, 決定 fires the focused one
 	# (both handled by the panel's focus ring — we consume nothing, so the keys fall through to it), and
@@ -262,7 +272,7 @@ func _input(event: InputEvent) -> void:
 # stop condition (a fight / chest / open overlay ends the repeat) and the move callback; it stays the sole
 # command dispatcher.
 func _process(delta: float) -> void:
-	var blocked: bool = _busy or (_full_map and is_instance_valid(_full_map)) or (_party_menu and is_instance_valid(_party_menu)) \
+	var blocked: bool = _busy or not _chest_result.is_empty() or (_full_map and is_instance_valid(_full_map)) or (_party_menu and is_instance_valid(_party_menu)) \
 			or String(_state.get("phase", "")) != "dungeon" or not current_chest().is_empty()
 	_hold.tick(delta, blocked, _do_move)
 
@@ -313,9 +323,17 @@ func set_ui_state(ui: Dictionary) -> void:
 				"lock": {"difficulty": 8} if bool(ui.get("chest_locked", false)) else null,
 				"unlockAttempted": false, "unlocked": not bool(ui.get("chest_locked", false))
 			}]
+			_chest_result = {}
+			if opened:
+				_chest_result = {
+					"chest": (_state["chests"] as Array)[0],
+					"events": [{"type": "inventory_item_gained", "itemName": "灰木の杖", "quantity": 1, "source": "treasure"}, {"type": "chest_opened"}]
+				}
 			_chest_pending_action = String(ui.get("chest_pending_action", ""))
 			_left_chest_cell = ""
 			_rebuild_dock()
+			if opened:
+				_show_chest_result(_chest_result.get("events", []))
 	# The dock is contextual, so its states are PLACES. Each of these stands the party in a real room of
 	# the authored floor — a stair, a gated stair, a way home — rather than faking a button into the row.
 	if bool(ui.get("at_stairs", false)):
@@ -464,7 +482,7 @@ func _rebuild_dock() -> void:
 	var chest: Dictionary = current_chest()
 	if not chest.is_empty():
 		_show_chest_overlay(chest)
-	else:
+	elif _chest_result.is_empty():
 		_hide_chest_overlay()
 
 	# A NON-INTERACTIVE key hint (playtest 2026-07-29): the dungeon is driven by direct keys, not a command
@@ -702,6 +720,8 @@ func _apply(result: Dictionary) -> void:
 	if _state.get("phase", "") != "dungeon":
 		return
 	_update_view(true)
+	if _has_chest_opened(events):
+		_show_chest_result(events)
 	_rebuild_dock()
 	_rebuild_party_hud()
 
@@ -755,8 +775,8 @@ func _close_config_overlay() -> void:
 		call_deferred("_ensure_focus_in", _party_menu)
 
 # The unresolved chest prompt, CENTRED on the stage over a dimming scrim — a decision the party stops
-# for, not a corner widget. Rebuilt through 調べる→開ける; opening makes current_chest() empty immediately,
-# tears this down, and restores movement without an extra Confirm.
+# for, not a corner widget. A successful disarm/unlock resolves directly into the opened result instead
+# of asking for a redundant 開ける confirmation.
 func _show_chest_overlay(chest: Dictionary) -> void:
 	if _chest_overlay and is_instance_valid(_chest_overlay):
 		_chest_overlay.queue_free()
@@ -787,6 +807,46 @@ func _hide_chest_overlay() -> void:
 		_chest_overlay.queue_free()
 	_chest_overlay = null
 	_chest_pending_action = ""
+
+func _has_chest_opened(events: Array) -> bool:
+	for event in events:
+		if typeof(event) == TYPE_DICTIONARY and String((event as Dictionary).get("type", "")) == "chest_opened":
+			return true
+	return false
+
+func _show_chest_result(events: Array) -> void:
+	var opened: Dictionary = {}
+	var cell_id := String(_position().get("cellId", ""))
+	for chest in _state.get("chests", []):
+		if typeof(chest) == TYPE_DICTIONARY and String((chest as Dictionary).get("cellId", "")) == cell_id and String((chest as Dictionary).get("phase", "")) == "opened":
+			opened = chest
+			break
+	if opened.is_empty():
+		return
+	_chest_result = {"chest": opened, "events": events.duplicate(true)}
+	if _chest_overlay and is_instance_valid(_chest_overlay):
+		_chest_overlay.queue_free()
+	var layer := Control.new()
+	layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	var scrim := ColorRect.new()
+	scrim.color = Color(0, 0, 0, 0.5)
+	scrim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	layer.add_child(scrim)
+	var center := CenterContainer.new()
+	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	layer.add_child(center)
+	var built: Dictionary = ChestPanel.build_opened_result(
+		opened, events, func(): _dismiss_chest_result(), _texture(_asset("dungeon/treasure-chest-open.png"))
+	)
+	center.add_child(built["control"])
+	add_child(layer)
+	_chest_overlay = layer
+	(built["focus"] as Control).call_deferred("grab_focus")
+
+func _dismiss_chest_result() -> void:
+	_chest_result = {}
+	_hide_chest_overlay()
+	_rebuild_dock()
 
 # 隊列 opens the party menu OVER the dungeon — it must never leave the maze. (It used to change scene to
 # the town, and the town forces phase=town on entry, so pressing it silently ENDED the expedition and

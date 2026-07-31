@@ -2508,7 +2508,8 @@ function attemptFields(record: AttemptRecord) {
   } as const;
 }
 
-// IMP-029 — attempt to disarm the current chest ONCE. Success removes the trap; failure leaves it armed.
+// IMP-029 — attempt to disarm the current chest ONCE. A successful disarm opens an unlocked chest in the
+// same action: the player has already accepted the risk and should not have to issue a redundant "Open".
 function disarmChestCommand(state: GameState, world: ScenarioWorld, characterId?: string, itemId?: string): CommandResult {
   const chest = currentChest(state);
   if (!chest) return withEvents(state, [{ type: "command_blocked_chest", reason: "no_chest" }]);
@@ -2526,11 +2527,21 @@ function disarmChestCommand(state: GameState, world: ScenarioWorld, characterId?
   const actor = state.party.find((member) => member.id === attempt.record.actorId) ?? null;
   const updated = disarmChest(chest, actor, `${chest.cellId}:${chest.roomId}`, attempt.aid?.bonus ?? 0);
   const inventory = attempt.aid ? consumeAid(state.inventory, attempt.aid.itemId) : state.inventory;
-  return withEvents({ ...replaceChest({ ...state, inventory }, updated), turn: state.turn + 1 }, [
+  const attempted = { ...replaceChest({ ...state, inventory }, updated), turn: state.turn + 1 };
+  const events: GameEvent[] = [
     { type: "chest_disarmed", success: updated.disarmed, handlerName: actor?.name, ...attemptFields(attempt.record) }
-  ]);
+  ];
+  // A separate lock is still a real decision. If there is none (or it was already opened), take the
+  // natural next step now; otherwise the chest panel proceeds to lockpicking.
+  if (updated.disarmed && (!updated.lock || updated.unlocked)) {
+    const opened = resolveOpenedChest(attempted, world, updated);
+    return withEvents(opened.state, [...events, ...opened.events]);
+  }
+  return withEvents(attempted, events);
 }
 
+// A successful lockpick has the same natural continuation as a successful disarm. Do not make a player
+// confirm an unchanged "Open" command merely because the lock is gone.
 function unlockChestCommand(state: GameState, world: ScenarioWorld, characterId?: string, itemId?: string): CommandResult {
   const chest = currentChest(state);
   if (!chest) return withEvents(state, [{ type: "command_blocked_chest", reason: "no_chest" }]);
@@ -2542,9 +2553,15 @@ function unlockChestCommand(state: GameState, world: ScenarioWorld, characterId?
   const actor = state.party.find((member) => member.id === attempt.record.actorId) ?? null;
   const updated = unlockChest(chest, actor, `${chest.cellId}:${chest.roomId}`, attempt.aid?.bonus ?? 0);
   const inventory = attempt.aid ? consumeAid(state.inventory, attempt.aid.itemId) : state.inventory;
-  return withEvents({ ...replaceChest({ ...state, inventory }, updated), turn: state.turn + 1 }, [
+  const attempted = { ...replaceChest({ ...state, inventory }, updated), turn: state.turn + 1 };
+  const events: GameEvent[] = [
     { type: "chest_unlocked", success: updated.unlocked, handlerName: actor?.name, ...attemptFields(attempt.record) }
-  ]);
+  ];
+  if (updated.unlocked && (!updated.trap || updated.disarmed)) {
+    const opened = resolveOpenedChest(attempted, world, updated);
+    return withEvents(opened.state, [...events, ...opened.events]);
+  }
+  return withEvents(attempted, events);
 }
 
 // IMP-029 — open the current chest. An armed, undisarmed trap TRIPS (wounds the party toward 1 HP) but
@@ -2554,8 +2571,16 @@ function openChestCommand(state: GameState, world: ScenarioWorld): CommandResult
   if (!chest) return withEvents(state, [{ type: "command_blocked_chest", reason: "no_chest" }]);
   if (chest.phase === "opened") return withEvents(state, [{ type: "command_blocked_chest", reason: "already_open" }]);
 
+  const resolved = resolveOpenedChest(state, world, chest);
+  return withEvents({ ...resolved.state, turn: state.turn + 1 }, resolved.events);
+}
+
+/** Apply the one-time trap and treasure consequences after a chest has been opened. The caller decides
+ * whether the interaction consumes a turn; automatic opening after a successful disarm/unlock remains
+ * one field action, while an explicit open is also one field action. */
+function resolveOpenedChest(state: GameState, world: ScenarioWorld, chest: ChestState): { state: GameState; events: GameEvent[] } {
   const { chest: opened, trapSprung, damage, blocked } = openChest(chest);
-  if (blocked) return withEvents(state, [{ type: "command_blocked_chest", reason: blocked }]);
+  if (blocked) return { state, events: [{ type: "command_blocked_chest", reason: blocked }] };
   let next = replaceChest(state, opened);
   const events: GameEvent[] = [];
   if (trapSprung) {
@@ -2586,7 +2611,7 @@ function openChestCommand(state: GameState, world: ScenarioWorld): CommandResult
     });
   }
   events.push({ type: "chest_opened" });
-  return withEvents({ ...next, turn: state.turn + 1 }, events);
+  return { state: next, events };
 }
 
 // IMP-029 — leave a CLOSED chest on `cellId` for a room with an authored reward, unless one already

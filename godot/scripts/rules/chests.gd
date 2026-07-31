@@ -142,6 +142,13 @@ static func disarm(state: Dictionary, world: Dictionary = {}, engine: Dictionary
 	if typeof(handler) == TYPE_DICTIONARY:
 		event["handlerName"] = handler.get("name", "")
 	Exploration.stamp_event(event, attempt)
+	# Once the party has successfully made an unlocked chest safe, asking for a second "Open" is a
+	# redundant confirmation. Open it as the natural conclusion of this one field action.
+	if success and (typeof(updated.get("lock", null)) != TYPE_DICTIONARY or bool(updated.get("unlocked", false))):
+		var opened := _resolve_opened_chest(next, world, engine, updated)
+		var events: Array = [event]
+		events.append_array(opened["events"])
+		return {"state": opened["state"], "events": events}
 	return {"state": next, "events": [event]}
 
 static func unlock(state: Dictionary, world: Dictionary = {}, engine: Dictionary = {}, character_id: String = "", item_id: String = "") -> Dictionary:
@@ -172,6 +179,13 @@ static func unlock(state: Dictionary, world: Dictionary = {}, engine: Dictionary
 	if typeof(handler) == TYPE_DICTIONARY:
 		event["handlerName"] = handler.get("name", "")
 	Exploration.stamp_event(event, attempt)
+	# A successful lockpick likewise leads straight into the opened-chest result, unless an armed trap
+	# still needs a conscious decision.
+	if success and (typeof(updated.get("trap", null)) != TYPE_DICTIONARY or bool(updated.get("disarmed", false))):
+		var opened := _resolve_opened_chest(next, world, engine, updated)
+		var events: Array = [event]
+		events.append_array(opened["events"])
+		return {"state": opened["state"], "events": events}
 	return {"state": next, "events": [event]}
 
 static func open_chest(state: Dictionary, world: Dictionary, engine: Dictionary) -> Dictionary:
@@ -183,6 +197,14 @@ static func open_chest(state: Dictionary, world: Dictionary, engine: Dictionary)
 	if typeof(chest.get("lock", null)) == TYPE_DICTIONARY and not bool(chest.get("unlocked", false)):
 		return _blocked(state, "locked")
 
+	var resolved := _resolve_opened_chest(state, world, engine, chest)
+	var next: Dictionary = resolved["state"]
+	next["turn"] = int(next.get("turn", 0)) + 1
+	return {"state": next, "events": resolved["events"]}
+
+## Apply the one-time consequences of opening `chest`. The caller owns turn cost: explicit opening and
+## automatic opening after a successful disarm/unlock each spend exactly one field action.
+static func _resolve_opened_chest(state: Dictionary, world: Dictionary, engine: Dictionary, chest: Dictionary) -> Dictionary:
 	var has_trap: bool = typeof(chest.get("trap", null)) == TYPE_DICTIONARY
 	var trap_sprung: bool = has_trap and not bool(chest.get("disarmed", false)) and not bool(chest.get("sprung", false))
 	var damage := int((chest["trap"] as Dictionary).get("damage", 0)) if trap_sprung else 0
@@ -227,7 +249,6 @@ static func open_chest(state: Dictionary, world: Dictionary, engine: Dictionary)
 		events.append(gained)
 
 	events.append({"type": "chest_opened"})
-	next["turn"] = int(next.get("turn", 0)) + 1
 	return {"state": next, "events": events}
 
 # --- the treasure roll -----------------------------------------------------------------------------
