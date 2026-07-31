@@ -211,7 +211,9 @@ export async function resolveVisibleCombat(page: Page) {
   // playback (default ON): drive the menu, press the confirm "Fight" button when it
   // appears, and wait through playback. Combat has truly ended only when the dungeon
   // dock is back — the menu also unmounts transiently during confirm/playback.
-  await expect(page.getByTestId("combat-command-menu")).toBeVisible();
+  // Generous timeouts: under FULL-suite parallel load the three.js combat/dungeon
+  // renders are CPU-starved and a 5s wait flakes (town.spec recovery walk, 2026-07-31).
+  await expect(page.getByTestId("combat-command-menu")).toBeVisible({ timeout: 15_000 });
 
   const dismissResult = async () => {
     // A win pops a result screen over the dungeon — dismiss it to keep exploring. It
@@ -223,7 +225,7 @@ export async function resolveVisibleCombat(page: Page) {
     }
   };
 
-  for (let step = 0; step < 300; step += 1) {
+  for (let step = 0; step < 600; step += 1) {
     if ((await page.getByTestId("combat-result").count()) > 0) {
       await page.getByTestId("combat-result-continue").click().catch(() => {});
       await page.waitForTimeout(40).catch(() => {});
@@ -246,7 +248,7 @@ export async function resolveVisibleCombat(page: Page) {
     await page.waitForTimeout(60).catch(() => {});
   }
 
-  await expect(page.getByTestId("dungeon-command-window")).toBeVisible();
+  await expect(page.getByTestId("dungeon-command-window")).toBeVisible({ timeout: 20_000 });
 }
 
 // B1F is a maze (see scripts/genFloorMaze.mjs, seed 20250709). Navigation replays
