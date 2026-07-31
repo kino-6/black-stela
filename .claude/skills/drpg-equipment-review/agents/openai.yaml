@@ -1,0 +1,4 @@
+interface:
+  display_name: "DRPG Equipment Review"
+  short_description: "Design and verify DRPG equipment UX and rules."
+  default_prompt: "Review or improve Black Stela equipment rules and controller-first UI using the DRPG equipment review workflow."

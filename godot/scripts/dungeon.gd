@@ -60,6 +60,9 @@ var _party_member_id: String = ""
 var _party_focus_member_id: String = ""
 var _party_page: String = "status"
 var _party_item: String = ""
+var _party_technique_id: String = ""
+var _party_equipment_slot: String = "weapon"
+var _party_equipment_candidate: String = ""
 
 func _ready() -> void:
 	await get_tree().process_frame
@@ -223,7 +226,14 @@ func _input(event: InputEvent) -> void:
 	# own arrows/Confirm for navigation, so only Cancel is consumed here; everything else falls through to it.
 	if _party_menu and is_instance_valid(_party_menu):
 		if event.is_action_pressed("cancel"):
-			_toggle_party_menu()
+			if _party_page == "spells" and _party_technique_id != "":
+				_party_technique_id = ""
+				_refresh_party_menu()
+			elif _party_page == "equipment" and _party_equipment_candidate != "":
+				_party_equipment_candidate = ""
+				_refresh_party_menu()
+			else:
+				_toggle_party_menu()
 			get_viewport().set_input_as_handled()
 		return
 	# The opening result remains modal: Confirm reaches its focused 「探索へ戻る」 command, Cancel accepts
@@ -733,7 +743,13 @@ func _apply(result: Dictionary) -> void:
 # it is leaving), so the menu is the one that carries the party out to the town, exactly as the old dock
 # 'charm'/'return' handlers did.
 func _menu_dispatch(command: Dictionary) -> void:
-	_apply(SliceRules.resolve(_state, command, _world, _engine))
+	var result := SliceRules.resolve(_state, command, _world, _engine)
+	var events: Array = result.get("events", [])
+	for event in events:
+		if String((event as Dictionary).get("type", "")) == "equipment_changed":
+			_party_equipment_candidate = ""
+			break
+	_apply(result)
 	if String(_state.get("phase", "")) == "town":
 		get_tree().change_scene_to_file("res://scenes/town.tscn")
 	elif _party_menu and is_instance_valid(_party_menu):
@@ -888,9 +904,16 @@ func _toggle_party_menu() -> void:
 		"party_focus_member_id": _party_focus_member_id,
 		"focus_hint": func(control): focus_target["control"] = control,
 		"party_page": _party_page,
-		"set_party_page": func(page): _party_page = String(page); _refresh_party_menu(),
+		"set_party_page": func(page): _party_page = String(page); _party_technique_id = ""; _refresh_party_menu(),
+		"party_technique_id": _party_technique_id,
+		"set_party_technique": func(id): _party_technique_id = String(id); _refresh_party_menu(),
 		"party_item": _party_item,
 		"set_party_item": func(key): _party_item = String(key); _refresh_party_menu(),
+		"party_equipment_slot": _party_equipment_slot,
+		"set_party_equipment_slot": func(slot): _party_equipment_slot = String(slot); _party_equipment_candidate = ""; _refresh_party_menu(),
+		"party_equipment_candidate": _party_equipment_candidate,
+		"set_party_equipment_candidate": func(key): _party_equipment_candidate = String(key); _refresh_party_menu(),
+		"open_equipment_item": func(item): _party_page = "equipment"; _party_equipment_slot = String(item.get("slot", "weapon")); _party_equipment_candidate = Fmt.equipment_selection_key(item); _refresh_party_menu(),
 		"party_discard_pending": false,
 		"set_party_discard": func(_p): pass
 	}

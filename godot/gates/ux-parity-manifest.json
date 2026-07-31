@@ -1642,6 +1642,7 @@
         "career.removeFromLoadout",
         "career.reqLevel",
         "career.reqMastered",
+        "career.requires",
         "career.shifts",
         "career.slot.accessory",
         "career.slot.body",
@@ -2124,7 +2125,10 @@
             ]
           },
           "uiState": {
-            "party_page": "equipment"
+            "party_page": "equipment",
+            "party_member_id": "debug.rook",
+            "party_equipment_slot": "head",
+            "party_equipment_candidate": "equip.iron-cap"
           }
         },
         {
@@ -2467,7 +2471,10 @@
             "phase": "dungeon"
           },
           "uiState": {
-            "party_page": "equipment"
+            "party_page": "equipment",
+            "party_member_id": "debug.rook",
+            "party_equipment_slot": "head",
+            "party_equipment_candidate": "equip.iron-cap"
           }
         },
         {
@@ -3207,7 +3214,10 @@
             ]
           },
           "uiState": {
-            "party_page": "equipment"
+            "party_page": "equipment",
+            "party_member_id": "debug.rook",
+            "party_equipment_slot": "head",
+            "party_equipment_candidate": "equip.iron-cap"
           }
         },
         {
@@ -3550,7 +3560,10 @@
             "phase": "dungeon"
           },
           "uiState": {
-            "party_page": "equipment"
+            "party_page": "equipment",
+            "party_member_id": "debug.rook",
+            "party_equipment_slot": "head",
+            "party_equipment_candidate": "equip.iron-cap"
           }
         },
         {

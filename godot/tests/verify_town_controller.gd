@@ -129,9 +129,138 @@ func _initialize() -> void:
 		_fail("shop: selected-item board has no controller focus route")
 	else:
 		print("[town-controller] shop: selected-item board is visible and focusable")
-	_press_cancel(town)
+		_press_cancel(town)
 	for i in 3:
 		await process_frame
+
+	# Equipment follows the same controller decision path in town as it does in the dungeon: select a
+	# slot, inspect a candidate without mutation, compare, then explicitly equip. Cancel only leaves the
+	# comparison stage, not the party counter.
+	var Economy := preload("res://scripts/rules/economy.gd")
+	var equipment_state: Dictionary = (town.call("state") as Dictionary).duplicate(true)
+	var cap: Variant = Economy.create_inventory_item(town.get("_world"), "equip.iron-cap", 1)
+	var cap_catalog: Variant = Economy.find_equipment(town.get("_world"), "equip.iron-cap")
+	var cap_wearer: Dictionary = {}
+	for member in equipment_state.get("party", []):
+		if typeof(cap_catalog) == TYPE_DICTIONARY and Economy.is_equipment_usable_by(cap_catalog, member):
+			cap_wearer = member
+			break
+	if cap_wearer.is_empty():
+		_fail("equipment: no compatible party member for the controller fixture")
+	else:
+		equipment_state["inventory"] = [cap]
+		var run_for_equipment: Node = town.get("_run")
+		if run_for_equipment != null:
+			run_for_equipment.state = equipment_state
+		else:
+			town.set("_fallback_state", equipment_state)
+		town.set("_selected_id", String(cap_wearer.get("id", "")))
+		town.call("set_ui_state", {"service": "party", "party_page": "equipment", "party_equipment_slot": "head", "party_equipment_candidate": ""})
+		for i in 4:
+			await process_frame
+		var cap_button := _button_with_text(town, "凹み鉄帽")
+		if cap_button == null:
+			_fail("equipment: selected head slot has no candidate command")
+		else:
+			cap_button.emit_signal("pressed")
+			for i in 4:
+				await process_frame
+			var before: Dictionary = town.call("selected_member")
+			if (before.get("equipment", {}) as Dictionary).get("head", null) != null:
+				_fail("equipment: selecting a candidate mutated town state")
+			elif not _all_text(town).contains("装着後の変化") or _button_with_text(town, "%sに装備" % String(cap_wearer.get("name", ""))) == null:
+				_fail("equipment: town does not show comparison and explicit confirmation")
+			else:
+				_press_cancel(town)
+				for i in 4:
+					await process_frame
+				if town.get("_service") != "party" or town.get("_party_equipment_candidate") != "":
+					_fail("equipment: Cancel did not return from comparison to the selected slot")
+				else:
+					cap_button = _button_with_text(town, "凹み鉄帽")
+					if cap_button != null:
+						cap_button.emit_signal("pressed")
+					for i in 4:
+						await process_frame
+					var equip_button := _button_with_text(town, "%sに装備" % String(cap_wearer.get("name", "")))
+					if equip_button == null:
+						_fail("equipment: explicit town equip command disappeared")
+					else:
+						equip_button.emit_signal("pressed")
+						for i in 4:
+							await process_frame
+						var after: Dictionary = town.call("selected_member")
+						if String(((after.get("equipment", {}) as Dictionary).get("head", {}) as Dictionary).get("id", "")) != "equip.iron-cap":
+							_fail("equipment: explicit town confirmation did not equip the selected candidate")
+						elif town.get("_party_equipment_candidate") != "":
+							_fail("equipment: town kept a stale selected candidate after equipping")
+						else:
+							print("[town-controller] equipment: slot → candidate → comparison → confirm works without pointer input")
+					_press_cancel(town)
+					for i in 3:
+						await process_frame
+
+	# Recovery/cure techniques are not combat-only entries in the party menu. The controller selects the
+	# caster's art, then an injured ally; the rules command spends MP and updates that ally without pointer
+	# input or a second, unrelated item surface.
+	var technique_state: Dictionary = (town.call("state") as Dictionary).duplicate(true)
+	var priest: Dictionary = {}
+	var injured: Dictionary = {}
+	for member_v in technique_state.get("party", []):
+		var member: Dictionary = member_v
+		if String(member.get("classId", "")) == "priest":
+			priest = member
+		elif injured.is_empty():
+			injured = member
+	if priest.is_empty() or injured.is_empty():
+		_fail("techniques: fixture has no priest and ally")
+	else:
+		for index in technique_state["party"].size():
+			var patched: Dictionary = (technique_state["party"][index] as Dictionary).duplicate(true)
+			if String(patched.get("id", "")) == String(priest.get("id", "")):
+				patched["mp"] = maxi(8, int(patched.get("mp", 0)))
+			if String(patched.get("id", "")) == String(injured.get("id", "")):
+				patched["hp"] = maxi(1, int(patched.get("maxHp", 10)) - 5)
+			technique_state["party"][index] = patched
+		var run_for_techniques: Node = town.get("_run")
+		if run_for_techniques != null:
+			run_for_techniques.state = technique_state
+		else:
+			town.set("_fallback_state", technique_state)
+		var Techniques := preload("res://scripts/rules/techniques.gd")
+		var heal_label := Techniques.label("heal", town.call("engine"))
+		town.set("_selected_id", String(priest.get("id", "")))
+		town.call("set_ui_state", {"service": "party", "party_page": "spells", "party_technique_id": ""})
+		for i in 4:
+			await process_frame
+		var heal_button := _button_with_text(town, heal_label)
+		if heal_button == null or heal_button.disabled:
+			_fail("techniques: a usable recovery art is not a controller command")
+		else:
+			heal_button.emit_signal("pressed")
+			for i in 4:
+				await process_frame
+			var target_button := _button_with_text(town, "%sに使う" % String(injured.get("name", "")))
+			if target_button == null or target_button.disabled:
+				_fail("techniques: recovery art did not offer the injured ally as a target")
+			else:
+				target_button.emit_signal("pressed")
+				for i in 4:
+					await process_frame
+				var after_party: Array = (town.call("state") as Dictionary).get("party", [])
+				var after_target: Dictionary = {}
+				for after_member_v in after_party:
+					var after_member: Dictionary = after_member_v
+					if String(after_member.get("id", "")) == String(injured.get("id", "")):
+						after_target = after_member
+						break
+				if int(after_target.get("hp", 0)) <= int(injured.get("maxHp", 0)) - 5:
+					_fail("techniques: selecting an ally did not apply recovery")
+				else:
+					print("[town-controller] techniques: recovery art selects and heals an ally by controller")
+				_press_cancel(town)
+				for i in 3:
+					await process_frame
 
 	# REGRESSION (playtest #4): a BRAND-NEW game has never descended — town must read as a FIRST departure
 	# (初めて潜る前に / 手持ち), never a post-return state (帰還後の支度 / 持ち帰った物). The shared state seeds
@@ -196,6 +325,15 @@ func _party_member_named(party: Array, name: String) -> bool:
 		if String(member.get("name", "")) == name:
 			return true
 	return false
+
+func _button_with_text(node: Node, text: String) -> Button:
+	if node is Button and (node as Button).text == text:
+		return node as Button
+	for child in node.get_children():
+		var found := _button_with_text(child, text)
+		if found != null:
+			return found
+	return null
 
 func _fail(message: String) -> void:
 	_failures += 1

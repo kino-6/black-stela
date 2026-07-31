@@ -32,9 +32,13 @@ test.describe("town career service", () => {
     // consolidation folded both into Warrior — see LEGACY_CLASS_MAPPING.)
     const current = page.getByTestId("career-current-vocation");
     const before = await current.innerText();
+    // SFC/DQ3 flow: choosing a calling opens its preview+confirm, it never reclasses in one press
+    // (CareerPanel: "the row IS the choice"). Pick Knight, then confirm on its preview sheet.
     const adoptKnight = page.getByTestId("career-adopt-knight");
     await expect(adoptKnight).toBeVisible();
     await adoptKnight.click();
+    await expect(page.getByTestId("career-preview")).toBeVisible();
+    await page.getByTestId("career-preview").getByRole("button", { name: "Reclass to this calling" }).click();
     await expect(current).not.toHaveText(before);
 
     // The learned techniques carry a loadout toggle.

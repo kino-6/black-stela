@@ -189,6 +189,19 @@ export interface Technique {
 }
 
 /**
+ * Effects that make sense between fights. Combat-duration wards and buffs deliberately do not qualify:
+ * the combat-effect store is reset when a battle ends, so silently making them persistent here would
+ * invent a second rules system. New exploration utilities should add an explicit effect primitive and
+ * extend this predicate together with its resolver.
+ */
+export function isCampUsableTechnique(technique: Technique): boolean {
+  if (technique.target !== "self" && technique.target !== "ally" && technique.target !== "party") {
+    return false;
+  }
+  return technique.effects.length > 0 && technique.effects.every((effect) => effect.kind === "heal" || effect.kind === "cure");
+}
+
+/**
  * The catalog. Same four techniques, same numbers, same costs as the old SPELLS map — see
  * tests/classCapabilities.test.ts, which pins the derived legacy view against the literal old table.
  */

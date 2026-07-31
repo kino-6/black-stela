@@ -59,6 +59,9 @@ var _loot_filter: String = "all"
 var _loot_pending: String = ""
 var _party_page: String = "status"
 var _party_item: String = ""
+var _party_technique_id: String = ""
+var _party_equipment_slot: String = "weapon"
+var _party_equipment_candidate: String = ""
 var _party_discard: bool = false
 var _party_focus_member_id: String = "" # one rebuild only; keeps roster browsing under the controller cursor
 var _career_preview: String = ""  # the 転職 destination being previewed (SFC list→preview→confirm); "" = the list
@@ -107,7 +110,11 @@ func set_ui_state(ui: Dictionary) -> void:
 	if ui.has("shop_category"): _shop_category = String(ui["shop_category"])
 	if ui.has("shop_item_id"): _shop_item_id = String(ui["shop_item_id"])
 	if ui.has("party_page"): _party_page = String(ui["party_page"])
+	if ui.has("party_member_id"): _selected_id = String(ui["party_member_id"])
 	if ui.has("party_item"): _party_item = String(ui["party_item"])
+	if ui.has("party_technique_id"): _party_technique_id = String(ui["party_technique_id"])
+	if ui.has("party_equipment_slot"): _party_equipment_slot = String(ui["party_equipment_slot"])
+	if ui.has("party_equipment_candidate"): _party_equipment_candidate = String(ui["party_equipment_candidate"])
 	if ui.has("party_discard"): _party_discard = bool(ui["party_discard"])
 	if ui.has("career_preview"): _career_preview = String(ui["career_preview"])
 	_rebuild()
@@ -198,6 +205,16 @@ func dispatch(command: Dictionary) -> Array:
 	if not events.is_empty():
 		_event_text = _describe(events[events.size() - 1])
 	_rebuild()
+	return events
+
+func _dispatch_service_command(command: Dictionary) -> Array:
+	var events := dispatch(command)
+	if String(command.get("type", "")) == "equip_item":
+		for event in events:
+			if String((event as Dictionary).get("type", "")) == "equipment_changed":
+				_party_equipment_candidate = ""
+				_rebuild()
+				break
 	return events
 
 func selected_member() -> Dictionary:
@@ -486,6 +503,17 @@ func _close_service() -> void:
 	_event_text = ""
 	_rebuild()
 
+func _back_from_party_equipment() -> bool:
+	if _party_page == "spells" and _party_technique_id != "":
+		_party_technique_id = ""
+		_rebuild()
+		return true
+	if _party_page != "equipment" or _party_equipment_candidate == "":
+		return false
+	_party_equipment_candidate = ""
+	_rebuild()
+	return true
+
 # --- the town MENU: settings + leave-to-title, reachable from anywhere in the square (playtest: "メニュー
 # ボタンがない？"). An overlay over the square (cancel closes it back), NOT a scene change — so the run
 # is never lost by peeking at the options. Reuses the shared ConfigPanel the title/combat settings use.
@@ -537,7 +565,7 @@ func _service_ctx() -> Dictionary:
 		"world": _world,
 		"engine": engine(),
 		"event_text": _event_text,
-		"dispatch": func(command): dispatch(command),
+		"dispatch": func(command): _dispatch_service_command(command),
 		"save_run": func(): _save_run(),
 		"close": func(): _close_service(),
 		"selected_member": func(): return selected_member(),
@@ -556,9 +584,16 @@ func _service_ctx() -> Dictionary:
 		"loot_filter": _loot_filter,
 		"set_loot_filter": func(f): _loot_filter = String(f); _rebuild(),
 		"party_page": _party_page,
-		"set_party_page": func(page): _party_page = String(page); _party_discard = false; _rebuild(),
+		"set_party_page": func(page): _party_page = String(page); _party_technique_id = ""; _party_discard = false; _rebuild(),
+		"party_technique_id": _party_technique_id,
+		"set_party_technique": func(id): _party_technique_id = String(id); _rebuild(),
 		"party_item": _party_item,
 		"set_party_item": func(key): _party_item = String(key); _party_discard = false; _rebuild(),
+		"party_equipment_slot": _party_equipment_slot,
+		"set_party_equipment_slot": func(slot): _party_equipment_slot = String(slot); _party_equipment_candidate = ""; _rebuild(),
+		"party_equipment_candidate": _party_equipment_candidate,
+		"set_party_equipment_candidate": func(key): _party_equipment_candidate = String(key); _rebuild(),
+		"open_equipment_item": func(item): _party_page = "equipment"; _party_equipment_slot = String(item.get("slot", "weapon")); _party_equipment_candidate = Fmt.equipment_selection_key(item); _party_discard = false; _rebuild(),
 		"party_discard_pending": _party_discard,
 		"set_party_discard": func(pending): _party_discard = bool(pending); _rebuild(),
 		"loot_pending_bulk": _loot_pending,
@@ -607,6 +642,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		if _service == "loot" and _loot_pending != "":
 			_loot_pending = ""
 			_rebuild()
+		elif _back_from_party_equipment():
+			pass
 		else:
 			_close_service()
 		get_viewport().set_input_as_handled()

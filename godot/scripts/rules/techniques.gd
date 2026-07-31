@@ -99,3 +99,21 @@ static func targeting(id: String, engine: Dictionary) -> String:
 			return "group"
 		_:
 			return "none"
+
+## The camp menu may only offer effects which have an out-of-combat state meaning. Combat-duration
+## wards/buffs have no persistent store, so allowing them here would create Godot-only behavior.
+static func is_camp_usable(id: String, engine: Dictionary) -> bool:
+	var definition := _def(id, engine)
+	var scope := String(definition.get("target", ""))
+	if not (scope == "self" or scope == "ally" or scope == "party"):
+		return false
+	var effects: Array = definition.get("effects", [])
+	if effects.is_empty():
+		return false
+	for effect_v in effects:
+		if typeof(effect_v) != TYPE_DICTIONARY:
+			return false
+		var kind := String((effect_v as Dictionary).get("kind", ""))
+		if not (kind == "heal" or kind == "cure"):
+			return false
+	return true

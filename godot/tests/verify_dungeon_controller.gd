@@ -158,12 +158,38 @@ func _initialize() -> void:
 	equip_state["inventory"] = [cap]
 	d.set("_state", equip_state)
 	d.set("_party_member_id", String(cap_wearer.get("id", "")))
+	d.set("_party_equipment_slot", "head")
+	d.set("_party_equipment_candidate", "")
 	d.call("_refresh_party_menu")
 	for i in 4:
 		await process_frame
 	menu = d.get("_party_menu")
-	var equip_button := _button_with_text(menu, "凹み鉄帽")
-	_check(equip_button != null, "装備 tab lists a compatible carried piece as a controller command")
+	var slot_button := _button_with_prefix(menu, "頭　")
+	_check(slot_button != null, "装備 tab exposes the current head slot as a controller command")
+	var candidate_button := _button_with_text(menu, "凹み鉄帽")
+	_check(candidate_button != null, "selected slot lists the compatible carried piece as a controller command")
+	if candidate_button != null:
+		candidate_button.emit_signal("pressed")
+	for i in 4:
+		await process_frame
+	var before_equip: Dictionary = d.call("_party_selected")
+	_check((before_equip.get("equipment", {}) as Dictionary).get("head", null) == null, "selecting a candidate does not equip it")
+	menu = d.get("_party_menu")
+	_check(_has_text(menu, "装着後の変化"), "candidate selection shows the post-equip comparison before mutation")
+	var equip_button := _button_with_prefix(menu, "%sに装備" % String(cap_wearer.get("name", "")))
+	_check(equip_button != null, "comparison exposes an explicit equip confirmation")
+	d.call("_input", _pressed("cancel"))
+	for i in 4:
+		await process_frame
+	menu = d.get("_party_menu")
+	_check(_valid(menu) and not _has_text(menu, "装着後の変化"), "Cancel returns from a candidate comparison to the selected slot")
+	candidate_button = _button_with_text(menu, "凹み鉄帽")
+	if candidate_button != null:
+		candidate_button.emit_signal("pressed")
+	for i in 4:
+		await process_frame
+	menu = d.get("_party_menu")
+	equip_button = _button_with_prefix(menu, "%sに装備" % String(cap_wearer.get("name", "")))
 	if equip_button != null:
 		equip_button.emit_signal("pressed")
 	for i in 4:
@@ -175,6 +201,42 @@ func _initialize() -> void:
 	menu = d.get("_party_menu")
 	focus_owner = get_root().get_viewport().gui_get_focus_owner()
 	_check(_valid(menu) and focus_owner != null and menu.is_ancestor_of(focus_owner), "装備後も menu rebuild keeps controller focus")
+	# A slot list must not silently omit a class-ineligible candidate. Switch to the occultist: the same
+	# iron cap remains visible but cannot be Confirmed, and the reason is legible without a tooltip.
+	var ineligible: Dictionary = {}
+	for candidate in initial_party:
+		if typeof(cap_catalog) == TYPE_DICTIONARY and not Economy.is_equipment_usable_by(cap_catalog, candidate):
+			ineligible = candidate
+			break
+	if not ineligible.is_empty():
+		d.set("_party_member_id", String(ineligible.get("id", "")))
+		d.set("_party_equipment_slot", "head")
+		d.set("_party_equipment_candidate", "")
+		d.call("_refresh_party_menu")
+		for i in 4:
+			await process_frame
+		menu = d.get("_party_menu")
+		var ineligible_button := _button_with_text(menu, "凹み鉄帽")
+		_check(ineligible_button != null and ineligible_button.disabled and _has_text(menu, "この職は扱えない"), "ineligible equipment stays visible with a reason instead of disappearing")
+	# A unique/shared copy tells the player which member it will leave before the explicit confirmation.
+	var transfer_target: Dictionary = {}
+	for candidate in initial_party:
+		if String(candidate.get("id", "")) != String(cap_wearer.get("id", "")) and typeof(cap_catalog) == TYPE_DICTIONARY and Economy.is_equipment_usable_by(cap_catalog, candidate):
+			transfer_target = candidate
+			break
+	if not transfer_target.is_empty():
+		var Fmt := preload("res://scripts/town_format.gd")
+		d.set("_party_member_id", String(transfer_target.get("id", "")))
+		d.set("_party_equipment_slot", "head")
+		d.set("_party_equipment_candidate", Fmt.equipment_selection_key(cap))
+		d.call("_refresh_party_menu")
+		for i in 4:
+			await process_frame
+		menu = d.get("_party_menu")
+		_check(_has_text(menu, "Rookの頭から移す"), "shared equipment names the current owner before transfer")
+		d.call("_input", _pressed("cancel"))
+		for i in 4:
+			await process_frame
 	d.call("_input", _pressed("cancel"))
 	for i in 4:
 		await process_frame
@@ -237,6 +299,15 @@ func _button_with_text(node: Node, text: String) -> Button:
 		return node as Button
 	for child in node.get_children():
 		var found := _button_with_text(child, text)
+		if found != null:
+			return found
+	return null
+
+func _button_with_prefix(node: Node, prefix: String) -> Button:
+	if node is Button and (node as Button).text.begins_with(prefix):
+		return node as Button
+	for child in node.get_children():
+		var found := _button_with_prefix(child, prefix)
 		if found != null:
 			return found
 	return null

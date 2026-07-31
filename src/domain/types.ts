@@ -44,6 +44,7 @@ export type Command =
   | { type: "attack" }
   | { type: "defend" }
   | { type: "use_item"; itemId: string; targetCharacterId: string }
+  | { type: "use_technique"; characterId: string; techniqueId: TechniqueId; targetCharacterId?: string }
   | { type: "discard_item"; itemId: string; plus?: number; affix?: string }
   | { type: "set_member_row"; characterId: string; row: CombatRow }
   | { type: "swap_member_rows"; characterId: string; targetCharacterId: string }
@@ -494,6 +495,7 @@ export type GameEvent =
   | { type: "character_leveled_up"; characterId: string; characterName: string; level: number }
   | { type: "party_defended"; enemyId: string; enemyName: string; damage: number }
   | { type: "item_used"; itemId: string; itemName: string; targetCharacterId: string; targetName: string; healAmount: number }
+  | { type: "technique_used"; techniqueId: TechniqueId; characterId: string; characterName: string; targetCharacterIds: string[]; targetNames: string[]; healAmount: number; curedStatuses: CombatStatus[] }
   | { type: "item_discarded"; itemId: string; itemName: string }
   | { type: "inventory_item_gained"; itemId: string; itemName: string; quantity: number; source: "treasure" | "reward"; plus?: number; affix?: string }
   | { type: "item_bought"; itemId: string; itemName: string; gold: number }

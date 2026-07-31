@@ -24,8 +24,8 @@ static func build(ctx: Dictionary) -> Control:
 
 	var root := UI.col(10)
 	root.add_child(UI.service_heading(I18n.t("partyMenu.title"), I18n.t("town.gold", {"gold": int(state.get("partyGold", 0))})))
-	# The same panel opens in town and in the dungeon, and it says which one you are in — because what it
-	# lets you DO differs: gear is changed at the guild, never in a corridor.
+	# The same panel opens in town and in the dungeon. Both are legitimate preparation surfaces; combat is
+	# the only phase that locks equipment because a resolved round must not change beneath queued actions.
 	var in_town: bool = String(state.get("phase", "town")) == "town"
 	root.add_child(UI.prose(I18n.t("partyMenu.subtitleTown" if in_town else "partyMenu.subtitleDungeon"), 16, UI.DIM, 900))
 	var last_event: String = ctx.get("event_text", "")
@@ -89,12 +89,13 @@ static func build(ctx: Dictionary) -> Control:
 			if String(candidate.get("id", "")) == String(member.get("id", "")):
 				selected_sfocus = _first_button(rr)
 		sbody.add_child(UI.card(sroster))
-		sbody.add_child(_spells_page(engine, member))
+		var spell_page := _spells_page(ctx, engine, member)
+		sbody.add_child(spell_page["control"])
 		var sfoot := UI.row()
 		var sback := UI.button(I18n.t("partyMenu.close"), ctx["close"], Vector2(180, 44), 18)
 		sfoot.add_child(sback)
 		root.add_child(sfoot)
-		ctx["focus_hint"].call(selected_sfocus if selected_sfocus != null else sfocus if sfocus != null else sback)
+		ctx["focus_hint"].call(spell_page["focus"] if spell_page["focus"] != null else selected_sfocus if selected_sfocus != null else sfocus if sfocus != null else sback)
 		return root
 
 	# 編成 is its own decision surface. The status page is for reading one adventurer, not for six repeated
@@ -313,43 +314,98 @@ static func _equipment_page(ctx: Dictionary, world: Dictionary, party: Array, me
 			selected_roster_focus = _first_button(roster_row)
 	body.add_child(UI.card(roster))
 
+	# Equipment is a four-step preparation decision: choose a slot, inspect a carried instance, compare the
+	# complete effective result, then equip. The old list equipped as soon as it was pressed, giving the
+	# player no chance to see what it displaced or whether a copy would be moved from another adventurer.
+	var selected_slot: String = String(ctx.get("party_equipment_slot", "weapon"))
+	if not Fmt.EQUIPMENT_SLOT_ORDER.has(selected_slot):
+		selected_slot = "weapon"
+	var selected_key: String = String(ctx.get("party_equipment_candidate", ""))
+	var selected_item: Dictionary = {}
+	for item_v in state.get("inventory", []):
+		var item: Dictionary = item_v
+		if Fmt.equipment_selection_key(item) == selected_key:
+			selected_item = item
+			break
+
 	var detail := UI.col(8)
 	detail.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	detail.add_child(UI.label("%s — %s" % [String(member.get("name", "")), I18n.t("partyMenu.equipped")], 20, UI.GOLD))
-	detail.add_child(UI.label(I18n.t("partyMenu.equipmentDungeon"), 15, UI.DIM))
+	detail.add_child(UI.label(I18n.t("partyMenu.equipmentSelectSlot"), 15, UI.DIM))
 	var slots := UI.col(3)
-	for slot in Fmt.EQUIPMENT_SLOT_ORDER:
-		var line := UI.row()
-		line.add_child(UI.label(Fmt.format_equipment_slot(String(slot)), 15, UI.DIM))
-		line.add_child(UI.grow(UI.label(Fmt.equipped_name(world, (member.get("equipment", {}) as Dictionary).get(slot, null)), 16, UI.INK)))
-		slots.add_child(line)
+	var selected_slot_focus: Control = null
+	for slot_v in Fmt.EQUIPMENT_SLOT_ORDER:
+		var slot := String(slot_v)
+		var current: Variant = (member.get("equipment", {}) as Dictionary).get(slot, null)
+		var label := "%s　%s" % [Fmt.format_equipment_slot(slot), Fmt.equipped_name(world, current)]
+		var slot_button := UI.button(label, func(): ctx["set_party_equipment_slot"].call(slot), Vector2(610, 36), 15)
+		if slot == selected_slot:
+			slot_button.add_theme_color_override("font_color", UI.GOLD)
+			selected_slot_focus = slot_button
+		slots.add_child(slot_button)
 	detail.add_child(UI.card(slots))
-	detail.add_child(UI.label(I18n.t("partyMenu.tabs.items"), 18, UI.GOLD))
+
 	var candidates := UI.col(4)
-	var focus: Control = null
+	candidates.add_child(UI.label(I18n.t("partyMenu.equipmentCandidates"), 18, UI.GOLD))
+	var candidate_focus: Control = null
 	var found := false
-	for item in state.get("inventory", []):
+	for item_v in state.get("inventory", []):
+		var item: Dictionary = item_v
 		if String(item.get("kind", "")) != "equipment":
 			continue
 		var catalog: Variant = Fmt.find_equipment(world, item.get("id", ""))
-		if typeof(catalog) != TYPE_DICTIONARY or not Fmt.is_usable_by(catalog, member):
+		if typeof(catalog) != TYPE_DICTIONARY or String((catalog as Dictionary).get("slot", "")) != selected_slot:
 			continue
 		found = true
+		var usable := Fmt.is_usable_by(catalog as Dictionary, member)
 		var row := UI.row()
-		var b := UI.button(Fmt.describe_equipment_instance(world, item.get("id", ""), item.get("plus", null), item.get("affix", null)), func(): ctx["dispatch"].call({"type": "equip_item", "characterId": member.get("id", ""), "equipmentId": item.get("id", ""), "plus": item.get("plus", null), "affix": item.get("affix", null)}), Vector2(330, 38), 16)
-		row.add_child(b)
-		row.add_child(UI.grow(UI.label(Fmt.format_inventory_effect(item), 14, UI.DIM)))
+		var key := Fmt.equipment_selection_key(item)
+		var candidate_button := UI.button(Fmt.describe_equipment_instance(world, item.get("id", ""), item.get("plus", null), item.get("affix", null)), func(): ctx["set_party_equipment_candidate"].call(key), Vector2(330, 38), 16)
+		candidate_button.disabled = not usable
+		if key == selected_key:
+			candidate_button.add_theme_color_override("font_color", UI.GOLD)
+			candidate_focus = candidate_button
+		row.add_child(candidate_button)
+		row.add_child(UI.grow(UI.label(I18n.t("partyMenu.equipmentIncompatible") if not usable else Fmt.format_inventory_effect(item), 14, UI.DIM)))
 		candidates.add_child(row)
-		if focus == null:
-			focus = b
 	if not found:
-		candidates.add_child(UI.label(I18n.t("partyMenu.inventoryEmpty"), 15, UI.DIM))
-	detail.add_child(UI.scroller(candidates, Vector2(900, 300)))
-	body.add_child(UI.card(detail))
-	# Entering 装備 should still start at an equippable carried item. Once the player navigates back to a
-	# member, preserve that member's cursor after the detail pane refreshes.
+		candidates.add_child(UI.label(I18n.t("partyMenu.equipmentNoCandidate"), 15, UI.DIM))
+	var comparison := UI.col(4)
+	var current_item: Variant = (member.get("equipment", {}) as Dictionary).get(selected_slot, null)
+	comparison.add_child(UI.label("%s：%s" % [I18n.t("partyMenu.equipmentCurrent"), Fmt.equipped_name(world, current_item)], 15, UI.DIM))
+	if selected_item.is_empty():
+		comparison.add_child(UI.label(I18n.t("partyMenu.equipmentCandidates"), 15, UI.DIM))
+	else:
+		comparison.add_child(UI.label(I18n.t("partyMenu.equipmentCompare"), 18, UI.GOLD))
+		comparison.add_child(UI.label("%s：%s" % [I18n.t("partyMenu.equipmentCandidate"), Fmt.describe_equipment_instance(world, selected_item.get("id", ""), selected_item.get("plus", null), selected_item.get("affix", null))], 16, UI.INK))
+		comparison.add_child(UI.prose(Fmt.localized_catalog_description(world, selected_item.get("id", "")), 14, UI.DIM, 720))
+		var catalog: Variant = Fmt.find_equipment(world, selected_item.get("id", ""))
+		var usable := typeof(catalog) == TYPE_DICTIONARY and Fmt.is_usable_by(catalog as Dictionary, member)
+		if not usable:
+			comparison.add_child(UI.label(I18n.t("partyMenu.equipmentIncompatible"), 15, UI.BAD))
+		else:
+			var current_stats := CharacterStats.effective(member, world)
+			var next_stats := Fmt.preview_equipment_instance_stats(member, selected_item, world)
+			for line in Fmt.equipment_comparison_lines(current_stats, next_stats):
+				comparison.add_child(UI.label(String(line), 15, UI.INK))
+			var transfer := Fmt.transfer_source(party, selected_item, String(member.get("id", "")))
+			if not transfer.is_empty():
+				comparison.add_child(UI.label(I18n.t("partyMenu.equipmentTransferFrom", {"name": String(transfer.get("name", "")), "slot": Fmt.format_equipment_slot(String(transfer.get("slot", "")))}), 15, UI.BAD))
+			var same := Fmt.equipment_selection_key(selected_item) == Fmt.equipment_selection_key(current_item if typeof(current_item) == TYPE_DICTIONARY else {})
+			var equip_label := I18n.t("partyMenu.equipmentSame") if same else I18n.t("partyMenu.equipOn", {"name": String(member.get("name", ""))})
+			var equip_button := UI.button(equip_label, func(): ctx["dispatch"].call({"type": "equip_item", "characterId": member.get("id", ""), "equipmentId": selected_item.get("id", ""), "plus": selected_item.get("plus", null), "affix": selected_item.get("affix", null)}), Vector2(260, 42), 16)
+			equip_button.disabled = same
+			comparison.add_child(equip_button)
+	# Candidate selection and its consequence are one decision, so they sit beside each other rather than
+	# forcing the player to scan from the top of a sparse list to a detached lower panel.
+	var decision := UI.row()
+	decision.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	decision.add_child(UI.scroller(candidates, Vector2(520, 250)))
+	decision.add_child(UI.grow(UI.card(comparison)))
+	detail.add_child(decision)
+	body.add_child(UI.grow(UI.card(detail)))
 	var restore_member_focus: bool = String(ctx.get("party_focus_member_id", "")) != ""
-	return {"control": body, "focus": selected_roster_focus if restore_member_focus and selected_roster_focus != null else focus}
+	return {"control": body, "focus": selected_roster_focus if restore_member_focus and selected_roster_focus != null else candidate_focus if candidate_focus != null else selected_slot_focus}
 
 
 const VALUABLE_KINDS := ["key", "treasure", "escape"]
@@ -419,12 +475,12 @@ static func _item_page(ctx: Dictionary, world: Dictionary, member: Dictionary, p
 		if is_equipment:
 			var equip: Variant = Fmt.find_equipment(world, selected.get("id", ""))
 			var usable: bool = typeof(equip) == TYPE_DICTIONARY and Fmt.is_usable_by(equip, member)
-			# A carried piece may be equipped from this detail too. Ineligible gear states the reason rather
-			# than offering a dead command; the same action is legal in town and while exploring.
-			var label := I18n.t("partyMenu.equipOn", {"name": String(member.get("name", ""))})
+			# Inventory is a safe inspection list. Equipping routes to the dedicated slot → candidate →
+			# comparison surface, so the player never mutates gear just by reading an item.
+			var label := I18n.t("partyMenu.equipmentInspect")
 			if not usable:
 				label = I18n.t("partyMenu.cannotEquip")
-			var eb := UI.button(label, func(): ctx["dispatch"].call({"type": "equip_item", "characterId": member.get("id", ""), "equipmentId": selected.get("id", ""), "plus": selected.get("plus", null), "affix": selected.get("affix", null)}), Vector2(220, 40), 16)
+			var eb := UI.button(label, func(): ctx["open_equipment_item"].call(selected), Vector2(220, 40), 16)
 			eb.disabled = not usable
 			actions.add_child(eb)
 		# Discarding is a TWO-PRESS confirm — one press can never destroy a carried item.
@@ -481,8 +537,11 @@ static func _describe_consumable(item: Dictionary) -> String:
 		parts.append(I18n.t("partyMenu.cures", {"statuses": "・".join(PackedStringArray(names))}))
 	return " / ".join(PackedStringArray(parts)) if not parts.is_empty() else I18n.t("partyMenu.noDescription")
 
-# --- 呪文/特技 page (read-only reference) -----------------------------------------------------------
-static func _spells_page(engine: Dictionary, member: Dictionary) -> Control:
+# --- 呪文/特技 page -------------------------------------------------------------------------------
+# Recovery and cure arts have a deterministic exploration meaning, so they are usable from this menu.
+# Combat-only techniques remain visible as reference material rather than pretending they persist outside
+# a round. The route is actor → technique → target → command; candidate selection itself costs nothing.
+static func _spells_page(ctx: Dictionary, engine: Dictionary, member: Dictionary) -> Dictionary:
 	var col := UI.col(6)
 	col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	col.add_child(UI.label("%s — %s" % [String(member.get("name", "")), I18n.t("partyMenu.tabs.spells")], 19, UI.GOLD))
@@ -490,7 +549,7 @@ static func _spells_page(engine: Dictionary, member: Dictionary) -> Control:
 	var learned: Array = voc.get("learned", [])
 	if learned.is_empty():
 		col.add_child(UI.label(I18n.t("partyMenu.noSpells"), 15, UI.DIM))
-		return col
+		return {"control": col, "focus": null}
 	var spells := []
 	var skills := []
 	for tid in learned:
@@ -498,24 +557,73 @@ static func _spells_page(engine: Dictionary, member: Dictionary) -> Control:
 			skills.append(String(tid))
 		else:
 			spells.append(String(tid))
-	_tech_group(col, I18n.t("partyMenu.spellsGroup"), spells, engine)
-	_tech_group(col, I18n.t("partyMenu.skillsGroup"), skills, engine)
-	return col
+	var selected_id := String(ctx.get("party_technique_id", ""))
+	if selected_id != "" and learned.has(selected_id) and Techniques.is_camp_usable(selected_id, engine):
+		var back := UI.button(I18n.t("partyMenu.back"), func(): ctx["set_party_technique"].call(""), Vector2(180, 38), 15)
+		col.add_child(back)
+		col.add_child(UI.label(Techniques.label(selected_id, engine), 20, UI.GOLD))
+		var summary := Techniques.summary(selected_id, engine)
+		if summary != "":
+			col.add_child(UI.label(summary, 15, UI.DIM))
+		var target_mode := Techniques.targeting(selected_id, engine)
+		var party: Array = (ctx["state"] as Dictionary).get("party", [])
+		var target_focus: Control = back
+		if target_mode == "ally":
+			col.add_child(UI.label(I18n.t("partyMenu.members"), 16, UI.DIM))
+			for target_v in party:
+				var target: Dictionary = target_v
+				var usable_target := int(target.get("hp", 0)) > 0 and target.get("injury", null) == null
+				var target_button := UI.button(I18n.t("partyMenu.useOn", {"name": String(target.get("name", ""))}), func(): ctx["dispatch"].call({"type": "use_technique", "characterId": member.get("id", ""), "techniqueId": selected_id, "targetCharacterId": target.get("id", "")}), Vector2(360, 38), 16)
+				target_button.disabled = not usable_target
+				col.add_child(target_button)
+				if target_focus == back and usable_target:
+					target_focus = target_button
+		else:
+			var action := UI.button(I18n.t("partyMenu.useOn", {"name": String(member.get("name", ""))}), func(): ctx["dispatch"].call({"type": "use_technique", "characterId": member.get("id", ""), "techniqueId": selected_id, "targetCharacterId": member.get("id", "")}), Vector2(360, 40), 16)
+			col.add_child(action)
+			target_focus = action
+		return {"control": col, "focus": target_focus}
+	var focus: Control = null
+	focus = _tech_group(col, I18n.t("partyMenu.spellsGroup"), spells, engine, ctx, member, focus)
+	focus = _tech_group(col, I18n.t("partyMenu.skillsGroup"), skills, engine, ctx, member, focus)
+	return {"control": col, "focus": focus}
 
-static func _tech_group(host: Control, title: String, ids: Array, engine: Dictionary) -> void:
+static func _tech_group(host: Control, title: String, ids: Array, engine: Dictionary, ctx: Dictionary, member: Dictionary, focus: Control) -> Control:
 	if ids.is_empty():
-		return
+		return focus
 	host.add_child(UI.label(title, 16, UI.DIM))
 	for id in ids:
 		var row := UI.row()
-		row.add_child(UI.grow(UI.label(Techniques.label(String(id), engine), 16, UI.INK)))
-		var mp := Techniques.cost(String(id), engine)
+		var technique_id := String(id)
+		var camp_usable := Techniques.is_camp_usable(technique_id, engine)
+		var name_control: Control
+		if camp_usable:
+			var active := _can_use_camp_technique(member, technique_id, engine)
+			var technique_button := UI.button(Techniques.label(technique_id, engine), func(): ctx["set_party_technique"].call(technique_id), Vector2(240, 36), 16)
+			technique_button.disabled = not active
+			name_control = technique_button
+			if focus == null and active:
+				focus = technique_button
+		else:
+			name_control = UI.label(Techniques.label(technique_id, engine), 16, UI.INK)
+		row.add_child(UI.grow(name_control))
+		var mp := Techniques.cost(technique_id, engine)
 		if mp > 0:
 			row.add_child(UI.label("MP %d" % mp, 14, UI.DIM))
 		host.add_child(row)
-		var summary := Techniques.summary(String(id), engine)
+		var summary := Techniques.summary(technique_id, engine)
 		if summary != "":
 			host.add_child(UI.label("　%s" % summary, 13, UI.DIM))
+	return focus
+
+static func _can_use_camp_technique(member: Dictionary, technique_id: String, engine: Dictionary) -> bool:
+	var statuses: Array = member.get("status", [])
+	if int(member.get("hp", 0)) <= 0 or member.get("injury", null) != null or statuses.has("sleep"):
+		return false
+	var definition: Dictionary = (engine.get("techniques", {}) as Dictionary).get(technique_id, {})
+	if String(definition.get("kind", "")) == "spell" and statuses.has("silence"):
+		return false
+	return int(member.get("mp", 0)) >= Techniques.cost(technique_id, engine)
 
 static func _first_button(node: Node) -> Control:
 	if node is Button:

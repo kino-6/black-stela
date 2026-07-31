@@ -521,6 +521,31 @@ function escapeAndResumeRoute(world: ScenarioWorld): { initial: GameState; comma
   };
 }
 
+// Outside combat, a priest spends MP to restore an ally and then lift the named conditions. This locks
+// the camp technique command to the TS oracle; combat-duration wards/buffs are deliberately not traced
+// here because they are not valid exploration effects.
+function campTechniquesRoute(_world: ScenarioWorld): { initial: GameState; commands: Command[] } {
+  const priest = {
+    ...createGuildCharacter({ name: "Sei", classId: "priest", seed: "camp-techniques" }),
+    hp: 10,
+    mp: 20,
+    maxMp: 20
+  };
+  const ally = {
+    ...createGuildCharacter({ name: "Rook", classId: "warrior", seed: "camp-techniques" }),
+    hp: 2,
+    status: ["poison", "silence", "fear"] as CombatStatus[]
+  };
+  const initial: GameState = { ...createInitialGameState(), phase: "dungeon", party: [priest, ally] };
+  return {
+    initial,
+    commands: [
+      { type: "use_technique", characterId: priest.id, techniqueId: "heal", targetCharacterId: ally.id },
+      { type: "use_technique", characterId: priest.id, techniqueId: "purge", targetCharacterId: ally.id }
+    ]
+  };
+}
+
 // The legacy one-button combat verbs (attack / defend). import_member mints an id internally, so it
 // is proven by SAMPLE (export:character-samples + verify_character_creation), not a state-hash trace.
 function legacyCombatRoute(world: ScenarioWorld): { initial: GameState; commands: Command[] } {
@@ -598,6 +623,7 @@ export const SLICE_ROUTES: TraceRoute[] = [
   { name: "legacy-combat", worldId: "default", build: legacyCombatRoute },
   { name: "growth-items", worldId: "default", build: growthItemsRoute },
   { name: "escape-resume", worldId: "default", build: escapeAndResumeRoute },
+  { name: "camp-techniques", worldId: "default", build: campTechniquesRoute },
   // M4 floor features: a one-shot room TRAP, a Wizardry SPINNER, a TELEPORTER (transit only, no
   // encounter on arrival), and a gate that GRANTS a shortcut flag on entry.
   { name: "b1f-trap", worldId: "default", build: cellFeatureRoute("ready", "room.b1f.c13_4", "south", [{ type: "move_backward" }, { type: "strafe_left" }]) },

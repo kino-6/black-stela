@@ -80,7 +80,11 @@ export function CareerPanel({
       parts.push(t("career.reqMastered", { vocation: localizedVocationName(world, req, locale) }));
     }
     if (requires?.minLevel) parts.push(t("career.reqLevel", { level: requires.minLevel }));
-    return parts.join(" · ");
+    if (parts.length === 0) return "";
+    // Wrap the requirement list in the "Needs: {requirements}" copy — the SFC rewrite rendered the bare
+    // list and dropped the label, so a locked path read "Warrior mastered · …" with no cue it was a
+    // requirement (e2e career.spec expects "Needs"; caught only when the full gate ran, 2026-07-31).
+    return t("career.requires", { requirements: parts.join(" · ") });
   };
 
   const statShifts = (mods: (typeof catalog)[number]["statModifiers"]) =>

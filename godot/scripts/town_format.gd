@@ -36,6 +36,29 @@ static func format_stat_delta(current: Dictionary, next: Dictionary) -> String:
 			parts.append(text)
 	return " / ".join(PackedStringArray(parts)) if not parts.is_empty() else I18n.t("town.noStatChange")
 
+## A replacement preview needs values as well as deltas.  A bare “防御 +1” does not tell a player
+## whether they are trading a damage range, accuracy, or speed for it.
+static func equipment_comparison_lines(current: Dictionary, next: Dictionary) -> Array:
+	var lines: Array = []
+	var current_min := int(current.get("damageMin", 0))
+	var current_max := int(current.get("damageMax", 0))
+	var next_min := int(next.get("damageMin", 0))
+	var next_max := int(next.get("damageMax", 0))
+	if current_min != next_min or current_max != next_max:
+		lines.append("%s %d-%d → %d-%d (%s/%s)" % [I18n.t("party.damage"), current_min, current_max, next_min, next_max, _signed_number(next_min - current_min), _signed_number(next_max - current_max)])
+	for pair in [["partyMenu.attack", "attack"], ["party.accuracy", "accuracy"], ["party.armor", "armor"], ["party.speed", "speed"]]:
+		var key := String(pair[1])
+		var before := int(current.get(key, 0))
+		var after := int(next.get(key, 0))
+		if before != after:
+			lines.append("%s %d → %d (%s)" % [I18n.t(String(pair[0])), before, after, _signed_number(after - before)])
+	if lines.is_empty():
+		lines.append(I18n.t("town.noStatChange"))
+	return lines
+
+static func _signed_number(value: int) -> String:
+	return "+%d" % value if value > 0 else str(value)
+
 static func format_signed_bonus(label: String, value: Variant) -> String:
 	var v := int(value) if value != null else 0
 	if v == 0:
@@ -101,6 +124,12 @@ static func equipped_name(world: Dictionary, equipped: Variant) -> String:
 		return "-"
 	return describe_equipment_instance(world, equipped.get("id", ""), equipped.get("plus", null), equipped.get("affix", null))
 
+## A carried equipment instance has one stable identity across the party menu.  Do not use a
+## presentation-only concatenation here: null optional fields and reinforced/affixed copies must
+## resolve exactly as the economy command resolves them.
+static func equipment_selection_key(item: Dictionary) -> String:
+	return Economy.equipment_instance_key(item.get("id", ""), item.get("plus", null), item.get("affix", null))
+
 static func localized_shop_name(shop: Dictionary) -> String:
 	var ja: Dictionary = (shop.get("locales", {}) as Dictionary).get("ja", {})
 	return String(ja.get("name", shop.get("name", "")))
@@ -139,6 +168,41 @@ static func preview_equipment_stats(member: Dictionary, equipment: Dictionary, w
 	slots[String(equipment.get("slot", ""))] = {"id": equipment.get("id", "")}
 	hypothetical["equipment"] = slots
 	return CharacterStats.effective(hypothetical, world)
+
+## The party menu compares the exact carried instance, not its bare catalog entry: reinforcement and
+## affix effects must be visible before the player commits to moving an item.
+static func preview_equipment_instance_stats(member: Dictionary, item: Dictionary, world: Dictionary) -> Dictionary:
+	var equipment: Variant = find_equipment(world, item.get("id", ""))
+	if typeof(equipment) != TYPE_DICTIONARY:
+		return CharacterStats.effective(member, world)
+	var hypothetical: Dictionary = member.duplicate(true)
+	var slots: Dictionary = (hypothetical.get("equipment", {}) as Dictionary).duplicate(true)
+	var equipped := {"id": item.get("id", "")}
+	if item.get("plus", null) != null and int(item.get("plus", 0)) != 0:
+		equipped["plus"] = int(item.get("plus", 0))
+	if item.get("affix", null) != null and String(item.get("affix", "")) != "":
+		equipped["affix"] = String(item.get("affix", ""))
+	slots[String((equipment as Dictionary).get("slot", ""))] = equipped
+	hypothetical["equipment"] = slots
+	return CharacterStats.effective(hypothetical, world)
+
+## If every copy is currently worn, equipping this instance will move it from this owner. The UI names
+## that consequence before the player confirms; the economy command remains the authoritative transfer.
+static func transfer_source(party: Array, item: Dictionary, target_id: String) -> Dictionary:
+	var key := Economy.equipment_instance_key(item.get("id", ""), item.get("plus", null), item.get("affix", null))
+	var owners := []
+	for member_v in party:
+		var member: Dictionary = member_v
+		for slot in (member.get("equipment", {}) as Dictionary):
+			var equipped: Variant = (member.get("equipment", {}) as Dictionary).get(slot, null)
+			if typeof(equipped) == TYPE_DICTIONARY and Economy.equipment_instance_key(equipped.get("id", ""), equipped.get("plus", null), equipped.get("affix", null)) == key:
+				owners.append({"characterId": String(member.get("id", "")), "name": String(member.get("name", "")), "slot": String(slot)})
+	if owners.any(func(owner): return String(owner.get("characterId", "")) == target_id) or owners.size() < int(item.get("quantity", 0)):
+		return {}
+	for owner in owners:
+		if String(owner.get("characterId", "")) != target_id:
+			return owner
+	return {}
 
 static func shop_category_for(world: Dictionary, item_id: String) -> String:
 	var equipment: Variant = find_equipment(world, item_id)

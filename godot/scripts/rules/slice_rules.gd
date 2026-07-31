@@ -19,6 +19,7 @@ const Exploration := preload("res://scripts/rules/exploration.gd")
 const PartyCommands := preload("res://scripts/rules/party_commands.gd")
 const RosterUtil := preload("res://scripts/rules/roster_util.gd")
 const ItemCommands := preload("res://scripts/rules/item_commands.gd")
+const CampTechniques := preload("res://scripts/rules/camp_techniques.gd")
 const RulesUtil := preload("res://scripts/rules/rules_util.gd")
 const Leveling := preload("res://scripts/rules/leveling.gd")
 
@@ -74,6 +75,8 @@ static func resolve(state: Dictionary, command: Dictionary, world: Dictionary = 
 			return ExplorationCommands._resume_at_checkpoint(state, world, command.get("roomId", ""))
 		"use_item":
 			return ItemCommands.use_item(state, world, command.get("itemId", ""), command.get("targetCharacterId", ""))
+		"use_technique":
+			return CampTechniques.use_technique(state, world, engine, command.get("characterId", ""), command.get("techniqueId", ""), command.get("targetCharacterId", ""))
 		"attack":
 			return _attack(state, world, engine)
 		"defend":

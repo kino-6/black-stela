@@ -16,7 +16,7 @@ import { acceptQuest, claimQuest } from "./commands/questCommands";
 import { applyLevelUps, rewardXpFor } from "./leveling";
 import { PARTY_SIZE_LIMIT, findClass, importAdventurer, reclassCharacter } from "./characterCreation";
 import { SPELLS, knownSpells } from "./spells";
-import { TECHNIQUES, type Technique } from "./techniques";
+import { TECHNIQUES, isCampUsableTechnique, type Technique } from "./techniques";
 import { applyLastingEffects, coveringMemberId, statModifier, tickEffects, type ActiveEffect } from "./combatEffects";
 import { getCriticalChance, getEvasionChance, getInitiativeScore, getSpellPowerBonus, getStatusSpellChance } from "./combatMath";
 import { FEAR_ACCURACY_PENALTY, POISON_DAMAGE, STATUS_WEAR_OFF, statusResistPct } from "./status";
@@ -253,6 +253,8 @@ export function resolveCommand(state: GameState, world: ScenarioWorld, command: 
       return defend(state);
     case "use_item":
       return useItem(state, world, command.itemId, command.targetCharacterId);
+    case "use_technique":
+      return useTechnique(state, world, command.characterId, command.techniqueId, command.targetCharacterId);
     case "discard_item":
       return discardItem(state, command.itemId, command.plus, command.affix);
     case "set_member_row":
@@ -1956,6 +1958,89 @@ function useItem(state: GameState, world: ScenarioWorld, itemId: string, targetC
       healAmount: item.healAmount ?? 0
     }
   ]);
+}
+
+/** Use a recovery/cure technique from the expedition menu. Combat effects are intentionally excluded. */
+function useTechnique(
+  state: GameState,
+  world: ScenarioWorld,
+  characterId: string,
+  techniqueId: Technique["id"],
+  targetCharacterId?: string
+): CommandResult {
+  if (state.phase === "combat") {
+    return noChange(state);
+  }
+
+  const actor = state.party.find((member) => member.id === characterId);
+  const technique = TECHNIQUES[techniqueId];
+  if (!actor || !technique || !isCampUsableTechnique(technique)) {
+    return noChange(state);
+  }
+  if (!resolveVocationState(actor).learned.includes(techniqueId)) {
+    return noChange(state);
+  }
+  if (actor.hp <= 0 || actor.injury || actor.status?.includes("sleep") || (technique.kind === "spell" && actor.status?.includes("silence"))) {
+    return noChange(state);
+  }
+
+  const mpCost = technique.cost.mp ?? 0;
+  if (actor.mp < mpCost) {
+    return noChange(state);
+  }
+
+  const ableMembers = state.party.filter((member) => member.hp > 0 && !member.injury);
+  const targets =
+    technique.target === "self"
+      ? [actor]
+      : technique.target === "party"
+        ? ableMembers
+        : targetCharacterId
+          ? ableMembers.filter((member) => member.id === targetCharacterId)
+          : [];
+  if (targets.length === 0) {
+    return noChange(state);
+  }
+
+  const targetIds = new Set(targets.map((member) => member.id));
+  let healed = 0;
+  let curedStatuses: CombatStatus[] = [];
+  const party = state.party.map((member) => {
+    let next = member;
+    if (member.id === actor.id) {
+      next = { ...next, mp: next.mp - mpCost };
+    }
+    if (!targetIds.has(member.id)) {
+      return next;
+    }
+    for (const effect of technique.effects) {
+      if (effect.kind === "heal") {
+        const amount = effect.amount + (technique.kind === "spell" && effect.scalesWithSpellPower ? getSpellPowerBonus(actor) : 0);
+        const hp = Math.min(effectiveMaxHp(next, world), next.hp + amount);
+        healed += hp - next.hp;
+        next = { ...next, hp };
+      } else if (effect.kind === "cure") {
+        const removed = (next.status ?? []).filter((status) => effect.statuses.includes(status));
+        curedStatuses = [...new Set([...curedStatuses, ...removed])];
+        next = { ...next, status: (next.status ?? []).filter((status) => !effect.statuses.includes(status)) };
+      }
+    }
+    return next;
+  });
+
+  return withEvents(
+    { ...state, party, turn: state.turn + 1 },
+    [{
+      type: "technique_used",
+      techniqueId,
+      characterId: actor.id,
+      characterName: actor.name,
+      targetCharacterIds: targets.map((member) => member.id),
+      targetNames: targets.map((member) => member.name),
+      healAmount: healed,
+      curedStatuses
+    }]
+  );
 }
 
 

@@ -1,6 +1,7 @@
 import type { AdventureLogEntry, GameEvent, RoomEntryMotion } from "./types";
 import { newId } from "./ids";
 import { getLocalizedRoomText } from "./scenario";
+import { SPELL_LABEL } from "./combatBeatText";
 import type { ScenarioWorld } from "./types";
 import { createTranslator, type Locale, type Translator } from "../i18n";
 
@@ -173,6 +174,16 @@ export function projectEventToLog(event: GameEvent, locale: Locale = "en", world
           hp: event.healAmount
         }),
         tags: ["item"]
+      };
+    case "technique_used":
+      return {
+        text: t("events.techniqueUsed", {
+          actor: event.characterName,
+          technique: t(SPELL_LABEL[event.techniqueId]),
+          targets: event.targetNames.join("、"),
+          hp: event.healAmount
+        }),
+        tags: ["technique"]
       };
     case "item_discarded":
       return {

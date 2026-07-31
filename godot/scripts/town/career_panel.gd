@@ -264,4 +264,8 @@ static func _requirement_text(world: Dictionary, engine: Dictionary, requires: D
 		parts.append(I18n.t("career.reqMastered", {"vocation": Vocations.localized_vocation_name(world, engine, String(req), "ja")}))
 	if int(requires.get("minLevel", 0)) > 0:
 		parts.append(I18n.t("career.reqLevel", {"level": int(requires.get("minLevel", 0))}))
-	return " · ".join(PackedStringArray(parts))
+	if parts.is_empty():
+		return ""
+	# Wrap in the 条件：{requirements} copy — a bare list read as if it were already met, with no cue it is a
+	# LOCK requirement (mirrors the React fix; e2e career.spec expects the label, 2026-07-31).
+	return I18n.t("career.requires", {"requirements": " · ".join(PackedStringArray(parts))})
