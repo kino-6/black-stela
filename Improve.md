@@ -562,21 +562,26 @@ centered creature.
   action is unavailable — so prose never sits between buttons as an equal line.
   Verified in `_ux_combat-command.png`; combat-controller / combat-geometry /
   ux-parity all green.
-- [ ] **Stage framing (open).** A single small pack still floats in a large black
-  void inside a hard-bordered box, and the creature is drawn once as a sprite AND
-  again as a name/HP/×N card below it (the duplication `combat-ui-drpg` warns
-  against). Options for the next pass (needs a direction call): soften/remove the
-  box border into a vignette; scale the creature up via its data `size` class
-  (never re-order art); fold the name/×N into a floating cue on the sprite. This
-  is a subjective feel change — bring screenshots and pick a direction with the
-  user before committing.
+- [x] **Stage rework (done — user chose "A: bold").** `CombatStage.enemy_mark`
+  rewritten: the hard gold reticle box and the name/HP/**×N** card are gone. A pack
+  of N is now drawn as **N grounded bodies** on a common floor line (the pack
+  visibly shrinks as units fall, honouring the Wiz-style model where the FRONT unit
+  is chipped and the rest are full), each body carrying its own thin per-unit HP
+  bar; a lone enemy is drawn LARGE and central. The creature is the ONLY
+  representation. Selection is a soft gold floor glow + ▼ arrow, not a hard box.
+  Creature scale comes from the data `size` class (small/medium/large →
+  `_enemy_size_scale`), never by re-ordering art. Verified single-enemy
+  (`_ux_combat-command.png`) and a count-4 pack (temp capture — four bodies abreast,
+  front unit's bar chipped); combat-geometry / combat-controller / ux-parity green.
+  Godot-only presentation (React rules-oracle unaffected; ux-parity checks text
+  keys, not stage pixels).
 
-### Acceptance / Gate
+### Acceptance / Gate — DONE
 
 - [x] Controller focus order reads top-to-bottom with one clear gold cursor; the
   round commands are a visibly distinct, bordered group under their own heading.
-- [ ] (stage) The enemy reads large and central with no dead black band, and is
-  represented once, at 1280×720 and 1920×1080.
+- [x] The enemy reads large and central; a pack is N bodies with no ×N card, each
+  grounded with its own HP cue; combat-geometry (3-group HUD-clearance) stays green.
 
 ## IMP-058: Default-biome dungeon ceiling renders as a black void
 

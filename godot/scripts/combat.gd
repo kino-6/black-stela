@@ -913,9 +913,23 @@ func _rebuild_stage() -> void:
 		var group: Dictionary = groups[index]
 		var gid := String(group.get("id", ""))
 		var centre := band.position.x + slot_w * (float(index) + 0.5)
-		var mark := CombatStage.enemy_mark(self, group, centre, slot_w, _enemy_stage_rect, gid == _target_group_id(), _enemy_texture(group), _enemy_ja(group), _group_hp(group), _group_max_hp(group))
+		var mark := CombatStage.enemy_mark(self, group, centre, slot_w, _enemy_stage_rect, gid == _target_group_id(), _enemy_texture(group), _enemy_ja(group), _group_hp(group), _group_max_hp(group), _enemy_size_scale(group))
 		_enemy_marks[gid] = mark
 		_stage_layer.add_child(mark)
+
+# The creature's apparent scale from its DATA size class (small/medium/large) — tuned here, never by
+# re-ordering art (combat-ui-drpg: the engine owns size). Unknown/absent → neutral.
+func _enemy_size_scale(group: Dictionary) -> float:
+	var size_class := ""
+	for enemy in _world.get("enemies", []):
+		if enemy.get("id", "") == group.get("enemyId", ""):
+			size_class = String(enemy.get("size", ""))
+			break
+	match size_class:
+		"large": return 1.5
+		"medium": return 1.2
+		"small": return 1.0
+		_: return 1.05
 
 func _acting_member() -> Dictionary:
 	# Commands use the filtered, formation-sorted actor queue (not raw party order).  Keeping the hero

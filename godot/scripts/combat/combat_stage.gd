@@ -64,71 +64,96 @@ static func actor_figure(member: Dictionary, stage_rect: Rect2, portrait_tex: Te
 	stack.add_child(role)
 	return panel
 
-## One enemy group's mark: its art, the reticle when it is the chosen target, and the name / HP bar /
-## count caption. `host` is the scene (for the reticle pulse tween). Returns the mark; the scene caches it.
-static func enemy_mark(host: Node, group: Dictionary, centre_x: float, slot_w: float, stage_rect: Rect2, selected: bool, enemy_tex: Texture2D, name_ja: String, hp: int, max_hp: int) -> Control:
-	var dead := int(group.get("count", 0)) <= 0
+## One enemy group's mark (IMP-057 stage rework, playtest 2026-07-31). A pack of N is drawn as N BODIES
+## grounded on a common floor line — never one sprite with a "×N" beside it — so the fight reads like modern
+## DRPGs and honours the Wiz-style model: units fall one at a time (a body vanishes as `count` drops) and the
+## FRONT unit is the one being chipped (`hpEach`), the rest still full. The creature is the ONLY representation
+## (no framed box, no name/HP CARD); selection is a soft floor glow + arrow, not a hard rectangle. `hp`/`max_hp`
+## are the pooled totals the caller already had; per-unit HP is read off the group. `host` is unused now (the
+## looping reticle tween is gone) but kept so the call site and the geometry gate need no change.
+## size_scale (default 1.0) scales the creature by its data size class (small/medium/large), tuned in DATA.
+static func enemy_mark(host: Node, group: Dictionary, centre_x: float, slot_w: float, stage_rect: Rect2, selected: bool, enemy_tex: Texture2D, name_ja: String, hp: int, max_hp: int, size_scale: float = 1.0) -> Control:
+	var alive := maxi(0, int(group.get("count", 0)))
+	var dead := alive <= 0
+	var hp_each := int(group.get("hpEach", hp))
+	var max_hp_each := maxi(1, int(group.get("maxHpEach", maxi(1, hp_each))))
 
+	# The mark spans the whole slot; its meta lets the IMP-024 geometry gate find the rect it must keep off
+	# the HUD. The slot already sits inside the HUD-clearing band, so the full-width mark still clears it.
 	var mark := Control.new()
 	mark.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	mark.set_meta("enemy_mark", true)   # so the IMP-024 geometry gate can find every creature's rect
-	var art_w: float = minf(slot_w * 0.9, 420.0)
-	var art_h: float = minf(stage_rect.size.y * 0.74, 400.0)
-	mark.position = Vector2(centre_x - art_w / 2.0, stage_rect.position.y)
-	mark.size = Vector2(art_w, stage_rect.size.y)
+	mark.set_meta("enemy_mark", true)
+	mark.position = Vector2(centre_x - slot_w / 2.0, stage_rect.position.y)
+	mark.size = Vector2(slot_w, stage_rect.size.y)
 
-	var art := TextureRect.new()
-	art.texture = enemy_tex
-	art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	art.size = Vector2(art_w, art_h)
-	art.modulate = Color(1, 1, 1, 0.28) if dead else Color(1, 1, 1, 1)
-	mark.add_child(art)
+	# Bodies: draw the LIVING units so the pack visibly shrinks as they fall (a wiped group keeps one faded
+	# body until the stage rebuilds). Cap how many stand abreast — a broad rank overlaps into a mass. A lone
+	# enemy is drawn LARGE and central (the choice-A "creatures are the screen"); a big pack shrinks so it fits.
+	var bodies := 1 if dead else mini(maxi(alive, 1), 5)
+	var shrink := 1.0
+	if bodies >= 5: shrink = 0.6
+	elif bodies >= 3: shrink = 0.74
+	elif bodies == 2: shrink = 0.9
+	var floor_y := stage_rect.size.y * 0.74          # the common floor line the feet stand on
+	var body_h := minf(stage_rect.size.y * 0.76, 410.0) * clampf(size_scale, 0.6, 1.7) * shrink
+	body_h = minf(body_h, floor_y - 8.0)             # never let the tallest body clip off the stage top
+	var body_w := body_h * 0.9
+	var step := 0.0
+	if bodies > 1:
+		step = minf(body_w * 0.68, (slot_w - body_w) / float(bodies - 1))
+	var rank_w := body_w + step * float(bodies - 1)
+	var start_x := slot_w / 2.0 - rank_w / 2.0
 
+	# A soft grounded glow marks the SELECTED group instead of a hard box around one sprite (playtest: the
+	# framed box read as clutter). Under the rank, faded gold, so the target is unmistakable but the creature
+	# still owns the frame.
 	if selected and not dead:
-		var reticle := PanelContainer.new()
-		var frame := StyleBoxFlat.new()
-		frame.bg_color = Color(0, 0, 0, 0)
-		frame.border_color = GOLD
-		frame.set_border_width_all(3)
-		frame.set_corner_radius_all(4)
-		reticle.add_theme_stylebox_override("panel", frame)
-		reticle.position = Vector2(-8, -8)
-		reticle.size = Vector2(art_w + 16, art_h + 16)
-		reticle.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		mark.add_child(reticle)
-		var arrow := _label("▼", 32, GOLD)
-		arrow.position = Vector2(art_w / 2.0 - 14, -40)
+		var glow := ColorRect.new()
+		glow.color = Color(GOLD, 0.16)
+		glow.position = Vector2(start_x - 10.0, floor_y - 14.0)
+		glow.size = Vector2(rank_w + 20.0, 20.0)
+		glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		mark.add_child(glow)
+
+	# Back-to-front: add rear bodies first so the front (index 0, the chipped unit) overlaps on top.
+	for i in range(bodies - 1, -1, -1):
+		var bx := start_x + step * float(i)
+		var depth := 1.0 - 0.06 * float(i)          # rear ranks a touch smaller/higher for depth
+		var bh := body_h * depth
+		var bw := body_w * depth
+		var body := TextureRect.new()
+		body.texture = enemy_tex
+		body.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		body.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		body.size = Vector2(bw, bh)
+		body.position = Vector2(bx + (body_w - bw) / 2.0, floor_y - bh - 8.0 * float(i))
+		body.modulate = Color(1, 1, 1, 0.26) if dead else Color(1, 1, 1, 1)
+		mark.add_child(body)
+
+		# Each living body carries its own thin HP cue: the front unit shows its real chipped HP, the rest
+		# are full (the model damages the front first). No numbers, no ×N — the bodies ARE the count.
+		if not dead:
+			var unit_bar := ProgressBar.new()
+			unit_bar.max_value = float(max_hp_each)
+			unit_bar.value = float(max_hp_each) if i > 0 else clampf(float(hp_each), 0.0, float(max_hp_each))
+			unit_bar.show_percentage = false
+			unit_bar.custom_minimum_size = Vector2(minf(bw, 120.0), 5)
+			unit_bar.position = Vector2(bx + (body_w - minf(bw, 120.0)) / 2.0, floor_y + 4.0)
+			mark.add_child(unit_bar)
+
+	# The arrow rides above the selected rank (clamped onto the stage); the name sits once under the group,
+	# small (not a card).
+	if selected and not dead:
+		var arrow := _label("▼", 30, GOLD)
+		arrow.position = Vector2(slot_w / 2.0 - 13.0, maxf(4.0, floor_y - body_h - 38.0))
 		mark.add_child(arrow)
-		_reticle_pulse(host, reticle)
 
-	var caption := UIKit.col(2)
-	caption.position = Vector2(0, art_h + 6)
-	caption.custom_minimum_size = Vector2(art_w, 0)
-	var name_label := _label(name_ja, 22, GOLD if selected else INK)
+	var name_label := _label(name_ja, 20, GOLD if selected else INK)
 	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	name_label.custom_minimum_size = Vector2(art_w, 0)
-	caption.add_child(name_label)
-
-	var bar := ProgressBar.new()
-	bar.max_value = maxf(1.0, float(max_hp))
-	bar.value = float(hp)
-	bar.show_percentage = false
-	bar.custom_minimum_size = Vector2(minf(art_w, 260.0), 8)
-	caption.add_child(bar)
-
-	var count_label := _label("×%d" % int(group.get("count", 0)), 16, DIM)
-	count_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	count_label.custom_minimum_size = Vector2(art_w, 0)
-	caption.add_child(count_label)
-	mark.add_child(caption)
+	name_label.position = Vector2(0, floor_y + 14.0)
+	name_label.size = Vector2(slot_w, 0)
+	mark.add_child(name_label)
 	return mark
-
-static func _reticle_pulse(_host: Node, node: Control) -> void:
-	# A static gold frame is clearer than a fading one and, unlike the old unbounded Tween, cannot make
-	# Godot 4.7 emit "Infinite loop detected" during normal play. The arrow and selected caption still make
-	# the current target unambiguous without an animation that outlives the rebuilt stage.
-	node.modulate.a = 1.0
 
 static func _label(text: String, sz: int, col: Color) -> Label:
 	var l := Label.new()
