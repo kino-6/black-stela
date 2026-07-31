@@ -123,6 +123,25 @@ func _initialize() -> void:
 	for i in 4:
 		await process_frame
 	_check(_valid(d.get("_party_menu")), "隊列 opens over the dungeon")
+	# Roster browsing is focus-driven: moving the controller cursor onto another adventurer must refresh the
+	# right-hand sheet immediately. Confirm is reserved for actions such as swapping rows or equipping.
+	var menu: Node = d.get("_party_menu")
+	var before_browse: Dictionary = d.call("_party_selected")
+	var browse_target: Dictionary = {}
+	for candidate in initial_party:
+		if String(candidate.get("id", "")) != String(before_browse.get("id", "")):
+			browse_target = candidate
+			break
+	var browse_button := _button_with_text(menu, String(browse_target.get("name", "")))
+	_check(browse_button != null, "隊列 has a focusable roster entry to browse")
+	if browse_button != null:
+		browse_button.grab_focus()
+		for i in 4:
+			await process_frame
+		var browsed: Dictionary = d.call("_party_selected")
+		var browsed_focus: Control = get_root().get_viewport().gui_get_focus_owner()
+		_check(String(browsed.get("id", "")) == String(browse_target.get("id", "")), "roster focus immediately refreshes the selected adventurer")
+		_check(browsed_focus is Button and (browsed_focus as Button).text == String(browse_target.get("name", "")), "roster refresh preserves the controller cursor on that adventurer (got %s)" % ("nothing" if browsed_focus == null else String((browsed_focus as Button).text) if browsed_focus is Button else browsed_focus.get_class()))
 	# playtest 2026-07-29: switching to the 装備 tab (or any tab) must never leave the controller with
 	# nothing focused. The safety net grabs the first usable control on every rebuild.
 	d.call("set", "_party_page", "equipment")
@@ -130,7 +149,7 @@ func _initialize() -> void:
 	for i in 4:
 		await process_frame
 	var focus_owner: Control = get_root().get_viewport().gui_get_focus_owner()
-	var menu: Node = d.get("_party_menu")
+	menu = d.get("_party_menu")
 	_check(_valid(menu) and focus_owner != null and menu.is_ancestor_of(focus_owner), "the 装備 tab keeps a focused control (no soft-lock)")
 	# Camp gear must work while exploring. Give a compatible active adventurer an iron cap, activate the
 	# same command the equipment list emits, and require both the state and the rebuilt menu to reflect it.

@@ -60,6 +60,7 @@ var _loot_pending: String = ""
 var _party_page: String = "status"
 var _party_item: String = ""
 var _party_discard: bool = false
+var _party_focus_member_id: String = "" # one rebuild only; keeps roster browsing under the controller cursor
 var _career_preview: String = ""  # the 転職 destination being previewed (SFC list→preview→confirm); "" = the list
 var _event_text: String = ""      # the last thing that happened, shown at the open counter
 
@@ -208,6 +209,14 @@ func selected_member() -> Dictionary:
 			return member
 	_selected_id = String(party[0].get("id", ""))
 	return party[0]
+
+func _select_party_member(id: String, preserve_roster_focus: bool) -> void:
+	if id == "" or id == _selected_id:
+		return
+	_selected_id = id
+	_party_focus_member_id = id if preserve_roster_focus else ""
+	_career_preview = ""
+	_rebuild()
 
 # --- build ----------------------------------------------------------------------------------------
 func _build() -> void:
@@ -532,7 +541,9 @@ func _service_ctx() -> Dictionary:
 		"save_run": func(): _save_run(),
 		"close": func(): _close_service(),
 		"selected_member": func(): return selected_member(),
-		"set_selected": func(id): _selected_id = String(id); _career_preview = ""; _rebuild(),
+		"set_selected": func(id): _select_party_member(String(id), false),
+		"focus_selected": func(id): _select_party_member(String(id), true),
+		"party_focus_member_id": _party_focus_member_id,
 		"career_preview": _career_preview,
 		"set_career_preview": func(id): _career_preview = String(id); _rebuild(),
 		"focus_hint": func(control): _pending_focus = control,
@@ -577,6 +588,7 @@ func _build_service() -> void:
 		"career": body = CareerPanel.build(ctx)
 		"records": body = RecordsPanel.build(ctx)
 		"party", "guild": body = PartyPanel.build(ctx)
+	_party_focus_member_id = ""
 	if body == null:
 		body = UI.label("(未実装)", 18, UI.DIM)
 	panel.add_child(body)

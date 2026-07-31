@@ -55,6 +55,9 @@ var _chest_overlay: Control = null
 # screen until the player has read the acquired item.
 var _chest_result: Dictionary = {}
 var _party_member_id: String = ""
+# A roster move rebuilds the sheet; remember its target for that one rebuild so focus stays on the member
+# being inspected instead of jumping to an unrelated command.
+var _party_focus_member_id: String = ""
 var _party_page: String = "status"
 var _party_item: String = ""
 
@@ -869,15 +872,19 @@ func _toggle_party_menu() -> void:
 	panel.add_theme_stylebox_override("panel", _panel_style(Color("14180df9"), GOLD))
 	layer.add_child(panel)
 
-	var focus_target: Control = null
+	# Lambda assignments to a local Control do not survive the callback boundary in GDScript. Keep this in a
+	# mutable container so PartyPanel can hand the actual roster/button focus back to the modal host.
+	var focus_target := {"control": null}
 	var ctx := {
 		"state": _state, "world": _world, "engine": _engine, "event_text": "",
 		"dispatch": func(command): _menu_dispatch(command),
 		"close": func(): _toggle_party_menu(),
 		"open_config": func(): _open_config_overlay(),
 		"selected_member": func(): return _party_selected(),
-		"set_selected": func(id): _party_member_id = String(id); _refresh_party_menu(),
-		"focus_hint": func(control): focus_target = control,
+		"set_selected": func(id): _select_party_member(String(id), false),
+		"focus_selected": func(id): _select_party_member(String(id), true),
+		"party_focus_member_id": _party_focus_member_id,
+		"focus_hint": func(control): focus_target["control"] = control,
 		"party_page": _party_page,
 		"set_party_page": func(page): _party_page = String(page); _refresh_party_menu(),
 		"party_item": _party_item,
@@ -886,20 +893,22 @@ func _toggle_party_menu() -> void:
 		"set_party_discard": func(_p): pass
 	}
 	panel.add_child(PartyPanel.build(ctx))
+	_party_focus_member_id = ""
 	add_child(layer)
 	_party_menu = layer
-	if focus_target:
-		focus_target.call_deferred("grab_focus")
 	# Focus safety net (playtest 2026-07-29): a tab switch rebuilds the panel, and if the new page's hint
 	# ever fails to land, the controller is left with nothing focused — a soft-lock. After the frame settles,
-	# guarantee SOME focusable control in the panel holds the cursor. "Every screen hands the cursor a place
-	# to land" (.claude/skills/controller-first-ui).
-	call_deferred("_ensure_focus_in", panel)
+	# give the requested roster member priority, then guarantee SOME focusable control in the panel holds the
+	# cursor. Combining those deferred operations prevents the generic fallback from stealing roster focus.
+	call_deferred("_ensure_focus_in", panel, focus_target.get("control", null))
 
 # Guarantee the cursor is on a usable control inside `root` — if nothing focusable already holds it, grab
 # the first enabled, visible button. The backstop that keeps a rebuilt menu (a tab switch) operable.
-func _ensure_focus_in(root: Node) -> void:
+func _ensure_focus_in(root: Node, preferred: Control = null) -> void:
 	if not is_instance_valid(root):
+		return
+	if preferred != null and is_instance_valid(preferred) and root.is_ancestor_of(preferred):
+		preferred.grab_focus()
 		return
 	var owner: Control = get_viewport().gui_get_focus_owner()
 	if owner != null and is_instance_valid(owner) and root.is_ancestor_of(owner):
@@ -932,6 +941,13 @@ func _party_selected() -> Dictionary:
 			return member
 	_party_member_id = String(party[0].get("id", ""))
 	return party[0]
+
+func _select_party_member(id: String, preserve_roster_focus: bool) -> void:
+	if id == "" or id == _party_member_id:
+		return
+	_party_member_id = id
+	_party_focus_member_id = id if preserve_roster_focus else ""
+	_refresh_party_menu()
 
 # The full-floor map (play.fullMap) — a Wizardry overlay, Cancel closes it.
 func _close_overlays_or(fallback: Callable) -> void:

@@ -80,18 +80,21 @@ static func build(ctx: Dictionary) -> Control:
 		sroster.custom_minimum_size = Vector2(430, 0)
 		sroster.add_child(UI.label(I18n.t("partyMenu.members"), 19, UI.GOLD))
 		var sfocus: Control = null
+		var selected_sfocus: Control = null
 		for candidate in party:
 			var rr := _roster_row(ctx, candidate, member)
 			sroster.add_child(rr)
 			if sfocus == null:
 				sfocus = _first_button(rr)
+			if String(candidate.get("id", "")) == String(member.get("id", "")):
+				selected_sfocus = _first_button(rr)
 		sbody.add_child(UI.card(sroster))
 		sbody.add_child(_spells_page(engine, member))
 		var sfoot := UI.row()
 		var sback := UI.button(I18n.t("partyMenu.close"), ctx["close"], Vector2(180, 44), 18)
 		sfoot.add_child(sback)
 		root.add_child(sfoot)
-		ctx["focus_hint"].call(sfocus if sfocus != null else sback)
+		ctx["focus_hint"].call(selected_sfocus if selected_sfocus != null else sfocus if sfocus != null else sback)
 		return root
 
 	# 編成 is its own decision surface. The status page is for reading one adventurer, not for six repeated
@@ -126,8 +129,12 @@ static func build(ctx: Dictionary) -> Control:
 	var roster := UI.col(6)
 	roster.custom_minimum_size = Vector2(430, 0)
 	roster.add_child(UI.label(I18n.t("partyMenu.members"), 19, UI.GOLD))
+	var selected_roster_focus: Control = null
 	for candidate in party:
-		roster.add_child(_roster_row(ctx, candidate, member))
+		var roster_row := _roster_row(ctx, candidate, member)
+		roster.add_child(roster_row)
+		if String(candidate.get("id", "")) == String(member.get("id", "")):
+			selected_roster_focus = _first_button(roster_row)
 	if not reserve.is_empty():
 		roster.add_child(UI.label(I18n.t("town.reserve") if I18n.has("town.reserve") else I18n.t("partyMenu.members"), 16, UI.DIM))
 		for candidate in reserve:
@@ -214,7 +221,9 @@ static func build(ctx: Dictionary) -> Control:
 	var foot := UI.row()
 	foot.add_child(back)
 	root.add_child(foot)
-	ctx["focus_hint"].call(back)
+	# Browsing the roster is not an action. The highlighted adventurer is already the subject of the
+	# right-hand sheet, so the cursor starts there and an arrow move changes the sheet immediately.
+	ctx["focus_hint"].call(selected_roster_focus if selected_roster_focus != null else back)
 	return root
 
 static func _condition(member: Dictionary) -> String:
@@ -243,6 +252,10 @@ static func _roster_row(ctx: Dictionary, candidate: Dictionary, selected: Dictio
 	var body := UI.col(3)
 	var head := UI.row()
 	var name_btn := UI.button(String(candidate.get("name", "?")), func(): ctx["set_selected"].call(cid), Vector2(150, 34), 15)
+	# Selecting a member is an inspection operation, not a two-step command. Button focus is the source of
+	# truth for controller/keyboard browsing; Confirm remains available without being required to refresh.
+	if ctx.has("focus_selected"):
+		name_btn.focus_entered.connect(func(): ctx["focus_selected"].call(cid))
 	if is_selected:
 		name_btn.add_theme_color_override("font_color", UI.GOLD)
 	head.add_child(name_btn)
@@ -257,6 +270,7 @@ static func _formation_page(ctx: Dictionary, party: Array, selected: Dictionary)
 	root.add_child(UI.label(I18n.t("partyMenu.formationHint"), 16, UI.DIM))
 	var rows := UI.row()
 	var focus: Button = null
+	var selected_focus: Button = null
 	for row_id in ["front", "back"]:
 		var column := UI.col(6)
 		column.custom_minimum_size = Vector2(360, 0)
@@ -264,8 +278,11 @@ static func _formation_page(ctx: Dictionary, party: Array, selected: Dictionary)
 		for candidate in party.filter(func(entry): return String(entry.get("row", "front")) == row_id):
 			var cid := String(candidate.get("id", ""))
 			var b := UI.button(String(candidate.get("name", "?")), func(): ctx["set_selected"].call(cid), Vector2(300, 38), 16)
+			if ctx.has("focus_selected"):
+				b.focus_entered.connect(func(): ctx["focus_selected"].call(cid))
 			if cid == String(selected.get("id", "")):
 				b.add_theme_color_override("font_color", UI.GOLD)
+				selected_focus = b
 			if focus == null: focus = b
 			column.add_child(b)
 		rows.add_child(UI.card(column))
@@ -278,7 +295,7 @@ static func _formation_page(ctx: Dictionary, party: Array, selected: Dictionary)
 		actions.add_child(b)
 		if focus == null and not b.disabled: focus = b
 	root.add_child(actions)
-	return {"control": UI.card(root), "focus": focus}
+	return {"control": UI.card(root), "focus": selected_focus if selected_focus != null else focus}
 
 static func _equipment_page(ctx: Dictionary, world: Dictionary, party: Array, member: Dictionary) -> Dictionary:
 	var state: Dictionary = ctx["state"]
@@ -288,8 +305,12 @@ static func _equipment_page(ctx: Dictionary, world: Dictionary, party: Array, me
 	var roster := UI.col(6)
 	roster.custom_minimum_size = Vector2(430, 0)
 	roster.add_child(UI.label(I18n.t("partyMenu.members"), 19, UI.GOLD))
+	var selected_roster_focus: Control = null
 	for candidate in party:
-		roster.add_child(_roster_row(ctx, candidate, member))
+		var roster_row := _roster_row(ctx, candidate, member)
+		roster.add_child(roster_row)
+		if String(candidate.get("id", "")) == String(member.get("id", "")):
+			selected_roster_focus = _first_button(roster_row)
 	body.add_child(UI.card(roster))
 
 	var detail := UI.col(8)
@@ -325,7 +346,10 @@ static func _equipment_page(ctx: Dictionary, world: Dictionary, party: Array, me
 		candidates.add_child(UI.label(I18n.t("partyMenu.inventoryEmpty"), 15, UI.DIM))
 	detail.add_child(UI.scroller(candidates, Vector2(900, 300)))
 	body.add_child(UI.card(detail))
-	return {"control": body, "focus": focus}
+	# Entering 装備 should still start at an equippable carried item. Once the player navigates back to a
+	# member, preserve that member's cursor after the detail pane refreshes.
+	var restore_member_focus: bool = String(ctx.get("party_focus_member_id", "")) != ""
+	return {"control": body, "focus": selected_roster_focus if restore_member_focus and selected_roster_focus != null else focus}
 
 
 const VALUABLE_KINDS := ["key", "treasure", "escape"]
