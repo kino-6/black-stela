@@ -88,7 +88,7 @@ export function applyLevelUps(character: Character): LevelUpResult {
   return { character: current, events };
 }
 
-interface StatGain {
+export interface StatGain {
   maxHp: number;
   maxMp: number;
   attack: number;
@@ -99,7 +99,9 @@ interface StatGain {
   speed: number;
 }
 
-function growthForLevel(character: Character, newLevel: number): StatGain {
+// The stat gain a single level adds (deterministic from aptitude + level) — the same curve applyLevelUps
+// banks. Exported so the result screen can state "what changed" without re-deriving it (T5).
+export function growthForLevel(character: Character, newLevel: number): StatGain {
   const might = character.aptitude.might ?? 0;
   const agility = character.aptitude.agility ?? 0;
   const spirit = character.aptitude.spirit ?? 0;

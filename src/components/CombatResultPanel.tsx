@@ -2,6 +2,32 @@ import { useEffect, useRef } from "react";
 import type { Character, CombatConclusion } from "../domain/types";
 import type { Translator } from "../i18n";
 import { renderPortraitContent } from "../ui/portrait";
+import { growthForLevel, xpForLevel } from "../domain/leveling";
+import { SPELLS, knownSpells, type SpellId } from "../domain/spells";
+import { SPELL_LABEL as SPELL_LABEL_KEY } from "../domain/combatBeatText";
+
+// What a single level added, as "HP+5 · MP+2 · 攻撃+1 …" for the fields that moved (T5) — the same growth
+// curve applyLevelUps banks, so it needs no new event data.
+function growthDetail(member: Character, level: number, t: Translator): string {
+  const g = growthForLevel(member, level);
+  const parts: string[] = [];
+  if (g.maxHp) parts.push(`HP+${g.maxHp}`);
+  if (g.maxMp) parts.push(`MP+${g.maxMp}`);
+  if (g.attack) parts.push(`${t("partyMenu.attack")}+${g.attack}`);
+  if (g.damageMax) parts.push(`${t("party.damage")}+${g.damageMax}`);
+  if (g.accuracy) parts.push(`${t("party.accuracy")}+${g.accuracy}`);
+  if (g.armor) parts.push(`${t("party.armor")}+${g.armor}`);
+  if (g.speed) parts.push(`${t("party.speed")}+${g.speed}`);
+  return parts.join(" · ");
+}
+
+// Techniques/spells first usable AT this level — the class line known now minus the line one level ago.
+function newTechniques(member: Character, level: number, t: Translator): string {
+  const now = knownSpells(member.classId, level);
+  const before = new Set(knownSpells(member.classId, level - 1));
+  const fresh = now.filter((id) => !before.has(id)).map((id: SpellId) => (id in SPELLS ? t(SPELL_LABEL_KEY[id]) : id));
+  return fresh.length ? `${t("result.learned")} ${fresh.join("・")}` : "";
+}
 
 interface CombatResultPanelProps {
   result: CombatConclusion;
@@ -76,6 +102,17 @@ export function CombatResultPanel({ result, party, t, onDismiss }: CombatResultP
                       <span className="combat-result-growth-copy">
                         <strong>{entry.name}</strong>
                         <span>{t("result.levelUp")}</span>
+                        {member && growthDetail(member, entry.level, t) && (
+                          <span className="combat-result-growth-stats">{growthDetail(member, entry.level, t)}</span>
+                        )}
+                        {member && newTechniques(member, entry.level, t) && (
+                          <span className="combat-result-growth-learned">{newTechniques(member, entry.level, t)}</span>
+                        )}
+                        {member && (
+                          <span className="combat-result-growth-xp">
+                            {t("partyMenu.xpToNext")} {Math.max(0, xpForLevel(entry.level + 1) - member.xp)}
+                          </span>
+                        )}
                       </span>
                       <b>{t("result.level", { level: entry.level })}</b>
                     </li>

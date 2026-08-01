@@ -47,10 +47,10 @@ IMP-060/061/062/063/064 completion records in `Improve.md`.
   - **Gate:** a chest-reward test — a trapped/guardian chest yields more than one cheap consumable
     (value/roll floor); the opened-result panel shows the still + the reward line. Visual check of the beat.
 
-- [-] **T5 — 勝利/成長画面に「レベルアップで何が変わったか」を明記 (REGRESSION)** — Godot DONE, React mirror pending
-  - Godot `result.gd` now shows per levelled member: stat deltas (HP+5 MP+2 攻撃+1 威力+1 命中+1 速度+1),
-    any newly-usable 特技/呪文, and 次のレベルまで N. Verified on the result screen. React `CombatResultPanel`
-    mirror + a lock still to do.
+- [x] **T5 — 勝利/成長画面に「レベルアップで何が変わったか」を明記 (REGRESSION)** — DONE
+  - Godot `result.gd` + React `CombatResultPanel` both show per levelled member: stat deltas (HP+5 MP+2 攻撃+1
+    威力+1 命中+1 速度+1), any newly-usable 特技/呪文, and 次のレベルまで N. `growthForLevel` exported;
+    `tests/leveling.test.ts` locks the derivations. Godot visually verified; build + leveling tests green.
   - The victory 成長 panel shows only 「レベルアップ / レベル N」 — a regression; it was meant to state WHAT
     changed. Show, per levelled member: the ability/stat CHANGES (HP/攻撃/… deltas), any newly-usable
     特技/呪文, and the EXP to the next level.

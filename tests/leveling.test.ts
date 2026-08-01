@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { createCharacter } from "../src/domain/gameState";
-import { applyLevelUps, xpForLevel } from "../src/domain/leveling";
+import { applyLevelUps, growthForLevel, xpForLevel } from "../src/domain/leveling";
+import { knownSpells } from "../src/domain/spells";
 
 function member(xp: number) {
   return { ...createCharacter({ name: "Mira", notes: "Mapper" }), xp };
@@ -12,6 +13,25 @@ describe("leveling", () => {
     expect(xpForLevel(2)).toBe(8);
     expect(xpForLevel(3)).toBe(24);
     expect(xpForLevel(3)).toBeGreaterThan(xpForLevel(2));
+  });
+
+  // T5 — the result screen states WHAT a level-up changed; these are the exported derivations it maps over.
+  it("exposes the per-level stat gain the result panel shows (growthForLevel)", () => {
+    const gain = growthForLevel(member(0), 2);
+    expect(gain.maxHp).toBeGreaterThan(0); // a delta always exists to display
+    expect(gain.attack).toBe(1); // level 2 is an every-other level
+    // The panel renders only the non-zero fields, so at least one must be non-zero.
+    expect(Object.values(gain).some((v) => v !== 0)).toBe(true);
+  });
+
+  it("detects techniques newly usable at a level (knownSpells delta)", () => {
+    // A caster class learns more of its line as it levels — the 'Learned:' line the panel derives.
+    const early = knownSpells("mage", 1);
+    const later = knownSpells("mage", 8);
+    expect(later.length).toBeGreaterThanOrEqual(early.length);
+    // Somewhere on the curve a new technique appears (the delta the panel names).
+    const anyGrowth = Array.from({ length: 8 }, (_, i) => knownSpells("mage", i + 1).length);
+    expect(Math.max(...anyGrowth)).toBeGreaterThan(anyGrowth[0]);
   });
 
   it("does not level up below the threshold", () => {
