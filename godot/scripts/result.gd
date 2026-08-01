@@ -12,6 +12,9 @@ extends Control
 
 const I18n := preload("res://scripts/i18n.gd")
 const UI := preload("res://scripts/town/ui_kit.gd")
+const Leveling := preload("res://scripts/rules/leveling.gd")
+const Vocations := preload("res://scripts/rules/vocations.gd")
+const Techniques := preload("res://scripts/rules/techniques.gd")
 
 const BG := Color("0b0d09")
 
@@ -140,12 +143,56 @@ func _level_up_row(entry: Dictionary) -> Control:
 	portrait.texture = WorldResources.portrait_texture(String(member.get("portraitRef", "")), _asset("portraits/%s.png" % _portrait_key(member)))
 	row.add_child(UI.card(portrait, Color(String(member.get("accentColor", "#c9a765")))))
 
+	var lvl := int(entry.get("level", 1))
 	var copy := UI.col(2)
 	copy.add_child(UI.label(String(entry.get("name", member.get("name", "?"))), 20, UI.INK))
 	copy.add_child(UI.label(I18n.t("result.levelUp"), 16, UI.OK))
+	# What actually CHANGED at this level (playtest T5: "レベルアップ" alone said nothing): the stat gains,
+	# any newly-usable 特技/呪文, and the EXP to the next level.
+	var delta := _growth_delta_text(member, lvl)
+	if delta != "":
+		copy.add_child(UI.label(delta, 15, UI.INK))
+	var learned := _new_techniques_text(member, lvl)
+	if learned != "":
+		copy.add_child(UI.label(learned, 15, UI.OK))
+	copy.add_child(UI.label("%s %d" % [I18n.t("partyMenu.xpToNext"), _xp_to_next(member, lvl)], 14, UI.DIM))
 	row.add_child(UI.grow(copy))
-	row.add_child(UI.label(I18n.t("result.level", {"level": int(entry.get("level", 1))}), 22, UI.GOLD))
+	row.add_child(UI.label(I18n.t("result.level", {"level": lvl}), 22, UI.GOLD))
 	return row
+
+# The stat gain THIS level added, from the ported growth curve (deterministic from aptitude + level), shown
+# as "HP+4  攻撃+1  速度+1" for the fields that moved — the answer to "何が変わったのか".
+func _growth_delta_text(member: Dictionary, level: int) -> String:
+	var g: Dictionary = Leveling.growth_for_level(member, level)
+	var parts := []
+	if int(g.get("maxHp", 0)) != 0: parts.append("HP+%d" % int(g["maxHp"]))
+	if int(g.get("maxMp", 0)) != 0: parts.append("MP+%d" % int(g["maxMp"]))
+	if int(g.get("attack", 0)) != 0: parts.append("%s+%d" % [I18n.t("partyMenu.attack"), int(g["attack"])])
+	if int(g.get("damageMax", 0)) != 0: parts.append("%s+%d" % [I18n.t("party.damage"), int(g["damageMax"])])
+	if int(g.get("accuracy", 0)) != 0: parts.append("%s+%d" % [I18n.t("party.accuracy"), int(g["accuracy"])])
+	if int(g.get("armor", 0)) != 0: parts.append("%s+%d" % [I18n.t("party.armor"), int(g["armor"])])
+	if int(g.get("speed", 0)) != 0: parts.append("%s+%d" % [I18n.t("party.speed"), int(g["speed"])])
+	return "  ".join(PackedStringArray(parts))
+
+# Techniques/spells first usable AT this level — the class line known now minus the line known one level ago.
+func _new_techniques_text(member: Dictionary, level: int) -> String:
+	var class_id := String(member.get("classId", ""))
+	var eng := _engine()
+	var now: Array = Vocations._known_spells(class_id, level, eng)
+	var before: Array = Vocations._known_spells(class_id, level - 1, eng)
+	var fresh := []
+	for id in now:
+		if not before.has(id):
+			fresh.append(Techniques.label(String(id), eng))
+	return "%s %s" % [I18n.t("result.learned"), "・".join(PackedStringArray(fresh))] if not fresh.is_empty() else ""
+
+func _xp_to_next(member: Dictionary, level: int) -> int:
+	return maxi(0, Leveling.xp_for_level(level + 1) - int(member.get("xp", 0)))
+
+func _engine() -> Dictionary:
+	if _run != null and _run.get("engine") != null:
+		return _run.engine
+	return _read_json("res://data/engine-data.json")
 
 ## The creatures are named from the WORLD catalog by id — the conclusion's `enemyNames` are the engine's
 ## raw English catalog names (they are part of the state, so they cannot be localized there).

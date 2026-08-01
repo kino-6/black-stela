@@ -47,7 +47,10 @@ IMP-060/061/062/063/064 completion records in `Improve.md`.
   - **Gate:** a chest-reward test — a trapped/guardian chest yields more than one cheap consumable
     (value/roll floor); the opened-result panel shows the still + the reward line. Visual check of the beat.
 
-- [ ] **T5 — 勝利/成長画面に「レベルアップで何が変わったか」を明記 (REGRESSION)**
+- [-] **T5 — 勝利/成長画面に「レベルアップで何が変わったか」を明記 (REGRESSION)** — Godot DONE, React mirror pending
+  - Godot `result.gd` now shows per levelled member: stat deltas (HP+5 MP+2 攻撃+1 威力+1 命中+1 速度+1),
+    any newly-usable 特技/呪文, and 次のレベルまで N. Verified on the result screen. React `CombatResultPanel`
+    mirror + a lock still to do.
   - The victory 成長 panel shows only 「レベルアップ / レベル N」 — a regression; it was meant to state WHAT
     changed. Show, per levelled member: the ability/stat CHANGES (HP/攻撃/… deltas), any newly-usable
     特技/呪文, and the EXP to the next level.
@@ -55,6 +58,23 @@ IMP-060/061/062/063/064 completion records in `Improve.md`.
     from `Leveling.apply_level_ups` events (`character_leveled_up`) and the before/after stats.
   - **Gate:** a result-panel test — a levelled member's growth row names its stat deltas, any newly-learned
     technique, and the XP-to-next (proven to fail on the level-only display).
+
+- [ ] **T6 — セーブ削除機能（タイトル/メニューから）**
+  - Let the player DELETE a save slot from the menu (title continue-list is the natural place; the user
+    said "メニュー画面で削除できるといい"). Confirm before delete (irreversible). React + Godot (parity) —
+    save slots live in `saveData`/the run/save autoload.
+  - **Gate:** a save test — deleting a slot removes it from the listed saves and cannot be undone; the
+    title continue-list reflects the removal; controller-reachable with a confirm step.
+
+- [ ] **T7 — 探索フィードバック＋ログの視認性**
+  - (a) Searching a cell whose secret/hidden path is ALREADY opened reports 「あたりを探ったが、何も
+    見つからない。」 — misleading. It should say the passage here is already open (or there is nothing left
+    to find here), not a flat "nothing".
+  - (b) The dungeon log (bottom-left) is too inconspicuous — give it a Window/frame so search results,
+    trap notes, and openings actually read.
+  - Godot dungeon (`dungeon.gd` log + `_event_line`/search result) (+ React parity for the copy).
+  - **Gate:** search-result test — searching an opened-secret cell reports "already open", not "nothing";
+    visual check the log window is legible at 1280/1920.
 
 - [ ] **玄室 landmark visual tuning** (carried over, Codex art-lane)
   - The 玄室 landmark (pillars + floor disk) reads as an unexplained "green object"; tone the floor disk /

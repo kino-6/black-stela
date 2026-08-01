@@ -43,6 +43,7 @@ export const en = {
     xp: "Experience",
     gold: "Gold",
     levelUp: "Level up",
+    learned: "Learned",
     level: "Level {level}",
     continue: "Return to exploration"
   },

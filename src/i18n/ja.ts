@@ -45,6 +45,7 @@ export const ja = {
     xp: "経験値",
     gold: "ゴールド",
     levelUp: "レベルアップ",
+    learned: "習得",
     level: "レベル {level}",
     continue: "探索へ戻る"
   },
