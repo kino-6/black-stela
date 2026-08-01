@@ -118,6 +118,18 @@ IMP-060/061/062/063/064 completion records in `Improve.md`.
   - **Gate:** upgrade test — gold upgrade raises the piece's +level up to the cap, costs gold, refuses past
     the cap / when broke; controller-reachable.
 
+- [ ] **T10 — ギルド名簿編集の配置＋画像取り込みバグ**
+  - (a) The roster editor (名簿を整える: 名前/称号/記録/画像取り込み) is crammed into the narrow bottom-right
+    hall panel. Move it into the MAIN left window (the ギルドマスター briefing area has all the room) so editing
+    a member is a proper screen, not a corner.
+  - (b) **BUG:** 「画像を取り込む」 does not let the user select their prepared image — importing a custom
+    portrait fails. Investigate `guild.gd:_import_portrait` / `_image_file_to_data_url` (native FileDialog on
+    macOS; file_selected → data URL). Repro + fix.
+  - Godot `guild.gd` (roster hall panel ~652-720; `_import_portrait`); React parity for the layout if it
+    diverges.
+  - **Gate:** import test — a chosen image becomes the member's portraitRef (data URL) and persists a
+    save/re-save; roster editor is controller-reachable and fits the main window at 1280/1920.
+
 - [ ] **玄室 landmark visual tuning** (carried over, Codex art-lane)
   - The 玄室 landmark (pillars + floor disk) reads as an unexplained "green object"; tone the floor disk /
     make the hall read as a room, not a prop. Closed-door on chamber entrances is done; this is the interior.
