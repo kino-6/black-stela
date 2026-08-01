@@ -112,6 +112,17 @@ static func read_slot(slot: int) -> Dictionary:
 		return {"ok": false, "error": "empty"}
 	return parse_save_data(JSON.parse_string(FileAccess.get_file_as_string(path)))
 
+## Delete a save slot (T6). Irreversible — the caller confirms first. Returns true if the slot is now gone
+## (removed, or already empty). An empty slot is a no-op success, never an error.
+static func delete_slot(slot: int) -> bool:
+	var path := slot_path(slot)
+	if not FileAccess.file_exists(path):
+		return true
+	var dir := DirAccess.open("user://")
+	if dir == null:
+		return false
+	return dir.remove(path.trim_prefix("user://")) == OK
+
 ## Slot headline for the title screen's continue list — never raw ids or implementation wording.
 static func slot_summary(slot: int) -> Dictionary:
 	var loaded := read_slot(slot)

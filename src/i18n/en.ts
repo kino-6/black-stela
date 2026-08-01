@@ -51,7 +51,11 @@ export const en = {
     menu: "Title menu",
     newGame: "New expedition",
     continue: "Continue",
-    config: "Config"
+    config: "Config",
+    deleteSlot: "Delete",
+    deleteConfirm: "Yes, delete",
+    deleteCancel: "Cancel",
+    deleteDone: "Deleted slot {slot}."
   },
   save: {
     controls: "Save controls",

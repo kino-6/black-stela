@@ -53,7 +53,11 @@ export const ja = {
     menu: "タイトルメニュー",
     newGame: "新たな探索",
     continue: "続きから",
-    config: "設定"
+    config: "設定",
+    deleteSlot: "削除",
+    deleteConfirm: "はい、削除する",
+    deleteCancel: "やめる",
+    deleteDone: "スロット {slot} を削除した。"
   },
   save: {
     controls: "保存操作",

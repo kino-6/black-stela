@@ -23,6 +23,7 @@ var _config_open: bool = false
 var _settings: Dictionary = {}
 var _status: String = ""
 var _force_corrupt: bool = false   # gate seam: render the unreadable-save line without breaking a real slot
+var _pending_delete: int = 0       # the slot armed for deletion, awaiting a confirm (T6)
 
 func _ready() -> void:
 	await get_tree().process_frame
@@ -100,12 +101,21 @@ func _rebuild() -> void:
 			corrupt = corrupt or bool(summary.get("corrupt", false))
 			continue
 		continues += 1
+		var row := UI.row()
 		var b := UI.button("%s %s %d — %s ・ %s ・ %s" % [
 			I18n.t("title.continue"), I18n.t("save.slot"), slot, String(summary.get("title", "")),
 			I18n.t("town.partyReady", {"count": int(summary.get("party", 0))}),
 			I18n.t("town.gold", {"gold": int(summary.get("gold", 0))})
-		], func(): _on_continue(slot), Vector2(560, 48), 18)
-		box.add_child(_centered(b))
+		], func(): _on_continue(slot), Vector2(470, 48), 18)
+		row.add_child(b)
+		# T6 — delete a slot from the title, with a confirm step (irreversible). The 削除 button arms it; はい
+		# does it, やめる backs out. Never a one-press destroy.
+		if _pending_delete == slot:
+			row.add_child(UI.button(I18n.t("title.deleteConfirm"), func(): _delete_slot(slot), Vector2(96, 48), 16))
+			row.add_child(UI.button(I18n.t("title.deleteCancel"), func(): _pending_delete = 0; _rebuild(), Vector2(96, 48), 16))
+		else:
+			row.add_child(UI.button(I18n.t("title.deleteSlot"), func(): _pending_delete = slot; _rebuild(), Vector2(96, 48), 16))
+		box.add_child(_centered(row))
 	if continues == 0:
 		# The command still has to be VISIBLE and legible as unavailable — React renders it disabled
 		# rather than removing it, so a first-time player learns the game has a continue at all.
@@ -131,6 +141,13 @@ func _rebuild() -> void:
 
 func _toggle_config() -> void:
 	_config_open = not _config_open
+	_rebuild()
+
+# Delete a save slot after the confirm (T6). Irreversible; disarms and rebuilds so the row disappears.
+func _delete_slot(slot: int) -> void:
+	SaveGame.delete_slot(slot)
+	_pending_delete = 0
+	_status = I18n.t("title.deleteDone", {"slot": slot})
 	_rebuild()
 
 # Continue: load the slot into the shared run and drop the party back where they stood.

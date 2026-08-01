@@ -87,7 +87,15 @@ func _initialize() -> void:
 			failures += 1
 		else:
 			print("[save] DISK slot round-trip preserves world + state")
-		DirAccess.remove_absolute(SaveGame.slot_path(9))
+		# T6 — delete_slot removes the slot; slot_summary then reports it empty (no undo, no file left behind).
+		if not SaveGame.delete_slot(9):
+			print("[save] delete_slot did not report success"); failures += 1
+		elif not bool(SaveGame.slot_summary(9).get("empty", false)):
+			print("[save] delete_slot left the slot listed (T6)"); failures += 1
+		elif FileAccess.file_exists(SaveGame.slot_path(9)):
+			print("[save] delete_slot left the file on disk (T6)"); failures += 1
+		else:
+			print("[save] delete_slot removes the slot (T6)")
 
 	print("")
 	if failures == 0:

@@ -57,12 +57,11 @@ IMP-060/061/062/063/064 completion records in `Improve.md`.
   - **Gate:** a result-panel test — a levelled member's growth row names its stat deltas, any newly-learned
     technique, and the XP-to-next (proven to fail on the level-only display).
 
-- [ ] **T6 — セーブ削除機能（タイトル/メニューから）**
-  - Let the player DELETE a save slot from the menu (title continue-list is the natural place; the user
-    said "メニュー画面で削除できるといい"). Confirm before delete (irreversible). React + Godot (parity) —
-    save slots live in `saveData`/the run/save autoload.
-  - **Gate:** a save test — deleting a slot removes it from the listed saves and cannot be undone; the
-    title continue-list reflects the removal; controller-reachable with a confirm step.
+- [-] **T6 — セーブ削除機能（タイトル/メニューから）** — Godot DONE, React mirror pending
+  - The title continue-list now shows a 削除 button per slot → はい、削除する / やめる confirm (never a
+    one-press destroy). `SaveGame.delete_slot` removes the file; the row disappears. Locked in
+    `verify_save` (delete removes the slot + file, slot_summary reports empty). React title mirror is the
+    remaining slice (new copy `title.delete*` is Godot-only for now; ux-parity unaffected — Godot superset).
 
 - [x] **T7 — 探索フィードバック＋ログの視認性** — DONE
   - (a) `dungeon._event_line` now says 「この場所の隠し通路はもう開いている。」 on a cell whose secret is
