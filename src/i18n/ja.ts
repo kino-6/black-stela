@@ -191,6 +191,7 @@ export const ja = {
     review: "登録確認",
     notes: "覚え書き",
     portrait: "肖像",
+    allFiles: "すべてのファイル",
     battleArt: "戦闘用の全身・半身画（任意）",
     portraitPreview: "選択した肖像のプレビュー",
     previewToken: "隊列",

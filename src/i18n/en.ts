@@ -189,6 +189,7 @@ export const en = {
     review: "Registration review",
     notes: "Record",
     portrait: "Portrait",
+    allFiles: "All files",
     battleArt: "Battle full-body or bust art (optional)",
     portraitPreview: "Selected portrait preview",
     previewToken: "Formation",

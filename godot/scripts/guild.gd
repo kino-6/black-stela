@@ -1210,7 +1210,14 @@ func _import_portrait(on_ref: Callable) -> void:
 	var dialog := FileDialog.new()
 	dialog.file_mode = FileDialog.FILE_MODE_OPEN_FILE
 	dialog.access = FileDialog.ACCESS_FILESYSTEM
-	dialog.filters = PackedStringArray(["*.png,*.jpg,*.jpeg,*.webp ; %s" % I18n.t("party.portrait")])
+	# T10 bug: the image-only filter greyed out the user's prepared image (an UPPER-case extension, or the
+	# native dialog mishandling the combined type list) — so a valid picture could not be selected. Add
+	# per-extension entries (case tolerant) AND an all-files fallback so a real image is never unselectable;
+	# the importer re-validates by content anyway (_image_file_to_data_url).
+	dialog.filters = PackedStringArray([
+		"*.png,*.jpg,*.jpeg,*.webp,*.PNG,*.JPG,*.JPEG,*.WEBP ; %s" % I18n.t("party.portrait"),
+		"*.* ; %s" % I18n.t("party.allFiles")
+	])
 	dialog.use_native_dialog = true
 	add_child(dialog)
 	dialog.file_selected.connect(func(path: String):
@@ -1234,6 +1241,12 @@ func _image_file_to_data_url(path: String) -> String:
 		err = img.load_jpg_from_buffer(bytes)
 	elif ext == "webp":
 		err = img.load_webp_from_buffer(bytes)
+	# All-files fallback (T10): the extension didn't identify a format, so try each decoder by CONTENT — a
+	# real PNG/JPG/WEBP with an odd or upper-case extension still imports.
+	if err != OK:
+		err = img.load_png_from_buffer(bytes)
+		if err != OK: err = img.load_jpg_from_buffer(bytes)
+		if err != OK: err = img.load_webp_from_buffer(bytes)
 	if err != OK:
 		return ""
 	var max_dim := 512

@@ -112,17 +112,13 @@ IMP-060/061/062/063/064 completion records in `Improve.md`.
   - **Gate:** upgrade test — gold upgrade raises the piece's +level up to the cap, costs gold, refuses past
     the cap / when broke; controller-reachable.
 
-- [ ] **T10 — ギルド名簿編集の配置＋画像取り込みバグ**
-  - (a) The roster editor (名簿を整える: 名前/称号/記録/画像取り込み) is crammed into the narrow bottom-right
-    hall panel. Move it into the MAIN left window (the ギルドマスター briefing area has all the room) so editing
-    a member is a proper screen, not a corner.
-  - (b) **BUG:** 「画像を取り込む」 does not let the user select their prepared image — importing a custom
-    portrait fails. Investigate `guild.gd:_import_portrait` / `_image_file_to_data_url` (native FileDialog on
-    macOS; file_selected → data URL). Repro + fix.
-  - Godot `guild.gd` (roster hall panel ~652-720; `_import_portrait`); React parity for the layout if it
-    diverges.
-  - **Gate:** import test — a chosen image becomes the member's portraitRef (data URL) and persists a
-    save/re-save; roster editor is controller-reachable and fits the main window at 1280/1920.
+- [-] **T10 — ギルド名簿編集の配置＋画像取り込みバグ** — BUG DONE, layout pending
+  - (b) BUG FIXED: 「画像を取り込む」 could not select the user's image — the image-only filter greyed out
+    files with odd/UPPER-case extensions. Now: per-extension + all-files fallback filters, AND
+    `_image_file_to_data_url` decodes by CONTENT (a real PNG/JPG/WEBP imports regardless of extension; a
+    non-image is still rejected). Locked in `verify_portrait_import` (wired into gate:migration).
+  - (a) Layout (move the roster editor out of the cramped bottom-right into the main window) — still to do
+    (a guild.gd restructure).
 
 - [x] **T12 — 装備タブがコントローラで操作できない (BUG)** — DONE
   - Root cause: LEFT from a slot/candidate jumped to the TAB strip (geometric neighbour), not the roster, so
