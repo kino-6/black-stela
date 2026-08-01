@@ -238,15 +238,16 @@ static func _add_stairs(parent: Node, base: Vector3, tex_path: String, kind: Str
 		# Shift the shaft just enough above the HUD line while keeping it tied to the threshold.
 		m.position = base + forward * (CELL / 2.0 - 0.035) + Vector3(0, h / 2.0 + 0.24, 0)
 	else:
-		# The upward art is a real ladder leading through the edge. Its base meets the floor and its top meets the
-		# ceiling line; keeping its face fixed to the edge makes the route intelligible as the party turns.
+		# The upward art is a ladder THROUGH the ceiling, not a portrait hovering in the middle of a wall. Keep its
+		# feet on the floor, let the root hoop nearly meet the ceiling, and preserve the side walls so the player
+		# reads one continuous route upward instead of a full-screen prop.
 		var quad := QuadMesh.new()
-		var h := WALL_H * 0.75
-		quad.size = Vector2(CELL * 0.64, h)
+		var h := WALL_H * 0.92
+		quad.size = Vector2(CELL * 0.50, h)
 		m.mesh = quad
 		m.material_override = mat
 		m.rotation.y = _edge_rotation(direction)
-		m.position = base + forward * (CELL * 0.46) + Vector3(0, h / 2.0, 0)
+		m.position = base + forward * (CELL / 2.0 - 0.035) + Vector3(0, h / 2.0, 0)
 	parent.add_child(m)
 
 static func _direction_vector(direction: String) -> Vector3:

@@ -5,6 +5,7 @@ extends SceneTree
 
 const DungeonRenderer := preload("res://scripts/dungeon/dungeon_renderer.gd")
 const CELL := 3.0
+const WALL_H := 3.2
 
 var _fail := 0
 
@@ -38,6 +39,9 @@ func _initialize() -> void:
 	if up:
 		_check(up.mesh is QuadMesh, "ascent uses the upright ladder art")
 		_check(up.position.x > 8.0 * CELL + 1.0, "ascent is placed at its east stairs edge")
+		var ladder: QuadMesh = up.mesh
+		_check(ladder.size.y >= WALL_H * 0.90 and ladder.size.x <= CELL * 0.52, "ascent nearly reaches the ceiling while preserving the stair-side walls")
+		_check(is_zero_approx(up.position.y - ladder.size.y / 2.0), "ascent's feet remain grounded at the stair threshold")
 		var mat: StandardMaterial3D = up.material_override
 		_check(mat != null and mat.billboard_mode == BaseMaterial3D.BILLBOARD_DISABLED, "ascent is fixed to its stair edge, never billboarded")
 	# This builder test owns the detached viewport tree. Free it explicitly so Godot's headless renderer exits
