@@ -167,11 +167,11 @@ IMP-060/061/062/063/064 completion records in `Improve.md`.
     make the hall read as a room, not a prop. Closed-door on chamber entrances is done; this is the interior.
   - **Gate:** visual review on the real build (Codex art-lane sign-off).
 
-- [ ] **IMP-063 descent colour arc — visual sign-off** (not playtest-blocking)
-  - User reviewing the per-floor colour arc in the real build (deep-floor QA starts floor_5 / floor_8);
-    tune hue/strength on feedback. Optional next: Codex brief (drafted) for Default 3-band descent TEXTURES
-    — Default currently has only the colour arc, no distinct band art like Verdant's block1/2/3.
-  - **Gate:** deep-floor sweep (`capture_deep_floors.gd`) + user/Codex visual sign-off.
+- [x] **IMP-063 descent colour arc + textures — DONE** (art delivered + verified 2026-08-02)
+  - Colour arc (per-floor palette) + Codex's Default 3-band TEXTURES (`a8fc903`) both landed. Verified via the
+    deep-floor sweep: B1F clean dry ash-stone (block1, B1 ash-stone-v2 exception removed), B5F damp blackened
+    stone (block2), B8F purple-black stone split by black roots (block3) — reads as a clear descent. Verdant
+    already had its own block1/2/3. Move to Archive on next tidy.
 
 ---
 
