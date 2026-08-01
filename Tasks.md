@@ -76,6 +76,19 @@ IMP-060/061/062/063/064 completion records in `Improve.md`.
   - **Gate:** search-result test — searching an opened-secret cell reports "already open", not "nothing";
     visual check the log window is legible at 1280/1920.
 
+- [ ] **T8 — 商店の全面リデザイン（世界樹式・buy/sell分離・party-wide）** ⟵ needs a design-direction OK
+  - Current shop is low quality + "業務アプリ感": buy/sell/equip are all on ONE dense screen, and it is
+    scoped to ONE adventurer (「見る冒険者: セーブル」) — buying is per-character, which is odd.
+  - Proposed (Etrian/世界樹 model): top-level **買う / 売る** split; **買う** browses categories → item detail
+    → buys into the SHARED party inventory (equipping happens in the party 装備 tab, not here) — party-wide,
+    not per-character; **売る** lists 所持品/loot to sell (optionally the Etrian "selling new materials
+    unlocks new stock" hook as a later slice). Reduce density, give it a shop identity (framing/art), not a
+    spreadsheet.
+  - React + Godot (parity), i18n, ux-parity re-derive.
+  - **Gate:** shop-controller test — 買う and 売る are separate reachable modes; buying adds to shared
+    inventory (not bound to a character); controller-only; no reflow/overflow at 1280/1920.
+  - **Status:** DESIGN PROPOSED to user (this entry) — confirm direction before building.
+
 - [ ] **玄室 landmark visual tuning** (carried over, Codex art-lane)
   - The 玄室 landmark (pillars + floor disk) reads as an unexplained "green object"; tone the floor disk /
     make the hall read as a room, not a prop. Closed-door on chamber entrances is done; this is the interior.
