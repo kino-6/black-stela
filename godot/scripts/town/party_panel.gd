@@ -13,6 +13,18 @@ const Leveling := preload("res://scripts/rules/leveling.gd")
 const Helpers := preload("res://scripts/rules/combat_helpers.gd")
 const Vocations := preload("res://scripts/rules/vocations.gd")
 const Techniques := preload("res://scripts/rules/techniques.gd")
+const WorldResources := preload("res://scripts/world_resources.gd")
+
+# The member's portrait, from an imported data-URL ref or a built-in portrait key — the face equipment
+# decisions want beside the name (T11). Falls back to the 'gate' portrait when none is set.
+static func _roster_portrait(member: Dictionary, world: Dictionary) -> Texture2D:
+	var ref := String(member.get("portraitRef", ""))
+	var key := "gate"
+	const BUILTIN := "builtin://portrait/"
+	if ref.begins_with(BUILTIN):
+		key = ref.trim_prefix(BUILTIN)
+	var world_id := String(world.get("id", "default")).trim_prefix("world.")
+	return WorldResources.portrait_texture(ref, WorldResources.world_asset(world_id, "portraits/%s.png" % key))
 
 const APTITUDES := ["might", "agility", "spirit", "wit", "luck"]
 
@@ -263,7 +275,23 @@ static func _roster_row(ctx: Dictionary, candidate: Dictionary, selected: Dictio
 	head.add_child(UI.label("Lv.%d" % int(candidate.get("level", 1)), 14, UI.DIM))
 	head.add_child(UI.grow(UI.label("HP %d/%d" % [int(candidate.get("hp", 0)), int(candidate.get("maxHp", 0))], 14, UI.INK)))
 	body.add_child(head)
-	return UI.card(body, UI.GOLD if is_selected else Color("3a4326"))
+	# T11 — the context equipment decisions need: front/back row and the current job, on a compact line.
+	var world: Dictionary = ctx.get("world", {})
+	var engine: Dictionary = ctx.get("engine", {})
+	var row_label := I18n.t("play.frontRow") if String(candidate.get("row", "front")) == "front" else I18n.t("play.backRow")
+	var voc: Dictionary = Vocations.resolve_vocation_state(candidate, engine)
+	var job := Vocations.localized_vocation_name(world, engine, String(voc.get("current", "")), "ja")
+	body.add_child(UI.label("%s ・ %s" % [row_label, job], 13, UI.DIM))
+	# T11 — the face, so a member reads at a glance.
+	var portrait := TextureRect.new()
+	portrait.custom_minimum_size = Vector2(46, 54)
+	portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	portrait.texture = _roster_portrait(candidate, world)
+	var framed := UI.row()
+	framed.add_child(portrait)
+	framed.add_child(UI.grow(body))
+	return UI.card(framed, UI.GOLD if is_selected else Color("3a4326"))
 
 static func _formation_page(ctx: Dictionary, party: Array, selected: Dictionary) -> Dictionary:
 	var root := UI.col(10)

@@ -145,11 +145,9 @@ IMP-060/061/062/063/064 completion records in `Improve.md`.
     Fix likely needs explicit `focus_neighbor_*` wiring (or one flat focus chain) across the groups, proven by
     a controller nav test. Needs real-scene reproduction — not a blind edit.
 
-- [ ] **T11 — 装備検討時の情報不足（隊列・現ジョブ・顔画像を追加）**
-  - The 装備 tab roster shows only name/Lv/HP. Add, per member: 前衛/後衛 (row), the current job (vocation/
-    class), and the portrait — so equipment decisions have the context they need. `party_panel.gd:_roster_row`
-    (portrait via WorldResources, row via `member.row`, job via `Vocations.resolve_vocation_state`).
-  - **Gate:** visual check the 装備 roster shows row + job + face; fits at 1280/1920. (Bundle with T12 — same screen.)
+- [x] **T11 — 装備検討時の情報不足（隊列・現ジョブ・顔画像を追加）** — DONE
+  - `party_panel._roster_row` now shows, per member: the PORTRAIT (顔画像), a 前衛/後衛 ・ <現在の職> line
+    (row + localized vocation), alongside name/Lv/HP. Verified on the 装備 tab (fits, reads at a glance).
 
 - [-] **T13 — 難易度検証 — DONE (verified working-as-designed; a design decision remains)**
   - descentSim per-floor (heal:none): **naive lv1 WIPES** — Verdant is at ~7% HP by g1f and wipes at g3f;
