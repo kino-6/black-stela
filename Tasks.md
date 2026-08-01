@@ -89,7 +89,25 @@ IMP-060/061/062/063/064 completion records in `Improve.md`.
     inventory (not bound to a character); controller-only; no reflow/overflow at 1280/1920.
   - **Direction CONFIRMED (2026-08-02):** 世界樹式 — 買う/売る tabs; **買う = purchase into the SHARED party
     inventory, equipping is separate (party 装備 tab); NO per-character purchase scope.** (Not the sell-unlock
-    slice for now.) Build Godot first (user's build), then React parity + gate.
+    slice for now.)
+  - **Impl analysis (turnkey for next session):**
+    - MUST change React + Godot IN LOCKSTEP — ux-parity requires React's shop keys ⊆ Godot. A Godot-only
+      redesign that drops keys React still renders (e.g. `town.selectedAdventurer`, shop-context `town.canEquip`)
+      breaks the gate.
+    - New UI state: a `shop_mode` = "buy" | "sell" (+ setter) threaded through the ctx, like `shop_category`
+      is today (town.gd provides `shop_category`/`set_shop_category` → add `shop_mode`/`set_shop_mode`;
+      React App has the mirror state).
+    - **買う mode:** keep category tabs + stock list + selected-item detail + 買う (dispatch `buy_item` into
+      shared inventory). Item detail may show "誰が装備可" as INFO (keep `town.canEquip`), but drop the
+      「見る冒険者」 picker as a *purchase scope* and drop the equipment board from the shop.
+    - **売る mode:** the 所持品 list + 売る (dispatch `sell_item`).
+    - Equipping moves entirely to the party 装備 tab (already exists) — remove the shop equip board.
+    - i18n: add `town.shopModeBuy`/`town.shopModeSell`; retire (or repurpose) `town.selectedAdventurer` in the
+      shop across BOTH engines so ux-parity stays balanced; re-derive the manifest.
+    - Files: `godot/scripts/town/shop_panel.gd` (251 lines) + `godot/scripts/town.gd` (ctx/state);
+      `src/components/ShopPanel.tsx` + `src/App.tsx` (state); `src/i18n/*`; ux-parity manifest.
+  - **Gate:** shop-controller test — 買う/売る are separate reachable modes; buying adds to SHARED inventory
+    (not bound to a character); controller-only; no reflow/overflow at 1280/1920. ux-parity re-derived green.
 
 - [ ] **T9 — 鍛冶屋: 金銭で装備を強化する施設（上限あり）**
   - Want a blacksmith that upgrades gear for GOLD up to some cap. NB: the 錬成所 (workshop) already does
