@@ -160,9 +160,15 @@ static func _build_geometry(parent: Node, world: Dictionary, state: Dictionary, 
 			# The pack ships stair-up/stair-down art; draw it so a stair cell is VISIBLE in the first-person
 			# view instead of a plain dead-end the 階段を使う command only hints at (playtest: asset delivered,
 			# never rendered).
-			var stair_kind := _stairs_kind(cell, floor_dungeon)
-			if stair_kind != "":
-				_add_stairs(parent, base, _asset(world, run, "dungeon/stair-%s.png" % stair_kind), stair_kind)
+			var stair := _stairs_info(cell, floor_dungeon)
+			if not stair.is_empty():
+				_add_stairs(
+					parent,
+					base,
+					_asset(world, run, "dungeon/stair-%s.png" % String(stair.get("kind", ""))),
+					String(stair.get("kind", "")),
+					String(stair.get("direction", "north")),
+				)
 
 static func _is_chamber(edges: Dictionary) -> bool:
 	var openings := 0
@@ -171,16 +177,25 @@ static func _is_chamber(edges: Dictionary) -> bool:
 			openings += 1
 	return openings >= 3
 
-# "" / "down" / "up" — a cell carries stairs when one of its edges is a `stairs` edge. A deeper target is
-# a descent (stair-down art); anything else (shallower, or off-floor to town) is an ascent (stair-up).
-static func _stairs_kind(cell: Dictionary, floor_id: String) -> String:
+# A cell carries stairs when one of its edges is a `stairs` edge.  Keep the edge direction with the art:
+# stairs are a current-cell action in the rules, but visually they must lead to the traversable edge rather
+# than sit under the party at the centre of the tile.
+static func _stairs_info(cell: Dictionary, floor_id: String) -> Dictionary:
 	var depth := _floor_depth(floor_id)
 	for dir in ["north", "south", "east", "west"]:
 		var edge: Variant = cell.get("edges", {}).get(dir, null)
 		if typeof(edge) == TYPE_DICTIONARY and String(edge.get("kind", "")) == "stairs":
 			var target := String(edge.get("targetFloorId", ""))
-			return "down" if target != "" and _floor_depth(target) > depth else "up"
-	return ""
+			return {
+				"kind": "down" if target != "" and _floor_depth(target) > depth else "up",
+				"direction": dir,
+			}
+	return {}
+
+# Kept as a small compatibility helper for any focused renderer tests or tools that only need the artwork
+# choice. New rendering code must use _stairs_info so it does not discard the physical stair direction.
+static func _stairs_kind(cell: Dictionary, floor_id: String) -> String:
+	return String(_stairs_info(cell, floor_id).get("kind", ""))
 
 static func _floor_depth(floor_id: String) -> int:
 	var re := RegEx.new()
@@ -188,12 +203,12 @@ static func _floor_depth(floor_id: String) -> int:
 	var m := re.search(floor_id)
 	return int(m.get_string(1)) if m else 0
 
-# The stairs art, drawn to match what it depicts. A DESCENT is a hole in the ground (the art is a pit seen
-# from above) so it lies FLAT on the floor like a trapdoor; an ASCENT is a ladder climbing up, so it stands
-# UPRIGHT and turns to face the party. Rendering the pit as an upright billboard made a ground-hole stand up
-# like a signboard and read as floating (playtest 2026-07-30: 階段浮いている / 全く変わってない — the earlier
-# billboard tweak could not fix it because the whole ORIENTATION was wrong for a descent).
-static func _add_stairs(parent: Node, base: Vector3, tex_path: String, kind: String) -> void:
+# The stairs art follows the edge it uses. The rules keep a stair edge as a current-cell action rather than a
+# walkable neighbour, so the world still needs its wall plane. Embed both artworks just inside that wall:
+# the wall becomes the dark/recessed backing for a downshaft or ladder instead of leaving a black void beyond
+# the authored grid. They are fixed to the edge — never billboards — and remain visible when the party stands
+# on the stair cell and faces it.
+static func _add_stairs(parent: Node, base: Vector3, tex_path: String, kind: String, direction: String) -> void:
 	if not ResourceLoader.exists(tex_path):
 		return
 	var tex: Texture2D = load(tex_path)
@@ -203,28 +218,52 @@ static func _add_stairs(parent: Node, base: Vector3, tex_path: String, kind: Str
 	mat.albedo_texture = tex
 	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	mat.roughness = 1.0
 	var m := MeshInstance3D.new()
+	m.name = "Stair_%s_%s" % [kind, direction]
+	m.set_meta("stair_kind", kind)
+	m.set_meta("stair_direction", direction)
+	var forward := _direction_vector(direction)
 	if kind == "down":
-		# Flat on the floor — a pit is PART of the ground, not an object standing on it. PlaneMesh already lies
-		# in the XZ plane (normal +Y); a round pit reads the same whichever way the party faces, so no billboard.
-		var plane := PlaneMesh.new()
-		var s := CELL * 0.92
-		plane.size = Vector2(s, s)
-		m.mesh = plane
-		mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+		# The downshaft illustration is framed by the stone edge. At this eye height a floor decal is entirely
+		# below the view when the party occupies its own stair cell, so a wall-backed opening is the readable
+		# first-person equivalent of looking into the shaft.
+		var shaft := QuadMesh.new()
+		var h := WALL_H * 0.54
+		shaft.size = Vector2(CELL * 0.64, h)
+		m.mesh = shaft
 		m.material_override = mat
-		m.position = base + Vector3(0, 0.03, 0)   # a hair above the floor plane to avoid z-fighting
+		m.rotation.y = _edge_rotation(direction)
+		# Shift the shaft just enough above the HUD line while keeping it tied to the threshold.
+		m.position = base + forward * (CELL / 2.0 - 0.035) + Vector3(0, h / 2.0 + 0.24, 0)
 	else:
-		# Upright, grounded at its base, turning to face the party (Y-fixed billboard, not a full one — a full
-		# billboard tilts and lifts its bottom edge off the floor, which floats it).
+		# The upward art is a real ladder leading through the edge. Its base meets the floor and its top meets the
+		# ceiling line; keeping its face fixed to the edge makes the route intelligible as the party turns.
 		var quad := QuadMesh.new()
-		var h := CELL * 0.8
-		quad.size = Vector2(h, h)
+		var h := WALL_H * 0.75
+		quad.size = Vector2(CELL * 0.64, h)
 		m.mesh = quad
-		mat.billboard_mode = BaseMaterial3D.BILLBOARD_FIXED_Y
 		m.material_override = mat
-		m.position = base + Vector3(0, h / 2.0, 0)   # bottom edge on the floor, centred in the cell
+		m.rotation.y = _edge_rotation(direction)
+		m.position = base + forward * (CELL * 0.46) + Vector3(0, h / 2.0, 0)
 	parent.add_child(m)
+
+static func _direction_vector(direction: String) -> Vector3:
+	return {
+		"north": Vector3(0, 0, -1),
+		"south": Vector3(0, 0, 1),
+		"east": Vector3(1, 0, 0),
+		"west": Vector3(-1, 0, 0),
+	}.get(direction, Vector3(0, 0, -1))
+
+static func _edge_rotation(direction: String) -> float:
+	return {
+		"north": 0.0,
+		"south": PI,
+		"east": -PI / 2.0,
+		"west": PI / 2.0,
+	}.get(direction, 0.0)
 
 static func _add_plane(parent: Node, mat: Material, pos: Vector3, rot: Vector3) -> void:
 	var m := MeshInstance3D.new()
