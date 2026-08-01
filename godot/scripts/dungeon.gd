@@ -174,10 +174,17 @@ func _build_overlays() -> void:
 	add_child(_minimap)
 	_minimap.setup(_world, _state)
 
-	# log ticker
+	# log WINDOW — a framed panel, not a faint line: search results / trap notes / openings must actually
+	# read (playtest T7: ログが目立たなすぎ). Sits above the party formation, left of the right-hand dock.
+	var log_panel := PanelContainer.new()
+	log_panel.position = Vector2(40, size.y - 316)
+	log_panel.custom_minimum_size = Vector2(size.x - 420, 52)
+	log_panel.size = Vector2(size.x - 420, 52)
+	log_panel.add_theme_stylebox_override("panel", _panel_style(Color("11140deb"), GOLD))
 	_log_label = _label("地下に踏み入った。松明の灯が石を照らす。", 20, INK)
-	_log_label.position = Vector2(48, size.y - 286)   # message band, ABOVE the party formation
-	add_child(_log_label)
+	_log_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	log_panel.add_child(_log_label)
+	add_child(log_panel)
 
 	# The command region is a FIXED area (AGENTS.md: logs and messages must never push commands around).
 	# It is rebuilt in place, because a chest on this cell takes the region over.
@@ -860,7 +867,9 @@ func _show_chest_result(events: Array) -> void:
 	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	layer.add_child(center)
 	var built: Dictionary = ChestPanel.build_opened_result(
-		opened, events, func(): _dismiss_chest_result(), _texture(_asset("dungeon/treasure-chest-open.png")), _world
+		# A reward tableau communicates that the contents have been taken; the text below remains the
+		# canonical, exact list of what entered the inventory.  Do not reuse this for the unopened prompt.
+		opened, events, func(): _dismiss_chest_result(), _texture(_asset("dungeon/treasure-reward-still.png")), _world
 	)
 	center.add_child(built["control"])
 	add_child(layer)
@@ -1133,6 +1142,21 @@ func _current_cell() -> Dictionary:
 				return cell
 	return {}
 
+# True when the CURRENT cell has a secret edge whose passage is already discovered — so a fresh 探索 that
+# finds nothing should say "already open here", not "nothing found" (T7). Mirrors the rules' flag key
+# `secret:<room>:<dir>` (exploration_commands.search).
+func _has_opened_secret_here() -> bool:
+	var cell := _current_cell()
+	if cell.is_empty():
+		return false
+	var room_id := String(cell.get("roomId", ""))
+	var discovered: Array = _state.get("discoveredSecrets", [])
+	for dir in ["north", "east", "south", "west"]:
+		var edge: Variant = (cell.get("edges", {}) as Dictionary).get(dir, null)
+		if typeof(edge) == TYPE_DICTIONARY and String((edge as Dictionary).get("kind", "")) == "secret" and discovered.has("secret:%s:%s" % [room_id, dir]):
+			return true
+	return false
+
 func _room_name() -> String:
 	var rid: String = _position().get("roomId", "")
 	for dungeon in _world.get("dungeons", []):
@@ -1176,7 +1200,8 @@ func _event_line(e: Dictionary) -> String:
 		"inspection_made":
 			return "耳をすます……乾いた風の音だけだ。"
 		"search_completed":
-			return "あたりを探ったが、何も見つからない。"
+			# "何も見つからない" is misleading on a cell whose hidden passage is ALREADY open (playtest T7).
+			return "この場所の隠し通路はもう開いている。" if _has_opened_secret_here() else "あたりを探ったが、何も見つからない。"
 		"secret_found":
 			return "隠された継ぎ目を見つけた！"
 		"chest_investigated":

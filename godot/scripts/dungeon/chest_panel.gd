@@ -83,7 +83,9 @@ static func build_opened_result(chest: Dictionary, events: Array, on_dismiss: Ca
 	if opened_tex != null:
 		var img := TextureRect.new()
 		img.texture = opened_tex
-		img.custom_minimum_size = Vector2(232, 150)
+		# This is the reward still, rather than an interaction icon: give it enough presence for the
+		# discovered contents to read before the exact acquired-item list below.
+		img.custom_minimum_size = Vector2(300, 190)
 		img.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		img.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		root.add_child(img)

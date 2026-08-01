@@ -332,6 +332,23 @@ func _initialize() -> void:
 	if mm is Node:
 		(mm as Node).free()
 
+	# T7 — a fruitless 探索 on a cell whose hidden passage is ALREADY open must SAY so, not "何も見つからない".
+	# b1f's secret is cell.b1f.c6_17 (room.b1f.c6_17, east); the rules key it "secret:<room>:<dir>".
+	d.set("_state", {
+		"phase": "dungeon",
+		"position": {"cellId": "cell.b1f.c6_17", "roomId": "room.b1f.c6_17", "facing": "east"},
+		"map": {"floorId": "dungeon.b1f", "currentCellId": "cell.b1f.c6_17", "visitedCells": ["cell.b1f.c6_17"]},
+		"discoveredSecrets": ["secret:room.b1f.c6_17:east"]
+	})
+	_check(String(d.call("_event_line", {"type": "search_completed"})).find("開いている") != -1, "search on an already-opened secret cell says the passage is open (T7)")
+	d.set("_state", {
+		"phase": "dungeon",
+		"position": {"cellId": "cell.b1f.c6_17", "roomId": "room.b1f.c6_17", "facing": "east"},
+		"map": {"floorId": "dungeon.b1f", "currentCellId": "cell.b1f.c6_17", "visitedCells": ["cell.b1f.c6_17"]},
+		"discoveredSecrets": []
+	})
+	_check(String(d.call("_event_line", {"type": "search_completed"})).find("見つからない") != -1, "search with the secret still hidden says nothing found (T7)")
+
 	print("[dungeon-controller] %s (%d failures)" % ["PASS" if _fail == 0 else "FAIL", _fail])
 	quit(_fail)
 

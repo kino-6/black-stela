@@ -66,15 +66,12 @@ IMP-060/061/062/063/064 completion records in `Improve.md`.
   - **Gate:** a save test — deleting a slot removes it from the listed saves and cannot be undone; the
     title continue-list reflects the removal; controller-reachable with a confirm step.
 
-- [ ] **T7 — 探索フィードバック＋ログの視認性**
-  - (a) Searching a cell whose secret/hidden path is ALREADY opened reports 「あたりを探ったが、何も
-    見つからない。」 — misleading. It should say the passage here is already open (or there is nothing left
-    to find here), not a flat "nothing".
-  - (b) The dungeon log (bottom-left) is too inconspicuous — give it a Window/frame so search results,
-    trap notes, and openings actually read.
-  - Godot dungeon (`dungeon.gd` log + `_event_line`/search result) (+ React parity for the copy).
-  - **Gate:** search-result test — searching an opened-secret cell reports "already open", not "nothing";
-    visual check the log window is legible at 1280/1920.
+- [x] **T7 — 探索フィードバック＋ログの視認性** — DONE
+  - (a) `dungeon._event_line` now says 「この場所の隠し通路はもう開いている。」 on a cell whose secret is
+    already discovered (`_has_opened_secret_here`, keyed to the rules' `secret:<room>:<dir>`), not a flat
+    "nothing found". Locked in `verify_dungeon_controller` (both branches).
+  - (b) The dungeon log is now a framed WINDOW (gold-bordered panel, autowrap) above the party formation —
+    verified legible. dungeon-controller green.
 
 - [ ] **T8 — 商店の全面リデザイン（世界樹式・buy/sell分離・party-wide）** ⟵ needs a design-direction OK
   - Current shop is low quality + "業務アプリ感": buy/sell/equip are all on ONE dense screen, and it is
