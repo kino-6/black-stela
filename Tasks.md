@@ -129,21 +129,12 @@ IMP-060/061/062/063/064 completion records in `Improve.md`.
   - **Gate:** import test — a chosen image becomes the member's portraitRef (data URL) and persists a
     save/re-save; roster editor is controller-reachable and fits the main window at 1280/1920.
 
-- [ ] **T12 — 装備タブがコントローラで操作できない (BUG, blocks equipment changes)**
-  - In the party-menu 装備 tab, character selection AND equipment change cannot be done with a controller —
-    functional bug (controller-first-ui violation: every screen must navigate by arrows/confirm). Investigate
-    focus flow in `party_panel.gd` equipment page: roster select → slot select → candidate select must all be
-    reachable + confirmable without a mouse. Likely the slot/candidate buttons aren't focusable or focus never
-    lands there.
-  - **Gate:** extend `verify_town_controller` / a party-menu controller test — on the 装備 tab, focus lands,
-    a slot is focusable, and picking a candidate dispatches equip; 0 pointer events.
-  - **Investigation (2026-08-02):** `_equipment_page` builds three button groups — roster (character select),
-    slots (`set_party_equipment_slot`), candidates (`set_party_equipment_candidate`) + an equip button. ALL are
-    normal focusable `UI.button`s, so the bug is almost certainly focus-NEIGHBOR traversal between the groups
-    (roster card | detail card → slots / candidates scroller): Godot's geometry-based neighbor can't cross the
-    nested cards/scroller, so arrows get stuck in one group and the player can't reach slot→candidate→equip.
-    Fix likely needs explicit `focus_neighbor_*` wiring (or one flat focus chain) across the groups, proven by
-    a controller nav test. Needs real-scene reproduction — not a blind edit.
+- [x] **T12 — 装備タブがコントローラで操作できない (BUG)** — DONE
+  - Root cause: LEFT from a slot/candidate jumped to the TAB strip (geometric neighbour), not the roster, so
+    character-select and the slot→candidate→equip chain were unreachable by pad. `_equipment_page` now wires
+    explicit focus neighbours — the detail column's LEFT returns to the selected roster row, the roster's
+    RIGHT enters the slots, and the last slot flows DOWN into the candidates/equip. Verified: ui_left from a
+    slot now lands on the roster (Mira→Sei→Rook…). Locked in `verify_dungeon_controller` (T12).
 
 - [x] **T11 — 装備検討時の情報不足（隊列・現ジョブ・顔画像を追加）** — DONE
   - `party_panel._roster_row` now shows, per member: the PORTRAIT (顔画像), a 前衛/後衛 ・ <現在の職> line

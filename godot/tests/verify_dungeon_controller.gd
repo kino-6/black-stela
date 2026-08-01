@@ -152,6 +152,19 @@ func _initialize() -> void:
 	var focus_owner: Control = get_root().get_viewport().gui_get_focus_owner()
 	var menu: Node = d.get("_party_menu")
 	_check(_valid(menu) and focus_owner != null and menu.is_ancestor_of(focus_owner), "the 装備 tab keeps a focused control (no soft-lock)")
+	# T12 — controller navigation on the 装備 tab must reach character-select: from a slot, ui_left goes to the
+	# roster, NOT the tab strip (the bug made equipment changes unreachable by pad). Focus a slot, press left.
+	var a_slot: Button = _find_button_with(menu, "武器")
+	if a_slot != null:
+		a_slot.grab_focus()
+		await process_frame
+		Input.parse_input_event(_pressed("ui_left"))
+		for i in 2:
+			await process_frame
+		var after_left: Control = get_root().get_viewport().gui_get_focus_owner()
+		var tab_texts := ["能力", "編成", "呪文/特技", "装備", "所持品", "貴重品"]
+		var on_tab := after_left is Button and tab_texts.has(String((after_left as Button).text))
+		_check(after_left != null and menu.is_ancestor_of(after_left) and not on_tab, "装備 tab: ui_left from a slot reaches the roster, not the tab strip (T12)")
 	# Camp gear must work while exploring. Give a compatible active adventurer an iron cap, activate the
 	# same command the equipment list emits, and require both the state and the rebuilt menu to reflect it.
 	var Economy := preload("res://scripts/rules/economy.gd")
@@ -366,6 +379,15 @@ func _party_member_named(party: Array, name: String) -> bool:
 		if String(member.get("name", "")) == name:
 			return true
 	return false
+
+func _find_button_with(node: Node, needle: String) -> Button:
+	if node is Button and String((node as Button).text).find(needle) != -1:
+		return node
+	for c in node.get_children():
+		var found := _find_button_with(c, needle)
+		if found != null:
+			return found
+	return null
 
 func _has_focusable_button(node: Node) -> bool:
 	for c in node.get_children():

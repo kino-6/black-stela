@@ -335,11 +335,15 @@ static func _equipment_page(ctx: Dictionary, world: Dictionary, party: Array, me
 	roster.custom_minimum_size = Vector2(430, 0)
 	roster.add_child(UI.label(I18n.t("partyMenu.members"), 19, UI.GOLD))
 	var selected_roster_focus: Control = null
+	var roster_buttons: Array[Button] = []
 	for candidate in party:
 		var roster_row := _roster_row(ctx, candidate, member)
 		roster.add_child(roster_row)
+		var rb := _first_button(roster_row)
+		if rb != null:
+			roster_buttons.append(rb)
 		if String(candidate.get("id", "")) == String(member.get("id", "")):
-			selected_roster_focus = _first_button(roster_row)
+			selected_roster_focus = rb
 	body.add_child(UI.card(roster))
 
 	# Equipment is a four-step preparation decision: choose a slot, inspect a carried instance, compare the
@@ -362,6 +366,7 @@ static func _equipment_page(ctx: Dictionary, world: Dictionary, party: Array, me
 	detail.add_child(UI.label(I18n.t("partyMenu.equipmentSelectSlot"), 15, UI.DIM))
 	var slots := UI.col(3)
 	var selected_slot_focus: Control = null
+	var slot_buttons: Array[Button] = []
 	for slot_v in Fmt.EQUIPMENT_SLOT_ORDER:
 		var slot := String(slot_v)
 		var current: Variant = (member.get("equipment", {}) as Dictionary).get(slot, null)
@@ -371,11 +376,14 @@ static func _equipment_page(ctx: Dictionary, world: Dictionary, party: Array, me
 			slot_button.add_theme_color_override("font_color", UI.GOLD)
 			selected_slot_focus = slot_button
 		slots.add_child(slot_button)
+		slot_buttons.append(slot_button)
 	detail.add_child(UI.card(slots))
 
 	var candidates := UI.col(4)
 	candidates.add_child(UI.label(I18n.t("partyMenu.equipmentCandidates"), 18, UI.GOLD))
 	var candidate_focus: Control = null
+	var candidate_buttons: Array[Button] = []
+	var equip_button_ref: Button = null
 	var found := false
 	for item_v in state.get("inventory", []):
 		var item: Dictionary = item_v
@@ -396,6 +404,7 @@ static func _equipment_page(ctx: Dictionary, world: Dictionary, party: Array, me
 		row.add_child(candidate_button)
 		row.add_child(UI.grow(UI.label(I18n.t("partyMenu.equipmentIncompatible") if not usable else Fmt.format_inventory_effect(item), 14, UI.DIM)))
 		candidates.add_child(row)
+		candidate_buttons.append(candidate_button)
 	if not found:
 		candidates.add_child(UI.label(I18n.t("partyMenu.equipmentNoCandidate"), 15, UI.DIM))
 	var comparison := UI.col(4)
@@ -424,6 +433,7 @@ static func _equipment_page(ctx: Dictionary, world: Dictionary, party: Array, me
 			var equip_button := UI.button(equip_label, func(): ctx["dispatch"].call({"type": "equip_item", "characterId": member.get("id", ""), "equipmentId": selected_item.get("id", ""), "plus": selected_item.get("plus", null), "affix": selected_item.get("affix", null)}), Vector2(260, 42), 16)
 			equip_button.disabled = same
 			comparison.add_child(equip_button)
+			equip_button_ref = equip_button
 	# Candidate selection and its consequence are one decision, so they sit beside each other rather than
 	# forcing the player to scan from the top of a sparse list to a detached lower panel.
 	var decision := UI.row()
@@ -432,6 +442,31 @@ static func _equipment_page(ctx: Dictionary, world: Dictionary, party: Array, me
 	decision.add_child(UI.grow(UI.card(comparison)))
 	detail.add_child(decision)
 	body.add_child(UI.grow(UI.card(detail)))
+
+	# T12 — controller navigation was chaotic: LEFT from a slot/candidate jumped to the TAB strip, not the
+	# roster, so character-select and the slot→candidate→equip chain were effectively unreachable by pad.
+	# Wire explicit neighbours: the detail column's LEFT always returns to the selected roster row; the
+	# roster's RIGHT enters the slots; slots→candidates→equip flow down/right. Buttons keep their geometric
+	# up/down within a column.
+	var into_detail: Control = selected_slot_focus if selected_slot_focus != null else (slot_buttons[0] if not slot_buttons.is_empty() else null)
+	var back_to_roster: Control = selected_roster_focus if selected_roster_focus != null else (roster_buttons[0] if not roster_buttons.is_empty() else null)
+	if back_to_roster != null:
+		for rb in roster_buttons:
+			if into_detail != null:
+				rb.focus_neighbor_right = rb.get_path_to(into_detail)
+		for sb in slot_buttons:
+			sb.focus_neighbor_left = sb.get_path_to(back_to_roster)
+		for cb in candidate_buttons:
+			cb.focus_neighbor_left = cb.get_path_to(back_to_roster)
+		if equip_button_ref != null:
+			equip_button_ref.focus_neighbor_left = equip_button_ref.get_path_to(back_to_roster)
+	# Last slot flows DOWN into the first candidate (or the equip button) so the choose-slot→choose-item→
+	# equip sequence is one straight run.
+	if not slot_buttons.is_empty():
+		var after_slots: Control = (candidate_buttons[0] if not candidate_buttons.is_empty() else equip_button_ref)
+		if after_slots != null:
+			slot_buttons[slot_buttons.size() - 1].focus_neighbor_bottom = slot_buttons[slot_buttons.size() - 1].get_path_to(after_slots)
+
 	var restore_member_focus: bool = String(ctx.get("party_focus_member_id", "")) != ""
 	return {"control": body, "focus": selected_roster_focus if restore_member_focus and selected_roster_focus != null else candidate_focus if candidate_focus != null else selected_slot_focus}
 
