@@ -512,6 +512,12 @@ func _resolve_round(animated: bool) -> void:
 		_busy = false
 		return
 
+	# Play the round out member-by-member BEFORE the result so it has weight and the player can read what
+	# happened — the aggregate one-flash jump to the victory screen gave no time to learn (playtest IMP-064:
+	# 「一瞬で遷移して知見がたまらない」). Presentation only; no fabricated numbers, the rules are untouched.
+	if animated:
+		await _narrate_all_out()
+
 	var result := CombatRound.declare_round(_state, _world, actions, _engine)
 	var events: Array = result.get("events", [])
 	_state = result.get("state", _state)
@@ -520,6 +526,21 @@ func _resolve_round(animated: bool) -> void:
 
 	await _playback(before, events, animated)
 	_busy = false
+
+# Narrate the all-out round member-by-member, so 全員でかかる visibly plays out instead of snapping to the
+# result. Presentation only — it reads the pre-resolution party (all living members attack), sets one beat
+# per member, and pulses the target. No fabricated numbers; the real damage/defeat still land in _playback.
+func _narrate_all_out() -> void:
+	var target := _first_group()
+	var enemy_name := _enemy_ja(target) if not target.is_empty() else ""
+	for member in _state.get("party", []):
+		if int(member.get("hp", 0)) <= 0:
+			continue
+		if enemy_name != "":
+			_set_log("%s が %s に斬りかかる。" % [String(member.get("name", "?")), enemy_name])
+		else:
+			_set_log("%s の攻撃！" % String(member.get("name", "?")))
+		await get_tree().create_timer(0.32).timeout
 
 # Build one attack per living member at the first living enemy group (the slice's all-out round).
 func _all_out_actions() -> Array:
