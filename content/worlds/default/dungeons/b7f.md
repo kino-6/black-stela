@@ -1,5 +1,13 @@
 ---
 id: dungeon.b7f
+# IMP-063 descent arc — deep band: the black stela's cold violet corruption begins to bleed into the ash.
+palette:
+  ceiling: "#38323c"
+  ambient: "#241e28"
+  fog: "#08070b"
+  torch: "#dfbab4"
+  ambientEnergy: 0.48
+  fogDensity: 0.12
 name: B7F - Side Ash Vaults
 level: 7
 role: optional

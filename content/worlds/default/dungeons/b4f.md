@@ -1,5 +1,12 @@
 ---
 id: dungeon.b4f
+# IMP-063 descent arc — mid band: the ash cools and dims as the party descends toward the stela's root.
+palette:
+  ceiling: "#3d382f"
+  ambient: "#251f1b"
+  fog: "#080705"
+  torch: "#ebc189"
+  ambientEnergy: 0.5
 name: B4F - Turned Lanterns
 level: 4
 role: navigation_twist

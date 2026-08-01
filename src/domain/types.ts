@@ -938,6 +938,9 @@ export interface DungeonFloor {
    *  authored `name` (IMP-056). */
   locales?: Record<string, { name?: string }>;
   startRoom: string;
+  /** Optional per-floor scene-colour override, merged OVER the world palette, so the descent can shift
+   *  (a deeper floor darker/more corrupt than the entrance — IMP-063). */
+  palette?: ScenePalette;
   grid?: DungeonGrid;
   rooms: DungeonRoom[];
   level?: number;

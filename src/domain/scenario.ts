@@ -397,9 +397,31 @@ const roomSchema = z.object({
   event: z.string().optional()
 });
 
+// Scene colour (fog/lights/wall+floor+ceiling tint, and lighting intensity/reach). Authored at the WORLD
+// level (the scenario's base look) and, optionally, overridden per DUNGEON FLOOR so the descent can shift —
+// a deeper floor darker/more corrupt than the entrance (IMP-063). A floor's palette merges OVER the world's;
+// omitted keys fall through to the world value, then to the renderer's ash defaults.
+export const scenePaletteSchema = z.object({
+  fog: z.string().min(1).optional(),
+  ambient: z.string().min(1).optional(),
+  torch: z.string().min(1).optional(),
+  front: z.string().min(1).optional(),
+  wall: z.string().min(1).optional(),
+  floor: z.string().min(1).optional(),
+  ceiling: z.string().min(1).optional(),
+  chamberFloor: z.string().min(1).optional(),
+  chamberWall: z.string().min(1).optional(),
+  chamberAccent: z.string().min(1).optional(),
+  ambientEnergy: z.number().min(0).optional(),
+  fogDensity: z.number().min(0).optional(),
+  torchRange: z.number().min(0).optional()
+});
+
 export const dungeonFloorSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
+  // Optional per-floor palette override for the descent arc (IMP-063). Merges over the world palette.
+  palette: scenePaletteSchema.optional(),
   locales: z.record(z.object({ name: z.string().min(1).optional() })).optional(),
   startRoom: z.string().min(1),
   grid: z.object({ cells: z.array(gridCellSchema).min(1) }).optional(),
@@ -467,33 +489,9 @@ export const scenarioWorldSchema = z.object({
     })
     .optional(),
   assetPack: z.string().min(1).optional(),
-  // Per-scenario scene colour (fog/lights/wall+floor tint). Omitted → default ash.
-  palette: z
-    .object({
-      fog: z.string().min(1).optional(),
-      ambient: z.string().min(1).optional(),
-      torch: z.string().min(1).optional(),
-      front: z.string().min(1).optional(),
-      wall: z.string().min(1).optional(),
-      floor: z.string().min(1).optional(),
-      // The overhead plane's tone. Omitted → the renderer's near-black ash default; authoring it lifts the
-      // ceiling off pure black (and opts into a faint self-lit emission) so depth/corners read in the
-      // first-person frame. Without this key here Zod stripped it, so no world's authored ceiling ever
-      // reached Godot (IMP-058, 2026-07-31).
-      ceiling: z.string().min(1).optional(),
-      // The chamber is a deliberately authored combat-and-reward space, not a green prop placed on
-      // the normal floor. These stay in the scenario palette so Godot can render that distinction
-      // without baking a Verdant-only colour into its shared renderer.
-      chamberFloor: z.string().min(1).optional(),
-      chamberWall: z.string().min(1).optional(),
-      chamberAccent: z.string().min(1).optional(),
-      // Lighting intensity / view distance, authored per scenario so a "verdant/lush" floor is not as
-      // dark as an ash pit. The dungeon renderer reads these with its ash-pit defaults when omitted.
-      ambientEnergy: z.number().min(0).optional(),
-      fogDensity: z.number().min(0).optional(),
-      torchRange: z.number().min(0).optional()
-    })
-    .optional(),
+  // Per-scenario scene colour (fog/lights/wall+floor+ceiling tint). Omitted → default ash. A floor may
+  // override any of these (dungeonFloorSchema.palette) for the descent arc (IMP-063).
+  palette: scenePaletteSchema.optional(),
   startDungeon: z.string().min(1),
   startRoom: z.string().min(1),
   aiPolicy: z.object({

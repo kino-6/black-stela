@@ -21,7 +21,7 @@ static func build(world: Dictionary, state: Dictionary, run: Object, view_size: 
 	vp.size = Vector2i(int(view_size.x), int(view_size.y))
 	container.add_child(vp)
 
-	var pal: Dictionary = world.get("palette", {}) if typeof(world.get("palette", null)) == TYPE_DICTIONARY else {}
+	var pal: Dictionary = _floor_palette(world, state)
 	var intro_ash := _current_floor_id(state, world) == "dungeon.b1f" and String(world.get("id", "")).trim_prefix("world.") == "default"
 	var env := WorldEnvironment.new()
 	var e := Environment.new()
@@ -53,7 +53,7 @@ static func build(world: Dictionary, state: Dictionary, run: Object, view_size: 
 
 static func _build_geometry(parent: Node, world: Dictionary, state: Dictionary, run: Object) -> void:
 	var block := _block_textures(state, world, run)
-	var pal: Dictionary = world.get("palette", {}) if typeof(world.get("palette", null)) == TYPE_DICTIONARY else {}
+	var pal: Dictionary = _floor_palette(world, state)
 	var wall_mat := _textured_mat(block["wall"], Color(String(pal.get("wall", "8a8074"))))
 	var floor_mat := _textured_mat(block["floor"], Color(String(pal.get("floor", "6e675c"))))
 	# The ceiling is part of the world-owned readability composition, not a fixed near-black mass: a scenario
@@ -477,3 +477,18 @@ static func _is_open_secret(edge: Variant, state: Dictionary, room_id: String, d
 static func _current_floor_id(state: Dictionary, world: Dictionary) -> String:
 	var fid: Variant = (state.get("map", {}) as Dictionary).get("floorId", null)
 	return String(fid) if typeof(fid) == TYPE_STRING and fid != "" else String(world.get("startDungeon", "dungeon.b1f"))
+
+## The palette to render the CURRENT floor with: the world palette with the current floor's own `palette`
+## override merged ON TOP (IMP-063 descent arc). A floor that authors no palette renders exactly as before.
+static func _floor_palette(world: Dictionary, state: Dictionary) -> Dictionary:
+	var pal: Dictionary = (world.get("palette", {}) as Dictionary).duplicate() if typeof(world.get("palette", null)) == TYPE_DICTIONARY else {}
+	var floor_id := _current_floor_id(state, world)
+	for dungeon in world.get("dungeons", []):
+		if String((dungeon as Dictionary).get("id", "")) != floor_id:
+			continue
+		var override: Variant = (dungeon as Dictionary).get("palette", null)
+		if typeof(override) == TYPE_DICTIONARY:
+			for key in (override as Dictionary):
+				pal[key] = (override as Dictionary)[key]
+		break
+	return pal

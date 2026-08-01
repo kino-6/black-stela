@@ -4,6 +4,15 @@ name: B8F - Gate of Ash
 level: 8
 role: finale
 dangerTier: 5
+# IMP-063 descent arc — the deepest floor, at the black stela's root. Darkest, with the stela's cold
+# violet corruption creeping into the ash. Merges over the world palette (only these keys shift).
+palette:
+  ceiling: "#322c39"
+  ambient: "#221c28"
+  fog: "#08060c"
+  torch: "#d9b6b2"
+  ambientEnergy: 0.46
+  fogDensity: 0.13
 recommendedPartyLevel: 4
 tags:
   - finale

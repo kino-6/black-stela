@@ -704,14 +704,22 @@ down, which the world's own fiction ("八層の底で、黒い碑が根を張っ
 Both worlds tint every floor from ONE per-world palette + texture pack, so B1F and
 B8F read identically apart from the map name. The descent has no visual arc.
 
-### Implementation Slices
+### Implementation Slices — mechanism + first-pass done (2026-07-31); visual sign-off pending
 
-- [ ] Give the descent a per-act (or per-floor-band) visual shift — palette/texture/
-  lighting that darkens/corrupts toward the deepest floors — authored in world data
-  (a `palette` per floor band, or an act tint), never a code branch. Keep it data so
-  a new scenario sets its own arc.
-- [ ] Verify at B1F / mid / B8F that the floors read as a progression, using the
-  IMP-062 deep-floor sweep.
+- [x] **Per-floor palette override mechanism.** `dungeonFloorSchema` gains an optional
+  `palette` (shared `scenePaletteSchema`, extracted from the world schema); the Godot
+  renderer's new `_floor_palette(world, state)` merges the current floor's palette OVER
+  the world's. A floor with no override renders exactly as before. All data, no code
+  branch — a new scenario authors its own arc.
+- [x] **Conservative default-world arc authored:** b1-b3 base warm ash → b4-b6 mid
+  (cooler, dimmer) → b7 deep-approach (cold violet creeping in) → b8 deepest (the black
+  stela's violet corruption, darkest). Verified via the IMP-062 sweep: B1F warm, B5F
+  dimmer/cooler, B8F violet-dark — reads as a progression. 708 unit + verdant-chambers
+  + dungeon-controller green.
+- [ ] **Visual aesthetic sign-off (user/Codex).** Per CLAUDE.md the implementer does
+  not self-approve player-facing visual completion — the exact hues/strength are a
+  first pass to be judged and tuned in the real build. Verdant has no arc yet (can add
+  one on the same mechanism once the default arc's look is approved).
 
 ## Archive
 
