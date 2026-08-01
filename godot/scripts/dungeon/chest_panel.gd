@@ -147,7 +147,9 @@ static func _note(result: String, locked: bool) -> String:
 static func _opened_note(chest: Dictionary, events: Array) -> String:
 	for event in events:
 		if typeof(event) == TYPE_DICTIONARY and String((event as Dictionary).get("type", "")) == "chest_trap_sprung":
-			return I18n.t("play.chestTrapOpened")
+			# Name the trap kind and the damage — a bare "罠が作動した" left the player unsure what sprang or
+			# whether it cost anything (playtest 2026-07-31 IMP-061; the penalty is real, feedback was missing).
+			return I18n.t("play.chestTrapOpened", {"trap": _trap_name(String((event as Dictionary).get("trapKind", ""))), "damage": int((event as Dictionary).get("damage", 0))})
 	if bool(chest.get("disarmed", false)):
 		return I18n.t("play.chestDisarmedOpened")
 	if bool(chest.get("unlocked", false)) and typeof(chest.get("lock", null)) == TYPE_DICTIONARY:
@@ -160,6 +162,15 @@ static func _loot_events(events: Array) -> Array:
 		if typeof(event) == TYPE_DICTIONARY and String((event as Dictionary).get("type", "")) == "inventory_item_gained":
 			loot.append(event)
 	return loot
+
+# The localized name of a sprung trap kind (needle / gas / rune / snare), mirroring React's replayLog map.
+static func _trap_name(kind: String) -> String:
+	match kind:
+		"needle": return I18n.t("play.trapNeedle")
+		"gas": return I18n.t("play.trapGas")
+		"rune": return I18n.t("play.trapRune")
+		"snare": return I18n.t("play.trapSnare")
+		_: return I18n.t("play.trapUnknown")
 
 static func _loot_name(gained: Dictionary, world: Dictionary = {}) -> String:
 	# Localize by item id (the dungeon log already does) so the reward never leaks the base English name

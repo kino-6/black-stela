@@ -654,13 +654,18 @@ the SAME class of leak as IMP-055 (combat 道具 menu), on a different screen.
 The party shows one wounded member (ガルト HP 7/18) but it is unclear if that came
 from the trap or a prior fight — i.e. the trap may apply no visible penalty at all.
 
-### Implementation Slices
+### Implementation Slices — DONE (2026-07-31)
 
-- [ ] Name the trap kind and its effect in the sprung-trap line (e.g. "毒針の罠が
-  作動——ガルトに N ダメージ / 毒"), so a triggered trap reads as a consequence.
-- [ ] Confirm a sprung trap actually applies its authored penalty (damage/status)
-  and that the message reflects it; if trapped-open currently costs nothing, that is
-  a rules gap, not just copy. Cross-check `chests.gd` / the React chest rules.
+- [x] The penalty is REAL (not a rules gap): `chests.gd:_resolve_opened_chest`
+  already subtracts `trap.damage` (4-5 in data) from every non-injured member and
+  emits `chest_trap_sprung {trapKind, damage}`. The screenshot's wounded member WAS
+  the trap — only the feedback was missing.
+- [x] The sprung-trap message now NAMES the kind and STATES the damage, in both the
+  Godot opened-chest note (`chest_panel._opened_note`) and the dungeon log line
+  (`dungeon._event_line`), and the React log (`replayLog` → `events.chestTrapSprung`).
+  New trap-kind copy `play.trap{Needle,Gas,Rune,Snare,Unknown}` in both locales; the
+  messages interpolate `{trap}` + `{damage}` (e.g. 「毒針の罠が作動——隊列に 4 の傷。
+  宝箱は開いた。」). Locked by `verify_chest_loot_label.gd`; ux-parity green.
 
 ## IMP-062: No mid/late-game save or QA start — only B1F is ever reviewed
 

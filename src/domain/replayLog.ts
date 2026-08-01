@@ -296,8 +296,23 @@ export function projectEventToLog(event: GameEvent, locale: Locale = "en", world
       const name = event.handlerName ?? (locale === "ja" ? "隊列" : "The party");
       return { text: t(event.success ? "events.chestUnlockedSuccess" : "events.chestUnlockedFail", { name }), tags: ["dungeon", "chest", "lock"] };
     }
-    case "chest_trap_sprung":
-      return { text: t("events.chestTrapSprung"), tags: ["dungeon", "chest", "trap"] };
+    case "chest_trap_sprung": {
+      // Name the trap kind and state the damage — a bare "the trap springs" left the player unsure what
+      // sprang or whether it cost anything (playtest 2026-07-31 IMP-061; the penalty is real, only the
+      // feedback was missing).
+      const trap = t(
+        event.trapKind === "needle"
+          ? "play.trapNeedle"
+          : event.trapKind === "gas"
+            ? "play.trapGas"
+            : event.trapKind === "rune"
+              ? "play.trapRune"
+              : event.trapKind === "snare"
+                ? "play.trapSnare"
+                : "play.trapUnknown"
+      );
+      return { text: t("events.chestTrapSprung", { trap, damage: event.damage }), tags: ["dungeon", "chest", "trap"] };
+    }
     // Opening is the state transition behind the loot event, not a separate player-facing beat. Keeping
     // it out of the visible log lets the acquired item remain the result the player sees.
     case "chest_opened":

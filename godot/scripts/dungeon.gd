@@ -1187,7 +1187,7 @@ func _event_line(e: Dictionary) -> String:
 		"chest_unlocked":
 			return I18n.t("events.chestUnlocked%s" % ("Success" if bool(e.get("success", false)) else "Fail"), {"name": String(e.get("handlerName", "隊列"))})
 		"chest_trap_sprung":
-			return I18n.t("events.chestTrapSprung")
+			return I18n.t("events.chestTrapSprung", {"trap": ChestPanel._trap_name(String(e.get("trapKind", ""))), "damage": int(e.get("damage", 0))})
 		"command_blocked_chest":
 			if String(e.get("reason", "")) == "locked": return I18n.t("play.chestLockedNote")
 		"inventory_item_gained":

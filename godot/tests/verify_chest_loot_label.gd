@@ -23,8 +23,29 @@ func _initialize() -> void:
 
 	if control:
 		control.free()
+
+	# IMP-061: a sprung trap must NAME the kind and STATE the damage — not a bare "罠が作動した".
+	var trap_events := [{"type": "chest_trap_sprung", "trapKind": "needle", "damage": 4}, {"type": "inventory_item_gained", "itemId": "item.healing-draught", "itemName": "Healing Draught", "quantity": 1}]
+	var trapped: Dictionary = ChestPanel.build_opened_result({}, trap_events, func(): pass, null, world)
+	var note := _note_text(trapped["control"])
+	_check(note.find("毒針") != -1, "the sprung-trap note names the trap kind (毒針)")
+	_check(note.find("4") != -1, "the sprung-trap note states the damage (4)")
+	(trapped["control"] as Control).free()
+
 	print("[chest-loot-label] %s (%d failures)" % ["PASS" if _fail == 0 else "FAIL", _fail])
 	quit(_fail)
+
+# The opened-chest NOTE: the first non-heading, non-loot label (the trap/opened sentence).
+func _note_text(node: Node) -> String:
+	if node is Label:
+		var t := String((node as Label).text)
+		if t.find("作動") != -1:
+			return t
+	for c in node.get_children():
+		var found := _note_text(c)
+		if found != "":
+			return found
+	return ""
 
 # The reward line is the "・<item> ×N" label under the loot heading.
 func _loot_line_text(node: Node) -> String:
