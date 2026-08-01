@@ -469,6 +469,7 @@ export const en = {
     chestClosedNote: "A chest waits on the floor.",
     chestUncertainNote: "Whether it is trapped is unclear.",
     chestTrappedNote: "It is trapped.",
+    chestTrappedKnown: "You spot a {trap}.",
     chestClearNote: "No trap found.",
     chestLockedNote: "The chest is locked.",
     chestChooseHandler: "Choose who will {action}",

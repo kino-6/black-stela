@@ -471,6 +471,7 @@ export const ja = {
     chestClosedNote: "床に宝箱が残されている。",
     chestUncertainNote: "罠の有無は判別できない。",
     chestTrappedNote: "罠が仕掛けられている。",
+    chestTrappedKnown: "{trap}を見抜いた。",
     chestClearNote: "罠は見当たらない。",
     chestLockedNote: "錠がかかっている。",
     chestChooseHandler: "{action}役を選ぶ",

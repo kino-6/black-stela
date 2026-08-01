@@ -31,14 +31,11 @@ IMP-060/061/062/063/064 completion records in `Improve.md`.
     (then re-verify the maze design-gate, which asserts sweep/branch metrics). Deferred to avoid a risky
     maze edit under time pressure; needs a careful design pass.
 
-- [ ] **T3 — 罠は「あり/なし」でなく「特定できる/できない」(Wiz式識別)**
-  - Investigating a trapped chest should NAME the specific trap on a successful check
-    (「毒針の罠を見抜いた」) and, on an uncertain check, say a trap is present but its KIND is unknown — not a
-    flat 「罠が仕掛けられている」. Disarm relates to the identified kind. Extends IMP-061 (the sprung message
-    already names the kind).
-  - React + Godot chest rules/copy (parity).
-  - **Gate:** a chest-rules test — a successful investigate reveals the trap kind; an uncertain one reports
-    "trap present, kind unknown"; never a false "clear" (proven to fail on the flat-message code).
+- [x] **T3 — 罠は「特定できる/できない」(Wiz式識別)** — DONE
+  - A successful investigation now IDENTIFIES the trap: `chest_panel._note` (Godot) + `ChestPanel` note
+    (React) show 「{trap}を見抜いた。」 (e.g. 毒針の罠を見抜いた) instead of a flat 「罠が仕掛けられている」.
+    New copy `play.chestTrappedKnown` (ja+en). Locked in `verify_chest_loot_label` (names 毒針, not the flat
+    message). Uncertain/clear unchanged. build + chest test green.
 
 - [ ] **T4 — 罠解除/開封後の報酬プレゼン: 宝スチル＋相応の報酬 (Wiz式)**
   - After disarm/open the reward reads as an あっさり log line with a しょうもない payout (one cheap potion).

@@ -32,6 +32,11 @@ func _initialize() -> void:
 	_check(note.find("4") != -1, "the sprung-trap note states the damage (4)")
 	(trapped["control"] as Control).free()
 
+	# T3 — a successful investigation NAMES the trap kind, not a flat 「罠が仕掛けられている」.
+	var trapped_note := String(ChestPanel._note({"trap": {"kind": "needle"}}, "trapped", false))
+	_check(trapped_note.find("毒針") != -1, "investigating a trapped chest names the trap kind (毒針, T3)")
+	_check(trapped_note.find("仕掛けられている") == -1, "the identified-trap note is not the flat 'trapped' message (T3)")
+
 	print("[chest-loot-label] %s (%d failures)" % ["PASS" if _fail == 0 else "FAIL", _fail])
 	quit(_fail)
 

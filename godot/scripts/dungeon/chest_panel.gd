@@ -21,7 +21,7 @@ static func build(chest: Dictionary, party: Array, inventory: Array, world: Dict
 		img.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		img.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		root.add_child(img)
-	root.add_child(UI.label(_note(result, locked), 17, UI.INK))
+	root.add_child(UI.label(_note(chest, result, locked), 17, UI.INK))
 
 	var actions := UI.col(6)
 	var focus: Button = null
@@ -139,8 +139,12 @@ static func _aids_for_action(inventory: Array, world: Dictionary, action: String
 			break
 	return found
 
-static func _note(result: String, locked: bool) -> String:
-	if result == "trapped": return I18n.t("play.chestTrappedNote")
+static func _note(chest: Dictionary, result: String, locked: bool) -> String:
+	# T3 — a successful investigation IDENTIFIES the specific trap ("毒針の罠を見抜いた"), not a flat
+	# "罠が仕掛けられている". Wiz-style: the skill result is whether you can NAME what you face.
+	if result == "trapped":
+		var kind := String((chest.get("trap", {}) as Dictionary).get("kind", "")) if typeof(chest.get("trap", null)) == TYPE_DICTIONARY else ""
+		return I18n.t("play.chestTrappedKnown", {"trap": _trap_name(kind)}) if kind != "" else I18n.t("play.chestTrappedNote")
 	if result == "uncertain": return I18n.t("play.chestUncertainNote")
 	if result == "clear": return I18n.t("play.chestClearNote")
 	if locked: return I18n.t("play.chestLockedNote")

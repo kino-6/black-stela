@@ -65,8 +65,22 @@ export function ChestPanel({ chest, party, t, onCommand, onLeave }: ChestPanelPr
     return () => window.clearTimeout(timer);
   }, [bestHandlerId, chest.cellId, chest.disarmAttempted, chest.investigated, chest.unlockAttempted, pendingAction]);
 
+  // T3 — a successful investigation IDENTIFIES the trap ("You spot a needle trap."), not a flat "It is
+  // trapped." — mirrors the sprung-trap naming (IMP-061).
+  const trapKindLabel = (kind: string | undefined): string =>
+    kind === "needle"
+      ? t("play.trapNeedle")
+      : kind === "gas"
+        ? t("play.trapGas")
+        : kind === "rune"
+          ? t("play.trapRune")
+          : kind === "snare"
+            ? t("play.trapSnare")
+            : t("play.trapUnknown");
   const note = chest.investigateResult === "trapped"
-    ? t("play.chestTrappedNote")
+    ? chest.trap?.kind
+      ? t("play.chestTrappedKnown", { trap: trapKindLabel(chest.trap.kind) })
+      : t("play.chestTrappedNote")
     : chest.investigateResult === "uncertain"
       ? t("play.chestUncertainNote")
       : chest.investigateResult === "clear"
