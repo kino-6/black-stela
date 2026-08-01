@@ -411,17 +411,6 @@ static func _block_textures(state: Dictionary, world: Dictionary, run: Object) -
 		suffix = "-block3"
 	elif depth >= 4:
 		suffix = "-block2"
-	# The opening Ash floor needs to sell "ancient stone" before the player ever
-	# reaches its first fight.  The previous block texture was a coloured checker
-	# grid, which turned the first-person view into an editor-like box.  Keep later
-	# floor variants and other worlds data-driven; only the shipped B1F introduction
-	# opts into the authored ash-stone material.
-	var world_id := String(world.get("id", "default")).trim_prefix("world.")
-	if depth == 1 and world_id == "default":
-		return {
-			"wall": _asset(world, run, "dungeon/ash-stone-wall-v2.png"),
-			"floor": _asset(world, run, "dungeon/ash-stone-floor-v2.png"),
-		}
 	return {
 		"wall": _asset(world, run, "dungeon/stone-wall%s.jpg" % suffix),
 		"floor": _asset(world, run, "dungeon/stone-floor%s.jpg" % suffix)
