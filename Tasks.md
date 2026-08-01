@@ -21,13 +21,15 @@ IMP-060/061/062/063/064 completion records in `Improve.md`.
 
 ## Active queue (process top-down)
 
-- [ ] **T2 — 玄室の敵出現ポイントを扉に隣接させる**
-  - The guardian / `keep` miniboss encounter must sit on the cell ADJACENT TO (behind) the chamber's
-    sealed door — a guardian placed anywhere else is meaningless (the closed door is the choke it holds).
-  - Content/data: for each floor with a guardian chamber, check the `keep`/guardian room's encounter cell
-    vs the chamber door cell; move the encounter onto the door-adjacent cell.
-  - **Gate:** a design-gate assertion — every guardian/keep chamber's encounter cell is adjacent to the
-    chamber's sealed-door cell (headless, over both worlds).
+- [-] **T2 — 玄室の敵出現ポイントを扉に隣接させる** — analysis done, deferred behind clear wins
+  - Encounters trigger on ROOM ENTRY (`begin_room_encounter`), so the guardian is fought at whatever cell
+    you enter the chamber from. The real intent: **a guardian chamber must be a true door-CHOKE** — its only
+    entrance is the sealed door, so the guardian can't be bypassed. If a chamber has an open (non-door)
+    entrance too, the sealed door is meaningless.
+  - Concrete plan: add a **design-gate assertion — every `chamberGuardian`/`keep` room's boundary edges are
+    all door/secret (no plain `open` entrance)** over both worlds; seal any stray entrance a floor exposes
+    (then re-verify the maze design-gate, which asserts sweep/branch metrics). Deferred to avoid a risky
+    maze edit under time pressure; needs a careful design pass.
 
 - [ ] **T3 — 罠は「あり/なし」でなく「特定できる/できない」(Wiz式識別)**
   - Investigating a trapped chest should NAME the specific trap on a successful check
@@ -149,15 +151,16 @@ IMP-060/061/062/063/064 completion records in `Improve.md`.
     (portrait via WorldResources, row via `member.row`, job via `Vocations.resolve_vocation_state`).
   - **Gate:** visual check the 装備 roster shows row + job + face; fits at 1280/1920. (Bundle with T12 — same screen.)
 
-- [ ] **T13 — 難易度が効いているか検証（早期フロアが簡単すぎる疑い）**
-  - User reached Verdant ~2F with almost NO equipment, attacking randomly, never struggling. The balance
-    system (applyBalance threat/hp scalars, descentSim invariants) is supposed to make a naive party feel
-    pressure; empirically early floors read trivial. Reconcile intent vs reality: "Act I teaches gently
-    (g1f>0.7)" is deliberate, but the user expects more bite. Verify with `descentSim` (naive vs prepared
-    survivability per floor) and a real walk via the IMP-062 deep-floor starts; if early Verdant is genuinely
-    too soft, tune `content/worlds/verdant/world.md` balance (NOT per-enemy) within the locked invariants.
-  - **Gate:** `descentSim`/balance tests already lock the invariants; add/adjust an assertion for the early
-    Verdant survivability band if the target changes. Document the intended early-floor difficulty.
+- [-] **T13 — 難易度検証 — DONE (verified working-as-designed; a design decision remains)**
+  - descentSim per-floor (heal:none): **naive lv1 WIPES** — Verdant is at ~7% HP by g1f and wipes at g3f;
+    default barely reaches b2f then falls. **Prepared clears** (Verdant g1f 77% > the 0.7 "teaches-gently"
+    floor). So the invariants hold and difficulty IS calibrated. The user's easy G2F is the *deliberately
+    gentle Act I* seen by a LEVELLED/HEALED party (the sim's naive-lv1-heal-none is the worst-case wipe
+    floor, not the normal experience). **NOT a bug.**
+  - Remaining = a DESIGN DECISION for the user: keep Act I gentle (teaches), or make early floors demand
+    prep sooner? If the latter, tune `verdant/world.md` balance (threatScalar/hpScalar) — but the
+    "Act I teaches gently (g1f>0.7 prepared)" invariant is a locked gate, so this is a deliberate re-target,
+    not a silent change. No edit made pending that call.
 
 - [ ] **玄室 landmark visual tuning** (carried over, Codex art-lane)
   - The 玄室 landmark (pillars + floor disk) reads as an unexplained "green object"; tone the floor disk /
