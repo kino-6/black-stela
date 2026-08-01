@@ -87,7 +87,18 @@ IMP-060/061/062/063/064 completion records in `Improve.md`.
   - React + Godot (parity), i18n, ux-parity re-derive.
   - **Gate:** shop-controller test — 買う and 売る are separate reachable modes; buying adds to shared
     inventory (not bound to a character); controller-only; no reflow/overflow at 1280/1920.
-  - **Status:** DESIGN PROPOSED to user (this entry) — confirm direction before building.
+  - **Direction CONFIRMED (2026-08-02):** 世界樹式 — 買う/売る tabs; **買う = purchase into the SHARED party
+    inventory, equipping is separate (party 装備 tab); NO per-character purchase scope.** (Not the sell-unlock
+    slice for now.) Build Godot first (user's build), then React parity + gate.
+
+- [ ] **T9 — 鍛冶屋: 金銭で装備を強化する施設（上限あり）**
+  - Want a blacksmith that upgrades gear for GOLD up to some cap. NB: the 錬成所 (workshop) already does
+    強化 via MATERIALS (from dismantling) — T9 is the GOLD axis (a different sink), or an extension of the
+    workshop with a gold path. Decide: new facility vs. add a gold-cost tier to 錬成所. Reinforcement rules
+    live in `economy.gd`/`reinforceEquipment`; town facility list in `town.gd`.
+  - React + Godot (parity), i18n, ux-parity, town-controller.
+  - **Gate:** upgrade test — gold upgrade raises the piece's +level up to the cap, costs gold, refuses past
+    the cap / when broke; controller-reachable.
 
 - [ ] **玄室 landmark visual tuning** (carried over, Codex art-lane)
   - The 玄室 landmark (pillars + floor disk) reads as an unexplained "green object"; tone the floor disk /
