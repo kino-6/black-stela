@@ -37,14 +37,13 @@ IMP-060/061/062/063/064 completion records in `Improve.md`.
     New copy `play.chestTrappedKnown` (ja+en). Locked in `verify_chest_loot_label` (names 毒針, not the flat
     message). Uncertain/clear unchanged. build + chest test green.
 
-- [ ] **T4 — 罠解除/開封後の報酬プレゼン: 宝スチル＋相応の報酬 (Wiz式)**
-  - After disarm/open the reward reads as an あっさり log line with a しょうもない payout (one cheap potion).
-    Want: (a) **presentation** — the reveal is a BEAT with the open-chest still, not a fleeting line; (b)
-    **content** — trapped / guardian chest treasure tables give a MEANINGFUL reward (gear / multiple / a
-    notable item), not a single consumable.
-  - Balance authored in `content/worlds/*/treasure.md` (and the reveal in the chest panel / dungeon).
-  - **Gate:** a chest-reward test — a trapped/guardian chest yields more than one cheap consumable
-    (value/roll floor); the opened-result panel shows the still + the reward line. Visual check of the beat.
+- [x] **T4 — 罠解除/開封後の報酬プレゼン: 宝スチル＋相応の報酬** — DONE
+  - (a) Presentation: the opened-chest reveal uses a proper reward still (`treasure-reward-still.png`, larger
+    300x190) — delivered + wired in dungeon.gd/chest_panel (T7 commit).
+  - (b) Content: guardian `.keep` chests are now GEAR-FORWARD (equip weight 10 vs consumables 3; g1/g2 keep
+    gained gear) — a miniboss reward reliably yields gear, not a しょうもない potion. Locked by
+    `tests/treasureRewards.test.ts` (every verdant .keep table's gear weight ≥ consumable weight). chests/
+    chamber/economy tests green. (Default world + side-chest weighting are a further tuning knob.)
 
 - [x] **T5 — 勝利/成長画面に「レベルアップで何が変わったか」を明記 (REGRESSION)** — DONE
   - Godot `result.gd` + React `CombatResultPanel` both show per levelled member: stat deltas (HP+5 MP+2 攻撃+1
