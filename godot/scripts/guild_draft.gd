@@ -161,7 +161,12 @@ static func reroll_trait(draft: Dictionary, data: Dictionary) -> void:
 		return
 	var s := int(draft.get("traitSeed", draft.get("originSeed", 1))) + 1
 	draft["traitSeed"] = s
-	draft["traitId"] = String(traits[absi(int(floor(s * 1.7))) % traits.size()].get("id", ""))
+	var next := absi(int(floor(s * 1.7))) % traits.size()
+	# A visible reroll must never reproduce the current 気質 — otherwise the control reads as broken (and the
+	# gate flakes when the seed happens to land on it). Advance one when it would, exactly as face/origin do.
+	if traits.size() > 1 and String(traits[next].get("id", "")) == String(draft.get("traitId", "")):
+		next = (next + 1) % traits.size()
+	draft["traitId"] = String(traits[next].get("id", ""))
 
 ## The face pool: the distinct portrait keys the backgrounds draw from — a face is chosen from here
 ## independently of which 来歴 owns it.

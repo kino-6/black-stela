@@ -950,7 +950,13 @@ export function App() {
       const originSeed = current.originSeed + 1;
       const currentBackgroundIndex = Math.max(0, backgroundCatalog.findIndex((background) => background.id === current.backgroundId));
       const background = backgroundCatalog[(currentBackgroundIndex + 1) % backgroundCatalog.length];
-      const trait = traitCatalog[Math.floor(originSeed * 1.7) % traitCatalog.length];
+      // A visible reroll must never reproduce the current 気質 (advance one if it would) — mirrors the
+      // background pick above and Godot's reroll_trait, and stops the guild-controller gate from flaking.
+      let traitIndex = Math.floor(originSeed * 1.7) % traitCatalog.length;
+      if (traitCatalog.length > 1 && traitCatalog[traitIndex].id === current.traitId) {
+        traitIndex = (traitIndex + 1) % traitCatalog.length;
+      }
+      const trait = traitCatalog[traitIndex];
       return {
         ...current,
         originSeed,
