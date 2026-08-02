@@ -163,6 +163,45 @@ IMP-060/061/062/063/064 completion records in `Improve.md`.
     stone (block2), B8F purple-black stone split by black roots (block3) — reads as a clear descent. Verdant
     already had its own block1/2/3. Move to Archive on next tidy.
 
+- [ ] **T14 — 敵の見た目・遭遇バリエーションを各階層帯で増やす**
+  - **Problem:** both worlds have authored sprites, but ordinary encounters keep reusing the same 2–3
+    silhouettes over a whole act. The existing tables lean too hard on carry-over entries (e.g. Verdant G6–G8
+    is `茨斬り / 心材殻 / 花粉の靄`), so even mechanically mixed groups look visually repetitive.
+  - **Asset delivery (16 PNGs):** generate one 768×768 RGBA base sprite and one matching `-hurt` pose for each
+    of the eight additions below. Bottom-grounded or intentionally `hover: true`, no baked scene, no glow or
+    strong flash; each needs a distinct silhouette and a readable material/color hook at combat scale. Drop
+    them into `content/worlds/<world>/assets/dungeon/` using the enemy-id basename contract (dots → dashes),
+    e.g. `enemy-b1f-ember-beetle.png` + `enemy-b1f-ember-beetle-hurt.png`.
+  - **Default / 灰の門 — four additions:**
+    - `enemy.b1f.ember-beetle` — small, low bronze-and-cinder carapace; **B1F halls/chambers** as the third
+      first-band silhouette.
+    - `enemy.b3f.salt-leech` — medium, pale mineral leech with cold blue brine core; **B3F cistern → B4F dark**
+      as the status/attrition counterpoint to 苦い塵 and 灯守.
+    - `enemy.b5f.ledger-wisp` — medium hovering oath-paper/iron-seal caster, muted blue-white paper and red
+      thread; **B5F gate → B6F oaths** so the mid-game does not look like only sentinels and keepers.
+    - `enemy.b7f.sealbreaker` — medium ash-black grave robber construct with a broken brass pry-bar; **B7F
+      vaults → B8F gate** as the late-game non-boss silhouette beside 納骨殻 / 灰の奉者.
+  - **Verdant / 蔦の回廊 — four additions:**
+    - `enemy.verdant.g1.bark-tick` — small orange fungus-bellied bark parasite; **G1 pack → G2 pack**. It must
+      not read as another green beetle beside 苔虫 / 棘虫.
+    - `enemy.verdant.g3.sporerook` — medium ground bird made from pale shelf-fungi and dark twig legs; **G3
+      pack → G4 pack**, a non-hover silhouette in the transition to the pollen act.
+    - `enemy.verdant.g5.sap-eel` — medium, low translucent amber sap predator; **G5 pack → G6 pack**, visually
+      separates the sap act from the recurring flower/pollen forms.
+    - `enemy.verdant.g7.root-moth` — medium hovering violet root-moth with folded leaf wings, no loose particle
+      cloud; **G7 pack → G8 pack** as the deep-root counterpart that is not 心材殻.
+  - **Insertion order:** define stats, role, weakness, tier, Japanese name and at most one readable signature
+    action in the relevant `content/worlds/*/enemies.md`; then insert each at a modest first-pass weight (4–6)
+    into the exact encounter tables named above in `content/worlds/*/encounters.md`. Keep `groupsMax: 2` and
+    distinct-group selection intact; do not inflate the number of bodies merely to show new art. Preserve every
+    `.keep` table as a single named guardian/boss — this task varies normal exploration, not boss identity.
+  - **Balance and presentation gate:** add encounter coverage assertions that every new id is reachable in its
+    named tables and each normal floor has at least three candidate silhouettes across its local + carried
+    entries; re-run `descentSim`/encounter tests so new roles do not silently raise attrition. Export Godot,
+    capture one real combat at 1280 and 1920 for each world with at least two new silhouettes present, and run
+    `npm run gate:migration` plus a clean Godot boot. Review both base and hurt frames on the actual combat lane
+    for grounding, scale, contrast, and no strong-flash regression.
+
 ---
 
 ## Recently done (awaiting nothing — move to Archive on next tidy)
