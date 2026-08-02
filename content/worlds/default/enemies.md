@@ -337,6 +337,80 @@ enemies:
     dangerTier: 2
     prizedXp: true
     tags: [rare, prized]
+  # ---- T14 variety additions (art delivered) — a third/side silhouette per band, modest weight ----
+  - id: enemy.b1f.ember-beetle
+    weaknesses: { salt: 1.5 }
+    name: Ember Beetle
+    locales: { ja: { name: 熾火甲虫 } }
+    hp: 4
+    attack: 1
+    armor: 1
+    accuracy: 70
+    damageMin: 1
+    damageMax: 3
+    speed: 5
+    morale: 7
+    xp: 1
+    gold: 2
+    role: attrition
+    size: small
+    dangerTier: 1
+    tags: [beetle]
+  - id: enemy.b3f.salt-leech
+    weaknesses: { fire: 1.5, star: 1.5 }
+    name: Salt Leech
+    locales: { ja: { name: 塩蛭 } }
+    hp: 7
+    attack: 2
+    armor: 0
+    accuracy: 70
+    damageMin: 2
+    damageMax: 4
+    speed: 5
+    morale: 7
+    xp: 3
+    gold: 4
+    role: attrition
+    size: medium
+    dangerTier: 2
+    tags: [brine]
+  - id: enemy.b5f.ledger-wisp
+    weaknesses: { salt: 1.5, star: 1.5 }
+    name: Ledger Wisp
+    locales: { ja: { name: 帳の火 } }
+    hp: 9
+    attack: 2
+    armor: 1
+    accuracy: 68
+    damageMin: 2
+    damageMax: 4
+    speed: 6
+    morale: 8
+    xp: 5
+    gold: 7
+    role: attrition
+    size: medium
+    dangerTier: 4
+    tags: [oath]
+    elevation: air
+  - id: enemy.b7f.sealbreaker
+    weaknesses: { fire: 1.75 }
+    name: Sealbreaker
+    locales: { ja: { name: 封破り } }
+    hp: 12
+    attack: 4
+    armor: 2
+    accuracy: 74
+    damageMin: 3
+    damageMax: 6
+    speed: 6
+    morale: 9
+    xp: 6
+    gold: 10
+    role: attrition
+    size: medium
+    dangerTier: 5
+    tags: [robber]
 ---
 
 # Enemies

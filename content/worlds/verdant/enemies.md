@@ -361,6 +361,80 @@ enemies:
     prizedXp: true
     hover: true
     tags: [rare, prized]
+  # ---- T14 variety additions (art delivered) — a side silhouette per band, modest weight ----
+  - id: enemy.verdant.g1.bark-tick
+    weaknesses: { metal: 1.5 }
+    name: Bark Tick
+    locales: { ja: { name: 樹皮蜱 } }
+    hp: 4
+    attack: 1
+    armor: 1
+    accuracy: 68
+    damageMin: 1
+    damageMax: 3
+    speed: 5
+    morale: 7
+    xp: 1
+    gold: 2
+    role: attrition
+    size: small
+    dangerTier: 1
+    tags: [tick, bark]
+  - id: enemy.verdant.g3.sporerook
+    weaknesses: { metal: 1.5, fire: 1.25 }
+    name: Sporerook
+    locales: { ja: { name: 胞子鴉 } }
+    hp: 9
+    attack: 3
+    armor: 1
+    accuracy: 72
+    damageMin: 2
+    damageMax: 4
+    speed: 6
+    morale: 7
+    xp: 3
+    gold: 4
+    role: attrition
+    size: medium
+    dangerTier: 2
+    tags: [bird, spore]
+  - id: enemy.verdant.g5.sap-eel
+    weaknesses: { fire: 1.5, metal: 1.25 }
+    name: Sap Eel
+    locales: { ja: { name: 樹液鰻 } }
+    hp: 12
+    attack: 3
+    armor: 1
+    accuracy: 70
+    damageMin: 3
+    damageMax: 5
+    speed: 6
+    morale: 7
+    xp: 4
+    gold: 6
+    role: attrition
+    size: medium
+    dangerTier: 3
+    tags: [sap, eel]
+  - id: enemy.verdant.g7.root-moth
+    weaknesses: { fire: 1.5, metal: 1.25 }
+    name: Root Moth
+    locales: { ja: { name: 根の蛾 } }
+    hp: 15
+    attack: 3
+    armor: 2
+    accuracy: 70
+    damageMin: 3
+    damageMax: 5
+    speed: 6
+    morale: 8
+    xp: 5
+    gold: 8
+    role: attrition
+    size: medium
+    hover: true
+    dangerTier: 3
+    tags: [moth, root]
 ---
 
 # Verdant enemies

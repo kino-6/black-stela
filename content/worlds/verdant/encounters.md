@@ -20,6 +20,7 @@ encounterTables:
       - { enemyId: enemy.verdant.g2.thorn-crawler, weight: 10, minCount: 2, maxCount: 3 }
       - { enemyId: enemy.verdant.g2.spore-caster, weight: 6, minCount: 1, maxCount: 2 }
       - { enemyId: enemy.verdant.g2.bramble-shield, weight: 5, minCount: 1, maxCount: 1 }
+      - { enemyId: enemy.verdant.g1.bark-tick, weight: 4, minCount: 1, maxCount: 2 }
   - id: encounters.verdant.g3.pack
     floorId: dungeon.verdant.g3f
     groupsMax: 2
@@ -28,6 +29,7 @@ encounterTables:
       - { enemyId: enemy.verdant.g2.spore-caster, weight: 6, minCount: 1, maxCount: 2 }
       - { enemyId: enemy.verdant.g2.bramble-shield, weight: 5, minCount: 1, maxCount: 1 }
       - { enemyId: enemy.verdant.g1.moss-mite, weight: 4, minCount: 2, maxCount: 3 }
+      - { enemyId: enemy.verdant.g3.sporerook, weight: 5, minCount: 1, maxCount: 2 }
   - id: encounters.verdant.g4.pack
     floorId: dungeon.verdant.g4f
     groupsMax: 2
@@ -36,6 +38,7 @@ encounterTables:
       - { enemyId: enemy.verdant.g2.thorn-crawler, weight: 5, minCount: 1, maxCount: 1 }
       # The prized runner — rare, single, prized XP (bypasses the falloff).
       - { enemyId: enemy.verdant.rare.gilded-sporecloud, weight: 1, minCount: 1, maxCount: 1 }
+      - { enemyId: enemy.verdant.g3.sporerook, weight: 4, minCount: 1, maxCount: 1 }
   - id: encounters.verdant.g5.pack
     floorId: dungeon.verdant.g5f
     groupsMax: 2
@@ -43,6 +46,7 @@ encounterTables:
       - { enemyId: enemy.verdant.g4.pollen-drifter, weight: 10, minCount: 1, maxCount: 2 }
       - { enemyId: enemy.verdant.g6.thorn-cutter, weight: 6, minCount: 1, maxCount: 1 }
       - { enemyId: enemy.verdant.g2.spore-caster, weight: 4, minCount: 1, maxCount: 2 }
+      - { enemyId: enemy.verdant.g5.sap-eel, weight: 5, minCount: 1, maxCount: 2 }
   # Deep floors EASED a step (2026-07-30, paired with the harder Act I): they were a Lv1 near-wipe that
   # forced the whole descent's clear level up, which over-levelled the party and trivialised the mid/economy.
   # Trimming the deep counts pulls the clear level back down, so the party meets the finale at the RIGHT level
@@ -54,6 +58,7 @@ encounterTables:
       - { enemyId: enemy.verdant.g6.thorn-cutter, weight: 10, minCount: 1, maxCount: 2 }
       - { enemyId: enemy.verdant.g7.husk-spawn, weight: 6, minCount: 1, maxCount: 1 }
       - { enemyId: enemy.verdant.g4.pollen-drifter, weight: 4, minCount: 1, maxCount: 1 }
+      - { enemyId: enemy.verdant.g5.sap-eel, weight: 4, minCount: 1, maxCount: 1 }
   - id: encounters.verdant.g7.pack
     floorId: dungeon.verdant.g7f
     groupsMax: 2
@@ -61,6 +66,7 @@ encounterTables:
       - { enemyId: enemy.verdant.g7.husk-spawn, weight: 10, minCount: 1, maxCount: 1 }
       - { enemyId: enemy.verdant.g6.thorn-cutter, weight: 6, minCount: 1, maxCount: 1 }
       - { enemyId: enemy.verdant.g4.pollen-drifter, weight: 4, minCount: 1, maxCount: 1 }
+      - { enemyId: enemy.verdant.g7.root-moth, weight: 5, minCount: 1, maxCount: 2 }
   - id: encounters.verdant.g8.pack
     floorId: dungeon.verdant.g8f
     groupsMax: 2
@@ -68,6 +74,7 @@ encounterTables:
       - { enemyId: enemy.verdant.g7.husk-spawn, weight: 10, minCount: 1, maxCount: 2 }
       - { enemyId: enemy.verdant.g6.thorn-cutter, weight: 6, minCount: 1, maxCount: 1 }
       - { enemyId: enemy.verdant.g4.pollen-drifter, weight: 4, minCount: 1, maxCount: 1 }
+      - { enemyId: enemy.verdant.g7.root-moth, weight: 4, minCount: 1, maxCount: 1 }
   # ---- keep chokes (single miniboss/boss) ----
   - id: encounters.verdant.g3.keep
     floorId: dungeon.verdant.g3f

@@ -201,9 +201,18 @@ IMP-060/061/062/063/064 completion records in `Improve.md`.
     stone (block2), B8F purple-black stone split by black roots (block3) — reads as a clear descent. Verdant
     already had its own block1/2/3. Move to Archive on next tidy.
 
-- [ ] **T14 — 敵の見た目・遭遇バリエーションを各階層帯で増やす**
-  - **Problem:** both worlds have authored sprites, but ordinary encounters keep reusing the same 2–3
-    silhouettes over a whole act. The existing tables lean too hard on carry-over entries (e.g. Verdant G6–G8
+- [x] **T14 — 敵の見た目・遭遇バリエーションを各階層帯で増やす** — DONE (art delivered by Codex + data wired)
+  - Codex delivered the 16 sprites (base+hurt for all 8 additions, commit e906e72). Defined the 8 enemies in
+    `enemies.md` (both worlds) and inserted each into its band's exploration table(s) at modest weight: Default
+    ember-beetle (B2F), salt-leech (B3F→B4F), ledger-wisp (B5F→B6F), sealbreaker (B7F→B8F); Verdant bark-tick
+    (G2), sporerook (G3→G4), sap-eel (G5→G6), root-moth (G7→G8). Kept as LIGHT pure-attrition silhouettes (no
+    status abilities) so they add variety WITHOUT disturbing the tuned gates — the first-band pair was pulled
+    OFF floor 1 (a 3rd type changed the groupsMax:2 roll and broke the locked T13 floor-1 balance); they enter
+    on floor 2. `.keep` boss tables untouched.
+  - **Gate:** `tests/encounterVariety.test.ts` — every new id is reachable in a table (its sprite appears), no
+    table names a non-existent enemy, and each exploration floor fields ≥3 distinct silhouettes (tutorial
+    floor ≥2). All balance gates re-verified green (difficultyGate/verdantBalance/descentSim/coverageSim/
+    contentSim), verify_parity green, unit 727+6. NB: run `npm run export:godot` for the Godot build.
     is `茨斬り / 心材殻 / 花粉の靄`), so even mechanically mixed groups look visually repetitive.
   - **Asset delivery (16 PNGs):** generate one 768×768 RGBA base sprite and one matching `-hurt` pose for each
     of the eight additions below. Bottom-grounded or intentionally `hover: true`, no baked scene, no glow or

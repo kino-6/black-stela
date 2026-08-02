@@ -41,6 +41,7 @@ encounterTables:
         maxCount: 2
       # The prized runner — rare, single, its huge XP bypasses the falloff (a growth reward).
       - { enemyId: enemy.rare.ashsilver-glimmer, weight: 1, minCount: 1, maxCount: 1 }
+      - { enemyId: enemy.b1f.ember-beetle, weight: 5, minCount: 2, maxCount: 3 }
   # B3F cistern: the fresh bitter-mote, sometimes with a trailing hook-rat (groupsMax 2).
   - id: encounters.b3f.cistern
     floorId: dungeon.b3f
@@ -56,6 +57,7 @@ encounterTables:
         maxCount: 2
       # The prized runner — rare, single, its huge XP bypasses the falloff (a growth reward).
       - { enemyId: enemy.rare.ashsilver-glimmer, weight: 1, minCount: 1, maxCount: 1 }
+      - { enemyId: enemy.b3f.salt-leech, weight: 5, minCount: 1, maxCount: 2 }
   # B4F fielded only ONE type, so the floor drew almost no attrition and read as a
   # sudden lull between B3F and B5F. A second, lighter type gives it a real floor drain.
   - id: encounters.b4f.dark
@@ -70,6 +72,7 @@ encounterTables:
         weight: 6
         minCount: 2
         maxCount: 3
+      - { enemyId: enemy.b3f.salt-leech, weight: 4, minCount: 1, maxCount: 2 }
   - id: encounters.b5f.gate
     floorId: dungeon.b5f
     entries:
@@ -81,6 +84,7 @@ encounterTables:
         weight: 1
         minCount: 1
         maxCount: 1
+      - { enemyId: enemy.b5f.ledger-wisp, weight: 4, minCount: 1, maxCount: 2 }
   - id: encounters.b6f.oaths
     floorId: dungeon.b6f
     groupsMax: 2
@@ -93,6 +97,7 @@ encounterTables:
         weight: 3
         minCount: 1
         maxCount: 1
+      - { enemyId: enemy.b5f.ledger-wisp, weight: 4, minCount: 1, maxCount: 1 }
   # B7F stays single-type on the main path (deep floors bite hard enough); mixed
   # groups live on B1–B3 and B6 where the player meets them first.
   - id: encounters.b7f.vaults
@@ -106,6 +111,7 @@ encounterTables:
         weight: 3
         minCount: 3
         maxCount: 3
+      - { enemyId: enemy.b7f.sealbreaker, weight: 4, minCount: 1, maxCount: 2 }
   - id: encounters.b8f.gate
     floorId: dungeon.b8f
     entries:
@@ -117,6 +123,7 @@ encounterTables:
         weight: 1
         minCount: 1
         maxCount: 1
+      - { enemyId: enemy.b7f.sealbreaker, weight: 3, minCount: 1, maxCount: 1 }
 ---
 
 # Encounter Tables
