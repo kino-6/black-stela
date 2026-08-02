@@ -232,7 +232,15 @@ IMP-060/061/062/063/064 completion records in `Improve.md`.
     `npm run gate:migration` plus a clean Godot boot. Review both base and hurt frames on the actual combat lane
     for grounding, scale, contrast, and no strong-flash regression.
 
-- [ ] **T15 — オート/全員でかかる の再生に数字とHP更新が出ない (REGRESSION vs T1)**
+- [-] **T15 — オート/全員でかかる の再生に数字とHP更新が出ない (REGRESSION vs T1)** — PARTIAL (auto now animates)
+  - DONE: オート now plays each round ANIMATED (`_run_auto` → `_resolve_round_with(orders, true)`), so the
+    damage number lands on the target and the HP bars DRAIN as it resolves (auto used to pass
+    `animated=false` and skip all of that). The command menu no longer flickers between auto rounds. Combat
+    gates green (parity/controller/geometry) — the change is presentation-only, state is untouched.
+  - REMAINING (with **T19**): `_playback` still shows the ROUND's aggregate damage for the first group, not a
+    per-ATTACKER beat — so "誰が何にどれだけ" is not fully granular yet. That needs `_playback` to walk the
+    per-hit `events` (actor→target→damage) and spawn a number per hit on the correct target + drain that
+    target's bar. This is the same rework as T19 (juicy numbers) and needs live combat feel-review.
   - **Problem (playtest 2026-08-02):** T1 made オート play each attacker instead of skipping — good — but the
     playback does NOT show WHO dealt HOW MUCH damage to WHAT, and the **HP bars do not update during** the
     sequence. So the beat-by-beat goal (see who did what, feel the numbers land) is not actually met: the

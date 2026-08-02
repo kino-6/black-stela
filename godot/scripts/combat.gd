@@ -446,7 +446,10 @@ func _run_auto() -> void:
 		var orders := _all_out_actions()
 		if orders.is_empty():
 			break
-		await _resolve_round_with(orders, false)
+		# T15: play the round out ANIMATED even under オート — the damage number lands on the target and the
+		# HP bars drain as it resolves. Auto used to skip all of that (animated=false), so the moves happened
+		# but "誰が何にどれだけ / HPバー更新" was invisible; the beat-by-beat goal was not actually met.
+		await _resolve_round_with(orders, true)
 		if _party_in_danger():
 			_auto = false
 			_log_line(I18n.t("tempo.autoStoppedDanger"))
@@ -596,9 +599,10 @@ func _playback(before: Dictionary, events: Array, animated: bool) -> void:
 	elif not wiped.is_empty():
 		_show_wipe(wiped)
 	else:
-		# Round survived on both sides — hand the command back for the next round.
+		# Round survived on both sides — hand the command back for the next round. Under オート the loop
+		# immediately plays the next round, so DON'T flash the command menu between auto rounds (T15).
 		_rebuild_stage()
-		if _cmd_panel:
+		if _cmd_panel and not _auto:
 			_cmd_panel.show()
 			var b := _first_command_button()
 			if b:
