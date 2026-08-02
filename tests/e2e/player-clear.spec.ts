@@ -10,7 +10,11 @@ test("clears the MVP route through visible player controls only", async ({ page 
   await expect(page.getByRole("button", { name: "Headless reachability" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Headless clear" })).toHaveCount(0);
 
-  await registerAdventurer(page, { name: "Mira" });
+  // A FULL party — T13 (2026-08-02) made B1F bite hard enough that a lone Lv1 adventurer wipes the marker
+  // trek (a solo is the extreme no-facility case). A real player fields a full party; it survives the floor
+  // (arriving hurt), which is what this MVP-route smoke test exercises.
+  await createStarterParty(page);
+  await page.getByRole("button", { name: "Back to town" }).click();
   await page.getByRole("button", { name: "Enter dungeon" }).click();
 
   await expect(page.getByRole("heading", { name: "Silent Stone Chamber" })).toBeVisible();

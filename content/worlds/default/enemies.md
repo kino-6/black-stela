@@ -7,11 +7,11 @@ enemies:
       ja:
         name: 灰泥
     hp: 4
-    attack: 1
+    attack: 2
     armor: 0
-    accuracy: 70
-    damageMin: 1
-    damageMax: 2
+    accuracy: 78
+    damageMin: 2
+    damageMax: 5
     speed: 4
     morale: 7
     xp: 1
@@ -29,9 +29,9 @@ enemies:
     hp: 6
     attack: 3
     armor: 0
-    accuracy: 68
+    accuracy: 76
     damageMin: 2
-    damageMax: 5
+    damageMax: 6
     speed: 5
     morale: 6
     xp: 2

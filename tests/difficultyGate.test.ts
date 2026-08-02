@@ -36,6 +36,22 @@ describe("difficulty axes — party-size & resource-economy", () => {
         expect(pv.levelsSaved).toBeGreaterThanOrEqual(0);
         expect(pv.levelsSaved).toBeLessThanOrEqual(4);
       });
+
+      // T13 (user, 2026-08-02): "作成したてのLv1では1F徘徊は困難 — 施設をしっかり使わないと攻略できない。"
+      // A freshly created Lv1 party (naive = the class STARTING loadout, no shopping/provisioning) is
+      // all-but-wiped clearing floor 1 — it cannot progress without using the town facilities. A facility-
+      // equipped (mid = a shop general weapon+body) party clears floor 1 with real margin. This locks the
+      // per-fight Act I weight that makes the town loop (稼ぐ→買う→突破) mandatory. It does NOT contradict
+      // the "Act I teaches gently" act-curve gates — those measure a LEVELLED party at its clear level,
+      // where floor 1 is genuinely gentle; THIS measures the fresh Lv1 party, for whom it is a wall.
+      it("floor 1 gates on facilities — a fresh Lv1 party is all-but-wiped, a shopped party clears", () => {
+        const naive = simulateDescent(world, { heal: "town", policy: "naive", startLevel: 1 });
+        const shopped = simulateDescent(world, { heal: "town", policy: "mid", startLevel: 1 });
+        // 施設なし: a blind first dive is a near-wipe (cannot be cleared without buying gear/heals first).
+        expect(naive.floors[0].lowestHpPct).toBeLessThanOrEqual(0.2);
+        // 施設あり: a shopped party clears floor 1 with margin (facility use IS the path, not a faceroll).
+        expect(shopped.floors[0].lowestHpPct).toBeGreaterThanOrEqual(0.3);
+      });
     });
   }
 });

@@ -10,12 +10,12 @@ encounterTables:
     entries:
       - enemyId: enemy.b1f.ash-slime
         weight: 10
-        minCount: 2
-        maxCount: 3
+        minCount: 4
+        maxCount: 5
       - enemyId: enemy.b1f.dust-crawler
         weight: 7
-        minCount: 1
-        maxCount: 2
+        minCount: 2
+        maxCount: 4
   # Chambers roll ONLY a fresh type (the ash-slime is already down from B1F 002), so
   # a table can never "roll a defeated type and skip" — the玄室 fight is guaranteed.
   - id: encounters.b1f.chambers
@@ -24,7 +24,7 @@ encounterTables:
       - enemyId: enemy.b1f.dust-crawler
         weight: 10
         minCount: 3
-        maxCount: 4
+        maxCount: 5
   # B2F branches: the fresh hook-rat pack, sometimes joined by a straggler crawler
   # from above (groupsMax 2) so the corridor can field a mixed group, not just one kind.
   - id: encounters.b2f.branches

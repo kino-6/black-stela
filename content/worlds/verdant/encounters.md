@@ -9,8 +9,8 @@ encounterTables:
     floorId: dungeon.verdant.g1f
     groupsMax: 2
     entries:
-      - { enemyId: enemy.verdant.g1.moss-mite, weight: 10, minCount: 2, maxCount: 4 }
-      - { enemyId: enemy.verdant.g1.spore-gnat, weight: 8, minCount: 2, maxCount: 3 }
+      - { enemyId: enemy.verdant.g1.moss-mite, weight: 10, minCount: 3, maxCount: 5 }
+      - { enemyId: enemy.verdant.g1.spore-gnat, weight: 8, minCount: 2, maxCount: 4 }
       - { enemyId: enemy.verdant.g2.thorn-crawler, weight: 5, minCount: 1, maxCount: 2 }
   - id: encounters.verdant.g2.pack
     floorId: dungeon.verdant.g2f

@@ -16,10 +16,14 @@ function party(size: number): GameState {
   return state;
 }
 
+// Force-win the fights the explorer stops on. This is a NAVIGATION test (does auto-explore descend on its
+// own?), not an attrition test — and T13 (2026-08-02) made Act I bite hard enough that a small fresh party
+// wipes a real fight, ending the walk. debug_force_victory records the defeat and returns to the dungeon
+// so the explorer can keep walking, regardless of balance.
 function resolveCombat(state: GameState): GameState {
   let current = state;
-  for (let round = 0; round < 20 && current.phase === "combat"; round += 1) {
-    current = executeCommand(current, defaultWorld, { type: "attack" });
+  if (current.phase === "combat") {
+    current = executeCommand(current, defaultWorld, { type: "debug_force_victory" });
   }
   if (current.combatConclusion) {
     current = executeCommand(current, defaultWorld, { type: "continue_after_combat" });

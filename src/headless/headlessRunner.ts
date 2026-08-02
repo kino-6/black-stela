@@ -41,7 +41,15 @@ export interface HeadlessStepTrace {
   knowledge: HeadlessKnowledge;
 }
 
-export function runHeadlessClear(initialState: GameState, world: ScenarioWorld, maxSteps = 20): HeadlessClearResult {
+export function runHeadlessClear(
+  initialState: GameState,
+  world: ScenarioWorld,
+  maxSteps = 20,
+  // winCombats: this is a ROUTE-reachability probe, not a combat test. With it set, the runner force-wins
+  // fights instead of grinding attacks, so a fresh Lv1 party can prove a route exists even after T13
+  // (2026-08-02) made Act I hard enough to wipe such a party. Default off — real gates still fight.
+  options: { winCombats?: boolean } = {}
+): HeadlessClearResult {
   let state = initialState;
   const commands: Command[] = [];
   const trace: HeadlessStepTrace[] = [];
@@ -65,7 +73,7 @@ export function runHeadlessClear(initialState: GameState, world: ScenarioWorld, 
       visitCounts.set(state.position.roomId, (visitCounts.get(state.position.roomId) ?? 0) + 1);
     }
 
-    const decision = chooseNextCommand(state, world, visitCounts, blockedMoves);
+    const decision = chooseNextCommand(state, world, visitCounts, blockedMoves, false, options.winCombats);
     if (!decision.command) {
       return { cleared: false, reason: "stuck", state, commands, trace, diagnostic: decision.diagnostic };
     }
@@ -292,10 +300,17 @@ function chooseNextCommand(
   // 2/3 threads to the intended down-stair) nor, crucially, BACKWARD through an
   // always-open return shortcut (e.g. B5F's bar → B2F), which would silently warp
   // the party up several floors and then re-descend, reading as a "B5F → B3F loop".
-  descendOnly = false
+  descendOnly = false,
+  winCombats = false
 ): HeadlessDecision {
   if (state.combatConclusion) {
     return { command: { type: "continue_after_combat" }, knowledge: "combat_state" };
+  }
+
+  // Route-reachability mode: end the fight as a win rather than grind it, so a fresh party can traverse a
+  // post-T13 hard Act I to prove a route exists (see runHeadlessClear's `winCombats`).
+  if (winCombats && state.phase === "combat") {
+    return { command: { type: "debug_force_victory" }, knowledge: "combat_state" };
   }
 
   if (state.phase === "town") {

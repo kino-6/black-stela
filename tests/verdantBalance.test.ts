@@ -27,7 +27,10 @@ describe("verdant difficulty (prepare or wipe)", () => {
   it("preparation buys a large head-start (offense-led, so a touch under 黒碑's ten)", () => {
     const value = preparationValue(world);
     expect(value.levelsSaved).toBeGreaterThanOrEqual(5);
-    expect(value.preparedMinLevel).toBeLessThanOrEqual(3);
+    // T13 (2026-08-02): Act I now BITES a fresh party (floor 1 wipes the unprepared — see the floor-1 lock
+    // in difficultyGate), so even a prepared party clears the descent a few levels later than the old gentle
+    // opener allowed. Still near-entry, still a large prepare-or-wipe swing; the number just moved 3→5.
+    expect(value.preparedMinLevel).toBeLessThanOrEqual(6);
   });
 
   it("escalates by act, and still costs the prepared party real HP at depth", () => {

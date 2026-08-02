@@ -150,7 +150,20 @@ IMP-060/061/062/063/064 completion records in `Improve.md`.
   - `party_panel._roster_row` now shows, per member: the PORTRAIT (顔画像), a 前衛/後衛 ・ <現在の職> line
     (row + localized vocation), alongside name/Lv/HP. Verified on the 装備 tab (fits, reads at a glance).
 
-- [-] **T13 — 序盤難易度の再設計: 作成直後のLv1は施設なしでは1Fを突破できない** — IN PROGRESS
+- [x] **T13 — 序盤難易度の再設計: 作成直後のLv1は施設なしでは1Fを突破できない** — DONE (measured; felt-review is continuous)
+  - **Shipped (both worlds, data-only):** raised Act I per-fight weight — bigger g1/b1 swarms (moss-mite 3-5,
+    spore-gnat 2-4, ash-slime 4-5, dust-crawler 2-4/3-5) + more bite on the two opener enemies (dmg/acc). Now
+    a fresh Lv1 NAIVE (starter-loadout) party is all-but-wiped clearing floor 1 (verdant g1f≈7%/WIPE, default
+    b1f≈10%), while a shopped MID party clears with margin (40% / 64%). A full 6p party takes CUMULATIVE
+    attrition (single g1f fight leaves 6p ~40%), not a single-fight wall — the skill's core principle held.
+  - **Gates:** new `difficultyGate` lock — a fresh Lv1 party's floor-1 trough ≤0.2, a shopped party's ≥0.3,
+    BOTH worlds (proven to fail on the pre-change soft opener). All existing balance gates still green
+    (prepare-or-wipe, non-increasing act curve measured on the LEVELLED party, party-size, provision);
+    verdant `preparedMinLevel` re-targeted 3→≤6 (harder Act I). Navigation/debug harnesses that assumed a
+    fresh party traverses B1F were made difficulty-agnostic (force-win fights: rulesEngine walks,
+    debugAutoExplore, headlessRunner `winCombats` option). Unit 722 green.
+  - NOTE: the sim is a LOWER bound (no gimmick hazards/status); the FELT tuning is the user's continuous
+    real-play review. Run `npm run export:godot` so the Godot build reflects the new numbers.
   - **DECISION (user, 2026-08-02):** a freshly created Lv1 party (starter gear, no shopping/provisioning)
     must NOT be able to clear floor 1 on a blind dive — the loop is 町へ戻る→装備購入/補給→再挑戦→突破.
     「施設をしっかり使わないと攻略できない。稼げばしっかり必要なものが入手できる」. INVARIANTS HELD: a MID
@@ -233,6 +246,52 @@ IMP-060/061/062/063/064 completion records in `Improve.md`.
   - **Gate:** a combat-playback test — an オート round emits, per attacker beat, a damage number on the
     correct target and a decreasing target-HP snapshot (proven to fail on the current number-less playback);
     plus a real-browser check that the bars drain and numbers float during オート.
+
+- [ ] **T16 — 商店「売る」に売却額と性能を表示 (T8 の抜け)**
+  - **Problem (playtest 2026-08-02):** the 売る list shows only name + 個数 — no **売却額 (how much gold you
+    get)** and, for equipment, no **性能 (stats)**. The player cannot judge a sale. (Screenshot: 花粉の軟膏 /
+    樹液の水薬 rows have a 売る button but no price.)
+  - **Fix:** each sell row shows the sell value (e.g. 「売値 N G」 from `item.sellValue`) and the item's
+    effect — consumables their effect (heal/cure amount), equipment their slot · stat line (already partly
+    shown; add the price). Both engines: React `ShopPanel` sell section + Godot `shop_panel._inventory_row`.
+    Parity + i18n (`town.sellValue` or reuse an existing price key).
+  - **Gate:** extend the shop test — a sell row exposes its sell value and effect; town.spec sell-mode
+    assertion + `verify_town_controller` sell branch. ux-parity if a new key is added.
+
+- [ ] **T17 — 能力タブの「〜と前後を交代」コマンドを削除**
+  - **Problem (playtest 2026-08-02):** the 能力 (ability) page shows a 「<相手>と前後を交代」 button (e.g.
+    「ネラと前後を交代」) — an unclear, unnecessary command on the stats screen. Row (前衛/後衛) changes belong
+    to the 編成 tab, not a per-character stat page. Remove it from the ability page.
+  - Godot `party_panel` ability/stats page (`_ability_page` or equivalent). Confirm 編成 tab still owns
+    front/back ordering (so the capability is not lost, just relocated out of the stats view). React parity
+    if the same button exists there.
+  - **Gate:** `verify_town_controller` / party-menu test — the ability page renders NO 前後交代 button; the
+    編成 tab still exposes row changes (proven to fail on the current ability-page button).
+
+- [ ] **T18 — 回復の対象選択: 満タンは選べない＋初期カーソルは最重傷へ（＋partyMenu.back 未翻訳バグ）**
+  - **Problem (playtest 2026-08-02):** the 小癒し (heal-ally) target picker lets you select members who are
+    at full HP (no reason to heal them), and the cursor starts on the first member, not the one who most
+    needs it. Also visible: a **raw i18n key `partyMenu.back`** renders as the back button label (missing
+    translation) on the 呪文/特技 use screen.
+  - **Fix:** (a) disable (non-focusable) any target already at full HP for a pure-heal effect; (b) land the
+    initial cursor on the MOST-wounded valid target (lowest HP%); (c) add the missing `partyMenu.back` copy
+    (ja+en) so no raw key shows. Godot party_panel 呪文/特技 use flow; React parity if present.
+  - (d) After a heal is CAST, the cursor jumps back to the top of the target list — NG. It must stay on the
+    just-healed member (or advance to the next-most-wounded valid target), like the dungeon-search focus
+    survival rule (controller-first-ui: "focus survives every transition").
+  - **Gate:** party-menu heal-target test — full-HP members are disabled, the cursor lands on the lowest-HP
+    member, after a cast the cursor does NOT reset to the top, and no raw `partyMenu.*` key appears.
+
+- [ ] **T19 — ダメージ数字の演出を「気持ちよく」する（業務アプリ感の脱却）**
+  - **Problem (playtest 2026-08-02):** the current floating damage number reads like a spreadsheet cell —
+    no pop, no weight, no 数字感. Combat-ui-drpg wants numbers that LAND on the target with impact.
+  - **Research + apply:** study juicy damage-number presentation (scale-pop on spawn, slight arc + rise,
+    ease-out fade, crit emphasis / colour, drop-shadow or outline for punch, stagger for multi-hit) and apply
+    a satisfying treatment on the combat stage. Keep it readable and controller-first; no external assets
+    (self-contained). Both engines (Godot combat stage + React `CombatCockpit`) for parity where reasonable.
+    Pairs with **T15** (auto-play must show these numbers + drain bars).
+  - **Gate:** visual — real-browser combat capture at 1280/1920 showing the new number pop on a hit
+    (+ a unit/e2e check that a damage number element still renders on the struck target). No layout reflow.
 
 ---
 

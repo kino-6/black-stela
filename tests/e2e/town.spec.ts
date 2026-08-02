@@ -75,7 +75,10 @@ test("town shop is an Etrian buy/sell split — buying fills the shared bag, not
 test("recovery costs gold and blocks free healing", async ({ page }) => {
   await startNewExpedition(page);
 
-  await registerAdventurer(page, { name: "Mira" });
+  // A full party — post-T13 a lone Lv1 wipes the B1F trek; a real party survives the floor but arrives
+  // injured, which is exactly what this recovery-cost test needs.
+  await createStarterParty(page);
+  await page.getByRole("button", { name: "Back to town" }).click();
   await page.getByRole("button", { name: "Enter dungeon" }).click();
   // Route across the needle trap so the party returns injured and recovery has a cost.
   await advanceToB1fMarkerViaNeedle(page);

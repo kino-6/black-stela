@@ -8,7 +8,9 @@ import { runHeadlessClear, runHeadlessProbes } from "../src/headless/headlessRun
 describe("headless reachability runner", () => {
   it("navigates from a fresh debug party and reaches town", () => {
     const initialState = createDebugStateFromProgress(defaultWorld, "ready");
-    const result = runHeadlessClear(initialState, defaultWorld, 3000);
+    // Route-reachability probe: force-win fights (T13 made Act I wipe a fresh Lv1 party — that's a DIFFICULTY
+    // fact, verified in difficultyGate; this test proves the ROUTE from entrance to a town-return exists).
+    const result = runHeadlessClear(initialState, defaultWorld, 3000, { winCombats: true });
 
     expect(result.cleared).toBe(true);
     expect(result.reason).toBe("clear");

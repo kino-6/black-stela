@@ -10,9 +10,9 @@ enemies:
     hp: 5
     attack: 2
     armor: 0
-    accuracy: 70
-    damageMin: 1
-    damageMax: 4
+    accuracy: 76
+    damageMin: 2
+    damageMax: 6
     speed: 4
     morale: 7
     xp: 1
@@ -28,9 +28,9 @@ enemies:
     hp: 4
     attack: 3
     armor: 0
-    accuracy: 72
-    damageMin: 1
-    damageMax: 3
+    accuracy: 78
+    damageMin: 2
+    damageMax: 5
     speed: 6
     morale: 6
     xp: 1
