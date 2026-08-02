@@ -254,10 +254,16 @@ IMP-060/061/062/063/064 completion records in `Improve.md`.
     damage number lands on the target and the HP bars DRAIN as it resolves (auto used to pass
     `animated=false` and skip all of that). The command menu no longer flickers between auto rounds. Combat
     gates green (parity/controller/geometry) — the change is presentation-only, state is untouched.
-  - REMAINING (with **T19**): `_playback` still shows the ROUND's aggregate damage for the first group, not a
-    per-ATTACKER beat — so "誰が何にどれだけ" is not fully granular yet. That needs `_playback` to walk the
-    per-hit `events` (actor→target→damage) and spawn a number per hit on the correct target + drain that
-    target's bar. This is the same rework as T19 (juicy numbers) and needs live combat feel-review.
+  - REMAINING (with **T19**): `_playback` shows the ROUND's aggregate for the first group, not a per-ATTACKER
+    beat — so "誰が何にどれだけ" is not fully granular. **Scoped (2026-08-02):** the Godot combat result
+    carries NO per-hit beats by design — `combat.gd:8` "beats are presentation the target UI rebuilds", i.e.
+    the renderer reconstructs from the state DELTA (group HP totals only). So this is NOT a renderer tweak: it
+    needs (1) `combat_round.gd` to EMIT per-hit beats (actor→target→damage) in its result — a change to the
+    parity presentation seam (React already has this via `collectCombatBeats` reading `event.beats`); (2)
+    `_playback` to walk those beats, spawn a number on each target's mark, and drain that group's bar per beat
+    (needs an incremental-HP path in `CombatStage.enemy_mark`, which is build-once today); (3) the T19 juicy
+    treatment; (4) live browser feel-review (the sim/e2e cannot judge "juicy"). A focused combat-feel session,
+    not a tail-end change — best done with the user watching the real build.
   - **Problem (playtest 2026-08-02):** T1 made オート play each attacker instead of skipping — good — but the
     playback does NOT show WHO dealt HOW MUCH damage to WHAT, and the **HP bars do not update during** the
     sequence. So the beat-by-beat goal (see who did what, feel the numbers land) is not actually met: the
