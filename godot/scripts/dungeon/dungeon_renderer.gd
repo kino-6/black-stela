@@ -361,6 +361,10 @@ static func _add_chamber_landmarks(parent: Node, base: Vector3, wall_mat: Materi
 	# The old three-cylinder treatment made an oversized, luminous "magic circle" that floated at the bottom
 	# of the first-person view. A chamber now has one small, textured stone seal set into its floor: material
 	# detail and shallow relief sell an authored architectural place without a portal-like glow.
+	# Playtest: even the small accent inlays read as an "unexplained green object" — a coloured prop rather
+	# than stonework. MUTE the accent (drop most of its saturation) so the inlays read as tinted STONE, which
+	# is what makes the hall read as a room and not a placed object. (Codex art-lane owns the visual sign-off.)
+	accent = Color.from_hsv(accent.h, accent.s * 0.4, accent.v * 0.92, accent.a)
 	_add_chamber_floor_seal(parent, base, seal_path, cleared)
 	# The raised ceiling is part of the room's promise, not empty vertical space. Its subdued root-crown
 	# echoes the chamber's stonework overhead, so an approaching player reads the room before the floor mark
@@ -400,7 +404,9 @@ static func _add_chamber_floor_seal(parent: Node, base: Vector3, seal_path: Stri
 		return
 	var mat := StandardMaterial3D.new()
 	mat.albedo_texture = seal
-	mat.albedo_color = Color(0.62, 0.62, 0.62, 0.60 if cleared else 0.88)
+	# Subtler still (playtest "green object"): a touch more transparent so it reads as an inlaid detail flush
+	# with the floor, not a placed disk. Codex art-lane owns the final visual sign-off on the real build.
+	mat.albedo_color = Color(0.62, 0.62, 0.62, 0.52 if cleared else 0.74)
 	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
 	mat.roughness = 1.0

@@ -190,10 +190,14 @@ IMP-060/061/062/063/064 completion records in `Improve.md`.
     blind dive (per-fight trough below a survivable-without-facilities line) AND a facility-equipped party
     clears floor 1 and the descent, with the invariants intact. Two worlds. Real-browser feel check.
 
-- [ ] **玄室 landmark visual tuning** (carried over, Codex art-lane)
-  - The 玄室 landmark (pillars + floor disk) reads as an unexplained "green object"; tone the floor disk /
-    make the hall read as a room, not a prop. Closed-door on chamber entrances is done; this is the interior.
-  - **Gate:** visual review on the real build (Codex art-lane sign-off).
+- [-] **玄室 landmark visual tuning** (Codex art-lane) — code tuning done, Codex visual sign-off PENDING
+  - Implemented a directional pass at the "unexplained green object": `_add_chamber_landmarks` now MUTES the
+    chamber accent (drops ~60% of its saturation) so the inlays read as tinted STONE, not a green prop, and
+    `_add_chamber_floor_seal` drops the seal opacity (0.88→0.74) so it reads as an inlaid detail flush with
+    the floor rather than a placed disk. dungeon renders clean (dungeon-controller green).
+  - **Gate:** visual review on the real build — **Codex art-lane sign-off** (per CLAUDE.md the primary
+    implementer does not self-approve player-facing visual completion; this handoff is Codex's). `npm run
+    export:godot` then eyeball a verdant 玄室 on the real build.
 
 - [x] **IMP-063 descent colour arc + textures — DONE** (art delivered + verified 2026-08-02)
   - Colour arc (per-floor palette) + Codex's Default 3-band TEXTURES (`a8fc903`) both landed. Verified via the
