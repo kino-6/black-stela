@@ -1103,6 +1103,15 @@ func _update_view(animate: bool) -> void:
 	var base := Vector3(int(cell.get("x", 0)) * CELL, EYE, int(cell.get("y", 0)) * CELL)
 	var facing: String = _state.get("position", {}).get("facing", "north")
 	var look := base + _facing_vec(facing)
+	# Stairs are part of the current cell, so looking at one should use the same natural glance a person makes:
+	# lower the gaze into a descent and raise it toward a climb. A permanent horizontal camera hid the downshaft
+	# behind the party HUD and made the up ladder look as if it grew out of a wall.
+	var floor_id := String((_state.get("map", {}) as Dictionary).get("floorId", ""))
+	var stair := DungeonRenderer._stairs_info(cell, floor_id)
+	if String(stair.get("direction", "")) == facing:
+		match String(stair.get("kind", "")):
+			"down": look.y -= 0.58
+			"up": look.y += 0.42
 	if _camera:
 		_camera.position = base
 		_camera.look_at(look, Vector3.UP)

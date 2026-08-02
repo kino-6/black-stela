@@ -5,7 +5,6 @@ extends SceneTree
 
 const DungeonRenderer := preload("res://scripts/dungeon/dungeon_renderer.gd")
 const CELL := 3.0
-const WALL_H := 3.2
 
 var _fail := 0
 
@@ -33,26 +32,36 @@ func _initialize() -> void:
 	_check(down != null, "descent mesh is built")
 	_check(up != null, "ascent mesh is built")
 	if down:
-		_check(down.mesh is QuadMesh, "descent uses a wall-backed stairwell opening")
+		_check(String(down.get_meta("stair_geometry", "")) == "descending_steps", "descent owns a real descending stairwell")
 		_check(down.position.z > 5.0 * CELL + 1.2, "descent is placed at its south stair threshold")
-		_check(down.position.y > 0.5 and is_zero_approx(down.rotation.x), "descent is fixed to the stair wall, never billboarded")
+		_check(_children_named(down, "StairStep_") == 5, "descent has five physical treads, not a wall decal")
+		_check(_child_mesh(down, "StairArtwork_Downshaft") is PlaneMesh, "descent artwork is laid into the shaft floor")
 	if up:
-		_check(up.mesh is QuadMesh, "ascent uses the upright ladder art")
+		_check(String(up.get_meta("stair_geometry", "")) == "ladder_well", "ascent owns a recessed ladder well")
 		_check(up.position.x > 8.0 * CELL + 1.0, "ascent is placed at its east stairs edge")
-		var ladder: QuadMesh = up.mesh
-		_check(ladder.size.y >= WALL_H * 0.90 and ladder.size.x <= CELL * 0.52, "ascent nearly reaches the ceiling while preserving the stair-side walls")
-		_check(is_zero_approx(up.position.y - ladder.size.y / 2.0), "ascent's feet remain grounded at the stair threshold")
-		var mat: StandardMaterial3D = up.material_override
-		_check(mat != null and mat.billboard_mode == BaseMaterial3D.BILLBOARD_DISABLED, "ascent is fixed to its stair edge, never billboarded")
+		_check(_child_mesh(up, "StairArtwork_Ladder") is QuadMesh, "ascent artwork sits at the far face of a shaft")
+		_check(_children_named(up, "StairStep_") == 0, "ascent does not use the descending treads")
+		_check(up.rotation.y < 0.0, "ascent shaft faces its east stair edge, never the camera")
 	# This builder test owns the detached viewport tree. Free it explicitly so Godot's headless renderer exits
 	# cleanly instead of reporting test-created RID leaks.
 	(built["container"] as SubViewportContainer).free()
 	quit(1 if _fail > 0 else 0)
 
-func _stair(root: Node, kind: String, direction: String) -> MeshInstance3D:
+func _stair(root: Node, kind: String, direction: String) -> Node3D:
 	var wanted := "Stair_%s_%s" % [kind, direction]
 	var found := root.find_child(wanted, true, false)
-	return found as MeshInstance3D if found is MeshInstance3D else null
+	return found as Node3D if found is Node3D else null
+
+func _children_named(node: Node, prefix: String) -> int:
+	var found := 0
+	for child in node.get_children():
+		if String(child.name).begins_with(prefix):
+			found += 1
+	return found
+
+func _child_mesh(node: Node, child_name: String) -> Mesh:
+	var child := node.get_node_or_null(NodePath(child_name)) as MeshInstance3D
+	return child.mesh if child else null
 
 func _check(condition: bool, label: String) -> void:
 	if condition:

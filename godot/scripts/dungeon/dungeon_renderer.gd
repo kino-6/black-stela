@@ -90,8 +90,16 @@ static func _build_geometry(parent: Node, world: Dictionary, state: Dictionary, 
 		# the entire room reads as the 玄室. The map already carves the 2×2 — this makes the render honour it.
 		var walkable := {}
 		var all_cells: Array = (dungeon.get("grid", {}) as Dictionary).get("cells", [])
+		# A stairs edge belongs to one physical boundary, even when the reciprocal cell still describes that
+		# boundary as a wall.  Rendering cell-local walls independently was what sealed the 3D stair well from
+		# the opposite side and made the prop appear pasted onto a wall.
+		var stair_boundaries := {}
 		for cell in all_cells:
 			walkable["%d,%d" % [int(cell.get("x", 0)), int(cell.get("y", 0))]] = true
+			var edge_map: Dictionary = cell.get("edges", {})
+			for dir in ["north", "south", "east", "west"]:
+				if _is_stairs(edge_map.get(dir, null)):
+					stair_boundaries[_door_key(int(cell.get("x", 0)), int(cell.get("y", 0)), dir)] = true
 		var chamber_block := {}
 		var chamber_anchor := {}
 		for cell in all_cells:
@@ -135,9 +143,13 @@ static func _build_geometry(parent: Node, world: Dictionary, state: Dictionary, 
 			_add_plane(parent, ceil_mat, base + Vector3(0, wall_height, 0), Vector3(PI, 0, 0))
 			for dir in ["north", "south", "east", "west"]:
 				var edge: Variant = edges.get(dir, null)
+				var stair_edge := stair_boundaries.has(_door_key(cx, cy, dir))
 				# A DISCOVERED secret reads as an OPENING, not a wall — otherwise a found passage still looked
 				# solid and the player kept re-searching it (playtest 2026-07-29: "一度開通した隠し通路は再調査不要").
-				if not _is_passage(edge) and not _is_open_secret(edge, state, String(cell.get("roomId", "")), dir):
+				# A stair is neither an ordinary passage nor an ordinary wall.  Its renderer builds the narrow
+				# well, side masonry, and the actual climb/descent; retaining a full wall here made the stair
+				# illustration look like it had grown out of stone.
+				if not _is_passage(edge) and not stair_edge and not _is_open_secret(edge, state, String(cell.get("roomId", "")), dir):
 					_add_wall(parent, chamber_wall_mat if chamber_deco else wall_mat, base, dir, wall_height)
 				elif _is_door(edge):
 					var door_key := _door_key(cx, cy, dir)
@@ -168,6 +180,7 @@ static func _build_geometry(parent: Node, world: Dictionary, state: Dictionary, 
 					_asset(world, run, "dungeon/stair-%s.png" % String(stair.get("kind", ""))),
 					String(stair.get("kind", "")),
 					String(stair.get("direction", "north")),
+					chamber_wall_mat if chamber_deco else wall_mat,
 				)
 
 static func _is_chamber(edges: Dictionary) -> bool:
@@ -208,47 +221,95 @@ static func _floor_depth(floor_id: String) -> int:
 # the wall becomes the dark/recessed backing for a downshaft or ladder instead of leaving a black void beyond
 # the authored grid. They are fixed to the edge — never billboards — and remain visible when the party stands
 # on the stair cell and faces it.
-static func _add_stairs(parent: Node, base: Vector3, tex_path: String, kind: String, direction: String) -> void:
-	if not ResourceLoader.exists(tex_path):
-		return
-	var tex: Texture2D = load(tex_path)
-	if tex == null:
-		return
-	var mat := StandardMaterial3D.new()
-	mat.albedo_texture = tex
-	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
-	mat.roughness = 1.0
-	var m := MeshInstance3D.new()
-	m.name = "Stair_%s_%s" % [kind, direction]
-	m.set_meta("stair_kind", kind)
-	m.set_meta("stair_direction", direction)
+static func _add_stairs(parent: Node, base: Vector3, tex_path: String, kind: String, direction: String, wall_material: Material) -> void:
+	# The artwork is deliberately set *inside* a physical opening, rather than nailed onto the end wall. The
+	# first-person camera can then look into a descent or up a shaft while the picture supplies the fine root
+	# and ladder detail that primitive cylinders cannot.
+	var art_material := _stair_art_mat(tex_path)
+	var root := Node3D.new()
+	root.name = "Stair_%s_%s" % [kind, direction]
+	root.set_meta("stair_kind", kind)
+	root.set_meta("stair_direction", direction)
+	root.set_meta("stair_geometry", "descending_steps" if kind == "down" else "ladder_well")
 	var forward := _direction_vector(direction)
+	root.position = base + forward * (CELL / 2.0)
+	root.rotation.y = _edge_rotation(direction)
+	parent.add_child(root)
+	_add_stair_well(root, wall_material)
 	if kind == "down":
-		# The downshaft illustration is framed by the stone edge. At this eye height a floor decal is entirely
-		# below the view when the party occupies its own stair cell, so a wall-backed opening is the readable
-		# first-person equivalent of looking into the shaft.
-		var shaft := QuadMesh.new()
-		var h := WALL_H * 0.54
-		shaft.size = Vector2(CELL * 0.64, h)
-		m.mesh = shaft
-		m.material_override = mat
-		m.rotation.y = _edge_rotation(direction)
-		# Shift the shaft just enough above the HUD line while keeping it tied to the threshold.
-		m.position = base + forward * (CELL / 2.0 - 0.035) + Vector3(0, h / 2.0 + 0.24, 0)
+		_add_descending_steps(root, wall_material)
+		_add_downshaft_art(root, art_material)
 	else:
-		# The upward art is a ladder THROUGH the ceiling, not a portrait hovering in the middle of a wall. Keep its
-		# feet on the floor, let the root hoop nearly meet the ceiling, and preserve the side walls so the player
-		# reads one continuous route upward instead of a full-screen prop.
-		var quad := QuadMesh.new()
-		var h := WALL_H * 0.92
-		quad.size = Vector2(CELL * 0.50, h)
-		m.mesh = quad
-		m.material_override = mat
-		m.rotation.y = _edge_rotation(direction)
-		m.position = base + forward * (CELL / 2.0 - 0.035) + Vector3(0, h / 2.0, 0)
-	parent.add_child(m)
+		_add_ladder_shaft_art(root, art_material)
+
+static func _add_stair_well(root: Node3D, wall_material: Material) -> void:
+	# Local -Z goes through the active stair edge for every `_edge_rotation` direction. The outer wall strips,
+	# jambs, lintel and dark rear face turn the opening into a shallow, readable shaft instead of a black void.
+	var opening := CELL * 0.46
+	var depth := CELL * 0.46
+	var strip := (CELL - opening) / 2.0
+	for side in [-1.0, 1.0]:
+		_add_box(root, Vector3(strip, WALL_H, 0.16), wall_material, Vector3(side * (opening / 2.0 + strip / 2.0), WALL_H / 2.0, 0))
+		_add_box(root, Vector3(0.18, WALL_H, depth), wall_material, Vector3(side * (opening / 2.0 + 0.09), WALL_H / 2.0, -depth / 2.0))
+	_add_box(root, Vector3(opening, 0.18, depth), wall_material, Vector3(0, WALL_H - 0.09, -depth / 2.0))
+	_add_box(root, Vector3(opening, WALL_H, 0.14), _mat(Color("11150d")), Vector3(0, WALL_H / 2.0, -depth))
+
+static func _add_descending_steps(root: Node3D, wall_material: Material) -> void:
+	# Five shallow, physical treads run away from the party and below the floor line. The resulting parallax is
+	# the cue the old vertical billboard could never supply: this route goes DOWN through the edge.
+	var tread_depth := 0.26
+	var tread_height := 0.19
+	for i in 5:
+		var top := -0.10 - float(i) * 0.18
+		var tread := MeshInstance3D.new()
+		tread.name = "StairStep_%d" % i
+		var block := BoxMesh.new()
+		block.size = Vector3(CELL * 0.42, tread_height, tread_depth)
+		tread.mesh = block
+		tread.material_override = wall_material
+		tread.position = Vector3(0, top - tread_height / 2.0, -0.13 - float(i) * tread_depth)
+		root.add_child(tread)
+
+static func _add_downshaft_art(root: Node3D, material: Material) -> void:
+	# A descent is seen from above: lay the supplied shaft art across the lowered landing. The picture is not a
+	# decal on the front wall; the real treads continue underneath its transparent foliage and give the mouth
+	# depth when the player looks down.
+	var art := MeshInstance3D.new()
+	art.name = "StairArtwork_Downshaft"
+	var plane := PlaneMesh.new()
+	plane.size = Vector2(CELL * 0.47, CELL * 0.47)
+	art.mesh = plane
+	art.material_override = material
+	art.position = Vector3(0, -0.055, -CELL * 0.30)
+	root.add_child(art)
+
+static func _add_ladder_shaft_art(root: Node3D, material: Material) -> void:
+	# Looking up is inherently a vertical view. Place the detailed root ladder at the far face of the recessed
+	# shaft, framed by real jambs and a lintel, so it reads as a route through the ceiling instead of a poster
+	# placed over a solid wall.
+	var art := MeshInstance3D.new()
+	art.name = "StairArtwork_Ladder"
+	var quad := QuadMesh.new()
+	quad.size = Vector2(CELL * 0.48, WALL_H * 0.88)
+	art.mesh = quad
+	art.material_override = material
+	# Keep the transparent ladder card in FRONT of the dark backer. At the same depth it was z-fighting with
+	# the back wall, which made the shaft appear empty on some Compatibility renderers.
+	# Its crown meets the lintel/ceiling instead of floating halfway down the back wall. This establishes the
+	# correct direction at a glance: the party climbs up through this root-bound hatch.
+	art.position = Vector3(0, WALL_H * 0.58, -CELL * 0.39)
+	root.add_child(art)
+
+static func _stair_art_mat(tex_path: String) -> Material:
+	var material := StandardMaterial3D.new()
+	var tex := _texture(tex_path)
+	if tex:
+		material.albedo_texture = tex
+	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	material.roughness = 1.0
+	return material
 
 static func _direction_vector(direction: String) -> Vector3:
 	return {
@@ -422,6 +483,9 @@ static func _door_key(cx: int, cy: int, dir: String) -> String:
 
 static func _is_door(edge: Variant) -> bool:
 	return typeof(edge) == TYPE_DICTIONARY and String(edge.get("kind", "")) == "door"
+
+static func _is_stairs(edge: Variant) -> bool:
+	return typeof(edge) == TYPE_DICTIONARY and String(edge.get("kind", "")) == "stairs"
 
 static func _add_mesh(parent: Node, mesh: Mesh, material: Material, pos: Vector3, rot: Vector3 = Vector3.ZERO) -> void:
 	var instance := MeshInstance3D.new()
