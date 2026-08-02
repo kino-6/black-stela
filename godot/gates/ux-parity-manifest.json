@@ -224,31 +224,28 @@
       "service": "shop",
       "evidence": "tests/_ux_town-market.png",
       "requiredKeys": [
-        "town.allowed",
         "town.buy",
-        "town.canEquip",
-        "town.cannotEquip",
         "town.category.armor",
         "town.category.consumable",
         "town.category.offhand",
         "town.category.tool",
         "town.category.trinket",
         "town.category.weapon",
-        "town.equip",
-        "town.equipment",
-        "town.equipmentSummary",
+        "town.equipWhoCan",
         "town.gold",
-        "town.ineligible",
         "town.inventory",
         "town.inventoryEmpty",
         "town.price",
         "town.quantity",
         "town.remainingGold",
-        "town.selectedAdventurer",
         "town.sell",
+        "town.shopGuideShared",
+        "town.shopModeBuy",
+        "town.shopModeSell",
+        "town.shopSellGuide",
         "town.shopStock"
       ],
-      "notes": "AGENTS.md: a shop MUST show who can use the equipment (town.canEquip/cannotEquip against the selected adventurer) and what changes (town.equipmentSummary stat deltas). A name+price list is a gate failure.",
+      "notes": "T8 Etrian-style shop: a 買う/売る split (town.shopModeBuy/shopModeSell). 買う shows who CAN equip a piece (town.equipWhoCan/equipNoneCan) as info and buys into the SHARED inventory — equipping is done in the party 装備 tab, not here. The sell-mode state (uiState.shop_mode=sell) exercises town.sell + shopSellGuide.",
       "states": [
         {
           "fixture": {
@@ -284,7 +281,41 @@
           "fixture": {
             "partyGold": 400,
             "inventory": []
+          },
+          "uiState": {
+            "shop_mode": "sell"
           }
+        },
+        {
+          "uiState": {
+            "shop_mode": "sell"
+          },
+          "fixture": {
+            "partyGold": 400,
+            "inventory": [
+              {
+                "id": "equip.militia-sabre",
+                "name": "Militia Sabre",
+                "kind": "equipment",
+                "quantity": 1,
+                "slot": "weapon",
+                "sellValue": 9
+              },
+              {
+                "id": "item.healing-draught",
+                "name": "Healing Draught",
+                "kind": "healing",
+                "quantity": 2,
+                "healAmount": 6
+              }
+            ]
+          }
+        }
+      ],
+      "derivedExclusions": [
+        {
+          "key": "town.equipNoneCan",
+          "reason": "T8: the positive 'who can equip' line (town.equipWhoCan) is driven by a gear item with wearers; the no-wearer fallback needs an item NO party class can equip, which the shared default party never yields. Same conditional pair; the reachable half is exercised."
         }
       ]
     },
@@ -1953,9 +1984,9 @@
         "partyMenu.valuablesEmpty",
         "partyMenu.wounded",
         "partyMenu.xpToNext",
-        "play.useReturnCharm",
         "play.backRow",
-        "play.frontRow"
+        "play.frontRow",
+        "play.useReturnCharm"
       ],
       "notes": "The party menu across its pages and every state a decision needs: derived combat numbers and resistances, formation, equipment slots, a carried piece that can be equipped in town or the dungeon, items that heal / restore 気力 / cure, an ineligible piece, discard confirmation, protected valuables, and empty lists.",
       "states": [
@@ -2661,10 +2692,10 @@
         "chest": true
       },
       "requiredKeys": [
-        "play.chestClearNote",
         "play.chestBack",
         "play.chestChance",
         "play.chestChooseHandler",
+        "play.chestClearNote",
         "play.chestClosedNote",
         "play.chestDisarm",
         "play.chestHeading",
@@ -2672,9 +2703,11 @@
         "play.chestLeave",
         "play.chestLockedNote",
         "play.chestOpen",
-        "play.chestTrappedNote",
+        "play.chestTrappedKnown",
+        "play.chestUncertainNote",
         "play.chestUnlock",
-        "play.chestUncertainNote"
+        "play.trapNeedle",
+        "play.trapUnknown"
       ],
       "notes": "An unresolved chest HOLDS the cell (Wizardry prompt model): while closed, its panel owns the command region. It shows only what the party can SEE — closed, a trap found, 'cannot tell', or no trap. A risky operation opens a formation-order handler list with visible success rates and initial focus on its best standing member; after a found trap, focus moves straight to 罠を外す. A successful disarm or lockpick opens the chest in the same field action. Its opened art and acquired treasure stay centred until one focused 探索へ戻る acknowledgement; only then does exploration resume.",
       "states": [
@@ -2719,6 +2752,24 @@
             "chest": true,
             "chest_opened": true
           }
+        }
+      ],
+      "derivedExclusions": [
+        {
+          "key": "play.chestTrappedNote",
+          "reason": "T3: the flat 'trapped' note is the fallback for a trap with NO kind; authored traps always carry a kind, so only the identified form (chestTrappedKnown) is driven."
+        },
+        {
+          "key": "play.trapGas",
+          "reason": "T3: the driven chest state carries a needle trap; gas/rune/snare are the SAME _trap_name identify path, exercised by trapNeedle (毒針)."
+        },
+        {
+          "key": "play.trapRune",
+          "reason": "T3: see play.trapGas — same identify path, exercised by the needle trap."
+        },
+        {
+          "key": "play.trapSnare",
+          "reason": "T3: see play.trapGas — same identify path, exercised by the needle trap."
         }
       ]
     },
@@ -3042,9 +3093,9 @@
         "partyMenu.valuablesEmpty",
         "partyMenu.wounded",
         "partyMenu.xpToNext",
-        "play.useReturnCharm",
         "play.backRow",
-        "play.frontRow"
+        "play.frontRow",
+        "play.useReturnCharm"
       ],
       "notes": "The party menu across its pages and every state a decision needs: derived combat numbers and resistances, formation, equipment slots, a carried piece that can be equipped in town or the dungeon, items that heal / restore 気力 / cure, an ineligible piece, discard confirmation, protected valuables, and empty lists.",
       "states": [
@@ -3926,6 +3977,11 @@
       "scene": "res://scenes/result.tscn",
       "evidence": "tests/_ux_result.png",
       "requiredKeys": [
+        "party.accuracy",
+        "party.damage",
+        "party.speed",
+        "partyMenu.attack",
+        "partyMenu.xpToNext",
         "result.continue",
         "result.defeated",
         "result.gold",
@@ -3947,6 +4003,16 @@
           "uiState": {
             "no_growth": true
           }
+        }
+      ],
+      "derivedExclusions": [
+        {
+          "key": "result.learned",
+          "reason": "T5: the 'Learned:' line renders only when a levelling member crosses a technique-unlock level; the driven levelup fixture levels a member who learns nothing that level. Stat deltas + XP-to-next (the always-present growth) are driven."
+        },
+        {
+          "key": "party.armor",
+          "reason": "T5: the growth-delta line renders each stat only when it moved this level (React `if (g.armor)`, Godot `if armor != 0` — same conditional). The driven level-2 gain moves HP/攻撃/速度/命中/damage (all exercised) but not 防御; armor is flat at that level. Same per-stat structure as the driven stats, verified by the ones that move."
         }
       ]
     },

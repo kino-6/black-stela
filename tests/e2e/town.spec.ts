@@ -37,7 +37,7 @@ test("the town square offers a few destinations plus a separated departure", asy
   await expect(page.getByRole("heading", { name: "Silent Stone Chamber" })).toBeVisible();
 });
 
-test("town shop supports buying, selling, and equipping without an admin table", async ({ page }) => {
+test("town shop is an Etrian buy/sell split — buying fills the shared bag, not a character", async ({ page }) => {
   await startNewExpedition(page);
 
   await createStarterParty(page);
@@ -45,30 +45,31 @@ test("town shop supports buying, selling, and equipping without an admin table",
 
   await expect(page.getByRole("heading", { name: "Stela Gate General Store" })).toBeVisible();
   await expect(page.getByText("75 gold")).toBeVisible();
-  await expect(page.getByText("Selected adventurer")).toBeVisible();
+  // T8: 買う/売る are top-level modes; there is no per-adventurer purchase scope anymore.
+  await expect(page.getByTestId("shop-mode-buy")).toBeVisible();
+  await expect(page.getByTestId("shop-mode-sell")).toBeVisible();
+  await expect(page.getByText("Selected adventurer")).toHaveCount(0);
 
-  // Weapons category is the default; other slots live under their own tabs.
+  // 買う mode: browse by category. The item detail names who CAN equip it — information, not a scope.
   await expect(page.getByText(/Weapon · DMG/).first()).toBeVisible();
-  await expect(page.getByTestId("shop-delta").first()).toBeVisible();
+  await expect(page.getByTestId("shop-who-can-equip").first()).toBeVisible();
   await page.getByTestId("shop-category-offhand").click();
   await expect(page.getByText(/Offhand · ARM/).first()).toBeVisible();
   await page.getByTestId("shop-category-armor").click();
   await expect(page.getByText(/Body · ARM/).first()).toBeVisible();
-  await page.getByTestId("shop-category-trinket").click();
-  await expect(page.getByText("Head", { exact: true }).first()).toBeVisible();
 
-  // Buy a consumable from its category, then a weapon, then equip it.
+  // Buy a consumable and a weapon — both land in the SHARED inventory (equipping is the party menu's job).
   await page.getByTestId("shop-category-consumable").click();
   await page.getByRole("button", { name: "Buy Healing Draught" }).click();
   await expect(page.getByText("Bought Healing Draught for 25 gold.")).toBeVisible();
   await page.getByTestId("shop-category-weapon").click();
   await page.getByRole("button", { name: "Buy Militia Sabre" }).click();
   await expect(page.getByText("Bought Militia Sabre for 45 gold.")).toBeVisible();
-  const equipSabre = page.locator('button[aria-label^="Equip Militia Sabre to"]:not([disabled])').first();
-  await expect(equipSabre).toBeVisible();
-  await equipSabre.click();
-  await expect(page.getByText(/equips Militia Sabre/i)).toBeVisible();
-  await expect(page.getByRole("button", { name: "Sell" }).last()).toBeVisible();
+
+  // 売る mode lists the shared bag we just filled, each with a Sell action.
+  await page.getByTestId("shop-mode-sell").click();
+  await expect(page.getByText("Militia Sabre", { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Sell" }).first()).toBeVisible();
 });
 
 test("recovery costs gold and blocks free healing", async ({ page }) => {
@@ -102,7 +103,10 @@ test("Japanese shop equipment stays readable on mobile", async ({ page }) => {
   await openTownService(page, "商店", "ja");
 
   await expect(page.getByRole("heading", { name: "黒碑門の雑貨店" })).toBeVisible();
-  await expect(page.getByText("見る冒険者")).toBeVisible();
+  // T8: the 買う/売る split replaced the per-adventurer picker.
+  await expect(page.getByTestId("shop-mode-buy")).toBeVisible();
+  await expect(page.getByTestId("shop-mode-sell")).toBeVisible();
+  await expect(page.getByText("見る冒険者")).toHaveCount(0);
   // Weapons category is default and readable, then switch categories on mobile.
   await expect(page.getByText(/武器 ·/).first()).toBeVisible();
   await expect(page.getByLabel("品揃え").getByText("民兵の湾刀")).toBeVisible();

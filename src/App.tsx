@@ -28,7 +28,7 @@ import { normalizeVisualProfile, shiftVisualFocus } from "./ui/characterVisual";
 import { RecoveryPanel } from "./components/RecoveryPanel";
 import { RecordsPanel } from "./components/RecordsPanel";
 import { TownEntryPanel } from "./components/TownEntryPanel";
-import { ShopPanel } from "./components/ShopPanel";
+import { ShopPanel, type ShopMode } from "./components/ShopPanel";
 import { QuestBoardPanel } from "./components/QuestBoardPanel";
 import { questBoardEntries } from "./domain/quests";
 import { CareerPanel } from "./components/CareerPanel";
@@ -232,6 +232,7 @@ export function App() {
   const [selectedTargetId, setSelectedTargetId] = useState<string | null>(null);
   const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null);
   const [shopCategory, setShopCategory] = useState<ShopCategory>("weapon");
+  const [shopMode, setShopMode] = useState<ShopMode>("buy");
   const [careerMemberId, setCareerMemberId] = useState<string | null>(null);
   const [reclassClassId, setReclassClassId] = useState<CharacterClassId | "">("");
   const [eraseConfirmId, setEraseConfirmId] = useState<string | null>(null);
@@ -2606,11 +2607,11 @@ export function App() {
                   inventory={state.inventory}
                   latestLogText={latestLogText}
                   latestEventType={latestEventType ?? null}
-                  selectedProfile={selectedProfile}
-                  onSelectProfile={setSelectedProfileId}
                   availableShopCategories={availableShopCategories}
                   activeShopCategory={activeShopCategory}
                   onSetCategory={setShopCategory}
+                  shopMode={shopMode}
+                  onSetShopMode={setShopMode}
                   onCommand={run}
                 />
               )}

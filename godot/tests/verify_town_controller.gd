@@ -12,6 +12,7 @@ extends SceneTree
 # by verify_guild_controller. Opening it here would change_scene mid-gate. Roster management is "party".
 const LOCATIONS := {"hall": ["party", "career"], "market": ["shop", "loot", "workshop"], "archive": ["records", "quests"]}
 const DungeonEntry := preload("res://scripts/rules/dungeon_entry.gd")
+const I18n := preload("res://scripts/i18n.gd")
 
 var _failures := 0
 
@@ -114,22 +115,76 @@ func _initialize() -> void:
 	else:
 		print("[town-controller] loot confirm: Cancel returned to the counter, not out of it")
 
-	# A shop is a decision surface, not a name-and-price table. The controller route must expose one
-	# explicit purchase target before Confirm reaches 買う. This catches the old market layout where each
-	# row had an immediate Buy button but no selected-item board.
+	# T8 — the shop is an Etrian/世界樹 買う/売る split, party-wide (buying drops into the SHARED bag, not a
+	# per-adventurer scope), and equipping lives in the party 装備 tab. This locks: (1) 買う and 売る are two
+	# separate reachable modes; (2) buying adds to the shared inventory, not to one character; (3) the old
+	# per-adventurer purchase picker (「見る冒険者」) is gone; (4) both modes hand the controller a cursor.
+	# It is proven to fail on the pre-T8 single-page shop (no modes, a 見る冒険者 picker, no shared-bag guide).
+	town.set("_shop_mode", "buy")
 	town.call("set_ui_state", {"service": "shop", "shop_category": "weapon", "shop_item_id": "equip.rusted-dirk"})
-	for i in 3:
+	for i in 4:
 		await process_frame
-	var shop_text := _all_text(town)
-	if not shop_text.contains("選んだ品"):
-		_fail("shop: no selected-item board — the player cannot review a purchase before buying")
-	if not shop_text.contains("詳しく見る"):
-		_fail("shop: stock has no controller-visible inspect command")
+	var buy_text := _all_text(town)
+	if _button_with_text(town, I18n.t("town.shopModeBuy")) == null or _button_with_text(town, I18n.t("town.shopModeSell")) == null:
+		_fail("shop: 買う/売る are not both reachable as modes")
+	if not buy_text.contains(I18n.t("town.shopStock")):
+		_fail("shop 買う: no 品揃え stock heading")
+	if buy_text.contains("見る冒険者"):
+		_fail("shop 買う: the per-adventurer purchase picker is still present — buying must be party-wide")
+	if not buy_text.contains("共有の持ち物"):
+		_fail("shop 買う: the shared-bag guide (buying is party-wide) is missing")
+	var buy_labels: Array = []
+	_buttons_with_text(town, I18n.t("town.buy"), buy_labels)
+	if buy_labels.size() < 2:
+		_fail("shop 買う: no controller-visible 買う purchase action (only the mode tab)")
 	if _focused() == null:
-		_fail("shop: selected-item board has no controller focus route")
+		_fail("shop 買う: no controller focus route")
+	# Buying drops the piece into the SHARED inventory — assert the bag grows, not one member's equipment.
+	var shop_state: Dictionary = (town.call("state") as Dictionary).duplicate(true)
+	shop_state["partyGold"] = 99999
+	shop_state["inventory"] = []
+	var shop_run: Node = town.get("_run")
+	if shop_run != null:
+		shop_run.state = shop_state
 	else:
-		print("[town-controller] shop: selected-item board is visible and focusable")
-		_press_cancel(town)
+		town.set("_fallback_state", shop_state)
+	town.call("set_ui_state", {"service": "shop", "shop_category": "weapon", "shop_item_id": "equip.rusted-dirk"})
+	for i in 4:
+		await process_frame
+	var before_bag := int((town.call("state").get("inventory", []) as Array).size())
+	# 買う labels BOTH the mode tab and the purchase action; take the LAST match — the action board renders
+	# after the mode tabs — so we press the purchase, not re-select the mode.
+	var buy_candidates: Array = []
+	_buttons_with_text(town, I18n.t("town.buy"), buy_candidates)
+	var buy_now: Button = buy_candidates.back() if not buy_candidates.is_empty() else null
+	if buy_now == null or buy_now.disabled:
+		_fail("shop 買う: 買う is unavailable even with gold to spend")
+	else:
+		buy_now.emit_signal("pressed")
+		for i in 4:
+			await process_frame
+		var after_bag := int((town.call("state").get("inventory", []) as Array).size())
+		if after_bag <= before_bag:
+			_fail("shop 買う: buying did not add the piece to the SHARED inventory")
+		else:
+			print("[town-controller] shop 買う: purchase landed in the shared bag (%d→%d)" % [before_bag, after_bag])
+
+	# 売る is a distinct mode — the stock heading gives way to the 所持品 sell list.
+	town.set("_shop_mode", "sell")
+	town.call("set_ui_state", {"service": "shop", "shop_mode": "sell"})
+	for i in 4:
+		await process_frame
+	var sell_text := _all_text(town)
+	if sell_text.contains(I18n.t("town.shopStock")):
+		_fail("shop 売る: still showing the 買う stock — 買う/売る are not separate modes")
+	if not sell_text.contains(I18n.t("town.inventory")):
+		_fail("shop 売る: no 所持品 sell list")
+	if _focused() == null:
+		_fail("shop 売る: no controller focus route")
+	else:
+		print("[town-controller] shop: 買う/売る are separate controller-reachable modes")
+	town.set("_shop_mode", "buy")
+	_press_cancel(town)
 	for i in 3:
 		await process_frame
 
@@ -334,6 +389,12 @@ func _button_with_text(node: Node, text: String) -> Button:
 		if found != null:
 			return found
 	return null
+
+func _buttons_with_text(node: Node, text: String, out: Array) -> void:
+	if node is Button and (node as Button).text == text:
+		out.append(node)
+	for child in node.get_children():
+		_buttons_with_text(child, text, out)
 
 func _fail(message: String) -> void:
 	_failures += 1

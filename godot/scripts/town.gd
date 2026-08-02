@@ -55,6 +55,7 @@ var _menu_open: bool = false      # the settings/menu overlay (over the square)
 var _selected_id: String = ""     # the adventurer services act on
 var _shop_category: String = ""
 var _shop_item_id: String = ""    # stock currently being examined; buying is a deliberate second step
+var _shop_mode: String = "buy"    # 買う / 売る — the Etrian-style top-level split (T8)
 var _loot_filter: String = "all"
 var _loot_pending: String = ""
 var _party_page: String = "status"
@@ -110,6 +111,7 @@ func set_ui_state(ui: Dictionary) -> void:
 	if ui.has("loot_filter"): _loot_filter = String(ui["loot_filter"])
 	if ui.has("shop_category"): _shop_category = String(ui["shop_category"])
 	if ui.has("shop_item_id"): _shop_item_id = String(ui["shop_item_id"])
+	if ui.has("shop_mode"): _shop_mode = String(ui["shop_mode"])
 	if ui.has("party_page"): _party_page = String(ui["party_page"])
 	if ui.has("party_member_id"): _selected_id = String(ui["party_member_id"])
 	if ui.has("party_item"): _party_item = String(ui["party_item"])
@@ -590,6 +592,8 @@ func _service_ctx() -> Dictionary:
 		"set_shop_category": func(cat): _shop_category = String(cat); _rebuild(),
 		"shop_item_id": _shop_item_id,
 		"set_shop_item": func(id): _shop_item_id = String(id); _rebuild(),
+		"shop_mode": _shop_mode,
+		"set_shop_mode": func(m): _shop_mode = String(m); _rebuild(),
 		"loot_filter": _loot_filter,
 		"set_loot_filter": func(f): _loot_filter = String(f); _rebuild(),
 		"party_page": _party_page,

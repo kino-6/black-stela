@@ -171,8 +171,9 @@ test("browser self-play completes the visible dungeon loop without headless shor
       report.commands.push("Shop");
       await expect(page.getByRole("heading", { name: "Stela Gate General Store" })).toBeVisible();
       await expect(page.getByText(/\d+ gold/).first()).toBeVisible();
-      await expect(page.getByText("Selected adventurer")).toBeVisible();
-      await expect(page.getByTestId("shop-delta").first()).toBeVisible();
+      // T8: the shop is a 買う/売る split with no per-adventurer purchase scope.
+      await expect(page.getByTestId("shop-mode-buy")).toBeVisible();
+      await expect(page.getByTestId("shop-mode-sell")).toBeVisible();
       await capture("shop");
 
       await page.getByRole("button", { name: "Back to town" }).click();
@@ -203,7 +204,7 @@ test("browser self-play completes the visible dungeon loop without headless shor
         await expect(japanesePage.getByRole("button", { name: "施療院" })).toBeVisible();
         await openTownService(japanesePage, "商店", "ja");
         await expect(japanesePage.getByRole("heading", { name: "黒碑門の雑貨店" })).toBeVisible();
-        await expect(japanesePage.getByText("見る冒険者")).toBeVisible();
+        await expect(japanesePage.getByTestId("shop-mode-buy")).toBeVisible();
         await expect(japanesePage.getByText("gold")).toHaveCount(0);
         await expect(japanesePage.getByRole("button", { name: "Shop" })).toHaveCount(0);
         await captureFrom(japanesePage, "ja-shop", report);

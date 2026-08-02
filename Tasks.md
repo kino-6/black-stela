@@ -70,7 +70,17 @@ IMP-060/061/062/063/064 completion records in `Improve.md`.
   - (b) The dungeon log is now a framed WINDOW (gold-bordered panel, autowrap) above the party formation —
     verified legible. dungeon-controller green.
 
-- [ ] **T8 — 商店の全面リデザイン（世界樹式・buy/sell分離・party-wide）** ⟵ needs a design-direction OK
+- [x] **T8 — 商店の全面リデザイン（世界樹式・buy/sell分離・party-wide）** — DONE
+  - Shipped: the shop is now a top-level **買う / 売る** split in BOTH engines (parity). **買う** browses stock
+    by category, names who CAN equip a piece as INFO (not a purchase scope), and buys into the **SHARED party
+    inventory**; equipping moved entirely to the party 装備 tab. **売る** lists the shared bag. Dropped the
+    per-adventurer 「見る冒険者」 picker and the in-shop equip board. New UI state `shop_mode` (buy|sell) +
+    setter threaded through ctx (Godot `town.gd`) and App state (React). i18n: `town.shopModeBuy/shopModeSell/
+    shopGuideShared/shopSellGuide/equipWhoCan/equipNoneCan`; ux-parity re-derived (dropped selectedAdventurer/
+    canEquip; conditional-only keys carry `derivedExclusions` with reasons).
+  - **Gate:** `verify_town_controller` shop section — asserts 買う/売る are separate reachable modes, buying
+    grows the SHARED inventory (0→1), the 「見る冒険者」 scope is gone, and both modes hand the controller a
+    cursor (proven to fail on the pre-T8 single-page shop). ux-parity PASS · gate:final e2e 139 · unit 719.
   - Current shop is low quality + "業務アプリ感": buy/sell/equip are all on ONE dense screen, and it is
     scoped to ONE adventurer (「見る冒険者: セーブル」) — buying is per-character, which is odd.
   - Proposed (Etrian/世界樹 model): top-level **買う / 売る** split; **買う** browses categories → item detail

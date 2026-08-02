@@ -1,14 +1,12 @@
-import type { Character, Command, EquipmentSlot, GameEvent, InventoryItem, ScenarioShop, ScenarioWorld } from "../domain/types";
+import type { Character, Command, GameEvent, InventoryItem, ScenarioShop, ScenarioWorld } from "../domain/types";
 import { equipmentInstanceKey } from "../domain/affixes";
-import { getEffectiveCharacterStats, isEquipmentUsableBy } from "../domain/economy";
+import { isEquipmentUsableBy } from "../domain/economy";
 import {
   describeEquipmentInstance,
-  equippedName,
   findEquipmentById,
   localizedCatalogDescription,
   localizedCatalogName,
   localizedShopName,
-  previewEquipmentStats,
   shopCategoryFor,
   type ShopCategory
 } from "../ui/catalog";
@@ -16,13 +14,12 @@ import {
   formatEquipmentEffect,
   formatEquipmentSlot,
   formatInventoryEffect,
-  formatStatDelta,
   isShopEventType
 } from "../ui/format";
 import { catalogIconUrl } from "../ui/artAssets";
 import type { Locale, Translator } from "../i18n";
 
-const equipmentSlotOrder: EquipmentSlot[] = ["weapon", "offhand", "body", "head", "hands", "accessory"];
+export type ShopMode = "buy" | "sell";
 
 // The shop/inventory row is a 3-column grid (icon | text | action). ALWAYS emit the
 // icon cell — an item whose art hasn't been drawn yet (e.g. a new scenario's pack)
@@ -45,11 +42,11 @@ interface ShopPanelProps {
   inventory: InventoryItem[];
   latestLogText: string;
   latestEventType: GameEvent["type"] | null;
-  selectedProfile: Character;
-  onSelectProfile: (id: string) => void;
   availableShopCategories: ShopCategory[];
   activeShopCategory: ShopCategory;
   onSetCategory: (category: ShopCategory) => void;
+  shopMode: ShopMode;
+  onSetShopMode: (mode: ShopMode) => void;
   onCommand: (command: Command) => void;
 }
 
@@ -65,14 +62,13 @@ export function ShopPanel({
   inventory,
   latestLogText,
   latestEventType,
-  selectedProfile,
-  onSelectProfile,
   availableShopCategories,
   activeShopCategory,
   onSetCategory,
+  shopMode,
+  onSetShopMode,
   onCommand
 }: ShopPanelProps) {
-  const selectedProfileStats = getEffectiveCharacterStats(selectedProfile, world);
   const artPack = world.assetPack ?? "default";
   return (
     <section
@@ -86,34 +82,20 @@ export function ShopPanel({
         <strong>{t("town.gold", { gold: partyGold })}</strong>
       </div>
       {latestLogText && latestEventType && isShopEventType(latestEventType) && <p className="event-window" aria-live="polite">{latestLogText}</p>}
-      <section className="shop-adventurer-panel" aria-label={t("town.selectedAdventurer")}>
-        <div>
-          <strong>{t("town.selectedAdventurer")}: {selectedProfile.name}</strong>
-          <span>
-            {t("town.equipmentSummary", {
-              attack: selectedProfileStats.damageMax,
-              accuracy: selectedProfileStats.accuracy,
-              armorValue: selectedProfileStats.armor,
-              speed: selectedProfileStats.speed
-            })}
-          </span>
-        </div>
-        <div className="shop-party-select">
-          {party.map((member) => (
-            <button
-              type="button"
-              className={member.id === selectedProfile.id ? "selected" : ""}
-              key={member.id}
-              onClick={() => onSelectProfile(member.id)}
-            >
-              {member.name}
-            </button>
-          ))}
-        </div>
-      </section>
-      <div className="shop-grid">
+      {/* 買う / 売る — the Etrian-style top-level split (T8). Equipping is done in the party menu; buying is
+          party-wide into the shared inventory (no per-character purchase scope). */}
+      <div className="shop-mode-tabs" role="tablist">
+        <button type="button" role="tab" aria-selected={shopMode === "buy"} className={shopMode === "buy" ? "selected" : ""} data-testid="shop-mode-buy" onClick={() => onSetShopMode("buy")}>
+          {t("town.shopModeBuy")}
+        </button>
+        <button type="button" role="tab" aria-selected={shopMode === "sell"} className={shopMode === "sell" ? "selected" : ""} data-testid="shop-mode-sell" onClick={() => onSetShopMode("sell")}>
+          {t("town.shopModeSell")}
+        </button>
+      </div>
+      {shopMode === "buy" ? (
         <section aria-label={t("town.shopStock")}>
           <h4>{t("town.shopStock")}</h4>
+          <p className="shop-guide">{t("town.shopGuideShared")}</p>
           <div className="shop-category-tabs" role="tablist">
             {availableShopCategories.map((category) => (
               <button
@@ -132,8 +114,7 @@ export function ShopPanel({
           <div className="shop-list">
             {shop.stock?.filter((stock) => shopCategoryFor(stock.itemId) === activeShopCategory).map((stock) => {
               const equipment = findEquipmentById(stock.itemId);
-              const selectedCanEquip = equipment ? isEquipmentUsableBy(equipment, selectedProfile) : false;
-              const previewStats = equipment ? previewEquipmentStats(selectedProfile, equipment) : null;
+              const wearers = equipment ? party.filter((m) => isEquipmentUsableBy(equipment, m)).map((m) => m.name) : [];
               return (
                 <article className="shop-row shop-row-with-icon" key={stock.itemId}>
                   {renderCatalogIcon(stock.itemId, artPack)}
@@ -146,13 +127,8 @@ export function ShopPanel({
                     </span>
                     {equipment && <small>{localizedCatalogDescription(stock.itemId, locale)}</small>}
                     {equipment && (
-                      <small data-testid="shop-delta">
-                        {selectedCanEquip
-                          ? t("town.canEquip", { member: selectedProfile.name })
-                          : t("town.cannotEquip", { member: selectedProfile.name })}
-                        {selectedCanEquip && previewStats
-                          ? ` · ${formatStatDelta(selectedProfileStats, previewStats, t)}`
-                          : ""}
+                      <small data-testid="shop-who-can-equip">
+                        {wearers.length ? t("town.equipWhoCan", { names: wearers.join("・") }) : t("town.equipNoneCan")}
                       </small>
                     )}
                     {equipment && <small>{t("town.price", { gold: stock.price })}</small>}
@@ -171,8 +147,10 @@ export function ShopPanel({
             })}
           </div>
         </section>
+      ) : (
         <section aria-label={t("town.inventory")}>
           <h4>{t("town.inventory")}</h4>
+          <p className="shop-guide">{t("town.shopSellGuide")}</p>
           <div className="shop-list">
             {inventory.length === 0 ? (
               <p className="empty-state">{t("town.inventoryEmpty")}</p>
@@ -215,58 +193,7 @@ export function ShopPanel({
             )}
           </div>
         </section>
-      </div>
-      <section className="equipment-board" aria-label={t("town.equipment")}>
-        <h4>{t("town.equipment")}</h4>
-        <article className="equipment-row">
-          <div>
-            <strong>{selectedProfile.name}</strong>
-            <span>
-              {t("town.equipmentSummary", {
-                attack: selectedProfileStats.damageMax,
-                accuracy: selectedProfileStats.accuracy,
-                armorValue: selectedProfileStats.armor,
-                speed: selectedProfileStats.speed
-              })}
-            </span>
-            <dl className="equipment-slots">
-              {equipmentSlotOrder.map((slot) => (
-                <div key={`${selectedProfile.id}:${slot}`}>
-                  <dt>{formatEquipmentSlot(slot, t)}</dt>
-                  <dd>{equippedName(selectedProfile.equipment[slot], locale, t)}</dd>
-                </div>
-              ))}
-            </dl>
-          </div>
-          <div className="equipment-actions">
-            {inventory.filter((item) => item.kind === "equipment").map((item) => {
-              const equipment = findEquipmentById(item.id);
-              const usable = equipment ? isEquipmentUsableBy(equipment, selectedProfile) : false;
-              return (
-                <button
-                  type="button"
-                  key={`${selectedProfile.id}:${equipmentInstanceKey(item.id, item.plus, item.affix)}`}
-                  aria-label={`${t("town.equip")} ${describeEquipmentInstance(item.id, locale, t, item.plus, item.affix)} to ${selectedProfile.name}`}
-                  disabled={!usable}
-                  onClick={() =>
-                    onCommand({
-                      type: "equip_item",
-                      characterId: selectedProfile.id,
-                      equipmentId: item.id,
-                      plus: item.plus,
-                      affix: item.affix
-                    })
-                  }
-                >
-                  {renderCatalogIcon(item.id, artPack)}
-                  {describeEquipmentInstance(item.id, locale, t, item.plus, item.affix)}
-                  <small>{usable ? t("town.allowed") : t("town.ineligible")}</small>
-                </button>
-              );
-            })}
-          </div>
-        </article>
-      </section>
+      )}
     </section>
   );
 }

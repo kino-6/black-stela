@@ -607,6 +607,12 @@ export const en = {
     recoveryCost: "Recovery cost: {gold}",
     shopStock: "Stock",
     shopGuide: "Choose an item, check its bearer and stat change, then buy.",
+    shopModeBuy: "Buy",
+    shopModeSell: "Sell",
+    shopGuideShared: "Choose an item, see who can equip it, then buy. Purchases go to the shared bag (equip in the party menu).",
+    shopSellGuide: "Sell what you don't need. Unequip a worn piece first.",
+    equipWhoCan: "Can equip: {names}",
+    equipNoneCan: "No one in the party can equip this.",
     selectedItem: "Selected item",
     inspect: "Inspect",
     category: {

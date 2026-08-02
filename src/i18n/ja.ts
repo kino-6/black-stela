@@ -609,6 +609,12 @@ export const ja = {
     recoveryCost: "回復費: {gold}G",
     shopStock: "品揃え",
     shopGuide: "品を選び、渡す相手と装備の変化を確かめてから買う。",
+    shopModeBuy: "買う",
+    shopModeSell: "売る",
+    shopGuideShared: "品を選び、誰が装備できるか確かめてから買う。買った品は共有の持ち物に入る（装備は隊列メニューで）。",
+    shopSellGuide: "いらない品を売る。装備中の品は先に外すこと。",
+    equipWhoCan: "装備できる: {names}",
+    equipNoneCan: "今の隊列に装備できる者はいない。",
     selectedItem: "選んだ品",
     inspect: "詳しく見る",
     category: {
