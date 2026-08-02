@@ -74,6 +74,23 @@ test("town shop is an Etrian buy/sell split — buying fills the shared bag, not
   await expect(page.getByTestId("sell-value").first()).toContainText(/Sells for \d+ gold/);
 });
 
+test("the blacksmith tempers worn gear for gold, up to a cap (T9)", async ({ page }) => {
+  await startNewExpedition(page);
+  await createStarterParty(page);
+  await page.getByRole("button", { name: "Back to town" }).click();
+  await openTownService(page, "Blacksmith");
+
+  await expect(page.getByTestId("blacksmith-panel")).toBeVisible();
+  await expect(page.getByText("75 gold")).toBeVisible();
+  // Temper the first worn piece (starter classes vary, so pick whichever slot is worn): +1 costs 30 gold
+  // and shows on the piece.
+  const forgeFirst = page.locator('[data-testid^="blacksmith-forge-"]').first();
+  await expect(forgeFirst).toBeEnabled();
+  await forgeFirst.click();
+  await expect(page.getByText("45 gold")).toBeVisible(); // 75 - 30
+  await expect(page.getByTestId("blacksmith-list")).toContainText("+1");
+});
+
 test("recovery costs gold and blocks free healing", async ({ page }) => {
   await startNewExpedition(page);
 

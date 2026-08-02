@@ -556,6 +556,7 @@ export const ja = {
     career: "転職",
     reliquary: "鑑定所",
     workshop: "錬成所",
+    blacksmith: "鍛冶屋",
     entry: "迷宮入口",
     serviceCancel: "やめる",
     backToTown: "町へ戻る",
@@ -767,6 +768,19 @@ export const ja = {
     nothingWorn: "強化できる装備がない。",
     back: "戻る"
   },
+  blacksmith: {
+    title: "鍛冶屋",
+    intro: "ゴールドを払えば、いま身につけている装備を鍛えて強化できます。錬成所とは違い、素材ではなく金銭で強くします。",
+    member: "冒険者",
+    gold: "所持金 {gold}G",
+    forge: "鍛える（{cost}G）",
+    cantAfford: "{cost}G必要",
+    atCap: "鍛え切った",
+    boosts: "→ {stat} +1",
+    noGold: "ゴールドが足りません。迷宮で稼いでから出直すといい。",
+    nothingWorn: "鍛えられる装備がない。",
+    back: "戻る"
+  },
   questBoard: {
     title: "依頼掲示板",
     intro: "街に常設された依頼です。受注してから、討伐または納品を達成すると報酬を受け取れます。",
@@ -914,6 +928,7 @@ export const ja = {
     itemSold: "{item} を売り、{gold}G を得た。",
     equipmentChanged: "{name} は {item} を装備した。",
     equipmentReinforced: "{name} の {item} を +{plus} に鍛えた。",
+    equipmentForged: "{name} の {item} を +{plus} に鍛え上げた（{cost}G）。",
     vocationChanged: "{name} は{vocation}に就いた。",
     itemAppraised: "鑑定した：{item}。",
     bulkSold: "{count}個を売り、{gold}G を得た。",

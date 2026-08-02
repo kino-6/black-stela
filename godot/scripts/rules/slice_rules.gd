@@ -133,6 +133,8 @@ static func resolve(state: Dictionary, command: Dictionary, world: Dictionary = 
 			return Loot.toggle_flag(state, command.get("instanceId", ""), "favorite")
 		"reinforce_equipment":
 			return Loot.reinforce(state, world, command.get("characterId", ""), command.get("slot", ""))
+		"forge_equipment":
+			return Loot.forge(state, world, command.get("characterId", ""), command.get("slot", ""))
 		"bulk_convert":
 			return Loot.bulk_convert(state, command.get("mode", ""), command.get("rarities", null))
 		"change_vocation":

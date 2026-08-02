@@ -554,6 +554,7 @@ export const en = {
     career: "Reclass",
     reliquary: "Appraiser",
     workshop: "Forge",
+    blacksmith: "Blacksmith",
     entry: "Dungeon Entry",
     serviceCancel: "Cancel",
     backToTown: "Back to town",
@@ -765,6 +766,19 @@ export const en = {
     nothingWorn: "Nothing equipped to reinforce.",
     back: "Back"
   },
+  blacksmith: {
+    title: "Blacksmith",
+    intro: "Pay gold to temper what an adventurer already wears. Unlike the Forge, the smith works in coin, not materials.",
+    member: "Adventurer",
+    gold: "{gold} gold",
+    forge: "Temper ({cost}g)",
+    cantAfford: "Need {cost}g",
+    atCap: "Fully tempered",
+    boosts: "\u2192 {stat} +1",
+    noGold: "Not enough gold — earn some in the dungeon and come back.",
+    nothingWorn: "Nothing equipped to temper.",
+    back: "Back"
+  },
   questBoard: {
     title: "Quest board",
     intro: "Standing work posted in town. Take a contract, then bring back the kill or the goods.",
@@ -912,6 +926,7 @@ export const en = {
     itemSold: "Sold {item} for {gold} gold.",
     equipmentChanged: "{name} equips {item}.",
     equipmentReinforced: "Reforged {item} to +{plus} for {name}.",
+    equipmentForged: "Tempered {item} to +{plus} for {name} ({cost}g).",
     vocationChanged: "{name} takes up the {vocation} vocation.",
     itemAppraised: "Appraised: {item}.",
     bulkSold: "Sold {count} items for {gold} gold.",

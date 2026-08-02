@@ -34,6 +34,7 @@
         "play.enterDungeon",
         "play.resumeAt",
         "town.backToHub",
+        "town.blacksmith",
         "town.career",
         "town.gold",
         "town.guild",
@@ -1580,6 +1581,89 @@
         {
           "key": "career.stat.speed",
           "reason": "WorkshopPanel reaches career.stat.* only through PRIMARY_STAT_KEY (weapon->attack, accessory->accuracy, else armor); the other stats are not reachable from this screen."
+        }
+      ]
+    },
+    {
+      "id": "town-blacksmith",
+      "milestone": "M3",
+      "reactPanel": "src/components/BlacksmithPanel.tsx",
+      "scene": "res://scenes/town.tscn",
+      "service": "blacksmith",
+      "evidence": "tests/_ux_town-blacksmith.png",
+      "requiredKeys": [
+        "blacksmith.atCap",
+        "blacksmith.boosts",
+        "blacksmith.cantAfford",
+        "blacksmith.forge",
+        "blacksmith.gold",
+        "blacksmith.intro",
+        "blacksmith.member",
+        "blacksmith.noGold",
+        "blacksmith.nothingWorn",
+        "blacksmith.title",
+        "career.slot.accessory",
+        "career.slot.body",
+        "career.slot.hands",
+        "career.slot.head",
+        "career.slot.offhand",
+        "career.slot.weapon",
+        "career.stat.accuracy",
+        "career.stat.armor",
+        "career.stat.attack",
+        "town.serviceCancel"
+      ],
+      "notes": "T9: the 鍛冶屋 (blacksmith) — the GOLD twin of the Forge. Same +MAX_REINFORCE ceiling paid in coin. requiredKeys derived from BlacksmithPanel.tsx.",
+      "states": [
+        {
+          "fixture": {
+            "partyGold": 400
+          }
+        },
+        {
+          "fixture": {
+            "partyGold": 0
+          }
+        },
+        {
+          "fixture": {
+            "partyGold": 400,
+            "__wearAll": true
+          }
+        },
+        {
+          "fixture": {
+            "partyGold": 400,
+            "__wearMaxed": true
+          }
+        },
+        {
+          "fixture": {
+            "partyGold": 400,
+            "__wearNone": true
+          }
+        }
+      ],
+      "derivedExclusions": [
+        {
+          "key": "career.stat.damageMin",
+          "reason": "BlacksmithPanel reaches career.stat.* only through PRIMARY_STAT_KEY (weapon->attack, accessory->accuracy, else armor); the other stats are not reachable from this screen."
+        },
+        {
+          "key": "career.stat.damageMax",
+          "reason": "BlacksmithPanel reaches career.stat.* only through PRIMARY_STAT_KEY (weapon->attack, accessory->accuracy, else armor); the other stats are not reachable from this screen."
+        },
+        {
+          "key": "career.stat.maxHp",
+          "reason": "BlacksmithPanel reaches career.stat.* only through PRIMARY_STAT_KEY (weapon->attack, accessory->accuracy, else armor); the other stats are not reachable from this screen."
+        },
+        {
+          "key": "career.stat.maxMp",
+          "reason": "BlacksmithPanel reaches career.stat.* only through PRIMARY_STAT_KEY (weapon->attack, accessory->accuracy, else armor); the other stats are not reachable from this screen."
+        },
+        {
+          "key": "career.stat.speed",
+          "reason": "BlacksmithPanel reaches career.stat.* only through PRIMARY_STAT_KEY (weapon->attack, accessory->accuracy, else armor); the other stats are not reachable from this screen."
         }
       ]
     },
@@ -3744,6 +3828,7 @@
         "play.enterDungeon",
         "play.resumeAt",
         "town.backToHub",
+        "town.blacksmith",
         "town.career",
         "town.gold",
         "town.guild",

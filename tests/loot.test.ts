@@ -8,6 +8,7 @@ import {
   isProtectedFromBulk,
   isUnidentifiedRare,
   reinforceCost,
+  forgeCost,
   resolveAffixCatalog,
   rollEquipmentDrop,
   sellValueOf
@@ -174,6 +175,35 @@ describe("rare-loot contract", () => {
     const overCap = executeCommand(maxed, defaultWorld, { type: "reinforce_equipment", characterId: hero.id, slot: "weapon" });
     expect(overCap.party[0].equipment.weapon?.plus).toBe(MAX_REINFORCE); // unchanged
     expect(overCap.materials).toBe(999); // nothing spent
+  });
+
+  it("the blacksmith spends GOLD to temper worn gear — cost climbs, caps, and a broke party can't (T9 gold sink)", () => {
+    expect(forgeCost(0)).toBe(30);
+    expect(forgeCost(1)).toBeGreaterThan(forgeCost(0)); // each step costs more
+
+    const hero = { ...createGuildCharacter({ name: "Rook", classId: "warrior", seed: "forge" }), equipment: { weapon: { id: WEAPON } } };
+    const base: GameState = { ...createInitialGameState(), phase: "town", party: [hero], partyGold: 100 };
+
+    const tempered = executeCommand(base, defaultWorld, { type: "forge_equipment", characterId: hero.id, slot: "weapon" });
+    expect(tempered.party[0].equipment.weapon?.plus).toBe(1); // tempered
+    expect(tempered.partyGold).toBe(100 - forgeCost(0)); // GOLD spent, not materials
+    expect(tempered.materials ?? 0).toBe(base.materials ?? 0); // materials untouched
+    // The +1 actually raises the weapon's primary stat (attack).
+    expect(getEffectiveCharacterStats(tempered.party[0], defaultWorld).attack).toBe(
+      getEffectiveCharacterStats(base.party[0], defaultWorld).attack + 1
+    );
+
+    // Broke → nothing happens (no negative gold, no free upgrade).
+    const broke: GameState = { ...base, partyGold: 5 };
+    const blocked = executeCommand(broke, defaultWorld, { type: "forge_equipment", characterId: hero.id, slot: "weapon" });
+    expect(blocked.party[0].equipment.weapon?.plus ?? 0).toBe(0);
+    expect(blocked.partyGold).toBe(5);
+
+    // At the cap → refused even with gold to spare.
+    const maxed = { ...base, party: [{ ...hero, equipment: { weapon: { id: WEAPON, plus: MAX_REINFORCE } } }], partyGold: 9999 };
+    const overCap = executeCommand(maxed, defaultWorld, { type: "forge_equipment", characterId: hero.id, slot: "weapon" });
+    expect(overCap.party[0].equipment.weapon?.plus).toBe(MAX_REINFORCE); // unchanged
+    expect(overCap.partyGold).toBe(9999); // nothing spent
   });
 
   it("applies an authored affix's bonus in combat via the merged catalog", () => {

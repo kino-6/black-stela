@@ -23,6 +23,7 @@ const WorldResources := preload("res://scripts/world_resources.gd")
 const ShopPanel := preload("res://scripts/town/shop_panel.gd")
 const LootPanel := preload("res://scripts/town/loot_panel.gd")
 const WorkshopPanel := preload("res://scripts/town/workshop_panel.gd")
+const BlacksmithPanel := preload("res://scripts/town/blacksmith_panel.gd")
 const QuestPanel := preload("res://scripts/town/quest_panel.gd")
 const CareerPanel := preload("res://scripts/town/career_panel.gd")
 const RecordsPanel := preload("res://scripts/town/records_panel.gd")
@@ -33,13 +34,13 @@ const BG := Color("0b0d09")
 # The square's destinations, and which services each holds (mirrors TownEntryPanel's `services`).
 const LOCATIONS := {
 	"hall": ["guild", "party", "career"],
-	"market": ["shop", "loot", "workshop"],
+	"market": ["shop", "loot", "workshop", "blacksmith"],
 	"archive": ["records", "quests"]
 }
 const LOCATION_LABEL := {"hall": "town.locGuildHall", "market": "town.locMarket", "archive": "town.locArchive"}
 const SERVICE_LABEL := {
 	"guild": "town.guild", "party": "partyMenu.title", "career": "town.career",
-	"shop": "town.shop", "loot": "town.reliquary", "workshop": "town.workshop",
+	"shop": "town.shop", "loot": "town.reliquary", "workshop": "town.workshop", "blacksmith": "town.blacksmith",
 	"records": "town.records", "quests": "town.quests", "recovery": "town.recovery"
 }
 
@@ -395,7 +396,7 @@ func _build_square() -> void:
 
 func _service_disabled(service: String, party_empty: bool) -> bool:
 	match service:
-		"party", "career", "workshop":
+		"party", "career", "workshop", "blacksmith":
 			return party_empty
 		"shop":
 			return (_world.get("shops", []) as Array).is_empty()
@@ -636,6 +637,7 @@ func _build_service() -> void:
 		"shop": body = ShopPanel.build(ctx)
 		"loot": body = LootPanel.build(ctx)
 		"workshop": body = WorkshopPanel.build(ctx)
+		"blacksmith": body = BlacksmithPanel.build(ctx)
 		"quests": body = QuestPanel.build(ctx)
 		"career": body = CareerPanel.build(ctx)
 		"records": body = RecordsPanel.build(ctx)
@@ -713,6 +715,7 @@ func _describe(event: Dictionary) -> String:
 		"equipment_changed": return I18n.t("town.equipment")
 		"item_appraised": return "%s ・ %s" % [String(event.get("itemName", "")), I18n.t("loot.title")]
 		"equipment_reinforced": return I18n.t("workshop.boosts", {"stat": String(event.get("itemName", ""))})
+		"equipment_forged": return I18n.t("events.equipmentForged", {"name": String(event.get("characterName", "")), "item": String(event.get("itemName", "")), "plus": int(event.get("plus", 0)), "cost": int(event.get("cost", 0))})
 		"bulk_converted": return I18n.t("loot.convertible", {"count": int(event.get("count", 0)), "gold": int(event.get("gold", 0)), "materials": int(event.get("materials", 0))})
 		"quest_accepted": return "%s ・ %s" % [String(event.get("questName", "")), I18n.t("questBoard.accept")]
 		"quest_claimed": return "%s ・ %s" % [String(event.get("questName", "")), I18n.t("questBoard.claim")]

@@ -60,6 +60,7 @@ export type Command =
   | { type: "sell_item"; itemId: string; plus?: number; affix?: string }
   | { type: "equip_item"; characterId: string; equipmentId: string; plus?: number; affix?: string }
   | { type: "reinforce_equipment"; characterId: string; slot: EquipmentSlot }
+  | { type: "forge_equipment"; characterId: string; slot: EquipmentSlot }
   | { type: "declare_round"; actions: CombatActionDeclaration[] }
   | { type: "continue_after_combat" }
   | { type: "retreat" }
@@ -502,6 +503,7 @@ export type GameEvent =
   | { type: "item_sold"; itemId: string; itemName: string; gold: number }
   | { type: "equipment_changed"; itemId: string; characterName: string; itemName: string; slot: EquipmentSlot }
   | { type: "equipment_reinforced"; characterName: string; itemId: string; itemName: string; slot: EquipmentSlot; plus: number; cost: number }
+  | { type: "equipment_forged"; characterName: string; itemId: string; itemName: string; slot: EquipmentSlot; plus: number; cost: number }
   | { type: "quest_accepted"; questId: string; questName: string }
   | { type: "quest_claimed"; questId: string; questName: string; gold: number; xp: number; itemName?: string }
   | { type: "vocation_changed"; characterId: string; characterName: string; vocationId: string; vocationName: string }

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, ClipboardList, DoorOpen, Gem, GraduationCap, Hammer, HeartPulse, Landmark, ScrollText, ShoppingBag, Store, Users, UsersRound } from "lucide-react";
+import { Anvil, ArrowLeft, ClipboardList, DoorOpen, Gem, GraduationCap, Hammer, HeartPulse, Landmark, ScrollText, ShoppingBag, Store, Users, UsersRound } from "lucide-react";
 import type { Character, Command, ScenarioWorld } from "../domain/types";
 import { getLocalizedRoomText } from "../domain/scenario";
 import type { Locale, Translator } from "../i18n";
@@ -25,7 +25,7 @@ interface TownEntryPanelProps {
   hasEquipmentLoot: boolean;
   unlockedCheckpoints: Checkpoint[];
   onCommand: (command: Command) => void;
-  onEnterMode: (mode: "guild" | "shop" | "recovery" | "records" | "quests" | "career" | "loot" | "workshop") => void;
+  onEnterMode: (mode: "guild" | "shop" | "recovery" | "records" | "quests" | "career" | "loot" | "workshop" | "blacksmith") => void;
   onOpenPartyMenu: () => void;
 }
 
@@ -81,7 +81,8 @@ export function TownEntryPanel({
     market: [
       { key: "shop", testid: "town-service-shop", icon: <ShoppingBag size={18} />, label: t("town.shop"), onClick: () => onEnterMode("shop"), disabled: (world.shops?.length ?? 0) === 0 },
       { key: "loot", testid: "town-service-loot", icon: <Gem size={18} />, label: t("town.reliquary"), onClick: () => onEnterMode("loot") },
-      { key: "workshop", testid: "town-service-workshop", icon: <Hammer size={18} />, label: t("town.workshop"), onClick: () => onEnterMode("workshop"), disabled: partyEmpty }
+      { key: "workshop", testid: "town-service-workshop", icon: <Hammer size={18} />, label: t("town.workshop"), onClick: () => onEnterMode("workshop"), disabled: partyEmpty },
+      { key: "blacksmith", testid: "town-service-blacksmith", icon: <Anvil size={18} />, label: t("town.blacksmith"), onClick: () => onEnterMode("blacksmith"), disabled: partyEmpty }
     ],
     archive: [
       { key: "records", testid: "town-service-records", icon: <ScrollText size={18} />, label: t("town.records"), onClick: () => onEnterMode("records") },

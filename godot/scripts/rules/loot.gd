@@ -27,6 +27,10 @@ static func appraisal_fee(item: Dictionary) -> int:
 static func reinforce_cost(current_plus: int) -> int:
 	return (current_plus + 1) * 2
 
+# The blacksmith (鍛冶屋, T9): the same +MAX_REINFORCE ceiling, paid in GOLD instead of materials.
+static func forge_cost(current_plus: int) -> int:
+	return (current_plus + 1) * 30
+
 # appraise_item: pay the reading fee, flip identified→true, reveal the affix. Rare/unidentified only.
 static func appraise(state: Dictionary, instance_id: String) -> Dictionary:
 	if state.get("phase", "") != "town":
@@ -122,6 +126,51 @@ static func reinforce(state: Dictionary, world: Dictionary, character_id: String
 	next["turn"] = int(next.get("turn", 0)) + 1
 	var item_name := String(definition.get("name", equipped.get("id", ""))) if typeof(definition) == TYPE_DICTIONARY else String(equipped.get("id", ""))
 	var event := {"type": "equipment_reinforced", "characterName": member.get("name", ""), "itemId": equipped.get("id", ""), "itemName": item_name, "slot": slot, "plus": next_plus, "cost": cost}
+	return {"state": next, "events": [event]}
+
+# forge_equipment (鍛冶屋, T9): the workshop's +1 upgrade paid in GOLD. Same guards (town, worn, cap, afford);
+# spends partyGold instead of materials and emits equipment_forged. Mirrors forgeEquipmentCommand (TS).
+static func forge(state: Dictionary, world: Dictionary, character_id: String, slot: String) -> Dictionary:
+	if state.get("phase", "") != "town":
+		return {"state": state, "events": []}
+	var member: Variant = null
+	for candidate in state.get("party", []):
+		if candidate.get("id", "") == character_id:
+			member = candidate
+			break
+	if typeof(member) != TYPE_DICTIONARY:
+		return {"state": state, "events": []}
+	var equipped: Variant = (member.get("equipment", {}) as Dictionary).get(slot, null)
+	if typeof(equipped) != TYPE_DICTIONARY:
+		return {"state": state, "events": []}
+	var current_plus := int(equipped.get("plus", 0))
+	var cost := forge_cost(current_plus)
+	if current_plus >= MAX_REINFORCE or int(state.get("partyGold", 0)) < cost:
+		return {"state": state, "events": []}
+	var next_plus := current_plus + 1
+	var definition: Variant = null
+	for candidate in world.get("equipment", []):
+		if candidate.get("id", "") == equipped.get("id", ""):
+			definition = candidate
+			break
+	var next: Dictionary = state.duplicate(true)
+	next["partyGold"] = int(next.get("partyGold", 0)) - cost
+	var party := []
+	for candidate in next.get("party", []):
+		if candidate.get("id", "") == character_id:
+			var grown: Dictionary = candidate.duplicate(true)
+			var equipment: Dictionary = (grown.get("equipment", {}) as Dictionary).duplicate(true)
+			var piece: Dictionary = (equipment.get(slot) as Dictionary).duplicate(true)
+			piece["plus"] = next_plus
+			equipment[slot] = piece
+			grown["equipment"] = equipment
+			party.append(grown)
+		else:
+			party.append(candidate)
+	next["party"] = party
+	next["turn"] = int(next.get("turn", 0)) + 1
+	var item_name := String(definition.get("name", equipped.get("id", ""))) if typeof(definition) == TYPE_DICTIONARY else String(equipped.get("id", ""))
+	var event := {"type": "equipment_forged", "characterName": member.get("name", ""), "itemId": equipped.get("id", ""), "itemName": item_name, "slot": slot, "plus": next_plus, "cost": cost}
 	return {"state": next, "events": [event]}
 
 static func equipped_instance_keys(state: Dictionary) -> Dictionary:

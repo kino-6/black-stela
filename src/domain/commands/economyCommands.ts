@@ -14,6 +14,7 @@ import {
   appraisalFee,
   appraiseInstance,
   dismantleYield,
+  forgeCost,
   isProtectedFromBulk,
   isUnidentifiedRare,
   reinforceCost,
@@ -123,6 +124,40 @@ export function reinforceEquipmentCommand(state: GameState, world: ScenarioWorld
   };
   return withEvents(next, [
     { type: "equipment_reinforced", characterName: member.name, itemId: equipped.id, itemName: definition?.name ?? equipped.id, slot, plus: nextPlus, cost }
+  ]);
+}
+
+// The blacksmith (鍛冶屋, T9): the same +1→+MAX_REINFORCE upgrade as the workshop, paid in GOLD. Refuses in
+// the dungeon, on a slot with nothing worn, at the cap, or when the party can't afford the step — never
+// spends past what it has, never exceeds MAX_REINFORCE.
+export function forgeEquipmentCommand(state: GameState, world: ScenarioWorld, characterId: string, slot: EquipmentSlot): CommandResult {
+  if (state.phase !== "town") {
+    return noChange(state);
+  }
+  const member = state.party.find((candidate) => candidate.id === characterId);
+  const equipped = member?.equipment[slot];
+  if (!member || !equipped) {
+    return noChange(state);
+  }
+  const currentPlus = equipped.plus ?? 0;
+  const cost = forgeCost(currentPlus);
+  if (currentPlus >= MAX_REINFORCE || state.partyGold < cost) {
+    return noChange(state);
+  }
+  const nextPlus = currentPlus + 1;
+  const definition = world.equipment.find((candidate) => candidate.id === equipped.id);
+  const next: GameState = {
+    ...state,
+    partyGold: state.partyGold - cost,
+    party: state.party.map((candidate) =>
+      candidate.id === characterId
+        ? { ...candidate, equipment: { ...candidate.equipment, [slot]: { ...equipped, plus: nextPlus } } }
+        : candidate
+    ),
+    turn: state.turn + 1
+  };
+  return withEvents(next, [
+    { type: "equipment_forged", characterName: member.name, itemId: equipped.id, itemName: definition?.name ?? equipped.id, slot, plus: nextPlus, cost }
   ]);
 }
 

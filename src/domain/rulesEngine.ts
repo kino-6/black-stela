@@ -7,6 +7,7 @@ import {
   bulkConvertCommand,
   buyItem,
   equipItem,
+  forgeEquipmentCommand,
   reinforceEquipmentCommand,
   sellItem,
   toggleItemFlagCommand
@@ -285,6 +286,8 @@ export function resolveCommand(state: GameState, world: ScenarioWorld, command: 
       return equipItem(state, world, command.characterId, command.equipmentId, command.plus, command.affix);
     case "reinforce_equipment":
       return reinforceEquipmentCommand(state, world, command.characterId, command.slot);
+    case "forge_equipment":
+      return forgeEquipmentCommand(state, world, command.characterId, command.slot);
     case "declare_round":
       return declareRound(state, world, command.actions);
     case "continue_after_combat":

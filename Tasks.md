@@ -118,14 +118,19 @@ IMP-060/061/062/063/064 completion records in `Improve.md`.
   - **Gate:** shop-controller test — 買う/売る are separate reachable modes; buying adds to SHARED inventory
     (not bound to a character); controller-only; no reflow/overflow at 1280/1920. ux-parity re-derived green.
 
-- [ ] **T9 — 鍛冶屋: 金銭で装備を強化する施設（上限あり）**
-  - Want a blacksmith that upgrades gear for GOLD up to some cap. NB: the 錬成所 (workshop) already does
-    強化 via MATERIALS (from dismantling) — T9 is the GOLD axis (a different sink), or an extension of the
-    workshop with a gold path. Decide: new facility vs. add a gold-cost tier to 錬成所. Reinforcement rules
-    live in `economy.gd`/`reinforceEquipment`; town facility list in `town.gd`.
-  - React + Godot (parity), i18n, ux-parity, town-controller.
-  - **Gate:** upgrade test — gold upgrade raises the piece's +level up to the cap, costs gold, refuses past
-    the cap / when broke; controller-reachable.
+- [x] **T9 — 鍛冶屋: 金銭で装備を強化する施設（上限あり）** — DONE (new facility)
+  - Shipped a NEW town facility 鍛冶屋 (Blacksmith) under 市場 — the GOLD twin of the 錬成所 (which spends
+    MATERIALS). It tempers a WORN piece +1 per step (same MAX_REINFORCE=5 ceiling) for gold; cost climbs
+    `(plus+1)*30` (30→150, 450g to max). Refuses in the dungeon / on an empty slot / at the cap / when broke.
+    New `forge_equipment` command + `equipment_forged` event + copy, in BOTH engines (byte-for-byte parity):
+    TS `loot.forgeCost`/`forgeEquipmentCommand`/rulesEngine route + `BlacksmithPanel.tsx` + App/TownEntry
+    wiring; Godot `loot.forge`/slice_rules route + `blacksmith_panel.gd` + town.gd (LOCATIONS/label/preload/
+    ctx/disabled/event-log). i18n ja+en; ux-parity entry + evidence captured; derivedExclusions mirror the
+    workshop's unreachable career.stat.*.
+  - **Gate:** `tests/loot.test.ts` gold-upgrade lock (cost climbs, +1 applied, GOLD spent not materials,
+    broke refused, cap refused — through the real rules engine); e2e `town.spec` (open 鍛冶屋, temper → 75→45
+    gold, +1 shown); `verify_town_controller` blacksmith walk + behavioral forge (gold 9999→9969);
+    `verify_parity` (new command hashes match); ux-parity PASS. unit 723, build green.
 
 - [x] **T10 — ギルド名簿編集の配置＋画像取り込みバグ** — DONE (bug + layout)
   - (b) BUG FIXED: 「画像を取り込む」 could not select the user's image — the image-only filter greyed out

@@ -184,3 +184,10 @@ export const MAX_REINFORCE = 5;
 export function reinforceCost(currentPlus: number): number {
   return (currentPlus + 1) * 2;
 }
+
+// The GOLD sink (the blacksmith, 鍛冶屋 — T9): the SAME +MAX_REINFORCE ceiling as the workshop, but paid
+// in coin instead of dismantled materials. A different sink for a different resource, so gold earned in the
+// dungeon buys a stronger keeper without hoarding junk. Each step costs more; +1..+5 totals 450g.
+export function forgeCost(currentPlus: number): number {
+  return (currentPlus + 1) * 30;
+}

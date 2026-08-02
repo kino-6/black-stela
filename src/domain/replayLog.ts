@@ -219,6 +219,11 @@ export function projectEventToLog(event: GameEvent, locale: Locale = "en", world
         text: t("events.equipmentReinforced", { name: event.characterName, item: resolveCatalogName(event.itemId, event.itemName, world, locale), plus: event.plus }),
         tags: ["town", "equipment"]
       };
+    case "equipment_forged":
+      return {
+        text: t("events.equipmentForged", { name: event.characterName, item: resolveCatalogName(event.itemId, event.itemName, world, locale), plus: event.plus, cost: event.cost }),
+        tags: ["town", "equipment"]
+      };
     case "quest_accepted":
       return {
         text: t("events.questAccepted", { quest: resolveQuestName(event.questId, event.questName, world, locale) }),

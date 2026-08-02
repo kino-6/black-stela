@@ -10,7 +10,7 @@ extends SceneTree
 
 # NOTE: "guild" is NOT a town panel — it launches the registration scene (guild.tscn), which is exercised
 # by verify_guild_controller. Opening it here would change_scene mid-gate. Roster management is "party".
-const LOCATIONS := {"hall": ["party", "career"], "market": ["shop", "loot", "workshop"], "archive": ["records", "quests"]}
+const LOCATIONS := {"hall": ["party", "career"], "market": ["shop", "loot", "workshop", "blacksmith"], "archive": ["records", "quests"]}
 const DungeonEntry := preload("res://scripts/rules/dungeon_entry.gd")
 const I18n := preload("res://scripts/i18n.gd")
 
@@ -228,6 +228,34 @@ func _initialize() -> void:
 	else:
 		print("[town-controller] shop: 買う/売る are separate modes; sell rows show 売値 (T16)")
 	town.set("_shop_mode", "buy")
+	_press_cancel(town)
+	for i in 3:
+		await process_frame
+
+	# T9: the 鍛冶屋 (blacksmith) tempers a WORN piece for GOLD — 鍛える raises its +level and spends gold.
+	var forge_state: Dictionary = (town.call("state") as Dictionary).duplicate(true)
+	forge_state["partyGold"] = 9999
+	var forge_run: Node = town.get("_run")
+	if forge_run != null:
+		forge_run.state = forge_state
+	else:
+		town.set("_fallback_state", forge_state)
+	town.call("set_ui_state", {"service": "blacksmith"})
+	for i in 4:
+		await process_frame
+	var gold_before := int((town.call("state").get("partyGold", 0)))
+	var forge_btn := _button_with_text(town, I18n.t("blacksmith.forge", {"cost": 30}))
+	if forge_btn == null or forge_btn.disabled:
+		_fail("blacksmith: no affordable 鍛える action even with gold to spend")
+	else:
+		forge_btn.emit_signal("pressed")
+		for i in 4:
+			await process_frame
+		var gold_after := int((town.call("state").get("partyGold", 0)))
+		if gold_after >= gold_before:
+			_fail("blacksmith: 鍛える did not spend gold from the shared purse (T9)")
+		else:
+			print("[town-controller] blacksmith: 鍛える tempers a worn piece for gold (%d->%d)" % [gold_before, gold_after])
 	_press_cancel(town)
 	for i in 3:
 		await process_frame
