@@ -258,15 +258,15 @@ IMP-060/061/062/063/064 completion records in `Improve.md`.
   - **Gate:** extend the shop test — a sell row exposes its sell value and effect; town.spec sell-mode
     assertion + `verify_town_controller` sell branch. ux-parity if a new key is added.
 
-- [ ] **T17 — 能力タブの「〜と前後を交代」コマンドを削除**
-  - **Problem (playtest 2026-08-02):** the 能力 (ability) page shows a 「<相手>と前後を交代」 button (e.g.
-    「ネラと前後を交代」) — an unclear, unnecessary command on the stats screen. Row (前衛/後衛) changes belong
-    to the 編成 tab, not a per-character stat page. Remove it from the ability page.
-  - Godot `party_panel` ability/stats page (`_ability_page` or equivalent). Confirm 編成 tab still owns
-    front/back ordering (so the capability is not lost, just relocated out of the stats view). React parity
-    if the same button exists there.
-  - **Gate:** `verify_town_controller` / party-menu test — the ability page renders NO 前後交代 button; the
-    編成 tab still exposes row changes (proven to fail on the current ability-page button).
+- [x] **T17 — 能力タブの「〜と前後を交代」コマンドを削除** — DONE
+  - Removed the 「<相手>と前後を交代」 button from the status/能力 detail page in BOTH engines (Godot
+    `party_panel` + dropped the unused `_counterpart`; React `PartyMenuPanel`). Front/back changes now live
+    ONLY in the 編成 tab via explicit 前衛へ/後衛へ placement (`set_member_row`) — Godot already had this;
+    ADDED the matching place-front/back buttons to React's formation section so the capability isn't lost and
+    ux-parity stays balanced (dropped `partyMenu.swapWith`, both engines now render `placeFront/placeBack`;
+    added a 編成 manifest state so Godot drives them). build + unit 722 + ux-parity + town-controller green.
+  - **Gate:** `verify_town_controller` party section — the status page shows NO 前後を交代 command and the
+    編成 tab still exposes 前衛へ placement (proven to fail on the pre-fix status-page button).
 
 - [ ] **T18 — 回復の対象選択: 満タンは選べない＋初期カーソルは最重傷へ（＋partyMenu.back 未翻訳バグ）**
   - **Problem (playtest 2026-08-02):** the 小癒し (heal-ally) target picker lets you select members who are

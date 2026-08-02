@@ -1965,6 +1965,8 @@
         "partyMenu.inventoryEmpty",
         "partyMenu.level",
         "partyMenu.members",
+        "partyMenu.placeBack",
+        "partyMenu.placeFront",
         "partyMenu.protectedItem",
         "partyMenu.resistances",
         "partyMenu.spellPower",
@@ -1976,7 +1978,6 @@
         "partyMenu.statusPower",
         "partyMenu.subtitleDungeon",
         "partyMenu.subtitleTown",
-        "partyMenu.swapWith",
         "partyMenu.tabs.items",
         "partyMenu.tabs.valuables",
         "partyMenu.title",
@@ -2557,6 +2558,24 @@
           "uiState": {
             "party_page": "items",
             "party_item": "item.healing-draught||"
+          }
+        },
+        {
+          "fixture": {
+            "partyGold": 200,
+            "inventory": [
+              {
+                "id": "item.return-charm",
+                "name": "Return Charm",
+                "kind": "escape",
+                "quantity": 1
+              }
+            ],
+            "phase": "dungeon"
+          },
+          "uiState": {
+            "party_page": "formation",
+            "party_item": "item.return-charm||"
           }
         }
       ],
@@ -3074,6 +3093,8 @@
         "partyMenu.inventoryEmpty",
         "partyMenu.level",
         "partyMenu.members",
+        "partyMenu.placeBack",
+        "partyMenu.placeFront",
         "partyMenu.protectedItem",
         "partyMenu.resistances",
         "partyMenu.spellPower",
@@ -3085,7 +3106,6 @@
         "partyMenu.statusPower",
         "partyMenu.subtitleDungeon",
         "partyMenu.subtitleTown",
-        "partyMenu.swapWith",
         "partyMenu.tabs.items",
         "partyMenu.tabs.valuables",
         "partyMenu.title",
@@ -3666,6 +3686,24 @@
           "uiState": {
             "party_page": "items",
             "party_item": "item.healing-draught||"
+          }
+        },
+        {
+          "fixture": {
+            "partyGold": 200,
+            "inventory": [
+              {
+                "id": "item.return-charm",
+                "name": "Return Charm",
+                "kind": "escape",
+                "quantity": 1
+              }
+            ],
+            "phase": "dungeon"
+          },
+          "uiState": {
+            "party_page": "formation",
+            "party_item": "item.return-charm||"
           }
         }
       ],

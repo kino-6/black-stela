@@ -81,6 +81,22 @@ func _initialize() -> void:
 					_fail("party: roster focus did not refresh and retain the inspected adventurer")
 				else:
 					print("[town-controller] party: Down refreshes %s without Confirm" % String(browsed.get("name", "")))
+					# T17: the 能力/status page READS one adventurer — no 前後交代 command. Row changes live in 編成.
+					town.call("set_ui_state", {"service": "party", "party_page": "status"})
+					for i in 3:
+						await process_frame
+					if _all_text(town).contains("前後を交代"):
+						_fail("party status page still shows a 前後交代 command (T17 — it belongs to 編成)")
+					town.call("set_ui_state", {"service": "party", "party_page": "formation"})
+					for i in 3:
+						await process_frame
+					if not _all_text(town).contains(I18n.t("partyMenu.placeFront")):
+						_fail("party 編成 tab lost its 前衛へ placement — row changes must remain reachable")
+					else:
+						print("[town-controller] party: 前後交代 gone from status; 編成 owns row placement (T17)")
+					town.call("set_ui_state", {"service": "party", "party_page": "status"})
+					for i in 3:
+						await process_frame
 
 			# Cancel must resolve one step back: counter -> the location's service menu.
 			_press_cancel(town)

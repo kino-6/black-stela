@@ -172,11 +172,9 @@ static func build(ctx: Dictionary) -> Control:
 	vitals.add_child(UI.label("%s: %s" % [I18n.t("partyMenu.condition"), _condition(member)], 16, UI.BAD if member.get("injury", null) != null else UI.OK))
 	detail.add_child(vitals)
 
-	# Trading places with the adventurer standing opposite: React's one-press swap, which is how a party
-	# is actually re-formed (moving one member alone leaves a hole in the line).
-	var counterpart := _counterpart(party, member)
-	if not counterpart.is_empty():
-		detail.add_child(UI.button(I18n.t("partyMenu.swapWith", {"name": String(counterpart.get("name", ""))}), func(): ctx["dispatch"].call({"type": "swap_member_rows", "characterId": member.get("id", ""), "targetCharacterId": counterpart.get("id", "")}), Vector2(260, 38), 15))
+	# T17: the ability/status page READS one adventurer — it no longer carries a 前後交代 command (playtest
+	# 2026-08-02: "意味わからんコマンドは不要"). Front/back changes live in the 編成 tab, which owns them
+	# with explicit 前衛へ/後衛へ placement.
 
 	# XP to the next level — the reason to keep descending.
 	var next_level := int(member.get("level", 1)) + 1
@@ -611,22 +609,6 @@ static func _item_page(ctx: Dictionary, world: Dictionary, member: Dictionary, p
 			detail.add_child(actions)
 	cols.add_child(detail)
 	return {"control": cols, "focus": focus}
-
-## The adventurer standing opposite this one — the same index in the other row, clamped, exactly as
-## React picks the swap partner.
-static func _counterpart(party: Array, member: Dictionary) -> Dictionary:
-	var row := String(member.get("row", "front"))
-	var own := []
-	var other := []
-	for candidate in party:
-		if String(candidate.get("row", "front")) == row:
-			own.append(candidate)
-		else:
-			other.append(candidate)
-	if other.is_empty():
-		return {}
-	var index := maxi(0, own.find(member))
-	return other[clampi(index, 0, other.size() - 1)]
 
 static func _item_key(item: Dictionary) -> String:
 	if item.is_empty():

@@ -108,9 +108,6 @@ export function PartyMenuPanel({ state, world, locale, t, onCommand, onClose }: 
       !["key", "treasure", "escape"].includes(selectedItem.kind) &&
       selectedItem.quantity > equippedCount
   );
-  const rowMembers = state.party.filter((candidate) => candidate.row === member.row);
-  const oppositeMembers = state.party.filter((candidate) => candidate.row !== member.row);
-  const counterpart = oppositeMembers[Math.min(Math.max(0, rowMembers.findIndex((candidate) => candidate.id === member.id)), oppositeMembers.length - 1)];
   const conditions = [
     member.injury ? t("partyMenu.wounded") : "",
     ...(member.status ?? []).map((status) => t(`partyMenu.status.${status}` as TranslationKey))
@@ -220,6 +217,20 @@ export function PartyMenuPanel({ state, world, locale, t, onCommand, onClose }: 
               </div>
             </div>
           ))}
+          {/* T17: front/back changes live HERE (the formation), by explicit placement — not a 前後交代
+              command on the read-only status profile. */}
+          <div className="party-menu-formation-actions">
+            {(["front", "back"] as const).map((row) => (
+              <button
+                type="button"
+                key={row}
+                disabled={member.row === row}
+                onClick={() => onCommand({ type: "set_member_row", characterId: member.id, row })}
+              >
+                {row === "front" ? t("partyMenu.placeFront") : t("partyMenu.placeBack")}
+              </button>
+            ))}
+          </div>
         </div>
 
         <div className="party-menu-content">
@@ -249,15 +260,6 @@ export function PartyMenuPanel({ state, world, locale, t, onCommand, onClose }: 
               <div><dt>HP</dt><dd>{member.hp}/{stats.maxHp}</dd></div>
               <div><dt>MP</dt><dd>{member.mp}/{stats.maxMp}</dd></div>
             </dl>
-            {counterpart && (
-              <button
-                type="button"
-                className="party-menu-swap"
-                onClick={() => onCommand({ type: "swap_member_rows", characterId: member.id, targetCharacterId: counterpart.id })}
-              >
-                {t("partyMenu.swapWith", { name: counterpart.name })}
-              </button>
-            )}
           </aside>
 
           {page === "status" && (
