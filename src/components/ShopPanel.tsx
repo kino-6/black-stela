@@ -168,7 +168,9 @@ export function ShopPanel({
                         ? `${formatEquipmentSlot(item.slot, t)} · ${formatInventoryEffect(item, t)}`
                         : t("town.quantity", { count: item.quantity })}
                     </span>
-                    {item.kind === "equipment" && <small>{localizedCatalogDescription(item.id, locale)}</small>}
+                    {/* T16: the seller needs 性能 (what it does) and 売値 (what they get) to judge the sale. */}
+                    <small>{localizedCatalogDescription(item.id, locale)}</small>
+                    <small data-testid="sell-value">{t("town.sellValue", { gold: item.sellValue ?? 0 })}</small>
                     {item.kind === "equipment" && <small>{t("town.quantity", { count: item.quantity })}</small>}
                   </div>
                   <button

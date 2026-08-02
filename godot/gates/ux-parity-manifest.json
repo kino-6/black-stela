@@ -239,6 +239,7 @@
         "town.quantity",
         "town.remainingGold",
         "town.sell",
+        "town.sellValue",
         "town.shopGuideShared",
         "town.shopModeBuy",
         "town.shopModeSell",

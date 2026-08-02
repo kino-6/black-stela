@@ -70,6 +70,8 @@ test("town shop is an Etrian buy/sell split — buying fills the shared bag, not
   await page.getByTestId("shop-mode-sell").click();
   await expect(page.getByText("Militia Sabre", { exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Sell" }).first()).toBeVisible();
+  // T16: a sell row shows its 売値 (what you get) so the sale is judgeable.
+  await expect(page.getByTestId("sell-value").first()).toContainText(/Sells for \d+ gold/);
 });
 
 test("recovery costs gold and blocks free healing", async ({ page }) => {

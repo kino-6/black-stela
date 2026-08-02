@@ -198,6 +198,11 @@ static func _inventory_row(ctx: Dictionary, world: Dictionary, item: Dictionary,
 	body.add_child(UI.label(Fmt.describe_equipment_instance(world, item.get("id", ""), item.get("plus", null), item.get("affix", null)), 17, UI.INK))
 	if item.get("kind", "") == "equipment" and item.get("slot", null) != null:
 		body.add_child(UI.label("%s · %s" % [Fmt.format_equipment_slot(String(item.get("slot", ""))), Fmt.format_inventory_effect(item)], 14, UI.DIM))
+	# T16: the seller needs 性能 (what it does) and 売値 (what they get) to judge the sale.
+	var desc := Fmt.localized_catalog_description(world, item.get("id", ""))
+	if desc != "":
+		body.add_child(UI.prose(desc, 13, UI.DIM, 560))
+	body.add_child(UI.label(I18n.t("town.sellValue", {"gold": int(item.get("sellValue", 0))}), 14, UI.GOLD))
 	body.add_child(UI.label(I18n.t("town.quantity", {"count": int(item.get("quantity", 1))}), 14, UI.DIM))
 
 	var equipped_now := Fmt.is_equipped_by_party(party, item)

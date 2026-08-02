@@ -624,6 +624,7 @@ export const en = {
       consumable: "Consumables"
     },
     price: "{gold} gold",
+    sellValue: "Sells for {gold} gold",
     quantity: "x{count}",
     buy: "Buy",
     sell: "Sell",

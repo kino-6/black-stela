@@ -195,10 +195,13 @@ func _initialize() -> void:
 		_fail("shop 売る: still showing the 買う stock — 買う/売る are not separate modes")
 	if not sell_text.contains(I18n.t("town.inventory")):
 		_fail("shop 売る: no 所持品 sell list")
+	# T16: a sell row states its 売値 (the gold you get) so the sale is judgeable — not just a name + 個数.
+	if not sell_text.contains("売値"):
+		_fail("shop 売る: a sell row does not show its 売値 (sell value)")
 	if _focused() == null:
 		_fail("shop 売る: no controller focus route")
 	else:
-		print("[town-controller] shop: 買う/売る are separate controller-reachable modes")
+		print("[town-controller] shop: 買う/売る are separate modes; sell rows show 売値 (T16)")
 	town.set("_shop_mode", "buy")
 	_press_cancel(town)
 	for i in 3:

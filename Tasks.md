@@ -247,7 +247,12 @@ IMP-060/061/062/063/064 completion records in `Improve.md`.
     correct target and a decreasing target-HP snapshot (proven to fail on the current number-less playback);
     plus a real-browser check that the bars drain and numbers float during オート.
 
-- [ ] **T16 — 商店「売る」に売却額と性能を表示 (T8 の抜け)**
+- [x] **T16 — 商店「売る」に売却額と性能を表示 (T8 の抜け)** — DONE
+  - Each 売る row now shows the item's 性能 (its description; equipment keeps the slot·stat line) AND the
+    売値 (`town.sellValue` = 「売値 N G」) so the sale is judgeable. Both engines (React `ShopPanel` sell
+    section + Godot `shop_panel._inventory_row`), new i18n key ja+en, ux-parity re-derived green.
+  - **Gate:** town.spec sell-mode asserts a `sell-value` element reads 「Sells for N gold」;
+    `verify_town_controller` sell branch asserts a row shows 売値. ux-parity + build green.
   - **Problem (playtest 2026-08-02):** the 売る list shows only name + 個数 — no **売却額 (how much gold you
     get)** and, for equipment, no **性能 (stats)**. The player cannot judge a sale. (Screenshot: 花粉の軟膏 /
     樹液の水薬 rows have a 売る button but no price.)

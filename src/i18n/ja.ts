@@ -626,6 +626,7 @@ export const ja = {
       consumable: "消耗品"
     },
     price: "{gold}G",
+    sellValue: "売値 {gold}G",
     quantity: "{count} 個",
     buy: "買う",
     sell: "売る",
