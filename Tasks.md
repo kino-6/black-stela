@@ -253,15 +253,19 @@ IMP-060/061/062/063/064 completion records in `Improve.md`.
     `npm run gate:migration` plus a clean Godot boot. Review both base and hurt frames on the actual combat lane
     for grounding, scale, contrast, and no strong-flash regression.
 
-- [x] **T15 — オート/全員でかかる の再生に数字とHP更新が出ない** — DONE (per-target numbers + bars drain)
+- [x] **T15 — オート/全員でかかる の再生に数字とHP更新が出ない** — DONE (誰が→何に→どれだけ + bars drain)
   - DONE: (1) オート now plays each round ANIMATED (`_run_auto` → `_resolve_round_with(orders, true)`), no
     command-menu flicker between auto rounds. (2) `_playback` reworked from one aggregate number on the first
     group to a number on EACH struck target: it snapshots every enemy group's HP before the round and
     reconstructs each group's loss, landing a juicy number ON that creature (positioned by x_frac) and
     draining the bars per beat — so 何にどれだけ + HPバー更新 are both covered, in auto and manual.
-  - Locked by `verify_combat_numbers` (juicy/positioned/crit/outline number rendering) + parity/controller/
-    geometry/flow green (presentation-only, state untouched). NB: the per-MEMBER attribution ("誰が") still
-    needs per-hit beats from `combat_round.gd` (documented below) — a smaller rules-seam follow-up.
+  - (3) Per-MEMBER attribution ("誰が") DONE: `combat_round.gd` now emits per-hit BEATS
+    ({actorName, targetGroupId, damage, crit}) on the `combat_round_resolved` event in every branch
+    (victory/wipe/continue), and `_playback` walks them to show 「<member> → <target> に <N> ダメージ」 with
+    the number on the struck creature — full 誰が→何に→どれだけ. Parity-safe: `verify_parity._semantic_events`
+    drops beats, so the state-hash oracle is untouched (parity/controller/geometry/flow green).
+  - Locked by `verify_combat_numbers` (juicy/positioned/crit/outline rendering) + `verify_combat_controller`
+    (a resolved round emits beats naming the actor/target/damage) + parity/flow.
   - REMAINING (with **T19**): `_playback` shows the ROUND's aggregate for the first group, not a per-ATTACKER
     beat — so "誰が何にどれだけ" is not fully granular. **Scoped (2026-08-02):** the Godot combat result
     carries NO per-hit beats by design — `combat.gd:8` "beats are presentation the target UI rebuilds", i.e.

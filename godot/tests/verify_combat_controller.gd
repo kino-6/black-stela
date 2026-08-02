@@ -22,6 +22,26 @@ func _initialize() -> void:
 	_check(_has_focusable_button(combat), "the command menu offers a focusable command a controller can act on")
 	_check(_tree_has_text(combat, I18n.t("play.menuHint")), "the command menu names its controls (select / confirm / back)")
 
+	# T15: a resolved round emits per-hit BEATS naming WHO struck each target for HOW much, so playback can
+	# show 誰が→何に→どれだけ (not just a per-group total). Resolve an all-out round off the live state.
+	var CombatRound := preload("res://scripts/rules/combat_round.gd")
+	var actions: Array = combat.call("_all_out_actions")
+	if actions.is_empty():
+		_check(false, "the synthesised encounter yields no all-out actions to resolve")
+	else:
+		var res: Dictionary = CombatRound.declare_round(combat.get("_state"), combat.get("_world"), actions, combat.get("_engine"))
+		var beats: Array = []
+		for e in res.get("events", []):
+			if String((e as Dictionary).get("type", "")) == "combat_round_resolved":
+				var b: Variant = (e as Dictionary).get("beats", [])
+				beats = b if typeof(b) == TYPE_ARRAY else []
+				break
+		_check(not beats.is_empty(), "a resolved round emits per-hit beats (誰が→何に→どれだけ)")
+		if not beats.is_empty():
+			var first: Dictionary = beats[0]
+			_check(String(first.get("actorName", "")) != "" and int(first.get("damage", 0)) > 0 and String(first.get("targetGroupId", "")) != "",
+				"a beat names the acting member, its target, and its damage (T15)")
+
 	combat.free()
 	print("[combat-controller] %s (%d failures)" % ["PASS" if _fail == 0 else "FAIL", _fail])
 	quit(_fail)

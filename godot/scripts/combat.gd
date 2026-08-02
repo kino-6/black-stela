@@ -574,11 +574,23 @@ func _playback(before: Dictionary, events: Array, animated: bool) -> void:
 	struck.sort_custom(func(a, b): return a["x_frac"] < b["x_frac"])
 
 	if animated:
-		for hit in struck:
-			var is_crit: bool = int(hit["removed"]) >= int(hit["before"]) * 0.6  # a heavy chunk reads as a big pop
-			_spawn_damage_number_at(int(hit["removed"]), float(hit["x_frac"]), is_crit)
-			_set_log("%s に %d ダメージ。" % [String(hit["name"]), int(hit["removed"])])
-			await get_tree().create_timer(0.32).timeout
+		var beats := _round_beats(events)
+		if not beats.is_empty():
+			# Per-MEMBER beats (誰が→何に→どれだけ): one number per landed hit, on the struck creature.
+			for beat in beats:
+				var gid := String((beat as Dictionary).get("targetGroupId", ""))
+				var snap: Dictionary = before.get(gid, {})
+				var dmg := int((beat as Dictionary).get("damage", 0))
+				_spawn_damage_number_at(dmg, float(snap.get("x_frac", 0.5)), bool((beat as Dictionary).get("crit", false)))
+				_set_log("%s → %s に %d ダメージ。" % [String((beat as Dictionary).get("actorName", "")), String(snap.get("name", "")), dmg])
+				await get_tree().create_timer(0.3).timeout
+		else:
+			# Fallback (no beats): per-GROUP reconstruction from before/after.
+			for hit in struck:
+				var is_crit: bool = int(hit["removed"]) >= int(hit["before"]) * 0.6
+				_spawn_damage_number_at(int(hit["removed"]), float(hit["x_frac"]), is_crit)
+				_set_log("%s に %d ダメージ。" % [String(hit["name"]), int(hit["removed"])])
+				await get_tree().create_timer(0.32).timeout
 
 	# The bars drain to their post-round HP.
 	_rebuild_stage()
@@ -761,6 +773,15 @@ func _group_hp_by_id(gid: String) -> int:
 		if String(g.get("id", "")) == gid:
 			return _group_hp(g)
 	return 0  # a fully-defeated group has been dropped from the array — it lost all its HP
+
+# T15: the per-hit beats the round emitted ({actorName, targetGroupId, damage, crit}), so playback can
+# name WHO struck each target (誰が) — not just the per-group total.
+func _round_beats(events: Array) -> Array:
+	for e in events:
+		if String((e as Dictionary).get("type", "")) == "combat_round_resolved":
+			var b: Variant = (e as Dictionary).get("beats", [])
+			return b if typeof(b) == TYPE_ARRAY else []
+	return []
 
 # combat is cleared to null on victory — read it null-safe everywhere.
 func _combat() -> Dictionary:

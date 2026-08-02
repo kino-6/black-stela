@@ -43,6 +43,9 @@ static func declare_round(state: Dictionary, world: Dictionary, actions: Array, 
 		var sb := CombatHelpers.get_initiative_score(lb, world) if typeof(lb) == TYPE_DICTIONARY else 0
 		return sa > sb)
 
+	# T15: record a presentation BEAT per landed player hit (誰が→何に→どれだけ). Parity drops beats
+	# semantically (verify_parity._semantic_events), so this cannot affect the state-hash oracle.
+	var beats := []
 	for action in ordered:
 		var actor: Variant = _find_member(party, action.get("actorId", ""))
 		if typeof(actor) != TYPE_DICTIONARY or int(actor.get("hp", 0)) <= 0 or actor.get("injury", null) != null:
@@ -131,10 +134,12 @@ static func declare_round(state: Dictionary, world: Dictionary, actions: Array, 
 		var crit := CombatRng.roll_percent("%d:%d:%s:%s:crit" % [turn, rnd, actor["id"], group["id"]]) < CombatHelpers.get_critical_chance(actor)
 		var damage := roundi(weakened * CRIT_MULTIPLIER) if crit else weakened
 		enemy_groups = CombatHelpers.damage_group(enemy_groups, group["id"], damage)
+		if damage > 0:
+			beats.append({"actorName": String(actor.get("name", "")), "targetGroupId": String(group["id"]), "damage": damage, "crit": crit})
 
 	var living := enemy_groups.filter(func(g): return int(g.get("count", 0)) > 0)
 	if living.is_empty():
-		return _victory(state, world, combat, party, inventory, engine)
+		return _victory(state, world, combat, party, inventory, engine, beats)
 
 	# --- ENEMY TURN (ported from declareRound's post-victory branch) ---
 	# Each living GROUP acts once, fastest first: an authored ability (its own reach), else a basic
@@ -267,7 +272,7 @@ static func declare_round(state: Dictionary, world: Dictionary, actions: Array, 
 		wiped["map"]["currentCellId"] = null
 		wiped["map"]["currentFacing"] = null
 		wiped["turn"] = int(state.get("turn", 0)) + 1
-		var wipe_events := [{"type": "combat_round_resolved", "round": rnd}]
+		var wipe_events := [{"type": "combat_round_resolved", "round": rnd, "beats": beats}]
 		wipe_events.append_array(injured_events)
 		wipe_events.append({"type": "party_wiped", "rescueFee": rescue_fee})
 		return {"state": wiped, "events": wipe_events}
@@ -277,7 +282,7 @@ static func declare_round(state: Dictionary, world: Dictionary, actions: Array, 
 	cont["party"] = party
 	cont["inventory"] = inventory
 	cont["turn"] = int(state.get("turn", 0)) + 1
-	var cont_events := [{"type": "combat_round_resolved", "round": rnd}]
+	var cont_events := [{"type": "combat_round_resolved", "round": rnd, "beats": beats}]
 	cont_events.append_array(injured_events)
 	return {"state": cont, "events": cont_events}
 
@@ -413,7 +418,7 @@ static func _consume_item(inventory: Array, item_id: String) -> Array:
 
 # --- victory + rewards ------------------------------------------------------------------------------
 
-static func _victory(state: Dictionary, world: Dictionary, combat: Dictionary, party: Array, inventory: Array, engine: Dictionary) -> Dictionary:
+static func _victory(state: Dictionary, world: Dictionary, combat: Dictionary, party: Array, inventory: Array, engine: Dictionary, beats: Array = []) -> Dictionary:
 	var groups: Array = combat.get("enemyGroups", [])
 	var xp := 0
 	var gold := 0
@@ -470,7 +475,7 @@ static func _victory(state: Dictionary, world: Dictionary, combat: Dictionary, p
 		next = released["state"]
 		chamber_events = released["events"]
 
-	var events := [{"type": "combat_round_resolved", "round": int(combat.get("round", 1))}]
+	var events := [{"type": "combat_round_resolved", "round": int(combat.get("round", 1)), "beats": beats}]
 	for i in defeated_names.size():
 		events.append({"type": "enemy_defeated", "enemyId": defeated_ids[i], "enemyName": defeated_names[i]})
 	events.append({"type": "combat_rewards", "xp": xp, "gold": gold, "enemyNames": defeated_names, "enemyIds": defeated_ids})
