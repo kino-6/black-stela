@@ -4030,6 +4030,9 @@
         "save.corrupt",
         "title.config",
         "title.continue",
+        "title.deleteCancel",
+        "title.deleteConfirm",
+        "title.deleteSlot",
         "title.menu",
         "title.newGame"
       ],
@@ -4044,6 +4047,34 @@
           "uiState": {
             "config": true,
             "corrupt": true
+          }
+        },
+        {
+          "uiState": {
+            "slots": {
+              "1": {
+                "empty": false,
+                "corrupt": false,
+                "title": "黒碑門",
+                "party": 3,
+                "gold": 120
+              }
+            },
+            "pending_delete": 0
+          }
+        },
+        {
+          "uiState": {
+            "slots": {
+              "1": {
+                "empty": false,
+                "corrupt": false,
+                "title": "黒碑門",
+                "party": 3,
+                "gold": 120
+              }
+            },
+            "pending_delete": 1
           }
         }
       ],

@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import type { Locale, Translator } from "../i18n";
 
 interface TitleScreenProps {
@@ -14,6 +15,7 @@ interface TitleScreenProps {
   debugMode?: boolean;
   onNewGame: () => void;
   onContinue: () => void;
+  onDeleteSave: () => void;
   onToggleConfig: () => void;
   onChangeLocale: (locale: Locale) => void;
   onToggleAutoBattleSafety: (enabled: boolean) => void;
@@ -35,12 +37,21 @@ export function TitleScreen({
   debugMode,
   onNewGame,
   onContinue,
+  onDeleteSave,
   onToggleConfig,
   onChangeLocale,
   onToggleAutoBattleSafety,
   onToggleInstantCombatLog,
   onToggleConfirmRound
 }: TitleScreenProps) {
+  // The 削除 confirm is a two-step gate: 削除 → はい、削除する / やめる. Reset it whenever the save vanishes
+  // (deleted, or we leave the title) so a stale confirm can never act on a slot that is already gone.
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  useEffect(() => {
+    if (!hasAutosave || screen !== "title") {
+      setConfirmingDelete(false);
+    }
+  }, [hasAutosave, screen]);
   return (
     <section className="title-screen" aria-labelledby="title-heading">
       <div className="title-mark">
@@ -54,6 +65,29 @@ export function TitleScreen({
         <button type="button" disabled={!hasAutosave} onClick={onContinue}>
           {t("title.continue")}
         </button>
+        {hasAutosave && !confirmingDelete && (
+          <button type="button" data-testid="title-delete-save" onClick={() => setConfirmingDelete(true)}>
+            {t("title.deleteSlot")}
+          </button>
+        )}
+        {hasAutosave && confirmingDelete && (
+          <div className="title-delete-confirm" role="group" aria-label={t("title.deleteSlot")}>
+            <button
+              type="button"
+              className="danger-action"
+              data-testid="title-delete-confirm"
+              onClick={() => {
+                onDeleteSave();
+                setConfirmingDelete(false);
+              }}
+            >
+              {t("title.deleteConfirm")}
+            </button>
+            <button type="button" data-testid="title-delete-cancel" onClick={() => setConfirmingDelete(false)}>
+              {t("title.deleteCancel")}
+            </button>
+          </div>
+        )}
         <button type="button" onClick={onToggleConfig}>
           {t("title.config")}
         </button>

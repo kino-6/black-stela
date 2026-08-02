@@ -24,6 +24,7 @@ var _settings: Dictionary = {}
 var _status: String = ""
 var _force_corrupt: bool = false   # gate seam: render the unreadable-save line without breaking a real slot
 var _pending_delete: int = 0       # the slot armed for deletion, awaiting a confirm (T6)
+var _slot_overrides: Dictionary = {}  # T6 test seam: slot-number string → fabricated slot_summary
 
 func _ready() -> void:
 	await get_tree().process_frame
@@ -42,6 +43,12 @@ func set_ui_state(ui: Dictionary) -> void:
 		_config_open = bool(ui["config"])
 	if ui.has("corrupt"):
 		_force_corrupt = bool(ui["corrupt"])
+	# T6 test seam: stand real slot rows (keyed by slot number as a string) and arm a slot's delete confirm,
+	# so the 削除 → はい、削除する / やめる stages can be driven headlessly without writing to user://.
+	if ui.has("slots"):
+		_slot_overrides = ui["slots"]
+	if ui.has("pending_delete"):
+		_pending_delete = int(ui["pending_delete"])
 	_rebuild()
 
 func set_world_override(world_id: String) -> void:
@@ -96,7 +103,7 @@ func _rebuild() -> void:
 	var corrupt := _force_corrupt
 	var continues := 0
 	for slot in [1, 2, 3]:
-		var summary: Dictionary = SaveGame.slot_summary(slot)
+		var summary: Dictionary = _slot_overrides.get(str(slot), SaveGame.slot_summary(slot))
 		if bool(summary.get("empty", true)):
 			corrupt = corrupt or bool(summary.get("corrupt", false))
 			continue

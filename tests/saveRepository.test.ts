@@ -60,6 +60,17 @@ describe("local storage save repository", () => {
     ]);
   });
 
+  it("deletes a save slot so it no longer lists or reads (T6)", () => {
+    const repository = new LocalStorageSaveRepository(new MemoryStorage());
+    repository.write("autosave", saveData());
+    expect(repository.list()).toHaveLength(1);
+
+    repository.delete("autosave");
+
+    expect(repository.list()).toEqual([]);
+    expect(repository.read("autosave")).toMatchObject({ ok: false, reason: "missing" });
+  });
+
   it("reports corrupt save data without crashing", () => {
     const storage = new MemoryStorage();
     const repository = new LocalStorageSaveRepository(storage);

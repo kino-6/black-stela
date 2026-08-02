@@ -57,11 +57,16 @@ IMP-060/061/062/063/064 completion records in `Improve.md`.
   - **Gate:** a result-panel test — a levelled member's growth row names its stat deltas, any newly-learned
     technique, and the XP-to-next (proven to fail on the level-only display).
 
-- [-] **T6 — セーブ削除機能（タイトル/メニューから）** — Godot DONE, React mirror pending
-  - The title continue-list now shows a 削除 button per slot → はい、削除する / やめる confirm (never a
-    one-press destroy). `SaveGame.delete_slot` removes the file; the row disappears. Locked in
-    `verify_save` (delete removes the slot + file, slot_summary reports empty). React title mirror is the
-    remaining slice (new copy `title.delete*` is Godot-only for now; ux-parity unaffected — Godot superset).
+- [x] **T6 — セーブ削除機能（タイトル/メニューから）** — DONE (Godot + React mirror)
+  - Godot: the title continue-list shows a 削除 button per slot → はい、削除する / やめる confirm (never a
+    one-press destroy). `SaveGame.delete_slot` removes the file; the row disappears.
+  - React: the title now shows 削除 next to Continue when a save exists → はい、削除する / やめる confirm →
+    `SaveRepository.delete` removes the autosave; Continue goes disabled and the delete control disappears.
+    Added `delete(slotId)` to the repository interface + LocalStorage impl; a `deleteSave` handler in App.
+  - **Gate:** `verify_save` (delete removes the slot + file), `tests/saveRepository.test.ts` (delete drops
+    the slot from list/read), e2e `save-load.spec.ts` (削除→confirm disables Continue and survives reload),
+    and ux-parity — the title now drives all three delete stages (a new slot fixture + `pending_delete` seam
+    in `title.gd`), so `title.deleteSlot/deleteConfirm/deleteCancel` are matched in both engines. All green.
 
 - [x] **T7 — 探索フィードバック＋ログの視認性** — DONE
   - (a) `dungeon._event_line` now says 「この場所の隠し通路はもう開いている。」 on a cell whose secret is

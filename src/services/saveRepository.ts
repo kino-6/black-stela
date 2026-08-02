@@ -6,6 +6,7 @@ export interface SaveRepository {
   write(slotId: string, save: SaveDataV1): void;
   read(slotId: string): SaveReadResult;
   list(): SaveSlotSummary[];
+  delete(slotId: string): void;
 }
 
 export type SaveReadResult =
@@ -74,6 +75,10 @@ export class LocalStorageSaveRepository implements SaveRepository {
     }
 
     return summaries.sort((left, right) => left.slotId.localeCompare(right.slotId));
+  }
+
+  delete(slotId: string): void {
+    this.storage.removeItem(this.keyFor(slotId));
   }
 
   private parse(raw: string): SaveReadResult {

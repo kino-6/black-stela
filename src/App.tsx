@@ -1109,6 +1109,20 @@ export function App() {
     }
   }
 
+  // T6: delete a save from the title (parity with the Godot title's per-slot 削除). The title button gates
+  // this behind a はい、削除する / やめる confirm so a save is never one stray press from gone.
+  function deleteSave(slotId = AUTO_SAVE_SLOT) {
+    if (!saveRepository) {
+      setSaveStatus(t("save.unavailable"));
+      return;
+    }
+    const summary = saveSlots.find((slot) => slot.slotId === slotId);
+    const label = summary && summary.status === "valid" ? summary.title : slotId;
+    saveRepository.delete(slotId);
+    setSaveSlots(saveRepository.list());
+    setSaveStatus(t("title.deleteDone", { slot: label }));
+  }
+
   function loadGame(slotId = saveSlotId, enterGame = true) {
     if (!saveRepository) {
       setSaveStatus(t("save.unavailable"));
@@ -1474,6 +1488,7 @@ export function App() {
           autoBattleSafety={autoBattleSafety}
           onNewGame={beginNewGame}
           onContinue={() => loadGame(AUTO_SAVE_SLOT)}
+          onDeleteSave={() => deleteSave(AUTO_SAVE_SLOT)}
           onToggleConfig={() => setScreen(screen === "config" ? "title" : "config")}
           onChangeLocale={changeLocale}
           onToggleAutoBattleSafety={(enabled) => {
