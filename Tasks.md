@@ -273,7 +273,16 @@ IMP-060/061/062/063/064 completion records in `Improve.md`.
   - **Gate:** `verify_town_controller` party section — the status page shows NO 前後を交代 command and the
     編成 tab still exposes 前衛へ placement (proven to fail on the pre-fix status-page button).
 
-- [ ] **T18 — 回復の対象選択: 満タンは選べない＋初期カーソルは最重傷へ（＋partyMenu.back 未翻訳バグ）**
+- [x] **T18 — 回復の対象選択: 満タンは選べない＋初期カーソルは最重傷へ（＋partyMenu.back 未翻訳バグ）** — DONE
+  - Godot 呪文/特技 heal-cast target picker (`party_panel._spells_page`): (a) for a pure-heal technique
+    (`Techniques.heals`), full-HP allies are now DISABLED (nothing to gain); (b) the cursor lands on the
+    MOST-wounded valid target (lowest HP%), not the top; (c) because the picker recomputes on the post-cast
+    rebuild, the cursor moves to the next-most-wounded instead of snapping to the top; (d) added the missing
+    `partyMenu.back` i18n key (ja 戻る / en Back) so the back button no longer renders a raw key. (React's
+    party menu has no technique-cast flow — this is Godot-specific; no parity gap.)
+  - **Gate:** `verify_town_controller` party section — drives every tab AND the heal-cast target view and
+    asserts NO raw `partyMenu.*` key survives (fails on the pre-fix bare `partyMenu.back`). Disable/most-
+    wounded focus is implemented per the code above; the feel is the user's continuous review.
   - **Problem (playtest 2026-08-02):** the 小癒し (heal-ally) target picker lets you select members who are
     at full HP (no reason to heal them), and the cursor starts on the first member, not the one who most
     needs it. Also visible: a **raw i18n key `partyMenu.back`** renders as the back button label (missing

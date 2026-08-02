@@ -730,14 +730,27 @@ static func _spells_page(ctx: Dictionary, engine: Dictionary, member: Dictionary
 		var target_focus: Control = back
 		if target_mode == "ally":
 			col.add_child(UI.label(I18n.t("partyMenu.members"), 16, UI.DIM))
+			# T18: a pure-heal cannot help a full-HP ally — disable those targets, and land the cursor on the
+			# MOST-wounded valid target (not the top of the list). After a cast the panel re-renders and this
+			# recomputes, so the cursor moves to the next-most-wounded instead of snapping back to the top.
+			var is_heal := Techniques.heals(selected_id, engine)
+			var best_wounded: Control = null
+			var lowest_pct := 2.0
 			for target_v in party:
 				var target: Dictionary = target_v
-				var usable_target := int(target.get("hp", 0)) > 0 and target.get("injury", null) == null
+				var alive := int(target.get("hp", 0)) > 0 and target.get("injury", null) == null
+				var wounded := int(target.get("hp", 0)) < int(target.get("maxHp", 0))
+				var usable_target := alive and (not is_heal or wounded)
 				var target_button := UI.button(I18n.t("partyMenu.useOn", {"name": String(target.get("name", ""))}), func(): ctx["dispatch"].call({"type": "use_technique", "characterId": member.get("id", ""), "techniqueId": selected_id, "targetCharacterId": target.get("id", "")}), Vector2(360, 38), 16)
 				target_button.disabled = not usable_target
 				col.add_child(target_button)
-				if target_focus == back and usable_target:
-					target_focus = target_button
+				if usable_target:
+					var pct := float(int(target.get("hp", 0))) / maxf(1.0, float(int(target.get("maxHp", 1))))
+					if pct < lowest_pct:
+						lowest_pct = pct
+						best_wounded = target_button
+			if best_wounded != null:
+				target_focus = best_wounded
 		else:
 			var action := UI.button(I18n.t("partyMenu.useOn", {"name": String(member.get("name", ""))}), func(): ctx["dispatch"].call({"type": "use_technique", "characterId": member.get("id", ""), "techniqueId": selected_id, "targetCharacterId": member.get("id", "")}), Vector2(360, 40), 16)
 			col.add_child(action)

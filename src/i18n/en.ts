@@ -321,6 +321,7 @@ export const en = {
     inventoryEmpty: "No usable items or spare equipment.",
     valuablesEmpty: "No valuables are being carried.",
     useOn: "Use on {name}",
+    back: "Back",
     itemChooseTarget: "Choose a target",
     itemCanUse: "Can use",
     itemNoEffect: "No effect now",

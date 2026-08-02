@@ -22,6 +22,14 @@ static func label(id: String, engine: Dictionary) -> String:
 static func cost(id: String, engine: Dictionary) -> int:
 	return int((_def(id, engine).get("cost", {}) as Dictionary).get("mp", 0))
 
+## Whether the technique restores HP — a pure-heal has nothing to give a full-HP ally, so the target
+## picker disables full-HP recipients and lands the cursor on the most-wounded (T18).
+static func heals(id: String, engine: Dictionary) -> bool:
+	for effect in _def(id, engine).get("effects", []):
+		if String((effect as Dictionary).get("kind", "")) == "heal":
+			return true
+	return false
+
 ## A class-selection screen needs the player-facing consequence before the technique's proper noun.
 ## This derives a short explanation from the same exported effect data the combat resolver consumes;
 ## it intentionally does not introduce a second per-technique description table in the Godot UI.

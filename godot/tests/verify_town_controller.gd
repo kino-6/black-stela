@@ -94,7 +94,32 @@ func _initialize() -> void:
 						_fail("party 編成 tab lost its 前衛へ placement — row changes must remain reachable")
 					else:
 						print("[town-controller] party: 前後交代 gone from status; 編成 owns row placement (T17)")
-					town.call("set_ui_state", {"service": "party", "party_page": "status"})
+					# T18: no page of the party menu may leak a RAW i18n key. First the plain tabs.
+					for menu_page in ["status", "formation", "spells", "equipment", "items", "valuables"]:
+						town.call("set_ui_state", {"service": "party", "party_page": String(menu_page)})
+						for i in 3:
+							await process_frame
+						if _all_text(town).contains("partyMenu."):
+							_fail("party %s tab leaked a raw partyMenu.* i18n key (T18)" % menu_page)
+					# Then the 呪文/特技 CAST view — it once rendered a bare "partyMenu.back" as its back button.
+					# Find a member who knows a heal, drive their cast target list, and assert it is localized.
+					var heal_cast_seen := false
+					for member_v in (town.call("state").get("party", []) as Array):
+						var mid := String((member_v as Dictionary).get("id", ""))
+						town.call("set_ui_state", {"service": "party", "party_page": "spells", "party_member_id": mid, "party_technique_id": "lesser-heal"})
+						for i in 3:
+							await process_frame
+						var cast_text := _all_text(town)
+						if cast_text.contains("に使う"):
+							heal_cast_seen = true
+							if cast_text.contains("partyMenu."):
+								_fail("heal-cast view leaked a raw partyMenu.* key — the back button (T18)")
+							break
+					if heal_cast_seen:
+						print("[town-controller] party: heal-cast target view is fully localized (T18)")
+					else:
+						print("[town-controller] party: every tab is fully localized — no raw partyMenu.* key (T18)")
+					town.call("set_ui_state", {"service": "party", "party_page": "status", "party_technique_id": ""})
 					for i in 3:
 						await process_frame
 

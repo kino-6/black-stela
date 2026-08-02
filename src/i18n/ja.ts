@@ -323,6 +323,7 @@ export const ja = {
     inventoryEmpty: "使える品や予備の装備はない。",
     valuablesEmpty: "貴重品は持っていない。",
     useOn: "{name}に使う",
+    back: "戻る",
     itemChooseTarget: "対象を選ぶ",
     itemCanUse: "使用できる",
     itemNoEffect: "今は効果なし",
