@@ -158,9 +158,13 @@ func _rebuild() -> void:
 	var main := UI.col(10)
 	main_frame.add_child(main)
 	body.add_child(main_frame)
-	if _step != "briefing":
-		main.add_child(_preview_card())
-	main.add_child(_step_panel())
+	if _step == "briefing" and _roster_open:
+		# 名簿の管理 owns the MAIN window (playtest #37: the editor was crammed into the narrow hall column).
+		main.add_child(_roster_manager())
+	else:
+		if _step != "briefing":
+			main.add_child(_preview_card())
+		main.add_child(_step_panel())
 
 	# The hall stands beside the briefing only. During the steps it would be a SECOND focus surface, and
 	# the arrows would wander out of the question the player is being asked (the same reason React stopped
@@ -621,6 +625,74 @@ func _name_step() -> Control:
 	return UI.card(col)
 
 # --- the hall (briefing only) ---------------------------------------------------------------------
+# 名簿の管理 — the full roster editor, rendered in the MAIN window (playtest #37: it used to be crammed into
+# the narrow hall column on the right). Pick any registered adventurer (party OR reserve), then correct their
+# name / 来歴 / 顔, or 外す them from the roster.
+func _roster_manager() -> Control:
+	var col := UI.col(10)
+	col.add_child(UI.label(I18n.t("party.manageRoster"), 22, UI.GOLD))
+	# Every registered adventurer — party AND reserve — is selectable, so names/来歴 can be corrected
+	# after registration (playtest: "ギルドで名前変更できない / 冒険者情報の修正できないの？").
+	var everyone: Array = []
+	everyone.append_array(state().get("party", []))
+	everyone.append_array(state().get("reserve", []))
+	if everyone.is_empty():
+		col.add_child(UI.label("—", 15, UI.DIM))
+	# A grid, not a single row — six 150px buttons overflowed the old narrow panel; the main window fits more
+	# abreast, so widen to 4 columns (playtest 2026-07-29 "名簿UIが破損").
+	var picker := GridContainer.new()
+	picker.columns = 4
+	picker.add_theme_constant_override("h_separation", 6)
+	picker.add_theme_constant_override("v_separation", 6)
+	for member in everyone:
+		var mid := String(member.get("id", ""))
+		var pick := UI.button(String(member.get("name", "?")), func(): _roster_select(mid), Vector2(160, 34), 14)
+		if mid == _roster_selected_id:
+			pick.add_theme_color_override("font_color", UI.GOLD)
+		_claim(pick, "roster:%s" % mid)
+		picker.add_child(pick)
+	col.add_child(picker)
+	var editing := _member_by_id(_roster_selected_id)
+	if not editing.is_empty():
+		var edit_row := UI.row()
+		var face := UI.col(6)
+		var portrait := TextureRect.new()
+		portrait.custom_minimum_size = Vector2(160, 194)
+		portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+		# Prefer the working draft's imported ref (a fresh pick), else the member's current portrait.
+		var preview_ref := String(_roster_draft.get("portraitRef", ""))
+		if preview_ref == "":
+			preview_ref = String(editing.get("portraitRef", ""))
+		portrait.texture = WorldResources.portrait_texture(preview_ref, _member_portrait_path(editing))
+		face.add_child(UI.card(portrait))
+		var import_btn := UI.button(I18n.t("party.importImage"), func(): _import_portrait(func(ref: String): _roster_draft["portraitRef"] = ref; _rebuild()), Vector2(200, 36), 14)
+		_claim(import_btn, "roster:import")
+		face.add_child(import_btn)
+		edit_row.add_child(face)
+		var fields := UI.col(4)
+		fields.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		fields.add_child(_roster_field(I18n.t("party.editName"), String(_roster_draft.get("name", "")), I18n.t("party.namePlaceholder"), "name"))
+		fields.add_child(_roster_field(I18n.t("party.editTitle"), String(_roster_draft.get("title", "")), I18n.t("party.titlePlaceholder"), "title"))
+		fields.add_child(_roster_field(I18n.t("party.editNotes"), String(_roster_draft.get("notes", "")), I18n.t("party.notesPlaceholder"), "notes"))
+		edit_row.add_child(UI.grow(fields))
+		col.add_child(edit_row)
+		var edit_actions := UI.row()
+		var save := UI.button(I18n.t("party.editSave"), func(): _save_roster_edit(), Vector2(200, 40), 16)
+		_claim(save, "roster:save")
+		edit_actions.add_child(save)
+		# 外す — remove this adventurer from the party (retire, reversible at the town counter). Playtest
+		# 2026-07-29: the roster editor could rename but not REMOVE a member. Never let the roster go empty.
+		var total := int(state().get("party", []).size()) + int(state().get("reserve", []).size())
+		var remove := UI.button(I18n.t("party.removeMember"), func(): _remove_roster_member(_roster_selected_id), Vector2(160, 40), 16)
+		remove.disabled = total <= 1
+		remove.add_theme_color_override("font_color", UI.BAD if not remove.disabled else UI.DIM)
+		_claim(remove, "roster:remove")
+		edit_actions.add_child(remove)
+		col.add_child(edit_actions)
+	col.add_child(UI.button(I18n.t("party.rosterDone"), func(): _set_roster(false), Vector2(200, 40), 16))
+	return col
+
 func _hall_panel() -> Control:
 	var col := UI.col(8)
 	col.custom_minimum_size = Vector2(420, 0)
@@ -646,69 +718,10 @@ func _hall_panel() -> Control:
 		if not any:
 			col.add_child(UI.label("—", 15, UI.DIM))
 
-	# The roster is the hall's OTHER job: who is out, who is benched. Full roster management (bench /
-	# recall / retire) is the town's guild counter — this opens the same list so the hall is not a dead
-	# end while the party is still being built.
+	# The roster is the hall's OTHER job: who is out, who is benched. The 名簿を管理 toggle opens the full
+	# editor — but that editor renders in the MAIN window (see `_roster_manager`), not squeezed into this
+	# narrow hall column (playtest #37: "なんでこんな右下の狭いところに配置するの？").
 	if _roster_open:
-		col.add_child(UI.label(I18n.t("party.manageRoster"), 16, UI.GOLD))
-		# Every registered adventurer — party AND reserve — is selectable, so names/来歴 can be corrected
-		# after registration (playtest: "ギルドで名前変更できない / 冒険者情報の修正できないの？").
-		var everyone: Array = []
-		everyone.append_array(state().get("party", []))
-		everyone.append_array(state().get("reserve", []))
-		if everyone.is_empty():
-			col.add_child(UI.label("—", 15, UI.DIM))
-		# A 3-column grid, not a single row — six 150px buttons overflowed the panel's right edge and the
-		# last names + 保存 were clipped off-screen (playtest 2026-07-29 "名簿UIが破損").
-		var picker := GridContainer.new()
-		picker.columns = 3
-		picker.add_theme_constant_override("h_separation", 6)
-		picker.add_theme_constant_override("v_separation", 6)
-		for member in everyone:
-			var mid := String(member.get("id", ""))
-			var pick := UI.button(String(member.get("name", "?")), func(): _roster_select(mid), Vector2(150, 34), 14)
-			if mid == _roster_selected_id:
-				pick.add_theme_color_override("font_color", UI.GOLD)
-			_claim(pick, "roster:%s" % mid)
-			picker.add_child(pick)
-		col.add_child(picker)
-		var editing := _member_by_id(_roster_selected_id)
-		if not editing.is_empty():
-			var edit_row := UI.row()
-			var face := UI.col(6)
-			var portrait := TextureRect.new()
-			portrait.custom_minimum_size = Vector2(120, 146)
-			portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-			portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-			# Prefer the working draft's imported ref (a fresh pick), else the member's current portrait.
-			var preview_ref := String(_roster_draft.get("portraitRef", ""))
-			if preview_ref == "":
-				preview_ref = String(editing.get("portraitRef", ""))
-			portrait.texture = WorldResources.portrait_texture(preview_ref, _member_portrait_path(editing))
-			face.add_child(UI.card(portrait))
-			var import_btn := UI.button(I18n.t("party.importImage"), func(): _import_portrait(func(ref: String): _roster_draft["portraitRef"] = ref; _rebuild()), Vector2(180, 36), 14)
-			_claim(import_btn, "roster:import")
-			face.add_child(import_btn)
-			edit_row.add_child(face)
-			var fields := UI.col(4)
-			fields.add_child(_roster_field(I18n.t("party.editName"), String(_roster_draft.get("name", "")), I18n.t("party.namePlaceholder"), "name"))
-			fields.add_child(_roster_field(I18n.t("party.editTitle"), String(_roster_draft.get("title", "")), I18n.t("party.titlePlaceholder"), "title"))
-			fields.add_child(_roster_field(I18n.t("party.editNotes"), String(_roster_draft.get("notes", "")), I18n.t("party.notesPlaceholder"), "notes"))
-			edit_row.add_child(fields)
-			col.add_child(edit_row)
-			var edit_actions := UI.row()
-			var save := UI.button(I18n.t("party.editSave"), func(): _save_roster_edit(), Vector2(200, 40), 16)
-			_claim(save, "roster:save")
-			edit_actions.add_child(save)
-			# 外す — remove this adventurer from the party (retire, reversible at the town counter). Playtest
-			# 2026-07-29: the roster editor could rename but not REMOVE a member. Never let the roster go empty.
-			var total := int(state().get("party", []).size()) + int(state().get("reserve", []).size())
-			var remove := UI.button(I18n.t("party.removeMember"), func(): _remove_roster_member(_roster_selected_id), Vector2(160, 40), 16)
-			remove.disabled = total <= 1
-			remove.add_theme_color_override("font_color", UI.BAD if not remove.disabled else UI.DIM)
-			_claim(remove, "roster:remove")
-			edit_actions.add_child(remove)
-			col.add_child(edit_actions)
 		col.add_child(UI.button(I18n.t("party.rosterDone"), func(): _set_roster(false), Vector2(200, 40), 16))
 	else:
 		col.add_child(UI.button(I18n.t("party.manageRoster"), func(): _set_roster(true), Vector2(220, 40), 16))

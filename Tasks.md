@@ -127,13 +127,17 @@ IMP-060/061/062/063/064 completion records in `Improve.md`.
   - **Gate:** upgrade test — gold upgrade raises the piece's +level up to the cap, costs gold, refuses past
     the cap / when broke; controller-reachable.
 
-- [-] **T10 — ギルド名簿編集の配置＋画像取り込みバグ** — BUG DONE, layout pending
+- [x] **T10 — ギルド名簿編集の配置＋画像取り込みバグ** — DONE (bug + layout)
   - (b) BUG FIXED: 「画像を取り込む」 could not select the user's image — the image-only filter greyed out
     files with odd/UPPER-case extensions. Now: per-extension + all-files fallback filters, AND
     `_image_file_to_data_url` decodes by CONTENT (a real PNG/JPG/WEBP imports regardless of extension; a
     non-image is still rejected). Locked in `verify_portrait_import` (wired into gate:migration).
-  - (a) Layout (move the roster editor out of the cramped bottom-right into the main window) — still to do
-    (a guild.gd restructure).
+  - (a) LAYOUT FIXED: the 名簿 editor (picker + portrait + name/来歴 fields + 保存/外す) now renders in the
+    MAIN window via a new `_roster_manager()`, instead of being crammed into the narrow 420px hall column on
+    the right (playtest #37 "なんでこんな右下の狭いところに配置するの？"). The hall column keeps only the
+    party summary + the 名簿を整える / 名簿を閉じる toggle. Picker widened to 4 columns to use the space.
+  - **Gate:** `verify_guild_controller` roster section — with a member selected, the 保存 button is reachable
+    and is NOT a descendant of the 420px hall column (proven to fail on the pre-fix hall-embedded editor).
 
 - [x] **T12 — 装備タブがコントローラで操作できない (BUG)** — DONE
   - Root cause: LEFT from a slot/candidate jumped to the TAB strip (geometric neighbour), not the roster, so

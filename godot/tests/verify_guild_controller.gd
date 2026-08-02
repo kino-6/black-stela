@@ -359,6 +359,25 @@ func _initialize() -> void:
 			_fail("re-entering the guild wiped the existing roster (%d members) — start_guild must not run on _ready" % kept.size())
 		reentry.queue_free()
 
+	# T10 (playtest #37 "なんでこんな右下の狭いところに配置するの？"): the 名簿 editor renders in the MAIN
+	# window, not crammed into the narrow 420px hall column on the right. Open the manager, select a member,
+	# and assert the 保存 button is NOT a descendant of the hall column.
+	if run != null:
+		run.state["party"] = [{"id": "ros", "name": "名簿太郎", "classId": "warrior", "row": "front", "hp": 10, "maxHp": 10}]
+		run.state["reserve"] = []
+		guild.call("set_ui_state", {"step": "briefing", "roster": true})
+		guild.call("_roster_select", "ros")
+		for i in 4:
+			await process_frame
+		var save_btn := _find_button(guild, I18n.t("party.editSave"))
+		var hall_col := _find_hall_column(guild)
+		if save_btn == null:
+			_fail("roster: the 名簿 editor's 保存 is not reachable when a member is selected")
+		elif hall_col != null and _is_descendant(save_btn, hall_col):
+			_fail("roster editor is still inside the narrow hall column, not the main window (T10)")
+		else:
+			print("[guild-controller] roster editor renders in the main window, not the hall column (T10)")
+
 	print("")
 	if _failures == 0:
 		print("[guild-controller] PASS — the five registration steps are reachable, focusable, cancellable, and mint the adventurer that was built")
@@ -401,6 +420,24 @@ func _fire_action(guild: Node, action: String) -> void:
 	event.action = action
 	event.pressed = true
 	guild.call("_input", event)
+
+# The hall column is the narrow right-hand panel (`_hall_panel` gives its col a 420px minimum width).
+func _find_hall_column(node: Node) -> Control:
+	if node is VBoxContainer and absf((node as Control).custom_minimum_size.x - 420.0) < 0.5:
+		return node as Control
+	for child in node.get_children():
+		var found := _find_hall_column(child)
+		if found:
+			return found
+	return null
+
+func _is_descendant(node: Node, ancestor: Node) -> bool:
+	var cur := node.get_parent()
+	while cur != null:
+		if cur == ancestor:
+			return true
+		cur = cur.get_parent()
+	return false
 
 func _find_textedit(node: Node) -> TextEdit:
 	if node is TextEdit:
