@@ -562,25 +562,36 @@ func _all_out_actions() -> Array:
 
 # Rebuild the beat feel from before/after: HP removed per group, defeats, then the rewards event.
 func _playback(before: Dictionary, events: Array, animated: bool) -> void:
-	var group := _first_group()
-	var enemy_name: String = _enemy_ja(before if before.has("enemyId") else _first_group())
-	var removed := int(before.get("hp", 0)) - _group_hp(group)
-	var remaining := _group_hp(group)
+	# T15: land a damage number on EACH struck target (not one aggregate on the first group), draining that
+	# creature's bar as it lands — reconstructed per-group from the before-snapshot. "誰が" (which member)
+	# needs per-hit beats the rules do not emit yet; "何に / どれだけ" + the bars are covered here.
+	var struck := []   # [{gid, removed, x_frac, name, wiped}] in stage order
+	for gid in before:
+		var snap: Dictionary = before[gid]
+		var removed := int(snap.get("hp", 0)) - _group_hp_by_id(String(gid))
+		if removed > 0:
+			struck.append({"gid": String(gid), "removed": removed, "x_frac": float(snap.get("x_frac", 0.5)), "name": String(snap.get("name", "")), "before": int(snap.get("hp", 0))})
+	struck.sort_custom(func(a, b): return a["x_frac"] < b["x_frac"])
 
 	if animated:
-		_spawn_damage_number(removed)
+		for hit in struck:
+			var is_crit: bool = int(hit["removed"]) >= int(hit["before"]) * 0.6  # a heavy chunk reads as a big pop
+			_spawn_damage_number_at(int(hit["removed"]), float(hit["x_frac"]), is_crit)
+			_set_log("%s に %d ダメージ。" % [String(hit["name"]), int(hit["removed"])])
+			await get_tree().create_timer(0.32).timeout
 
+	# The bars drain to their post-round HP.
 	_rebuild_stage()
-	_set_log("%s が %s に %d ダメージ。" % [_acting_name(), enemy_name, maxi(removed, 0)])
-	if animated:
-		await get_tree().create_timer(0.55).timeout
 
-	if remaining <= 0:
-		_rebuild_stage()
-		_set_log("%s を撃破！" % enemy_name)
-		if animated:
-			_spawn_defeat_flourish()
-			await get_tree().create_timer(0.5).timeout
+	# Defeated groups get the 撃破 flourish + a line each.
+	for hit in struck:
+		if _group_hp_by_id(String(hit["gid"])) <= 0:
+			_set_log("%s を撃破！" % String(hit["name"]))
+			if animated:
+				_spawn_defeat_flourish()
+				await get_tree().create_timer(0.4).timeout
+	if struck.is_empty():
+		_set_log("%s の攻撃。" % _acting_name())
 
 	var rewards := _find_event(events, "combat_rewards")
 	var wiped := _find_event(events, "party_wiped")
@@ -727,13 +738,29 @@ func _refresh_member(member: Dictionary) -> void:
 func _spawn_damage_number(amount: int) -> void:
 	CombatPlayback.damage_number(_damage_layer, _enemy_stage_rect, amount)
 
+# T15: land a number on a SPECIFIC target (x_frac across the stage), with a crit pop for a heavy blow.
+func _spawn_damage_number_at(amount: int, x_frac: float, is_crit: bool) -> void:
+	CombatPlayback.damage_number(_damage_layer, _enemy_stage_rect, amount, x_frac, is_crit)
+
 func _spawn_defeat_flourish() -> void:
 	CombatPlayback.defeat_flourish(_damage_layer, _enemy_stage_rect)
 
 # --- enemy snapshot / lookup helpers --------------------------------------------------------------
+# A per-GROUP snapshot of HP + a horizontal position (x_frac), taken BEFORE the round, so _playback can
+# reconstruct each target's loss and land its number on the right creature (T15).
 func _enemy_snapshot() -> Dictionary:
-	var g := _first_group()
-	return {"hp": _group_hp(g), "name": _short_name(g)}
+	var snap := {}
+	var groups: Array = _combat().get("enemyGroups", [])
+	for i in groups.size():
+		var g: Dictionary = groups[i]
+		snap[String(g.get("id", ""))] = {"hp": _group_hp(g), "name": _short_name(g), "x_frac": (float(i) + 0.5) / maxf(1.0, float(groups.size()))}
+	return snap
+
+func _group_hp_by_id(gid: String) -> int:
+	for g in _combat().get("enemyGroups", []):
+		if String(g.get("id", "")) == gid:
+			return _group_hp(g)
+	return 0  # a fully-defeated group has been dropped from the array — it lost all its HP
 
 # combat is cleared to null on victory — read it null-safe everywhere.
 func _combat() -> Dictionary:

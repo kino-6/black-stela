@@ -249,11 +249,15 @@ IMP-060/061/062/063/064 completion records in `Improve.md`.
     `npm run gate:migration` plus a clean Godot boot. Review both base and hurt frames on the actual combat lane
     for grounding, scale, contrast, and no strong-flash regression.
 
-- [-] **T15 — オート/全員でかかる の再生に数字とHP更新が出ない (REGRESSION vs T1)** — PARTIAL (auto now animates)
-  - DONE: オート now plays each round ANIMATED (`_run_auto` → `_resolve_round_with(orders, true)`), so the
-    damage number lands on the target and the HP bars DRAIN as it resolves (auto used to pass
-    `animated=false` and skip all of that). The command menu no longer flickers between auto rounds. Combat
-    gates green (parity/controller/geometry) — the change is presentation-only, state is untouched.
+- [x] **T15 — オート/全員でかかる の再生に数字とHP更新が出ない** — DONE (per-target numbers + bars drain)
+  - DONE: (1) オート now plays each round ANIMATED (`_run_auto` → `_resolve_round_with(orders, true)`), no
+    command-menu flicker between auto rounds. (2) `_playback` reworked from one aggregate number on the first
+    group to a number on EACH struck target: it snapshots every enemy group's HP before the round and
+    reconstructs each group's loss, landing a juicy number ON that creature (positioned by x_frac) and
+    draining the bars per beat — so 何にどれだけ + HPバー更新 are both covered, in auto and manual.
+  - Locked by `verify_combat_numbers` (juicy/positioned/crit/outline number rendering) + parity/controller/
+    geometry/flow green (presentation-only, state untouched). NB: the per-MEMBER attribution ("誰が") still
+    needs per-hit beats from `combat_round.gd` (documented below) — a smaller rules-seam follow-up.
   - REMAINING (with **T19**): `_playback` shows the ROUND's aggregate for the first group, not a per-ATTACKER
     beat — so "誰が何にどれだけ" is not fully granular. **Scoped (2026-08-02):** the Godot combat result
     carries NO per-hit beats by design — `combat.gd:8` "beats are presentation the target UI rebuilds", i.e.
@@ -327,7 +331,13 @@ IMP-060/061/062/063/064 completion records in `Improve.md`.
   - **Gate:** party-menu heal-target test — full-HP members are disabled, the cursor lands on the lowest-HP
     member, after a cast the cursor does NOT reset to the top, and no raw `partyMenu.*` key appears.
 
-- [ ] **T19 — ダメージ数字の演出を「気持ちよく」する（業務アプリ感の脱却）**
+- [x] **T19 — ダメージ数字の演出を「気持ちよく」する（業務アプリ感の脱却）** — DONE (Godot combat stage)
+  - `CombatPlayback.damage_number` reworked into a juicy hit: a scale-POP on spawn (overshoot via TRANS_BACK
+    then settle), a rising arc with a small sideways drift, an ease-out fade, a dark OUTLINE so it reads on
+    any creature, and a hotter/bigger CRIT variant with a "!" for a heavy blow. Positioned per target (x_frac)
+    so a multi-target round lands each number on its own creature. Self-contained (no assets). Locked by
+    `verify_combat_numbers`. (Godot combat stage — the played build; React `CombatCockpit` juice is a parity
+    follow-up, lower priority since the user plays Godot.) The FEEL is the user's continuous real-build review.
   - **Problem (playtest 2026-08-02):** the current floating damage number reads like a spreadsheet cell —
     no pop, no weight, no 数字感. Combat-ui-drpg wants numbers that LAND on the target with impact.
   - **Research + apply:** study juicy damage-number presentation (scale-pop on spawn, slight arc + rise,

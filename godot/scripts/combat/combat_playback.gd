@@ -4,21 +4,39 @@ extends RefCounted
 ## decision — it draws what the resolved round already decided. The scene passes the damage layer and the
 ## enemy-stage rect; the tween runs on that layer's tree.
 
-const HURT := Color("d98a5a")
+const HURT := Color("f2b077")
+const CRIT := Color("ffd76a")
 const GOLD := Color("c9a765")
+const OUTLINE := Color("1a120a")
 
-## A damage number floating up over the enemy stage, then fading.
-static func damage_number(damage_layer: CanvasItem, stage_rect: Rect2, amount: int) -> void:
+## A juicy floating damage number (T19): a scale-POP on spawn (overshoot then settle), a rising arc with a
+## little sideways drift, a dark outline so it reads on any creature, and a hotter/bigger CRIT variant with
+## a "!". `x_frac` (0..1) places it horizontally over the STRUCK target so multi-target rounds land each
+## number on its own creature (T15). Presentation only — the resolved round already decided the numbers.
+static func damage_number(damage_layer: CanvasItem, stage_rect: Rect2, amount: int, x_frac: float = 0.5, is_crit: bool = false) -> void:
 	if amount <= 0:
 		return
-	var dmg := _label(str(amount), 56, HURT)
-	dmg.position = stage_rect.position + Vector2(stage_rect.size.x / 2 - 20, 120)
+	var size := 74 if is_crit else 54
+	var dmg := _label(("%d!" % amount) if is_crit else str(amount), size, CRIT if is_crit else HURT)
+	dmg.add_theme_color_override("font_outline_color", OUTLINE)
+	dmg.add_theme_constant_override("outline_size", 10 if is_crit else 8)
+	dmg.pivot_offset = Vector2(size * 0.5, size * 0.6)
+	var base_x := stage_rect.position.x + clampf(x_frac, 0.05, 0.95) * stage_rect.size.x - size * 0.5
+	dmg.position = Vector2(base_x, stage_rect.position.y + 130)
+	dmg.scale = Vector2(0.4, 0.4)
 	damage_layer.add_child(dmg)
+	var drift := (18.0 if int(base_x) % 2 == 0 else -18.0)  # a small deterministic sideways arc
 	var tw := damage_layer.create_tween()
+	# POP: overshoot then settle (the "juice").
+	tw.tween_property(dmg, "scale", Vector2(1.18, 1.18) if is_crit else Vector2(1.1, 1.1), 0.12).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tw.tween_property(dmg, "scale", Vector2.ONE, 0.08)
+	# RISE + drift + ease-out fade, in parallel.
 	tw.set_parallel(true)
-	tw.tween_property(dmg, "position:y", dmg.position.y - 80, 0.6)
-	tw.tween_property(dmg, "modulate:a", 0.0, 0.6).set_delay(0.2)
-	tw.chain().tween_callback(dmg.queue_free)
+	tw.tween_property(dmg, "position:y", dmg.position.y - 96, 0.62).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tw.tween_property(dmg, "position:x", dmg.position.x + drift, 0.62)
+	tw.tween_property(dmg, "modulate:a", 0.0, 0.5).set_delay(0.34)
+	tw.set_parallel(false)
+	tw.tween_callback(dmg.queue_free)
 
 ## The 撃破 defeat flourish over the enemy stage.
 static func defeat_flourish(damage_layer: CanvasItem, stage_rect: Rect2) -> void:
