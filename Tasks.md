@@ -150,16 +150,24 @@ IMP-060/061/062/063/064 completion records in `Improve.md`.
   - `party_panel._roster_row` now shows, per member: the PORTRAIT (顔画像), a 前衛/後衛 ・ <現在の職> line
     (row + localized vocation), alongside name/Lv/HP. Verified on the 装備 tab (fits, reads at a glance).
 
-- [-] **T13 — 難易度検証 — DONE (verified working-as-designed; a design decision remains)**
-  - descentSim per-floor (heal:none): **naive lv1 WIPES** — Verdant is at ~7% HP by g1f and wipes at g3f;
-    default barely reaches b2f then falls. **Prepared clears** (Verdant g1f 77% > the 0.7 "teaches-gently"
-    floor). So the invariants hold and difficulty IS calibrated. The user's easy G2F is the *deliberately
-    gentle Act I* seen by a LEVELLED/HEALED party (the sim's naive-lv1-heal-none is the worst-case wipe
-    floor, not the normal experience). **NOT a bug.**
-  - Remaining = a DESIGN DECISION for the user: keep Act I gentle (teaches), or make early floors demand
-    prep sooner? If the latter, tune `verdant/world.md` balance (threatScalar/hpScalar) — but the
-    "Act I teaches gently (g1f>0.7 prepared)" invariant is a locked gate, so this is a deliberate re-target,
-    not a silent change. No edit made pending that call.
+- [-] **T13 — 序盤難易度の再設計: 作成直後のLv1は施設なしでは1Fを突破できない** — IN PROGRESS
+  - **DECISION (user, 2026-08-02):** a freshly created Lv1 party (starter gear, no shopping/provisioning)
+    must NOT be able to clear floor 1 on a blind dive — the loop is 町へ戻る→装備購入/補給→再挑戦→突破.
+    「施設をしっかり使わないと攻略できない。稼げばしっかり必要なものが入手できる」. INVARIANTS HELD: a MID
+    (facility-equipped) party still clears the descent; no single required item; counterplay stays diverse.
+  - **Root-cause of the "easy" playtest (diagnosed):** the sim's `naive` policy IS the fresh starter party
+    (it keeps the class starting loadout). It already reads g1f≈7% / wipes by g3f — but that is the
+    CUMULATIVE none-heal trough. In real play the party heals between the many small first-contact fights, so
+    no single early fight bites → floor 1 feels trivial. The real lever is **per-fight weight on Act I** (a
+    single g1f/b1f fight must threaten a fresh party), NOT the cumulative curve. This RE-TARGETS the old
+    "Act I teaches gently (g1f>0.7)" invariant — a deliberate change, per the decision above.
+  - Approach: raise Act I per-fight weight (g1/b1 packs: group size / enemy dmg) so a starter party is pushed
+    to wipe-risk on a blind floor-1 dive, while a shopped+provisioned (mid+kit) party clears; keep
+    prepare-or-wipe + non-increasing act curve + no-wipe-for-prepared. Tune vs `descentSim` (both models) and
+    the shop/provision economy so 稼ぐ→買う→突破 is a real path. Grounded in `.claude/skills/drpg-balance`.
+  - **Gate:** extend `difficultyGate`/`verdantBalance` — assert a starter/naive party FAILS floor 1 on a
+    blind dive (per-fight trough below a survivable-without-facilities line) AND a facility-equipped party
+    clears floor 1 and the descent, with the invariants intact. Two worlds. Real-browser feel check.
 
 - [ ] **玄室 landmark visual tuning** (carried over, Codex art-lane)
   - The 玄室 landmark (pillars + floor disk) reads as an unexplained "green object"; tone the floor disk /
@@ -210,6 +218,21 @@ IMP-060/061/062/063/064 completion records in `Improve.md`.
     capture one real combat at 1280 and 1920 for each world with at least two new silhouettes present, and run
     `npm run gate:migration` plus a clean Godot boot. Review both base and hurt frames on the actual combat lane
     for grounding, scale, contrast, and no strong-flash regression.
+
+- [ ] **T15 — オート/全員でかかる の再生に数字とHP更新が出ない (REGRESSION vs T1)**
+  - **Problem (playtest 2026-08-02):** T1 made オート play each attacker instead of skipping — good — but the
+    playback does NOT show WHO dealt HOW MUCH damage to WHAT, and the **HP bars do not update during** the
+    sequence. So the beat-by-beat goal (see who did what, feel the numbers land) is not actually met: the
+    moves animate but read as a silent blur.
+  - **Intent:** every オート/all-out beat must land like a manual round — a floating damage number ON the
+    struck enemy (数字感), the target's HP bar draining that beat, and the one-line ticker naming the actor
+    → target → amount. Applies to both engines (combat-ui-drpg: "numbers belong on the target"). Likely the
+    auto path advances state without emitting/rendering the per-beat damage + hp-delta the manual path uses.
+  - React (`CombatCockpit`/beat playback) + Godot (`combat.gd` playback) parity; find where オート batches
+    beats and make it drive the SAME per-beat number+bar render as a hand-played round.
+  - **Gate:** a combat-playback test — an オート round emits, per attacker beat, a damage number on the
+    correct target and a decreasing target-HP snapshot (proven to fail on the current number-less playback);
+    plus a real-browser check that the bars drain and numbers float during オート.
 
 ---
 
