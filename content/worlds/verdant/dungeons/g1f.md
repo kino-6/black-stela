@@ -1,9 +1,6 @@
 ---
 id: dungeon.verdant.g1f
 name: G1F - Root Gallery
-locales:
-  ja:
-    name: G1F・根の回廊
 level: 1
 recommendedPartyLevel: 1
 tags:
@@ -19,12 +16,12 @@ map: |
   #.###...#.##....###
   #....##.#.#..##...#
   #.#.#######.###.#.#
-  #.#.#D...A.##F..#.#
-  #.#.#..##..##...###
+  #.#.#....A.##.F.#.#
+  #.#.#.D##..##...###
   #...##...##2###...#
   #...###.###.###.###
-  #.#..G..#M..#H....#
-  #.#.#..#...##...###
+  #.#..G..#...#.H...#
+  #.#.#..#.M.##...###
   #.#..##..#.s#.#...#
   #.#####.###S#.###.#
   #.........#X...1#.#
@@ -85,13 +82,13 @@ edges:
   - from: room.verdant.g1f.c6_9
     direction: east
     kind: door
-  - from: room.verdant.g1f.c6_10
+  - from: room.verdant.g1f.05
     direction: south
     kind: door
   - from: room.verdant.g1f.c14_10
     direction: east
     kind: door
-  - from: room.verdant.g1f.c14_9
+  - from: room.verdant.g1f.06
     direction: east
     kind: door
   - from: room.verdant.g1f.c6_13
@@ -106,7 +103,7 @@ edges:
   - from: room.verdant.g1f.c14_14
     direction: east
     kind: door
-  - from: room.verdant.g1f.c14_13
+  - from: room.verdant.g1f.08
     direction: east
     kind: door
   - from: room.verdant.g1f.c10_13
@@ -115,7 +112,7 @@ edges:
   - from: room.verdant.g1f.c10_14
     direction: south
     kind: door
-  - from: room.verdant.g1f.c9_14
+  - from: room.verdant.g1f.keep
     direction: west
     kind: door
 rooms:

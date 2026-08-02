@@ -45,6 +45,84 @@ const chamberRoomIds = (floorId: string) =>
       .map((r) => r.id)
   );
 
+// T2: a guardian chamber must be a true door-CHOKE — the guardian cannot be reached by walking in from an
+// OPEN side. Each chamber is an enclosed pocket (its named cell plus the rest of its 2×2 block, joined by
+// OPEN edges). The choke property is on the POCKET's boundary, not the single named cell: flood the pocket
+// along OPEN edges from the chamber cell, then every edge LEAVING that pocket into another cell must be a
+// gated kind (door/secret). An `open`/`one_way`/`shortcut` edge out of the pocket is a bypass.
+const OPEN_JOIN = new Set(["open"]);
+const GATED = new Set(["door", "secret", "stairs"]);
+function chamberOpenEntrances(world: (typeof worldRegistry)[string], floorId: string, chamberRoomId: string) {
+  const floor = world.dungeons.find((d) => d.id === floorId);
+  const cells = floor?.grid?.cells ?? [];
+  const byId = new Map(cells.map((c) => [c.id, c]));
+  const start = cells.find((c) => c.roomId === chamberRoomId);
+  if (!start) return [];
+  // Flood the open-connected pocket from the chamber cell.
+  const pocket = new Set<string>([start.id]);
+  const queue = [start];
+  while (queue.length) {
+    const cell = queue.shift()!;
+    for (const edge of Object.values(cell.edges)) {
+      if (edge && OPEN_JOIN.has(edge.kind) && edge.targetCellId && byId.has(edge.targetCellId) && !pocket.has(edge.targetCellId)) {
+        pocket.add(edge.targetCellId);
+        queue.push(byId.get(edge.targetCellId)!);
+      }
+    }
+  }
+  // Any NON-gated edge leaving the pocket is a bypass into the guardian.
+  const strays: { cellId: string; dir: string; targetRoomId: string; kind: string }[] = [];
+  for (const cellId of pocket) {
+    const cell = byId.get(cellId)!;
+    for (const [dir, edge] of Object.entries(cell.edges)) {
+      if (!edge || !edge.targetCellId || pocket.has(edge.targetCellId)) continue; // wall or stays in pocket
+      if (!GATED.has(edge.kind)) {
+        strays.push({ cellId, dir, targetRoomId: byId.get(edge.targetCellId)?.roomId ?? edge.targetRoomId ?? "?", kind: edge.kind });
+      }
+    }
+  }
+  return strays;
+}
+
+const allChamberRoomIds = (world: (typeof worldRegistry)[string], floorId: string) =>
+  (world.dungeons.find((d) => d.id === floorId)?.rooms ?? [])
+    .filter((r) => (r as { chamberGuardian?: boolean }).chamberGuardian)
+    .map((r) => r.id);
+
+describe("玄室 chamber is a door-choke (T2)", () => {
+  for (const worldId of ["default", "verdant"] as const) {
+    const world = worldRegistry[worldId];
+    it(`${worldId} — every chamberGuardian room's entrances are all door/secret (no open bypass)`, () => {
+      const offenders: string[] = [];
+      for (const floor of world.dungeons) {
+        for (const chamberId of allChamberRoomIds(world, floor.id)) {
+          const strays = chamberOpenEntrances(world, floor.id, chamberId);
+          for (const s of strays) {
+            offenders.push(`${floor.id} / ${chamberId}: ${s.kind} ${s.dir} → ${s.targetRoomId}`);
+          }
+        }
+      }
+      expect(offenders, `open bypasses into guardian chambers:\n${offenders.join("\n")}`).toEqual([]);
+    });
+
+    // T2 (user: 「エンカウントするマスをドア側に移動」): the guardian is fought AT the door — the chamber's
+    // OWN named cell (where begin_room_encounter fires) is entered through a door/secret, not reached by
+    // walking across an open pocket first. So opening the door steps you straight onto the guardian.
+    it(`${worldId} — the guardian cell is entered through a door (fought at the door, not deep)`, () => {
+      const notAtDoor: string[] = [];
+      for (const floor of world.dungeons) {
+        const cells = floor.grid?.cells ?? [];
+        for (const chamberId of allChamberRoomIds(world, floor.id)) {
+          const cell = cells.find((c) => c.roomId === chamberId);
+          const hasDoor = cell && Object.values(cell.edges).some((e) => e && (e.kind === "door" || e.kind === "secret"));
+          if (!hasDoor) notAtDoor.push(`${floor.id} / ${chamberId}`);
+        }
+      }
+      expect(notAtDoor, `guardian cells NOT entered through a door:\n${notAtDoor.join("\n")}`).toEqual([]);
+    });
+  }
+});
+
 describe("玄室 chamber guardians", () => {
   it("data — the early Verdant floors author ≥6 chamberGuardian rooms each", () => {
     for (const floorId of ["dungeon.verdant.g1f", "dungeon.verdant.g2f", "dungeon.verdant.g3f"]) {

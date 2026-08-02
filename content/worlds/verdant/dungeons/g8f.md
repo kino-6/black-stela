@@ -1,9 +1,6 @@
 ---
 id: dungeon.verdant.g8f
 name: G8F - The Green Heart
-locales:
-  ja:
-    name: G8F・緑の心臓
 level: 8
 recommendedPartyLevel: 7
 tags:
@@ -16,16 +13,16 @@ map: |
   #.#..##.#.#.#.#####
   #.................#
   ###.####..#.#######
-  #....B.#..#.#C....#
-  #..##..##.#.#..##.#
+  #....B.#..#.#.....#
+  #..##..##.#.#C.##.#
   #....##.......#...#
   #.#.#####.#.#.#.###
   #.#...#..A.#..#...#
   #.#######..#.####.#
   #.......###...#...#
   ###.#######.#####.#
-  #.......#M.##.....#
-  #.#.###.#..##.###.#
+  #.......#..##.....#
+  #.#.###.#M.##.###.#
   #.#...#s..#...#...#
   #.#####S###.###.#.#
   #.....#X....#1..#2#
@@ -70,10 +67,10 @@ edges:
   - from: room.verdant.g8f.c14_5
     direction: east
     kind: door
-  - from: room.verdant.g8f.c13_6
+  - from: room.verdant.g8f.04
     direction: south
     kind: door
-  - from: room.verdant.g8f.c9_14
+  - from: room.verdant.g8f.keep
     direction: south
     kind: door
 rooms:

@@ -1,9 +1,6 @@
 ---
 id: dungeon.verdant.g4f
 name: G4F - Bark Wards
-locales:
-  ja:
-    name: G4F・樹皮の守り
 level: 4
 recommendedPartyLevel: 3
 tags:
@@ -24,7 +21,7 @@ map: |
   #.#.#.#.#..##.##..#
   #.#.#.#..#..#.#...#
   #.#.###########.#.#
-  #.#...#..M......#.#
+  #.#...#...M.....#.#
   ###.###.#...#######
   #....s#..##.......#
   #.#.#S#.#...#####.#
@@ -84,13 +81,13 @@ edges:
   - from: room.verdant.g4f.04
     direction: north
     kind: door
-  - from: room.verdant.g4f.keep
+  - from: room.verdant.g4f.c9_13
     direction: west
     kind: door
   - from: room.verdant.g4f.c10_14
     direction: east
     kind: door
-  - from: room.verdant.g4f.c10_13
+  - from: room.verdant.g4f.keep
     direction: east
     kind: door
 rooms:

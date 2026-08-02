@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import type { Page } from "@playwright/test";
-import { advanceToB1fMarker, registerAdventurer, resolveVisibleCombat, setTitleLanguage, startNewExpedition } from "./helpers";
+import { advanceToB1fMarker, createStarterParty, registerAdventurer, resolveVisibleCombat, setTitleLanguage, startNewExpedition } from "./helpers";
 
 test("repeat and keyboard commands keep the dungeon loop fast", async ({ page }) => {
   await startNewExpedition(page);
@@ -31,7 +31,10 @@ test("repeat and keyboard commands keep the dungeon loop fast", async ({ page })
 test("combat and town recovery keep the loop playable", async ({ page }) => {
   await startNewExpedition(page);
 
-  await registerAdventurer(page, { name: "Mira" });
+  // A full party — post-T13 a lone Lv1 wipes the B1F marker trek (seed-dependent); a real party survives the
+  // floor, which is what this loop-playability test exercises.
+  await createStarterParty(page);
+  await page.getByRole("button", { name: "Back to town" }).click();
   await page.getByRole("button", { name: "Enter dungeon" }).click();
   await page.keyboard.press("w");
 

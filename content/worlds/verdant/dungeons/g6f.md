@@ -1,9 +1,6 @@
 ---
 id: dungeon.verdant.g6f
 name: G6F - Strangling Oaths
-locales:
-  ja:
-    name: G6F・絞めの誓い
 level: 6
 recommendedPartyLevel: 5
 tags:
@@ -16,15 +13,15 @@ map: |
   #.###.#.#.#.#.....#
   #.......#.........#
   #..####.##..#####.#
-  #...#B....#.#C.#..#
-  ###.#...#####..##.#
+  #...#.B...#.#..#..#
+  ###.#...#####C.##.#
   #.s..##.........#.#
   ##S##########.#####
-  #........A........#
+  #.........A.......#
   #.#.#.#.#..#..#.#.#
   #.#.#.#..##...#.#.#
   #.#########...#...#
-  #.#......M..#.#.#.#
+  #.#.......M.#.#.#.#
   #.#.#.#.#...#.#.#.#
   #2#.#.#.#.#.#.#.#.#
   ###.###.#.###.###.#
@@ -63,34 +60,34 @@ edges:
     direction: south
     kind: secret
     to: room.verdant.g6f.lift
-  - from: room.verdant.g6f.02
+  - from: room.verdant.g6f.c9_9
     direction: west
     kind: door
-  - from: room.verdant.g6f.c10_9
+  - from: room.verdant.g6f.02
     direction: east
     kind: door
   - from: room.verdant.g6f.c6_6
     direction: east
     kind: door
-  - from: room.verdant.g6f.c6_5
+  - from: room.verdant.g6f.03
     direction: east
     kind: door
   - from: room.verdant.g6f.c14_6
     direction: south
     kind: door
-  - from: room.verdant.g6f.c13_6
+  - from: room.verdant.g6f.04
     direction: south
     kind: door
   - from: room.verdant.g6f.c9_14
     direction: south
     kind: door
-  - from: room.verdant.g6f.keep
+  - from: room.verdant.g6f.c9_13
     direction: west
     kind: door
   - from: room.verdant.g6f.c10_14
     direction: east
     kind: door
-  - from: room.verdant.g6f.c10_13
+  - from: room.verdant.g6f.keep
     direction: east
     kind: door
 rooms:

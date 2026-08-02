@@ -233,6 +233,15 @@ function buildFloor(spec) {
   const key = (c) => `${c[0]},${c[1]}`;
   const usedChamber = chambers.slice().sort((a, b) => (dEnt.get(key(b)) ?? 0) - (dEnt.get(key(a)) ?? 0))[0] ?? [9, 9];
   const plainChambers = chambers.filter((c) => key(c) !== key(usedChamber));
+  // T2 (「エンカウントするマスをドア側に」): name each 玄室 on its entrance-NEAREST door (opening) cell, so
+  // opening the door steps straight onto the guardian (begin_room_encounter fires AT the door), not one cell
+  // in. Only the room NAME moves within the already-enclosed 2×2 block — the walls/maze are unchanged.
+  const chamberDoorCell = (coord) => {
+    const ops = chamberOpenings.get(key(coord)) ?? [];
+    if (ops.length === 0) return coord;
+    const best = ops.slice().sort((a, b) => (dEnt.get(`${a[0]},${a[1]}`) ?? 1e9) - (dEnt.get(`${b[0]},${b[1]}`) ?? 1e9))[0];
+    return [best[0], best[1]];
+  };
   // Reward nooks: farthest dead-ends not already used.
   const reserved = new Set([key(entrance), key(exit), key(scFrom), key(scTo), key(usedChamber), ...plainChambers.map(key)]);
   const nooks = cells
@@ -248,12 +257,12 @@ function buildFloor(spec) {
   const symbols = {};
   put(entrance, "E"); symbols.E = rid(n, "001");
   put(exit, "X"); symbols.X = rid(n, "exit");
-  put(usedChamber, "M"); symbols.M = rid(n, "keep");
+  put(chamberDoorCell(usedChamber), "M"); symbols.M = rid(n, "keep");
   // Enough glyphs for every plain chamber to be PLACED on the grid — with only A/B/C, G1–G3's extra chambers
   // were defined as rooms but never put on the map, so export dropped them (playtest:玄室 stayed at 3–4).
   // Avoids the reserved E/X/M/s/S glyphs.
   const chamberGlyphs = ["A", "B", "C", "D", "F", "G", "H"];
-  plainChambers.forEach((c, i) => { put(c, chamberGlyphs[i]); symbols[chamberGlyphs[i]] = rid(n, `0${i + 2}`); });
+  plainChambers.forEach((c, i) => { put(chamberDoorCell(c), chamberGlyphs[i]); symbols[chamberGlyphs[i]] = rid(n, `0${i + 2}`); });
   put(scFrom, "s"); symbols.s = rid(n, "gate");
   put(scTo, "S"); symbols.S = rid(n, "lift");
   nooks.forEach((c, i) => { put(c, String(i + 1)); symbols[String(i + 1)] = rid(n, `nook${i + 1}`); });
@@ -280,8 +289,9 @@ function buildFloor(spec) {
   // 2×2 sits on for the others. floorMap mirrors the reverse side.
   const slug = `verdant.g${n}f`;
   const chamberDoorEdges = (coord, anchorRoomId) => {
+    const named = chamberDoorCell(coord); // the block cell that carries the chamber's NAME (its door cell)
     for (const [by, bx, dir] of chamberOpenings.get(`${coord[0]},${coord[1]}`) ?? []) {
-      const fromId = by === coord[0] && bx === coord[1] ? anchorRoomId : `room.${slug}.c${bx}_${by}`;
+      const fromId = by === named[0] && bx === named[1] ? anchorRoomId : `room.${slug}.c${bx}_${by}`;
       edges.push(`  - from: ${fromId}\n    direction: ${dir}\n    kind: door`);
     }
   };

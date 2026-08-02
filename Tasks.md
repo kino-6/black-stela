@@ -21,15 +21,18 @@ IMP-060/061/062/063/064 completion records in `Improve.md`.
 
 ## Active queue (process top-down)
 
-- [-] **T2 — 玄室の敵出現ポイントを扉に隣接させる** — analysis done, deferred behind clear wins
-  - Encounters trigger on ROOM ENTRY (`begin_room_encounter`), so the guardian is fought at whatever cell
-    you enter the chamber from. The real intent: **a guardian chamber must be a true door-CHOKE** — its only
-    entrance is the sealed door, so the guardian can't be bypassed. If a chamber has an open (non-door)
-    entrance too, the sealed door is meaningless.
-  - Concrete plan: add a **design-gate assertion — every `chamberGuardian`/`keep` room's boundary edges are
-    all door/secret (no plain `open` entrance)** over both worlds; seal any stray entrance a floor exposes
-    (then re-verify the maze design-gate, which asserts sweep/branch metrics). Deferred to avoid a risky
-    maze edit under time pressure; needs a careful design pass.
+- [x] **T2 — 玄室の敵出現ポイントを扉に隣接させる** — DONE
+  - TWO invariants now locked in `chamberGuardian.test.ts` over BOTH worlds: (1) **door-choke** — flood a
+    chamber's OPEN-connected pocket from its cell and assert every edge LEAVING the pocket is door/secret, so
+    the guardian cannot be reached from an open flank (no bypass); (2) **fought AT the door** — the chamber's
+    OWN named cell (where `begin_room_encounter` fires) is entered through a door/secret, so opening the door
+    steps you straight onto the guardian, not one cell in.
+  - The choke already held (the generator encloses each 2×2 玄室 behind doors). The door-ADJACENCY failed for
+    14 verdant chambers (the door had landed on a non-anchor block cell). Fixed in `genVerdantFloors.mjs`
+    (`chamberDoorCell` — name each 玄室 on its entrance-nearest door cell) + regenerated g1f–g8f. Only the
+    room NAME moves within the already-enclosed block — the maze WALLS/graph are unchanged, so balance,
+    connectivity, and parity are untouched (unit 727, verify_verdant_chambers, verify_parity, verify_flow,
+    verdant e2e all green). Default already satisfied both without a change.
 
 - [x] **T3 — 罠は「特定できる/できない」(Wiz式識別)** — DONE
   - A successful investigation now IDENTIFIES the trap: `chest_panel._note` (Godot) + `ChestPanel` note

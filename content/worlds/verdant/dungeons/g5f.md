@@ -1,9 +1,6 @@
 ---
 id: dungeon.verdant.g5f
 name: G5F - Toll of Sap
-locales:
-  ja:
-    name: G5F・樹液の関
 level: 5
 recommendedPartyLevel: 4
 tags:
@@ -16,16 +13,16 @@ map: |
   #.#####.#.###.###.#
   #.....#.#...#.....#
   #...#####.###.#.#.#
-  #.#.#B.##...#C.##.#
-  #.#.#..##.#.#..####
+  #.#.#..##...#C.##.#
+  #.#.#B.##.#.#..####
   #.#.....#....#....#
   #.#.#.#.###.###..##
   #.#.#.#..A.#..#...#
   #.#######..##...#.#
   #........##...#...#
   ###.#.#####.###.#.#
-  #.....#..M.#X.#.#.#
-  #####.###..##.#.###
+  #.....#....#X.#.#.#
+  #####.###M.##.#.###
   #.........#.......#
   #.#####.#.#S##..#.#
   #.....#.#..s..#2#1#
@@ -69,7 +66,7 @@ edges:
   - from: room.verdant.g5f.c6_6
     direction: south
     kind: door
-  - from: room.verdant.g5f.c5_6
+  - from: room.verdant.g5f.03
     direction: south
     kind: door
   - from: room.verdant.g5f.c14_6
@@ -78,10 +75,10 @@ edges:
   - from: room.verdant.g5f.04
     direction: north
     kind: door
-  - from: room.verdant.g5f.keep
+  - from: room.verdant.g5f.c9_13
     direction: west
     kind: door
-  - from: room.verdant.g5f.c9_14
+  - from: room.verdant.g5f.keep
     direction: south
     kind: door
 rooms:

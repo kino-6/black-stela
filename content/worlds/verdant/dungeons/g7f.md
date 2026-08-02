@@ -1,9 +1,6 @@
 ---
 id: dungeon.verdant.g7f
 name: G7F - Heartwood Husks
-locales:
-  ja:
-    name: G7F・心材の殻
 level: 7
 recommendedPartyLevel: 6
 tags:
@@ -16,7 +13,7 @@ map: |
   #.#.###.#####.#.###
   #...#.........#...#
   #.#####.#.###.#.#.#
-  #...#A..#.#..B.##.#
+  #...#.A.#.#..B.##.#
   #.###..######..####
   #...###.......#...#
   ###.###.###.#.#.#.#
@@ -63,7 +60,7 @@ edges:
     direction: east
     kind: secret
     to: room.verdant.g7f.lift
-  - from: room.verdant.g7f.c6_5
+  - from: room.verdant.g7f.02
     direction: east
     kind: door
   - from: room.verdant.g7f.c13_6

@@ -1,9 +1,6 @@
 ---
 id: dungeon.verdant.g3f
 name: G3F - Pollen Cistern
-locales:
-  ja:
-    name: G3F・花粉の水槽
 level: 3
 recommendedPartyLevel: 2
 tags:
@@ -20,12 +17,12 @@ map: |
   ###.#..##.###..##.#
   #....#..#...###.#.#
   #.######..#.###.#.#
-  #....D.##A.##F..#.#
-  ###.#..##..##...#.#
+  #....D.##A.##...#.#
+  ###.#..##..##.F.#.#
   #....#..##..###...#
   #.#.###########.###
-  #.#.#G.##M.##H....#
-  #.###..##......####
+  #.#.#..##..##.H...#
+  #.###G.##.M....####
   #...#..s###.##....#
   ###.#.#S#...#..##.#
   #.....#X....#2#1..#
@@ -91,13 +88,13 @@ edges:
   - from: room.verdant.g3f.c14_9
     direction: east
     kind: door
-  - from: room.verdant.g3f.c14_10
+  - from: room.verdant.g3f.06
     direction: east
     kind: door
   - from: room.verdant.g3f.c6_14
     direction: south
     kind: door
-  - from: room.verdant.g3f.c5_14
+  - from: room.verdant.g3f.07
     direction: south
     kind: door
   - from: room.verdant.g3f.c13_14
@@ -106,10 +103,10 @@ edges:
   - from: room.verdant.g3f.c14_14
     direction: south
     kind: door
-  - from: room.verdant.g3f.c14_13
+  - from: room.verdant.g3f.08
     direction: east
     kind: door
-  - from: room.verdant.g3f.c10_14
+  - from: room.verdant.g3f.keep
     direction: east
     kind: door
 rooms:
@@ -121,18 +118,18 @@ rooms:
         name: 根の踊り場
         description: 根の絡む踊り場。階段が上の階へと登っていく。
   - id: room.verdant.g3f.02
-    name: Pollen Drift
-    description: Yellow pollen sifts down through the canopy and settles on the still green water.
+    name: Green Chamber 1
+    description: A chamber where the canopy-light pools green on standing water.
     chamberGuardian: true
     encounterTable: encounters.verdant.g3.pack
     treasureTable: treasure.verdant.g3.side
     locales:
       ja:
-        name: 花粉溜まりの間
-        description: 樹冠から黄の花粉が降り、淀む翠水の上に厚く積もる間。
+        name: 翠の間 1
+        description: 樹冠の光が水面に翠色を落とす間。
   - id: room.verdant.g3f.03
-    name: Sunken Reservoir
-    description: A drowned reservoir; drowned shelving juts from the water, and one shelf still holds a box.
+    name: Green Chamber 2
+    description: A chamber where the canopy-light pools green on standing water.
     chamberGuardian: true
     encounterTable: encounters.verdant.g3.pack
     chest:
@@ -143,21 +140,21 @@ rooms:
         damage: 6
     locales:
       ja:
-        name: 沈んだ貯水室
-        description: 水没した貯水室。棚が水面から突き出し、一段に箱が残る。
+        name: 翠の間 2
+        description: 樹冠の光が水面に翠色を落とす間。
   - id: room.verdant.g3f.04
-    name: Golden Haze
-    description: The pollen hangs so dense it glows gold in the canopy-light — and clogs every breath.
+    name: Green Chamber 3
+    description: A chamber where the canopy-light pools green on standing water.
     chamberGuardian: true
     encounterTable: encounters.verdant.g3.pack
     treasureTable: treasure.verdant.g3.side
     locales:
       ja:
-        name: 黄金の靄の間
-        description: 花粉が濃く、樹冠の光に金色に燃え、呼吸を詰まらせる間。
+        name: 翠の間 3
+        description: 樹冠の光が水面に翠色を落とす間。
   - id: room.verdant.g3f.05
-    name: Mossed Conduit
-    description: A broken feed-pipe furred with moss; a dry alcove behind it kept something safe.
+    name: Green Chamber 4
+    description: A chamber where the canopy-light pools green on standing water.
     chamberGuardian: true
     encounterTable: encounters.verdant.g3.pack
     chest:
@@ -168,21 +165,21 @@ rooms:
         damage: 6
     locales:
       ja:
-        name: 苔生す導管
-        description: 苔むした破れた送水管。その裏の乾いた窪みが何かを守っていた。
+        name: 翠の間 4
+        description: 樹冠の光が水面に翠色を落とす間。
   - id: room.verdant.g3f.06
-    name: Overflow Hall
-    description: Water spills in a slow sheet across the floor and vanishes into unseen drains.
+    name: Green Chamber 5
+    description: A chamber where the canopy-light pools green on standing water.
     chamberGuardian: true
     encounterTable: encounters.verdant.g3.pack
     treasureTable: treasure.verdant.g3.side
     locales:
       ja:
-        name: 溢水の広間
-        description: 床を薄く水が流れ、見えぬ排水へと消えていく広間。
+        name: 翠の間 5
+        description: 樹冠の光が水面に翠色を落とす間。
   - id: room.verdant.g3f.07
-    name: Pollen Cache
-    description: Pollen has drifted into a dune against the far wall, half-burying a strongbox.
+    name: Green Chamber 6
+    description: A chamber where the canopy-light pools green on standing water.
     chamberGuardian: true
     encounterTable: encounters.verdant.g3.pack
     chest:
@@ -193,18 +190,18 @@ rooms:
         damage: 6
     locales:
       ja:
-        name: 花粉の蔵
-        description: 奥壁に花粉が吹き溜まって丘をなし、金庫を半ば埋めている。
+        name: 翠の間 6
+        description: 樹冠の光が水面に翠色を落とす間。
   - id: room.verdant.g3f.08
-    name: Dry Cistern
-    description: The one tank that never filled — cracked, empty, and silent but for the drip.
+    name: Green Chamber 7
+    description: A chamber where the canopy-light pools green on standing water.
     chamberGuardian: true
     encounterTable: encounters.verdant.g3.pack
     treasureTable: treasure.verdant.g3.side
     locales:
       ja:
-        name: 涸れ水槽の間
-        description: 満ちなかった唯一の槽。ひび割れ、空で、滴の音だけが響く間。
+        name: 翠の間 7
+        description: 樹冠の光が水面に翠色を落とす間。
   - id: room.verdant.g3f.keep
     name: Bloom Warden
     description: A close, root-walled keep; the only way deeper passes through it.
