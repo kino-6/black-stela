@@ -17,8 +17,13 @@ export const ja = {
     sfxEnabled: "効果音（決定・キャンセル・カーソル）"
   },
   beat: {
-    hit: "{actor}の攻撃！ {target}に{damage}のダメージ",
-    crit: "{actor}の会心の一撃！ {target}に{damage}のダメージ",
+    hit: "{actor}が{target}に{verb}。 {target}に{damage}ダメージ！",
+    verbSlash: "切りかかった",
+    verbCut: "斬り込んだ",
+    verbCharge: "突き進んだ",
+    verbStrike: "打ちかかった",
+    verbCrit: "会心の一撃を叩き込んだ",
+    verbGeneric: "攻撃した",
     skill: "{actor}の{ability}！ {target}に{damage}のダメージ",
     weak: "（弱点！）",
     cast: "{actor}は{ability}を唱えた",

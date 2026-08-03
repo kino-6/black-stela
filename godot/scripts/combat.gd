@@ -582,12 +582,12 @@ func _playback(before: Dictionary, events: Array, animated: bool) -> void:
 				var actor := String((beat as Dictionary).get("actorName", ""))
 				var target_name := String(snap.get("name", ""))
 				var crit := bool((beat as Dictionary).get("crit", false))
-				# 1) the action, past tense ("リオ が 棘虫 に 切りかかった。")
-				_set_log("%s が %s に%s。" % [actor, target_name, _attack_verb(actor, crit)])
+				# 1) the action, past tense ("リオが棘虫に切りかかった。") — wording mirrors React's beat.hit
+				_set_log("%sが%sに%s。" % [actor, target_name, _attack_verb(actor, crit)])
 				await get_tree().create_timer(0.24).timeout
 				# 2) the damage: floating number on the creature + a popup-style line with ！
 				_spawn_damage_number_at(dmg, float(snap.get("x_frac", 0.5)), crit)
-				_set_log("%s に %d ダメージ！" % [target_name, dmg])
+				_set_log("%sに%dダメージ！" % [target_name, dmg])
 				await get_tree().create_timer(0.34).timeout
 		else:
 			# Fallback (no beats): per-GROUP reconstruction from before/after.

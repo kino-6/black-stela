@@ -71,6 +71,21 @@ export const SPELL_LABEL: Record<NonNullable<CombatBeat["spellId"]>, Translation
   "backstab": "play.spellBackstab"
 };
 
+// Past-tense attack verbs, mirrored with the Godot combat log (combat.gd `_attack_verb`): a member's
+// blow is narrated in past tense — then its damage lands as "…に N ダメージ！" (the number also pops on
+// the creature). Stable per actor (a hash of the name) so an adventurer always swings the same way — it
+// reads as their style, not random — with a distinct line for a crit. Presentation only; the numbers
+// come from the beat and the parity oracle ignores beat text, so this need not byte-match the engine —
+// only the wording/structure, so a future refactor keeps one shared shape across both engines.
+const ATTACK_VERB_KEYS: TranslationKey[] = ["beat.verbSlash", "beat.verbCut", "beat.verbCharge", "beat.verbStrike"];
+function attackVerbKey(actor: string, crit: boolean): TranslationKey {
+  if (crit) return "beat.verbCrit";
+  if (!actor) return "beat.verbGeneric";
+  let h = 0;
+  for (let i = 0; i < actor.length; i += 1) h = (h * 31 + actor.charCodeAt(i)) | 0;
+  return ATTACK_VERB_KEYS[Math.abs(h) % ATTACK_VERB_KEYS.length];
+}
+
 const STATUS_LABEL: Record<string, TranslationKey> = {
   sleep: "beat.statusSleep",
   poison: "beat.statusPoison",
@@ -100,7 +115,7 @@ export function formatCombatBeat(
       if (beat.spellId) {
         return t("beat.skill", { actor, ability, target, damage }) + (beat.weak ? t("beat.weak") : "");
       }
-      return beat.crit ? t("beat.crit", { actor, target, damage }) : t("beat.hit", { actor, target, damage });
+      return t("beat.hit", { actor, target, damage, verb: t(attackVerbKey(actor, !!beat.crit)) });
     case "cast":
       if (beat.damage != null) {
         return t("beat.skill", { actor, ability, target, damage }) + (beat.weak ? t("beat.weak") : "");

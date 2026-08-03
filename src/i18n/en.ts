@@ -15,8 +15,13 @@ export const en = {
     sfxEnabled: "Sound effects (confirm / cancel / cursor)"
   },
   beat: {
-    hit: "{actor} strikes {target} for {damage}.",
-    crit: "{actor} lands a critical hit on {target} for {damage}!",
+    hit: "{actor} {verb} {target}. {damage} damage!",
+    verbSlash: "slashed at",
+    verbCut: "cut into",
+    verbCharge: "charged",
+    verbStrike: "struck at",
+    verbCrit: "landed a critical blow on",
+    verbGeneric: "attacked",
     skill: "{actor}'s {ability} hits {target} for {damage}.",
     weak: " Weak point!",
     cast: "{actor} casts {ability} on {target}.",
