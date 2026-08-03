@@ -37,5 +37,8 @@ and baked scene lighting.
   claim that renaming or silently reusing six silhouettes completes the deep roster.
 - F3–F10 still need their own guardians, facilities, return stills, and enemy batches. Do not solve that
   gap with Default fallback art or by duplicating a generated silhouette under a new enemy id.
+- The F2–F10 equipment ladder is now canonical scenario data. Its own-basename 256² icons are deliberately
+  **not yet generated**: until the W4 icon batch lands, normal inventory uses the resolver's temporary
+  fallback rather than claiming that the new equipment has bespoke visual coverage.
 - `item.tl-universal-round` has an icon and data now; shared-ammunition consumption and alert state remain
   W3a rules work, not a fake visual feature in this asset pack.

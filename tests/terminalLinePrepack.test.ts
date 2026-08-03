@@ -103,4 +103,23 @@ describe("Terminal Line F1–F10 canonical pack", () => {
       expect(existsSync(resolve(root, relative))).toBe(true);
     }
   });
+
+  it("carries a Terminal Line-only equipment ladder through the F10 rewards", () => {
+    const result = loadScenarioPack(packFiles());
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    const equipment = result.world.equipment;
+    expect(equipment.length).toBeGreaterThanOrEqual(20);
+    expect(equipment.every((piece) => piece.id.startsWith("equip.tl-"))).toBe(true);
+    expect(new Set(equipment.map((piece) => piece.slot))).toEqual(
+      new Set(["weapon", "offhand", "body", "head", "hands", "accessory"])
+    );
+    expect(new Set(equipment.map((piece) => piece.tier))).toEqual(new Set([1, 2, 3, 4, 5, 6]));
+
+    const terminus = result.world.treasureTables.find((table) => table.id === "treasure.tl10f.terminus-cache");
+    expect(terminus?.entries.map((entry) => entry.itemId)).toEqual(expect.arrayContaining([
+      "equip.tl-platform-zero-plate", "equip.tl-zero-line-conductor", "equip.tl-end-marker-signet"
+    ]));
+  });
 });
