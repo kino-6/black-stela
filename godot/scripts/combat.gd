@@ -515,12 +515,11 @@ func _resolve_round(animated: bool) -> void:
 		_busy = false
 		return
 
-	# Play the round out member-by-member BEFORE the result so it has weight and the player can read what
-	# happened — the aggregate one-flash jump to the victory screen gave no time to learn (playtest IMP-064:
-	# 「一瞬で遷移して知見がたまらない」). Presentation only; no fabricated numbers, the rules are untouched.
-	if animated:
-		await _narrate_all_out()
-
+	# The round plays out member-by-member inside _playback (each beat narrates the actor's blow THEN lands
+	# its damage), so the fight has weight and the player can read what happened instead of the aggregate
+	# one-flash jump to the victory screen (playtest IMP-064: 「一瞬で遷移して知見がたまらない」). The old
+	# upfront _narrate_all_out pass fired every "斬りかかる" before any damage, desyncing action from number;
+	# the per-beat narration below keeps each verb next to its own popup.
 	var result := CombatRound.declare_round(_state, _world, actions, _engine)
 	var events: Array = result.get("events", [])
 	_state = result.get("state", _state)
@@ -530,20 +529,17 @@ func _resolve_round(animated: bool) -> void:
 	await _playback(before, events, animated)
 	_busy = false
 
-# Narrate the all-out round member-by-member, so 全員でかかる visibly plays out instead of snapping to the
-# result. Presentation only — it reads the pre-resolution party (all living members attack), sets one beat
-# per member, and pulses the target. No fabricated numbers; the real damage/defeat still land in _playback.
-func _narrate_all_out() -> void:
-	var target := _first_group()
-	var enemy_name := _enemy_ja(target) if not target.is_empty() else ""
-	for member in _state.get("party", []):
-		if int(member.get("hp", 0)) <= 0:
-			continue
-		if enemy_name != "":
-			_set_log("%s が %s に斬りかかる。" % [String(member.get("name", "?")), enemy_name])
-		else:
-			_set_log("%s の攻撃！" % String(member.get("name", "?")))
-		await get_tree().create_timer(0.32).timeout
+# Past-tense action verb for a member's blow, narrated a beat before its damage lands. Stable per actor
+# (a hash of the name) so a given adventurer always swings the same way — it reads as their style, not
+# random flavour — with a distinct line for a crit. This is presentation copy; the real numbers come from
+# the beat, not from here.
+const _ATTACK_VERBS := ["切りかかった", "斬り込んだ", "突き進んだ", "打ちかかった"]
+func _attack_verb(actor: String, crit: bool) -> String:
+	if crit:
+		return "会心の一撃を叩き込んだ"
+	if actor == "":
+		return "攻撃した"
+	return _ATTACK_VERBS[abs(actor.hash()) % _ATTACK_VERBS.size()]
 
 # Build one attack per living member at the first living enemy group (the slice's all-out round).
 func _all_out_actions() -> Array:
@@ -576,14 +572,23 @@ func _playback(before: Dictionary, events: Array, animated: bool) -> void:
 	if animated:
 		var beats := _round_beats(events)
 		if not beats.is_empty():
-			# Per-MEMBER beats (誰が→何に→どれだけ): one number per landed hit, on the struck creature.
+			# Per-MEMBER beats (誰が→何に→どれだけ): narrate the actor's completed blow, THEN land the number
+			# on the struck creature. Two steps, in that order, so the past-tense verb and its damage popup
+			# read together instead of every "斬りかかる" firing before any damage (playtest desync feedback).
 			for beat in beats:
 				var gid := String((beat as Dictionary).get("targetGroupId", ""))
 				var snap: Dictionary = before.get(gid, {})
 				var dmg := int((beat as Dictionary).get("damage", 0))
-				_spawn_damage_number_at(dmg, float(snap.get("x_frac", 0.5)), bool((beat as Dictionary).get("crit", false)))
-				_set_log("%s → %s に %d ダメージ。" % [String((beat as Dictionary).get("actorName", "")), String(snap.get("name", "")), dmg])
-				await get_tree().create_timer(0.3).timeout
+				var actor := String((beat as Dictionary).get("actorName", ""))
+				var target_name := String(snap.get("name", ""))
+				var crit := bool((beat as Dictionary).get("crit", false))
+				# 1) the action, past tense ("リオ が 棘虫 に 切りかかった。")
+				_set_log("%s が %s に%s。" % [actor, target_name, _attack_verb(actor, crit)])
+				await get_tree().create_timer(0.24).timeout
+				# 2) the damage: floating number on the creature + a popup-style line with ！
+				_spawn_damage_number_at(dmg, float(snap.get("x_frac", 0.5)), crit)
+				_set_log("%s に %d ダメージ！" % [target_name, dmg])
+				await get_tree().create_timer(0.34).timeout
 		else:
 			# Fallback (no beats): per-GROUP reconstruction from before/after.
 			for hit in struck:
