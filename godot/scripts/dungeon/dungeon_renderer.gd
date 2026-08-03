@@ -69,6 +69,11 @@ static func _build_geometry(parent: Node, world: Dictionary, state: Dictionary, 
 		ceil_mat.emission = ceil_col
 		ceil_mat.emission_energy_multiplier = 0.2
 	var chamber_wall_mat := _textured_mat(block["wall"], Color(String(pal.get("chamberWall", "a18e62"))))
+	# The DOOR FRAME reads as pale dressed STONE, distinct from the world's wall (verdant's green vine), so a
+	# closed 玄室 door announces "a built, sealed room ahead" from the approach rather than blending into the
+	# corridor (Codex 2026-08-03). A SOLID pale stone (tinting the dark vine texture only multiplied back to
+	# green); a scenario can override `chamberFrame`.
+	var chamber_frame_mat := _mat(Color(String(pal.get("chamberFrame", "cdbfa2"))))
 	var chamber_accent := Color(String(pal.get("chamberAccent", "c9a765")))
 	var chamber_seal_path := _asset(world, run, "dungeon/chamber-floor-seal.png")
 	# `door` remains a walkable edge in the rules. Its visual is a rooted, opened threshold: enough to
@@ -157,7 +162,7 @@ static func _build_geometry(parent: Node, world: Dictionary, state: Dictionary, 
 						rendered_doors[door_key] = true
 						# CLOSED until opened this floor visit (bump-to-open) — a closed door hides the room.
 						var opened := (state.get("openedDoors", []) as Array).has("door:%s:%s" % [String(cell.get("roomId", "")), dir])
-						_add_door(parent, door_mat, chamber_wall_mat, chamber_accent, base, dir, opened)
+						_add_door(parent, door_mat, chamber_frame_mat, chamber_wall_mat, chamber_accent, base, dir, opened)
 			if landmark_chamber:
 				# A CLEARED 玄室 (its guarded chest is out, or already claimed) calms its landmark so victory reads
 				# at a glance (playtest: the room looked unchanged after the fight).
@@ -168,7 +173,10 @@ static func _build_geometry(parent: Node, world: Dictionary, state: Dictionary, 
 						if String((ch as Dictionary).get("roomId", "")) == rid:
 							cleared = true
 							break
-				_add_chamber_landmarks(parent, base, chamber_wall_mat, chamber_accent, wall_height, cleared, chamber_seal_path)
+				# Pass the PALE FRAME stone (not the green wall) for the crown + corner stones, so the room's
+				# built elements read as dressed stone consistent with its doorway — the interior says "room",
+				# not "green corridor" (Codex 2026-08-03), without adding any new floating prop.
+				_add_chamber_landmarks(parent, base, chamber_frame_mat, chamber_accent, wall_height, cleared, chamber_seal_path)
 			# The pack ships stair-up/stair-down art; draw it so a stair cell is VISIBLE in the first-person
 			# view instead of a plain dead-end the 階段を使う command only hints at (playtest: asset delivered,
 			# never rendered).
@@ -420,7 +428,7 @@ static func _add_chamber_floor_seal(parent: Node, base: Vector3, seal_path: Stri
 	decal.position = base + Vector3(0, 0.012, 0)
 	parent.add_child(decal)
 
-static func _add_door(parent: Node, door_mat: Material, frame_mat: Material, _accent: Color, base: Vector3, dir: String, opened: bool = true) -> void:
+static func _add_door(parent: Node, door_mat: Material, frame_mat: Material, wall_mat: Material, _accent: Color, base: Vector3, dir: String, opened: bool = true) -> void:
 	# A door edge is still traversable by the rules, so draw the two living leaves already pushed aside.
 	# The player sees an intentional threshold and can pass through its centre; no state or collision rule is
 	# changed here. This is the Godot counterpart of the Web renderer's wood-door material and frame.
@@ -441,21 +449,25 @@ static func _add_door(parent: Node, door_mat: Material, frame_mat: Material, _ac
 
 	# Threshold frame: intentionally broad but not a wall. It makes the entrance read from a distance even
 	# when the door texture is dark, while its colour follows the chamber/world palette rather than a UI gold.
+	# A CHUNKY dressed-STONE surround: broad jambs, a deep lintel, and a raised keystone above it, so the
+	# threshold reads as built architecture head-on (Codex: 石枠・楣を主役に). Frame material is pale stone,
+	# distinct from the wall, and stands slightly PROUD of the wall plane (z = -0.06) so it catches the light.
 	for spec in [
-		{"size": Vector3(0.16, 2.58, 0.18), "pos": Vector3(-1.08, 1.29, 0)},
-		{"size": Vector3(0.16, 2.58, 0.18), "pos": Vector3(1.08, 1.29, 0)},
-		{"size": Vector3(2.32, 0.16, 0.18), "pos": Vector3(0, 2.50, 0)},
+		{"size": Vector3(0.30, 2.70, 0.30), "pos": Vector3(-1.05, 1.35, -0.06)},   # left jamb
+		{"size": Vector3(0.30, 2.70, 0.30), "pos": Vector3(1.05, 1.35, -0.06)},    # right jamb
+		{"size": Vector3(2.52, 0.34, 0.32), "pos": Vector3(0, 2.62, -0.06)},       # lintel
+		{"size": Vector3(0.70, 0.30, 0.34), "pos": Vector3(0, 2.92, -0.08)},       # keystone
 	]:
 		_add_box(root, spec["size"], frame_mat, spec["pos"])
 
 	# Embed the door in the surrounding WALL so it does not read as a free-standing frame edge-on: fill the
-	# header (lintel → ceiling) and the two jamb strips (frame post → cell edge) with wall material, spanning
-	# the full cell so it meets the neighbouring walls. Without this the door edge is see-through above and
-	# beside the frame from an adjacent cell (playtest 2026-07-29).
+	# header (lintel → ceiling) and the two jamb strips (frame post → cell edge) with WALL material (not the
+	# pale frame stone — otherwise a pale patch floats in the vine wall). Spans the full cell so it meets the
+	# neighbouring walls (playtest 2026-07-29: door edge was see-through above/beside the frame).
 	var header_bottom := 2.42 # lintel underside
-	_add_box(root, Vector3(CELL, WALL_H - header_bottom, 0.16), frame_mat, Vector3(0, (header_bottom + WALL_H) / 2.0, 0))
+	_add_box(root, Vector3(CELL, WALL_H - header_bottom, 0.16), wall_mat, Vector3(0, (header_bottom + WALL_H) / 2.0, 0))
 	for side in [-1.0, 1.0]:
-		_add_box(root, Vector3(CELL / 2.0 - 1.16, header_bottom, 0.16), frame_mat, Vector3(side * (1.16 + CELL / 2.0) / 2.0, header_bottom / 2.0, 0))
+		_add_box(root, Vector3(CELL / 2.0 - 1.16, header_bottom, 0.16), wall_mat, Vector3(side * (1.16 + CELL / 2.0) / 2.0, header_bottom / 2.0, 0))
 
 	# CLOSED (玄室 not yet opened): the two leaves MEET in the centre and fill the threshold, hiding the room
 	# beyond — the Wiz "what's behind the door?" beat (bump-to-open swings them aside). OPENED: the leaves are
