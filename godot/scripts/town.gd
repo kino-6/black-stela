@@ -636,13 +636,22 @@ func _service_ctx() -> Dictionary:
 func _build_service() -> void:
 	for child in _service_layer.get_children():
 		child.queue_free()
+	# A service still is only worth authoring when it survives the reading surface.  The forge's low-key
+	# fire and anvil can show through the otherwise dark counter body; its rows/buttons remain opaque, so
+	# controller focus and Japanese text contrast are unchanged.  Other services keep the shared opaque
+	# counter treatment until they have an art-directed reason to differ.
+	var blacksmith_backdrop := _service == "blacksmith"
 	var scrim := ColorRect.new()
-	scrim.color = Color(0, 0, 0, 0.78)
+	# The town scene already has a 0.62 atmosphere scrim.  Stacking the normal service 0.78 scrim on
+	# top would make a dedicated forge still mathematically invisible, so only this service uses a light
+	# second veil.  The panel and row cards still supply the reading contrast.
+	scrim.color = Color(0, 0, 0, 0.18 if blacksmith_backdrop else 0.78)
 	scrim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_service_layer.add_child(scrim)
 
 	var panel := PanelContainer.new()
-	panel.add_theme_stylebox_override("panel", UI.panel_style(UI.PANEL_BG, UI.GOLD))
+	var panel_bg := Color("14180f66") if blacksmith_backdrop else UI.PANEL_BG
+	panel.add_theme_stylebox_override("panel", UI.panel_style(panel_bg, UI.GOLD))
 	panel.position = Vector2(90, 60)
 	panel.custom_minimum_size = Vector2(1740, 960)
 	_service_layer.add_child(panel)

@@ -55,17 +55,15 @@ IMP-060/061/062/063/064 completion records in `Improve.md`.
   ついでにログの敵名が英語漏れ（「Spore Gnat」→「胞子蝿」）— beatのtargetNameをローカライズ名にする。
   - **Gate:** `verify_combat_*` にビートごとの手番ポートレート＝行動者、ログ敵名がローカライズ、を追加。
 
-- [-] **T28 — 鍛冶屋の専用スチル（Codex 作画依頼）** — 鍛冶屋は市場(market-workshop.png)の背景を借りている
-  だけで、施療院のような専用スチルが無い。**配線は完了**（`_service_still()`→`ui/blacksmith.png`、無ければ
-  市場→hub フォールバック、`14fafd2`）。**スチル欠落を検出する Gate も追加**：`verify_town_stills.gd`
-  （gate:migration に組込み）が各世界の location/service スチルを走査し、欠けは WARNING、必須の hub 欠落のみ
-  FAIL。現状 `blacksmith.png` 欠落で 2 WARNING（default/verdant）。
-  - **Codex への作画依頼（art-lane）:** `blacksmith.png` — **炉・鉄床・工具の並ぶ鍛冶場**の情景スチル。
-    トーン/画角は既存の `infirmary.png` / `market-workshop.png` に合わせる（黒碑=石造の炉、翠碑=蔦の絡む炉、
-    など世界別があれば理想。無ければ default に1枚置けば両世界が継承）。パネル背後で暗く落として表示されるので
-    中央〜下部に主役、上部は暗めでよい。置き場所：`content/worlds/<world>/assets/ui/blacksmith.png`
-    （または `content/worlds/default/assets/ui/blacksmith.png`）→ `npm run export:packs` で反映、自動表示。
-  - **Gate:** `verify_town_stills`（欠落を WARNING で可視化・hub 欠落は FAIL）。スチルの見た目は Codex サインオフ。
+- [x] **T28 — 鍛冶屋の専用スチル** — DONE (Codex art-lane, 2026-08-03): 1600×900 の世界別スチルを納品。
+  Default は煤けた石造の炉・鉄床・工具、Verdant は根と土炉・木床の工房で、既存の施療院／市場スチルと同じ
+  広い室内・線画を残す絵画調に揃えた。`content/worlds/{default,verdant}/assets/ui/blacksmith.png` に置き、
+  `npm run export:godot` でステージング済み。二重スクリーンでスチルが消えていたため、鍛冶屋だけは追加scrimと
+  外枠を半透明にし、行カード・ボタンの可読性を変えず炉／鉄床が読めるようにした。
+  - **Evidence:** `docs/evidence/t28-blacksmith-stills-2026-08-03/`（Default affordable / at-cap、Verdant at-cap、
+    いずれも1920×1080実機キャプチャ）。
+  - **Gate:** `verify_town_stills` 0 warning / 0 failure（両世界の専用スチルを検出）、`verify_town_controller` 緑、
+    Godot clean boot 緑。T28の新規missing-still Gate は以後も `gate:migration` で追跡する。
 
 - [x] **T27 — 町メニュー：開けない＋トグル表示バグ** — DONE: (a) `menu` アクション(Tab)で町ルートから
   メニュー開閉、さらに町ルートの `cancel` でも開く（迷宮の「キャンセル→メニュー」と統一、cancel が必ず解決）。

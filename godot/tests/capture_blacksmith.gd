@@ -3,7 +3,7 @@ extends SceneTree
 ## the controller/rules were signed off, but no blacksmith screenshot was in the evidence set). Mirrors
 ## capture_ux_evidence.gd exactly: instantiate town.tscn, inject a UX fixture, open the blacksmith service,
 ## grab the frame. MUST run WITHOUT --headless (a headless viewport yields a null image):
-##   godot --path godot/ --script res://tests/capture_blacksmith.gd -- /absolute/out-dir
+##   godot --path godot/ --script res://tests/capture_blacksmith.gd -- /absolute/out-dir [world_id]
 ## Writes <dir>/_blacksmith-<state>.png for three representative states.
 
 const UxFixture := preload("res://tests/ux_fixture.gd")
@@ -11,6 +11,7 @@ const UxFixture := preload("res://tests/ux_fixture.gd")
 func _initialize() -> void:
 	var args := OS.get_cmdline_user_args()
 	var out_dir := String(args[0]) if not args.is_empty() else "res://tests"
+	var world_id := String(args[1]) if args.size() > 1 else ""
 	var states := [
 		# a populated, affordable screen — every member wears all six slots, 400g covers each 30g forge
 		{"tag": "affordable", "fixture": {"partyGold": 400, "__wearAll": true}},
@@ -29,6 +30,10 @@ func _initialize() -> void:
 		get_root().add_child(root)
 		for _f in 8:
 			await process_frame
+		if world_id != "" and root.has_method("set_world_override"):
+			root.call("set_world_override", world_id)
+			for _f in 4:
+				await process_frame
 		if root.has_method("set_state_override"):
 			root.call("set_state_override", UxFixture.build(st["fixture"]))
 			for _f in 4:
