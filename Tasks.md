@@ -376,3 +376,17 @@ IMP-060/061/062/063/064 completion records in `Improve.md`.
 
 - [x] **T1 (IMP-064) 全員でかかる instant → beat-by-beat** — all-out narrates each living attacker before
   the real damage/defeat, no longer snapping to the result. Gate: `verify_combat_controller` green. `e8fd07f`.
+
+- [x] **Continue crash — world.default.json not found** — a save stores world id "world.default" but packs
+  are keyed "default.json"; continue loaded an empty world and crashed. `run_state._read_world` resolves
+  either form; `load_slot` normalises world_id to the KEY. `verify_save` green. `26a474a`.
+
+- [x] **Dungeon camera pull-back (tunable) + 玄室 wood door frame** — faced wall/door filled the whole frame;
+  slide the eye back from cell-centre (palette `cameraPullback`, clamped 1.2m) + widen `cameraFov`, so the
+  door frame and room read as context. Also reverted the glowing pale 玄室 frame to wood-textured jambs+lintel.
+  Controller + save gates green; visually confirmed. `61760a1`.
+
+- [x] **Combat log timing/wording — past-tense verb THEN damage popup** — the all-out round fired every
+  present-tense "斬りかかる" upfront, desyncing action from damage. Now each beat narrates the actor's
+  completed blow ("…に切りかかった。") then lands the popup line ("…に N ダメージ！") + floating number.
+  `verify_combat_numbers` + `verify_parity` green. `cb5336c`.
