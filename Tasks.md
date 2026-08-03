@@ -388,4 +388,10 @@ IMP-060/061/062/063/064 completion records in `Improve.md`.
 - [x] **Combat log timing/wording — past-tense verb THEN damage popup** — the all-out round fired every
   present-tense "斬りかかる" upfront, desyncing action from damage. Now each beat narrates the actor's
   completed blow ("…に切りかかった。") then lands the popup line ("…に N ダメージ！") + floating number.
-  `verify_combat_numbers` + `verify_parity` green. `cb5336c`.
+  React combat log aligned to the same wording/verb pool (i18n-localized). `verify_combat_numbers` +
+  `verify_parity` + 733 unit + combat e2e green. `cb5336c`, `9051ae8`.
+
+- [x] **T9/T13 held-evidence supplied** (Codex 2026-08-03 holds were missing evidence, not defects) —
+  T9 鍛冶屋 real-build capture (`capture_blacksmith.gd` + 3 shots in `docs/evidence/t9-blacksmith-2026-08-03/`,
+  self-verified); T13 no-purchase-vs-purchased B1F play record (sim:balance troughs + browser player-clear).
+  Handoff: `docs/handoffs/2026-08-03-t9-t13-evidence.md`. `c006e43`. **Codex visual/feel sign-off pending.**
