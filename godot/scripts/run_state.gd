@@ -40,8 +40,8 @@ func load_slot(slot: int) -> bool:
 	var envelope: Dictionary = loaded.get("envelope", {})
 	var saved_world := String((envelope.get("scenario", {}) as Dictionary).get("worldId", ""))
 	if saved_world != "":
-		world_id = saved_world
-	world = read_json("res://data/worlds/%s.json" % world_id).get("world", {})
+		world_id = _world_key(saved_world)  # normalise to the pack KEY so asset paths + re-saves stay correct
+	world = _read_world(world_id).get("world", {})
 	engine = read_json("res://data/engine-data.json")
 	character_data = read_json("res://data/character-data.json")
 	last_rewards = {}
@@ -96,7 +96,7 @@ func ensure_loaded() -> void:
 	reset()
 
 func reset() -> void:
-	world = read_json("res://data/worlds/%s.json" % world_id).get("world", {})
+	world = _read_world(world_id).get("world", {})
 	engine = read_json("res://data/engine-data.json")
 	character_data = read_json("res://data/character-data.json")
 	# The adventurer party is world-agnostic (generic classes) — reuse the exploration fixture's six.
@@ -119,3 +119,26 @@ static func read_json(path: String) -> Dictionary:
 		return {}
 	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(path))
 	return parsed if typeof(parsed) == TYPE_DICTIONARY else {}
+
+# Resolve a world PACK by the id a save stored. Packs are named by the registry KEY (default.json), but a
+# save stores the world's full `id` ("world.default", exactly as React's toSaveDataV1 does). So a continued
+# save asked for `world.default.json`, which does not exist, and the world loaded empty (crash on continue).
+# Try the id verbatim first (a key-based save), then strip a leading "world." (an id-based save).
+static func _read_world(world_id: String) -> Dictionary:
+	var direct := "res://data/worlds/%s.json" % world_id
+	if FileAccess.file_exists(direct):
+		return read_json(direct)
+	if world_id.begins_with("world."):
+		var keyed := "res://data/worlds/%s.json" % world_id.substr(6)
+		if FileAccess.file_exists(keyed):
+			return read_json(keyed)
+	push_error("[run] no world pack for '%s'" % world_id)
+	return {}
+
+# The pack KEY for a saved world id: verbatim if that pack exists, else the "world."-stripped form.
+static func _world_key(world_id: String) -> String:
+	if FileAccess.file_exists("res://data/worlds/%s.json" % world_id):
+		return world_id
+	if world_id.begins_with("world.") and FileAccess.file_exists("res://data/worlds/%s.json" % world_id.substr(6)):
+		return world_id.substr(6)
+	return world_id
