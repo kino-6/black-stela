@@ -45,9 +45,16 @@ IMP-060/061/062/063/064 completion records in `Improve.md`.
   `_grab_focus_safe`ガード、`_ensure_focus_in`のviewport null塞ぎ。**新Gate `gate:godot-runtime`**（scripts/
   godot-runtime-gate.mjs：controller/loop scenes をheadless起動しSCRIPT ERROR系シグネチャで fail）。緑確認済。
 - [ ] **P6 装備メニュー：装備不可の候補を出さない＋「均等」表示の是正** — 装身具スロットに樹皮の小盾等が出る。
-  スロット/装備者でフィルタ。「装身具・均等」の均等=aptitude親和`balanced`はノイズ→balanced時は非表示。
-  注意：dungeon_controller に「ineligible equipment stays visible with a reason」テスト有り＝*理由付き表示*が現行
-  設計。ユーザー意図（無意味な物は出すな）と擦り合わせて、装備不可の理由が読めるUIにするかフィルタするか決める。
+  スロット/装備者でフィルタ。
+  - **「均等」根因（調査済 2026-08-04）:** `town_format.gd:format_equipment_effect`（=React `describeEquipmentEffect`/
+    `format.ts formatBonusParts`）は **攻/防/命/速の4statしか出さず**、hp/mp/resistBonus/elementResist/regen を持つ
+    装身具は parts 空→`format_bonus_parts` が `I18n.t("aptitude.balanced")`＝「均等」にフォールバック。つまり
+    *aptitude用語の誤用*であると同時に *効果表示が不完全*。修正＝**gearの全効果（hp/mp/resist/element/regen）を
+    要約表示**し、真に無効果のときだけ中立表記（「均等」は使わない）。godot+React両方（パリティ）。Gate:
+    town_format のユニット or verify_dungeon_controller に「resist装身具の効果が"均等"でなく実効果を出す」アサート。
+  - **非装備候補フィルタ:** 注意：dungeon_controller に「ineligible equipment stays visible with a reason」テスト
+    有り＝*理由付き表示*が現行設計。ユーザー意図（無意味な物は出すな）と擦り合わせ、理由が読めるUIにするか
+    フィルタするか **user判断待ち**（設計コンフリクト）。
 - [ ] **P7 戦闘アニメ中に敵味方HPバーが減らない** — Godot beats は player→敵beatのみ(`combat_round.gd:138`)。
   味方バーは全beat後(`combat.gd:651`)に一括更新＝アニメ中は据置。React beat は per-beat `groups`/`party`
   スナップショットを持つ(rulesEngine.ts:1239)。Godot beat に snapshot を載せ、両バーを beat 単位で駆動する。
@@ -232,7 +239,7 @@ W3a → W3b → W4 → W5 を一つずつ進めること。各Wは、ここに `
     2. `item.tl-*` 4件、`equip.tl-*` 3件に対応する256² clean-alpha iconを作る。
     3. 保安通路／浸水ホーム／補給ロッカー／端末のランドマークを作り、A0の扉・階段・保管庫・報酬stillとの
        配置意図を文書化する。これは壁から生えた階段、HUD下の床印、ログだけの報酬を先に防ぐ。
-    4. `ART.md` の下書きと asset receipt を完成させ、受入済みcanonical packが届いた時に**コピーではなく
+    4. `docs/handoffs/` のART receiptを完成させ、受入済みcanonical packが届いた時に**コピーではなく
        own-basenameの昇格**だけで投入できる状態にする。
   - **先行Gate:** 全ファイルの形式・basename・base/hurt footprintを検査し、`npm run export:godot` でプレパックが
     world registryに混入しないことを確認する。これはアセット／受入準備の証明であり、通常プレイのUX証明ではない。
