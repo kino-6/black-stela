@@ -56,6 +56,23 @@ IMP-060/061/062/063/064 completion records in `Improve.md`.
   - **Gate:** visual review on the real build — **Codex art-lane sign-off** (primary implementer does not
     self-approve player-facing visual completion). Render gates green (dungeon-controller, verdant-chambers).
 
+- [ ] **T29 — Default B2F–B8F を Verdant 同等の迷宮品質＋玄室に作り直す** — Verdant は全 g1–g8 が生成で
+  フル迷宮ルール＋玄室を満たすが、Default は **B1F のみ**作り直し済みで **B2F–B7F は旧・手書きフロア**
+  （`dungeonDesign.test` の `MAZE_EXEMPT` で免除中＝品質未達・玄室0、B8F はボス扱い）。B2F–B8F を
+  `genFloorMaze.mjs`（棒倒し法＋玄室 carve）で作り直し、**玄室（確定戦闘＋宝の小部屋）も追加**（user 決定
+  2026-08-03）。各階：シード選定→ASCII マップ移植→既存の遭遇/宝/階段＋新玄室の遭遇/宝テーブルを配線→
+  `MAZE_EXEMPT` から解除。玄室で確定戦闘が増えるため **descentSim でバランス再調整**（prepare-or-wipe /
+  act 曲線 / 免除解除後の maze rules を維持）。
+  - **Gate:** `dungeonDesign.test`（各階を免除リストから外し、密度・ループ・正直スイープ300–360・on-path分岐・
+    近道・玄室を要求）＋ `difficultyGate`/balance sim ＋ `verify_parity`/`verify_flow` 緑＋各階の実機キャプチャ。
+
+- [ ] **T30 — 1シナリオに N 個の迷宮を持てるようにする（T29 後）** — 現在 world は迷宮1本（8階の降下）だが、
+  1シナリオが複数の独立した迷宮を持てるようにする。world データモデル・ダンジョンレジストリ・町からの入口
+  （どの迷宮へ潜るか選択）・セーブ（現在の迷宮 id）・階段/帰還の各迷宮スコープを拡張。既存の単一迷宮世界は
+  そのまま動く後方互換を維持。
+  - **Gate:** 複数迷宮 world がロード・選択・攻略・帰還・セーブ往復できる unit＋e2e、既存2世界の回帰緑、
+    `verify_parity`/`verify_flow` 緑。
+
 ---
 
 ## 将来世界プログラム — 封鎖線（仮称、現行キュー外）
