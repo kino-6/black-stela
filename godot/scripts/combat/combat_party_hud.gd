@@ -57,8 +57,8 @@ static func slot(member: Dictionary, acting_id: String, portrait_tex: Texture2D,
 		head.add_child(_label("▶", 18, GOLD))
 	v.add_child(head)
 
-	var hp := _stat_gauge(float(hp_now) / float(max_hp), BAD if danger else OK)
-	v.add_child(hp)
+	var hp := _hp_gauge(hp_now, max_hp, BAD if danger else OK)
+	v.add_child(hp["control"])
 	var mp: ProgressBar = null
 	if max_mp > 0:
 		mp = _stat_gauge(float(int(member.get("mp", 0))) / float(max_mp), Color("6a86b0"))
@@ -76,7 +76,42 @@ static func slot(member: Dictionary, acting_id: String, portrait_tex: Texture2D,
 		pips.add_child(_pip(I18n.t(key) if I18n.has(key) else String(status), GOLD if String(status) == "ward" else BAD))
 	v.add_child(pips)
 
-	return {"control": box, "bar": hp, "label": hp_label, "mp": mp}
+	# `bar`/`ghost` drive the animated drain (main fill + a trailing red "chip" that lags), `card` locates the
+	# member on screen so a damage number can land over them, `max` scales the tween (values are raw HP now).
+	return {"control": box, "bar": hp["main"], "ghost": hp["ghost"], "label": hp_label, "mp": mp, "card": box, "max": max_hp}
+
+# A "juicy" HP gauge: the main fill drops immediately, a trailing red "chip" fill behind it lags a beat, so
+# the amount JUST lost stays legible for a moment (the modern-RPG damage read — no screen shake/flash). Both
+# are raw-HP ProgressBars (max_value = maxHp) so _refresh_member can set value = hp directly.
+static func _hp_gauge(value: int, max_v: int, col: Color) -> Dictionary:
+	var wrap := Control.new()
+	wrap.custom_minimum_size = Vector2(180, 8)
+	wrap.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	# Ghost (behind): dark bg + a red "chip" fill that lags the main fill down.
+	var ghost := _raw_bar(value, max_v, Color(0.74, 0.20, 0.16), Color(0.10, 0.10, 0.09, 0.95))
+	ghost.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	wrap.add_child(ghost)
+	# Main (on top): the colour fill over a TRANSPARENT bg, so the ghost's red chip shows through the gap.
+	var main := _raw_bar(value, max_v, col, Color(0, 0, 0, 0))
+	main.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	wrap.add_child(main)
+	return {"control": wrap, "main": main, "ghost": ghost}
+
+static func _raw_bar(value: int, max_v: int, fill_col: Color, bg_col: Color) -> ProgressBar:
+	var bar := ProgressBar.new()
+	bar.max_value = maxi(1, max_v)
+	bar.value = clampi(value, 0, maxi(1, max_v))
+	bar.show_percentage = false
+	bar.custom_minimum_size = Vector2(180, 8)
+	var fill := StyleBoxFlat.new()
+	fill.bg_color = fill_col
+	fill.set_corner_radius_all(2)
+	var bg := StyleBoxFlat.new()
+	bg.bg_color = bg_col
+	bg.set_corner_radius_all(2)
+	bar.add_theme_stylebox_override("fill", fill)
+	bar.add_theme_stylebox_override("background", bg)
+	return bar
 
 static func _stat_gauge(ratio: float, col: Color) -> ProgressBar:
 	var bar := ProgressBar.new()

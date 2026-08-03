@@ -43,6 +43,13 @@ var _strip_box: VBoxContainer = null
 var _party_slots: Dictionary = {}   # member id -> { "bar": ProgressBar, "label": Label }
 var _stage_layer: Control = null
 var _enemy_marks: Dictionary = {}   # groupId -> the mark node, so a beat can flash the right creature
+var _actor_figure: Node = null       # the hero-scale spotlight figure, swapped to the acting member per beat
+var _stage_band: Rect2 = Rect2()     # cached enemy-band layout so one group's mark can be re-rendered mid-playback
+var _stage_slot_w: float = 0.0
+var _stage_group_total: int = 0
+var _stage_group_index: Dictionary = {}  # groupId -> its slot index
+var _party_before: Dictionary = {}   # memberId -> HP before the round, for the animated party-damage read (T22)
+const HURT_ALLY := Color("8fb6e0")   # cooler tint for damage numbers landing on a party member (vs HURT on enemies)
 var _enemy_stage_rect: Rect2 = Rect2()
 var _busy: bool = false
 var _resolved: bool = false
@@ -491,6 +498,7 @@ func _resolve_round_with(orders: Array, animated: bool) -> void:
 	if _cmd_panel:
 		_cmd_panel.hide()
 	var before := _enemy_snapshot()
+	_party_before = _snapshot_party()   # HP before the enemy turn, so playback can animate each member's loss (T22)
 	_last_round = orders.duplicate(true)
 	var result := CombatRound.declare_round(_state, _world, orders, _engine)
 	var events: Array = result.get("events", [])
@@ -510,6 +518,7 @@ func _resolve_round(animated: bool) -> void:
 		_cmd_panel.hide()
 
 	var before := _enemy_snapshot()
+	_party_before = _snapshot_party()   # HP before the enemy turn, so playback can animate each member's loss (T22)
 	var actions := _all_out_actions()
 	if actions.is_empty():
 		_busy = false
@@ -573,20 +582,28 @@ func _playback(before: Dictionary, events: Array, animated: bool) -> void:
 		var beats := _round_beats(events)
 		if not beats.is_empty():
 			# Per-MEMBER beats (誰が→何に→どれだけ): narrate the actor's completed blow, THEN land the number
-			# on the struck creature. Two steps, in that order, so the past-tense verb and its damage popup
-			# read together instead of every "斬りかかる" firing before any damage (playtest desync feedback).
+			# on the struck creature and drain that group's bar. Two steps, in that order, so the past-tense
+			# verb and its damage popup read together (playtest desync feedback).
+			var running := {}   # gid -> running pooled HP, so each beat drains the bar it hits (T21)
+			for gid0 in before:
+				running[gid0] = int((before[gid0] as Dictionary).get("hp", 0))
 			for beat in beats:
 				var gid := String((beat as Dictionary).get("targetGroupId", ""))
-				var snap: Dictionary = before.get(gid, {})
 				var dmg := int((beat as Dictionary).get("damage", 0))
 				var actor := String((beat as Dictionary).get("actorName", ""))
-				var target_name := String(snap.get("name", ""))
+				var target_name := _enemy_ja(_group_by_id(gid))   # localized name (was English "Spore Gnat")
 				var crit := bool((beat as Dictionary).get("crit", false))
+				# Spotlight the acting member at hero scale so WHO is striking reads during playback (T24).
+				var acting := _member_by_name(actor)
+				if not acting.is_empty():
+					_set_spotlight_member(acting)
 				# 1) the action, past tense ("リオが棘虫に切りかかった。") — wording mirrors React's beat.hit
 				_set_log("%sが%sに%s。" % [actor, target_name, _attack_verb(actor, crit)])
 				await get_tree().create_timer(0.24).timeout
-				# 2) the damage: floating number on the creature + a popup-style line with ！
-				_spawn_damage_number_at(dmg, float(snap.get("x_frac", 0.5)), crit)
+				# 2) the damage: floating number ON the creature + its bar drains + a popup-style line with ！
+				_pop_enemy_damage(gid, dmg, crit)
+				running[gid] = maxi(0, int(running.get(gid, 0)) - dmg)
+				_drain_enemy_group(gid, int(running[gid]))
 				_set_log("%sに%dダメージ！" % [target_name, dmg])
 				await get_tree().create_timer(0.34).timeout
 		else:
@@ -613,14 +630,28 @@ func _playback(before: Dictionary, events: Array, animated: bool) -> void:
 	var rewards := _find_event(events, "combat_rewards")
 	var wiped := _find_event(events, "party_wiped")
 
-	# The enemy turn already ran inside declare_round; reflect its damage on the party strip. If the
-	# fight goes on, call it out so the counter-attack reads.
-	if rewards.is_empty() and not _party_all_full():
-		if animated:
-			_set_log("敵の反撃！")
-			await get_tree().create_timer(0.4).timeout
+	# The enemy turn already ran inside declare_round; reflect its damage on the party strip. A member who
+	# lost HP gets a floating number over their card and an ANIMATED bar drain (main fill + trailing red
+	# chip), so the party no longer "silently dies" — the blow that hurt them reads (T22). No screen shake.
+	var party_hit := false
+	if rewards.is_empty():
+		for member in _state.get("party", []):
+			var mid := String(member.get("id", ""))
+			var loss := int(_party_before.get(mid, int(member.get("hp", 0)))) - int(member.get("hp", 0))
+			if loss > 0:
+				party_hit = true
+				break
+	if party_hit and animated:
+		_set_log("敵の反撃！")
+		await get_tree().create_timer(0.3).timeout
 	for member in _state.get("party", []):
-		_refresh_member(member)
+		var mid := String(member.get("id", ""))
+		var loss := int(_party_before.get(mid, int(member.get("hp", 0)))) - int(member.get("hp", 0))
+		_refresh_member(member, animated)
+		if animated and loss > 0:
+			_spawn_member_damage(mid, loss)
+	if party_hit and animated:
+		await get_tree().create_timer(0.5).timeout
 
 	if not rewards.is_empty():
 		_show_victory(rewards)
@@ -636,11 +667,6 @@ func _playback(before: Dictionary, events: Array, animated: bool) -> void:
 			if b:
 				b.grab_focus()
 
-func _party_all_full() -> bool:
-	for member in _state.get("party", []):
-		if int(member.get("hp", 0)) < int(member.get("maxHp", 0)):
-			return false
-	return true
 
 func _first_command_button() -> Button:
 	if _cmd_panel == null:
@@ -719,7 +745,7 @@ func _party_slot(member: Dictionary) -> Control:
 	# The slot itself is built by the CombatPartyHud collaborator (IMP-052); the scene keeps the live-update
 	# refs so _refresh_member can drive the HP bar/label as the round plays.
 	var built := CombatPartyHud.slot(member, _acting_member_id(), WorldResources.portrait_texture(String(member.get("portraitRef", "")), _portrait_path(member)), _hp_text(member))
-	_party_slots[member.get("id", "")] = {"bar": built["bar"], "label": built["label"], "mp": built["mp"]}
+	_party_slots[member.get("id", "")] = {"bar": built["bar"], "ghost": built["ghost"], "label": built["label"], "mp": built["mp"], "card": built["card"], "max": built["max"]}
 	return built["control"]
 
 func _rebuild_party_strip() -> void:
@@ -743,12 +769,39 @@ func _acting_member_id() -> String:
 		return ""
 	return String(actors[_actor_index].get("id", ""))
 
-func _refresh_member(member: Dictionary) -> void:
+func _refresh_member(member: Dictionary, animate: bool = false) -> void:
 	var refs: Variant = _party_slots.get(member.get("id", ""), null)
 	if typeof(refs) != TYPE_DICTIONARY:
 		return
-	(refs["bar"] as ProgressBar).value = float(member.get("hp", 0))
+	var main := refs["bar"] as ProgressBar
+	var ghost := refs["ghost"] as ProgressBar
+	# A downed member (injury) reads empty even though the rules park it at hp:1.
+	var hp: int = 0 if member.get("injury", null) != null else int(member.get("hp", 0))
 	(refs["label"] as Label).text = _hp_text(member)
+	if not animate or main == null:
+		if main: main.value = hp
+		if ghost: ghost.value = hp
+		return
+	# Main fill drops fast; the red ghost chip lags behind so the amount just lost stays legible a moment.
+	var tw := create_tween()
+	tw.tween_property(main, "value", float(hp), 0.18).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	if ghost:
+		var gt := create_tween()
+		gt.tween_interval(0.16)
+		gt.tween_property(ghost, "value", float(hp), 0.52).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+
+# Land a damage number over a party member's card (the enemy-counter read: whose HP just dropped).
+func _spawn_member_damage(member_id: String, amount: int) -> void:
+	if amount <= 0:
+		return
+	var refs: Variant = _party_slots.get(member_id, null)
+	if typeof(refs) != TYPE_DICTIONARY:
+		return
+	var card := refs.get("card", null) as Control
+	if card == null:
+		return
+	var r := card.get_global_rect()
+	CombatPlayback.damage_number_at(_damage_layer, Vector2(r.position.x + r.size.x * 0.5, r.position.y - 6.0), amount, false, HURT_ALLY)
 
 # --- floating presentation ------------------------------------------------------------------------
 # The floating flourishes live in the CombatPlayback collaborator (IMP-052).
@@ -778,6 +831,57 @@ func _group_hp_by_id(gid: String) -> int:
 		if String(g.get("id", "")) == gid:
 			return _group_hp(g)
 	return 0  # a fully-defeated group has been dropped from the array — it lost all its HP
+
+func _group_by_id(gid: String) -> Dictionary:
+	for g in _combat().get("enemyGroups", []):
+		if String(g.get("id", "")) == gid:
+			return g
+	return {}
+
+func _member_by_name(nm: String) -> Dictionary:
+	for member in _state.get("party", []):
+		if String(member.get("name", "")) == nm:
+			return member
+	return {}
+
+func _snapshot_party() -> Dictionary:
+	var snap := {}
+	for member in _state.get("party", []):
+		snap[String(member.get("id", ""))] = int(member.get("hp", 0))
+	return snap
+
+# A synthetic copy of `group` reduced to a running pooled HP, so a mid-playback rebuild shows the pack's
+# bar drained (and the odd unit fallen) in step with its damage number, before the round's end rebuild.
+func _group_at_hp(group: Dictionary, hp_now: int) -> Dictionary:
+	var g := group.duplicate(true)
+	var max_each := maxi(1, int(group.get("maxHpEach", group.get("hpEach", 1))))
+	var initial := maxi(1, int(group.get("initialCount", group.get("count", 1))))
+	var count := clampi(int(ceil(float(maxi(0, hp_now)) / float(max_each))), 0, initial)
+	if hp_now > 0:
+		count = maxi(1, count)
+	g["count"] = count
+	g["hpEach"] = (maxi(0, hp_now - (count - 1) * max_each)) if count > 0 else 0
+	return g
+
+# Land the damage number ON the struck creature (its mark's real screen centre, high on the body) — not at
+# a stage fraction that ignored the HUD band (T21: the number floated at top-centre, off the creature).
+func _pop_enemy_damage(gid: String, amount: int, is_crit: bool) -> void:
+	var mark: Variant = _enemy_marks.get(gid, null)
+	if not (mark is Control):
+		CombatPlayback.damage_number(_damage_layer, _enemy_stage_rect, amount, 0.5, is_crit)
+		return
+	var r := (mark as Control).get_global_rect()
+	CombatPlayback.damage_number_at(_damage_layer, Vector2(r.position.x + r.size.x * 0.5, r.position.y + r.size.y * 0.26), amount, is_crit)
+
+# Redraw a struck group's mark at a running HP so its bar drains as the beats land (T21).
+func _drain_enemy_group(gid: String, hp_now: int) -> void:
+	var idx := int(_stage_group_index.get(gid, -1))
+	if idx < 0:
+		return
+	var group := _group_by_id(gid)
+	if group.is_empty():
+		return
+	_place_enemy_mark(idx, _group_at_hp(group, hp_now))
 
 # T15: the per-hit beats the round emitted ({actorName, targetGroupId, damage, crit}), so playback can
 # name WHO struck each target (誰が) — not just the per-group total.
@@ -976,24 +1080,47 @@ func _rebuild_stage() -> void:
 	for n in CombatStage.backdrop_nodes(_enemy_stage_rect, _texture(_asset("ui/combat-vignette.jpg")), palette):
 		_stage_layer.add_child(n)
 
-	# During decisions, show whose turn it is at hero scale (IMP-014).
+	# During decisions, show whose turn it is at hero scale (IMP-014). Kept as a node ref so playback can
+	# swap it to the ACTING member per beat (T24 — the spotlight used to stay on the first actor all fight).
+	_actor_figure = null
 	if ConfigPanel.spotlight_actor() and _stage in ["command", "skill", "spell", "item", "target-group", "target-ally"]:
 		var actor := _acting_member()
 		if not actor.is_empty():
-			_stage_layer.add_child(CombatStage.actor_figure(actor, _enemy_stage_rect, WorldResources.portrait_texture(String(actor.get("portraitRef", "")), _portrait_path(actor))))
+			_set_spotlight_member(actor)
 
 	var groups: Array = _combat().get("enemyGroups", [])
 	if groups.is_empty():
 		return
-	var band := CombatStage.enemy_band(_enemy_stage_rect, ConfigPanel.spotlight_actor())
-	var slot_w: float = band.size.x / float(groups.size())
+	# Cache the layout so a single group's mark can be re-rendered mid-playback as its HP drains (T21).
+	_stage_band = CombatStage.enemy_band(_enemy_stage_rect, ConfigPanel.spotlight_actor())
+	_stage_slot_w = _stage_band.size.x / float(groups.size())
+	_stage_group_total = groups.size()
+	_stage_group_index.clear()
 	for index in groups.size():
 		var group: Dictionary = groups[index]
-		var gid := String(group.get("id", ""))
-		var centre := band.position.x + slot_w * (float(index) + 0.5)
-		var mark := CombatStage.enemy_mark(self, group, centre, slot_w, _enemy_stage_rect, gid == _target_group_id(), _enemy_texture(group), _enemy_ja(group), _group_hp(group), _group_max_hp(group), _enemy_size_scale(group))
-		_enemy_marks[gid] = mark
-		_stage_layer.add_child(mark)
+		_stage_group_index[String(group.get("id", ""))] = index
+		_place_enemy_mark(index, group)
+
+# Draw (or redraw) one enemy group's mark at its cached slot, for the given group snapshot. Used both by the
+# full rebuild and by playback to drain a single group's HP bar in step with its damage number.
+func _place_enemy_mark(index: int, group: Dictionary) -> void:
+	var gid := String(group.get("id", ""))
+	var old: Variant = _enemy_marks.get(gid, null)
+	if old is Node and (old as Node).is_inside_tree():
+		(old as Node).queue_free()
+	var centre := _stage_band.position.x + _stage_slot_w * (float(index) + 0.5)
+	var mark := CombatStage.enemy_mark(self, group, centre, _stage_slot_w, _enemy_stage_rect, gid == _target_group_id(), _enemy_texture(group), _enemy_ja(group), _group_hp(group), _group_max_hp(group), _enemy_size_scale(group))
+	_enemy_marks[gid] = mark
+	_stage_layer.add_child(mark)
+
+# Swap the hero-scale spotlight figure to `member` (whose turn/blow it is), replacing any prior one.
+func _set_spotlight_member(member: Dictionary) -> void:
+	if _stage_layer == null or member.is_empty() or not ConfigPanel.spotlight_actor():
+		return
+	if _actor_figure is Node and (_actor_figure as Node).is_inside_tree():
+		(_actor_figure as Node).queue_free()
+	_actor_figure = CombatStage.actor_figure(member, _enemy_stage_rect, WorldResources.portrait_texture(String(member.get("portraitRef", "")), _portrait_path(member)))
+	_stage_layer.add_child(_actor_figure)
 
 # The creature's apparent scale from its DATA size class (small/medium/large) — tuned here, never by
 # re-ordering art (combat-ui-drpg: the engine owns size). Unknown/absent → neutral.

@@ -14,16 +14,25 @@ const OUTLINE := Color("1a120a")
 ## a "!". `x_frac` (0..1) places it horizontally over the STRUCK target so multi-target rounds land each
 ## number on its own creature (T15). Presentation only — the resolved round already decided the numbers.
 static func damage_number(damage_layer: CanvasItem, stage_rect: Rect2, amount: int, x_frac: float = 0.5, is_crit: bool = false) -> void:
+	# Legacy x_frac entry (kept for the fallback path). Prefer damage_number_at with the target's real
+	# screen centre so the number lands ON the creature, not at a stage-fraction that ignores the HUD insets.
+	var cx := stage_rect.position.x + clampf(x_frac, 0.05, 0.95) * stage_rect.size.x
+	damage_number_at(damage_layer, Vector2(cx, stage_rect.position.y + 160), amount, is_crit)
+
+## Land a number centred on `top_centre` (screen space). `colour` overrides the default hurt/crit tint (the
+## party-counter numbers use a cooler ally tint). The struck target's real position comes from the caller.
+static func damage_number_at(damage_layer: CanvasItem, top_centre: Vector2, amount: int, is_crit: bool = false, colour: Color = Color(0, 0, 0, 0)) -> void:
 	if amount <= 0:
 		return
 	var size := 74 if is_crit else 54
+	var tint := colour if colour.a > 0.0 else (CRIT if is_crit else HURT)
 	# Same text convention as React's .hit-number (`-N`, crit adds `!`), so the two engines read identically.
-	var dmg := _label(("-%d!" % amount) if is_crit else ("-%d" % amount), size, CRIT if is_crit else HURT)
+	var dmg := _label(("-%d!" % amount) if is_crit else ("-%d" % amount), size, tint)
 	dmg.add_theme_color_override("font_outline_color", OUTLINE)
 	dmg.add_theme_constant_override("outline_size", 10 if is_crit else 8)
 	dmg.pivot_offset = Vector2(size * 0.5, size * 0.6)
-	var base_x := stage_rect.position.x + clampf(x_frac, 0.05, 0.95) * stage_rect.size.x - size * 0.5
-	dmg.position = Vector2(base_x, stage_rect.position.y + 130)
+	var base_x := top_centre.x - size * 0.5
+	dmg.position = Vector2(base_x, top_centre.y)
 	dmg.scale = Vector2(0.4, 0.4)
 	damage_layer.add_child(dmg)
 	var drift := (18.0 if int(base_x) % 2 == 0 else -18.0)  # a small deterministic sideways arc
