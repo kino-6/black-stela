@@ -169,7 +169,13 @@ static func _build_geometry(parent: Node, world: Dictionary, state: Dictionary, 
 						rendered_doors[door_key] = true
 						# CLOSED until opened this floor visit (bump-to-open) — a closed door hides the room.
 						var opened := (state.get("openedDoors", []) as Array).has("door:%s:%s" % [String(cell.get("roomId", "")), dir])
-						_add_door(parent, door_mat, chamber_frame_mat, chamber_wall_mat, chamber_accent, base, dir, opened)
+						# A door that opens INTO a 玄室 (this cell or the cell beyond is chamber-decorated) is drawn
+						# as a GRAND portal — near full-height, a bolder architrave — so a sealed guardian room reads
+						# as one from the corridor head-on, not the HUD-hidden floor seal (Codex 2026-08-03 玄室 NG).
+						var ndelta: Vector2i = {"north": Vector2i(0, -1), "south": Vector2i(0, 1), "east": Vector2i(1, 0), "west": Vector2i(-1, 0)}[dir]
+						var neighbor_key := "%d,%d" % [cx + ndelta.x, cy + ndelta.y]
+						var grand_door := use_authored_chambers and (chamber_block.has(coord_key) or chamber_block.has(neighbor_key))
+						_add_door(parent, door_mat, chamber_frame_mat, chamber_wall_mat, chamber_accent, base, dir, opened, grand_door)
 			if landmark_chamber:
 				# A CLEARED 玄室 (its guarded chest is out, or already claimed) calms its landmark so victory reads
 				# at a glance (playtest: the room looked unchanged after the fight).
@@ -432,7 +438,7 @@ static func _add_chamber_floor_seal(parent: Node, base: Vector3, seal_path: Stri
 	decal.position = base + Vector3(0, 0.012, 0)
 	parent.add_child(decal)
 
-static func _add_door(parent: Node, door_mat: Material, frame_mat: Material, wall_mat: Material, _accent: Color, base: Vector3, dir: String, opened: bool = true) -> void:
+static func _add_door(parent: Node, door_mat: Material, frame_mat: Material, wall_mat: Material, _accent: Color, base: Vector3, dir: String, opened: bool = true, grand: bool = false) -> void:
 	# A door edge is still traversable by the rules, so draw the two living leaves already pushed aside.
 	# The player sees an intentional threshold and can pass through its centre; no state or collision rule is
 	# changed here. This is the Godot counterpart of the Web renderer's wood-door material and frame.
@@ -456,10 +462,22 @@ static func _add_door(parent: Node, door_mat: Material, frame_mat: Material, wal
 	# A broad WOODEN door surround (jambs + lintel) standing slightly proud of the wall (z = -0.05) so the
 	# threshold reads as a framed doorway head-on — enough to announce a room, without the stone keystone that
 	# read as odd/glowing on a wood frame (playtest 2026-08-03).
+	#
+	# A GRAND portal (a 玄室 threshold) reaches nearly to the corridor ceiling with heavier jambs and a deep
+	# lintel beam, so a sealed guardian room reads as a big room from the corridor head-on — the architecture
+	# is the star, not the HUD-hidden floor seal (Codex 2026-08-03 玄室 NG). Still WOOD, no glow.
+	var jamb_t := 0.30 if grand else 0.22   # jamb thickness (across the opening)
+	var jamb_h := 2.90 if grand else 2.62   # jamb height
+	var jamb_d := 0.34 if grand else 0.24   # jamb depth (proud of the wall)
+	var jamb_x := 1.12 if grand else 1.06   # jamb centre off the opening centreline
+	var lintel_w := 2.68 if grand else 2.40
+	var lintel_h := 0.40 if grand else 0.26
+	var lintel_d := 0.40 if grand else 0.26
+	var lintel_y := 3.00 if grand else 2.55  # grand lintel top (3.20) meets the corridor ceiling (WALL_H)
 	for spec in [
-		{"size": Vector3(0.22, 2.62, 0.24), "pos": Vector3(-1.06, 1.31, -0.05)},   # left jamb
-		{"size": Vector3(0.22, 2.62, 0.24), "pos": Vector3(1.06, 1.31, -0.05)},    # right jamb
-		{"size": Vector3(2.40, 0.26, 0.26), "pos": Vector3(0, 2.55, -0.05)},       # lintel
+		{"size": Vector3(jamb_t, jamb_h, jamb_d), "pos": Vector3(-jamb_x, jamb_h / 2.0, -0.05)},   # left jamb
+		{"size": Vector3(jamb_t, jamb_h, jamb_d), "pos": Vector3(jamb_x, jamb_h / 2.0, -0.05)},     # right jamb
+		{"size": Vector3(lintel_w, lintel_h, lintel_d), "pos": Vector3(0, lintel_y, -0.05)},        # lintel beam
 	]:
 		_add_box(root, spec["size"], frame_mat, spec["pos"])
 
@@ -467,28 +485,32 @@ static func _add_door(parent: Node, door_mat: Material, frame_mat: Material, wal
 	# header (lintel → ceiling) and the two jamb strips (frame post → cell edge) with WALL material (not the
 	# pale frame stone — otherwise a pale patch floats in the vine wall). Spans the full cell so it meets the
 	# neighbouring walls (playtest 2026-07-29: door edge was see-through above/beside the frame).
-	var header_bottom := 2.42 # lintel underside
+	var header_bottom := lintel_y - lintel_h / 2.0 # lintel underside
 	_add_box(root, Vector3(CELL, WALL_H - header_bottom, 0.16), wall_mat, Vector3(0, (header_bottom + WALL_H) / 2.0, 0))
+	var jamb_outer := jamb_x + jamb_t / 2.0
 	for side in [-1.0, 1.0]:
-		_add_box(root, Vector3(CELL / 2.0 - 1.16, header_bottom, 0.16), wall_mat, Vector3(side * (1.16 + CELL / 2.0) / 2.0, header_bottom / 2.0, 0))
+		_add_box(root, Vector3(CELL / 2.0 - jamb_outer, header_bottom, 0.16), wall_mat, Vector3(side * (jamb_outer + CELL / 2.0) / 2.0, header_bottom / 2.0, 0))
 
 	# CLOSED (玄室 not yet opened): the two leaves MEET in the centre and fill the threshold, hiding the room
 	# beyond — the Wiz "what's behind the door?" beat (bump-to-open swings them aside). OPENED: the leaves are
 	# pushed ajar so the cleared room reads as entered and passable.
+	# Grand leaves rise with the taller opening so a sealed 玄室 door fills its imposing frame.
+	var leaf_h := 2.72 if grand else 2.36
+	var leaf_y := leaf_h / 2.0 + 0.02
 	for side in [-1.0, 1.0]:
 		var leaf := MeshInstance3D.new()
 		var slab := BoxMesh.new()
 		if opened:
-			slab.size = Vector3(0.58, 2.28, 0.09)
+			slab.size = Vector3(0.58, leaf_h - 0.08, 0.09)
 			leaf.mesh = slab
 			leaf.material_override = door_mat
-			leaf.position = Vector3(side * 0.76, 1.14, -0.16)
+			leaf.position = Vector3(side * (0.80 if grand else 0.76), leaf_y - 0.02, -0.16)
 			leaf.rotation.y = -side * 0.48
 		else:
-			slab.size = Vector3(1.06, 2.36, 0.12)
+			slab.size = Vector3(1.04 if grand else 1.06, leaf_h, 0.12)
 			leaf.mesh = slab
 			leaf.material_override = door_mat
-			leaf.position = Vector3(side * 0.54, 1.18, 0.0)
+			leaf.position = Vector3(side * (0.52 if grand else 0.54), leaf_y, 0.0)
 		root.add_child(leaf)
 	# (No centre latch: the emissive amber knob read as a floating yellow orb on the door from the
 	#  close first-person camera — removed per playtest. The frame + leaves carry the door read.)
