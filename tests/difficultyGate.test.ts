@@ -85,7 +85,9 @@ describe("resource-economy scarcity (worlds with an authored economy)", () => {
       it("dive income covers a re-provision without flooding", () => {
         expect(Number.isFinite(run.economyBalance)).toBe(true);
         expect(run.economyBalance).toBeGreaterThanOrEqual(1); // you can afford to restock
-        expect(run.economyBalance).toBeLessThanOrEqual(6); // …but gold is not a flood
+        // T31 (2026-08-03): a 10-floor descent brings two more floors of dive income; the "not a flood"
+        // ceiling rises a step with the deeper run (地続き). Default (still 8F) stays well under.
+        expect(run.economyBalance).toBeLessThanOrEqual(8); // …but gold is not a flood
       });
 
       it("never wipes a prepared, provisioned party on the one-push", () => {

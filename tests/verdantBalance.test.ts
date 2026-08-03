@@ -30,7 +30,9 @@ describe("verdant difficulty (prepare or wipe)", () => {
     // T13 (2026-08-02): Act I now BITES a fresh party (floor 1 wipes the unprepared — see the floor-1 lock
     // in difficultyGate), so even a prepared party clears the descent a few levels later than the old gentle
     // opener allowed. Still near-entry, still a large prepare-or-wipe swing; the number just moved 3→5.
-    expect(value.preparedMinLevel).toBeLessThanOrEqual(6);
+    // T31 (2026-08-03): the descent is now TEN floors ending at the g10 worldheart true boss, so a prepared
+    // party's comfortable clear level rises another step (地続き extension of the curve, not a wall).
+    expect(value.preparedMinLevel).toBeLessThanOrEqual(8);
   });
 
   it("escalates by act, and still costs the prepared party real HP at depth", () => {

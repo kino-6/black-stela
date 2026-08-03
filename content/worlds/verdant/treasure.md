@@ -133,6 +133,33 @@ treasureTables:
     entries:
       - { itemId: item.verdant.heartseed, weight: 10, quantity: 1 }
       - { itemId: equip.verdant.bark-plate, weight: 10 }
+  # G9 (scenario boss) + G10 (真層 true boss) — the deepest rewards. Reuses tier-3 gear (T31).
+  - id: treasure.verdant.g9.side
+    tier: 3
+    entries:
+      - { itemId: item.healing-draught, weight: 6 }
+      - { itemId: item.verdant.sap-draught, weight: 5 }
+      - { itemId: item.verdant.greater-sap, weight: 4 }
+      - { itemId: equip.verdant.reaver-axe, weight: 3 }
+      - { itemId: equip.verdant.heartwood-ward, weight: 2 }
+  - id: treasure.verdant.g9.keep
+    tier: 3
+    entries:
+      - { itemId: item.verdant.heartseed, weight: 10, quantity: 1 }
+      - { itemId: equip.verdant.reaver-axe, weight: 8 }
+      - { itemId: equip.verdant.heartwood-ward, weight: 6 }
+  - id: treasure.verdant.g10.side
+    tier: 3
+    entries:
+      - { itemId: item.verdant.greater-sap, weight: 5 }
+      - { itemId: item.verdant.heartsap-tonic, weight: 3 }
+      - { itemId: equip.verdant.heartwood-ward, weight: 3 }
+  - id: treasure.verdant.g10.keep
+    tier: 3
+    entries:
+      - { itemId: item.verdant.heartseed, weight: 10, quantity: 2 }
+      - { itemId: equip.verdant.reaver-axe, weight: 8 }
+      - { itemId: equip.verdant.heartwood-ward, weight: 8 }
 ---
 
 # Verdant treasure

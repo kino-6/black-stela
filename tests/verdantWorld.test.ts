@@ -13,16 +13,17 @@ describe("verdant scenario", () => {
     expect(listScenarios().some((s) => s.worldId === "verdant")).toBe(true);
   });
 
-  it("ships eight floors G1F..G8F in descent order", () => {
+  it("ships ten floors G1F..G10F in descent order", () => {
     expect(verdant.dungeons.map((d) => d.id)).toEqual([
       "dungeon.verdant.g1f", "dungeon.verdant.g2f", "dungeon.verdant.g3f", "dungeon.verdant.g4f",
-      "dungeon.verdant.g5f", "dungeon.verdant.g6f", "dungeon.verdant.g7f", "dungeon.verdant.g8f"
+      "dungeon.verdant.g5f", "dungeon.verdant.g6f", "dungeon.verdant.g7f", "dungeon.verdant.g8f",
+      "dungeon.verdant.g9f", "dungeon.verdant.g10f"
     ]);
     expect(verdant.startRoom).toBe("room.verdant.g1f.001");
   });
 
   it("connects the descent: each floor's exit stair leads to the next floor's landing", () => {
-    for (let n = 1; n <= 7; n += 1) {
+    for (let n = 1; n <= 9; n += 1) {
       const floor = verdant.dungeons.find((d) => d.id === `dungeon.verdant.g${n}f`)!;
       const exitCell = floor.grid?.cells.find((c) => c.roomId === `room.verdant.g${n}f.exit`);
       const down = Object.values(exitCell?.edges ?? {}).find((e) => e?.kind === "stairs" && e.targetFloorId);
@@ -31,17 +32,26 @@ describe("verdant scenario", () => {
     }
   });
 
-  it("ends at the G8F rootheart boss (finale, no deeper stair)", () => {
-    const g8 = verdant.dungeons.find((d) => d.id === "dungeon.verdant.g8f")!;
-    expect(g8.tags).toContain("boss");
-    const keep = g8.rooms.find((r) => r.id === "room.verdant.g8f.keep");
-    expect(keep?.encounterTable).toBe("encounters.verdant.g8.keep");
+  it("G9 is the rootheart scenario boss; G10 is the worldheart true-clear finale (no deeper stair)", () => {
+    // 10F (T31): the rootheart moved from G8 to G9 (the scenario-clear boss); G10 is the 真層 with the
+    // new worldheart true boss (the finale). G8 is now Act III deep trash.
+    const g9 = verdant.dungeons.find((d) => d.id === "dungeon.verdant.g9f")!;
+    const g9keep = g9.rooms.find((r) => r.id === "room.verdant.g9f.keep");
+    expect(g9keep?.encounterTable).toBe("encounters.verdant.g9.keep");
     const rootheart = verdant.enemies.find((e) => e.id === "enemy.verdant.g8.rootheart");
     expect(rootheart?.isBoss).toBe(true);
-    const bossTable = verdant.encounterTables.find((tbl) => tbl.id === "encounters.verdant.g8.keep");
-    expect(bossTable?.entries[0].enemyId).toBe("enemy.verdant.g8.rootheart");
-    const hasDeeper = g8.grid?.cells.some((c) =>
-      Object.values(c.edges).some((e) => e?.kind === "stairs" && e.targetFloorId && e.targetFloorId !== "dungeon.verdant.g7f")
+    expect(verdant.encounterTables.find((t) => t.id === "encounters.verdant.g9.keep")?.entries[0].enemyId)
+      .toBe("enemy.verdant.g8.rootheart");
+
+    const g10 = verdant.dungeons.find((d) => d.id === "dungeon.verdant.g10f")!;
+    expect(g10.tags).toContain("boss");
+    const g10keep = g10.rooms.find((r) => r.id === "room.verdant.g10f.keep");
+    expect(g10keep?.encounterTable).toBe("encounters.verdant.g10.keep");
+    const worldheart = verdant.enemies.find((e) => e.id === "enemy.verdant.g10.worldheart");
+    expect(worldheart?.isBoss).toBe(true);
+    // The true finale has no deeper stair (only the up-stair back to g9).
+    const hasDeeper = g10.grid?.cells.some((c) =>
+      Object.values(c.edges).some((e) => e?.kind === "stairs" && e.targetFloorId && e.targetFloorId !== "dungeon.verdant.g9f")
     );
     expect(hasDeeper).toBeFalsy();
   });

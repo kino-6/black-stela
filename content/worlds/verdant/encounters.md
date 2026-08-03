@@ -80,6 +80,22 @@ encounterTables:
       - { enemyId: enemy.verdant.g6.thorn-cutter, weight: 6, minCount: 1, maxCount: 1 }
       - { enemyId: enemy.verdant.g4.pollen-drifter, weight: 4, minCount: 1, maxCount: 1 }
       - { enemyId: enemy.verdant.g7.root-moth, weight: 4, minCount: 1, maxCount: 1 }
+  # G9 (Act III climax approach, the scenario-boss floor) + G10 (真層, the true-boss approach). Deep
+  # attrition drawing from the existing deep roster — no new trash art needed (T31).
+  - id: encounters.verdant.g9.pack
+    floorId: dungeon.verdant.g9f
+    groupsMax: 2
+    entries:
+      - { enemyId: enemy.verdant.g7.husk-spawn, weight: 10, minCount: 1, maxCount: 2 }
+      - { enemyId: enemy.verdant.g6.thorn-cutter, weight: 6, minCount: 1, maxCount: 1 }
+      - { enemyId: enemy.verdant.g7.root-moth, weight: 5, minCount: 1, maxCount: 1 }
+  - id: encounters.verdant.g10.pack
+    floorId: dungeon.verdant.g10f
+    groupsMax: 2
+    entries:
+      - { enemyId: enemy.verdant.g7.husk-spawn, weight: 10, minCount: 1, maxCount: 2 }
+      - { enemyId: enemy.verdant.g7.root-moth, weight: 6, minCount: 1, maxCount: 1 }
+      - { enemyId: enemy.verdant.g6.thorn-cutter, weight: 5, minCount: 1, maxCount: 1 }
   # ---- keep chokes (single miniboss/boss) ----
   - id: encounters.verdant.g3.keep
     floorId: dungeon.verdant.g3f
@@ -105,6 +121,15 @@ encounterTables:
     floorId: dungeon.verdant.g8f
     entries:
       - { enemyId: enemy.verdant.g8.rootheart, weight: 10, minCount: 1, maxCount: 1 }
+  # G9 = the SCENARIO-clear boss: the rootheart relocated here (10F structure, T31). G10 = the true boss.
+  - id: encounters.verdant.g9.keep
+    floorId: dungeon.verdant.g9f
+    entries:
+      - { enemyId: enemy.verdant.g8.rootheart, weight: 10, minCount: 1, maxCount: 1 }
+  - id: encounters.verdant.g10.keep
+    floorId: dungeon.verdant.g10f
+    entries:
+      - { enemyId: enemy.verdant.g10.worldheart, weight: 10, minCount: 1, maxCount: 1 }
 ---
 
 # Verdant encounters

@@ -339,6 +339,50 @@ enemies:
           min: 6
           max: 9
           element: wood
+  # ---- 真層 (G10) — the 完全クリア true boss (T31). A superboss escalation of the Rootheart: the
+  #      heartwood core laid bare. Reached only after the G9 rootheart falls. SPRITE: Codex art-lane
+  #      (enemy-verdant-g10-worldheart[.hurt].png) — pending; renders invisible until delivered.
+  - id: enemy.verdant.g10.worldheart
+    weaknesses: { metal: 2.0, fire: 0.3 }
+    name: Worldheart
+    locales: { ja: { name: 世界樹の芯 } }
+    hp: 74
+    attack: 9
+    armor: 4
+    accuracy: 78
+    damageMin: 9
+    damageMax: 12
+    speed: 7
+    morale: 12
+    xp: 60
+    gold: 120
+    role: boss
+    size: huge
+    isBoss: true
+    dangerTier: 6
+    tags: [boss, heartwood, truefinale]
+    # The true-clear spike: a wider, harder grove-wrath than the rootheart's, plus a coiling wood
+    # crush on the back line. Credible wipe without deep wood-resist + metal prep — the peak of the
+    # "prepare or fall" curve, but a fully-readied party fells it.
+    abilities:
+      - name: Wrath of the Worldheart
+        chance: 60
+        target: any
+        locales: { ja: { name: 世界樹の慟哭 } }
+        effect:
+          kind: damage
+          min: 8
+          max: 12
+          element: wood
+      - name: Heartroot Coil
+        chance: 40
+        target: back
+        locales: { ja: { name: 芯根の緊縛 } }
+        effect:
+          kind: damage
+          min: 6
+          max: 9
+          element: wood
   - id: enemy.verdant.rare.gilded-sporecloud
     name: Gilded Sporecloud
     locales:

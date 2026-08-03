@@ -191,8 +191,14 @@ const FLOORS = [
     boss: ["Strangler Warden", "絞め殺しの番人"], bossEnemy: "enemy.verdant.g6.strangler-warden", bossEnc: "encounters.verdant.g6.gate" },
   { n: 7, seed: 50507, level: 7, title: ["Heartwood Husks", "樹心の殻"],
     boss: ["Heartwood Husk", "樹心の殻守"], bossEnemy: "enemy.verdant.g7.heartwood-husk", bossEnc: "encounters.verdant.g7.gate" },
-  { n: 8, seed: 50508, level: 8, title: ["The Green Heart", "翠の樹心"],
-    boss: ["Rootheart", "樹心の主"], bossEnemy: "enemy.verdant.g8.rootheart", bossEnc: null, finale: true }
+  // 10F (T31): g8 is now Act III deep trash (no boss); g9 = the rootheart SCENARIO-clear boss; g10 = the
+  // 真層 (true-clear) floor with the NEW worldheart boss (finale). Balance extends 地続き from the 8F curve.
+  { n: 8, seed: 50508, level: 8, title: ["Deep Heartwood", "深き樹心"],
+    boss: null, bossEnc: "encounters.verdant.g8.pack" },
+  { n: 9, seed: 50509, level: 9, title: ["The Green Heart", "翠の樹心"],
+    boss: ["Rootheart", "樹心の主"], bossEnemy: "enemy.verdant.g8.rootheart", bossEnc: "encounters.verdant.g9.keep" },
+  { n: 10, seed: 50510, level: 10, title: ["The Worldheart", "世界樹の芯"],
+    boss: ["Worldheart", "世界樹の芯"], bossEnemy: "enemy.verdant.g10.worldheart", bossEnc: null, finale: true }
 ];
 
 const rid = (n, suffix) => `room.verdant.g${n}f.${suffix}`;
@@ -311,8 +317,8 @@ function buildFloor(spec) {
     n === 1 ? "地上への入口。苔むした階段が陽の光へと登っていく。" : "根の絡む踊り場。階段が上の階へと登っていく。",
     n === 1
       ? "    stairsToTown: true\n    returnStyle: stairs\n"
-      : n === 4 || n === 7
-        ? "    restPoint: true\n" // act-boundary checkpoint (resume from town), mirrors default b3/b6
+      : n === 4 || n === 7 || n === 10
+        ? "    restPoint: true\n" // act-boundary + 真層 checkpoint (resume from town), mirrors default b3/b6
         : ""
   ));
   // Each plain chamber is a true 玄室: chamberGuardian gates its fight PER-ROOM (by its own chest claim),
