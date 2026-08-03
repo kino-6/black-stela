@@ -2,18 +2,29 @@
 treasureTables:
   - id: treasure.verdant.g1.side
     tier: 1
+    # G1 side chests now hand VARIETY — gear across slots (whip / buckler / hood) and a sellable valuable,
+    # not just potions or the one thorn-lash (playtest 2026-08-03「イバラの鞭か二束三文ばかり」).
     entries:
-      - { itemId: item.healing-draught, weight: 6 }
-      - { itemId: item.verdant.sap-draught, weight: 5 }
-      - { itemId: item.verdant.pollen-salve, weight: 4 }
-      # A 玄室 is a fight — its chest can hold gear, rolled with a floor-scaled rarity/affix, not only potions.
+      - { itemId: item.healing-draught, weight: 5 }
+      - { itemId: item.verdant.sap-draught, weight: 4 }
+      - { itemId: item.verdant.pollen-salve, weight: 3 }
+      - { itemId: item.verdant.amber-resin, weight: 4 }
       - { itemId: equip.verdant.thorn-lash, weight: 3 }
+      - { itemId: equip.verdant.bark-buckler, weight: 3 }
+      - { itemId: equip.verdant.moss-hood, weight: 3 }
   - id: treasure.verdant.g1.keep
     tier: 1
+    # The G1 keep (a guardian fight) reliably yields GEAR — spread across the whip, body, offhand and head,
+    # so it's a real equip upgrade, not a near-guaranteed duplicate thorn-lash. Gear weight stays ≥ the
+    # consumable weight (treasureRewards gate).
     entries:
-      - { itemId: item.verdant.greater-sap, weight: 3 }
-      - { itemId: item.verdant.homing-spore, weight: 3 }
-      - { itemId: equip.verdant.thorn-lash, weight: 10 }
+      - { itemId: equip.verdant.thorn-lash, weight: 4 }
+      - { itemId: equip.verdant.bark-plate, weight: 4 }
+      - { itemId: equip.verdant.bark-buckler, weight: 3 }
+      - { itemId: equip.verdant.moss-hood, weight: 3 }
+      - { itemId: item.verdant.amber-resin, weight: 3 }
+      - { itemId: item.verdant.greater-sap, weight: 2 }
+      - { itemId: item.verdant.homing-spore, weight: 2 }
   - id: treasure.verdant.g2.side
     tier: 1
     entries:

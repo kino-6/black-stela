@@ -8,10 +8,15 @@ encounterTables:
   - id: encounters.verdant.g1.pack
     floorId: dungeon.verdant.g1f
     groupsMax: 2
+    # G1F now introduces FOUR distinct types with an even spread, so the shallows don't read as "the same
+    # bug every fight" (playtest 2026-08-03「1Fずっと同じ敵」). bark-tick (art delivered, T14) joins the two
+    # native g1 swarmers + the thorn-crawler; moss-mite no longer dominates the roll. (More NEW g1 types are
+    # queued for Codex art — see docs/handoffs.) first-contact keeps each type to one fight/run.
     entries:
-      - { enemyId: enemy.verdant.g1.moss-mite, weight: 10, minCount: 3, maxCount: 5 }
-      - { enemyId: enemy.verdant.g1.spore-gnat, weight: 8, minCount: 2, maxCount: 4 }
-      - { enemyId: enemy.verdant.g2.thorn-crawler, weight: 5, minCount: 1, maxCount: 2 }
+      - { enemyId: enemy.verdant.g1.moss-mite, weight: 7, minCount: 2, maxCount: 3 }
+      - { enemyId: enemy.verdant.g1.spore-gnat, weight: 7, minCount: 2, maxCount: 3 }
+      - { enemyId: enemy.verdant.g1.bark-tick, weight: 6, minCount: 1, maxCount: 2 }
+      - { enemyId: enemy.verdant.g2.thorn-crawler, weight: 5, minCount: 1, maxCount: 1 }
   - id: encounters.verdant.g2.pack
     floorId: dungeon.verdant.g2f
     groupsMax: 2

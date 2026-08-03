@@ -55,12 +55,25 @@ IMP-060/061/062/063/064 completion records in `Improve.md`.
   ついでにログの敵名が英語漏れ（「Spore Gnat」→「胞子蝿」）— beatのtargetNameをローカライズ名にする。
   - **Gate:** `verify_combat_*` にビートごとの手番ポートレート＝行動者、ログ敵名がローカライズ、を追加。
 
-- [ ] **T26 — Verdant G1F の戦利品が二束三文ばかり** (content) — 翠碑 G1F で「イバラの鞭」か、売っても
+- [ ] **T27 — 町メニュー：開けない＋トグル表示バグ** (Godot) — (a) **街でメニューが開けない**（右上メニュー/
+  設定へ到達できない・再オープン不可＝コントローラ経路の欠落の疑い）。開けるようにする。(b) 設定トグル
+  （危険時オート停止・実行確認・戦闘ログ一気・手番拡大・効果音）の状態表示が「オート」「停止」になっていて
+  意味不明 → **オン/オフ（有効/無効）** に直す。設定を右上に出すこと自体はOK（配置は変えない）。
+  - **Gate:** `verify_town_controller`/`verify_config_*` に「町でメニューが開ける（フォーカス到達）」＋
+    「トグル状態ラベルがオン/オフ」を追加。現行で落ちることを確認してから修正。
+
+- [x] **T26 — Verdant G1F の戦利品が二束三文ばかり** — DONE: G1 戦利品に**スロット別の装備**（樹皮の小盾/
+  苔の頭巾、既存の茨の鞭/樹皮の鎧）＋**換金物**（琥珀の樹脂 sell28）を追加。g1.side/g1.keep をリバランス
+  （茨の鞭の独占 w10 を解消、keep は gear weight ≥ consumable を維持＝treasureRewards 緑）。装備はテキストUIで
+  3Dアート不要。733 unit・build 緑。(content) — 翠碑 G1F で「イバラの鞭」か、売っても
   二束三文のアイテムしか出ない。G1F の宝箱/ドロップに、序盤として価値ある選択肢（使える装備・素材・そこそこの
   換金物）を増やす。`content/worlds/verdant/`（items/loot tables/chests）。treasureRewards 等のゲート維持。
   - **Gate:** verdant loot テーブルの gear/価値の下限を lock、`tests/treasureRewards.test.ts` 相当を verdant にも。
 
-- [ ] **T25 — Verdant G1F の敵が単調（同じ敵ばかり）** (content) — 翠碑 G1F でずっと同じ敵に当たる。
+- [x] **T25 — Verdant G1F の敵が単調（同じ敵ばかり）** — DONE(一次): G1F pack を moss-mite 独占（w10）から
+  **4種を均等配分**（moss-mite/spore-gnat/bark-tick/thorn-crawler、各 w5-7）に。bark-tick は既存アート（T14）を
+  G1へ投入。first-contact の各種を軽量化して act 曲線維持（733 unit・verdant balance 緑）。**追加の新規敵種は
+  Codex アート待ち**（新スプライトが無いと透明描画）。(content) — 翠碑 G1F でずっと同じ敵に当たる。
   first-contact モデル（各TYPE 1回/run）で G1F が導入する種が少ない。G1F に敵タイプを追加し、序盤の
   出会いに変化を出す（`content/worlds/verdant/` の enemies/encounters/dungeon rooms、descentSim で act 曲線維持）。
   - **Gate:** verdant balance/coverage sim + `verify_verdant_chambers` 緑、G1F の導入タイプ数が増える。

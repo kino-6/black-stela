@@ -55,6 +55,17 @@ items:
       ja:
         name: 大樹の種
         description: 樹心の芯から採れた、脈打つ種。
+  # A G1 valuable — worth carrying out to SELL, so a shallow chest isn't only 二束三文 consumables
+  # (playtest 2026-08-03). Not the best money, but a clear "cash this in" find for the early run.
+  - id: item.verdant.amber-resin
+    name: Amber Resin
+    kind: treasure
+    tier: 1
+    sellValue: 28
+    locales:
+      ja:
+        name: 琥珀の樹脂
+        description: 根方に溜まった、まだ柔らかい琥珀の塊。町でそこそこの値がつく。
   # ---- Growth items (verdant flavour; XP grants bypass the falloff) ----
   - id: item.verdant.heartsap-tonic
     name: Heartsap Tonic
@@ -193,6 +204,35 @@ equipment:
       ja:
         name: 茨の鞭
         description: 生きた茨の鞭。後列からも届く。
+  # ---- G1 early gear (T26 loot variety): options across slots the whip doesn't fill, so a shallow chest
+  #      can hand a real upgrade, not only the thorn-lash or a junk potion. Modest tier-1 stats. ----
+  - id: equip.verdant.bark-buckler
+    name: Bark Buckler
+    description: A small round shield of layered bark; light enough for a quick hand.
+    slot: offhand
+    tier: 1
+    armorBonus: 2
+    price: 42
+    sellValue: 14
+    tags: [shield, bark]
+    locales:
+      ja:
+        name: 樹皮の小盾
+        description: 樹皮を重ねた小さな丸盾。軽く、素早い手にも扱える。
+  - id: equip.verdant.moss-hood
+    name: Moss Hood
+    description: A hood matted with living moss; it softens a blow and steadies the head.
+    slot: head
+    tier: 1
+    armorBonus: 1
+    hpBonus: 3
+    price: 46
+    sellValue: 15
+    tags: [head, moss]
+    locales:
+      ja:
+        name: 苔の頭巾
+        description: 生きた苔が絡む頭巾。打撃をやわらげ、頭を守る。
   - id: equip.verdant.bark-plate
     name: Bark Plate
     description: Overlapping bark scutes, grown to fit; heavy but sure.
