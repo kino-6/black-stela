@@ -75,6 +75,21 @@ IMP-060/061/062/063/064 completion records in `Improve.md`.
   - **Gate:** `dungeonDesign.test`（各階を免除リストから外し、密度・ループ・正直スイープ300–360・on-path分岐・
     近道・玄室）＋ `chamberGuardian.test`（door-choke）＋ `difficultyGate`/balance sim ＋ `verify_parity`/
     `verify_flow` 緑＋各階の実機キャプチャ。
+  - **注:** 下記 T31 で両世界が10階化されるため、対象は **B2–B10**（B9/B10 は新規、作り込み保持は B2–B8）。
+
+- [ ] **T31 — 両世界を10階に拡張（真層＋真ボス）** — user 決定 2026-08-03。現行8階を **10階**へ**地続きで延伸**。
+  構成：3階ごとの雰囲気帯 B1–3 / B4–6 / B7–9（3幕）＋ **B10=真層（完全クリア）**。**B9=シナリオボス**（現
+  フィナーレ ash-votary / rootheart を移設、既存アート流用）、**B10=真ボス**（新規）。B7/B8→Act III 深部トラッシュ、
+  ボスは B9 へ。Verdant も同様（G1–G10、G9=rootheart、G10=新真ボス）。
+  - **やること:** (1) Verdant は `genVerdantFloors` の FLOORS を10化して g9/g10 生成（生成世界なので容易）。
+    (2) Default は b9/b10 追加（T29 の生成器と併せて）。(3) B10/G10 の**真ボス敵データ**を `enemies.md` に作成
+    ＋遭遇/宝テーブル、(4) 幕再マップ（dungeon-areas.md 済）、(5) `descentSim`/`dungeonDesign`/`difficultyGate`/
+    trough 目標を **10階へ延伸**（地続き）、(6) B10 は B9 撃破後に開く導線。
+  - **アセット（Codex 発注済 `docs/handoffs/2026-08-03-10f-assets-request.md`）:** B10/G10 真ボスのスプライト
+    （base+hurt）が critical path（無いと透明）。真層テクスチャは当面 block3 流用で可（後追い）。
+  - **Gate:** `descentSim.test`/`difficultyGate`（10階の act 曲線・地続きトラフ・prepared 非全滅）＋
+    `dungeonDesign`/`chamberGuardian`（新階も）＋ `verify_parity`/`verify_flow` ＋ 世界レジストリが g9/g10・b9/b10
+    をロード＋ B9→B10 導線の e2e ＋各新階の実機キャプチャ。
 
 - [ ] **T30 — 1シナリオに N 個の迷宮を持てるようにする（T29 後）** — 現在 world は迷宮1本（8階の降下）だが、
   1シナリオが複数の独立した迷宮を持てるようにする。world データモデル・ダンジョンレジストリ・町からの入口
