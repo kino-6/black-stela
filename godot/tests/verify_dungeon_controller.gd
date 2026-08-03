@@ -362,6 +362,19 @@ func _initialize() -> void:
 	})
 	_check(String(d.call("_event_line", {"type": "search_completed"})).find("見つからない") != -1, "search with the secret still hidden says nothing found (T7)")
 
+	# P10 (playtest 2026-08-03「階段が消えている」): up and down stairs both read as one generic 階段, so the
+	# descent could not be told apart from the way back. The prompt now distinguishes direction by the world's
+	# dungeon order — lock it so a deeper target reads DESCEND and a shallower one reads ASCEND.
+	var p10_world: Dictionary = d.get("_world")
+	var p10_b2f: Dictionary = {}
+	for dg in p10_world.get("dungeons", []):
+		if String((dg as Dictionary).get("id", "")) == "dungeon.b2f":
+			p10_b2f = dg
+	var p10_room := String(((p10_b2f.get("rooms", []) as Array)[0] as Dictionary).get("id", ""))
+	d.set("_state", {"phase": "dungeon", "position": {"roomId": p10_room, "cellId": "c", "facing": "north"}, "map": {}})
+	_check(bool(d.call("_stairs_is_descent", "dungeon.b3f")), "a deeper target floor reads as DESCEND (b2f→b3f)")
+	_check(not bool(d.call("_stairs_is_descent", "dungeon.b1f")), "a shallower target floor reads as ASCEND (b2f→b1f)")
+
 	print("[dungeon-controller] %s (%d failures)" % ["PASS" if _fail == 0 else "FAIL", _fail])
 	quit(_fail)
 

@@ -57,8 +57,12 @@ IMP-060/061/062/063/064 completion records in `Improve.md`.
 - [ ] **P9 商店に貯金の動機となる上位武器を1個限定で置く**（初期装備の羅列は無意味）— content で gear+shop stock。
 - [~] **P10 階段が見つからない（発見性）** — *論理は正常*（TS/Godot両grid に g2f.001→g1f, g2f.exit→g3f の階段セル
   存在、`verify_dungeon_controller` の stairs判定PASS）。階段セルに立てば `決定=階段` が出る。問題は**下り/上り
-  階段が地図で同じ「=」で区別できず降り口が見つからない**こと。legibility修正：context ラベルとマップ記号で
-  下り(次の階へ)／上り(前の階へ戻る)を区別する。Gate: dungeon_controller にラベル分岐アサート追加。
+  階段が同じ「階段」表示で区別できず降り口が分からない**こと。
+  - **[x] ラベル区別（済・commit）:** context ラベル＆ dock を、目的階の world.dungeons 順序で **「次の階へ降りる」
+    / 「前の階へ戻る」** に出し分け（`_stairs_target_floor_id` + `_stairs_is_descent`）。Gate: verify_dungeon_controller
+    に方向判定アサート（b2f→b3f=降下 / b2f→b1f=上昇）追加、緑。
+  - **[ ] 地図記号の下り/上り区別（残）:** full map / minimap で下り階段と帰還(上り)階段を別記号・別色にし、
+    100%踏破後でも降り口が一目で分かるようにする（floor_map.gd）。これが「探せない」核心の残り半分。
 
 ---
 

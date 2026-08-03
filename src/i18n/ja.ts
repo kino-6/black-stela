@@ -504,6 +504,8 @@ export const ja = {
     chestLootReceived: "{item} ×{quantity}",
     chestNoLoot: "中には何も残っていなかった。",
     useStairs: "階段を使う",
+    descendStairs: "次の階へ降りる",
+    ascendStairs: "前の階へ戻る",
     descentLocked: "この階段はまだ通れない——この階に、やり残したことがある。",
     descentLockedShort: "階段封鎖",
     useReturnMarker: "帰還標を使う",

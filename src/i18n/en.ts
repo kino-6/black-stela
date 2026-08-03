@@ -502,6 +502,8 @@ export const en = {
     chestLootReceived: "{item} ×{quantity}",
     chestNoLoot: "Nothing remains inside.",
     useStairs: "Use stairs",
+    descendStairs: "Descend to the next floor",
+    ascendStairs: "Return to the floor above",
     descentLocked: "The stair won't take you yet — something on this floor is unfinished.",
     descentLockedShort: "Stair sealed",
     useReturnMarker: "Use return marker",

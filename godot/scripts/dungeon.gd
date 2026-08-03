@@ -558,7 +558,9 @@ func _context_command() -> String:
 func _context_label() -> String:
 	match _context_command():
 		"stairs":
-			return I18n.t("play.useStairs")
+			# 下り(次の階へ) と 上り(前の階へ戻る) は両方 stairs だが向きが逆 — 同じ「階段」表示だと降り口が
+			# 探せない(playtest 2026-08-03「階段が消えている」)。目的階の順序で降下/上昇を出し分ける。
+			return I18n.t("play.descendStairs" if _stairs_is_descent(_stairs_target_floor_id()) else "play.ascendStairs")
 		"return":
 			var room: Variant = _current_room()
 			var via_stairs := typeof(room) == TYPE_DICTIONARY and bool(room.get("stairsToTown", false))
@@ -574,7 +576,7 @@ func _dock_commands() -> Array:
 	var room: Variant = _current_room()
 	var gate: Variant = _blocking_stair_gate()
 	if _has_stairs_here() and typeof(gate) != TYPE_DICTIONARY:
-		out.append({"kind": "stairs", "label": I18n.t("play.useStairs")})
+		out.append({"kind": "stairs", "label": I18n.t("play.descendStairs" if _stairs_is_descent(_stairs_target_floor_id()) else "play.ascendStairs")})
 	elif typeof(gate) == TYPE_DICTIONARY:
 		# #68: a DISABLED command with the same footprint, never a variable-width clue tile — the dock
 		# must not reflow. React hides the reason in a tooltip; a controller player never hovers, so the
@@ -662,6 +664,41 @@ func _has_stairs_here() -> bool:
 					if typeof(edge) == TYPE_DICTIONARY and edge.get("kind", "") == "stairs":
 						return true
 	return false
+
+# The targetFloorId of the stairs edge on the current cell ("" if none) — so the prompt can say WHICH WAY the
+# stair leads. Up (return) and down (descend) both read as "stairs"; without this they showed one label.
+func _stairs_target_floor_id() -> String:
+	if _state.get("position", null) == null:
+		return ""
+	var room_id: String = _state["position"]["roomId"]
+	for dungeon in _world.get("dungeons", []):
+		for cell in (dungeon.get("grid", {}) as Dictionary).get("cells", []):
+			if cell.get("roomId", "") == room_id:
+				for dir in (cell.get("edges", {}) as Dictionary):
+					var edge: Variant = (cell["edges"] as Dictionary)[dir]
+					if typeof(edge) == TYPE_DICTIONARY and String(edge.get("kind", "")) == "stairs":
+						return String(edge.get("targetFloorId", ""))
+	return ""
+
+# Descent = the target floor sits LATER in the world's dungeon order (authored deepest-last, the order
+# descentSim walks). Unknown/ambiguous defaults to descent, the common case.
+func _stairs_is_descent(target_floor_id: String) -> bool:
+	if target_floor_id == "" or _state.get("position", null) == null:
+		return true
+	var room_id: String = _state["position"]["roomId"]
+	var dungeons: Array = _world.get("dungeons", [])
+	var cur_idx := -1
+	var tgt_idx := -1
+	for i in dungeons.size():
+		var d: Dictionary = dungeons[i]
+		if String(d.get("id", "")) == target_floor_id:
+			tgt_idx = i
+		for room in d.get("rooms", []):
+			if String(room.get("id", "")) == room_id:
+				cur_idx = i
+	if cur_idx < 0 or tgt_idx < 0:
+		return true
+	return tgt_idx > cur_idx
 
 # Leaving a chest does NOT consume it — the party simply stops standing on the prompt.
 func _leave_chest() -> void:
