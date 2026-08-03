@@ -36,8 +36,12 @@ static func build(world: Dictionary, state: Dictionary, run: Object, view_size: 
 	env.environment = e
 	vp.add_child(env)
 
+	# Camera framing is tunable per world (palette). Standing in a 3m cell, a wall/door is only 1.5m off
+	# and fills the frame; `cameraPullback` slides the eye back toward the cell's rear so the wall, its
+	# door frame and the surrounding room read as context instead of a flat plane, and `cameraFov` widens
+	# the lens. Both live in data so a scenario can dial its own sense of space without a code change.
 	var camera := Camera3D.new()
-	camera.fov = 72.0
+	camera.fov = float(pal.get("cameraFov", 75.0))
 	camera.near = 0.05
 	vp.add_child(camera)
 
@@ -49,7 +53,10 @@ static func build(world: Dictionary, state: Dictionary, run: Object, view_size: 
 	vp.add_child(torch)
 
 	_build_geometry(vp, world, state, run)
-	return {"container": container, "camera": camera, "torch": torch, "rendered_floor": _current_floor_id(state, world)}
+	# Keep the pull-back inside the cell (rear wall is CELL/2 = 1.5m back; clamp to 1.2 so the eye never
+	# clips through it) and hand it to the scene, which positions the camera per step.
+	var pullback: float = clampf(float(pal.get("cameraPullback", 0.55)), 0.0, 1.2)
+	return {"container": container, "camera": camera, "torch": torch, "pullback": pullback, "rendered_floor": _current_floor_id(state, world)}
 
 static func _build_geometry(parent: Node, world: Dictionary, state: Dictionary, run: Object) -> void:
 	var block := _block_textures(state, world, run)
@@ -69,17 +76,17 @@ static func _build_geometry(parent: Node, world: Dictionary, state: Dictionary, 
 		ceil_mat.emission = ceil_col
 		ceil_mat.emission_energy_multiplier = 0.2
 	var chamber_wall_mat := _textured_mat(block["wall"], Color(String(pal.get("chamberWall", "a18e62"))))
-	# The DOOR FRAME reads as pale dressed STONE, distinct from the world's wall (verdant's green vine), so a
-	# closed 玄室 door announces "a built, sealed room ahead" from the approach rather than blending into the
-	# corridor (Codex 2026-08-03). A SOLID pale stone (tinting the dark vine texture only multiplied back to
-	# green); a scenario can override `chamberFrame`.
-	var chamber_frame_mat := _mat(Color(String(pal.get("chamberFrame", "cdbfa2"))))
 	var chamber_accent := Color(String(pal.get("chamberAccent", "c9a765")))
 	var chamber_seal_path := _asset(world, run, "dungeon/chamber-floor-seal.png")
 	# `door` remains a walkable edge in the rules. Its visual is a rooted, opened threshold: enough to
 	# announce a room boundary without pretending that the player is blocked by a collision the rules do
 	# not have. The scenario pack owns the texture; the shared renderer only places it.
 	var door_mat := _textured_mat(_asset(world, run, "dungeon/wood-door.jpg"), Color("d2b184"))
+	# The DOOR FRAME is TEXTURED dark WOOD, not a flat pale stone (a solid colour read as a glowing
+	# untextured fallback in-build — playtest 2026-08-03). A darker tint on the same wood texture so the
+	# structural surround reads distinct from the lighter leaves, natural, and NEVER glowing; still a broad
+	# framed threshold so a closed 玄室 announces a room. A scenario can override the tint via `chamberFrame`.
+	var chamber_frame_mat := _textured_mat(_asset(world, run, "dungeon/wood-door.jpg"), Color(String(pal.get("chamberFrame", "8f6f45"))))
 	var rendered_doors := {}
 
 	var floor_dungeon := _current_floor_id(state, world)
@@ -173,10 +180,7 @@ static func _build_geometry(parent: Node, world: Dictionary, state: Dictionary, 
 						if String((ch as Dictionary).get("roomId", "")) == rid:
 							cleared = true
 							break
-				# Pass the PALE FRAME stone (not the green wall) for the crown + corner stones, so the room's
-				# built elements read as dressed stone consistent with its doorway — the interior says "room",
-				# not "green corridor" (Codex 2026-08-03), without adding any new floating prop.
-				_add_chamber_landmarks(parent, base, chamber_frame_mat, chamber_accent, wall_height, cleared, chamber_seal_path)
+				_add_chamber_landmarks(parent, base, chamber_wall_mat, chamber_accent, wall_height, cleared, chamber_seal_path)
 			# The pack ships stair-up/stair-down art; draw it so a stair cell is VISIBLE in the first-person
 			# view instead of a plain dead-end the 階段を使う command only hints at (playtest: asset delivered,
 			# never rendered).
@@ -449,14 +453,13 @@ static func _add_door(parent: Node, door_mat: Material, frame_mat: Material, wal
 
 	# Threshold frame: intentionally broad but not a wall. It makes the entrance read from a distance even
 	# when the door texture is dark, while its colour follows the chamber/world palette rather than a UI gold.
-	# A CHUNKY dressed-STONE surround: broad jambs, a deep lintel, and a raised keystone above it, so the
-	# threshold reads as built architecture head-on (Codex: 石枠・楣を主役に). Frame material is pale stone,
-	# distinct from the wall, and stands slightly PROUD of the wall plane (z = -0.06) so it catches the light.
+	# A broad WOODEN door surround (jambs + lintel) standing slightly proud of the wall (z = -0.05) so the
+	# threshold reads as a framed doorway head-on — enough to announce a room, without the stone keystone that
+	# read as odd/glowing on a wood frame (playtest 2026-08-03).
 	for spec in [
-		{"size": Vector3(0.30, 2.70, 0.30), "pos": Vector3(-1.05, 1.35, -0.06)},   # left jamb
-		{"size": Vector3(0.30, 2.70, 0.30), "pos": Vector3(1.05, 1.35, -0.06)},    # right jamb
-		{"size": Vector3(2.52, 0.34, 0.32), "pos": Vector3(0, 2.62, -0.06)},       # lintel
-		{"size": Vector3(0.70, 0.30, 0.34), "pos": Vector3(0, 2.92, -0.08)},       # keystone
+		{"size": Vector3(0.22, 2.62, 0.24), "pos": Vector3(-1.06, 1.31, -0.05)},   # left jamb
+		{"size": Vector3(0.22, 2.62, 0.24), "pos": Vector3(1.06, 1.31, -0.05)},    # right jamb
+		{"size": Vector3(2.40, 0.26, 0.26), "pos": Vector3(0, 2.55, -0.05)},       # lintel
 	]:
 		_add_box(root, spec["size"], frame_mat, spec["pos"])
 

@@ -115,6 +115,7 @@ func _open_dirs(cell: Dictionary) -> Array:
 # --- 3D corridor ----------------------------------------------------------------------------------
 var _view3d: SubViewportContainer = null   # the 3D view; rebuilt when the party changes floor
 var _rendered_floor: String = ""           # the floor id _build_geometry last drew
+var _cam_pullback: float = 0.55             # eye slid back from cell-centre (palette cameraPullback) so a faced wall isn't the whole view
 
 func _build_3d() -> void:
 	# The 3D renderer is a collaborator (IMP-051): it builds the SubViewport + geometry and hands back the
@@ -123,6 +124,7 @@ func _build_3d() -> void:
 	_view3d = built["container"]
 	_camera = built["camera"]
 	_torch = built["torch"]
+	_cam_pullback = float(built.get("pullback", 0.55))
 	_rendered_floor = String(built["rendered_floor"])
 	add_child(_view3d)
 	move_child(_view3d, 0)   # keep the 3D view UNDER the HUD overlays
@@ -1113,7 +1115,10 @@ func _update_view(animate: bool) -> void:
 			"down": look.y -= 0.58
 			"up": look.y += 0.42
 	if _camera:
-		_camera.position = base
+		# Slide the eye back from cell-centre (opposite facing) so a faced wall/door sits at a natural
+		# distance with its frame and the room around it in view — not pressed flat against the lens. The
+		# look target stays ahead, so only the standing distance changes. Pull-back is palette-tunable.
+		_camera.position = base - _facing_vec(facing) * _cam_pullback
 		_camera.look_at(look, Vector3.UP)
 	if _torch:
 		_torch.position = base + _facing_vec(facing) * 0.4
