@@ -62,7 +62,9 @@ static func build(settings: Dictionary, on_change: Callable, heading: bool = tru
 		var row := UI.row()
 		# The state is spelled out, not implied by a colour — a controller player reads it, never hovers.
 		row.add_child(UI.grow(UI.label(I18n.t(String(toggle["label"])), 18, UI.INK)))
-		var b := UI.button(I18n.t("tempo.auto") if on else I18n.t("tempo.stop"), func(): _flip(settings, key, on_change), Vector2(140, 42), 16)
+		# The state label is a plain ON/OFF — it used to reuse the combat "オート/停止" tempo words, which read
+		# as nonsense on a settings toggle (playtest 2026-08-03「オート/停止でバグっている」).
+		var b := UI.button(I18n.t("config.on") if on else I18n.t("config.off"), func(): _flip(settings, key, on_change), Vector2(140, 42), 16)
 		b.add_theme_color_override("font_color", UI.OK if on else UI.DIM)
 		row.add_child(b)
 		col.add_child(UI.card(row))

@@ -12,7 +12,9 @@ export const en = {
     instantCombatLog: "Show the combat log all at once (skip the blow-by-blow reveal)",
     confirmRound: "Confirm before resolving a round (after all orders are set)",
     spotlightActor: "Spotlight the acting character during command select",
-    sfxEnabled: "Sound effects (confirm / cancel / cursor)"
+    sfxEnabled: "Sound effects (confirm / cancel / cursor)",
+    on: "On",
+    off: "Off"
   },
   beat: {
     hit: "{actor} {verb} {target}. {damage} damage!",

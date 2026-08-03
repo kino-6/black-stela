@@ -14,7 +14,9 @@ export const ja = {
     instantCombatLog: "戦闘ログを一気に表示（1手ずつの演出を省く）",
     confirmRound: "指示入力の完了後に実行を確認する",
     spotlightActor: "行動選択中に手番のキャラを大きく映す",
-    sfxEnabled: "効果音（決定・キャンセル・カーソル）"
+    sfxEnabled: "効果音（決定・キャンセル・カーソル）",
+    on: "オン",
+    off: "オフ"
   },
   beat: {
     hit: "{actor}が{target}に{verb}。 {target}に{damage}ダメージ！",

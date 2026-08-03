@@ -650,6 +650,16 @@ func _build_service() -> void:
 
 # Cancel resolves one step back, always: counter -> services -> square.
 func _unhandled_input(event: InputEvent) -> void:
+	# The dedicated menu key (Tab) opens the town menu from the root and closes it if open. The top-right
+	# メニュー button was the ONLY way in and it is not in the controller focus ring, so a keyboard/controller
+	# player at the town root could not reach the settings at all (playtest 2026-08-03「街でメニュー開けない」).
+	if event.is_action_pressed("menu"):
+		if _menu_open:
+			_close_menu()
+		elif _service == "" and _location == "":
+			_open_menu()
+		get_viewport().set_input_as_handled()
+		return
 	if not event.is_action_pressed("cancel"):
 		return
 	if _menu_open:
@@ -666,6 +676,11 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 	elif _location != "":
 		_go_location("")
+		get_viewport().set_input_as_handled()
+	else:
+		# Town ROOT: cancel has nowhere to back out to, so it opens the menu — the same "cancel → メニュー"
+		# affordance the dungeon offers, and it guarantees cancel always resolves to something.
+		_open_menu()
 		get_viewport().set_input_as_handled()
 
 func _on_descend() -> void:
