@@ -67,19 +67,27 @@ IMP-060/061/062/063/064 completion records in `Improve.md`.
   味方バーは全beat後(`combat.gd:651`)に一括更新＝アニメ中は据置。React beat は per-beat `groups`/`party`
   スナップショットを持つ(rulesEngine.ts:1239)。Godot beat に snapshot を載せ、両バーを beat 単位で駆動する。
   Gate: verify_combat_numbers 拡張 + 実機。
-- [ ] **P8 戦利品が寂しい／全職業の全装備が概ね揃う程度にドロップを増やす**（＋ランダムエンチャント頻度上げ）—
-  content/worlds/*/ の loot/drop を data で調整、loot sim で検証、経済破綻させない。
-- [ ] **P9 商店に貯金の動機となる上位武器を1個限定で置く**（初期装備の羅列は無意味）
-  - **調査（2026-08-04）:** shop stock 形式は `stock: - { itemId, price, availability: always|unlocked|limited,
-    unlockFlag }`（`content/worlds/*/items.md` の `shops:`）。**注意：`availability:"limited"` はスキーマ
-    (`scenario.ts:240`)にあるが消費側が無く未実装＝「1個限定」は現状効かない。** → (A) limited在庫の実装
-    （購入回数追跡＋sold-out表示、rules+UI+parity）か、(B) 高価格の上位武器を置いて価格自体を貯金動機にする、
-    のどちらか。**要ユーザー判断。**
-  - **武器候補（verdant, 既存だが shop未収録＝loot限定）:** `equip.verdant.iron-edge`（tier2 攻+4 metal 価150,
-    広class）／`equip.verdant.reaver-axe`（tier3 攻+6 metal, 価格未設定・sellValue120・**tags に "keyed"** ＝
-    boss counter のloot役割かも。shop化は要注意）。Default世界も同様の上位武器＋価格が要る。
-  - Gate: shop e2e / verify + economy gate（difficultyGate は kit=heal/cure 前提なので武器追加では壊れにくいが
-    要確認）。
+- [~] **P8/P9 憧れ装備ラインナップ＋探索ユーティリティ＝「面白さGate」**（user 2026-08-04：上位武器/防具を
+  「序盤無理・頑張れば届く・最終盤で活きる」段階に、＋探索が捗るユーティリティ品/アクセサリも。これを面白さの
+  Gateとして設置）
+  - **[x] 面白さGate（済・commit）** `tests/funGate.test.ts`：世界ごとに ①憧れ武器＋防具（shop購入可・price ≥ 250 の
+    貯金目標で、最も高い武器が最強＝貯金が報われる）②探索ユーティリティ品（kind∈{utility,escape}を3種以上＋帰還手段）
+    を要求。**Default(黒碑) は基準達成でLIVE緑**（tier3 warlord-blade 340/knight-plate 320 が flag.b7f.descent で終盤unlock、
+    ユーティリティ return-charm/lock-picks/trap-shim/dust-lens/lantern-oil）。ユーティリティは両世界LIVE緑。
+  - **[ ] Verdant 憧れ帯（`funGate` の todo）— 難易度統合パスが必須:** Verdant は shop 最高150G・価格付きtier3武器/防具
+    が無い。だが**素朴に足すと壊れる**：憧れ metal 装備を grove shop に入れると descentSim の現実的 `mid` パーティが
+    それを装備し、Verdant の**校正済み難易度カーブを緩める**（実測2026-08-04: verdantBalance の Act-I/エスカレーション
+    と difficultyGate の kit-runs-dry が赤化）。→ 正解は **(A) grove 深部の敵を再チューニングして良装備前提でカーブ維持**、
+    or **(B) sim の whole-descent loadout を availability-aware にして両世界再検証**。deliberate-difficulty の丁寧な
+    pass が要る（安易に balance gate を緩めない）。今セッションでは content/sim を revert して balance を無傷に戻し、
+    Gate のみ残置（Verdant憧れ帯は todo）。**この pass が P8(ドロップ増量)とも整合するよう同時に設計する。**
+  - **参考:** `availability:"limited"`（scenario.ts:240）は消費側未実装＝「1個限定」は要機能追加。verdant候補
+    iron-edge(t2 攻+4 metal 150)/reaver-axe(t3 攻+6 metal, "keyed"=boss loot役割かも)。verdant装備は `armorBonus`、
+    default は `defenseBonus`（要確認・パリティ注意）。
+- **既知の赤（私の作業外・要対応）:** `tests/itemAlternatives.test.ts` + `tests/techniqueLines.test.ts` が
+  **terminal-line（Codex 052fdaa の未完 world; worldRegistry の glob が拾う）**で赤（unlock道具無し・fire未宣言）。
+  私の変更を stash しても再現＝既存。**#31 terminal-line F1/F2 完遂**まで、または draft world を registry/invariant
+  から除外するまで残る。truth gate(`gate:final`)がこの2件で赤なので注意。
 - [~] **P10 階段が見つからない（発見性）** — *論理は正常*（TS/Godot両grid に g2f.001→g1f, g2f.exit→g3f の階段セル
   存在、`verify_dungeon_controller` の stairs判定PASS）。階段セルに立てば `決定=階段` が出る。問題は**下り/上り
   階段が同じ「階段」表示で区別できず降り口が分からない**こと。
