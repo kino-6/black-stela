@@ -70,8 +70,15 @@ IMP-060/061/062/063/064 completion records in `Improve.md`.
     2. **既存の作り込みの扱い** — Default の B3/B5/B6 ミニボス、B2/B4/B7 の lock 降下・クランク・鍵付き金庫・
        spinner・dark_zone・squad 等の**bespoke ギミックは Verdant 生成器には無い**。純生成すると失われる。
        **(a) 均一な Verdant 風で置換** か **(b) 生成迷宮＋玄室に既存ギミックを再配線** かを確定。
-  - **進め方:** 破壊を避け、`genDefaultFloors.mjs` を作って **b2f をプレビュー生成（content/ を上書きしない）**して
-    構造ゲート緑を実証 → user が上記2判断を下してから本適用・横展開・バランス再調整。
+  - **判断確定（user 2026-08-03）:** **(c) クリーン再生成（Verdant風で統一）** — bespoke ギミックは捨て、
+    ミニボスは keep ボスとして保持。B8 も再生成対象（B7–B10 が Act III/真層）。
+  - **試行と発見（2026-08-03、コミットせず revert）:** `genDefaultFloors.mjs` を table 再利用に拡張し b2–b10 を
+    生成→ **2つの障壁**を確認。① **バランスが崩れる**：再生成フロアの玄室（確定戦闘）で curve が段差化
+    （b4f が 6%＝target 60-42% を大きく割る崖、深部 b8/b9≈2%・b10 mid WIPE）＝閾値でなく per-floor 玄室/pack の
+    実バランス再チューニングが必要。② **25テストが赤**：純 bespoke 13（rulesEngine "runtime gates and shortcuts"＝
+    lock/teleport/spinner/dark_zone/secret/damage-tile/gather/key-vault、削除でOK）＋ **実機能**（block-cap 構造・
+    rest point・checkpoint 復帰・trap disarm・debug traces・summary）の更新が必要。→ **腰を据えた1パス**（生成器
+    再構築＋玄室/pack バランス再調整＋feel レビュー＋テスト整理）で実施すべきと判断し、崩れた状態をコミットせず退避。
   - **Gate:** `dungeonDesign.test`（各階を免除リストから外し、密度・ループ・正直スイープ300–360・on-path分岐・
     近道・玄室）＋ `chamberGuardian.test`（door-choke）＋ `difficultyGate`/balance sim ＋ `verify_parity`/
     `verify_flow` 緑＋各階の実機キャプチャ。
