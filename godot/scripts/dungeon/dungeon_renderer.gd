@@ -220,6 +220,7 @@ static func _stairs_info(cell: Dictionary, floor_id: String) -> Dictionary:
 			return {
 				"kind": "down" if target != "" and _floor_depth(target) > depth else "up",
 				"direction": dir,
+				"target": target,  # "" = an up-stair that exits to TOWN (vs a shallower floor)
 			}
 	return {}
 
@@ -375,28 +376,24 @@ static func _add_wall(parent: Node, mat: Material, base: Vector3, dir: String, h
 		"west": m.rotation.y = PI / 2
 	parent.add_child(m)
 
-static func _add_chamber_landmarks(parent: Node, base: Vector3, wall_mat: Material, accent: Color, height: float, cleared: bool = false, seal_path: String = "") -> void:
-	# The old three-cylinder treatment made an oversized, luminous "magic circle" that floated at the bottom
-	# of the first-person view. A chamber now has one small, textured stone seal set into its floor: material
-	# detail and shallow relief sell an authored architectural place without a portal-like glow.
-	# Playtest: even the small accent inlays read as an "unexplained green object" — a coloured prop rather
-	# than stonework. MUTE the accent (drop most of its saturation) so the inlays read as tinted STONE, which
-	# is what makes the hall read as a room and not a placed object. (Codex art-lane owns the visual sign-off.)
-	accent = Color.from_hsv(accent.h, accent.s * 0.4, accent.v * 0.92, accent.a)
+static func _add_chamber_landmarks(parent: Node, base: Vector3, wall_mat: Material, _accent: Color, height: float, cleared: bool = false, seal_path: String = "") -> void:
+	# A chamber reads as a room from its STRUCTURE — a raised stone ceiling crown and low boundary cairns of
+	# the same chamber stone, plus a muted floor seal — not from any coloured/emissive accent. Every accent
+	# inlay and overhead glow that used to sit here read as an "unexplained green object" (Codex NG #2/#3
+	# 2026-08-03), so the accent is no longer drawn at all; only neutral stonework remains.
 	_add_chamber_floor_seal(parent, base, seal_path, cleared)
 	# The raised ceiling is part of the room's promise, not empty vertical space. Its subdued root-crown
 	# echoes the chamber's stonework overhead, so an approaching player reads the room before the floor mark
 	# is underfoot. It is architectural (flat to the ceiling), never a floating treasure prop.
+	# The overhead crown is plain chamber STONE, flat to the ceiling — no emissive inlay. The pale green
+	# glowing disk that used to sit here read as an "unexplained green object" growing from under the HUD
+	# (Codex NG #3 2026-08-03); it is removed entirely. The room reads from its structure (raised ceiling,
+	# stone frame), not an overhead light.
 	var crown := CylinderMesh.new()
 	crown.top_radius = 0.98
 	crown.bottom_radius = 0.98
 	crown.height = 0.035
 	_add_mesh(parent, crown, wall_mat, base + Vector3(0, height - 0.035, 0))
-	var crown_inlay := CylinderMesh.new()
-	crown_inlay.top_radius = 0.68
-	crown_inlay.bottom_radius = 0.68
-	crown_inlay.height = 0.02
-	_add_mesh(parent, crown_inlay, _emissive_mat(accent.darkened(0.20), 0.04), base + Vector3(0, height - 0.063, 0))
 
 	# Root-bound boundary stones replace the sight-blocking columns. They frame the raised ceiling and the
 	# battle floor, but stay below a standing character's waist when looked at from the approach corridor.
@@ -410,7 +407,8 @@ static func _add_chamber_landmarks(parent: Node, base: Vector3, wall_mat: Materi
 		cap.top_radius = 0.09
 		cap.bottom_radius = 0.13
 		cap.height = 0.035
-		_add_mesh(parent, cap, _emissive_mat(accent.darkened(0.18), 0.04), base + offset + Vector3(0, cairn.height + cap.height / 2.0, 0))
+		# Dark neutral STONE cap, not an emissive accent — the glow read as a coloured prop (Codex NG #3).
+		_add_mesh(parent, cap, wall_mat, base + offset + Vector3(0, cairn.height + cap.height / 2.0, 0))
 
 static func _add_chamber_floor_seal(parent: Node, base: Vector3, seal_path: String, cleared: bool) -> void:
 	if seal_path == "":
@@ -463,17 +461,18 @@ static func _add_door(parent: Node, door_mat: Material, frame_mat: Material, wal
 	# threshold reads as a framed doorway head-on — enough to announce a room, without the stone keystone that
 	# read as odd/glowing on a wood frame (playtest 2026-08-03).
 	#
-	# A GRAND portal (a 玄室 threshold) reaches nearly to the corridor ceiling with heavier jambs and a deep
-	# lintel beam, so a sealed guardian room reads as a big room from the corridor head-on — the architecture
-	# is the star, not the HUD-hidden floor seal (Codex 2026-08-03 玄室 NG). Still WOOD, no glow.
-	var jamb_t := 0.30 if grand else 0.22   # jamb thickness (across the opening)
-	var jamb_h := 2.90 if grand else 2.62   # jamb height
-	var jamb_d := 0.34 if grand else 0.24   # jamb depth (proud of the wall)
-	var jamb_x := 1.12 if grand else 1.06   # jamb centre off the opening centreline
-	var lintel_w := 2.68 if grand else 2.40
-	var lintel_h := 0.40 if grand else 0.26
-	var lintel_d := 0.40 if grand else 0.26
-	var lintel_y := 3.00 if grand else 2.55  # grand lintel top (3.20) meets the corridor ceiling (WALL_H)
+	# A 玄室 threshold is a STURDIER, slightly taller door (~1.1–1.2× a normal one) — a heftier wood-and-stone
+	# frame that says "a built room" without becoming a boss castle-gate. An earlier pass reached the corridor
+	# ceiling and read as a face/monument (Codex NG #3 2026-08-03); this keeps the lintel well below the ceiling
+	# so it stays a repeatable door, not staging. Still WOOD, no glow.
+	var jamb_t := 0.26 if grand else 0.22   # jamb thickness (across the opening)
+	var jamb_h := 2.86 if grand else 2.62   # jamb height (~1.09×)
+	var jamb_d := 0.28 if grand else 0.24   # jamb depth (proud of the wall)
+	var jamb_x := 1.08 if grand else 1.06   # jamb centre off the opening centreline
+	var lintel_w := 2.52 if grand else 2.40
+	var lintel_h := 0.30 if grand else 0.26
+	var lintel_d := 0.30 if grand else 0.26
+	var lintel_y := 2.80 if grand else 2.55  # lintel top (2.95) sits clear below the 3.2m ceiling — not a gate
 	for spec in [
 		{"size": Vector3(jamb_t, jamb_h, jamb_d), "pos": Vector3(-jamb_x, jamb_h / 2.0, -0.05)},   # left jamb
 		{"size": Vector3(jamb_t, jamb_h, jamb_d), "pos": Vector3(jamb_x, jamb_h / 2.0, -0.05)},     # right jamb
@@ -495,7 +494,7 @@ static func _add_door(parent: Node, door_mat: Material, frame_mat: Material, wal
 	# beyond — the Wiz "what's behind the door?" beat (bump-to-open swings them aside). OPENED: the leaves are
 	# pushed ajar so the cleared room reads as entered and passable.
 	# Grand leaves rise with the taller opening so a sealed 玄室 door fills its imposing frame.
-	var leaf_h := 2.72 if grand else 2.36
+	var leaf_h := 2.58 if grand else 2.36
 	var leaf_y := leaf_h / 2.0 + 0.02
 	for side in [-1.0, 1.0]:
 		var leaf := MeshInstance3D.new()

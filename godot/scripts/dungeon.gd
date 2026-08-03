@@ -1206,7 +1206,17 @@ func _event_line(e: Dictionary) -> String:
 		"movement_blocked":
 			match e.get("reason", ""):
 				"wall": return "壁だ。先へは進めない。"
-				"stairs": return "階段だ。上れば町へ戻る。"
+				"stairs":
+					# Narrate the stair by its ACTUAL direction — a down-stair was wrongly called "上れば町へ戻る"
+					# (playtest 2026-08-03「大嘘、これは2Fへの階段」). down → next floor; up → town (no target
+					# floor = exits the dungeon) or the previous, shallower floor.
+					var scell := _current_cell()
+					var sfloor := String((_state.get("map", {}) as Dictionary).get("floorId", ""))
+					var sinfo := DungeonRenderer._stairs_info(scell, sfloor)
+					match String(sinfo.get("kind", "")):
+						"down": return "下り階段だ。下れば次の階へ。"
+						"up": return "階段だ。上れば町へ戻る。" if String(sinfo.get("target", "")) == "" else "上り階段だ。上れば前の階へ戻る。"
+					return "階段だ。"
 				"locked": return "固く閉ざされている。"
 				"door": return "扉が閉ざされている。「開く」で開けねば先へは進めない。"
 		"door_opened":

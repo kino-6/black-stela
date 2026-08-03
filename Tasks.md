@@ -47,6 +47,11 @@ IMP-060/061/062/063/064 completion records in `Improve.md`.
   ついでにログの敵名が英語漏れ（「Spore Gnat」→「胞子蝿」）— beatのtargetNameをローカライズ名にする。
   - **Gate:** `verify_combat_*` にビートごとの手番ポートレート＝行動者、ログ敵名がローカライズ、を追加。
 
+- [ ] **T26 — Verdant G1F の戦利品が二束三文ばかり** (content) — 翠碑 G1F で「イバラの鞭」か、売っても
+  二束三文のアイテムしか出ない。G1F の宝箱/ドロップに、序盤として価値ある選択肢（使える装備・素材・そこそこの
+  換金物）を増やす。`content/worlds/verdant/`（items/loot tables/chests）。treasureRewards 等のゲート維持。
+  - **Gate:** verdant loot テーブルの gear/価値の下限を lock、`tests/treasureRewards.test.ts` 相当を verdant にも。
+
 - [ ] **T25 — Verdant G1F の敵が単調（同じ敵ばかり）** (content) — 翠碑 G1F でずっと同じ敵に当たる。
   first-contact モデル（各TYPE 1回/run）で G1F が導入する種が少ない。G1F に敵タイプを追加し、序盤の
   出会いに変化を出す（`content/worlds/verdant/` の enemies/encounters/dungeon rooms、descentSim で act 曲線維持）。
