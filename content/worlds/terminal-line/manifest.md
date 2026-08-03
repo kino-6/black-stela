@@ -7,6 +7,14 @@ entryWorld: world.md
 dungeons:
   - dungeons/tl1f.md
   - dungeons/tl2f.md
+  - dungeons/tl3f.md
+  - dungeons/tl4f.md
+  - dungeons/tl5f.md
+  - dungeons/tl6f.md
+  - dungeons/tl7f.md
+  - dungeons/tl8f.md
+  - dungeons/tl9f.md
+  - dungeons/tl10f.md
 dataFiles:
   items: items.md
   enemies: enemies.md

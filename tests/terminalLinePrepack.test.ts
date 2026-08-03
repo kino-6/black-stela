@@ -55,19 +55,23 @@ function packFiles(directory = root, relative = ""): Record<string, string> {
   );
 }
 
-describe("Terminal Line F1/F2 canonical pack", () => {
+describe("Terminal Line F1–F10 canonical pack", () => {
   it("loads its authored map, events, enemies, encounters, treasure, and progression as one pack", () => {
     const result = loadScenarioPack(packFiles());
     expect(result).toMatchObject({ ok: true, manifest: { id: "pack.terminal-line" } });
     if (!result.ok) return;
 
     expect(result.world.id).toBe("world.terminal-line");
-    expect(result.world.dungeons.map((floor) => floor.id)).toEqual(["dungeon.tl1f", "dungeon.tl2f"]);
+    expect(result.world.dungeons.map((floor) => floor.id)).toEqual([
+      "dungeon.tl1f", "dungeon.tl2f", "dungeon.tl3f", "dungeon.tl4f", "dungeon.tl5f",
+      "dungeon.tl6f", "dungeon.tl7f", "dungeon.tl8f", "dungeon.tl9f", "dungeon.tl10f"
+    ]);
     expect(result.world.enemies.map((enemy) => enemy.id)).toEqual(enemyIds);
     expect(result.world.dungeons[0].grid?.cells.length).toBeGreaterThanOrEqual(80);
-    expect(result.world.dungeons[1].grid?.cells.length).toBeGreaterThanOrEqual(80);
+    for (const floor of result.world.dungeons) expect(floor.grid?.cells.length).toBeGreaterThanOrEqual(80);
     expect(result.world.dungeons[0].rooms.some((room) => room.id === "room.tl1f.signal-office" && room.event)).toBe(true);
     expect(result.world.dungeons[1].rooms.some((room) => room.id === "room.tl2f.power-terminal" && (room.gates?.length ?? 0) > 0)).toBe(true);
+    expect(result.world.dungeons.at(-1)?.rooms.some((room) => room.id === "room.tl10f.zero-core" && room.chamberGuardian)).toBe(true);
   });
 
   it("delivers every W0 F1/F2 enemy as a 768-square RGBA base/hurt pair", () => {

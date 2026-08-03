@@ -23,16 +23,16 @@ map: |
   #....F....#..M....#
   #.###.#######.###.#
   #...........#P#L..#
-  #.#####....##.####
+  #.#####....##.#####
   #.....#..H..#.....#
   ###.#.#.....###.#.#
-  #...#.#...#...#.#D#
+  #...#.#...#...#.#U#
   #.#####.#.#.#######
   #...#....T........#
   ###.###.#.#####.###
   #...#.........#..K#
   #.#####.###.###.###
-  #..C#.....#...#..R#
+  #..C#.....#...#D.R#
   ###################
 symbols:
   E: room.tl2f.platform-landing
@@ -45,7 +45,8 @@ symbols:
   T: room.tl2f.power-terminal
   K: room.tl2f.dry-cache
   C: room.tl2f.cable-culvert
-  D: room.tl2f.up-stair
+  U: room.tl2f.up-stair
+  D: room.tl2f.down-stair
   R: room.tl2f.return-marker
 corridor:
   name: Flooded Platform Passage
@@ -56,6 +57,7 @@ corridor:
       description: 水面に消えたホーム灯が映る。線路溝は黒い水の下に隠れ、足元の音だけが先へ走る。
 edges:
   - { from: room.tl2f.up-stair, direction: east, kind: stairs, to: room.tl1f.down-stair, targetFloorId: dungeon.tl1f }
+  - { from: room.tl2f.down-stair, direction: north, kind: stairs, to: room.tl3f.transfer-landing, targetFloorId: dungeon.tl3f }
 rooms:
   - id: room.tl2f.platform-landing
     name: Lower Platform Landing
@@ -128,6 +130,10 @@ rooms:
     locales: { ja: { name: ホーム非常電話, description: 非常電話、乾いた信号灯、乗換広場の呼出符号。ここは意図して戻るための地点だ。 } }
     stairsToTown: true
     returnStyle: marker
+  - id: room.tl2f.down-stair
+    name: Transfer Relay Stair
+    description: A lit service stair descends past the platform drainage trench toward the transfer relay.
+    locales: { ja: { name: 中継所への階段, description: ホーム排水溝の脇を、灯の残る保守階段が乗換中継所へ下る。 } }
 ---
 
 # F2・浸水ホーム
