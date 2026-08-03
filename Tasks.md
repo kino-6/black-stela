@@ -58,13 +58,23 @@ IMP-060/061/062/063/064 completion records in `Improve.md`.
 
 - [ ] **T29 — Default B2F–B8F を Verdant 同等の迷宮品質＋玄室に作り直す** — Verdant は全 g1–g8 が生成で
   フル迷宮ルール＋玄室を満たすが、Default は **B1F のみ**作り直し済みで **B2F–B7F は旧・手書きフロア**
-  （`dungeonDesign.test` の `MAZE_EXEMPT` で免除中＝品質未達・玄室0、B8F はボス扱い）。B2F–B8F を
-  `genFloorMaze.mjs`（棒倒し法＋玄室 carve）で作り直し、**玄室（確定戦闘＋宝の小部屋）も追加**（user 決定
-  2026-08-03）。各階：シード選定→ASCII マップ移植→既存の遭遇/宝/階段＋新玄室の遭遇/宝テーブルを配線→
-  `MAZE_EXEMPT` から解除。玄室で確定戦闘が増えるため **descentSim でバランス再調整**（prepare-or-wipe /
-  act 曲線 / 免除解除後の maze rules を維持）。
+  （`dungeonDesign.test` の `MAZE_EXEMPT` で免除中＝品質未達・玄室0、B8F はボス扱い）。**玄室（確定戦闘＋宝の
+  小部屋）も追加**（user 決定 2026-08-03）。
+  - **手法（調査確定 2026-08-03）:** `genFloorMaze.mjs` は open chamber しか作れず両世界の `chamberGuardian.test`
+    （door-choke）を満たさない。**`genVerdantFloors.mjs` を fork した `genDefaultFloors.mjs`**（唯一 door-choke
+    玄室を出力）で各階の完全 .md を生成する。既存の default 遭遇/宝テーブルを再利用（新規オーサリング不要）。
+  - **要確定（user 判断・離席中のため保留）:**
+    1. **階数 8 vs 10** — user 記憶では「10F（9F=シナリオクリア／10F=完全クリア）」だが、**現行の正式設計は
+       8階**（dungeon-areas.md／descentSim／全ゲート）。10階化は幕構成・トラフ目標・9F/10F の内容とボス・全
+       ゲートの再バランスを伴う設計変更。**先に 8/10 を確定**（B8=フィナーレか、B10=フィナーレかで B7/B8 設計が変わる）。
+    2. **既存の作り込みの扱い** — Default の B3/B5/B6 ミニボス、B2/B4/B7 の lock 降下・クランク・鍵付き金庫・
+       spinner・dark_zone・squad 等の**bespoke ギミックは Verdant 生成器には無い**。純生成すると失われる。
+       **(a) 均一な Verdant 風で置換** か **(b) 生成迷宮＋玄室に既存ギミックを再配線** かを確定。
+  - **進め方:** 破壊を避け、`genDefaultFloors.mjs` を作って **b2f をプレビュー生成（content/ を上書きしない）**して
+    構造ゲート緑を実証 → user が上記2判断を下してから本適用・横展開・バランス再調整。
   - **Gate:** `dungeonDesign.test`（各階を免除リストから外し、密度・ループ・正直スイープ300–360・on-path分岐・
-    近道・玄室を要求）＋ `difficultyGate`/balance sim ＋ `verify_parity`/`verify_flow` 緑＋各階の実機キャプチャ。
+    近道・玄室）＋ `chamberGuardian.test`（door-choke）＋ `difficultyGate`/balance sim ＋ `verify_parity`/
+    `verify_flow` 緑＋各階の実機キャプチャ。
 
 - [ ] **T30 — 1シナリオに N 個の迷宮を持てるようにする（T29 後）** — 現在 world は迷宮1本（8階の降下）だが、
   1シナリオが複数の独立した迷宮を持てるようにする。world データモデル・ダンジョンレジストリ・町からの入口
@@ -81,6 +91,17 @@ IMP-060/061/062/063/064 completion records in `Improve.md`.
 止めたり変更したりしない。W0を明示承認するまで `content/worlds/`・世界レジストリ・共有ルール・Godot画面へ
 変更を入れない。詳細な設計とアセット契約は
 [`docs/design/ballistic-world-program.md`](design/ballistic-world-program.md) を唯一の入口とする。
+
+**実装指示（ユーザー、2026-08-03）:** 初回のルック開発は「アートは面白い」と了承され、**封鎖線世界を
+実装へ移すことも明示指示済み**。実装者は現行キューを中断・横入りさせず、空いた順番で W0 → W1 → W2 →
+W3a → W3b → W4 → W5 を一つずつ進めること。各Wは、ここに `[-]` と実装者・開始日を記し、固有 Gate を
+緑にしてコミットした後だけ `[x]` にして Archive へ移す。次のWへ進むのに、改めて「実装してよいか」を尋ねない。
+ただし、既存二世界／共通ルールに触れる W3a 以降は、この分離契約と当該 Gate を優先する。
+
+**W0の最初の成果:** 正式タイトルは未決。`鉄雨の零番線` は「メガテン感・蒸気感が弱い」として採用しない。
+実装開始前に、蒸気・銃器・近現代オカルトの交点を持つタイトル候補（例：`黒煙の零番線`、`零号封鎖線`、
+`終端隔離線`）と、表示名に依存しない仮 world id を提示して確定する。確定までの設計・アート発注では
+作業名「封鎖線」を用いてよいが、プレイヤーに見える世界選択名を仮名で固定しない。
 
 - [ ] **W0 — 銃器DRPG世界「封鎖線」の核を承認する** — 具体たたき台を
   `ballistic-world-program.md` に記載：零番線を追う封鎖地下都市、共有弾薬＋階層警戒度、第一層の
@@ -119,4 +140,3 @@ IMP-060/061/062/063/064 completion records in `Improve.md`.
 - [ ] **W5 — 新世界の実機仕上げ（W4後）** — 全層を実プレイで通し、コントローラ、戦闘手触り、資産の配置、
   日本語の行組み、1280/1920の可読性を最終レビューする。
   - **Gate:** `npm run gate:final`、`npm run gate:migration`、Godot clean boot、現実機キャプチャと独立レビュー。
-
