@@ -79,18 +79,30 @@ IMP-060/061/062/063/064 completion records in `Improve.md`.
     lock/teleport/spinner/dark_zone/secret/damage-tile/gather/key-vault、削除でOK）＋ **実機能**（block-cap 構造・
     rest point・checkpoint 復帰・trap disarm・debug traces・summary）の更新が必要。→ **腰を据えた1パス**（生成器
     再構築＋玄室/pack バランス再調整＋feel レビュー＋テスト整理）で実施すべきと判断し、崩れた状態をコミットせず退避。
+  - **フロア単位の試行（b2 のみ、2026-08-03、これも revert）:** 生成器を floor 単位＋玄室数可変に拡張し b2f を
+    再生成（77%、Act I 帯内・up/down stair 修正・chamberGuardian/maze ルール緑）。だが **`descentSim` の act 曲線
+    テストが赤**：曲線は**グローバルな clearLevel 相対**で測るため、b2 に玄室（確定戦闘）を足すだけで clearLevel が
+    整数ジャンプ→中盤(act2)が clearLevel 相対で軽くなり `act2<act1` が崩れる（玄室2個でも同じ）。加えて underpower
+    係数（フロアの推奨Lv依存）と summary count も要更新。→ **結論：T29 は incremental 不可**。default の難易度は
+    グローバル指標なので、**全フロアの玄室/pack を一括で調整＋難易度ゲート（act 曲線・underpower）を玄室前提に
+    再キャリブレーション**する holistic 1パスが必要。かつ**設計上の緊張**：default は Verdant 並みの玄室密度を
+    curve を壊さずには入れられない（玄室=確定戦闘で XP/attrition が増える）。玄室数・ゲート厳格度は**難易度設計判断**。
   - **Gate:** `dungeonDesign.test`（各階を免除リストから外し、密度・ループ・正直スイープ300–360・on-path分岐・
     近道・玄室）＋ `chamberGuardian.test`（door-choke）＋ `difficultyGate`/balance sim ＋ `verify_parity`/
     `verify_flow` 緑＋各階の実機キャプチャ。
   - **注:** 下記 T31 で両世界が10階化されるため、対象は **B2–B10**（B9/B10 は新規、作り込み保持は B2–B8）。
 
-- [-] **T31 — 両世界を10階に拡張（真層＋真ボス）** — **構造・バランス完了（2026-08-03）**、真ボスのアートのみ
-  Codex 待ち。**Verdant**(`18a0dc5`)：g9=rootheart(シナリオ)/g10=worldheart(真ボス、新規)。**Default**(`65d5a5f`)：
-  b9=ash-votary(シナリオ、block-cap で b10 を封鎖)/b10=dark-stela(真ボス、新規、`genDefaultFloors.mjs`)。両世界とも
-  descentSim 自動10階化、全ゲート10F化、prepared 非全滅・act 曲線維持。真ボスは Codex アート待ちで暫定
-  プレースホルダ描画（B9/G9 は既存ボス流用）。765 unit・build・migration/parity 緑。
-  - **残**: (1) B10/G10 真ボスのスプライト（Codex、発注済）、(2) 真層テクスチャ（block3 流用中、任意）、
-    (3) 深部バランスの実機フィール確認（sim は下限、真ボスは要準備＝mid薄氷/prep生還）。
+- [-] **T31 — 両世界を10階に拡張（真層＋真ボス）** — 真層アート／実機キャプチャまで完了、**全体Gate再緑待ち
+  （2026-08-03）**。**Verdant**(`18a0dc5`)：
+  g9=rootheart(シナリオ)/g10=worldheart(真ボス、新規)。**Default**(`65d5a5f`)：b9=ash-votary(シナリオ、block-cap
+  でb10を封鎖)/b10=dark-stela(真ボス、新規、`genDefaultFloors.mjs`)。両世界ともdescentSim自動10階化、全ゲート10F化、
+  prepared非全滅・act曲線維持。並行T29のB2F再生成で `descentSim` の幕別圧力テストが赤のため、T31を完了／push扱いには
+  しない（T31自身のアート・fixture・asset gateは緑）。
+  - **T31アートとフィール確認（Codex, 2026-08-03）:** B10「黒碑の主」とG10「世界樹の芯」を clean-alpha の base/hurt
+    スプライトへ置換。両世界に真層専用 `stone-wall/floor-block4.jpg` を追加し、React/Godotとも**10Fだけ**block4を選ぶ。
+    B10は低輝度の専用パレットで黒曜石の継ぎ目と歩行面を可読に維持。実ランナーで B10/G10 の迷宮と真ボス戦のキャプチャを
+    再撮影し、深層パーティに対する接地・シルエット・画面内の読みやすさを確認。`dungeonView`、asset gate、floor_10
+    fixture、export、Godot boot はアート反映時に緑。現在は並行T29のB2F再生成で全体再検証を保留している。
   - user 決定 2026-08-03。現行8階を **10階**へ**地続きで延伸**。
   構成：3階ごとの雰囲気帯 B1–3 / B4–6 / B7–9（3幕）＋ **B10=真層（完全クリア）**。**B9=シナリオボス**（現
   フィナーレ ash-votary / rootheart を移設、既存アート流用）、**B10=真ボス**（新規）。B7/B8→Act III 深部トラッシュ、
