@@ -190,24 +190,23 @@ IMP-060/061/062/063/064 completion records in `Improve.md`.
     blind dive (per-fight trough below a survivable-without-facilities line) AND a facility-equipped party
     clears floor 1 and the descent, with the invariants intact. Two worlds. Real-browser feel check.
 
-- [-] **玄室 landmark visual tuning** (Codex art-lane) — 2nd pass done (approach FIXED), Codex re-review PENDING
-  - **Codex NG (2026-08-03):** the muted-accent/opacity pass reduced the "green object" but the closed door
-    still read as a dark CORRIDOR (the floor seal is hidden under the HUD), so the room's existence didn't
-    read. Codex's fix list actioned:
-    - **Capture harness rewritten** (`capture_verdant_chamber_visual.gd`): the old G1F FIXED point looked at
-      an OPEN edge and never proved the door-choke. It now finds a real DOOR/SECRET-choked chamber DYNAMICALLY
-      and shoots the two required frames — `<out>-closed.png` (closed door head-on, one cell outside) and
-      `<out>-inside.png` (one step in, door opened behind).
-    - **Front-readable architecture is now the star:** the chamber door gets a distinct pale dressed-STONE
-      surround (chunky jambs + deep lintel + keystone, `chamberFrame` palette, solid so it doesn't multiply
-      back to green) that clearly announces a built, sealed room from the approach; the wall-embed stays the
-      world's wall so the frame reads as set INTO the vine. The crown/corner stones also use the frame stone,
-      so the interior's built elements read as dressed stone. Verified on real captures: the closed-door shot
-      now reads as a stone doorway (was: green wall).
-  - **Still open for Codex:** the INTERIOR forward view is still dominated by the vine back-wall (the door
-    frame helps on entry but the room-ness isn't complete from every angle), and the `chamber-floor-seal.png`
-    retake to neutral inlaid stone is Codex's art call (no glow/魔法陣/prop). `npm run export:godot`, then run
-    `capture_verdant_chamber_visual.gd -- <out>.png g1f|g2f|g3f` and judge the two frames.
+- [-] **玄室 landmark visual tuning** (Codex art-lane) — 3rd pass done, Codex re-review PENDING
+  - **Codex NG #2 (2026-08-03):** even with the muted pass, the closed door read as a dark CORRIDOR from the
+    approach (the floor seal is hidden under the party HUD), so the room's existence didn't read. Codex's fix
+    list actioned this pass:
+    - **Capture harness** (`capture_verdant_chamber_visual.gd`) already finds a DOOR/SECRET-choked chamber
+      DYNAMICALLY and shoots the two required frames — `<out>-closed.png` (closed door head-on, one cell
+      outside) and `<out>-inside.png` (one step in, door opened behind). (Was done in the prior pass; Codex
+      re-verify — the G1F-fixed point is gone.)
+    - **Camera pulled back** (`cameraPullback`/`cameraFov`, palette-tunable): a faced wall/door no longer
+      fills the lens, so the doorway, its frame and the surrounding corridor read as context head-on.
+    - **Grand portal = front-readable architecture:** a door that opens INTO a 玄室 is drawn as a grand
+      portal — heavier jambs + a deep lintel beam rising nearly to the corridor ceiling, taller leaves filling
+      it — so a sealed guardian room announces itself from the corridor, not via the HUD-hidden floor. Frame
+      stays WOOD, no glow (the pale-stone frame was reverted: it read as a glowing Fallback — user feedback).
+  - **Still open for Codex:** the INTERIOR forward view is still dominated by the vine back-wall, and the
+    `chamber-floor-seal.png` retake to neutral inlaid stone is Codex's art call (no glow/魔法陣/prop).
+    `npm run export:godot`, then `capture_verdant_chamber_visual.gd -- <out>.png g1f|g2f|g3f` and judge both.
   - **Gate:** visual review on the real build — **Codex art-lane sign-off** (primary implementer does not
     self-approve player-facing visual completion). Render gates green (dungeon-controller, verdant-chambers).
 
