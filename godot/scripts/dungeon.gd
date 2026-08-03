@@ -281,18 +281,21 @@ func _input(event: InputEvent) -> void:
 	#   決定 = the CONTEXT action for this cell (探索, or 階段/帰還/罠 when the cell offers one);
 	#   キャンセル = open the メニュー (camp); M = full map. There is no focus ring — the scene owns the
 	#   keys, and the right panel is only a hint of what they do.
+	# Mark the event handled BEFORE dispatching: a context command (階段/帰還) can change scene, which pulls this
+	# node out of the tree and makes get_viewport() null on the next line — it crashed with "Cannot call method
+	# 'set_input_as_handled' on a null value" (playtest 2026-08-03). Consume first, then act.
 	if event.is_action_pressed("confirm"):
 		if current_chest().is_empty():
-			_on_command(_context_command())
 			get_viewport().set_input_as_handled()
+			_on_command(_context_command())
 		return
 	if event.is_action_pressed("cancel"):
-		_toggle_party_menu()
 		get_viewport().set_input_as_handled()
+		_toggle_party_menu()
 		return
 	if event.is_action_pressed("full_map"):
-		_toggle_full_map()
 		get_viewport().set_input_as_handled()
+		_toggle_full_map()
 
 # Held-movement auto-repeat is driven by the DungeonInput collaborator (IMP-051): the scene supplies the
 # stop condition (a fight / chest / open overlay ends the repeat) and the move callback; it stays the sole
@@ -798,7 +801,7 @@ func _open_config_overlay() -> void:
 	_config_overlay = layer
 	var focus: Variant = built.get("first", null)
 	if focus != null and is_instance_valid(focus):
-		(focus as Control).call_deferred("grab_focus")
+		call_deferred("_grab_focus_safe", focus)
 
 func _close_config_overlay() -> void:
 	if _config_overlay and is_instance_valid(_config_overlay):
@@ -833,7 +836,7 @@ func _show_chest_overlay(chest: Dictionary) -> void:
 	add_child(layer)
 	_chest_overlay = layer
 	if built["focus"] != null:
-		(built["focus"] as Control).call_deferred("grab_focus")
+		call_deferred("_grab_focus_safe", built["focus"])
 
 func _hide_chest_overlay() -> void:
 	if _chest_overlay and is_instance_valid(_chest_overlay):
@@ -876,7 +879,7 @@ func _show_chest_result(events: Array) -> void:
 	center.add_child(built["control"])
 	add_child(layer)
 	_chest_overlay = layer
-	(built["focus"] as Control).call_deferred("grab_focus")
+	call_deferred("_grab_focus_safe", built["focus"])
 
 func _dismiss_chest_result() -> void:
 	_chest_result = {}
@@ -947,17 +950,27 @@ func _toggle_party_menu() -> void:
 
 # Guarantee the cursor is on a usable control inside `root` — if nothing focusable already holds it, grab
 # the first enabled, visible button. The backstop that keeps a rebuilt menu (a tab switch) operable.
+# Deferred grab_focus target may be freed or pulled out of the tree before the deferred call runs (overlay
+# closed in the same frame) — grab_focus() then spams "Condition !is_inside_tree() is true" (playtest
+# 2026-08-03). Route every deferred focus through this guard instead of calling grab_focus directly.
+func _grab_focus_safe(control: Variant) -> void:
+	if control is Control and is_instance_valid(control) and (control as Control).is_inside_tree():
+		(control as Control).grab_focus()
+
 func _ensure_focus_in(root: Node, preferred: Control = null) -> void:
-	if not is_instance_valid(root):
+	if not is_instance_valid(root) or not root.is_inside_tree():
 		return
-	if preferred != null and is_instance_valid(preferred) and root.is_ancestor_of(preferred):
+	if preferred != null and is_instance_valid(preferred) and preferred.is_inside_tree() and root.is_ancestor_of(preferred):
 		preferred.grab_focus()
 		return
-	var owner: Control = get_viewport().gui_get_focus_owner()
+	var vp := get_viewport()
+	if vp == null:
+		return
+	var owner: Control = vp.gui_get_focus_owner()
 	if owner != null and is_instance_valid(owner) and root.is_ancestor_of(owner):
 		return
 	var first := _first_focusable(root)
-	if first != null:
+	if first != null and first.is_inside_tree():
 		first.grab_focus()
 
 func _first_focusable(node: Node) -> Control:
@@ -1028,13 +1041,13 @@ func _toggle_full_map() -> void:
 	margin.add_child(body)
 	body.add_child(FloorMap.build(_state, _world))
 	body.add_child(UIKit.label(I18n.t("map.coverage", {"percent": _coverage_percent()}), 17, INK))
-	var close: Button = UIKit.button(I18n.t("play.chestLeave"), func(): _toggle_full_map(), Vector2(180, 44), 17)
+	var close: Button = UIKit.button(I18n.t("play.closeMap"), func(): _toggle_full_map(), Vector2(180, 44), 17)
 	var foot: HBoxContainer = UIKit.row()
 	foot.add_child(close)
 	body.add_child(foot)
 	add_child(layer)
 	_full_map = layer
-	close.call_deferred("grab_focus")
+	call_deferred("_grab_focus_safe", close)
 
 # Visited cells only — the map is the party's RECORD, never the floor's truth.
 func _full_map_grid() -> Control:
@@ -1246,7 +1259,7 @@ func _event_line(e: Dictionary) -> String:
 			if item_name == "" or item_name == String(e.get("itemId", "")):
 				item_name = String(e.get("itemName", ""))
 			if e.get("affix", null) != null:
-				item_name = "%s %s" % [I18n.t("affix.%s" % String(e.get("affix", ""))), item_name]
+				item_name = "%s %s" % [Fmt.localized_affix_label(_world, String(e.get("affix", ""))), item_name]
 			if e.get("plus", null) != null:
 				item_name = "%s +%d" % [item_name, int(e.get("plus", 0))]
 			return I18n.t("events.inventoryItemGained", {"item": item_name, "quantity": int(e.get("quantity", 1))})

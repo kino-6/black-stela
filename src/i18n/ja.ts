@@ -515,7 +515,7 @@ export const ja = {
     breakCamp: "野営をたたむ",
     fullMap: "全体図",
     fullMapTitle: "フロア全体図",
-    closeMap: "閉じる",
+    closeMap: "地図を閉じる",
     moveToFront: "前列へ",
     moveToBack: "後列へ",
     campHeal: "{item}を使う（×{count}）",

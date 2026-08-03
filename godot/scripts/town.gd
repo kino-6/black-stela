@@ -555,11 +555,16 @@ func _open_menu() -> void:
 	scrim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_service_layer.add_child(scrim)
 
+	# CenterContainer, NOT PRESET_CENTER on the panel: PRESET_CENTER freezes the offsets while the panel is
+	# still 0×0, so once its column grows the panel spills down-right of screen-centre instead of centring
+	# (playtest 2026-08-03「メニューの位置が変」). A full-rect CenterContainer re-centres after layout.
+	var center := CenterContainer.new()
+	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_service_layer.add_child(center)
 	var panel := PanelContainer.new()
 	panel.add_theme_stylebox_override("panel", UI.panel_style(UI.PANEL_BG, UI.GOLD))
-	panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
 	panel.custom_minimum_size = Vector2(560, 0)
-	_service_layer.add_child(panel)
+	center.add_child(panel)
 
 	var col := UI.col(14)
 	col.add_child(UI.label(I18n.t("town.menu"), 26, UI.GOLD))
@@ -704,9 +709,10 @@ func _unhandled_input(event: InputEvent) -> void:
 		_go_location("")
 		get_viewport().set_input_as_handled()
 	else:
-		# Town ROOT: cancel has nowhere to back out to, so it opens the menu — the same "cancel → メニュー"
-		# affordance the dungeon offers, and it guarantees cancel always resolves to something.
-		_open_menu()
+		# Town ROOT: cancel opens the PARTY menu (隊列メニュー) — the same 迷宮メニュー the dungeon's cancel opens,
+		# NOT the settings overlay (playtest 2026-08-03「Escで開きたいのは迷宮メニュー、右上の設定ではない」). Settings
+		# stay on the dedicated menu key (Tab) and the top-right button; cancel now mirrors the crawl.
+		_open_service("party")
 		get_viewport().set_input_as_handled()
 
 func _on_descend() -> void:

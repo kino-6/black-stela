@@ -6,6 +6,7 @@ extends SceneTree
 ## Usage: godot --headless --path godot/ --script res://tests/verify_chest_loot_label.gd
 
 const ChestPanel := preload("res://scripts/dungeon/chest_panel.gd")
+const Fmt := preload("res://scripts/town_format.gd")
 
 var _fail := 0
 
@@ -36,6 +37,15 @@ func _initialize() -> void:
 	var trapped_note := String(ChestPanel._note({"trap": {"kind": "needle"}}, "trapped", false))
 	_check(trapped_note.find("毒針") != -1, "investigating a trapped chest names the trap kind (毒針, T3)")
 	_check(trapped_note.find("仕掛けられている") == -1, "the identified-trap note is not the flat 'trapped' message (T3)")
+
+	# P3 (playtest 2026-08-03): an AUTHORED affix must resolve to its localized label, never leak the doubled
+	# raw key "affix.affix.verdant.thorn-fanged" — the old I18n.t("affix." + id) prefixed an id that already
+	# began with "affix.". Lock both the authored (world.affixes ja label) and built-in (bare id → i18n) paths.
+	var verdant: Dictionary = (JSON.parse_string(FileAccess.get_file_as_string("res://data/worlds/verdant.json")) as Dictionary).get("world", {})
+	var affix_label := Fmt.localized_affix_label(verdant, "affix.verdant.thorn-fanged")
+	_check(affix_label == "棘牙の", "authored affix resolves to its JA label (棘牙の), got: %s" % affix_label)
+	_check(affix_label.find("affix.") == -1, "affix label does not leak the raw key (no 'affix.' substring)")
+	_check(Fmt.localized_affix_label(verdant, "keen") == "鋭利な", "built-in bare affix resolves via i18n (鋭利な)")
 
 	print("[chest-loot-label] %s (%d failures)" % ["PASS" if _fail == 0 else "FAIL", _fail])
 	quit(_fail)

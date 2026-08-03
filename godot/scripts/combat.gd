@@ -575,7 +575,7 @@ func _playback(before: Dictionary, events: Array, animated: bool) -> void:
 		var snap: Dictionary = before[gid]
 		var removed := int(snap.get("hp", 0)) - _group_hp_by_id(String(gid))
 		if removed > 0:
-			struck.append({"gid": String(gid), "removed": removed, "x_frac": float(snap.get("x_frac", 0.5)), "name": String(snap.get("name", "")), "before": int(snap.get("hp", 0))})
+			struck.append({"gid": String(gid), "removed": removed, "x_frac": float(snap.get("x_frac", 0.5)), "name": String(snap.get("name_ja", snap.get("name", ""))), "before": int(snap.get("hp", 0))})
 	struck.sort_custom(func(a, b): return a["x_frac"] < b["x_frac"])
 
 	if animated:
@@ -591,7 +591,11 @@ func _playback(before: Dictionary, events: Array, animated: bool) -> void:
 				var gid := String((beat as Dictionary).get("targetGroupId", ""))
 				var dmg := int((beat as Dictionary).get("damage", 0))
 				var actor := String((beat as Dictionary).get("actorName", ""))
-				var target_name := _enemy_ja(_group_by_id(gid))   # localized name (was English "Spore Gnat")
+				var live_group := _group_by_id(gid)   # localized name (was English "Spore Gnat")
+				var target_name := _enemy_ja(live_group)
+				if target_name.is_empty():
+					# group already defeated/dropped this round → fall back to the pre-round snapshot's localized name
+					target_name = String((before.get(gid, {}) as Dictionary).get("name_ja", ""))
 				var crit := bool((beat as Dictionary).get("crit", false))
 				# Spotlight the acting member at hero scale so WHO is striking reads during playback (T24).
 				var acting := _member_by_name(actor)
@@ -823,7 +827,9 @@ func _enemy_snapshot() -> Dictionary:
 	var groups: Array = _combat().get("enemyGroups", [])
 	for i in groups.size():
 		var g: Dictionary = groups[i]
-		snap[String(g.get("id", ""))] = {"hp": _group_hp(g), "name": _short_name(g), "x_frac": (float(i) + 0.5) / maxf(1.0, float(groups.size()))}
+		# name_ja captured HERE while the group is alive & still in enemyGroups: playback runs on the POST-round
+		# state, where a defeated group is dropped (→ _group_by_id empty → _enemy_ja "") and the log lost its target.
+		snap[String(g.get("id", ""))] = {"hp": _group_hp(g), "name": _short_name(g), "name_ja": _enemy_ja(g), "x_frac": (float(i) + 0.5) / maxf(1.0, float(groups.size()))}
 	return snap
 
 func _group_hp_by_id(gid: String) -> int:

@@ -11,8 +11,14 @@
 - **One at a time.** Process the active queue top-down; finish (verify + gate + commit) before starting
   the next. Newest requests append to the bottom of the queue unless re-prioritised.
 - **Build / verify:** `npm run export:godot && npm run play` (godot/data is gitignored). Truth gate
-  `npm run gate:final` (unit + e2e); Godot gates `npm run gate:migration`. Self-build + verify before
-  handoff (AGENTS.md). Read `.claude/skills/controller-first-ui` before any menu/focus work.
+  `npm run gate:final` (unit + e2e); Godot gates `npm run gate:migration`; runtime-error gate
+  `npm run gate:godot-runtime` (boots the controller/loop scenes headless, fails on any SCRIPT ERROR /
+  null-method / tree-focus fault). Self-build + verify before handoff (AGENTS.md). Read
+  `.claude/skills/controller-first-ui` before any menu/focus work.
+- **Sessions may be split (user-authorised 2026-08-03).** When the working context grows large, the
+  implementer decides on its own when to checkpoint: commit finished work, update this file's statuses,
+  write a handoff (memory `black-stela-open-work` + `docs/handoffs/` if structural), and start a fresh
+  session. No need to ask — judge, hand off, switch.
 
 Archived history: `docs/archive/Tasks.completed-2026-08.md` (the 2026-08-03 playtest marathon — T1–T28),
 `docs/archive/Tasks.completed-2026-07.md` (the 2026-07-27/29 marathon + earlier), and the
@@ -22,7 +28,40 @@ IMP-060/061/062/063/064 completion records in `Improve.md`.
 
 ## Active queue (process top-down)
 
-- [ ] **T13 refine — 受入条件を実測に合わせる（全滅強制はしない）** — Codex 2026-08-03：全員・無購入を
+### P — 2026-08-03 夜 実機playtest バッチ（最優先・player-facing）
+
+- [x] **P1 戦闘ログの対象名欠落**（「に7ダメージ！」で敵名が空）— `_enemy_ja` が撃破/ドロップ済みグループで空を返す。
+  スナップショット時(生存中)に `name_ja` を保存し beat/撃破ログで live→snapshot フォールバック。**「〜を撃破」の
+  英語名**も同時解消。Gate: `gate:godot-runtime`（combat_controller）+ 実機。
+- [x] **P2 町Escは迷宮メニュー（隊列メニュー）を開く**（設定でない）＋**設定パネル中央寄せバグ**（`PRESET_CENTER`
+  を size 確定前適用→右下に伸びる→`CenterContainer`）。Gate: `gate:godot-runtime`（town_controller）+ 実機。
+- [x] **P3 affixキーリーク**（`affix.affix.verdant.thorn-fanged 茨の鞭` 生表示・二重prefix）— `I18n.t("affix."+id)`
+  が authored affix(id既に`affix.`)を二重化。`Fmt.localized_affix_label(world,id)` を新設し town_format/dungeon/
+  chest_panel の3箇所を差し替え（world.affixes の ja ラベル優先、built-inはbare id）。「ランダムエンチャント
+  見えない」の一因。Gate: chest_loot_label + 実機。
+- [x] **P4 全体図「立ち去る」→「地図を閉じる」**（`play.chestLeave`誤用→`play.closeMap`、値も「地図を閉じる」）。
+- [x] **P5 ランタイムSCRIPT ERROR自動検出Gate**（ユーザー要望「毎回指摘、Gateで検出して」）— `get_viewport()`
+  null（`_input`でシーン遷移後の`set_input_as_handled`）＋ tree外`grab_focus`。consume-before-dispatch へ並替、
+  `_grab_focus_safe`ガード、`_ensure_focus_in`のviewport null塞ぎ。**新Gate `gate:godot-runtime`**（scripts/
+  godot-runtime-gate.mjs：controller/loop scenes をheadless起動しSCRIPT ERROR系シグネチャで fail）。緑確認済。
+- [ ] **P6 装備メニュー：装備不可の候補を出さない＋「均等」表示の是正** — 装身具スロットに樹皮の小盾等が出る。
+  スロット/装備者でフィルタ。「装身具・均等」の均等=aptitude親和`balanced`はノイズ→balanced時は非表示。
+  注意：dungeon_controller に「ineligible equipment stays visible with a reason」テスト有り＝*理由付き表示*が現行
+  設計。ユーザー意図（無意味な物は出すな）と擦り合わせて、装備不可の理由が読めるUIにするかフィルタするか決める。
+- [ ] **P7 戦闘アニメ中に敵味方HPバーが減らない** — Godot beats は player→敵beatのみ(`combat_round.gd:138`)。
+  味方バーは全beat後(`combat.gd:651`)に一括更新＝アニメ中は据置。React beat は per-beat `groups`/`party`
+  スナップショットを持つ(rulesEngine.ts:1239)。Godot beat に snapshot を載せ、両バーを beat 単位で駆動する。
+  Gate: verify_combat_numbers 拡張 + 実機。
+- [ ] **P8 戦利品が寂しい／全職業の全装備が概ね揃う程度にドロップを増やす**（＋ランダムエンチャント頻度上げ）—
+  content/worlds/*/ の loot/drop を data で調整、loot sim で検証、経済破綻させない。
+- [ ] **P9 商店に貯金の動機となる上位武器を1個限定で置く**（初期装備の羅列は無意味）— content で gear+shop stock。
+- [~] **P10 階段が見つからない（発見性）** — *論理は正常*（TS/Godot両grid に g2f.001→g1f, g2f.exit→g3f の階段セル
+  存在、`verify_dungeon_controller` の stairs判定PASS）。階段セルに立てば `決定=階段` が出る。問題は**下り/上り
+  階段が地図で同じ「=」で区別できず降り口が見つからない**こと。legibility修正：context ラベルとマップ記号で
+  下り(次の階へ)／上り(前の階へ戻る)を区別する。Gate: dungeon_controller にラベル分岐アサート追加。
+
+---
+
   B1Fで**必ず全滅**させる調整は**不要**（現状で無購入10%相当・購入済み64%、施設差は十分）。旧タスクの
   「施設なしでは1Fを突破できない」は実測と矛盾。受入条件を **「無購入フルパーティは薄氷でB1Fを生還できても、
   継続探索・B2進出は成立しない。帰還して準備する必然がある」** に直し、その実機証跡を追加する。難易度の
@@ -171,7 +210,8 @@ W3a → W3b → W4 → W5 を一つずつ進めること。各Wは、ここに `
     folder/world id は `terminal-line` とする。受入境界は
     `docs/handoffs/2026-08-03-terminal-line-w1-receipt.md`。ClaudeのF1/F2 canonical data到着後にのみW1を登録する。
 
-- [ ] **W1 — 受入済みシナリオを正規 world pack とアセット契約へ変換する（Claude → Codex）** —
+- [-] **W1 — 受入済みシナリオを正規 world pack とアセット契約へ変換する（Claude → Codex）** — **Codex,
+  2026-08-03 開始。**
   **Claude** の受入ファイル集合を、**Codex** が `content/worlds/<world-id>/` の canonical pack に取り込む。
   `manifest.md` と `world.md`、全data file、少なくともF1/F2の連続グリッドを揃え、`ART.md` に次を固定する：
   renderer固定basename（`stone-wall-block1..3.jpg`／`stone-floor-block1..3.jpg`／`wood-door.jpg`／
@@ -181,6 +221,17 @@ W3a → W3b → W4 → W5 を一つずつ進めること。各Wは、ここに `
   - **Gate:** `loadScenarioPack`／scenario content validation が緑、`npm run export:godot` が world JSON と
     asset staging を自動出力、既存Default/Verdantが同じexportで回帰しないこと。これはデータ受入証明であり、
     まだプレイ品質の証明ではない。
+  - **先行実装（ユーザー指示、2026-08-03）:** Claudeが現行世界の修正中にも、未登録プレパック
+    `content/worlds/cordon/` で以下を作り込む。`world.md`、迷宮grid、数値、遭遇、報酬、共有銃器ルールは作らず、
+    Claude受入の代わりにしない。受入時にIDが変わったものは生成理由ではなく対応表で解決する。
+    1. W0のF1/F2敵6 IDに**各base/hurt**（768² clean-alpha、role/size/elevation記録）を作る。
+    2. `item.tl-*` 4件、`equip.tl-*` 3件に対応する256² clean-alpha iconを作る。
+    3. 保安通路／浸水ホーム／補給ロッカー／端末のランドマークを作り、A0の扉・階段・保管庫・報酬stillとの
+       配置意図を文書化する。これは壁から生えた階段、HUD下の床印、ログだけの報酬を先に防ぐ。
+    4. `ART.md` の下書きと asset receipt を完成させ、受入済みcanonical packが届いた時に**コピーではなく
+       own-basenameの昇格**だけで投入できる状態にする。
+  - **先行Gate:** 全ファイルの形式・basename・base/hurt footprintを検査し、`npm run export:godot` でプレパックが
+    world registryに混入しないことを確認する。これはアセット／受入準備の証明であり、通常プレイのUX証明ではない。
 
 - [ ] **W2 — Codex A0: 構造アセットを生成・配置して都市地下として読ませる（Codex）** — CodexはW1の
   basename表に対し、上層／中層／深層の壁・床6枚（各1024² seamless JPG）、通常扉、封鎖扉の差分、下り貨物リフト、

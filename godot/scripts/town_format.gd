@@ -101,6 +101,22 @@ static func localized_catalog_name(world: Dictionary, item_id: Variant) -> Strin
 	var ja: Dictionary = (entry.get("locales", {}) as Dictionary).get("ja", {})
 	return String(ja.get("name", entry.get("name", entry.get("id", "-"))))
 
+# Affix ids come in two shapes: authored world affixes carry the full "affix.<world>.<name>" id AND a
+# localized label in world.affixes; built-in common enchants ("keen"/"heavy"…) are bare ids that resolve
+# through the i18n "affix.<id>" key. The old `I18n.t("affix." + id)` double-prefixed authored ids into a
+# missing key and leaked the raw "affix.affix.verdant.thorn-fanged" string into loot text (playtest).
+static func localized_affix_label(world: Dictionary, affix_id: Variant) -> String:
+	if typeof(affix_id) != TYPE_STRING or String(affix_id) == "":
+		return ""
+	for affix in world.get("affixes", []):
+		if typeof(affix) == TYPE_DICTIONARY and String(affix.get("id", "")) == String(affix_id):
+			var ja: Dictionary = (affix.get("locales", {}) as Dictionary).get("ja", {})
+			return String(ja.get("label", affix.get("label", affix_id)))
+	# built-in enchant: bare id → the i18n dictionary. Strip an accidental leading "affix." so an authored id
+	# that is missing from the catalog still degrades to a bare lookup instead of the doubled key.
+	var bare := String(affix_id).trim_prefix("affix.")
+	return I18n.t("affix.%s" % bare)
+
 static func localized_catalog_description(world: Dictionary, item_id: Variant) -> String:
 	var entry := _catalog_entry(world, item_id)
 	if entry.is_empty():
@@ -113,7 +129,7 @@ static func describe_equipment_instance(world: Dictionary, item_id: Variant, plu
 		return "-"
 	var prefix := ""
 	if typeof(affix) == TYPE_STRING and affix != "":
-		prefix = "%s " % I18n.t("affix.%s" % affix)
+		prefix = "%s " % localized_affix_label(world, affix)
 	var suffix := ""
 	if plus != null and int(plus) != 0:
 		suffix = " +%d" % int(plus)

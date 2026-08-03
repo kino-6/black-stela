@@ -184,7 +184,7 @@ static func _loot_name(gained: Dictionary, world: Dictionary = {}) -> String:
 	var item_id := String(gained.get("itemId", ""))
 	var item := Fmt.localized_catalog_name(world, item_id) if item_id != "" and not world.is_empty() else String(gained.get("itemName", ""))
 	if gained.get("affix", null) != null:
-		item = "%s %s" % [I18n.t("affix.%s" % String(gained.get("affix", ""))), item]
+		item = "%s %s" % [Fmt.localized_affix_label(world, String(gained.get("affix", ""))), item]
 	if gained.get("plus", null) != null:
 		item = "%s +%d" % [item, int(gained.get("plus", 0))]
 	return I18n.t("play.chestLootReceived", {"item": item, "quantity": int(gained.get("quantity", 1))})
