@@ -19,6 +19,8 @@ treasureTables:
       - { itemId: equip.tl-rain-jacket, weight: 4 }
       - { itemId: item.tl-field-dressing, weight: 5 }
       - { itemId: item.tl-universal-round, weight: 4, quantity: 3 }
+      - { itemId: item.tl-maintenance-multitool, weight: 4 }
+      - { itemId: item.tl-signal-scope, weight: 4 }
   - id: treasure.tl2f.sealed-cache
     tier: 2
     entries:
@@ -33,6 +35,7 @@ treasureTables:
       - { itemId: equip.tl-insulated-hood, weight: 5 }
       - { itemId: item.tl-universal-round, weight: 4, quantity: 3 }
       - { itemId: item.tl-field-dressing, weight: 3 }
+      - { itemId: item.tl-rainwater-flask, weight: 4 }
   - id: treasure.tl4f.rainworks-cache
     tier: 4
     entries:
@@ -40,6 +43,8 @@ treasureTables:
       - { itemId: equip.tl-sluice-coat, weight: 6 }
       - { itemId: item.tl-terminal-fuse, weight: 4, quantity: 2 }
       - { itemId: item.tl-field-dressing, weight: 4, quantity: 2 }
+      - { itemId: item.tl-breach-wedge, weight: 3 }
+      - { itemId: item.tl-tripwire-shim, weight: 3 }
   - id: treasure.tl5f.depot-cache
     tier: 5
     entries:
@@ -47,6 +52,7 @@ treasureTables:
       - { itemId: equip.tl-relay-gloves, weight: 5 }
       - { itemId: item.tl-universal-round, weight: 4, quantity: 4 }
       - { itemId: item.tl-field-dressing, weight: 3, quantity: 2 }
+      - { itemId: item.tl-thermite-charge, weight: 3 }
   - id: treasure.tl6f.records-cache
     tier: 6
     entries:
@@ -54,6 +60,8 @@ treasureTables:
       - { itemId: equip.tl-records-charm, weight: 5 }
       - { itemId: item.tl-field-dressing, weight: 4, quantity: 2 }
       - { itemId: item.tl-terminal-fuse, weight: 3, quantity: 3 }
+      - { itemId: item.tl-trauma-seal, weight: 3 }
+      - { itemId: item.tl-chime-muffler, weight: 3 }
   - id: treasure.tl7f.bureau-cache
     tier: 7
     entries:
@@ -61,6 +69,7 @@ treasureTables:
       - { itemId: equip.tl-clearance-vest, weight: 6 }
       - { itemId: item.tl-universal-round, weight: 4, quantity: 4 }
       - { itemId: item.tl-field-dressing, weight: 3, quantity: 2 }
+      - { itemId: item.tl-dispatch-stimulant, weight: 3 }
   - id: treasure.tl8f.control-cache
     tier: 8
     entries:
@@ -69,6 +78,8 @@ treasureTables:
       - { itemId: equip.tl-switchboard-gloves, weight: 5 }
       - { itemId: equip.tl-dispatch-ring, weight: 5 }
       - { itemId: item.tl-terminal-fuse, weight: 3, quantity: 3 }
+      - { itemId: item.tl-riot-ward, weight: 3 }
+      - { itemId: item.tl-fire-order, weight: 2 }
   - id: treasure.tl9f.lift-cache
     tier: 9
     entries:
@@ -77,6 +88,7 @@ treasureTables:
       - { itemId: equip.tl-lift-harness, weight: 6 }
       - { itemId: equip.tl-zero-line-helm, weight: 5 }
       - { itemId: equip.tl-return-winch-brace, weight: 5 }
+      - { itemId: equip.tl-route-seal, weight: 5 }
       - { itemId: item.tl-field-dressing, weight: 3, quantity: 3 }
   - id: treasure.tl10f.terminus-cache
     tier: 10
@@ -86,6 +98,7 @@ treasureTables:
       - { itemId: equip.tl-end-marker-signet, weight: 8 }
       - { itemId: item.tl-transit-key-fragment, weight: 4 }
       - { itemId: item.tl-universal-round, weight: 3, quantity: 6 }
+      - { itemId: item.tl-dispatch-stimulant, weight: 3 }
 ---
 
 # 補給ロッカーと封鎖配給箱

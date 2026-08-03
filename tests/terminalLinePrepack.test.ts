@@ -50,13 +50,6 @@ const enemyIds = [
   "enemy.tl10f.zero-line-stationmaster"
 ];
 
-const itemIcons = [
-  "item-tl-universal-round",
-  "item-tl-field-dressing",
-  "item-tl-terminal-fuse",
-  "item-tl-transit-key-fragment"
-];
-
 function pngInfo(path: string) {
   const png = readFileSync(path);
   return {
@@ -124,13 +117,13 @@ describe("Terminal Line F1–F10 canonical pack", () => {
   });
 
   it("delivers every Terminal Line item and equipment icon as 256-square RGBA", () => {
-    for (const basename of itemIcons) {
-      expect(pngInfo(resolve(root, "assets/icons", `${basename}.png`))).toEqual({ width: 256, height: 256, colorType: 6 });
-    }
-
     const result = loadScenarioPack(packFiles());
     expect(result.ok).toBe(true);
     if (!result.ok) return;
+    for (const item of result.world.items) {
+      const basename = item.id.replaceAll(".", "-");
+      expect(pngInfo(resolve(root, "assets/icons", `${basename}.png`))).toEqual({ width: 256, height: 256, colorType: 6 });
+    }
     for (const equipment of result.world.equipment) {
       const basename = equipment.id.replaceAll(".", "-");
       expect(pngInfo(resolve(root, "assets/icons", `${basename}.png`))).toEqual({ width: 256, height: 256, colorType: 6 });
@@ -158,7 +151,7 @@ describe("Terminal Line F1–F10 canonical pack", () => {
     if (!result.ok) return;
 
     const equipment = result.world.equipment;
-    expect(equipment.length).toBeGreaterThanOrEqual(20);
+    expect(equipment.length).toBeGreaterThanOrEqual(32);
     expect(equipment.every((piece) => piece.id.startsWith("equip.tl-"))).toBe(true);
     expect(new Set(equipment.map((piece) => piece.slot))).toEqual(
       new Set(["weapon", "offhand", "body", "head", "hands", "accessory"])
@@ -169,5 +162,22 @@ describe("Terminal Line F1–F10 canonical pack", () => {
     expect(terminus?.entries.map((entry) => entry.itemId)).toEqual(expect.arrayContaining([
       "equip.tl-platform-zero-plate", "equip.tl-zero-line-conductor", "equip.tl-end-marker-signet"
     ]));
+  });
+
+  it("puts supplies and lateral equipment across the complete descent", () => {
+    const result = loadScenarioPack(packFiles());
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    const itemIds = result.world.items.map((item) => item.id);
+    expect(itemIds).toEqual(expect.arrayContaining([
+      "item.tl-rainwater-flask", "item.tl-trauma-seal", "item.tl-chime-muffler",
+      "item.tl-dispatch-stimulant", "item.tl-breach-wedge", "item.tl-tripwire-shim"
+    ]));
+    const treasure = new Map(result.world.treasureTables.map((table) => [table.id, table]));
+    expect(treasure.get("treasure.tl4f.rainworks-cache")?.entries.map((entry) => entry.itemId)).toEqual(expect.arrayContaining([
+      "item.tl-breach-wedge", "item.tl-tripwire-shim"
+    ]));
+    expect(treasure.get("treasure.tl9f.lift-cache")?.entries.map((entry) => entry.itemId)).toContain("equip.tl-route-seal");
   });
 });

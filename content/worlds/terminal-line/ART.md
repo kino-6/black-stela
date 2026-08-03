@@ -24,7 +24,7 @@ and baked scene lighting.
 | F1/F2 chest state / reward | `dungeon/treasure-chest-closed.png`, `treasure-chest-open.png`, `treasure-reward-still.png` | PNG | generated / must show acquisition centrally |
 | F1 enemy catalog | `dungeon/enemy-tl1f-{drain-rat,baton-unit,breath-collector,unmanned-stationmaster}{,-hurt}.png` | 768² RGBA | generated / data bound |
 | F2 enemy catalog | `dungeon/enemy-tl2f-{cable-hound,rain-reclaimer}{,-hurt}.png` | 768² RGBA | generated / data bound |
-| `item.tl-*`, `equip.tl-*` | `icons/item-tl-*.png`, `icons/equip-tl-*.png` | 256² RGBA | generated / data bound (all 26 equipment IDs) |
+| `item.tl-*`, `equip.tl-*` | `icons/item-tl-*.png`, `icons/equip-tl-*.png` | 256² RGBA | generated / data bound (all 17 item IDs, all 32 equipment IDs) |
 | town / entrance / combat | `ui/town-hub.jpg`, `dungeon-entrance.png`, `combat-vignette.jpg` | 1600×900 opaque still | generated / needs runtime review |
 
 ## Deliberate gaps
@@ -47,8 +47,8 @@ and baked scene lighting.
     `enemy.tl10f.zero-line-stationmaster` → `enemy-tl10f-zero-line-stationmaster`.
   - Generated 2026-08-04. Asset-contract and content tests prove IDs and 768² RGBA pairs; 1920 in-game
     contact-grounding, scale, and silhouette readability remain a deliberately separate player-facing review.
-- The F1–F10 equipment ladder is canonical scenario data and every `equip.tl-*` ID owns a generated 256²
-  RGBA icon. The pack test resolves the icon from each catalog ID, so a future equipment entry cannot silently
-  fall back to Default art. Small-menu readability is still a distinct player-facing review.
+- The F1–F10 equipment and supply ladders are canonical scenario data: every `equip.tl-*` and `item.tl-*` ID
+  owns a generated 256² RGBA icon. The pack test resolves both catalogues dynamically, so a future entry cannot
+  silently fall back to Default art. Small-menu readability is still a distinct player-facing review.
 - `item.tl-universal-round` has an icon and data now; shared-ammunition consumption and alert state remain
   W3a rules work, not a fake visual feature in this asset pack.

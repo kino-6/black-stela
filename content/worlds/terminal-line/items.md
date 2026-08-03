@@ -103,6 +103,72 @@ items:
       ja:
         name: 焼夷指令書
         description: 一度だけ発令できる焼夷斉射の指令書。読み上げれば灰になる。
+  - id: item.tl-rainwater-flask
+    name: Rainwater Flask
+    kind: healing
+    tier: 2
+    price: 42
+    sellValue: 14
+    healAmount: 22
+    locales:
+      ja:
+        name: 浄水フラスコ
+        description: 雨水処理槽の上澄みを濾した小瓶。戦闘外で一人の傷をしっかり洗い流す。
+  - id: item.tl-trauma-seal
+    name: Trauma Seal
+    kind: healing
+    tier: 4
+    price: 88
+    sellValue: 29
+    healAmount: 36
+    locales:
+      ja:
+        name: 外傷封止材
+        description: 圧着すると深い傷を一時的に閉じる救護材。次の曲がり角まで歩くための備えになる。
+  - id: item.tl-chime-muffler
+    name: Chime Muffler
+    kind: cure
+    tier: 3
+    price: 36
+    sellValue: 12
+    curesStatuses: [fear, silence]
+    locales:
+      ja:
+        name: チャイム遮断栓
+        description: 耳と喉を覆う小さな遮断栓。閉鎖チャイムの恐怖と声の詰まりを一度だけ遠ざける。
+  - id: item.tl-dispatch-stimulant
+    name: Dispatch Stimulant
+    kind: focus
+    tier: 4
+    price: 82
+    sellValue: 27
+    restoreMp: 14
+    locales:
+      ja:
+        name: 指令用覚醒剤
+        description: 夜勤の管制員が使った強い覚醒アンプル。涸れた気力を大きく戻すが、一本きりだ。
+  - id: item.tl-breach-wedge
+    name: Breach Wedge
+    kind: utility
+    tier: 3
+    price: 76
+    sellValue: 25
+    explorationAid: { actions: [unlock], bonus: 8 }
+    locales:
+      ja:
+        name: 破扉ウェッジ
+        description: 固い非常錠へ打ち込む段付き楔。専門の手際には及ばないが、閉じた扉へ確かな力を貸す。
+  - id: item.tl-tripwire-shim
+    name: Tripwire Shim
+    kind: utility
+    tier: 3
+    price: 68
+    sellValue: 22
+    explorationAid: { actions: [disarm], bonus: 8 }
+    locales:
+      ja:
+        name: 仕掛け止め板
+        description: 細い信管の下へ滑らせる薄鋼板。罠師ほど正確ではないが、起爆を一度ためらわせる。
   - id: item.tl-terminal-fuse
     name: Terminal Fuse
     kind: key
@@ -204,6 +270,30 @@ equipment:
     price: 74
     sellValue: 24
     locales: { ja: { name: 絶縁フード, description: 信号雑音と濡れた冷気を、耳元から遠ざける裏地付きの作業頭巾。 } }
+  - id: equip.tl-callbox-knife
+    name: Callbox Knife
+    description: A short utility knife once kept inside emergency call boxes; quiet, quick, and no substitute for a real blade.
+    slot: weapon
+    tier: 2
+    attackBonus: 1
+    speedBonus: 2
+    allowedClasses: [duelist, seeker, scout, cutpurse, wayfinder]
+    tags: [melee, quiet, terminal-line]
+    price: 78
+    sellValue: 26
+    locales: { ja: { name: 非常電話ナイフ, description: 非常電話箱に収められた短い工具刃。威力より、静かな手早さを選ぶ者の武器。 } }
+  - id: equip.tl-ticket-cutter
+    name: Ticket Cutter Cuff
+    description: A reinforced cuff with a concealed ticket-cutting blade and a sure grip on narrow controls.
+    slot: hands
+    tier: 2
+    accuracyBonus: 2
+    speedBonus: 1
+    allowedClasses: [duelist, seeker, scout, cutpurse, wayfinder]
+    tags: [hands, precision, terminal-line]
+    price: 92
+    sellValue: 30
+    locales: { ja: { name: 改札切符手甲, description: 切符鋏を隠した補強手甲。狭い操作盤でも確かな手元を残す。 } }
   # F4–F6: rainworks, depot, and records. Two weapon lines compete with masks, a practical body layer,
   # and tools that let both ranks spend the same equipment slots differently.
   - id: equip.tl-sluice-shotgun
@@ -277,6 +367,30 @@ equipment:
     price: 146
     sellValue: 48
     locales: { ja: { name: 退院番号札, description: かつて誰かが外へ出るはずだったことを示す、番号入りの退院札。 } }
+  - id: equip.tl-sump-talisman
+    name: Sump Talisman
+    description: A lead-lined drain token that turns foul water away from the throat and keeps a carrier steady.
+    slot: accessory
+    tier: 3
+    hpBonus: 3
+    resistBonus: { poison: 35 }
+    tags: [charm, rainworks, terminal-line]
+    price: 132
+    sellValue: 44
+    locales: { ja: { name: 沈砂池の護符, description: 鉛板で裏打ちされた排水札。濁った水の毒気を遠ざけ、持ち主の息を保つ。 } }
+  - id: equip.tl-porter-frame
+    name: Porter Frame
+    description: A padded cargo frame that braces the bearer against a sudden load at the cost of free movement.
+    slot: offhand
+    tier: 3
+    defenseBonus: 3
+    hpBonus: 4
+    speedBonus: -1
+    allowedClasses: [vanguard, sellsword, bulwark, seeker, scout]
+    tags: [shield, depot, terminal-line]
+    price: 174
+    sellValue: 58
+    locales: { ja: { name: 荷役フレーム, description: 不意の積荷を受け止める背負い枠。身軽さを少し失う代わりに、前へ出る者を守る。 } }
   # F7–F8: bureau and control gear. It trades raw protection, casting depth, and resistance to the deep
   # signal threats rather than making every slot a mandatory firearm upgrade.
   - id: equip.tl-bureau-sidearm
@@ -352,6 +466,18 @@ equipment:
     price: 205
     sellValue: 68
     locales: { ja: { name: 指令員の指輪, description: どの地図からも消えた経路を刻んだ、真鍮の指令員指輪。 } }
+  - id: equip.tl-triage-lens
+    name: Triage Lens
+    description: A clipped inspection lens that isolates one clear detail from a crowded, noisy ward.
+    slot: head
+    tier: 4
+    defenseBonus: 1
+    accuracyBonus: 3
+    resistBonus: { silence: 25 }
+    tags: [head, medical, terminal-line]
+    price: 224
+    sellValue: 74
+    locales: { ja: { name: トリアージ単眼鏡, description: 騒がしい病棟から一つの確かな徴候を拾う検査単眼鏡。目と声を静かに保つ。 } }
   # F9–F10: the final recovery and command equipment. These are named endgame rewards with real slot
   # choices, not six copies of a larger attack number.
   - id: equip.tl-evacuation-carbine
@@ -408,6 +534,17 @@ equipment:
     tags: [hands, liftworks, terminal-line]
     sellValue: 108
     locales: { ja: { name: 帰還巻上げ手甲, description: 手動の帰還ケーブルを保持する、革と鋼の手首固定具。 } }
+  - id: equip.tl-route-seal
+    name: Route Seal Locket
+    description: A sealed route locket whose nested plates keep a last departure order close and the bearer moving.
+    slot: accessory
+    tier: 5
+    hpBonus: 5
+    speedBonus: 1
+    resistBonus: { ward: 20, fear: 15 }
+    tags: [charm, liftworks, terminal-line]
+    sellValue: 156
+    locales: { ja: { name: 運行封印のロケット, description: 最終退避命令を重ね板へ封じたロケット。足を止めず、恐怖を少しだけ遠ざける。 } }
   - id: equip.tl-platform-zero-plate
     name: Platform Zero Plate
     description: A final escort plate fitted with insulated joints and a heavy collar.
@@ -451,6 +588,17 @@ shops:
     service: general_store
     stock:
       - { itemId: item.tl-field-dressing, price: 24 }
+      - { itemId: item.tl-neutralizer-stick, price: 20 }
+      - { itemId: item.tl-rainwater-flask, price: 42, availability: unlocked, unlockFlag: flag.tl3f.bypass-open }
+      - { itemId: item.tl-chime-muffler, price: 36, availability: unlocked, unlockFlag: flag.tl4f.sluice-open }
+      - { itemId: item.tl-signal-salts, price: 45, availability: unlocked, unlockFlag: flag.tl5f.loading-open }
+      - { itemId: item.tl-trauma-seal, price: 88, availability: unlocked, unlockFlag: flag.tl6f.lift-online }
+      - { itemId: item.tl-dispatch-stimulant, price: 82, availability: unlocked, unlockFlag: flag.tl7f.archive-open }
+      - { itemId: item.tl-breach-wedge, price: 76, availability: unlocked, unlockFlag: flag.tl4f.sluice-open }
+      - { itemId: item.tl-tripwire-shim, price: 68, availability: unlocked, unlockFlag: flag.tl4f.sluice-open }
+      - { itemId: item.tl-riot-ward, price: 80, availability: unlocked, unlockFlag: flag.tl6f.lift-online }
+      - { itemId: item.tl-thermite-charge, price: 40, availability: unlocked, unlockFlag: flag.tl5f.loading-open }
+      - { itemId: item.tl-fire-order, price: 150, availability: unlocked, unlockFlag: flag.tl8f.switch-open }
       - { itemId: item.tl-terminal-fuse, price: 18 }
       - { itemId: item.tl-universal-round, price: 12 }
     locales:
@@ -467,18 +615,23 @@ shops:
       - { itemId: equip.tl-relay-carbine, price: 128, availability: unlocked, unlockFlag: flag.tl3f.bypass-open }
       - { itemId: equip.tl-platform-buckler, price: 86, availability: unlocked, unlockFlag: flag.tl3f.bypass-open }
       - { itemId: equip.tl-insulated-hood, price: 74, availability: unlocked, unlockFlag: flag.tl3f.bypass-open }
+      - { itemId: equip.tl-callbox-knife, price: 78, availability: unlocked, unlockFlag: flag.tl3f.bypass-open }
+      - { itemId: equip.tl-ticket-cutter, price: 92, availability: unlocked, unlockFlag: flag.tl3f.bypass-open }
       - { itemId: equip.tl-sluice-shotgun, price: 210, availability: unlocked, unlockFlag: flag.tl4f.sluice-open }
       - { itemId: equip.tl-archive-staff, price: 185, availability: unlocked, unlockFlag: flag.tl5f.loading-open }
       - { itemId: equip.tl-filter-mask, price: 118, availability: unlocked, unlockFlag: flag.tl4f.sluice-open }
       - { itemId: equip.tl-sluice-coat, price: 198, availability: unlocked, unlockFlag: flag.tl4f.sluice-open }
       - { itemId: equip.tl-relay-gloves, price: 102, availability: unlocked, unlockFlag: flag.tl5f.loading-open }
       - { itemId: equip.tl-records-charm, price: 146, availability: unlocked, unlockFlag: flag.tl6f.lift-online }
+      - { itemId: equip.tl-sump-talisman, price: 132, availability: unlocked, unlockFlag: flag.tl4f.sluice-open }
+      - { itemId: equip.tl-porter-frame, price: 174, availability: unlocked, unlockFlag: flag.tl5f.loading-open }
       - { itemId: equip.tl-bureau-sidearm, price: 310, availability: unlocked, unlockFlag: flag.tl7f.archive-open }
       - { itemId: equip.tl-control-rod, price: 295, availability: unlocked, unlockFlag: flag.tl8f.switch-open }
       - { itemId: equip.tl-clearance-vest, price: 275, availability: unlocked, unlockFlag: flag.tl7f.archive-open }
       - { itemId: equip.tl-signal-ward, price: 260, availability: unlocked, unlockFlag: flag.tl8f.switch-open }
       - { itemId: equip.tl-switchboard-gloves, price: 172, availability: unlocked, unlockFlag: flag.tl8f.switch-open }
       - { itemId: equip.tl-dispatch-ring, price: 205, availability: unlocked, unlockFlag: flag.tl8f.switch-open }
+      - { itemId: equip.tl-triage-lens, price: 224, availability: unlocked, unlockFlag: flag.tl7f.archive-open }
     locales:
       ja:
         name: シャッター工房
