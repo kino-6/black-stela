@@ -21,6 +21,10 @@ Status: **pre-pack asset batch**。正式 world id／表示名と Claude の受�
 | `dungeon/treasure-chest-closed.png` | 768² RGBA | 施錠された非常物資ケース。閉状態 | 生成済み・alpha確認済み |
 | `dungeon/treasure-chest-open.png` | 768² RGBA | 開封済み非常物資ケース。包帯・補給箱・整備工具を見せ、取得済みを一目で示す | 生成済み・alpha確認済み |
 | `dungeon/treasure-reward-still.png` | 1600×900 PNG | 物資ケースと報酬内容を中央で見せる結果画。ログだけに取得情報を残さない | 生成済み |
+| `dungeon/sealed-door.jpg` | 1024² JPG | 中央ハンドルと横閂を備える隔離区画用の大型防火扉。通常扉とは明確に別物 | 生成済み |
+| `ui/town-hub.jpg` | 1600×900 JPG | 乗換広場。市場・整備卓・診療スペースを寄せた旧コンコース | 生成済み |
+| `ui/dungeon-entrance.png` | 1600×900 PNG | 雨の出入口、改札、下り通路が同時に見える探索開始地点 | 生成済み |
+| `ui/combat-vignette.jpg` | 1600×900 JPG | 中央の戦闘レーンを空けた、封鎖ホームの対岸背景 | 生成済み |
 
 ## Claude への入力要求
 
@@ -36,6 +40,9 @@ Codex が次のバッチを正しく作るには、受入handoffに以下を含�
 
 1. 受入済みの F1/F2 ID に対応する敵6種の base/hurt、弾薬・医療・端末・運行鍵の icons を作る。
 2. `npm run export:godot` 後、実機で stair edge・return current-cell・chest result を確認する。
+
+封鎖扉と3枚のUI stillは、F1/F2 の最終数値・敵IDに依存しない共通成果物として先行した。実装可能な
+`terminal-line` pack へ昇格するまでは、ここに留めて world registry には登録しない。
 
 ## 生成方法
 

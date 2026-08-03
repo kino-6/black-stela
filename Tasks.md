@@ -167,6 +167,9 @@ W3a → W3b → W4 → W5 を一つずつ進めること。各Wは、ここに `
   - **成果物:** 承認済みタイトル・world id・世界一文・ID表・アート方向・`docs/handoffs/<date>-<world-id>-w0.md`。
   - **Gate:** 設計レビュー。銃が万能火力でなく有限弾薬による安全／時間の選択であること、既存二世界と構造的に
     異なること、外部作品の固有設定を持ち込まないこと。
+  - **運用確定（2026-08-03）:** ユーザーの `terminal-line` 実装指定により、表示名は「終端隔離線 — 零番線」、
+    folder/world id は `terminal-line` とする。受入境界は
+    `docs/handoffs/2026-08-03-terminal-line-w1-receipt.md`。ClaudeのF1/F2 canonical data到着後にのみW1を登録する。
 
 - [ ] **W1 — 受入済みシナリオを正規 world pack とアセット契約へ変換する（Claude → Codex）** —
   **Claude** の受入ファイル集合を、**Codex** が `content/worlds/<world-id>/` の canonical pack に取り込む。
