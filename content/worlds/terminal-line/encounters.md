@@ -22,65 +22,85 @@ encounterTables:
     floorId: dungeon.tl3f
     groupsMax: 2
     entries:
-      - { enemyId: enemy.tl2f.cable-hound, weight: 8, minCount: 1, maxCount: 3 }
-      - { enemyId: enemy.tl1f.baton-unit, weight: 7, minCount: 1, maxCount: 2 }
-      - { enemyId: enemy.tl2f.rain-reclaimer, weight: 5, minCount: 1, maxCount: 2 }
+      - { enemyId: enemy.tl3f.relay-tick, weight: 10, minCount: 2, maxCount: 4 }
+      - { enemyId: enemy.tl3f.platform-auditor, weight: 8, minCount: 1, maxCount: 2 }
+      - { enemyId: enemy.tl2f.rain-reclaimer, weight: 4, minCount: 1, maxCount: 1 }
+  - id: encounters.tl3f.transfer-warden
+    floorId: dungeon.tl3f
+    entries:
+      - { enemyId: enemy.tl3f.transfer-warden, weight: 10, minCount: 1, maxCount: 1 }
   - id: encounters.tl4f.rainworks
     floorId: dungeon.tl4f
     groupsMax: 2
     entries:
-      - { enemyId: enemy.tl2f.cable-hound, weight: 8, minCount: 1, maxCount: 3 }
-      - { enemyId: enemy.tl2f.rain-reclaimer, weight: 7, minCount: 1, maxCount: 2 }
-      - { enemyId: enemy.tl1f.breath-collector, weight: 5, minCount: 1, maxCount: 2 }
+      - { enemyId: enemy.tl4f.silt-lamprey, weight: 10, minCount: 2, maxCount: 4 }
+      - { enemyId: enemy.tl4f.pump-sentinel, weight: 8, minCount: 1, maxCount: 2 }
+      - { enemyId: enemy.tl3f.platform-auditor, weight: 4, minCount: 1, maxCount: 1 }
   - id: encounters.tl5f.depot
     floorId: dungeon.tl5f
     groupsMax: 2
     entries:
-      - { enemyId: enemy.tl2f.rain-reclaimer, weight: 8, minCount: 1, maxCount: 3 }
-      - { enemyId: enemy.tl1f.baton-unit, weight: 7, minCount: 1, maxCount: 2 }
-      - { enemyId: enemy.tl2f.cable-hound, weight: 5, minCount: 2, maxCount: 3 }
+      - { enemyId: enemy.tl5f.ration-porter, weight: 9, minCount: 1, maxCount: 2 }
+      - { enemyId: enemy.tl5f.cold-store-widow, weight: 8, minCount: 1, maxCount: 2 }
+      - { enemyId: enemy.tl4f.silt-lamprey, weight: 5, minCount: 1, maxCount: 3 }
   - id: encounters.tl6f.records
     floorId: dungeon.tl6f
     groupsMax: 2
     entries:
-      - { enemyId: enemy.tl1f.breath-collector, weight: 8, minCount: 1, maxCount: 3 }
-      - { enemyId: enemy.tl2f.rain-reclaimer, weight: 7, minCount: 1, maxCount: 2 }
-      - { enemyId: enemy.tl1f.baton-unit, weight: 5, minCount: 1, maxCount: 2 }
+      - { enemyId: enemy.tl6f.quarantine-orderly, weight: 9, minCount: 1, maxCount: 3 }
+      - { enemyId: enemy.tl5f.cold-store-widow, weight: 7, minCount: 1, maxCount: 2 }
+      - { enemyId: enemy.tl4f.pump-sentinel, weight: 5, minCount: 1, maxCount: 2 }
+  - id: encounters.tl6f.records-vault
+    floorId: dungeon.tl6f
+    entries:
+      - { enemyId: enemy.tl6f.archive-pallbearer, weight: 10, minCount: 1, maxCount: 1 }
   - id: encounters.tl7f.bureau
     floorId: dungeon.tl7f
     groupsMax: 2
     entries:
-      - { enemyId: enemy.tl1f.baton-unit, weight: 8, minCount: 1, maxCount: 3 }
-      - { enemyId: enemy.tl2f.rain-reclaimer, weight: 7, minCount: 1, maxCount: 3 }
-      - { enemyId: enemy.tl1f.breath-collector, weight: 5, minCount: 1, maxCount: 2 }
+      - { enemyId: enemy.tl7f.clearance-bailiff, weight: 9, minCount: 1, maxCount: 2 }
+      - { enemyId: enemy.tl6f.quarantine-orderly, weight: 7, minCount: 1, maxCount: 2 }
+      - { enemyId: enemy.tl8f.signal-marshal, weight: 4, minCount: 1, maxCount: 1 }
+  - id: encounters.tl7f.boardroom
+    floorId: dungeon.tl7f
+    entries:
+      - { enemyId: enemy.tl7f.clearance-bailiff, weight: 10, minCount: 1, maxCount: 1 }
   - id: encounters.tl8f.control
     floorId: dungeon.tl8f
     groupsMax: 2
     entries:
-      - { enemyId: enemy.tl2f.cable-hound, weight: 7, minCount: 2, maxCount: 3 }
-      - { enemyId: enemy.tl1f.baton-unit, weight: 7, minCount: 1, maxCount: 3 }
-      - { enemyId: enemy.tl2f.rain-reclaimer, weight: 6, minCount: 1, maxCount: 3 }
+      - { enemyId: enemy.tl8f.signal-marshal, weight: 9, minCount: 1, maxCount: 2 }
+      - { enemyId: enemy.tl7f.clearance-bailiff, weight: 7, minCount: 1, maxCount: 2 }
+      - { enemyId: enemy.tl6f.quarantine-orderly, weight: 5, minCount: 1, maxCount: 2 }
+  - id: encounters.tl8f.dispatch-guard
+    floorId: dungeon.tl8f
+    entries:
+      - { enemyId: enemy.tl8f.signal-marshal, weight: 10, minCount: 1, maxCount: 1 }
   - id: encounters.tl9f.liftworks
     floorId: dungeon.tl9f
     groupsMax: 2
     entries:
-      - { enemyId: enemy.tl1f.baton-unit, weight: 8, minCount: 2, maxCount: 3 }
-      - { enemyId: enemy.tl2f.rain-reclaimer, weight: 7, minCount: 1, maxCount: 3 }
-      - { enemyId: enemy.tl2f.cable-hound, weight: 5, minCount: 2, maxCount: 4 }
+      - { enemyId: enemy.tl8f.signal-marshal, weight: 8, minCount: 1, maxCount: 2 }
+      - { enemyId: enemy.tl7f.clearance-bailiff, weight: 7, minCount: 1, maxCount: 2 }
+      - { enemyId: enemy.tl6f.quarantine-orderly, weight: 5, minCount: 1, maxCount: 2 }
+  - id: encounters.tl9f.operator-guard
+    floorId: dungeon.tl9f
+    entries:
+      - { enemyId: enemy.tl9f.lift-custodian, weight: 10, minCount: 1, maxCount: 1 }
   - id: encounters.tl10f.terminus
     floorId: dungeon.tl10f
     groupsMax: 2
     entries:
-      - { enemyId: enemy.tl1f.baton-unit, weight: 8, minCount: 2, maxCount: 3 }
-      - { enemyId: enemy.tl2f.rain-reclaimer, weight: 7, minCount: 1, maxCount: 3 }
-      - { enemyId: enemy.tl1f.breath-collector, weight: 5, minCount: 1, maxCount: 2 }
+      - { enemyId: enemy.tl8f.signal-marshal, weight: 8, minCount: 1, maxCount: 2 }
+      - { enemyId: enemy.tl7f.clearance-bailiff, weight: 7, minCount: 1, maxCount: 2 }
+      - { enemyId: enemy.tl6f.quarantine-orderly, weight: 5, minCount: 1, maxCount: 2 }
   - id: encounters.tl10f.core
     floorId: dungeon.tl10f
     entries:
-      - { enemyId: enemy.tl1f.unmanned-stationmaster, weight: 10, minCount: 1, maxCount: 1 }
+      - { enemyId: enemy.tl10f.zero-line-stationmaster, weight: 10, minCount: 1, maxCount: 1 }
 ---
 
 # 終端隔離線の遭遇
 
-F1/F2は第一幕の低層表、F3–F10は深度データの骨格である。各到着セルには遭遇表を置かない。深層固有敵は
-W4のアセット同時投入でこの暫定表から置き換えるため、ここで既存敵の名だけを変更して完了とはしない。
+F1/F2は第一幕の低層表、F3–F10は固有敵を持つ深度帯である。各到着セルには遭遇表を置かない。玄室は
+ランダム表を流用せず、守護者専用表を参照する。

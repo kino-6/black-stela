@@ -6,13 +6,26 @@ import { loadScenarioPack } from "../src/services/scenarioPackLoader";
 const root = resolve(process.cwd(), "content/worlds/terminal-line");
 const dungeon = resolve(root, "assets/dungeon");
 
-const enemies = [
+const enemyBasenames = [
   "enemy-tl1f-drain-rat",
   "enemy-tl1f-baton-unit",
   "enemy-tl1f-breath-collector",
   "enemy-tl1f-unmanned-stationmaster",
   "enemy-tl2f-cable-hound",
-  "enemy-tl2f-rain-reclaimer"
+  "enemy-tl2f-rain-reclaimer",
+  "enemy-tl3f-relay-tick",
+  "enemy-tl3f-platform-auditor",
+  "enemy-tl3f-transfer-warden",
+  "enemy-tl4f-silt-lamprey",
+  "enemy-tl4f-pump-sentinel",
+  "enemy-tl5f-ration-porter",
+  "enemy-tl5f-cold-store-widow",
+  "enemy-tl6f-quarantine-orderly",
+  "enemy-tl6f-archive-pallbearer",
+  "enemy-tl7f-clearance-bailiff",
+  "enemy-tl8f-signal-marshal",
+  "enemy-tl9f-lift-custodian",
+  "enemy-tl10f-zero-line-stationmaster"
 ];
 
 const enemyIds = [
@@ -21,7 +34,20 @@ const enemyIds = [
   "enemy.tl1f.breath-collector",
   "enemy.tl1f.unmanned-stationmaster",
   "enemy.tl2f.cable-hound",
-  "enemy.tl2f.rain-reclaimer"
+  "enemy.tl2f.rain-reclaimer",
+  "enemy.tl3f.relay-tick",
+  "enemy.tl3f.platform-auditor",
+  "enemy.tl3f.transfer-warden",
+  "enemy.tl4f.silt-lamprey",
+  "enemy.tl4f.pump-sentinel",
+  "enemy.tl5f.ration-porter",
+  "enemy.tl5f.cold-store-widow",
+  "enemy.tl6f.quarantine-orderly",
+  "enemy.tl6f.archive-pallbearer",
+  "enemy.tl7f.clearance-bailiff",
+  "enemy.tl8f.signal-marshal",
+  "enemy.tl9f.lift-custodian",
+  "enemy.tl10f.zero-line-stationmaster"
 ];
 
 const icons = [
@@ -58,8 +84,8 @@ function packFiles(directory = root, relative = ""): Record<string, string> {
 describe("Terminal Line F1–F10 canonical pack", () => {
   it("loads its authored map, events, enemies, encounters, treasure, and progression as one pack", () => {
     const result = loadScenarioPack(packFiles());
+    if (!result.ok) throw new Error(JSON.stringify(result.errors));
     expect(result).toMatchObject({ ok: true, manifest: { id: "pack.terminal-line" } });
-    if (!result.ok) return;
 
     expect(result.world.id).toBe("world.terminal-line");
     expect(result.world.dungeons.map((floor) => floor.id)).toEqual([
@@ -74,13 +100,30 @@ describe("Terminal Line F1–F10 canonical pack", () => {
     expect(result.world.dungeons.at(-1)?.rooms.some((room) => room.id === "room.tl10f.zero-core" && room.chamberGuardian)).toBe(true);
   });
 
-  it("delivers every W0 F1/F2 enemy as a 768-square RGBA base/hurt pair", () => {
-    for (const basename of enemies) {
+  it("delivers every F1-F10 enemy as a 768-square RGBA base/hurt pair", () => {
+    for (const basename of enemyBasenames) {
       for (const suffix of ["", "-hurt"]) {
         const info = pngInfo(resolve(dungeon, `${basename}${suffix}.png`));
         expect(info).toEqual({ width: 768, height: 768, colorType: 6 });
       }
     }
+  });
+
+  it("replaces the F1/F2 deep-table placeholder roster with three or more silhouettes per floor", () => {
+    const result = loadScenarioPack(packFiles());
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    const tables = new Map(result.world.encounterTables.map((table) => [table.id, table]));
+    for (const floor of result.world.dungeons.slice(2)) {
+      const tableIds = floor.rooms.flatMap((room) => room.encounterTable ? [room.encounterTable] : []);
+      const ids = new Set(tableIds.flatMap((id) => tables.get(id)?.entries.map((entry) => entry.enemyId) ?? []));
+      expect(ids.size).toBeGreaterThanOrEqual(3);
+      expect([...ids].some((id) => /enemy\.tl(?:[3-9]f|10f)\./.test(id))).toBe(true);
+    }
+    expect(tables.get("encounters.tl10f.core")?.entries.map((entry) => entry.enemyId)).toEqual([
+      "enemy.tl10f.zero-line-stationmaster"
+    ]);
   });
 
   it("delivers every W0 F1/F2 item and equipment icon as 256-square RGBA", () => {

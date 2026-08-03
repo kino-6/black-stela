@@ -68,7 +68,7 @@ rooms:
     locales: { ja: { name: 地上端末, description: 回収された人々を出さないため、昇降機は地上側から止められていた。 } }
     event: The party finds the final proof that the sealed line was built to prevent return, not to endure a disaster.
   - { id: room.tl9f.counterweight-bay, name: Counterweight Bay, description: Open counterweights create several routes through the machinery., locales: { ja: { name: 釣合い錘の区画, description: 露出した釣合い錘が、機械の間に複数の経路を作る。 } }, encounterTable: encounters.tl9f.liftworks }
-  - { id: room.tl9f.operator-booth, name: Operator Booth, description: The final operator notes point down to Platform Zero's actual terminus., locales: { ja: { name: 運転員ブース, description: 最後の運転員メモは、零番線の本当の終点がさらに下だと示す。 } }, encounterTable: encounters.tl9f.liftworks, chamberGuardian: true }
+  - { id: room.tl9f.operator-booth, name: Operator Booth, description: The final operator notes point down to Platform Zero's actual terminus., locales: { ja: { name: 運転員ブース, description: 最後の運転員メモは、零番線の本当の終点がさらに下だと示す。 } }, encounterTable: encounters.tl9f.operator-guard, chamberGuardian: true }
   - { id: room.tl9f.tool-locker, name: Lift Tool Locker, description: A dry locker at the end of a service spur contains a reinforcement kit., locales: { ja: { name: 昇降機工具ロッカー, description: 保守枝道の奥の乾いたロッカーに、補強用具がある。 } }, treasureTable: treasure.tl9f.lift-cache }
   - { id: room.tl9f.bypass-control, name: Brake Control, description: A brake cabinet stabilises the counterweight shortcut., locales: { ja: { name: 制動制御盤, description: 制動盤は、釣合い錘の抜け道を安定させる。 } } }
   - { id: room.tl9f.maintenance-cache, name: Maintenance Cache, description: A steel tin of spare parts waits at a dead end., locales: { ja: { name: 保守部品箱, description: 行き止まりに、予備部品の鋼缶が残る。 } }, treasureTable: treasure.tl9f.lift-cache }

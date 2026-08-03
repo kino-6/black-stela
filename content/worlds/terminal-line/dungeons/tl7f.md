@@ -68,7 +68,7 @@ rooms:
     locales: { ja: { name: 許可端末, description: 中央局は脱出許可の代わりに、回収命令だけを承認してきた。 } }
     event: The party finds the signature chain that turned quarantine clearance into a collection mandate.
   - { id: room.tl7f.badge-archive, name: Badge Archive, description: A wall of expired badges leads to a guarded inner route., locales: { ja: { name: 身分証書庫, description: 失効した身分証の壁が、警備された内側の道へ続く。 } }, encounterTable: encounters.tl7f.bureau }
-  - { id: room.tl7f.perimeter-boardroom, name: Perimeter Boardroom, description: The closure committee left its final meeting arranged around an empty chair., locales: { ja: { name: 封鎖委員会室, description: 封鎖委員会の最後の会議は、空席を囲んだまま残されている。 } }, encounterTable: encounters.tl7f.bureau, chamberGuardian: true }
+  - { id: room.tl7f.perimeter-boardroom, name: Perimeter Boardroom, description: The closure committee left its final meeting arranged around an empty chair., locales: { ja: { name: 封鎖委員会室, description: 封鎖委員会の最後の会議は、空席を囲んだまま残されている。 } }, encounterTable: encounters.tl7f.boardroom, chamberGuardian: true }
   - { id: room.tl7f.service-control, name: Service Control, description: A small control desk reconnects the archive bypass., locales: { ja: { name: 保守制御卓, description: 小さな制御卓が、書庫の迂回路をつなぎ直す。 } } }
   - { id: room.tl7f.casework-cache, name: Casework Cache, description: A dead-end file drawer holds sealed supplies., locales: { ja: { name: 事件簿の保管箱, description: 行き止まりの書類棚には、封じた補給品が残る。 } }, treasureTable: treasure.tl7f.bureau-cache }
   - { id: room.tl7f.sealed-cabinet, name: Sealed Cabinet, description: A cabinet holds the bureau keycard behind a simple lock., locales: { ja: { name: 封印キャビネット, description: キャビネットには、中央局の鍵札が簡素な錠の奥にある。 } }, chest: { treasureTable: treasure.tl7f.bureau-cache, lock: { difficulty: 21 } } }

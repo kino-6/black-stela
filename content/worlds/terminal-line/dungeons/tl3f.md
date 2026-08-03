@@ -88,7 +88,8 @@ rooms:
     name: Broadcast Booth
     description: The midnight announcement plays here without a speaker or a train number.
     locales: { ja: { name: 放送ブース, description: 深夜の案内が、スピーカーも列車番号もないままここで流れる。 } }
-    encounterTable: encounters.tl3f.relay
+    encounterTable: encounters.tl3f.transfer-warden
+    chamberGuardian: true
   - id: room.tl3f.signal-splice
     name: Signal Splice
     description: A jumper cable can connect the bypass to the deep rainworks route.

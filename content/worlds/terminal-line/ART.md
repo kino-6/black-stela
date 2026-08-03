@@ -1,6 +1,6 @@
 # 終端隔離線 — 零番線: asset contract
 
-Status: **F1–F10 canonical map/event/treasure data bound; F1/F2 art generated; deep-band enemy art pending.** This contract accompanies
+Status: **F1–F10 canonical map/event/treasure data bound; every F1–F10 enemy has base/hurt art; deep-band in-game framing review pending.** This contract accompanies
 `world.terminal-line`; source data owns every ID, and the files below only provide its visual identity.
 
 ## Tone
@@ -31,12 +31,22 @@ and baked scene lighting.
 
 - F1/F2 use the shared party portrait and class-figure fallback. Terminal Line still needs its own 12
   portraits and eight base/action class figures before player-facing art acceptance.
-- F3–F10 now select the prepared block2–4 depth bands through their map tags. Their map/event/treasure
-  data is canonical, but the current encounter catalog deliberately keeps F1/F2 enemy IDs until each
-  deep band receives genuinely new base/hurt art and replacement data in W4. This is visible debt, not a
-  claim that renaming or silently reusing six silhouettes completes the deep roster.
-- F3–F10 still need their own guardians, facilities, return stills, and enemy batches. Do not solve that
-  gap with Default fallback art or by duplicating a generated silhouette under a new enemy id.
+- F3–F10 now select the prepared block2–4 depth bands through their map tags. Their encounter catalog is
+  also bound to own-basename sprites, not renamed F1/F2 fallbacks. Each file below is a 768² RGBA clean-alpha
+  base/hurt pair; hurt is a same-footprint impact color pass so the combat lane does not jump.
+  - F3 relay: `enemy.tl3f.relay-tick` → `enemy-tl3f-relay-tick`; `enemy.tl3f.platform-auditor` →
+    `enemy-tl3f-platform-auditor`; guardian `enemy.tl3f.transfer-warden` → `enemy-tl3f-transfer-warden`.
+  - F4–F6 rainworks / depot / records: `enemy.tl4f.silt-lamprey` → `enemy-tl4f-silt-lamprey`;
+    `enemy.tl4f.pump-sentinel` → `enemy-tl4f-pump-sentinel`; `enemy.tl5f.ration-porter` →
+    `enemy-tl5f-ration-porter`; `enemy.tl5f.cold-store-widow` → `enemy-tl5f-cold-store-widow`;
+    `enemy.tl6f.quarantine-orderly` → `enemy-tl6f-quarantine-orderly`; guardian
+    `enemy.tl6f.archive-pallbearer` → `enemy-tl6f-archive-pallbearer`.
+  - F7–F10 bureau / control / lift / terminus: `enemy.tl7f.clearance-bailiff` →
+    `enemy-tl7f-clearance-bailiff`; `enemy.tl8f.signal-marshal` → `enemy-tl8f-signal-marshal`;
+    `enemy.tl9f.lift-custodian` → `enemy-tl9f-lift-custodian`; true guardian
+    `enemy.tl10f.zero-line-stationmaster` → `enemy-tl10f-zero-line-stationmaster`.
+  - Generated 2026-08-04. Asset-contract and content tests prove IDs and 768² RGBA pairs; 1920 in-game
+    contact-grounding, scale, and silhouette readability remain a deliberately separate player-facing review.
 - The F2–F10 equipment ladder is now canonical scenario data. Its own-basename 256² icons are deliberately
   **not yet generated**: until the W4 icon batch lands, normal inventory uses the resolver's temporary
   fallback rather than claiming that the new equipment has bespoke visual coverage.
