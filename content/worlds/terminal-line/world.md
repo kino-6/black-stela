@@ -19,6 +19,13 @@ elements:
     label: Signal
     color: "#b8a45e"
     locales: { ja: { label: 信号 } }
+  # Incendiary — the combustion side of the line (muzzle flash, thermite, flares). Declared because the shared
+  # roster's base mage grants `firebolt` (a fire technique): a world that fields the base classes must own the
+  # element they cast, or that grant is uncastable here (techniqueLines invariant).
+  - id: fire
+    label: Incendiary
+    color: "#c46a3a"
+    locales: { ja: { label: 焼夷 } }
 balance:
   threatScalar: 1.35
   hpScalar: 1.15

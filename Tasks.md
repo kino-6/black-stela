@@ -74,13 +74,23 @@ IMP-060/061/062/063/064 completion records in `Improve.md`.
     貯金目標で、最も高い武器が最強＝貯金が報われる）②探索ユーティリティ品（kind∈{utility,escape}を3種以上＋帰還手段）
     を要求。**Default(黒碑) は基準達成でLIVE緑**（tier3 warlord-blade 340/knight-plate 320 が flag.b7f.descent で終盤unlock、
     ユーティリティ return-charm/lock-picks/trap-shim/dust-lens/lantern-oil）。ユーティリティは両世界LIVE緑。
-  - **[ ] Verdant 憧れ帯（`funGate` の todo）— 難易度統合パスが必須:** Verdant は shop 最高150G・価格付きtier3武器/防具
-    が無い。だが**素朴に足すと壊れる**：憧れ metal 装備を grove shop に入れると descentSim の現実的 `mid` パーティが
-    それを装備し、Verdant の**校正済み難易度カーブを緩める**（実測2026-08-04: verdantBalance の Act-I/エスカレーション
-    と difficultyGate の kit-runs-dry が赤化）。→ 正解は **(A) grove 深部の敵を再チューニングして良装備前提でカーブ維持**、
-    or **(B) sim の whole-descent loadout を availability-aware にして両世界再検証**。deliberate-difficulty の丁寧な
-    pass が要る（安易に balance gate を緩めない）。今セッションでは content/sim を revert して balance を無傷に戻し、
-    Gate のみ残置（Verdant憧れ帯は todo）。**この pass が P8(ドロップ増量)とも整合するよう同時に設計する。**
+  - **[ ] Verdant 憧れ帯 — user確定(2026-08-04): 「(B) sim整備して順当に調整」。腰を据えた balance pass（次セッション推奨）。**
+    調査で **3つの coupled 課題**が確定。順に「Sim整備→両世界再校正→fun content」:
+    1. **armorBonus バグ（新発見・要修正）:** verdant の防具 `bark-buckler/moss-hood/bark-plate` は `armorBonus:` を使うが
+       **equip schema(`scenario.ts:203`)に armorBonus は無く Zod が strip → 防御0**。React(`economy.ts:144`)も
+       Godot(`character_stats.gd:35`)も **`defenseBonus` しか読まない**（パリティは一致して壊れている）。修正＝verdant
+       items.md の armorBonus→defenseBonus（3箇所）。**→ verdant がtankyになり curve が緩む＝要再校正。**
+    2. **B: floor-aware loadout（sim整備の中核）:** `descentSim` の `generalLoadout`/`bestWeaponFor` が world 全カタログの
+       最強を序盤から装備＝終盤unlock装備(reaver/warlord)を floor1 から着る artifact。**tier を降下進捗の proxy** にして
+       `availableFloor(tier)=⌊(tier-1)/maxTier·N⌋`（t1→0, t2→N/3, t3→2N/3=終盤）で、各フロア時点の到達tierのみ使う。
+       実装：`equipPartyForEnemy`/`resolveFight`/`generalLoadout`/`bestWeaponFor` に **任意 uptoFloor(既定=全可)** を通し、
+       降下ループ(`descentSim.ts:537,583`)が floorIndex を渡す（exported を呼ぶ simParity は既定で不変＝壊れない）。
+    3. **両世界再校正:** 1+2 で curve が真値に直る（両世界とも終盤装備が序盤から外れ、verdant は防具が効く）。gate 閾値
+       (`descentSim.test`/`verdantBalance.test`/`difficultyGate.test`)と敵/threatScalar を **順当に**調整し、naive=全滅／
+       prepared=クリア／act-escalation の設計意図を保ったまま両世界を緑に。実測で Default `preparedMinLevel 4→5` になる等、
+       Default も動く前提で丁寧に。**ここで初めて** Verdant 憧れ帯(tier3 武器＋防具, 終盤unlock)を投入し funGate の todo を
+       解消。**P8(ドロップ増量)も同じ pass で設計**（報酬↑＝パーティ↑なので深部を相応に）。参考実測: 素朴投入で
+       verdantBalance Act-I(0.7 not>0.7)/escalation(0.657 not<0.592)、difficultyGate kit-dry/economy-flood が赤化。
   - **参考:** `availability:"limited"`（scenario.ts:240）は消費側未実装＝「1個限定」は要機能追加。verdant候補
     iron-edge(t2 攻+4 metal 150)/reaver-axe(t3 攻+6 metal, "keyed"=boss loot役割かも)。verdant装備は `armorBonus`、
     default は `defenseBonus`（要確認・パリティ注意）。
@@ -325,6 +335,12 @@ W3a → W3b → W4 → W5 を一つずつ進めること。各Wは、ここに `
     所持・装備画面の実機確認とicon投入は後続のアセット帯で閉じる。
     - **受入:** 各深度帯に少なくとも武器2種と別slotの防具／補助品があり、全6slotが有意味な候補を持つ。終盤報酬は
       単なる数値上位でなく、弾薬／警戒度ルールの実装前にも機能する既存ステータス・耐性・属性の選択であること。
+  - **装備アイコン帯（Codex, 2026-08-04 開始）:** F1の3件だけ生成済みであるため、F2–F10の全23 `equip.tl-*`
+    に own-basename の256² RGBA clean-alpha iconを投入する。銃器・近接／杖・盾・頭・胴・手・装身具は、同一の
+    記号や単なる色替えにせず、一覧の小寸法でもslotと材質が区別できる正面寄りの単品として作る。
+    - **受入:** 全26装備IDが `icons/equip-tl-*.png` に解決し、全6slotに最低1枚の固有物体があること。pack testは
+      寸法・RGBA・ID集合を検査し、通常の所持／装備画面でdefault fallbackを使わない。実機メニューでの小寸法可読性は
+      controller traversalと併せて別途確認する。
   - **Gate:** 全フロアの迷宮品質、door-choke玄室、遭遇多様性、経済・難易度、content validation、各層の
     1920実機キャプチャ。各階で最低3つの異なる敵シルエットと、深度に応じた構造の変化を読むこと。
 

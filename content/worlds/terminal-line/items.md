@@ -10,6 +10,30 @@ items:
       ja:
         name: 汎用弾
         description: 封鎖線の保安規格に合わせた短い実包。銃器ルール導入後の共有弾薬。
+  # Exploration tools — every world must answer a lock, a trap and a hidden passage without a specialist class
+  # (§9.4c / itemAlternatives invariant). The line's maintenance kit is that answer here.
+  - id: item.tl-maintenance-multitool
+    name: Maintenance Multitool
+    kind: utility
+    tier: 2
+    price: 60
+    sellValue: 20
+    explorationAid: { actions: [unlock, disarm], bonus: 6 }
+    locales:
+      ja:
+        name: 保守多用途具
+        description: 保安員が携える多用途工具。非常錠をこじ開け、仕掛けの信管を抜く。
+  - id: item.tl-signal-scope
+    name: Signal Scope
+    kind: utility
+    tier: 2
+    price: 70
+    sellValue: 23
+    explorationAid: { actions: [detectSecret, investigate], bonus: 5 }
+    locales:
+      ja:
+        name: 信号鏡
+        description: 壁越しの微弱信号を拾う手鏡。隠し配線や封じた区画の気配を読む。
   - id: item.tl-field-dressing
     name: Field Dressing
     kind: healing
@@ -21,6 +45,64 @@ items:
       ja:
         name: 応急包帯
         description: 濡れない袋に収められた止血布。戦闘外でも、負傷者一人の傷を手当てできる。
+  # §9.4c — a world must not be a dead end: a poisoned party needs a cure, an exhausted caster a way back, and
+  # the ward/throwable/scroll one-shots that stand in for a missing class (the WEAKER, paid route). Authored in
+  # the line's own voice; the offensive one-shots are incendiary (the world's `fire` element).
+  - id: item.tl-neutralizer-stick
+    name: Neutralizer Stick
+    kind: cure
+    tier: 1
+    price: 20
+    sellValue: 7
+    curesStatuses: [poison, sleep]
+    locales:
+      ja:
+        name: 中和スティック
+        description: 毒と麻痺を打ち消す注射式の中和剤。折れば一度きり効く。
+  - id: item.tl-signal-salts
+    name: Signal Salts
+    kind: focus
+    tier: 2
+    price: 45
+    sellValue: 15
+    restoreMp: 8
+    locales:
+      ja:
+        name: 気付けの塩
+        description: 嗅げば頭が冴える保安支給の塩。涸れた気力を呼び戻す。
+  - id: item.tl-riot-ward
+    name: Riot Ward Deploy
+    kind: ward
+    tier: 3
+    price: 80
+    sellValue: 26
+    useTechnique: ward-hymn
+    locales:
+      ja:
+        name: 防護展開具
+        description: 展張式の遮蔽膜。一度だけ隊列を覆い、詠唱者の代わりに前へ立つ。
+  - id: item.tl-thermite-charge
+    name: Thermite Charge
+    kind: throwable
+    tier: 2
+    price: 40
+    sellValue: 13
+    useTechnique: firebolt
+    locales:
+      ja:
+        name: 焼夷手榴弾
+        description: 投げれば白熱して爆ぜる焼夷弾。錆びた装甲も金具も焼き貫く。
+  - id: item.tl-fire-order
+    name: Incendiary Order
+    kind: scroll
+    tier: 4
+    price: 150
+    sellValue: 50
+    useTechnique: flame-wave
+    locales:
+      ja:
+        name: 焼夷指令書
+        description: 一度だけ発令できる焼夷斉射の指令書。読み上げれば灰になる。
   - id: item.tl-terminal-fuse
     name: Terminal Fuse
     kind: key
