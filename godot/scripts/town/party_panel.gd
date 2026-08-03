@@ -383,6 +383,10 @@ static func _equipment_page(ctx: Dictionary, world: Dictionary, party: Array, me
 	var candidate_buttons: Array[Button] = []
 	var equip_button_ref: Button = null
 	var found := false
+	# Collect the slot-matching carried gear, then order EQUIPPABLE-first with the class-ineligible pieces
+	# BELOW (dimmed + a reason) — so the cursor meets the usable picks first instead of hunting past greyed
+	# rows (user decision 2026-08-04「装備可能を上・不可を下に淡色」). Not filtered out: the reason stays visible.
+	var slot_items := []
 	for item_v in state.get("inventory", []):
 		var item: Dictionary = item_v
 		if String(item.get("kind", "")) != "equipment":
@@ -390,8 +394,12 @@ static func _equipment_page(ctx: Dictionary, world: Dictionary, party: Array, me
 		var catalog: Variant = Fmt.find_equipment(world, item.get("id", ""))
 		if typeof(catalog) != TYPE_DICTIONARY or String((catalog as Dictionary).get("slot", "")) != selected_slot:
 			continue
+		slot_items.append({"item": item, "catalog": catalog as Dictionary, "usable": Fmt.is_usable_by(catalog as Dictionary, member)})
+	slot_items.sort_custom(func(a, b): return a["usable"] and not b["usable"])  # equippable first; equal-usability keeps inventory order
+	for entry in slot_items:
+		var item: Dictionary = entry["item"]
 		found = true
-		var usable := Fmt.is_usable_by(catalog as Dictionary, member)
+		var usable: bool = entry["usable"]
 		var row := UI.row()
 		var key := Fmt.equipment_selection_key(item)
 		var candidate_button := UI.button(Fmt.describe_equipment_instance(world, item.get("id", ""), item.get("plus", null), item.get("affix", null)), func(): ctx["set_party_equipment_candidate"].call(key), Vector2(330, 38), 16)

@@ -647,6 +647,10 @@ export const en = {
     effectDefense: "ARM",
     effectAccuracy: "ACC",
     effectSpeed: "SPD",
+    effectHp: "HP",
+    effectMp: "MP",
+    effectRegen: "Regen",
+    effectWard: "Ward",
     allowed: "Usable",
     ineligible: "Cannot equip",
     slots: {

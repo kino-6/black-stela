@@ -44,17 +44,25 @@ IMP-060/061/062/063/064 completion records in `Improve.md`.
   null（`_input`でシーン遷移後の`set_input_as_handled`）＋ tree外`grab_focus`。consume-before-dispatch へ並替、
   `_grab_focus_safe`ガード、`_ensure_focus_in`のviewport null塞ぎ。**新Gate `gate:godot-runtime`**（scripts/
   godot-runtime-gate.mjs：controller/loop scenes をheadless起動しSCRIPT ERROR系シグネチャで fail）。緑確認済。
-- [ ] **P6 装備メニュー：装備不可の候補を出さない＋「均等」表示の是正** — 装身具スロットに樹皮の小盾等が出る。
-  スロット/装備者でフィルタ。
-  - **「均等」根因（調査済 2026-08-04）:** `town_format.gd:format_equipment_effect`（=React `describeEquipmentEffect`/
+- [~] **P6 装備メニュー：装備不可の候補を出さない＋「均等」表示の是正**
+  - **[x] 「均等」廃止（済・commit）:** `_gear_effect_summary`（godot town_format）＋ `gearEffectSummary`（React
+    format.ts）で hp/mp/再生/耐性(ward) も要約。ward護符は「HP +4 / 耐性」と出て「均等」は消滅。真に無効果のみ
+    「変化なし」。i18n に effectHp/Mp/Regen/Ward 追加（ja+en）。Gate: verify_chest_loot_label に「gearは均等を出さず
+    実効果を出す」アサート追加、緑。
+  - **[x] 候補ソート（済・commit, Godot）:** party_panel.gd で装備可能を先頭・不可を後方（disabled=淡色＋理由）に
+    sort_custom。verify_dungeon_controller「ineligible stays visible with a reason」緑維持。
+  - **[ ] 残: React候補ソートのパリティ**（PartyMenuPanel の候補リストも equippable-first に）＋ 候補順序の
+    専用アサート（現状は sort が自明＋回帰テストで担保）。
+  - **（参考）根因メモ:** `town_format.gd:format_equipment_effect`（=React `describeEquipmentEffect`/
     `format.ts formatBonusParts`）は **攻/防/命/速の4statしか出さず**、hp/mp/resistBonus/elementResist/regen を持つ
     装身具は parts 空→`format_bonus_parts` が `I18n.t("aptitude.balanced")`＝「均等」にフォールバック。つまり
     *aptitude用語の誤用*であると同時に *効果表示が不完全*。修正＝**gearの全効果（hp/mp/resist/element/regen）を
     要約表示**し、真に無効果のときだけ中立表記（「均等」は使わない）。godot+React両方（パリティ）。Gate:
     town_format のユニット or verify_dungeon_controller に「resist装身具の効果が"均等"でなく実効果を出す」アサート。
-  - **非装備候補フィルタ:** 注意：dungeon_controller に「ineligible equipment stays visible with a reason」テスト
-    有り＝*理由付き表示*が現行設計。ユーザー意図（無意味な物は出すな）と擦り合わせ、理由が読めるUIにするか
-    フィルタするか **user判断待ち**（設計コンフリクト）。
+  - **候補の並べ替え（user確定 2026-08-04）:** **装備可能を上・装備不可を下に淡色（＋理由）**。フィルタで消さず、
+    現行「ineligible stays visible with a reason」テストと両立させつつ、装備可能→装備不可の順にソートし不可品を
+    グレーアウト＋理由（例「装身具のみ」）を各行に。godot party_panel.gd（候補リスト構築）+ React PartyMenuPanel/
+    ShopPanel。Gate: verify_dungeon_controller に「候補は装備可能が先頭・不可は淡色で理由付き」アサート追加。
 - [ ] **P7 戦闘アニメ中に敵味方HPバーが減らない** — Godot beats は player→敵beatのみ(`combat_round.gd:138`)。
   味方バーは全beat後(`combat.gd:651`)に一括更新＝アニメ中は据置。React beat は per-beat `groups`/`party`
   スナップショットを持つ(rulesEngine.ts:1239)。Godot beat に snapshot を載せ、両バーを beat 単位で駆動する。

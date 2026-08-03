@@ -72,18 +72,46 @@ export function formatEquipmentSlot(slot: EquipmentSlot, t: Translator) {
   return t(`town.slots.${slot}` as Parameters<Translator>[0]);
 }
 
+// The full effect a piece of gear carries — the four combat stats PLUS hp/mp/regen and a 耐性(ward) marker for
+// any resist/element bonus. The old 4-stat-only summary fell back to the aptitude word "均等" for an accessory
+// whose whole point is HP or resistances, so a ward charm read as meaningless「装身具・均等」(playtest 2026-08-03
+// 「均等とは？」). Truly effect-less gear reads 変化なし, never 均等.
+function gearEffectSummary(
+  g: {
+    attackBonus?: number;
+    defenseBonus?: number;
+    accuracyBonus?: number;
+    speedBonus?: number;
+    hpBonus?: number;
+    mpBonus?: number;
+    regen?: number;
+    resistBonus?: Partial<Record<string, number>>;
+    elementResist?: Partial<Record<string, number>>;
+  },
+  t: Translator
+) {
+  const parts = [
+    formatSignedBonus(t("town.effectAttack"), g.attackBonus),
+    formatSignedBonus(t("town.effectDefense"), g.defenseBonus),
+    formatSignedBonus(t("town.effectAccuracy"), g.accuracyBonus),
+    formatSignedBonus(t("town.effectSpeed"), g.speedBonus),
+    formatSignedBonus(t("town.effectHp"), g.hpBonus),
+    formatSignedBonus(t("town.effectMp"), g.mpBonus),
+    formatSignedBonus(t("town.effectRegen"), g.regen)
+  ].filter(Boolean);
+  const hasWard =
+    (g.resistBonus && Object.keys(g.resistBonus).length > 0) ||
+    (g.elementResist && Object.keys(g.elementResist).length > 0);
+  if (hasWard) parts.push(t("town.effectWard"));
+  return parts.length > 0 ? parts.join(" / ") : t("town.noStatChange");
+}
+
 export function formatEquipmentEffect(equipment: ScenarioEquipment, t: Translator) {
-  return formatBonusParts(
-    equipment.attackBonus,
-    equipment.defenseBonus,
-    equipment.accuracyBonus,
-    equipment.speedBonus,
-    t
-  );
+  return gearEffectSummary(equipment, t);
 }
 
 export function formatInventoryEffect(item: InventoryItem, t: Translator) {
-  return formatBonusParts(item.attackBonus, item.defenseBonus, item.accuracyBonus, item.speedBonus, t);
+  return gearEffectSummary(item, t);
 }
 
 export function formatBonusParts(

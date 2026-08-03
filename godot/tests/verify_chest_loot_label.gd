@@ -47,6 +47,13 @@ func _initialize() -> void:
 	_check(affix_label.find("affix.") == -1, "affix label does not leak the raw key (no 'affix.' substring)")
 	_check(Fmt.localized_affix_label(verdant, "keen") == "鋭利な", "built-in bare affix resolves via i18n (鋭利な)")
 
+	# P6 (playtest 2026-08-03「均等とは？」): gear whose effect is HP/MP/regen or a resist ward must summarise its
+	# REAL effect — the old 4-combat-stat summary fell back to the aptitude word「均等」for a ward charm.
+	var ward_effect := Fmt.format_equipment_effect({"resistBonus": {"sleep": 30}, "hpBonus": 4})
+	_check(ward_effect.find("均等") == -1, "gear effect never shows the aptitude word 均等 (got: %s)" % ward_effect)
+	_check(ward_effect.find("耐性") != -1 and ward_effect.find("HP") != -1, "a resist+HP accessory summarises 耐性 and HP")
+	_check(Fmt.format_equipment_effect({"attackBonus": 3}).find("威力") != -1, "a weapon still summarises its combat stat")
+
 	print("[chest-loot-label] %s (%d failures)" % ["PASS" if _fail == 0 else "FAIL", _fail])
 	quit(_fail)
 

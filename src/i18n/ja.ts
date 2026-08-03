@@ -649,6 +649,10 @@ export const ja = {
     effectDefense: "防御",
     effectAccuracy: "命中",
     effectSpeed: "速度",
+    effectHp: "HP",
+    effectMp: "MP",
+    effectRegen: "再生",
+    effectWard: "耐性",
     allowed: "装備可",
     ineligible: "装備不可",
     slots: {

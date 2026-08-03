@@ -73,11 +73,36 @@ static func format_bonus_parts(attack: Variant, defense: Variant, accuracy: Vari
 			parts.append(text)
 	return " / ".join(PackedStringArray(parts)) if not parts.is_empty() else I18n.t("aptitude.balanced")
 
+# The full effect a piece of gear carries — the four combat stats PLUS hp/mp/regen and a 耐性(ward) marker for
+# any resist/element bonus. The old 4-stat-only summary fell back to the aptitude word "均等" for an accessory
+# whose whole point is HP or resistances, so a ward charm read as meaningless「装身具・均等」(playtest 2026-08-03
+# 「均等とは？」). Truly effect-less gear reads 変化なし, never 均等.
+static func _gear_effect_summary(g: Dictionary) -> String:
+	var parts := []
+	for pair in [
+		[I18n.t("town.effectAttack"), g.get("attackBonus", null)],
+		[I18n.t("town.effectDefense"), g.get("defenseBonus", null)],
+		[I18n.t("town.effectAccuracy"), g.get("accuracyBonus", null)],
+		[I18n.t("town.effectSpeed"), g.get("speedBonus", null)],
+		[I18n.t("town.effectHp"), g.get("hpBonus", null)],
+		[I18n.t("town.effectMp"), g.get("mpBonus", null)],
+		[I18n.t("town.effectRegen"), g.get("regen", null)],
+	]:
+		var text := format_signed_bonus(pair[0], pair[1])
+		if text != "":
+			parts.append(text)
+	var resist: Variant = g.get("resistBonus", {})
+	var elem: Variant = g.get("elementResist", {})
+	var has_ward := (typeof(resist) == TYPE_DICTIONARY and not (resist as Dictionary).is_empty()) or (typeof(elem) == TYPE_DICTIONARY and not (elem as Dictionary).is_empty())
+	if has_ward:
+		parts.append(I18n.t("town.effectWard"))
+	return " / ".join(PackedStringArray(parts)) if not parts.is_empty() else I18n.t("town.noStatChange")
+
 static func format_equipment_effect(equipment: Dictionary) -> String:
-	return format_bonus_parts(equipment.get("attackBonus", null), equipment.get("defenseBonus", null), equipment.get("accuracyBonus", null), equipment.get("speedBonus", null))
+	return _gear_effect_summary(equipment)
 
 static func format_inventory_effect(item: Dictionary) -> String:
-	return format_bonus_parts(item.get("attackBonus", null), item.get("defenseBonus", null), item.get("accuracyBonus", null), item.get("speedBonus", null))
+	return _gear_effect_summary(item)
 
 static func format_equipment_slot(slot: String) -> String:
 	return I18n.t("town.slots.%s" % slot)
