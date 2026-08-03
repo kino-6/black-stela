@@ -460,6 +460,49 @@ IMP-060/061/062/063/064 completion records in `Improve.md`.
 
 ---
 
+## 将来世界プログラム — 封鎖線（仮称、現行キュー外）
+
+**隔離ルール:** この節は「着手予約」であり、現在のDefault／Verdantの修正、玄室リテイク、既存ゲートを
+止めたり変更したりしない。W0を明示承認するまで `content/worlds/`・世界レジストリ・共有ルール・Godot画面へ
+変更を入れない。詳細な設計とアセット契約は
+[`docs/design/ballistic-world-program.md`](design/ballistic-world-program.md) を唯一の入口とする。
+
+- [ ] **W0 — 銃器DRPG世界の核を確定する（承認待ち）** — 近現代の封鎖地下都市を舞台に、既存二世界と
+  異なる探索資源・脅威・到達目標・三幕を一枚で確定する。第一幕では「有限弾薬による安全の購入」か
+  「射線／制圧による隊列戦」のどちらか一方だけを主役にし、後者を同時に肥大化させない。
+  - **Gate:** 設計レビューで、世界の一文／3幕／第一層で学ぶ判断／既存二世界との差を承認。外部作品の固有設定を
+    持ち込まない。
+
+- [ ] **W1 — 新世界パックの骨格とアセット契約を作る（W0後）** — `content/worlds/<new-id>/` に閉じた
+  world packの正規形、`world.md`、`ART.md`、世界固有コピーの入口を作る。ただし世界選択への登録、既存データへの
+  変更、共有アセットの上書きはしない。
+  - **Gate:** scenario pack schema/content validation。未登録のため通常プレイに影響しないこと。
+
+- [ ] **W2 — A0ルック開発: 都市地下の構造アセットを実機で承認（W1後）** — 3帯の壁／床、通常扉・封鎖扉、
+  昇降機／梯子、帰還標識、保管庫、戦闘・拠点背景を生成して、第一層の小さな検証マップに配置する。色替えではなく
+  都市地下の構造として置換する。
+  - **Gate:** `npm run export:godot` + レンダー検証、1280/1920の実機キャプチャ。Default／Verdantと並べて
+    構造だけで別世界に読めること。強い全画面フラッシュ・過剰発光なし。
+
+- [ ] **W3 — 第一幕の垂直スライス（W2承認後）** — 拠点→2フロア→戦闘→保管庫→帰還を新パックだけで通す。
+  敵6種（base/hurt）、弾薬／医療／端末のアイテム、最初の守護者、部屋ランドマークを含める。
+  - **Gate:** world registry/maze quality/encounter coverage/descentSim/treasure の新世界版、controller e2e、
+    実機戦闘で敵の接地・シルエット・hurtの差を確認。
+
+- [ ] **W4a — 銃・弾薬・騒音の固有ルール（必要な場合のみ、W3の調査後）** — 既存Commandで表現できない時だけ
+  TS oracleから追加し、Godotを追従させる。世界データやアセット量産と同じ変更に混ぜない。
+  - **Gate:** 新Commandのgolden trace、`verify_parity`、save round-trip、既存二世界の回帰が緑。
+
+- [ ] **W4b — 8層・経済・職能・敵・文章を量産（W3/W4a後）** — 各三層帯の敵、扉・階段・背景、玄室、
+  アイテム、拠点の品揃え、環境文章を全量制作する。アセットは A1（第一幕）→A2（全層）の承認バッチで納品する。
+  - **Gate:** 全フロアの迷宮品質・遭遇多様性・経済・難易度ゲート、各層の実機スクリーンショット。
+
+- [ ] **W5 — 新世界の実機仕上げ（W4b後）** — 全層を実プレイで通し、コントローラ、戦闘手触り、資産の配置、
+  日本語の行組み、1280/1920の可読性を最終レビューする。
+  - **Gate:** `npm run gate:final`、`npm run gate:migration`、Godot clean boot、現実機キャプチャと独立レビュー。
+
+---
+
 ## Recently done (awaiting nothing — move to Archive on next tidy)
 
 - [x] **T1 (IMP-064) 全員でかかる instant → beat-by-beat** — all-out narrates each living attacker before
