@@ -137,8 +137,15 @@ static func enemy_mark(host: Node, group: Dictionary, centre_x: float, slot_w: f
 			unit_bar.max_value = float(max_hp_each)
 			unit_bar.value = float(max_hp_each) if i > 0 else clampf(float(hp_each), 0.0, float(max_hp_each))
 			unit_bar.show_percentage = false
-			unit_bar.custom_minimum_size = Vector2(minf(bw, 120.0), 5)
-			unit_bar.position = Vector2(bx + (body_w - minf(bw, 120.0)) / 2.0, floor_y + 4.0)
+			# Cap the bar to the unit SPACING, not just the body width: a tightly-packed rank has step < body,
+			# so a fixed 120px bar under each unit overran the next unit's and the bars stacked into a smear
+			# (playtest 2026-08-03: 戦闘時HPバーが重なる). Keep a 6px gap so adjacent bars never touch.
+			var bar_w := minf(bw, 120.0)
+			if bodies > 1:
+				bar_w = clampf(step - 6.0, 22.0, bar_w)
+			unit_bar.custom_minimum_size = Vector2(bar_w, 5)
+			unit_bar.size = Vector2(bar_w, 5)
+			unit_bar.position = Vector2(bx + (body_w - bar_w) / 2.0, floor_y + 4.0)
 			mark.add_child(unit_bar)
 
 	# The arrow rides above the selected rank (clamped onto the stage); the name sits once under the group,

@@ -21,6 +21,49 @@ IMP-060/061/062/063/064 completion records in `Improve.md`.
 
 ## Active queue (process top-down)
 
+- [ ] **T20 — 戦闘の敵HPバーが重なっている** (Godot) — 実機戦闘で、敵グループの足元に置くHPバーが隣の
+  グループのバーと重なって表示される（胞子蝿×3 と 苔虫 の2グループで、バーが横に重複）。各グループのバーが
+  自グループの図の幅内に収まり、隣と重ならないようにする（アンカーのx位置/バー幅の算出を見直す）。
+  - **Gate:** `verify_combat_*`（バーの矩形が隣接グループと重ならない＝x範囲が非オーバーラップ）を追加/更新し、
+    現行コードで落ちることを確認してから修正。実機キャプチャで重なり解消を確認。
+
+- [ ] **T21 — ダメージポップアップのX軸ずれ＋ポップアップ時にHPバーが更新されない** (Godot) — 実機戦闘で
+  ダメージ数字（例「-9」）が敵画像のX位置ではなく画面上部中央付近に出る。**被弾した敵グループのX（x_frac）
+  真上**に出す。加えて、ポップアップ表示中に敵グループのHPバーが減らず、ビート後まで満タンのまま
+  （`_rebuild_stage` がビートループ後にしか走らない）。**各ビートで被弾グループのバーをその場で減らす**。
+  - **Gate:** `verify_combat_numbers` を拡張（数字のX中心が対象グループのx_frac位置に一致／被弾ビート後に
+    当該グループのバー value が減っている）。現行で落ちることを確認してから修正。実機で確認。
+
+- [ ] **T22 — 被弾表現：HPバーが減らず「いつの間にか死んでいる」** (Godot, 敵＋味方) — 味方HPバーが
+  敵の反撃で減らず、気づくと戦闘不能。ダメージ被弾を分かりやすく。**安易なシェイク/全画面フラッシュはNG。**
+  現代RPGの定番＝**HPバーのアニメ減少＋遅延ゴーストバー（chip/残像バー：メインは即減り、背後の赤バーが一拍
+  遅れて追いつき「削られた量」を残す）** ＋被弾対象の上にダメージ数字＋減少時だけバー色を軽くパルス＋ビート単位
+  の再生。敵グループ・味方の両バーに適用。T21（敵バー更新/ポップアップX）と同じ再生系で実装。
+  - **Gate:** `verify_combat_*` を拡張（ビートで味方/敵の当該バー value が減る／ゴーストバーが存在・遅延）。
+    現行で落ちることを確認してから修正。実機で敵反撃時に味方バーが目に見えて減ることを確認。
+
+- [ ] **T24 — 手番ポートレートが行動者に切り替わらない** (Godot) — 戦闘中、左の「手番」顔画像がずっと同じ
+  キャラのまま。再生（playback）で行動しているメンバーに合わせて切り替え、誰の番/誰が殴ったかが分かるように。
+  ついでにログの敵名が英語漏れ（「Spore Gnat」→「胞子蝿」）— beatのtargetNameをローカライズ名にする。
+  - **Gate:** `verify_combat_*` にビートごとの手番ポートレート＝行動者、ログ敵名がローカライズ、を追加。
+
+- [ ] **T25 — Verdant G1F の敵が単調（同じ敵ばかり）** (content) — 翠碑 G1F でずっと同じ敵に当たる。
+  first-contact モデル（各TYPE 1回/run）で G1F が導入する種が少ない。G1F に敵タイプを追加し、序盤の
+  出会いに変化を出す（`content/worlds/verdant/` の enemies/encounters/dungeon rooms、descentSim で act 曲線維持）。
+  - **Gate:** verdant balance/coverage sim + `verify_verdant_chambers` 緑、G1F の導入タイプ数が増える。
+
+- [ ] **T23 — 階段ナレーションが方向を誤表示（下り階段を「上れば町へ戻る」）** (Godot) — 根の下り（G2Fへの
+  **下り**階段）で「階段だ。上れば町へ戻る。」と表示される（Image #51「大嘘、これは2Fへの階段」）。ナレーション
+  を階段の**実際の向き/行き先**に合わせる：上り＝町/前の階へ戻る、下り＝次の階へ降りる。入口の上り階段のみ
+  「町へ戻る」。`_stairs_info` の kind(up/down) を見て文言を出し分ける。
+  - **Gate:** `verify_dungeon_controller` に down階段セルで「次の階へ」系、up階段（入口）で「町へ戻る」系、を追加。
+
+- [ ] **T13 refine — 受入条件を実測に合わせる（全滅強制はしない）** — Codex 2026-08-03：全員・無購入を
+  B1Fで**必ず全滅**させる調整は**不要**（現状で無購入10%相当・購入済み64%、施設差は十分）。旧タスクの
+  「施設なしでは1Fを突破できない」は実測と矛盾。受入条件を **「無購入フルパーティは薄氷でB1Fを生還できても、
+  継続探索・B2進出は成立しない。帰還して準備する必然がある」** に直し、その実機証跡を追加する。難易度の
+  再チューニングはしない（descentSim ゲートは現状維持）。
+
 - [x] **T2 — 玄室の敵出現ポイントを扉に隣接させる** — DONE
   - TWO invariants now locked in `chamberGuardian.test.ts` over BOTH worlds: (1) **door-choke** — flood a
     chamber's OPEN-connected pocket from its cell and assert every edge LEAVING the pocket is door/secret, so
@@ -121,7 +164,9 @@ IMP-060/061/062/063/064 completion records in `Improve.md`.
   - **Gate:** shop-controller test — 買う/売る are separate reachable modes; buying adds to SHARED inventory
     (not bound to a character); controller-only; no reflow/overflow at 1280/1920. ux-parity re-derived green.
 
-- [x] **T9 — 鍛冶屋: 金銭で装備を強化する施設（上限あり）** — DONE (new facility)
+- [x] **T9 — 鍛冶屋: 金銭で装備を強化する施設（上限あり）** — DONE + **Codex 承認 (2026-08-03)**: 3状態
+  （affordable/at-cap/no-gold）とも価格・強化先・上限・資金不足・フォーカス退避が自然に読める。証跡は
+  `docs/evidence/t9-blacksmith-2026-08-03/`（harness `capture_blacksmith.gd`）。 (new facility)
   - Shipped a NEW town facility 鍛冶屋 (Blacksmith) under 市場 — the GOLD twin of the 錬成所 (which spends
     MATERIALS). It tempers a WORN piece +1 per step (same MAX_REINFORCE=5 ceiling) for gold; cost climbs
     `(plus+1)*30` (30→150, 450g to max). Refuses in the dungeon / on an empty slot / at the cap / when broke.
@@ -204,9 +249,17 @@ IMP-060/061/062/063/064 completion records in `Improve.md`.
       portal — heavier jambs + a deep lintel beam rising nearly to the corridor ceiling, taller leaves filling
       it — so a sealed guardian room announces itself from the corridor, not via the HUD-hidden floor. Frame
       stays WOOD, no glow (the pale-stone frame was reverted: it read as a glowing Fallback — user feedback).
-  - **Still open for Codex:** the INTERIOR forward view is still dominated by the vine back-wall, and the
-    `chamber-floor-seal.png` retake to neutral inlaid stone is Codex's art call (no glow/魔法陣/prop).
-    `npm run export:godot`, then `capture_verdant_chamber_visual.gd -- <out>.png g1f|g2f|g3f` and judge both.
+  - **Codex NG #3 (2026-08-03) — grand portal OVERSHOT.** The 玄室 door now reads as a BOSS castle-gate /
+    face monument, not a repeatable 玄室 door; and the interior still reads as bare wall with a pale green
+    circular cap growing from under the HUD (the old "unexplained green object"). Confirmed G1–G3. Fix list
+    for Claude:
+    - **Shrink the portal** from "grand" to a **sturdy wood-and-stone door ~1.1–1.3× a normal door** — so
+      repetition never looks like boss staging.
+    - **Remove/replace the pale circular cap + any glow** in the interior with dark neutral stone; the
+      floor seal → a LOW-CONTRAST inlaid stone (Codex art retakes the texture).
+    - **Interior structure above the HUD:** ceiling height, back-wall recession, stone frame must read as a
+      "small room" — do NOT rely on the floor design (it's HUD-hidden).
+    - Re-shoot 扉の手前 + 入室直後 WITH the HUD, G1–G3, and confirm the difference from a normal corridor reads.
   - **Gate:** visual review on the real build — **Codex art-lane sign-off** (primary implementer does not
     self-approve player-facing visual completion). Render gates green (dungeon-controller, verdant-chambers).
 
