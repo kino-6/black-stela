@@ -25,7 +25,9 @@ human DRPG feel that automation can miss.
 | B5F - Toll of Cinders | The midpoint gate and miniboss should make preparation matter, and the shortcut should be recognizable after discovery. |
 | B6F - Narrow Oaths | Trap and ambush pressure should reward party composition rather than punish unknown mechanics. |
 | B7F - Side Ash Vaults | Optional lock/reward content should feel skippable, not required for basic progression. |
-| B8F - Gate of Ash | Finale pressure should still leave a visible return route after victory or retreat. |
+| B8F - Gate of Ash | Deep Act III trash before the boss; the descent to the votary's sanctum must read. |
+| B9F - Votary's Sanctum | The scenario-clear boss (ash-votary); clearing it should open the descent to the 真層. |
+| B10F - The Inmost Stela | The 完全クリア true boss; a commitment floor (no escape charm), still winnable prepared. |
 
 ## Red Flags
 

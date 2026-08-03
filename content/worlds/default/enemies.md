@@ -316,6 +316,51 @@ enemies:
     dangerTier: 5
     isBoss: true
     tags: [finale, boss]
+  # ---- 真層 (B10) — the 完全クリア true boss (T31). A superboss escalation of the Ash Votary: the black
+  #      stela's inmost heart. Reached only after the B9 votary falls. SPRITE: Codex art-lane (pending) —
+  #      a placeholder copies the ash-votary art so it renders until the real sprite lands.
+  - id: enemy.b10.dark-stela
+    weaknesses: { star: 2.0, fire: 0.35, salt: 0.35 }
+    name: Heart of the Stela
+    locales:
+      ja:
+        name: 黒碑の主
+    hp: 44
+    attack: 8
+    armor: 4
+    accuracy: 86
+    damageMin: 7
+    damageMax: 10
+    speed: 7
+    morale: 12
+    xp: 30
+    gold: 60
+    role: boss
+    size: huge
+    dangerTier: 6
+    isBoss: true
+    tags: [truefinale, boss]
+    # The true-clear spike: a wider ashfall than the votary's, plus a star-ash sear on the back line.
+    # Credible wipe without star weapons + fire/salt resist — the peak of the prepare-or-fall curve.
+    abilities:
+      - name: Ashfall Cataclysm
+        chance: 60
+        target: any
+        locales: { ja: { name: 灰燼の終焉 } }
+        effect:
+          kind: damage
+          min: 7
+          max: 11
+          element: star
+      - name: Cinder Sear
+        chance: 40
+        target: back
+        locales: { ja: { name: 燼の灼き } }
+        effect:
+          kind: damage
+          min: 5
+          max: 8
+          element: star
   - id: enemy.rare.ashsilver-glimmer
     name: Ashsilver Glimmer
     locales:

@@ -17,11 +17,12 @@ describe("world registry", () => {
     expect(getWorldById(DEFAULT_WORLD_ID)).toBe(defaultWorld);
   });
 
-  it("orders the default world's dungeons by descent (b1f..b8f)", () => {
+  it("orders the default world's dungeons by descent (b1f..b10f)", () => {
     const ids = defaultWorld.dungeons.map((d) => d.id);
     expect(ids).toEqual([
       "dungeon.b1f", "dungeon.b2f", "dungeon.b3f", "dungeon.b4f",
-      "dungeon.b5f", "dungeon.b6f", "dungeon.b7f", "dungeon.b8f"
+      "dungeon.b5f", "dungeon.b6f", "dungeon.b7f", "dungeon.b8f",
+      "dungeon.b9f", "dungeon.b10f"
     ]);
   });
 

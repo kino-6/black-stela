@@ -128,6 +128,31 @@ treasureTables:
         weight: 5
       - itemId: item.lantern-oil
         weight: 3
+  # 10F (T31): B9 (ash-votary scenario boss) + B10 (真層 dark-stela true boss). The star weapon
+  # (starlit-needle) is the counterplay reward — the boss is star-weak, so exploring for it fells it.
+  - id: treasure.b9f.side
+    tier: 5
+    entries:
+      - { itemId: item.healing-draught, weight: 5 }
+      - { itemId: item.lantern-oil, weight: 3 }
+      - { itemId: equip.black-thread-ring, weight: 2 }
+  - id: treasure.b9f.keep
+    tier: 5
+    entries:
+      - { itemId: equip.starlit-needle, weight: 10 }
+      - { itemId: item.stela-shard, weight: 6, quantity: 1 }
+      - { itemId: equip.black-thread-ring, weight: 5 }
+  - id: treasure.b10f.side
+    tier: 5
+    entries:
+      - { itemId: item.healing-draught, weight: 5 }
+      - { itemId: item.stela-shard, weight: 4 }
+  - id: treasure.b10f.keep
+    tier: 5
+    entries:
+      - { itemId: item.stela-shard, weight: 10, quantity: 2 }
+      - { itemId: equip.starlit-needle, weight: 8 }
+      - { itemId: equip.cinder-warded-jack, weight: 6 }
   - id: treasure.b2f.secret
     tier: 2
     entries:

@@ -15,6 +15,8 @@ dungeons:
   - dungeons/b6f.md
   - dungeons/b7f.md
   - dungeons/b8f.md
+  - dungeons/b9f.md
+  - dungeons/b10f.md
 dataFiles:
   items: items.md
   enemies: enemies.md

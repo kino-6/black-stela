@@ -547,7 +547,7 @@ describe("runtime gates and shortcuts", () => {
 describe("three-block dungeon structure", () => {
   it("caps each block with a boss gate, and B3/B6 caps add a rest point", () => {
     const capFloors = defaultWorld.dungeons.filter((floor) => floor.tags?.includes("block-cap"));
-    expect(capFloors.map((floor) => floor.id)).toEqual(["dungeon.b3f", "dungeon.b6f", "dungeon.b8f"]);
+    expect(capFloors.map((floor) => floor.id)).toEqual(["dungeon.b3f", "dungeon.b6f", "dungeon.b9f"]);
 
     for (const floor of capFloors) {
       expect(floor.rooms.some((room) => room.encounter?.isBoss), `${floor.id} needs a boss gate`).toBe(true);
@@ -582,7 +582,8 @@ describe("emergency return charm", () => {
   });
 
   it("is barred on the boss floor", () => {
-    const blocked = executeCommand(dungeonWithCharm("room.b8f.001", "dungeon.b8f"), defaultWorld, {
+    // 10F (T31): the true-clear finale (B10) is the commitment floor now, not B8.
+    const blocked = executeCommand(dungeonWithCharm("room.b10f.001", "dungeon.b10f"), defaultWorld, {
       type: "use_item",
       itemId: "item.return-charm",
       targetCharacterId: "unused"

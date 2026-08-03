@@ -9,6 +9,8 @@ import defaultB5f from "../content/worlds/default/dungeons/b5f.md?raw";
 import defaultB6f from "../content/worlds/default/dungeons/b6f.md?raw";
 import defaultB7f from "../content/worlds/default/dungeons/b7f.md?raw";
 import defaultB8f from "../content/worlds/default/dungeons/b8f.md?raw";
+import defaultB9f from "../content/worlds/default/dungeons/b9f.md?raw";
+import defaultB10f from "../content/worlds/default/dungeons/b10f.md?raw";
 import defaultItems from "../content/worlds/default/items.md?raw";
 import defaultEnemies from "../content/worlds/default/enemies.md?raw";
 import defaultEncounters from "../content/worlds/default/encounters.md?raw";
@@ -40,6 +42,8 @@ describe("scenario pack loader", () => {
       "dungeons/b6f.md": defaultB6f,
       "dungeons/b7f.md": defaultB7f,
       "dungeons/b8f.md": defaultB8f,
+      "dungeons/b9f.md": defaultB9f,
+      "dungeons/b10f.md": defaultB10f,
       "items.md": defaultItems,
       "enemies.md": defaultEnemies,
       "encounters.md": defaultEncounters,
@@ -396,6 +400,8 @@ function defaultPackFiles() {
     "dungeons/b6f.md": defaultB6f,
     "dungeons/b7f.md": defaultB7f,
     "dungeons/b8f.md": defaultB8f,
+    "dungeons/b9f.md": defaultB9f,
+    "dungeons/b10f.md": defaultB10f,
     "items.md": defaultItems,
     "enemies.md": defaultEnemies,
     "encounters.md": defaultEncounters,

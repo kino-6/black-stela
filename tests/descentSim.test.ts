@@ -17,10 +17,10 @@ describe("descent difficulty (prepare or wipe)", () => {
     expect(simulateDescent(defaultWorld, { heal: "none", policy: "naive" }).survived).toBe(false);
   });
 
-  it("a PREPARED party clears all eight floors — with town rest, and on a single push at its level", () => {
+  it("a PREPARED party clears all ten floors — with town rest, and on a single push at its level", () => {
     expect(simulateDescent(defaultWorld, { heal: "town", policy: "prepared" }).survived).toBe(true);
     const push = simulateDescent(defaultWorld, { heal: "none", policy: "prepared", startLevel: clearLevel });
-    expect(push.floors).toHaveLength(8);
+    expect(push.floors).toHaveLength(10); // T31: B1–B9 + the B10 真層
     expect(push.survived).toBe(true);
     expect(push.floors.every((floor) => !floor.wiped)).toBe(true);
   });
@@ -51,7 +51,7 @@ describe("descent difficulty (prepare or wipe)", () => {
     const actMin = (ids: string[]) => Math.min(...ids.map((id) => trough.get(id) ?? 1));
     const act1 = actMin(["dungeon.b1f", "dungeon.b2f", "dungeon.b3f"]);
     const act2 = actMin(["dungeon.b4f", "dungeon.b5f", "dungeon.b6f"]);
-    const act3 = actMin(["dungeon.b7f", "dungeon.b8f"]);
+    const act3 = actMin(["dungeon.b7f", "dungeon.b8f", "dungeon.b9f", "dungeon.b10f"]); // Act III + the 真層
     expect(act2).toBeLessThan(act1); // the middle bites harder than the shallows
     // …and the deep floors stay TENSE — no MEANINGFULLY gentler than the mid. A prepared party levels as
     // it descends and slightly out-scales the very deepest enemies, so act3's trough can sit a few HP%

@@ -2,7 +2,7 @@
 id: dungeon.b8f
 name: B8F - Gate of Ash
 level: 8
-role: finale
+role: deep_route
 dangerTier: 5
 # IMP-063 descent arc — the deepest floor, at the black stela's root. Darkest, with the stela's cold
 # violet corruption creeping into the ash. Merges over the world palette (only these keys shift).
@@ -15,10 +15,7 @@ palette:
   fogDensity: 0.13
 recommendedPartyLevel: 4
 tags:
-  - finale
-  - boss
   - block-3
-  - block-cap
 authorNotes: >-
   Finale floor on the full 20x20 frame. Two ash-gate halls converge on the
   approach, thick with votary-kin and the last caches before the end. The buried
@@ -48,7 +45,7 @@ map: |
   ###################
 symbols:
   E: room.b8f.001
-  M: room.b8f.002
+  M: room.b8f.exit
   D: room.b8f.003
   A: room.b8f.004
   B: room.b8f.005
@@ -71,6 +68,13 @@ edges:
     kind: stairs
     to: room.b7f.001
     targetFloorId: dungeon.b7f
+  # 10F (T31): B8 is no longer the finale — it descends to B9 (the ash-votary scenario boss). The old boss
+  # cell (M) becomes the down-stair; the ash-votary moved to B9.
+  - from: room.b8f.exit
+    direction: south
+    kind: stairs
+    to: room.b9f.001
+    targetFloorId: dungeon.b9f
   - from: room.b8f.c17_12
     direction: south
     kind: secret
@@ -108,24 +112,13 @@ rooms:
         name: 蝋の冷えた小間
         description: 北の広間から外れた行き止まりの小間。他より冷えた空気に、鞄が忘れ置かれている。
     treasureTable: treasure.b1f.nook
-  - id: room.b8f.002
-    name: Black Stela Root
-    description: The buried root of the stela rises from stone like a blade without an edge. Nothing passes deeper until its votary falls.
+  - id: room.b8f.exit
+    name: Root Descent
+    description: The buried root of the stela plunges on into the dark; a stair follows it down toward the votary's sanctum.
     locales:
       ja:
-        name: 黒碑の根
-        description: 埋もれた黒碑の根が、刃のない刃物のように石から立つ。その祭祀が斃れるまで、奥へは誰も通れない。
-    encounter:
-      id: enemy.b8f.ash-votary
-      name: Ash Votary
-      hp: 22
-      attack: 5
-      role: boss
-      dangerTier: 5
-      isBoss: true
-      tags:
-        - finale
-    treasureTable: treasure.b8f.final
+        name: 根の下り
+        description: 埋もれた黒碑の根が、なお暗がりへと落ちていく。階段がそれを追って、奉者の聖域へと下る。
   - id: room.b8f.003
     name: Return Scar
     description: A scar in the wall opens toward the town stair only after the ash quiets, past where the buried root fell.

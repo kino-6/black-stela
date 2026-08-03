@@ -8,32 +8,32 @@ describe("scenario summary", () => {
 
     expect(summary).toMatchObject({
       title: "Black Stela - Gate of Ash",
-      floorCount: 8,
-      roomCount: 1394,
+      floorCount: 10,
+      roomCount: 1730,
       itemCount: 20,
       equipmentCount: 32,
       shopCount: 1,
-      encounterTableCount: 9,
-      treasureTableCount: 26,
+      encounterTableCount: 13,
+      treasureTableCount: 30,
       shopStockReferenceCount: 48,
       returnAnchorCount: 3,
-      nextFloorLinkCount: 7,
+      nextFloorLinkCount: 9,
       lockCount: 4,
-      lootReferenceCount: 64,
+      lootReferenceCount: 68,
       missingJapaneseRooms: 0,
       pacing: {
         midpointFloor: "dungeon.b5f",
-        finaleFloor: "dungeon.b8f",
+        finaleFloor: "dungeon.b10f",
         maxDangerTier: 5
       }
     });
   });
 
   it("formats a stable text summary", () => {
-    expect(formatScenarioSummary(summarizeScenario(defaultWorld))).toContain("Floors: 8");
+    expect(formatScenarioSummary(summarizeScenario(defaultWorld))).toContain("Floors: 10");
     expect(formatScenarioSummary(summarizeScenario(defaultWorld))).toContain("Shops: 1");
     expect(formatScenarioSummary(summarizeScenario(defaultWorld))).toContain("Town returns: 3");
-    expect(formatScenarioSummary(summarizeScenario(defaultWorld))).toContain("Next-floor links: 7");
+    expect(formatScenarioSummary(summarizeScenario(defaultWorld))).toContain("Next-floor links: 9");
     expect(formatScenarioSummary(summarizeScenario(defaultWorld))).toContain("dungeon.b8f B8F - Gate of Ash");
   });
 

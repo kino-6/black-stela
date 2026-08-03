@@ -119,11 +119,32 @@ encounterTables:
         weight: 4
         minCount: 3
         maxCount: 3
-      - enemyId: enemy.b8f.ash-votary
-        weight: 1
-        minCount: 1
-        maxCount: 1
-      - { enemyId: enemy.b7f.sealbreaker, weight: 3, minCount: 1, maxCount: 1 }
+      - { enemyId: enemy.b7f.sealbreaker, weight: 3, minCount: 1, maxCount: 2 }
+      - { enemyId: enemy.b6f.oath-cutter, weight: 3, minCount: 2, maxCount: 3 }
+  # 10F (T31): B9 = the ash-votary SCENARIO-clear boss (relocated from B8, which is now deep trash above);
+  # B10 = 真層 with the NEW dark-stela true boss. `.chambers` feeds the 玄室 + wandering, `.keep` the boss.
+  - id: encounters.b9f.chambers
+    floorId: dungeon.b9f
+    groupsMax: 2
+    entries:
+      - { enemyId: enemy.b7f.vault-husk, weight: 10, minCount: 2, maxCount: 3 }
+      - { enemyId: enemy.b7f.sealbreaker, weight: 6, minCount: 1, maxCount: 2 }
+      - { enemyId: enemy.b6f.oath-cutter, weight: 5, minCount: 1, maxCount: 2 }
+  - id: encounters.b9f.keep
+    floorId: dungeon.b9f
+    entries:
+      - { enemyId: enemy.b8f.ash-votary, weight: 10, minCount: 1, maxCount: 1 }
+  - id: encounters.b10f.chambers
+    floorId: dungeon.b10f
+    groupsMax: 2
+    entries:
+      - { enemyId: enemy.b7f.vault-husk, weight: 10, minCount: 2, maxCount: 3 }
+      - { enemyId: enemy.b7f.sealbreaker, weight: 6, minCount: 1, maxCount: 2 }
+      - { enemyId: enemy.b6f.oath-cutter, weight: 5, minCount: 1, maxCount: 1 }
+  - id: encounters.b10f.keep
+    floorId: dungeon.b10f
+    entries:
+      - { enemyId: enemy.b10.dark-stela, weight: 10, minCount: 1, maxCount: 1 }
 ---
 
 # Encounter Tables
