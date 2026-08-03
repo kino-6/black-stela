@@ -239,9 +239,12 @@ W3a → W3b → W4 → W5 を一つずつ進めること。各Wは、ここに `
     folder/world id は `terminal-line` とする。受入境界は
     `docs/handoffs/2026-08-03-terminal-line-w1-receipt.md`。ClaudeのF1/F2 canonical data到着後にのみW1を登録する。
 
-- [-] **W1 — 受入済みシナリオを正規 world pack とアセット契約へ変換する（Claude → Codex）** — **Codex,
+- [-] **W1 — F1/F2のシナリオデータを正規 world pack とアセット契約へ変換する（Codex → Claude review）** — **Codex,
   2026-08-03 開始。**
-  **Claude** の受入ファイル集合を、**Codex** が `content/worlds/<world-id>/` の canonical pack に取り込む。
+  **運用訂正（ユーザー指示、2026-08-04）:** 受入待ちを理由に、Map・部屋イベント・敵・遭遇・宝・進行データを
+  未作成のままにしない。**Codex** がW0の世界設定を入力に、F1/F2・乗換広場を実際にロード可能な canonical pack として
+  authorし、**Claude** は後から受入レビューと数値／文章の調整を行う。共有弾薬・警戒度など既存二世界に触れる固有ルールは
+  W3aまで持ち込まず、W1では既存の安定したscenario schemaだけで縦切りを成立させる。
   `manifest.md` と `world.md`、全data file、少なくともF1/F2の連続グリッドを揃え、`ART.md` に次を固定する：
   renderer固定basename（`stone-wall-block1..3.jpg`／`stone-floor-block1..3.jpg`／`wood-door.jpg`／
   `stair-down.png`／`stair-up.png`／`return-marker.png`／宝箱・報酬スチル）、全enemyのbase/hurt、全world固有
@@ -250,6 +253,10 @@ W3a → W3b → W4 → W5 を一つずつ進めること。各Wは、ここに `
   - **Gate:** `loadScenarioPack`／scenario content validation が緑、`npm run export:godot` が world JSON と
     asset staging を自動出力、既存Default/Verdantが同じexportで回帰しないこと。これはデータ受入証明であり、
     まだプレイ品質の証明ではない。
+  - **W1 data acceptance:** F1/F2には入口・下り／上り・帰還・二経路の教示遭遇・ロッカー報酬・端末イベントを
+    current-cell／edgeデータとしてauthorし、6敵・4アイテム・3装備・2 treasure tableの全IDを参照可能にする。
+    floor JSONを手書きせず、Markdown source → `loadScenarioPack` → exportの経路だけを使う。Claude reviewで変更されたIDは
+    `ART.md` の対応表で追跡する。
   - **先行実装（ユーザー指示、2026-08-03）:** Claudeが現行世界の修正中にも、未登録プレパック
     `content/worlds/cordon/` で以下を作り込む。`world.md`、迷宮grid、数値、遭遇、報酬、共有銃器ルールは作らず、
     Claude受入の代わりにしない。受入時にIDが変わったものは生成理由ではなく対応表で解決する。

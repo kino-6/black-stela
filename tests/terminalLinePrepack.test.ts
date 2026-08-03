@@ -1,8 +1,9 @@
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
+import { loadScenarioPack } from "../src/services/scenarioPackLoader";
 
-const root = resolve(process.cwd(), "content/worlds/cordon");
+const root = resolve(process.cwd(), "content/worlds/terminal-line");
 const dungeon = resolve(root, "assets/dungeon");
 
 const enemies = [
@@ -12,6 +13,15 @@ const enemies = [
   "enemy-tl1f-unmanned-stationmaster",
   "enemy-tl2f-cable-hound",
   "enemy-tl2f-rain-reclaimer"
+];
+
+const enemyIds = [
+  "enemy.tl1f.drain-rat",
+  "enemy.tl1f.baton-unit",
+  "enemy.tl1f.breath-collector",
+  "enemy.tl1f.unmanned-stationmaster",
+  "enemy.tl2f.cable-hound",
+  "enemy.tl2f.rain-reclaimer"
 ];
 
 const icons = [
@@ -34,9 +44,30 @@ function pngInfo(path: string) {
   };
 }
 
-describe("Terminal Line pre-canonical art batch", () => {
-  it("remains outside the runtime registry until accepted scenario data arrives", () => {
-    expect(existsSync(resolve(root, "world.md"))).toBe(false);
+function packFiles(directory = root, relative = ""): Record<string, string> {
+  return Object.fromEntries(
+    readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+      const path = resolve(directory, entry.name);
+      const key = relative ? `${relative}/${entry.name}` : entry.name;
+      if (entry.isDirectory()) return Object.entries(packFiles(path, key));
+      return entry.name.endsWith(".md") && statSync(path).isFile() ? [[key, readFileSync(path, "utf8")]] : [];
+    })
+  );
+}
+
+describe("Terminal Line F1/F2 canonical pack", () => {
+  it("loads its authored map, events, enemies, encounters, treasure, and progression as one pack", () => {
+    const result = loadScenarioPack(packFiles());
+    expect(result).toMatchObject({ ok: true, manifest: { id: "pack.terminal-line" } });
+    if (!result.ok) return;
+
+    expect(result.world.id).toBe("world.terminal-line");
+    expect(result.world.dungeons.map((floor) => floor.id)).toEqual(["dungeon.tl1f", "dungeon.tl2f"]);
+    expect(result.world.enemies.map((enemy) => enemy.id)).toEqual(enemyIds);
+    expect(result.world.dungeons[0].grid?.cells.length).toBeGreaterThanOrEqual(80);
+    expect(result.world.dungeons[1].grid?.cells.length).toBeGreaterThanOrEqual(80);
+    expect(result.world.dungeons[0].rooms.some((room) => room.id === "room.tl1f.signal-office" && room.event)).toBe(true);
+    expect(result.world.dungeons[1].rooms.some((room) => room.id === "room.tl2f.power-terminal" && (room.gates?.length ?? 0) > 0)).toBe(true);
   });
 
   it("delivers every W0 F1/F2 enemy as a 768-square RGBA base/hurt pair", () => {
@@ -54,8 +85,10 @@ describe("Terminal Line pre-canonical art batch", () => {
     }
   });
 
-  it("keeps the shared stills and sealed-door ready for promotion", () => {
+  it("ships the shared stills and landmark props in the canonical pack", () => {
     for (const relative of [
+      "assets/dungeon/stone-wall-block4.jpg",
+      "assets/dungeon/stone-floor-block4.jpg",
       "assets/dungeon/sealed-door.jpg",
       "assets/dungeon/supply-locker.png",
       "assets/dungeon/maintenance-terminal.png",

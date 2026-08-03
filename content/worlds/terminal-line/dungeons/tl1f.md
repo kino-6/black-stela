@@ -1,0 +1,143 @@
+---
+id: dungeon.tl1f
+name: F1 - Outer Gates
+locales: { ja: { name: F1・改札外縁 } }
+level: 1
+role: onboarding
+dangerTier: 1
+recommendedPartyLevel: 1
+recommendedPartySize: 2
+recommendedClearLevel: 2
+tags: [onboarding, transit, block-1]
+authorNotes: >-
+  A 19x19 rod-falling maze, seed 20260804, post-carved into four public-infrastructure chambers.
+  The security route and flooded concourse both reach the signal office; a service-shutter shortcut
+  collapses a return route once found. The down stair is freely usable at the far end. Rewards pull
+  toward dead ends and the stationmaster chamber rather than blocking descent.
+startRoom: room.tl1f.entrance
+map: |
+  ###################
+  #E.a..#...#...#...#
+  #.#.#.#.###.#.###.#
+  #.#.#.......#.....#
+  #.###.#.#####.#####
+  #....F.......S....#
+  #.###.#####.#.#.###
+  #.#.......#...#...#
+  #####.#....##.###.#
+  #.....#..H..#.#K..#
+  #####.##...########
+  #.......#.........#
+  #.#.###.#.#####.#.#
+  #.#.#....T....#.#.#
+  ###.#####.#.#####.#
+  #.........#....C#R#
+  #.###.#############
+  #.#......P.......D#
+  ###################
+symbols:
+  E: room.tl1f.entrance
+  a: room.tl1f.security-corridor
+  F: room.tl1f.flooded-concourse
+  S: room.tl1f.signal-office
+  H: room.tl1f.stationmaster-hall
+  K: room.tl1f.key-locker
+  T: room.tl1f.maintenance-terminal
+  C: room.tl1f.concourse-cache
+  R: room.tl1f.return-marker
+  P: room.tl1f.service-hatch
+  D: room.tl1f.down-stair
+corridor:
+  name: Wet Ticket Gallery
+  description: Low station lamps repeat across white-grey tile. Water threads between the rubber floor seams.
+  locales:
+    ja:
+      name: 濡れた改札回廊
+      description: 低い駅灯が白灰のタイルに繰り返し映る。黒いゴム床の継ぎ目を、雨水が細く流れている。
+edges:
+  - { from: room.tl1f.security-corridor, direction: west, kind: shortcut, to: room.tl1f.service-hatch }
+  - { from: room.tl1f.down-stair, direction: east, kind: stairs, to: room.tl2f.platform-landing, targetFloorId: dungeon.tl2f }
+rooms:
+  - id: room.tl1f.entrance
+    name: Raised Fire Shutter
+    description: A half-raised fire shutter leaves a gap into the station. The Interchange Square is still behind the rain.
+    locales: { ja: { name: 上がった防火シャッター, description: 半ば上がった防火シャッターの下に、駅へ入る隙間がある。雨の向こうには、まだ乗換広場の灯が残っている。 } }
+    stairsToTown: true
+    returnStyle: stairs
+  - id: room.tl1f.security-corridor
+    name: Security Corridor
+    description: A narrow lane of broken gates. A baton unit blocks the dry, direct line toward the signal office.
+    locales: { ja: { name: 保安通路, description: 壊れた改札機が狭い通路をつくる。無線室への乾いた近道を、保安棒ユニットが塞いでいる。 } }
+    encounterTable: encounters.tl1f.outer-gate
+    gates:
+      - id: gate.tl1f.security-shutter
+        kind: shortcut
+        grantsFlag: flag.tl1f.security-shortcut
+        clue: A manual shutter release leads back toward the return marker.
+        locales: { ja: { clue: 手動シャッターを上げれば、帰還標識へ短く抜けられる。 } }
+  - id: room.tl1f.flooded-concourse
+    name: Flooded Concourse
+    description: An ankle-deep detour beneath dark timetable boards. The way is slower, but old lockers remain above the waterline.
+    locales: { ja: { name: 浸水コンコース, description: 消えた時刻表の下を、くるぶしまで水に浸かって回り込む。遅い道だが、古いロッカーはまだ水面より高い。 } }
+    damageTile: 1
+    treasureTable: treasure.tl1f.locker
+    event: The flooded route trades time and a little health for supplies without forcing the security corridor.
+  - id: room.tl1f.signal-office
+    name: Signal Office
+    description: A cracked platform display repeats a destination with no train number. A maintenance line answers from below.
+    locales: { ja: { name: 信号室, description: 割れた案内表示が、列車番号のない行先だけを繰り返す。保守回線は、さらに下から応答している。 } }
+    event: The party records the midnight signal and learns that the lower platform still has power.
+    gates:
+      - id: gate.tl1f.route-signal
+        kind: shortcut
+        grantsFlag: flag.tl1f.signal-routed
+        clue: The dead display reroutes a signal toward the lower platform.
+        locales: { ja: { clue: 死んだ表示板が、下のホームへ向けて一度だけ信号を流した。 } }
+  - id: room.tl1f.stationmaster-hall
+    name: Unmanned Stationmaster Hall
+    description: Ticket gates and a worker's coat have fused around a standing maintenance frame. It rings the closing chime at an empty platform.
+    locales: { ja: { name: 無人駅務長の広間, description: 改札機と作業服が、立った保守架台の周りで癒着している。誰もいないホームへ、閉鎖チャイムだけを鳴らしている。 } }
+    encounter:
+      id: enemy.tl1f.unmanned-stationmaster
+      name: Unmanned Stationmaster
+      hp: 28
+      attack: 5
+      role: miniboss
+    encounterTable: encounters.tl1f.stationmaster
+    chamberGuardian: true
+    treasureTable: treasure.tl1f.station-office
+  - id: room.tl1f.key-locker
+    name: Operations Locker
+    description: A dented steel locker bears the faded seal of platform operations. A key fragment ticks inside it.
+    locales: { ja: { name: 運行ロッカー, description: 鋼製ロッカーに、ホーム運行課の消えかけた印が残る。中で鍵片が小さく鳴っている。 } }
+    chest: { treasureTable: treasure.tl1f.station-office, lock: { difficulty: 8 } }
+  - id: room.tl1f.maintenance-terminal
+    name: Maintenance Terminal
+    description: A dark terminal waits beside a dry service hatch. Its ceramic fuse socket is intact.
+    locales: { ja: { name: 保守端末, description: 乾いた保守口の脇で、暗い端末が待っている。陶製ヒューズの差込口だけは無事だ。 } }
+    event: A terminal fuse can be installed here when the alert-state rule is connected in W3a.
+  - id: room.tl1f.concourse-cache
+    name: Lost Property Cache
+    description: A sealed lost-property box rests above the tide mark, heavy with forgotten work gear.
+    locales: { ja: { name: 遺失物の保管箱, description: 水位線より高い棚に、封をされた遺失物箱が残る。中には忘れられた作業用具の重みがある。 } }
+    treasureTable: treasure.tl1f.locker
+    chest: { treasureTable: treasure.tl1f.locker, trap: { kind: gas, difficulty: 10, damage: 3 } }
+  - id: room.tl1f.return-marker
+    name: Emergency Call Point
+    description: A battered emergency phone and a steady evacuation lamp mark a route back to the Interchange Square.
+    locales: { ja: { name: 非常電話前, description: へこんだ非常電話と、消えない退避灯が乗換広場へ戻る道を示している。 } }
+    stairsToTown: true
+    returnStyle: marker
+  - id: room.tl1f.service-hatch
+    name: Service Hatch
+    description: A narrow hatch opens behind the security shutter. It is a useful shortcut, not a mystery gate.
+    locales: { ja: { name: 保守口, description: 保安シャッターの裏に、狭い保守口が開く。これは謎の門ではなく、戻り道を短くする抜け道だ。 } }
+  - id: room.tl1f.down-stair
+    name: Platform Service Stairs
+    description: Steel steps descend beside the platform edge toward the flooded lower level. Nothing bars the way down.
+    locales: { ja: { name: ホーム脇の保守階段, description: ホーム端の鋼階段が、浸水した下層へと降りている。下りること自体を止めるものはない。 } }
+---
+
+# F1・改札外縁
+
+保安通路の速い道と、浸水コンコースの補給を拾う道の二択を置く。どちらを選んでも信号室と下り階段へ届く。
