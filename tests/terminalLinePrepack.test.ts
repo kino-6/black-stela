@@ -50,14 +50,11 @@ const enemyIds = [
   "enemy.tl10f.zero-line-stationmaster"
 ];
 
-const icons = [
+const itemIcons = [
   "item-tl-universal-round",
   "item-tl-field-dressing",
   "item-tl-terminal-fuse",
-  "item-tl-transit-key-fragment",
-  "equip-tl-service-pistol",
-  "equip-tl-crowbar",
-  "equip-tl-rain-jacket"
+  "item-tl-transit-key-fragment"
 ];
 
 function pngInfo(path: string) {
@@ -126,8 +123,16 @@ describe("Terminal Line F1–F10 canonical pack", () => {
     ]);
   });
 
-  it("delivers every W0 F1/F2 item and equipment icon as 256-square RGBA", () => {
-    for (const basename of icons) {
+  it("delivers every Terminal Line item and equipment icon as 256-square RGBA", () => {
+    for (const basename of itemIcons) {
+      expect(pngInfo(resolve(root, "assets/icons", `${basename}.png`))).toEqual({ width: 256, height: 256, colorType: 6 });
+    }
+
+    const result = loadScenarioPack(packFiles());
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    for (const equipment of result.world.equipment) {
+      const basename = equipment.id.replaceAll(".", "-");
       expect(pngInfo(resolve(root, "assets/icons", `${basename}.png`))).toEqual({ width: 256, height: 256, colorType: 6 });
     }
   });
