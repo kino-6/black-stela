@@ -344,8 +344,10 @@ IMP-060/061/062/063/064 completion records in `Improve.md`.
     then settle), a rising arc with a small sideways drift, an ease-out fade, a dark OUTLINE so it reads on
     any creature, and a hotter/bigger CRIT variant with a "!" for a heavy blow. Positioned per target (x_frac)
     so a multi-target round lands each number on its own creature. Self-contained (no assets). Locked by
-    `verify_combat_numbers`. (Godot combat stage — the played build; React `CombatCockpit` juice is a parity
-    follow-up, lower priority since the user plays Godot.) The FEEL is the user's continuous real-build review.
+    `verify_combat_numbers`. **Engine parity:** React's `.hit-number` was already juicy (scale-pop, rise,
+    shadow, bigger/hotter crit) — T19 brought Godot UP to it; the number TEXT is now identical in both
+    (`-N` normal, `-N!` crit). Minor React-only CSS accents remain (a per-hit `fx-flash` + crit `fx-slash`);
+    engine-appropriate, left for Codex's visual call. The FEEL is the user's continuous real-build review.
   - **Problem (playtest 2026-08-02):** the current floating damage number reads like a spreadsheet cell —
     no pop, no weight, no 数字感. Combat-ui-drpg wants numbers that LAND on the target with impact.
   - **Research + apply:** study juicy damage-number presentation (scale-pop on spawn, slight arc + rise,

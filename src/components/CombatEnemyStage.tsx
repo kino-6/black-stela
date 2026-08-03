@@ -103,7 +103,7 @@ export function CombatEnemyStage({
               )}
               {hit && activeBeat?.damage != null && (
                 <span className={`hit-number${activeBeat?.crit ? " crit" : ""}`} key={beatKey} data-testid="hit-number">
-                  -{activeBeat.damage}
+                  -{activeBeat.damage}{activeBeat?.crit ? "!" : ""}
                 </span>
               )}
               <div

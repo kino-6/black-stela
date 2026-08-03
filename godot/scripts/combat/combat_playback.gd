@@ -17,7 +17,8 @@ static func damage_number(damage_layer: CanvasItem, stage_rect: Rect2, amount: i
 	if amount <= 0:
 		return
 	var size := 74 if is_crit else 54
-	var dmg := _label(("%d!" % amount) if is_crit else str(amount), size, CRIT if is_crit else HURT)
+	# Same text convention as React's .hit-number (`-N`, crit adds `!`), so the two engines read identically.
+	var dmg := _label(("-%d!" % amount) if is_crit else ("-%d" % amount), size, CRIT if is_crit else HURT)
 	dmg.add_theme_color_override("font_outline_color", OUTLINE)
 	dmg.add_theme_constant_override("outline_size", 10 if is_crit else 8)
 	dmg.pivot_offset = Vector2(size * 0.5, size * 0.6)
