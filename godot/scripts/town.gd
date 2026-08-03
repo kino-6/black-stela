@@ -283,9 +283,16 @@ func _rebuild() -> void:
 	# own prepared art — the town used to keep town-hub.jpg everywhere (playtest 2026-07-29). Falls back to the
 	# hub for any world that ships only the hub still.
 	if _backdrop:
-		var still := _texture(_asset(_location_still()))
-		if still == null:
-			still = _texture(_asset("ui/town-hub.jpg"))
+		# Most-specific still wins: a per-SERVICE still (the forge for the 鍛冶屋, like the infirmary already
+		# has its own), then the LOCATION still, then the hub. Each step falls through if the world does not
+		# ship that art, so wiring a blacksmith still is safe before the picture exists.
+		var still: Texture2D = null
+		for candidate in [_service_still(), _location_still(), "ui/town-hub.jpg"]:
+			if candidate == "":
+				continue
+			still = _texture(_asset(candidate))
+			if still != null:
+				break
 		_backdrop.texture = still
 	if _service != "":
 		_build_service()
@@ -474,6 +481,16 @@ func _next_preparation(s: Dictionary, party: Array) -> String:
 	return I18n.t("town.readyToDescend")
 
 # The prepared still for where the party is standing: the infirmary counter, each destination, else the hub.
+# A still specific to the open SERVICE (its own atmosphere art), or "" to fall back to the location still.
+# The 鍛冶屋 gets a forge still of its own, mirroring the infirmary; falls back to the market backdrop until
+# the art ships (Codex art-lane owns the picture).
+func _service_still() -> String:
+	match _service:
+		"blacksmith":
+			return "ui/blacksmith.png"
+		_:
+			return ""
+
 func _location_still() -> String:
 	if _service == "recovery":
 		return "ui/infirmary.png"
