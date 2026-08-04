@@ -576,13 +576,12 @@ static func _resolve_vocation_state(member: Dictionary, engine: Dictionary) -> D
 		return member["vocation"]
 	var class_id: String = member.get("classId", "")
 	var learned := _known_spells(class_id, int(member.get("level", 1)), engine)
-	var limit := int(engine.get("loadoutLimit", 6))
 	return {
 		"current": class_id,
 		"mastery": {},
 		"progress": {},
 		"learned": learned.duplicate(),
-		"loadout": learned.slice(0, limit)
+		"loadout": learned.duplicate()
 	}
 
 static func _known_spells(class_id: String, level: int, engine: Dictionary) -> Array:

@@ -22,11 +22,10 @@ import type { CombatStatus, Element } from "./types";
  * The techniques the game ships. §9.4a added the first member of each family the resolver could not
  * previously carry out; §9.4b authored the rest of the growth lines §5 asks for.
  *
- * SIX PER CLASS, deliberately. §5 says "roughly six to ten", and `LOADOUT_LIMIT` is 6 — a class with
- * seven would have its SEVENTH silently dropped from the default loadout, because that loadout is the
- * first six learned, i.e. the lowest levels. A capstone the player never sees unless they hand-edit the
- * loadout is worse than one that does not exist. If a class ever grows past six, the default-loadout
- * rule has to be fixed first.
+ * ROUGHLY SIX PER CLASS. §5 says "roughly six to ten". T32 removed the old 6-slot loadout cap — a
+ * class may now carry MORE than six combat techniques and every one defaults into the combat set, so a
+ * capstone is never silently dropped. The built-in classes still ship six each (the growth-line design
+ * §9.4b settled on); the removed cap unblocks classes/gear that grant more.
  *
  * Elements are `physical` or `fire` ONLY. An element is a WORLD's cosmology (`world.md` `elements:`),
  * and these techniques are ENGINE code shared by every scenario; `fire` is the one element both the ash

@@ -53,14 +53,13 @@ static func build(ctx: Dictionary) -> Control:
 	var voc_state: Dictionary = Vocations.resolve_vocation_state(member, engine)
 	var catalog: Array = Vocations.resolve_vocation_catalog(world, engine)
 	var mastered_rank := int(engine.get("masteredRank", 5))
-	var loadout_limit := int(engine.get("loadoutLimit", 6))
 
 	var body := UI.row()
 	body.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	root.add_child(body)
 
 	# LEFT: who this adventurer is now (pinned) + the 戦闘セット editor for the CURRENT calling.
-	body.add_child(UI.card(_overview(ctx, world, engine, member, voc_state, mastered_rank, loadout_limit)))
+	body.add_child(UI.card(_overview(ctx, world, engine, member, voc_state, mastered_rank)))
 
 	# RIGHT: 就ける道 — a lean NAME list; choosing one swaps this pane for its PREVIEW + CONFIRM.
 	var dest := UI.col(8)
@@ -112,7 +111,7 @@ static func build(ctx: Dictionary) -> Control:
 	return root
 
 # --- LEFT pane: current calling + combat-set editor -------------------------------------------------
-static func _overview(ctx: Dictionary, world: Dictionary, engine: Dictionary, member: Dictionary, voc_state: Dictionary, mastered_rank: int, loadout_limit: int) -> Control:
+static func _overview(ctx: Dictionary, world: Dictionary, engine: Dictionary, member: Dictionary, voc_state: Dictionary, mastered_rank: int) -> Control:
 	var overview := UI.col(6)
 	overview.custom_minimum_size = Vector2(380, 0)
 	overview.add_child(UI.label(I18n.t("career.overview"), 19, UI.GOLD))
@@ -129,14 +128,13 @@ static func _overview(ctx: Dictionary, world: Dictionary, engine: Dictionary, me
 
 	var learned: Array = voc_state.get("learned", [])
 	var loadout: Array = voc_state.get("loadout", [])
-	overview.add_child(UI.label(I18n.t("career.loadout", {"count": loadout.size(), "max": loadout_limit}), 17, UI.GOLD))
+	overview.add_child(UI.label(I18n.t("career.loadout", {"count": loadout.size()}), 17, UI.GOLD))
 	if learned.is_empty():
 		overview.add_child(UI.label(I18n.t("career.noTechniques"), 14, UI.DIM))
 	else:
 		for technique in learned:
 			var tid := String(technique)
 			var in_loadout := loadout.has(tid)
-			var full := loadout.size() >= loadout_limit
 			var line := UI.row()
 			line.add_child(UI.grow(UI.label(_technique_name(tid, engine), 15, UI.INK if in_loadout else UI.DIM)))
 			var next_loadout := []
@@ -147,8 +145,7 @@ static func _overview(ctx: Dictionary, world: Dictionary, engine: Dictionary, me
 			else:
 				next_loadout = loadout.duplicate()
 				next_loadout.append(tid)
-			var lb := UI.button(I18n.t("career.removeFromLoadout") if in_loadout else (I18n.t("career.loadoutFull") if full else I18n.t("career.addToLoadout")), func(): ctx["dispatch"].call({"type": "set_loadout", "characterId": member.get("id", ""), "loadout": next_loadout}), Vector2(140, 34), 14)
-			lb.disabled = (not in_loadout) and full
+			var lb := UI.button(I18n.t("career.removeFromLoadout") if in_loadout else I18n.t("career.addToLoadout"), func(): ctx["dispatch"].call({"type": "set_loadout", "characterId": member.get("id", ""), "loadout": next_loadout}), Vector2(140, 34), 14)
 			line.add_child(lb)
 			overview.add_child(line)
 	return overview

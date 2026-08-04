@@ -90,8 +90,10 @@ evasion/escape identity before it is selectable.
 
 One spell per class is not a class system. Each base class needs a small,
 readable growth line: normally two or three usable choices at creation and
-roughly six to ten techniques across the intended level range. The loadout
-remains bounded so combat commands stay legible.
+roughly six to ten techniques across the intended level range. (T32 removed the
+old hard six-slot loadout cap: every learned technique is usable in combat by
+default, and the player keeps combat commands legible by curating/reordering
+their own combat set rather than by a system-imposed ceiling.)
 
 - **Weapon skills:** Warrior, Knight, and Swordmaster have different resource
   spends and target profiles -- heavy pressure, protection, and precision --
@@ -112,7 +114,7 @@ The desired structure takes Wizardry's readable spell families and level bands,
 then gives each class an Etrian-style reason to occupy a party slot. It does not
 require an opaque, universal skill tree.
 
-## 6. Vocation change: accumulation with a bounded loadout
+## 6. Vocation change: accumulation with a curated loadout
 
 Starting class is the adventurer's first discipline and visual/biographical
 anchor. Vocation is training they acquire during the campaign. A character has
@@ -122,7 +124,7 @@ three distinct layers:
 | --- | --- | --- |
 | Starting discipline | original class, baseline growth, starting gear and identity | always |
 | Mastered vocations | training history, learned techniques, earned proficiencies | always |
-| Active vocation | the current signature, positive focus, and recommended combat set | changes |
+| Active vocation | the current signature, positive focus, and default combat set | changes |
 
 Changing vocation is therefore a sideways or upward build decision, not a
 respec punishment. It may change which positive signature is active, but it
@@ -131,9 +133,10 @@ already legitimately using. A new vocation starts with its basic identity and
 grows into its stronger techniques through mastery; it does not make the player
 re-earn their existing character.
 
-Power is kept from becoming "every job at once" by a bounded combat loadout,
-technique costs, equipment choices, and a limited number of active signature
-effects -- not by deleting learned spells or imposing a crippling stat reset.
+Power is kept from becoming "every job at once" by technique costs, equipment
+choices, MP economy, and a limited number of active signature effects -- not by
+a hard loadout cap (removed in T32), and not by deleting learned spells or
+imposing a crippling stat reset.
 Cross-trained low-tier techniques and item use are valid ways to form unusual
 parties. A specialist still wins through stronger techniques, deeper
 proficiency, better efficiency, and high-difficulty access.
@@ -150,8 +153,9 @@ Every advanced vocation needs all of the following:
 - two to four exclusive techniques or spells that use that mechanism;
 - a clear bridge between two or three mastered basic disciplines;
 - a positive equipment, resource, or formation expression; and
-- a bounded loadout trade-off so mastering it never means equipping every
-  technique learned in the campaign.
+- a resource/opportunity trade-off (MP economy, technique costs, formation) so
+  mastering it is a real build choice -- not enforced by a loadout cap, which
+  T32 removed.
 
 Basic classes remain viable. An advanced vocation is a focused destination, not
 a mandatory replacement, and no normal route may require one.
@@ -337,8 +341,9 @@ Do this in the stated order. Do not begin by rebuilding `godot/scripts/guild.gd`
    explanatory `roleTags` as the class contract with explicit combat techniques
    and exploration proficiencies. Expand `src/domain/spells.ts` into a
    data-driven technique catalog that can represent healing, cure, ward, buff,
-   debuff, target scope, duration, and resource cost. Keep the existing bounded
-   vocation loadout concept.
+   debuff, target scope, duration, and resource cost. Keep the vocation loadout
+   concept (T32 later removed its hard six-slot cap — all learned techniques are
+   usable, curated/reordered by the player).
 2. **Deterministic commands:** Make chest/trap/lock/secret resolution use the
    declared actor and proficiency, rather than silently calling
    `selectTrapHandler`. Add typed events that record actor id, action, result,
@@ -379,7 +384,7 @@ The class revision is not done until all of the following are true:
   different cost, risk, or ceiling.
 - A vocation-change trace proves that level, learned techniques, prior
   exploration proficiency, and legitimately equipped gear survive; only the
-  bounded active loadout and current positive focus change.
+  active loadout and current positive focus change.
 - TypeScript/Godot traces agree for every revised command and save migration.
 - Browser evidence proves the guild's controller flow, Japanese layout, and
   visible class promise; it does not merely prove that a class id was stored.

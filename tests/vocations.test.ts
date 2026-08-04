@@ -9,6 +9,7 @@ import {
   adoptVocationState,
   applyMastery,
   canAdoptVocation,
+  combatLoadout,
   findVocation,
   masteryGain,
   resolveVocationCatalog,
@@ -123,13 +124,51 @@ describe("vocation mastery contract", () => {
     expect(after.party[0].vocation?.current ?? "warrior").not.toBe("vocation.ash-reaver");
   });
 
-  it("set_loadout keeps only learned techniques and caps at the limit", () => {
+  it("set_loadout keeps only learned techniques", () => {
     const hero = createGuildCharacter({ name: "Sei", classId: "priest", seed: "load" });
     const withState = { ...hero, vocation: { current: "priest", mastery: {}, progress: {}, learned: ["heal", "sleep"], loadout: [] } };
     const state: GameState = { ...townState(), party: [withState] };
     const after = executeCommand(state, defaultWorld, { type: "set_loadout", characterId: hero.id, loadout: ["heal", "firebolt", "sleep"] });
     // firebolt is not learned → dropped; heal + sleep kept.
     expect(after.party[0].vocation?.loadout).toEqual(["heal", "sleep"]);
+  });
+
+  // T32 — the old 6-slot LOADOUT_LIMIT is gone. A class/gear may grant MORE than six combat
+  // techniques and every one must reach combat, never be silently truncated to the first six.
+  it("carries MORE than six techniques into combat — no loadout cap (T32)", () => {
+    const eight = ["heal", "firebolt", "sleep", "power-strike", "purge", "ward-hymn", "battle-hymn", "sunder"];
+    const hero = createGuildCharacter({ name: "Octa", classId: "priest", seed: "t32" });
+    const withState = { ...hero, vocation: { current: "priest", mastery: {}, progress: {}, learned: [...eight], loadout: [] } };
+
+    // set_loadout keeps all eight — nothing is dropped for exceeding a limit.
+    const state: GameState = { ...townState(), party: [withState] };
+    const after = executeCommand(state, defaultWorld, { type: "set_loadout", characterId: hero.id, loadout: [...eight] });
+    expect(after.party[0].vocation?.loadout).toEqual(eight);
+
+    // combatLoadout — what the combat command menu shows — returns all eight, not the first six.
+    expect(combatLoadout(after.party[0])).toEqual(eight);
+  });
+
+  // T32 — a member who LEARNS more techniques (levelling folds the class line in) has each new one
+  // added to the combat set even when six are already in it. The old cap broke at six and silently
+  // dropped the rest; there is no ceiling now.
+  it("folds newly-learned techniques into the loadout past six (T32)", () => {
+    const hero = createGuildCharacter({ name: "Grow", classId: "priest", seed: "t32b" });
+    // A level-20 priest's class line is six; the stored state is missing one of them (sanctuary) and
+    // carries two cross-vocation techniques instead, with a curated loadout already at the old cap.
+    const stored = {
+      current: "priest",
+      mastery: {},
+      progress: {},
+      learned: ["heal", "purge", "greater-heal", "blessing", "purification", "battle-hymn", "sunder"],
+      loadout: ["heal", "purge", "greater-heal", "blessing", "purification", "battle-hymn"]
+    };
+    const refreshed = resolveVocationState({ ...hero, level: 20, vocation: stored });
+    // Reading folds the missing class spell (sanctuary) into `learned`, then appends BOTH the free
+    // learned techniques (sunder, sanctuary) to the six-deep loadout — eight in all, none capped away.
+    expect(refreshed.loadout).toContain("sunder");
+    expect(refreshed.loadout).toContain("sanctuary");
+    expect(refreshed.loadout.length).toBe(8);
   });
 
   it("a combat victory advances the current vocation's mastery", () => {

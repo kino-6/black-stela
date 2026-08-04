@@ -3,7 +3,6 @@ import { GraduationCap } from "lucide-react";
 import type { Character, Command, EquipmentSlot, GameEvent, ScenarioWorld } from "../domain/types";
 import { SPELLS, type SpellId } from "../domain/spells";
 import {
-  LOADOUT_LIMIT,
   MASTERED_RANK,
   canAdoptVocation,
   isMastered,
@@ -281,20 +280,18 @@ export function CareerPanel({
 
             {/* Learned techniques and the bounded combat loadout. */}
             <div className="career-techniques" data-testid="career-techniques">
-              <h5>{t("career.loadout", { count: state.loadout.length, max: LOADOUT_LIMIT })}</h5>
+              <h5>{t("career.loadout", { count: state.loadout.length })}</h5>
               {state.learned.length === 0 ? (
                 <p className="service-empty">{t("career.noTechniques")}</p>
               ) : (
                 <ul className="career-technique-list">
                   {state.learned.map((technique) => {
                     const inLoadout = state.loadout.includes(technique);
-                    const full = state.loadout.length >= LOADOUT_LIMIT;
                     return (
                       <li className={`career-technique${inLoadout ? " in-loadout" : ""}`} key={technique} data-testid={`career-technique-${technique}`}>
                         <span>{techniqueName(technique, t)}</span>
                         <button
                           type="button"
-                          disabled={!inLoadout && full}
                           data-testid={`career-loadout-${technique}`}
                           onClick={() =>
                             onCommand({
@@ -306,7 +303,7 @@ export function CareerPanel({
                             })
                           }
                         >
-                          {inLoadout ? t("career.removeFromLoadout") : full ? t("career.loadoutFull") : t("career.addToLoadout")}
+                          {inLoadout ? t("career.removeFromLoadout") : t("career.addToLoadout")}
                         </button>
                       </li>
                     );

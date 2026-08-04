@@ -240,14 +240,25 @@ IMP-060/061/062/063/064 completion records in `Improve.md`.
   - **Gate:** 複数迷宮 world がロード・選択・攻略・帰還・セーブ往復できる unit＋e2e、既存2世界の回帰緑、
     `verify_parity`/`verify_flow` 緑。
 
-- [ ] **T32 — 「職ごとに6枠の戦闘セット」制約を撤廃（user 決定 2026-08-04）** — 職の戦闘コマンド（特技/呪文）を
-  **6枠に制限する前提を置かない**。この制約は不要。上記「終端火器技術帯」タスクにある〈職の6枠戦闘セットを圧迫せず〉
-  〈6人編成の戦闘コマンドを一覧地獄にしない〉という 6枠前提の記述は、この決定で無効化する（銃技/職技が6枠に収まる
-  ことを設計制約にしない）。もしコード/データ側に6枠のハードリミットが実装されていれば撤去し、なければ「制限を新設
-  しない」方針として残す。`class-system.md` の "roughly six to ten techniques" はあくまで作劇のゆるい目安であって
-  枠制限ではない旨を、実装を触る際に確認する。
-  - **Gate:** 6枠を超える戦闘技/呪文を持つ職が、controller で `攻撃→特技→標的→決定` を完走できる（一覧が枠数で
-    切られない）ことを実機で確認。枠制限のアサートがどこかにあれば削除。
+- [x] **T32 — 「職ごとに6枠の戦闘セット」制約を撤廃（user 決定 2026-08-04）DONE（未コミット）** — 職の戦闘
+  コマンド（特技/呪文）を6枠に制限するハードリミット `LOADOUT_LIMIT = 6` を **完全撤去**。戦闘セット（loadout）は
+  「習得技のうち6件までの部分集合」ではなく、**既定で全習得技が戦闘で使える**。curate/並べ替えの余地は保持（プレイヤーが
+  自分でメニューを短くできる＝「一覧地獄」対策の手段は残す）。**現行コンテンツは全職 ≤6 技なので `slice(0,6)` は元々全件を
+  返しており、この変更は既存データ・parity トレースに対して no-op**、>6 技を持つ将来の職/銃技だけを解禁する。
+  - **撤去箇所:** TS = `vocations.ts`（定数削除＋resolveVocationState/adoptVocationState/setLoadout の cap 4箇所）・
+    `export-engine-data.ts`（`loadoutLimit` export 削除）・`CareerPanel.tsx`（`full`判定＋`loadoutFull`コピー削除）・
+    `techniques.ts`（コメント）・i18n（`career.loadout` から `/{max}` 削除、`loadoutFull` キー削除）・
+    `classCapabilities.test.ts`（`.toBe(6)` → §5「six to ten」レンジ `[6,10]`）。
+    Godot = `rules/vocations.gd`（`_loadout_limit` 削除＋cap 3箇所）・`rules/combat_round.gd`（`_resolve_vocation_state`
+    の `learned.slice(0,limit)`→`duplicate()`）・`town/career_panel.gd`（`loadout_limit` 引数＋`full`判定削除）。
+    engine/i18n data を `export:engine`/`export:i18n` で再生成（`loadoutLimit`/`loadoutFull` 消滅を確認）。
+  - **Gate（全緑）:** 新規 unit `vocations.test.ts`「carries MORE than six techniques into combat — no loadout cap
+    (T32)」＋「folds newly-learned techniques into the loadout past six」で combatLoadout/setLoadout/resolveVocationState が
+    8技を切らないことを実証。full unit 867緑・tsc緑。Godot verify_parity 0-fail（no-op 確認）・verify_combat_controller・
+    verify_town_controller 緑・gate:godot-runtime 8/8緑。e2e career.spec/combat.spec 緑。
+  - **注:** 現在 >6 技の職は未出荷（銃技/terminal-line 帯で登場予定）。撤去は「潜在能力の解禁」＝実機の見た目は既存職では
+    不変（career の「戦闘セット（X）」表示が `/6` を落とすのみ）。>6 職が来たら combat command menu のスクロール/
+    カテゴリ整理（「一覧地獄」対策）を UX として詰める。
 
 ---
 

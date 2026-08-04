@@ -331,9 +331,12 @@ describe("class capabilities — every class states a rules identity", () => {
     for (const classId of ALL_CLASSES) {
       const grants = classTechniqueGrants(classId);
       expect(grants.length, `${classId} still has no technique — the §3 finding has reopened`).toBeGreaterThan(0);
-      // §5 asks for "roughly six to ten across the intended level range", and LOADOUT_LIMIT is 6: a
-      // seventh would be silently dropped from the default loadout, which takes the SIX LOWEST levels.
-      expect(grants.length, `${classId} exceeds the bounded loadout`).toBe(6);
+      // §5 asks for "roughly six to ten across the intended level range". T32 removed the old 6-slot
+      // loadout cap, so a class is no longer PINNED to exactly six (every learned technique now defaults
+      // into the combat set) — the built-in classes still ship six each, but the assertion is the §5
+      // range, not the removed cap.
+      expect(grants.length, `${classId} is outside the §5 "six to ten" range`).toBeGreaterThanOrEqual(6);
+      expect(grants.length, `${classId} is outside the §5 "six to ten" range`).toBeLessThanOrEqual(10);
       // "normally two or three usable choices at creation" (§5) — nobody starts with a single move.
       const atCreation = grants.filter((grant) => grant.level === 1);
       expect(atCreation.length, `${classId} offers ${atCreation.length} choice(s) at level 1`).toBeGreaterThanOrEqual(2);

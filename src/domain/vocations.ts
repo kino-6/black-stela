@@ -15,8 +15,6 @@ export const BUILTIN_VOCATION_IDS: VocationId[] = classCatalog.map((definition) 
 /** Mastery points for one rank, and the rank at which a vocation counts as MASTERED. */
 export const MASTERY_POINTS_PER_RANK = 100;
 export const MASTERED_RANK = 5;
-/** How many techniques may be active in combat at once (the bounded loadout). */
-export const LOADOUT_LIMIT = 6;
 /** Base mastery points a fight is worth before the level falloff trims it. */
 const MASTERY_BASE_PER_FIGHT = 34;
 
@@ -57,7 +55,9 @@ export function findVocation(world: ScenarioWorld, id: VocationId): ResolvedVoca
 
 // A character created before IMP-021 has no vocation state; materialise a sane default from its
 // class so every rule can assume one. The class is the current (basic) vocation, its spells are the
-// learned techniques, and the loadout is the first LOADOUT_LIMIT of them.
+// learned techniques, and the loadout defaults to ALL of them (T32 removed the old 6-slot cap — a
+// class may now carry as many combat techniques as it learns, and the player trims the set by choice,
+// not by a hard limit).
 export function resolveVocationState(character: Character): CharacterVocationState {
   const classLine = knownSpells(character.classId, character.level) as string[];
 
@@ -72,11 +72,10 @@ export function resolveVocationState(character: Character): CharacterVocationSta
     if (learned.length === character.vocation.learned.length) {
       return character.vocation;
     }
-    // A newly learned technique fills a free loadout slot rather than sitting unusable behind the
-    // career screen — but the player's own picks and their order are never disturbed.
+    // A newly learned technique joins the combat set rather than sitting unusable behind the career
+    // screen — but the player's own picks and their order are never disturbed.
     const loadout = [...character.vocation.loadout];
     for (const technique of learned) {
-      if (loadout.length >= LOADOUT_LIMIT) break;
       if (!loadout.includes(technique)) loadout.push(technique);
     }
     return { ...character.vocation, learned, loadout };
@@ -87,7 +86,7 @@ export function resolveVocationState(character: Character): CharacterVocationSta
     mastery: {},
     progress: {},
     learned: [...classLine],
-    loadout: classLine.slice(0, LOADOUT_LIMIT)
+    loadout: [...classLine]
   };
 }
 
@@ -153,10 +152,9 @@ export function adoptVocationState(
   const learned = Array.from(new Set([...state.learned, ...(vocation.grantsTechniques ?? [])]));
   const touchedMastery = state.mastery[vocation.id] === undefined ? { ...state.mastery, [vocation.id]: 0 } : state.mastery;
   const loadout = state.loadout.filter((technique) => learned.includes(technique));
-  // Fill the loadout up to the limit from freshly-granted techniques, so a new vocation's signature
-  // move is usable at once rather than hidden until the player opens a menu.
+  // Add freshly-granted techniques to the combat set, so a new vocation's signature move is usable at
+  // once rather than hidden until the player opens a menu.
   for (const technique of vocation.grantsTechniques ?? []) {
-    if (loadout.length >= LOADOUT_LIMIT) break;
     if (!loadout.includes(technique)) loadout.push(technique);
   }
   return { ...state, current: vocation.id, learned, mastery: touchedMastery, loadout };
@@ -190,13 +188,13 @@ export function changeCharacterVocation(character: Character, vocation: Resolved
   return { ...rebuilt, vocation: adoptVocationState(withClassTechniques, vocation) };
 }
 
-// Set the bounded combat loadout to `desired`, keeping only genuinely-learned techniques and never
-// exceeding LOADOUT_LIMIT. Order is preserved (the loadout is reorderable in the UI).
+// Set the combat loadout to `desired`, keeping only genuinely-learned techniques (T32: no upper
+// bound). Order is preserved (the loadout is reorderable in the UI).
 export function setLoadout(state: CharacterVocationState, desired: string[]): CharacterVocationState {
   const learned = new Set(state.learned);
   const loadout: string[] = [];
   for (const technique of desired) {
-    if (learned.has(technique) && !loadout.includes(technique) && loadout.length < LOADOUT_LIMIT) {
+    if (learned.has(technique) && !loadout.includes(technique)) {
       loadout.push(technique);
     }
   }

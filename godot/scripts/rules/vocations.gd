@@ -7,9 +7,6 @@ extends RefCounted
 
 const CharacterCreation := preload("res://scripts/rules/character_creation.gd")
 
-static func _loadout_limit(engine: Dictionary) -> int:
-	return int(engine.get("loadoutLimit", 6))
-
 static func _mastered_rank(engine: Dictionary) -> int:
 	return int(engine.get("masteredRank", 5))
 
@@ -47,7 +44,6 @@ static func find_vocation(world: Dictionary, engine: Dictionary, id: String) -> 
 static func resolve_vocation_state(character: Dictionary, engine: Dictionary) -> Dictionary:
 	var class_id: String = character.get("classId", "")
 	var class_line := _known_spells(class_id, int(character.get("level", 1)), engine)
-	var limit := _loadout_limit(engine)
 
 	if typeof(character.get("vocation", null)) == TYPE_DICTIONARY:
 		# §9.4b, mirroring src/domain/vocations.ts: LEVELLING MUST STILL TEACH. Stored vocation state is
@@ -66,8 +62,6 @@ static func resolve_vocation_state(character: Dictionary, engine: Dictionary) ->
 		# career screen — the player's own picks and their order are never disturbed.
 		var loadout: Array = (stored.get("loadout", []) as Array).duplicate()
 		for technique in learned:
-			if loadout.size() >= limit:
-				break
 			if not loadout.has(technique):
 				loadout.append(technique)
 		var refreshed := stored.duplicate()
@@ -75,7 +69,7 @@ static func resolve_vocation_state(character: Dictionary, engine: Dictionary) ->
 		refreshed["loadout"] = loadout
 		return refreshed
 
-	return {"current": class_id, "mastery": {}, "progress": {}, "learned": class_line.duplicate(), "loadout": class_line.slice(0, limit)}
+	return {"current": class_id, "mastery": {}, "progress": {}, "learned": class_line.duplicate(), "loadout": class_line.duplicate()}
 
 static func mastery_rank(state: Dictionary, vocation_id: String) -> int:
 	return int((state.get("mastery", {}) as Dictionary).get(vocation_id, 0))
@@ -113,10 +107,7 @@ static func adopt_vocation_state(state: Dictionary, vocation: Dictionary, engine
 	for t in state.get("loadout", []):
 		if learned.has(t):
 			loadout.append(t)
-	var limit := _loadout_limit(engine)
 	for t in vocation.get("grantsTechniques", []):
-		if loadout.size() >= limit:
-			break
 		if not loadout.has(t):
 			loadout.append(t)
 	var next: Dictionary = state.duplicate(true)
@@ -153,10 +144,9 @@ static func set_loadout(state: Dictionary, desired: Array, engine: Dictionary) -
 	var learned: Dictionary = {}
 	for t in state.get("learned", []):
 		learned[t] = true
-	var limit := _loadout_limit(engine)
 	var loadout := []
 	for t in desired:
-		if learned.has(t) and not loadout.has(t) and loadout.size() < limit:
+		if learned.has(t) and not loadout.has(t):
 			loadout.append(t)
 	var next: Dictionary = state.duplicate(true)
 	next["loadout"] = loadout
