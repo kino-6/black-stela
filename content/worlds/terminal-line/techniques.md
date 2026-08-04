@@ -1,0 +1,1023 @@
+---
+techniques:
+  - id: pistol-draw
+    kind: skill
+    target: enemyGroup
+    cost:
+      mp: 2
+    effects:
+      - kind: damage
+        min: 4
+        max: 7
+        element: physical
+    duration:
+      kind: instant
+    tags:
+      - firearm
+      - pistol
+      - terminal-line
+    locales:
+      en:
+        name: Quick Shot
+      ja:
+        name: 即応射撃
+  - id: pistol-aimed
+    kind: skill
+    target: enemyGroup
+    cost:
+      mp: 3
+    effects:
+      - kind: damage
+        min: 5
+        max: 9
+        element: physical
+    duration:
+      kind: instant
+    tags:
+      - firearm
+      - pistol
+      - terminal-line
+    locales:
+      en:
+        name: Aimed Shot
+      ja:
+        name: 狙点射撃
+  - id: pistol-suppress
+    kind: skill
+    target: enemyGroup
+    cost:
+      mp: 3
+    effects:
+      - kind: debuff
+        stat: accuracy
+        amount: 8
+    duration:
+      kind: rounds
+      rounds: 2
+    tags:
+      - firearm
+      - pistol
+      - terminal-line
+    locales:
+      en:
+        name: Suppressive Sight
+      ja:
+        name: 制圧照準
+  - id: pistol-pin
+    kind: skill
+    target: enemyGroup
+    cost:
+      mp: 3
+    effects:
+      - kind: damage
+        min: 5
+        max: 8
+        element: physical
+      - kind: debuff
+        stat: speed
+        amount: 2
+    duration:
+      kind: rounds
+      rounds: 2
+    tags:
+      - firearm
+      - pistol
+      - terminal-line
+    locales:
+      en:
+        name: Pinning Shot
+      ja:
+        name: 足止め射
+  - id: pistol-relay
+    kind: skill
+    target: enemyGroup
+    cost:
+      mp: 4
+    effects:
+      - kind: damage
+        min: 7
+        max: 11
+        element: physical
+    duration:
+      kind: instant
+    tags:
+      - firearm
+      - pistol
+      - terminal-line
+    locales:
+      en:
+        name: Relay Shot
+      ja:
+        name: 中継射撃
+  - id: pistol-mark
+    kind: skill
+    target: party
+    cost:
+      mp: 3
+    effects:
+      - kind: buff
+        stat: accuracy
+        amount: 4
+    duration:
+      kind: rounds
+      rounds: 2
+    tags:
+      - firearm
+      - pistol
+      - terminal-line
+    locales:
+      en:
+        name: Mark Share
+      ja:
+        name: 標的共有
+  - id: pistol-bureau
+    kind: skill
+    target: enemyGroup
+    cost:
+      mp: 4
+    effects:
+      - kind: damage
+        min: 8
+        max: 12
+        element: physical
+      - kind: debuff
+        stat: evasion
+        amount: 8
+    duration:
+      kind: rounds
+      rounds: 2
+    tags:
+      - firearm
+      - pistol
+      - terminal-line
+    locales:
+      en:
+        name: Bureau Shot
+      ja:
+        name: 制式射撃
+  - id: pistol-seal
+    kind: skill
+    target: enemyGroup
+    cost:
+      mp: 4
+    effects:
+      - kind: status
+        status: fear
+    duration:
+      kind: combat
+    tags:
+      - firearm
+      - pistol
+      - terminal-line
+    locales:
+      en:
+        name: Seal Warning
+      ja:
+        name: 封鎖警告
+  - id: pistol-terminal
+    kind: skill
+    target: enemyGroup
+    cost:
+      mp: 5
+    effects:
+      - kind: damage
+        min: 10
+        max: 15
+        element: physical
+    duration:
+      kind: instant
+    tags:
+      - firearm
+      - pistol
+      - terminal-line
+    locales:
+      en:
+        name: Terminal Sight
+      ja:
+        name: 終端照準
+  - id: pistol-lastword
+    kind: skill
+    target: enemyGroup
+    cost:
+      mp: 6
+    effects:
+      - kind: damage
+        min: 12
+        max: 18
+        element: physical
+      - kind: debuff
+        stat: accuracy
+        amount: 10
+    duration:
+      kind: rounds
+      rounds: 2
+    tags:
+      - firearm
+      - pistol
+      - terminal-line
+    locales:
+      en:
+        name: Last Word
+      ja:
+        name: 最終一射
+  - id: rifle-rest
+    kind: skill
+    target: self
+    cost:
+      mp: 2
+    effects:
+      - kind: buff
+        stat: accuracy
+        amount: 6
+    duration:
+      kind: rounds
+      rounds: 2
+    tags:
+      - firearm
+      - rifle
+      - terminal-line
+    locales:
+      en:
+        name: Rested Aim
+      ja:
+        name: 据銃
+  - id: rifle-sight
+    kind: skill
+    target: enemyGroup
+    cost:
+      mp: 3
+    effects:
+      - kind: damage
+        min: 6
+        max: 10
+        element: physical
+    duration:
+      kind: instant
+    tags:
+      - firearm
+      - rifle
+      - terminal-line
+    locales:
+      en:
+        name: Sighted Shot
+      ja:
+        name: 照準射
+  - id: rifle-brace
+    kind: skill
+    target: self
+    cost:
+      mp: 3
+    effects:
+      - kind: buff
+        stat: damage
+        amount: 2
+    duration:
+      kind: rounds
+      rounds: 2
+    tags:
+      - firearm
+      - rifle
+      - terminal-line
+    locales:
+      en:
+        name: Stock Brace
+      ja:
+        name: 銃床固定
+  - id: rifle-hamper
+    kind: skill
+    target: enemyGroup
+    cost:
+      mp: 3
+    effects:
+      - kind: damage
+        min: 6
+        max: 9
+        element: physical
+      - kind: debuff
+        stat: speed
+        amount: 3
+    duration:
+      kind: rounds
+      rounds: 2
+    tags:
+      - firearm
+      - rifle
+      - terminal-line
+    locales:
+      en:
+        name: Hampering Shot
+      ja:
+        name: 脚止め射
+  - id: rifle-cutline
+    kind: skill
+    target: enemyGroup
+    cost:
+      mp: 4
+    effects:
+      - kind: damage
+        min: 8
+        max: 13
+        element: physical
+    duration:
+      kind: instant
+    tags:
+      - firearm
+      - rifle
+      - terminal-line
+    locales:
+      en:
+        name: Cut Line
+      ja:
+        name: 線路断ち
+  - id: rifle-scan
+    kind: skill
+    target: enemyGroup
+    cost:
+      mp: 4
+    effects:
+      - kind: debuff
+        stat: evasion
+        amount: 12
+    duration:
+      kind: rounds
+      rounds: 3
+    tags:
+      - firearm
+      - rifle
+      - terminal-line
+    locales:
+      en:
+        name: Observation Shot
+      ja:
+        name: 観測射
+  - id: rifle-quarantine
+    kind: skill
+    target: enemyGroup
+    cost:
+      mp: 5
+    effects:
+      - kind: damage
+        min: 10
+        max: 16
+        element: physical
+      - kind: debuff
+        stat: armor
+        amount: 2
+    duration:
+      kind: rounds
+      rounds: 2
+    tags:
+      - firearm
+      - rifle
+      - terminal-line
+    locales:
+      en:
+        name: Quarantine Shot
+      ja:
+        name: 隔離射
+  - id: rifle-coldshot
+    kind: skill
+    target: enemyGroup
+    cost:
+      mp: 5
+    effects:
+      - kind: damage
+        min: 11
+        max: 17
+        element: physical
+    duration:
+      kind: instant
+    tags:
+      - firearm
+      - rifle
+      - terminal-line
+    locales:
+      en:
+        name: Cold Shot
+      ja:
+        name: 冷徹射
+  - id: rifle-evac
+    kind: skill
+    target: party
+    cost:
+      mp: 5
+    effects:
+      - kind: buff
+        stat: accuracy
+        amount: 6
+      - kind: buff
+        stat: speed
+        amount: 2
+    duration:
+      kind: rounds
+      rounds: 2
+    tags:
+      - firearm
+      - rifle
+      - terminal-line
+    locales:
+      en:
+        name: Evacuation Cover
+      ja:
+        name: 退避援護
+  - id: rifle-longwatch
+    kind: skill
+    target: enemyGroup
+    cost:
+      mp: 6
+    effects:
+      - kind: damage
+        min: 14
+        max: 21
+        element: physical
+      - kind: debuff
+        stat: evasion
+        amount: 12
+    duration:
+      kind: rounds
+      rounds: 2
+    tags:
+      - firearm
+      - rifle
+      - terminal-line
+    locales:
+      en:
+        name: Long Watch
+      ja:
+        name: 長距離監視
+  - id: smg-sweep
+    kind: skill
+    target: allEnemies
+    cost:
+      mp: 3
+    effects:
+      - kind: damage
+        min: 3
+        max: 6
+        element: physical
+    duration:
+      kind: instant
+    tags:
+      - firearm
+      - smg
+      - terminal-line
+    locales:
+      en:
+        name: Corridor Sweep
+      ja:
+        name: 通路掃射
+  - id: smg-push
+    kind: skill
+    target: enemyGroup
+    cost:
+      mp: 3
+    effects:
+      - kind: damage
+        min: 5
+        max: 8
+        element: physical
+      - kind: debuff
+        stat: armor
+        amount: 1
+    duration:
+      kind: rounds
+      rounds: 2
+    tags:
+      - firearm
+      - smg
+      - terminal-line
+    locales:
+      en:
+        name: Pressing Shot
+      ja:
+        name: 押し込み射
+  - id: smg-turnstile
+    kind: skill
+    target: allEnemies
+    cost:
+      mp: 4
+    effects:
+      - kind: damage
+        min: 4
+        max: 8
+        element: physical
+    duration:
+      kind: instant
+    tags:
+      - firearm
+      - smg
+      - terminal-line
+    locales:
+      en:
+        name: Turnstile Sweep
+      ja:
+        name: 改札掃射
+  - id: smg-scatter
+    kind: skill
+    target: enemyGroup
+    cost:
+      mp: 4
+    effects:
+      - kind: debuff
+        stat: accuracy
+        amount: 10
+      - kind: debuff
+        stat: speed
+        amount: 2
+    duration:
+      kind: rounds
+      rounds: 2
+    tags:
+      - firearm
+      - smg
+      - terminal-line
+    locales:
+      en:
+        name: Scatter Denial
+      ja:
+        name: 散開阻止
+  - id: smg-rainline
+    kind: skill
+    target: allEnemies
+    cost:
+      mp: 5
+    effects:
+      - kind: damage
+        min: 6
+        max: 10
+        element: physical
+    duration:
+      kind: instant
+    tags:
+      - firearm
+      - smg
+      - terminal-line
+    locales:
+      en:
+        name: Rainline Sweep
+      ja:
+        name: 雨路掃射
+  - id: smg-crossfire
+    kind: skill
+    target: enemyGroup
+    cost:
+      mp: 5
+    effects:
+      - kind: damage
+        min: 8
+        max: 12
+        element: physical
+      - kind: debuff
+        stat: armor
+        amount: 2
+    duration:
+      kind: rounds
+      rounds: 2
+    tags:
+      - firearm
+      - smg
+      - terminal-line
+    locales:
+      en:
+        name: Crossfire
+      ja:
+        name: 交差制圧
+  - id: smg-bureau
+    kind: skill
+    target: allEnemies
+    cost:
+      mp: 5
+    effects:
+      - kind: damage
+        min: 7
+        max: 11
+        element: physical
+    duration:
+      kind: instant
+    tags:
+      - firearm
+      - smg
+      - terminal-line
+    locales:
+      en:
+        name: Bureau Sweep
+      ja:
+        name: 制式掃射
+  - id: smg-lockdown
+    kind: skill
+    target: enemyGroup
+    cost:
+      mp: 5
+    effects:
+      - kind: status
+        status: fear
+      - kind: debuff
+        stat: speed
+        amount: 3
+    duration:
+      kind: rounds
+      rounds: 2
+    tags:
+      - firearm
+      - smg
+      - terminal-line
+    locales:
+      en:
+        name: Lockdown
+      ja:
+        name: 封鎖射
+  - id: smg-zero
+    kind: skill
+    target: allEnemies
+    cost:
+      mp: 6
+    effects:
+      - kind: damage
+        min: 8
+        max: 13
+        element: physical
+    duration:
+      kind: instant
+    tags:
+      - firearm
+      - smg
+      - terminal-line
+    locales:
+      en:
+        name: Zero Sweep
+      ja:
+        name: 零番掃射
+  - id: smg-breakthrough
+    kind: skill
+    target: enemyGroup
+    cost:
+      mp: 6
+    effects:
+      - kind: damage
+        min: 11
+        max: 17
+        element: physical
+      - kind: debuff
+        stat: armor
+        amount: 3
+    duration:
+      kind: rounds
+      rounds: 2
+    tags:
+      - firearm
+      - smg
+      - terminal-line
+    locales:
+      en:
+        name: Breakthrough
+      ja:
+        name: 突破制圧
+  - id: shotgun-breach
+    kind: skill
+    target: enemyGroup
+    cost:
+      mp: 3
+    effects:
+      - kind: damage
+        min: 6
+        max: 10
+        element: physical
+      - kind: debuff
+        stat: armor
+        amount: 1
+    duration:
+      kind: rounds
+      rounds: 2
+    tags:
+      - firearm
+      - shotgun
+      - terminal-line
+    locales:
+      en:
+        name: Breach Shot
+      ja:
+        name: 破扉射
+  - id: shotgun-close
+    kind: skill
+    target: enemyGroup
+    cost:
+      mp: 3
+    effects:
+      - kind: damage
+        min: 8
+        max: 13
+        element: physical
+    duration:
+      kind: instant
+    tags:
+      - firearm
+      - shotgun
+      - terminal-line
+    locales:
+      en:
+        name: Close Shot
+      ja:
+        name: 至近射
+  - id: shotgun-pump
+    kind: skill
+    target: self
+    cost:
+      mp: 3
+    effects:
+      - kind: buff
+        stat: armor
+        amount: 2
+    duration:
+      kind: rounds
+      rounds: 2
+    tags:
+      - firearm
+      - shotgun
+      - terminal-line
+    locales:
+      en:
+        name: Pump Stance
+      ja:
+        name: ポンプ構え
+  - id: shotgun-stagger
+    kind: skill
+    target: enemyGroup
+    cost:
+      mp: 4
+    effects:
+      - kind: damage
+        min: 8
+        max: 12
+        element: physical
+      - kind: debuff
+        stat: speed
+        amount: 3
+    duration:
+      kind: rounds
+      rounds: 2
+    tags:
+      - firearm
+      - shotgun
+      - terminal-line
+    locales:
+      en:
+        name: Stagger Shot
+      ja:
+        name: よろめかせ
+  - id: shotgun-sluice
+    kind: skill
+    target: enemyGroup
+    cost:
+      mp: 4
+    effects:
+      - kind: damage
+        min: 10
+        max: 15
+        element: physical
+    duration:
+      kind: instant
+    tags:
+      - firearm
+      - shotgun
+      - terminal-line
+    locales:
+      en:
+        name: Sluice Breaker
+      ja:
+        name: 水門破り
+  - id: shotgun-brace
+    kind: skill
+    target: self
+    cost:
+      mp: 4
+    effects:
+      - kind: ward
+        statusResist:
+          fear: 40
+      - kind: buff
+        stat: armor
+        amount: 2
+    duration:
+      kind: rounds
+      rounds: 3
+    tags:
+      - firearm
+      - shotgun
+      - terminal-line
+    locales:
+      en:
+        name: Recoil Brace
+      ja:
+        name: 反動固定
+  - id: shotgun-floodgate
+    kind: skill
+    target: enemyGroup
+    cost:
+      mp: 5
+    effects:
+      - kind: damage
+        min: 11
+        max: 17
+        element: physical
+      - kind: debuff
+        stat: armor
+        amount: 3
+    duration:
+      kind: rounds
+      rounds: 2
+    tags:
+      - firearm
+      - shotgun
+      - terminal-line
+    locales:
+      en:
+        name: Floodgate Shot
+      ja:
+        name: 防潮射
+  - id: shotgun-gate
+    kind: skill
+    target: enemyGroup
+    cost:
+      mp: 5
+    effects:
+      - kind: damage
+        min: 11
+        max: 16
+        element: physical
+      - kind: status
+        status: fear
+    duration:
+      kind: combat
+    tags:
+      - firearm
+      - shotgun
+      - terminal-line
+    locales:
+      en:
+        name: Gate Shot
+      ja:
+        name: 門前射
+  - id: shotgun-terminus
+    kind: skill
+    target: enemyGroup
+    cost:
+      mp: 6
+    effects:
+      - kind: damage
+        min: 13
+        max: 20
+        element: physical
+    duration:
+      kind: instant
+    tags:
+      - firearm
+      - shotgun
+      - terminal-line
+    locales:
+      en:
+        name: Terminus Breaker
+      ja:
+        name: 終端破り
+  - id: shotgun-final
+    kind: skill
+    target: allEnemies
+    cost:
+      mp: 7
+    effects:
+      - kind: damage
+        min: 9
+        max: 15
+        element: physical
+      - kind: debuff
+        stat: armor
+        amount: 2
+    duration:
+      kind: rounds
+      rounds: 2
+    tags:
+      - firearm
+      - shotgun
+      - terminal-line
+    locales:
+      en:
+        name: Final Spread
+      ja:
+        name: 最終散布
+  - id: quick-draw
+    kind: passive
+    target: self
+    cost: {}
+    effects: []
+    duration:
+      kind: instant
+    tags:
+      - firearm
+      - pistol
+      - passive
+    locales:
+      en:
+        name: Quick Draw
+      ja:
+        name: 抜き撃ちの型
+    passiveBonus:
+      speed: 2
+  - id: sidearm-discipline
+    kind: passive
+    target: self
+    cost: {}
+    effects: []
+    duration:
+      kind: instant
+    tags:
+      - firearm
+      - pistol
+      - passive
+    locales:
+      en:
+        name: Sidearm Discipline
+      ja:
+        name: 拳銃規律
+    passiveBonus:
+      accuracy: 2
+  - id: steady-sight
+    kind: passive
+    target: self
+    cost: {}
+    effects: []
+    duration:
+      kind: instant
+    tags:
+      - firearm
+      - rifle
+      - passive
+    locales:
+      en:
+        name: Steady Sight
+      ja:
+        name: 安定照準
+    passiveBonus:
+      accuracy: 4
+  - id: close-control
+    kind: passive
+    target: self
+    cost: {}
+    effects: []
+    duration:
+      kind: instant
+    tags:
+      - firearm
+      - smg
+      - passive
+    locales:
+      en:
+        name: Close Control
+      ja:
+        name: 近接制御
+    passiveBonus:
+      speed: 2
+      accuracy: 1
+  - id: breach-brace
+    kind: passive
+    target: self
+    cost: {}
+    effects: []
+    duration:
+      kind: instant
+    tags:
+      - firearm
+      - shotgun
+      - passive
+    locales:
+      en:
+        name: Breach Brace
+      ja:
+        name: 破扉姿勢
+    passiveBonus:
+      armor: 2
+  - id: last-platform-stance
+    kind: passive
+    target: self
+    cost: {}
+    effects: []
+    duration:
+      kind: instant
+    tags:
+      - firearm
+      - terminal-line
+      - passive
+    locales:
+      en:
+        name: Last Platform Stance
+      ja:
+        name: 最終ホームの構え
+    passiveBonus:
+      attack: 1
+      resistance:
+        fear: 15
+---
+
+# Terminal Line — firearm techniques
+
+The pistol / rifle / SMG / shotgun maneuvers (40 active + 6 gear passives) granted by equipped weapons
+(see items.md). Authored as DATA: the engine defines no firearm technique — this world does. Externalised
+from src/domain/techniques.ts in the technique-catalog externalisation slice.

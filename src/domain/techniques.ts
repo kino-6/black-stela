@@ -100,26 +100,12 @@ type TechniqueIdBase =
   | "canopy-read"
   | "sap-weave";
 
-/**
- * Terminal Line firearm techniques are granted by equipped world gear, rather than by a universal
- * vocation. Keeping the ids in the engine catalog makes their resolution/export deterministic; the
- * world equipment contract decides whether any character can actually reach them.
- */
-export type FirearmTechniqueId =
-  | "pistol-draw" | "pistol-aimed" | "pistol-suppress" | "pistol-pin" | "pistol-relay" | "pistol-mark" | "pistol-bureau" | "pistol-seal" | "pistol-terminal" | "pistol-lastword"
-  | "rifle-rest" | "rifle-sight" | "rifle-brace" | "rifle-hamper" | "rifle-cutline" | "rifle-scan" | "rifle-quarantine" | "rifle-coldshot" | "rifle-evac" | "rifle-longwatch"
-  | "smg-sweep" | "smg-push" | "smg-turnstile" | "smg-scatter" | "smg-rainline" | "smg-crossfire" | "smg-bureau" | "smg-lockdown" | "smg-zero" | "smg-breakthrough"
-  | "shotgun-breach" | "shotgun-close" | "shotgun-pump" | "shotgun-stagger" | "shotgun-sluice" | "shotgun-brace" | "shotgun-floodgate" | "shotgun-gate" | "shotgun-terminus" | "shotgun-final";
-
-export type FirearmPassiveId =
-  | "quick-draw"
-  | "sidearm-discipline"
-  | "steady-sight"
-  | "close-control"
-  | "breach-brace"
-  | "last-platform-stance";
-
-export type TechniqueId = TechniqueIdBase | FirearmTechniqueId | FirearmPassiveId;
+// Terminal Line's 46 firearm techniques used to live here as a FirearmTechniqueId/FirearmPassiveId
+// union + a firearmSkill() factory. They are now AUTHORED DATA in content/worlds/terminal-line/
+// techniques.md — the proof that a whole new ability family is pure content, needing no engine code.
+// The base id union stays for the built-in catalog and the class-ability grants; an authored id is a
+// free string, validated against the resolved catalog at load (validateScenarioGraph).
+export type TechniqueId = TechniqueIdBase;
 
 /** 呪文 (arcane, scales with spell power, stopped by silence), 特技 (martial), or a gear-bound passive. */
 export type TechniqueKind = "spell" | "skill" | "passive";
@@ -232,86 +218,12 @@ export function isCampUsableTechnique(technique: Technique): boolean {
   return technique.effects.length > 0 && technique.effects.every((effect) => effect.kind === "heal" || effect.kind === "cure");
 }
 
-function firearmSkill(
-  id: FirearmTechniqueId,
-  target: TechniqueTarget,
-  cost: number,
-  effects: TechniqueEffect[],
-  duration: TechniqueDuration = { kind: "instant" }
-): Technique {
-  // The family tag is data as well as presentation: a pistol's timing tool should
-  // never be indistinguishable from a rifle's precision tool to a future filter or
-  // command surface. IDs are deliberately `<family>-<maneuver>` by contract.
-  const family = id.split("-", 1)[0];
-  return { id, kind: "skill", target, cost: { mp: cost }, effects, duration, tags: ["firearm", family, "terminal-line"] };
-}
-
-const FIREARM_ACTIVE_TECHNIQUES: Record<FirearmTechniqueId, Technique> = {
-  // 拳銃: quick single-target control. It wins small timing advantages, never claims an unimplemented reload cycle.
-  "pistol-draw": firearmSkill("pistol-draw", "enemyGroup", 2, [{ kind: "damage", min: 4, max: 7, element: "physical" }]),
-  "pistol-aimed": firearmSkill("pistol-aimed", "enemyGroup", 3, [{ kind: "damage", min: 5, max: 9, element: "physical" }]),
-  "pistol-suppress": firearmSkill("pistol-suppress", "enemyGroup", 3, [{ kind: "debuff", stat: "accuracy", amount: 8 }], { kind: "rounds", rounds: 2 }),
-  "pistol-pin": firearmSkill("pistol-pin", "enemyGroup", 3, [{ kind: "damage", min: 5, max: 8, element: "physical" }, { kind: "debuff", stat: "speed", amount: 2 }], { kind: "rounds", rounds: 2 }),
-  "pistol-relay": firearmSkill("pistol-relay", "enemyGroup", 4, [{ kind: "damage", min: 7, max: 11, element: "physical" }]),
-  "pistol-mark": firearmSkill("pistol-mark", "party", 3, [{ kind: "buff", stat: "accuracy", amount: 4 }], { kind: "rounds", rounds: 2 }),
-  "pistol-bureau": firearmSkill("pistol-bureau", "enemyGroup", 4, [{ kind: "damage", min: 8, max: 12, element: "physical" }, { kind: "debuff", stat: "evasion", amount: 8 }], { kind: "rounds", rounds: 2 }),
-  "pistol-seal": firearmSkill("pistol-seal", "enemyGroup", 4, [{ kind: "status", status: "fear" }], { kind: "combat" }),
-  "pistol-terminal": firearmSkill("pistol-terminal", "enemyGroup", 5, [{ kind: "damage", min: 10, max: 15, element: "physical" }]),
-  "pistol-lastword": firearmSkill("pistol-lastword", "enemyGroup", 6, [{ kind: "damage", min: 12, max: 18, element: "physical" }, { kind: "debuff", stat: "accuracy", amount: 10 }], { kind: "rounds", rounds: 2 }),
-
-  // 長銃: deliberate accuracy and range control. The bolt-action is represented by patience/precision, not fake reload rules.
-  "rifle-rest": firearmSkill("rifle-rest", "self", 2, [{ kind: "buff", stat: "accuracy", amount: 6 }], { kind: "rounds", rounds: 2 }),
-  "rifle-sight": firearmSkill("rifle-sight", "enemyGroup", 3, [{ kind: "damage", min: 6, max: 10, element: "physical" }]),
-  "rifle-brace": firearmSkill("rifle-brace", "self", 3, [{ kind: "buff", stat: "damage", amount: 2 }], { kind: "rounds", rounds: 2 }),
-  "rifle-hamper": firearmSkill("rifle-hamper", "enemyGroup", 3, [{ kind: "damage", min: 6, max: 9, element: "physical" }, { kind: "debuff", stat: "speed", amount: 3 }], { kind: "rounds", rounds: 2 }),
-  "rifle-cutline": firearmSkill("rifle-cutline", "enemyGroup", 4, [{ kind: "damage", min: 8, max: 13, element: "physical" }]),
-  "rifle-scan": firearmSkill("rifle-scan", "enemyGroup", 4, [{ kind: "debuff", stat: "evasion", amount: 12 }], { kind: "rounds", rounds: 3 }),
-  "rifle-quarantine": firearmSkill("rifle-quarantine", "enemyGroup", 5, [{ kind: "damage", min: 10, max: 16, element: "physical" }, { kind: "debuff", stat: "armor", amount: 2 }], { kind: "rounds", rounds: 2 }),
-  "rifle-coldshot": firearmSkill("rifle-coldshot", "enemyGroup", 5, [{ kind: "damage", min: 11, max: 17, element: "physical" }]),
-  "rifle-evac": firearmSkill("rifle-evac", "party", 5, [{ kind: "buff", stat: "accuracy", amount: 6 }, { kind: "buff", stat: "speed", amount: 2 }], { kind: "rounds", rounds: 2 }),
-  "rifle-longwatch": firearmSkill("rifle-longwatch", "enemyGroup", 6, [{ kind: "damage", min: 14, max: 21, element: "physical" }, { kind: "debuff", stat: "evasion", amount: 12 }], { kind: "rounds", rounds: 2 }),
-
-  // 短機関銃: pressure against groups and movement; no rate-of-fire/ammunition promise is made.
-  "smg-sweep": firearmSkill("smg-sweep", "allEnemies", 3, [{ kind: "damage", min: 3, max: 6, element: "physical" }]),
-  "smg-push": firearmSkill("smg-push", "enemyGroup", 3, [{ kind: "damage", min: 5, max: 8, element: "physical" }, { kind: "debuff", stat: "armor", amount: 1 }], { kind: "rounds", rounds: 2 }),
-  "smg-turnstile": firearmSkill("smg-turnstile", "allEnemies", 4, [{ kind: "damage", min: 4, max: 8, element: "physical" }]),
-  "smg-scatter": firearmSkill("smg-scatter", "enemyGroup", 4, [{ kind: "debuff", stat: "accuracy", amount: 10 }, { kind: "debuff", stat: "speed", amount: 2 }], { kind: "rounds", rounds: 2 }),
-  "smg-rainline": firearmSkill("smg-rainline", "allEnemies", 5, [{ kind: "damage", min: 6, max: 10, element: "physical" }]),
-  "smg-crossfire": firearmSkill("smg-crossfire", "enemyGroup", 5, [{ kind: "damage", min: 8, max: 12, element: "physical" }, { kind: "debuff", stat: "armor", amount: 2 }], { kind: "rounds", rounds: 2 }),
-  "smg-bureau": firearmSkill("smg-bureau", "allEnemies", 5, [{ kind: "damage", min: 7, max: 11, element: "physical" }]),
-  "smg-lockdown": firearmSkill("smg-lockdown", "enemyGroup", 5, [{ kind: "status", status: "fear" }, { kind: "debuff", stat: "speed", amount: 3 }], { kind: "rounds", rounds: 2 }),
-  "smg-zero": firearmSkill("smg-zero", "allEnemies", 6, [{ kind: "damage", min: 8, max: 13, element: "physical" }]),
-  "smg-breakthrough": firearmSkill("smg-breakthrough", "enemyGroup", 6, [{ kind: "damage", min: 11, max: 17, element: "physical" }, { kind: "debuff", stat: "armor", amount: 3 }], { kind: "rounds", rounds: 2 }),
-
-  // 散弾銃: a front-line breaker. Self wards and armor changes are existing combat effects, not invented cover mechanics.
-  "shotgun-breach": firearmSkill("shotgun-breach", "enemyGroup", 3, [{ kind: "damage", min: 6, max: 10, element: "physical" }, { kind: "debuff", stat: "armor", amount: 1 }], { kind: "rounds", rounds: 2 }),
-  "shotgun-close": firearmSkill("shotgun-close", "enemyGroup", 3, [{ kind: "damage", min: 8, max: 13, element: "physical" }]),
-  "shotgun-pump": firearmSkill("shotgun-pump", "self", 3, [{ kind: "buff", stat: "armor", amount: 2 }], { kind: "rounds", rounds: 2 }),
-  "shotgun-stagger": firearmSkill("shotgun-stagger", "enemyGroup", 4, [{ kind: "damage", min: 8, max: 12, element: "physical" }, { kind: "debuff", stat: "speed", amount: 3 }], { kind: "rounds", rounds: 2 }),
-  "shotgun-sluice": firearmSkill("shotgun-sluice", "enemyGroup", 4, [{ kind: "damage", min: 10, max: 15, element: "physical" }]),
-  "shotgun-brace": firearmSkill("shotgun-brace", "self", 4, [{ kind: "ward", statusResist: { fear: 40 } }, { kind: "buff", stat: "armor", amount: 2 }], { kind: "rounds", rounds: 3 }),
-  "shotgun-floodgate": firearmSkill("shotgun-floodgate", "enemyGroup", 5, [{ kind: "damage", min: 11, max: 17, element: "physical" }, { kind: "debuff", stat: "armor", amount: 3 }], { kind: "rounds", rounds: 2 }),
-  "shotgun-gate": firearmSkill("shotgun-gate", "enemyGroup", 5, [{ kind: "damage", min: 11, max: 16, element: "physical" }, { kind: "status", status: "fear" }], { kind: "combat" }),
-  "shotgun-terminus": firearmSkill("shotgun-terminus", "enemyGroup", 6, [{ kind: "damage", min: 13, max: 20, element: "physical" }]),
-  "shotgun-final": firearmSkill("shotgun-final", "allEnemies", 7, [{ kind: "damage", min: 9, max: 15, element: "physical" }, { kind: "debuff", stat: "armor", amount: 2 }], { kind: "rounds", rounds: 2 })
-};
-
-const FIREARM_PASSIVES: Record<FirearmPassiveId, Technique> = {
-  "quick-draw": { id: "quick-draw", kind: "passive", target: "self", cost: {}, effects: [], duration: { kind: "instant" }, passiveBonus: { speed: 2 }, tags: ["firearm", "pistol", "passive"] },
-  "sidearm-discipline": { id: "sidearm-discipline", kind: "passive", target: "self", cost: {}, effects: [], duration: { kind: "instant" }, passiveBonus: { accuracy: 2 }, tags: ["firearm", "pistol", "passive"] },
-  "steady-sight": { id: "steady-sight", kind: "passive", target: "self", cost: {}, effects: [], duration: { kind: "instant" }, passiveBonus: { accuracy: 4 }, tags: ["firearm", "rifle", "passive"] },
-  "close-control": { id: "close-control", kind: "passive", target: "self", cost: {}, effects: [], duration: { kind: "instant" }, passiveBonus: { speed: 2, accuracy: 1 }, tags: ["firearm", "smg", "passive"] },
-  "breach-brace": { id: "breach-brace", kind: "passive", target: "self", cost: {}, effects: [], duration: { kind: "instant" }, passiveBonus: { armor: 2 }, tags: ["firearm", "shotgun", "passive"] },
-  "last-platform-stance": { id: "last-platform-stance", kind: "passive", target: "self", cost: {}, effects: [], duration: { kind: "instant" }, passiveBonus: { attack: 1, resistance: { fear: 15 } }, tags: ["firearm", "terminal-line", "passive"] }
-};
-
 /**
- * The catalog. Same four techniques, same numbers, same costs as the old SPELLS map — see
- * tests/classCapabilities.test.ts, which pins the derived legacy view against the literal old table.
+ * The BUILT-IN catalog. Terminal Line's firearms are no longer here — they are authored in
+ * content/worlds/terminal-line/techniques.md and layered on at load by resolveTechniqueCatalog.
+ * See tests/classCapabilities.test.ts, which pins the derived legacy view against the literal old table.
  */
 export const TECHNIQUES: Record<TechniqueId, Technique> = {
-  ...FIREARM_ACTIVE_TECHNIQUES,
-  ...FIREARM_PASSIVES,
   heal: {
     id: "heal",
     kind: "spell",

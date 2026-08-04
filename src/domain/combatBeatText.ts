@@ -70,12 +70,7 @@ export const SPELL_LABEL: Record<string, TranslationKey> = {
   "smoke-veil": "play.spellSmokeVeil",
   "shadow-step": "play.spellShadowStep",
   "blinding-dust": "play.spellBlindingDust",
-  "backstab": "play.spellBackstab",
-  "pistol-draw": "play.firearmPistolDraw", "pistol-aimed": "play.firearmPistolAimed", "pistol-suppress": "play.firearmPistolSuppress", "pistol-pin": "play.firearmPistolPin", "pistol-relay": "play.firearmPistolRelay", "pistol-mark": "play.firearmPistolMark", "pistol-bureau": "play.firearmPistolBureau", "pistol-seal": "play.firearmPistolSeal", "pistol-terminal": "play.firearmPistolTerminal", "pistol-lastword": "play.firearmPistolLastword",
-  "rifle-rest": "play.firearmRifleRest", "rifle-sight": "play.firearmRifleSight", "rifle-brace": "play.firearmRifleBrace", "rifle-hamper": "play.firearmRifleHamper", "rifle-cutline": "play.firearmRifleCutline", "rifle-scan": "play.firearmRifleScan", "rifle-quarantine": "play.firearmRifleQuarantine", "rifle-coldshot": "play.firearmRifleColdshot", "rifle-evac": "play.firearmRifleEvac", "rifle-longwatch": "play.firearmRifleLongwatch",
-  "smg-sweep": "play.firearmSmgSweep", "smg-push": "play.firearmSmgPush", "smg-turnstile": "play.firearmSmgTurnstile", "smg-scatter": "play.firearmSmgScatter", "smg-rainline": "play.firearmSmgRainline", "smg-crossfire": "play.firearmSmgCrossfire", "smg-bureau": "play.firearmSmgBureau", "smg-lockdown": "play.firearmSmgLockdown", "smg-zero": "play.firearmSmgZero", "smg-breakthrough": "play.firearmSmgBreakthrough",
-  "shotgun-breach": "play.firearmShotgunBreach", "shotgun-close": "play.firearmShotgunClose", "shotgun-pump": "play.firearmShotgunPump", "shotgun-stagger": "play.firearmShotgunStagger", "shotgun-sluice": "play.firearmShotgunSluice", "shotgun-brace": "play.firearmShotgunBrace", "shotgun-floodgate": "play.firearmShotgunFloodgate", "shotgun-gate": "play.firearmShotgunGate", "shotgun-terminus": "play.firearmShotgunTerminus", "shotgun-final": "play.firearmShotgunFinal",
-  "quick-draw": "play.firearmPassiveQuickDraw", "sidearm-discipline": "play.firearmPassiveSidearmDiscipline", "steady-sight": "play.firearmPassiveSteadySight", "close-control": "play.firearmPassiveCloseControl", "breach-brace": "play.firearmPassiveBreachBrace", "last-platform-stance": "play.firearmPassiveLastPlatformStance"
+  "backstab": "play.spellBackstab"
 };
 
 // Past-tense attack verbs, mirrored with the Godot combat log (combat.gd `_attack_verb`): a member's

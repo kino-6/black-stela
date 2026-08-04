@@ -24,6 +24,7 @@ dataFiles:
   quests: quests.md
   vocations: vocations.md
   affixes: affixes.md
+  techniques: techniques.md
 compatibility:
   minAppVersion: 0.1.0
 ---
