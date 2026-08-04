@@ -71,7 +71,7 @@ test("visible controls can descend to B2F and still return through the authored 
   // The descent is never locked on this shallow floor: thread the maze to the
   // Winding Stair and use it. Exploration is pressured by reward and difficulty.
   expect(await descendB1fViaWarden(page)).toBe(true);
-  await expect(page.getByTestId("map-current")).toContainText("Landing of Split Dust");
+  await expect(page.getByTestId("map-current")).toContainText("Ash Landing");
 
   // The B2F landing's up-stair to B1F faces west; turn to it and climb back.
   await faceDirection(page, "west");

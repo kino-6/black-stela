@@ -374,7 +374,7 @@ export async function descendB1fViaWarden(page: Page) {
       await resolveVisibleCombat(page);
     }
   }
-  return (await current()).includes("Landing of Split Dust");
+  return (await current()).includes("Ash Landing");
 }
 
 async function currentFacing(page: Page): Promise<string> {

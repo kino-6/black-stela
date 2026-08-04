@@ -28,7 +28,7 @@ describe("GM-aware narration subject", () => {
       member.hp = 0;
     });
 
-    expect(selectNarrationSubject(state, "room.b3f.003")).toBeNull();
+    expect(selectNarrationSubject(state, "room.b3f.exit")).toBeNull();
   });
 
   it("sends only bounded read-only identity fields for the rule-selected subject", () => {

@@ -1,177 +1,249 @@
 ---
 id: dungeon.b6f
-# IMP-063 descent arc — mid band: the ash cools and dims as the party descends toward the stela's root.
-palette:
-  ceiling: "#3d382f"
-  ambient: "#251f1b"
-  fog: "#080705"
-  torch: "#ebc189"
-  ambientEnergy: 0.5
-name: B6F - Narrow Oaths
+name: B6F - The Oathvault
 level: 6
 role: deep_route
-dangerTier: 4
 recommendedPartyLevel: 3
 tags:
-  - role-check
-  - traps
   - block-2
   - block-cap
-authorNotes: >-
-  Deep-route floor on the full 20x20 frame. A broad vow hall of oath-cutters
-  opens off the entry, with a warren, a cache, and two niches. The only way down
-  is the vertical Needle Choir choke, where the trap sings and the Oath Warden
-  holds the line. Below it the Salted Arch keeps the last sure town-return before
-  the deep route, beside a small vault. Traps and role checks bite, but no build
-  is hard-locked out.
 startRoom: room.b6f.001
 map: |
   ###################
-  #E#...............#
-  #.#.#####.###.#.###
-  #.......#.#...#...#
-  #.###.#.#.###.###.#
-  #....A..#....B....#
-  ###.#.#.#.###.#####
-  #...#...#.........#
-  #.#.#.##....#####.#
-  #.#.#.........#...#
-  ###.#.#.....###.###
-  #...#.#.#.#.#.....#
-  #.#.#.###.#.#.#.#.#
-  #.#.#.......#.#.#.#
-  #.#######.###.#.#.#
-  #......P#.#DM.#K#.#
-  #.###############.#
-  #..............G#V#
+  #E......#.......#.#
+  #.#...###.###.#...#
+  #.#.#.....#...#...#
+  ###.#####.#######.#
+  #....B.##....C.#..#
+  #.###..######...###
+  #....#....#...#...#
+  #.#######.#.###.#.#
+  #.#....##A.##.F.#.#
+  #.###.M.#..##..##.#
+  #.#...#...#.....#.#
+  #.#####.#.###.#####
+  #...#...#D.#.....1#
+  #.###...#..####.###
+  #...#....#....#..X#
+  #####.#.#####.##S##
+  #2....#...#.....s.#
   ###################
 symbols:
+  1: room.b6f.nook1
+  2: room.b6f.nook2
   E: room.b6f.001
-  A: room.b6f.004
-  B: room.b6f.005
-  P: room.b6f.006
-  M: room.b6f.002
-  D: room.b6f.003
-  K: room.b6f.007
-  G: room.b6f.008
-  V: room.b6f.009
+  X: room.b6f.exit
+  M: room.b6f.keep
+  A: room.b6f.02
+  B: room.b6f.03
+  C: room.b6f.04
+  D: room.b6f.05
+  F: room.b6f.06
+  s: room.b6f.gate
+  S: room.b6f.lift
 corridor:
-  name: Oath Gallery
-  description: A gallery whose walls are scratched over with names, each crossed out by a different hand.
+  name: Ashen Gallery
+  description: An ash-choked passage; cold light seeps down from cracks far above.
   locales:
     ja:
-      name: 誓いの回廊
-      description: 壁一面に名が刻まれ、それぞれ別の手で線を引かれた回廊。
+      name: 灰の回廊
+      description: 灰の詰まる通路。はるか頭上の裂け目から、冷たい光が差し込む。
 edges:
   - from: room.b6f.001
     direction: west
     kind: stairs
-    to: room.b5f.003
+    to: room.b5f.exit
     targetFloorId: dungeon.b5f
-  - from: room.b6f.003
-    direction: south
+  - from: room.b6f.exit
+    direction: north
     kind: stairs
     to: room.b7f.001
     targetFloorId: dungeon.b7f
-  - from: room.b6f.c17_16
-    direction: south
+  - from: room.b6f.gate
+    direction: north
     kind: secret
-    to: room.b6f.009
+    to: room.b6f.lift
+  - from: room.b6f.c9_10
+    direction: south
+    kind: door
+  - from: room.b6f.02
+    direction: north
+    kind: door
+  - from: room.b6f.c6_6
+    direction: south
+    kind: door
+  - from: room.b6f.03
+    direction: west
+    kind: door
+  - from: room.b6f.c14_6
+    direction: east
+    kind: door
+  - from: room.b6f.c13_6
+    direction: south
+    kind: door
+  - from: room.b6f.04
+    direction: west
+    kind: door
+  - from: room.b6f.c10_14
+    direction: south
+    kind: door
+  - from: room.b6f.05
+    direction: north
+    kind: door
+  - from: room.b6f.c13_10
+    direction: south
+    kind: door
+  - from: room.b6f.c14_10
+    direction: south
+    kind: door
+  - from: room.b6f.06
+    direction: east
+    kind: door
+  - from: room.b6f.c5_9
+    direction: west
+    kind: door
+  - from: room.b6f.c5_10
+    direction: south
+    kind: door
+  - from: room.b6f.keep
+    direction: east
+    kind: door
 rooms:
   - id: room.b6f.001
-    name: Vow Passage
-    description: Names are scratched into the wall, each crossed out by a different hand. Stairs climb west to B5F; the vow hall opens ahead.
+    name: Ash Landing
+    description: A landing of cracked ash-stone; a stair climbs back toward the floor above.
+    event: Cold ash-light pools on the landing; someone in the party marks the way down into The Oathvault.
     locales:
       ja:
-        name: 誓いの通路
-        description: 壁に刻まれた名は、それぞれ別の手で線を引かれている。西の階段はB5Fへ上り、誓いの広間が先に開く。
-  - id: room.b6f.004
-    name: Broken Vow Hall
-    description: The vow hall proper, where oath-cutters work the aisles between the scratched-out names.
-    locales:
-      ja:
-        name: 破誓の広間
-        description: 誓いの広間そのもの。線を引かれた名の間の通路を、誓約破りが行き来している。
+        name: 灰の踊り場
+        description: 灰石の踊り場。階段が上の階へと登っていく。
+  - id: room.b6f.02
+    name: Ash Chamber 1
+    description: A vaulted chamber where cold ash-light pools on the black stone.
+    chamberGuardian: true
     encounterTable: encounters.b6f.oaths
     treasureTable: treasure.b6f.side
-  - id: room.b6f.005
-    name: Oathkeeper's Cache
-    description: A shelf in the vow hall where a ring was left wrapped in a scrap of oath-cloth.
     locales:
       ja:
-        name: 誓約者の隠し
-        description: 誓いの広間の棚。指輪が誓いの布切れに包まれて残されている。
-    treasureTable: treasure.b6f.side
-  - id: room.b6f.006
-    name: Scratched Niche
-    description: A dead-end niche off the vow hall, its wall crowded with crossed-out names and a hidden satchel.
-    locales:
-      ja:
-        name: 刻みの小間
-        description: 誓いの広間から外れた行き止まりの小間。壁は線を引かれた名で埋まり、鞄が隠されている。
-    treasureTable: treasure.b1f.nook
-  - id: room.b6f.008
-    name: Erased Niche
-    description: A dead-end pocket off the west of the vow hall, one name scraped clean above a stitched bundle.
-    locales:
-      ja:
-        name: 消えた名の小間
-        description: 誓いの広間の西にある行き止まりの窪み。縫い綴じの包みの上で、名がひとつ削り消されている。
-    treasureTable: treasure.b1f.nook
-  - id: room.b6f.002
-    name: Needle Choir
-    description: Thin metal reeds hum when boots touch the wrong slab. The only way down runs through their song.
-    locales:
-      ja:
-        name: 針の合唱
-        description: 誤った石板を踏むと、細い金属の葦が鳴る。下りへの道は、その歌の中を抜けるほかない。
+        name: 灰の間 1
+        description: 冷たい灰光が黒石に淀む、天井の高い間。
+  - id: room.b6f.03
+    name: Ash Chamber 2
+    description: A vaulted chamber where cold ash-light pools on the black stone.
     trap:
-      id: trap.b6f.needle-choir
-      name: Needle Choir
-      damage: 5
-      detectDc: 13
-      warning: The safe slabs are silent under dropped grit.
+      id: trap.b6f.chamber2
+      name: A pressure-plate snare
+      damage: 9
+      detectDc: 17
+      warning: The floorstones here sit a hair proud, sprung to bite.
+    chamberGuardian: true
+    encounterTable: encounters.b6f.oaths
+    treasureTable: treasure.b6f.side
+    locales:
+      ja:
+        name: 灰の間 2
+        description: 冷たい灰光が黒石に淀む、天井の高い間。
+  - id: room.b6f.04
+    name: Ash Chamber 3
+    description: A vaulted chamber where cold ash-light pools on the black stone.
+    chamberGuardian: true
+    encounterTable: encounters.b6f.oaths
+    treasureTable: treasure.b6f.side
+    locales:
+      ja:
+        name: 灰の間 3
+        description: 冷たい灰光が黒石に淀む、天井の高い間。
+  - id: room.b6f.05
+    name: Ash Chamber 4
+    description: A vaulted chamber where cold ash-light pools on the black stone.
+    trap:
+      id: trap.b6f.chamber4
+      name: A pressure-plate snare
+      damage: 9
+      detectDc: 17
+      warning: The floorstones here sit a hair proud, sprung to bite.
+    chamberGuardian: true
+    encounterTable: encounters.b6f.oaths
+    treasureTable: treasure.b6f.side
+    locales:
+      ja:
+        name: 灰の間 4
+        description: 冷たい灰光が黒石に淀む、天井の高い間。
+  - id: room.b6f.06
+    name: Ash Chamber 5
+    description: A vaulted chamber where cold ash-light pools on the black stone.
+    chamberGuardian: true
+    encounterTable: encounters.b6f.oaths
+    treasureTable: treasure.b6f.side
+    locales:
+      ja:
+        name: 灰の間 5
+        description: 冷たい灰光が黒石に淀む、天井の高い間。
+  - id: room.b6f.keep
+    name: Oath Warden
+    description: A close, ash-walled keep; the only way deeper passes through it.
     encounter:
       id: enemy.b6f.oath-warden
       name: Oath Warden
-      hp: 18
-      attack: 5
+      hp: 26
+      attack: 8
       role: miniboss
-      dangerTier: 4
       isBoss: true
-      tags:
-        - block-cap
-    treasureTable: treasure.b6f.oaths
-  - id: room.b6f.003
-    name: Salted Arch
-    description: Salt crusts the arch ahead, dry as old vows. A shallow alcove keeps the last sure way back before the deep route.
+    chest:
+      treasureTable: treasure.b6f.oaths
+      trap:
+        kind: snare
+        difficulty: 19
+        damage: 10
     locales:
       ja:
-        name: 塩の迫持
-        description: 先の迫持には、古い誓いのように乾いた塩がこびりつく。浅い窪みが、深部へ入る前の確かな帰り道を残している。
+        name: 誓いの番人
+        description: 灰の壁に囲まれた狭い番所。奥へはここを抜けるほかない。
+  - id: room.b6f.exit
+    name: Ash Descent
+    description: A shaft drops toward the next depth; a chain of iron falls away below.
     restPoint: true
-  - id: room.b6f.007
-    name: Salt Vault
-    description: A salt-crusted vault beside the arch, its shelf holding what earlier oath-breakers never came back for.
     locales:
       ja:
-        name: 塩の宝庫
-        description: 迫持の脇の塩にまみれた宝庫。棚には、先の誓約破りが取りに戻らなかったものが残っている。
+        name: 灰の下り
+        description: 竪坑が次の深みへ落ちる。鉄の鎖が下へ垂れている。
+  - id: room.b6f.gate
+    name: Suspect Wall
+    description: A stretch of ash-wall rings hollow — search here to reveal a hidden way down.
+    locales:
+      ja:
+        name: 怪しい壁
+        description: 灰の壁の一角が虚ろに響く。ここを調べれば、下りへの隠しみちが現れるかもしれない。
+  - id: room.b6f.lift
+    name: Hidden Passage
+    description: A cramped passage behind the false wall, letting out close to the descent.
+    locales:
+      ja:
+        name: 隠しみち
+        description: 偽りの壁の奥の狭い抜け道。下りのすぐ近くへ通じている。
+  - id: room.b6f.nook1
+    name: Ash Niche 1
+    description: A dead-end niche where something was left in the drift.
+    chest:
+      treasureTable: treasure.b6f.side
+      trap:
+        kind: snare
+        difficulty: 17
+        damage: 9
+    locales:
+      ja:
+        name: 灰の窪み 1
+        description: 吹き溜まりに何かが残された行き止まりの窪み。
+  - id: room.b6f.nook2
+    name: Ash Niche 2
+    description: A dead-end niche where something was left in the drift.
     treasureTable: treasure.b6f.side
-  - id: room.b6f.009
-    name: Vault Cache
-    description: A slot of dead air hides behind a salt-sealed seam off the deep corridor — a cloth-bound cache rests within, richer than the open niches.
     locales:
       ja:
-        name: 誓いの隠し宝処
-        description: 深部の通路の脇、塩で固めた継ぎ目の裏に淀んだ空気の隙間が隠れている。布に包まれた蓄えが中に置かれ、開けた小間よりも実り多い。
-    treasureTable: treasure.b6f.secret
+        name: 灰の窪み 2
+        description: 吹き溜まりに何かが残された行き止まりの窪み。
 ---
 
-# B6F - Narrow Oaths
+# B6F - The Oathvault
 
-A deep-route floor on the full 20x20 frame. A broad vow hall of oath-cutters
-opens off the entry, with a warren, a cache, and two scratched niches. The only
-way down is the vertical Needle Choir choke, where the trap sings and the Oath
-Warden holds the line. Below it the Salted Arch keeps the last sure town-return
-before the deep route, beside a small salt vault.
+An ashen descent floor. Generated skeleton (V1); encounters/treasure tables in V2/V3.

@@ -45,12 +45,14 @@ test("debug scenario import reports success for a local pack file set", async ({
       "dungeons/b5f.md",
       "dungeons/b6f.md",
       "dungeons/b7f.md",
-      "dungeons/b8f.md"
+      "dungeons/b8f.md",
+      "dungeons/b9f.md",
+      "dungeons/b10f.md"
     ])
   );
 
-  await expect(page.getByText("Loaded Black Stela - Gate of Ash (8 floors).")).toBeVisible();
-  await expect(page.getByText("Floors: 8")).toBeVisible();
+  await expect(page.getByText("Loaded Black Stela - Gate of Ash (10 floors).")).toBeVisible();
+  await expect(page.getByText("Floors: 10")).toBeVisible();
 });
 
 function defaultPackFiles(relativePaths: string[]) {

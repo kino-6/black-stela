@@ -14,7 +14,9 @@ export type DebugProgress =
   | "floor_5"
   | "floor_6"
   | "floor_7"
-  | "floor_8";
+  | "floor_8"
+  | "floor_9"
+  | "floor_10";
 
 export const debugProgressValues: DebugProgress[] = [
   "ready",
@@ -26,7 +28,11 @@ export const debugProgressValues: DebugProgress[] = [
   "floor_5",
   "floor_6",
   "floor_7",
-  "floor_8"
+  "floor_8",
+  // T31 extended the descent to 10 floors; the debug seeds follow so the 真層 (B9 scenario boss, B10 finale)
+  // are reachable for review and gates (e.g. the escape-charm-barred finale).
+  "floor_9",
+  "floor_10"
 ];
 
 export function parseDebugProgress(value: string | null): DebugProgress {

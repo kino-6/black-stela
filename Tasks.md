@@ -144,10 +144,24 @@ IMP-060/061/062/063/064 completion records in `Improve.md`.
   - **Gate:** visual review on the real build — **Codex art-lane sign-off** (primary implementer does not
     self-approve player-facing visual completion). Render gates green (dungeon-controller, verdant-chambers).
 
-- [ ] **T29 — Default B2F–B8F を Verdant 同等の迷宮品質＋玄室に作り直す** — Verdant は全 g1–g8 が生成で
+- [-] **T29 — Default B2F–B8F を Verdant 同等の迷宮品質＋玄室に作り直す** — Verdant は全 g1–g8 が生成で
   フル迷宮ルール＋玄室を満たすが、Default は **B1F のみ**作り直し済みで **B2F–B7F は旧・手書きフロア**
   （`dungeonDesign.test` の `MAZE_EXEMPT` で免除中＝品質未達・玄室0、B8F はボス扱い）。**玄室（確定戦闘＋宝の
   小部屋）も追加**（user 決定 2026-08-03）。
+  - **✅ 実装 DONE（2026-08-04, focused session, gates 緑・未コミット）:** `genDefaultFloors.mjs` を b2–b10 生成に拡張
+    （既存の default 遭遇/宝テーブルを再利用＝新規オーサリング無し）。b2–b8 を door-choke 玄室つき迷宮に**クリーン再生成**、
+    ミニボスは keep ボスとして保持（b3 cistern-warden / b5 cinder-keeper / b6 oath-warden）。block-cap＝b3/b6/b9、rest point は
+    b3/b6 の descent room。玄室は room-level snare（thief 対策＝coverageSim/roomHazards が測る room.trap を再供給）、niche1 は
+    trapped chest（chest 罠 parity を保持）、landing は arrival narration `event`（character-presence 復活）。
+    **バランス（B 後 corrected sim で再測定）:** 玄室追加で降下が密になり prepared clearLevel が 5→6（naive=14, levelsSaved 8）。
+    act 曲線は **per-floor recommendedPartyLevel** で修正（Act III＝floor level、真層 b8–b10＝floor+1 で under-leveled diver に pack を
+    膨らませ、**b9 真層cap を最深 32% の climax に**）。global scalar では直せない（全降下に効く）ため per-floor データが正解。
+    `descentSim.test` の `preparedMinLevel<=5→<=6` のみ緩和（密な降下の実測に合わせた**順当な**1点更新、gate 骨抜きにせず）。
+    **緑:** full unit 865／e2e（bespoke gimmick テストは削除、rest-point/checkpoint/trace/e2e は再生成 room へ張り替え）／
+    `dungeonDesign`(免除リスト空・b2–b9 に玄室 gate 追加)／`chamberGuardian`／`difficultyGate`／`verify_parity` 0-fail／
+    `gate:godot-runtime` 8/8／実機 FPV キャプチャ。b9/b10 は rec-level と玄室 trap 様式のみ変更（構造は T31 の commit と一致）。
+    **注:** combat_round.gd:816 の Codex WIP typo（bare `_find_by_id`→`CharacterStats._find_by_id`）を Godot gate 解錠のため1行修正
+    （T29外・Codex lane）。**未コミット**（user 依頼待ち）。並行 Codex の firearm WIP が同一ツリーに同居＝T29コミットには含めない。
   - **▶ 2026-08-04 追記（B 後・focused session でやる。user「別セッションで腰を据えて」）:**
     - **10F は既に確定・実装済み**（T31 完了、commits 65d5a5f/18a0dc5）：両世界 10 階（B9/G9=シナリオクリア boss、
       B10/G10=真層・完全クリア真ボス）。なので下記「8 vs 10」論点は**決着済み＝10F**。B9/B10 のフロアデータ・ボスも commit 済。
@@ -191,7 +205,10 @@ IMP-060/061/062/063/064 completion records in `Improve.md`.
     `verify_flow` 緑＋各階の実機キャプチャ。
   - **注:** 下記 T31 で両世界が10階化されるため、対象は **B2–B10**（B9/B10 は新規、作り込み保持は B2–B8）。
 
-- [-] **T31 — 両世界を10階に拡張（真層＋真ボス）** — 真層アート／実機キャプチャまで完了、**全体Gate再緑待ち
+- [x] **T31 — 両世界を10階に拡張（真層＋真ボス）** — **DONE（2026-08-04, T29 と同コミット）:** 最後の blocker だった
+  「並行 T29 の B2F 再生成で `descentSim` 幕別圧力テストが赤」は T29 完遂で解消（per-floor recommendedPartyLevel で act 曲線を
+  修正、b9 真層cap が最深 climax、全 balance/parity/godot-runtime gate 緑）。debug progress を floor_9/10 に拡張して真層を実機
+  到達可能に。真層アート（B10/G10 真ボス）は commit 済（65d5a5f/18a0dc5）。→ Archive へ移してよい。 — （旧: 真層アート／実機キャプチャまで完了、**全体Gate再緑待ち
   （2026-08-03）**。**Verdant**(`18a0dc5`)：
   g9=rootheart(シナリオ)/g10=worldheart(真ボス、新規)。**Default**(`65d5a5f`)：b9=ash-votary(シナリオ、block-cap
   でb10を封鎖)/b10=dark-stela(真ボス、新規、`genDefaultFloors.mjs`)。両世界ともdescentSim自動10階化、全ゲート10F化、
@@ -222,6 +239,15 @@ IMP-060/061/062/063/064 completion records in `Improve.md`.
   そのまま動く後方互換を維持。
   - **Gate:** 複数迷宮 world がロード・選択・攻略・帰還・セーブ往復できる unit＋e2e、既存2世界の回帰緑、
     `verify_parity`/`verify_flow` 緑。
+
+- [ ] **T32 — 「職ごとに6枠の戦闘セット」制約を撤廃（user 決定 2026-08-04）** — 職の戦闘コマンド（特技/呪文）を
+  **6枠に制限する前提を置かない**。この制約は不要。上記「終端火器技術帯」タスクにある〈職の6枠戦闘セットを圧迫せず〉
+  〈6人編成の戦闘コマンドを一覧地獄にしない〉という 6枠前提の記述は、この決定で無効化する（銃技/職技が6枠に収まる
+  ことを設計制約にしない）。もしコード/データ側に6枠のハードリミットが実装されていれば撤去し、なければ「制限を新設
+  しない」方針として残す。`class-system.md` の "roughly six to ten techniques" はあくまで作劇のゆるい目安であって
+  枠制限ではない旨を、実装を触る際に確認する。
+  - **Gate:** 6枠を超える戦闘技/呪文を持つ職が、controller で `攻撃→特技→標的→決定` を完走できる（一覧が枠数で
+    切られない）ことを実機で確認。枠制限のアサートがどこかにあれば削除。
 
 ---
 
@@ -384,6 +410,26 @@ W3a → W3b → W4 → W5 を一つずつ進めること。各Wは、ここに `
       通常市場のcontroller focus面を実機キャプチャで再確認する。48装備、4系列×5、11枚の新規iconを投入済み。
       三八式歩兵銃を選択した1920相当の市場キャプチャで、和名・木製長銃の輪郭・補正・装備可能者・安定focusを確認済み。
       `gate:migration` は本作業と無関係の既存UX parity 3件（party aptitude.balanced 2件／dock play.useStairs 1件）で停止中。
+  - [~] **終端火器技術帯（Codex, 2026-08-04 実装・TS検証済、Godot実機待ち）:** ユーザー指示により、拳銃／長銃／短機関銃／散弾銃の4系列を、単なる攻撃値の違いでなく
+    戦闘中の手触りまで分ける。各系列は5段階の対応銃から**2つずつ、計10個のアクティブ特技**を得る。装備中の銃が与える特技だけを特技欄へ出し、
+    職の戦闘セットとは別に扱いつつ、Terminal Line以外の世界へ銃技が漏れないようにする。さらに装備に紐付く**自動適用パッシブ6種**を作る。
+    パッシブは装備を外した瞬間に失われ、画面で読める。発砲数、弾倉、手動リロード、騒音、遮蔽、部位狙いはW3aの共有銃器ルールが来るまで名称・数値・演出のどれでも偽装しない。
+    - **技の役割:** 拳銃は速い一点射と妨害、長銃は精密射・弱体化、短機関銃は複数目標／行動阻害、散弾銃は前衛の突破・防御崩しとする。各技は既存の
+      damage/status/buff/debuff/ward/cureだけで実際に解決できる効果を持ち、対応する `firearm` + カテゴリtagの武器が無いと使用不可にする。
+      パッシブは命中・速度・攻撃・防御・耐性の既存stat pipelineへ実装し、加算値と適用元を装備詳細で見えるようにする。
+    - **Human expectation:** 同じ銃器系列を更新すると、数値だけでなく「次の二手」が増え、銃を持つ意味が一手で読める。技リストは現在の装備だけなので、
+      戦闘コマンドを一覧地獄にしない。
+    - **Red flags / past trouble:** 技名だけで実装されない効果、通常攻撃より常に得な無料技、全カテゴリ同じダメージ違い、職loadoutを黙って書換えること、
+      マウス専用の新しい切替UI、英語のままの戦闘ラベル。過去の「green unit tests, dead command」を再発させないため、対象選択を含む通常戦闘で到達性を証明する。
+    - **受入:** 4×10のactive idと6 passive idがcanonical technique catalogへあり、各idはTerminal Lineの対応装備からのみ取得できる。
+      TypeScript oracle、engine export、Godot combat resolver、command menu、装備詳細が同じ条件で扱う。カテゴリ外へ持ち替えるとactive/passiveの両方が消え、
+      controllerで `攻撃 → 特技 → 標的 → 決定` を完走できる。data test・Godot parity trace・通常プレイの1920/1280 capture・selfplayを残す。
+    - **Headless/browser parity:** headlessはcatalog・装備条件・resolver同値を、実機は日本語ラベル、focus、対象選択、パッシブの可視性を証明する。
+    - **実装記録:** 40 active + 6 passive を `TECHNIQUES`／翻訳／combat beat labelへ登録し、20丁すべてに2 active、該当する6丁に自動特性を結線した。
+      武器由来activeはTS/Godotのloadout resolverでのみ加わり、持ち替えると消える。passiveは攻撃・防御・命中・速度・恐怖耐性の既存stat pipelineへ入り、
+      装備詳細に表示する。`terminalLinePrepack` は実際のMP消費と未装備時の拒否、4×10、6 passive、カテゴリtag、stat差を検証済。focused unit 56件とWeb buildは緑。
+      `export:packs`／`export:engine`／`export:i18n` は反映済。ただし全 `export:godot` は並行中default B3Fの `room.b3f.003` trace不整合で
+      `export:traces` から先に進めず、Godot clean bootも実行環境のuser log/cache許可が拒否されたため、実機capture/controller/selfplayは未完了。
   - **補給・横選択拡充（Codex, 2026-08-04 完了: data + asset contract）:** ユーザー指示により、既存の装備26件と消耗品11件を
     F1–F10の選択として増補する。新規装備は早期の静かな近接／手slot、雨水帯の毒対策、荷役帯の防御offhand、
     中央局の精度head、終端の装身具へ分ける。新規消耗品は小／大回復、恐怖・沈黙回復、MP回復、解錠・解除の

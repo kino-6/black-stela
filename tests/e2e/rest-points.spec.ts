@@ -1,41 +1,23 @@
 import { test, expect } from "@playwright/test";
-import { faceDirection, resolveVisibleCombat } from "./helpers";
 
 /**
  * Lane Z slice A: return-to-town is available only at block-cap rest points
- * (every ~3 floors), not on every floor. B3F "Chain Descent" is the block-1 cap.
+ * (every ~3 floors), not on every floor. B3F "The Chain Descent" is the block-1 cap;
+ * T29 seats its rest point on the regenerated DESCENT room (room.b3f.exit, "Ash Descent").
  *
- * B3F is now a dense grid; the descent sits past the warden choke, so the walk
- * from the entry threads the cistern galleries down through the warden's mark.
+ * The party is seeded directly on the cell under test via `&at=...` (see
+ * withDebugStartCell) so the test proves the rest-point rule, not a long maze walk
+ * across a regenerated grid.
  */
-async function move(page: import("@playwright/test").Page) {
-  await page.keyboard.press("w");
-  if (await page.getByLabel("Battle screen").isVisible().catch(() => false)) {
-    await resolveVisibleCombat(page);
-  }
-}
-
 test("B3F block-cap rest point offers return to town", async ({ page }) => {
-  await page.goto("/?debug=1&progress=floor_3");
-  await expect(page.getByTestId("map-current")).toContainText("Dry Cistern Mouth");
-
-  // A mid-floor cell must not offer return.
+  // A mid-floor cell (the hidden-passage gate) must NOT offer return.
+  await page.goto("/?debug=1&progress=floor_3&at=room.b3f.gate&facing=north");
+  await expect(page.getByTestId("map-current")).toContainText("Suspect Wall");
   await expect(page.getByRole("button", { name: "Use return marker" })).toHaveCount(0);
 
-  // Thread the maze down to the Chain Descent (the block-1 cap rest point),
-  // resolving the cistern-crossing fight on the way (scripts/genFloorMaze.mjs path).
-  const toChainDescent: Array<"north" | "south" | "east" | "west"> = [
-    "south", "south", "east", "east", "east", "east", "south", "south", "east", "east",
-    "south", "south", "east", "south", "south", "south", "south", "east", "south", "south",
-    "east", "east", "north", "north", "east", "east", "south", "south", "east", "east",
-    "south", "south", "south", "south", "west", "west"
-  ];
-  for (const dir of toChainDescent) {
-    await faceDirection(page, dir);
-    await move(page);
-  }
-
-  await expect(page.getByTestId("map-current")).toContainText("Chain Descent");
+  // The block-1 cap's descent room IS a rest point: return to town is offered here.
+  await page.goto("/?debug=1&progress=floor_3&at=room.b3f.exit&facing=north");
+  await expect(page.getByTestId("map-current")).toContainText("Ash Descent");
   const returnBtn = page.getByRole("button", { name: "Use return marker" });
   await expect(returnBtn).toBeVisible();
 
@@ -44,6 +26,6 @@ test("B3F block-cap rest point offers return to town", async ({ page }) => {
 
   // The reached rest point is now a resumable checkpoint from the dungeon entry.
   await expect(page.getByTestId("checkpoint-resume")).toBeVisible();
-  await page.getByTestId("resume-room.b3f.003").click();
-  await expect(page.getByTestId("map-current")).toContainText("Chain Descent");
+  await page.getByTestId("resume-room.b3f.exit").click();
+  await expect(page.getByTestId("map-current")).toContainText("Ash Descent");
 });

@@ -1,8 +1,8 @@
-// Verdant floor skeleton generator (V1). Emits content/worlds/verdant/dungeons/g1f..g8f.md
-// as navigable dense mazes with connected up/down stairs + an on-floor collapse shortcut.
-// Reuses the 棒倒し maze core from genFloorMaze.mjs's approach. Room CONTENT (encounters,
-// treasure) is referenced by table id here; those tables are authored in V2/V3. Rerun:
-//   node scripts/genVerdantFloors.mjs
+// Default (黒碑) floor skeleton generator. Emits content/worlds/default/dungeons/b2f..b10f.md
+// as navigable dense mazes with connected up/down stairs, enclosed door-choke 玄室, and an on-floor
+// hidden-door shortcut. Forked from genVerdantFloors.mjs (the only generator that outputs door-choke
+// chambers). Room CONTENT (encounters, treasure) is referenced by existing default table id. Rerun:
+//   node scripts/genDefaultFloors.mjs
 import { writeFileSync } from "node:fs";
 
 const CELLS = 9; // 19x19 frame
@@ -176,14 +176,61 @@ function carveEnclosedChamber(w, ay, ax, entrance) {
 // Per-floor spec: seed + names (en/ja) for entrance, exit(down-stair), the miniboss/boss
 // chamber, plain chambers, shortcut, and reward nooks. Enemy/table ids match the roster in
 // docs/design/verdant-areas.md and are filled in V2/V3.
-// DEFAULT (黒碑) 10F extension — generates ONLY the two NEW floors B9 + B10 (T31). B1–B8 stay hand-authored
-// (their maze-quality upgrade is T29); this tool writes b9f.md + b10f.md and does not touch them. B9 = the
-// ash-votary SCENARIO-clear boss (relocated from B8); B10 = the 真層 with the NEW dark-stela true boss.
+// DEFAULT (黒碑) FULL descent generator — T29 rebuilt B2F–B8F to Verdant-equivalent maze quality + enclosed
+// 玄室 (door-choke guardian chambers), and T31 added B9 (scenario-boss cap) + B10 (真層 true boss). B1F stays
+// hand-authored (its own 棒倒し maze, genFloorMaze.mjs). Every floor here REUSES the existing default
+// encounter/treasure tables (no new authoring) — the chambers add real-play density (guaranteed fights +
+// treasure) without introducing new enemy types, so the calibrated difficulty curve is preserved. Minibosses
+// are kept as KEEP BOSSES (the sole-approach choke room's forced fight): b3 cistern-warden, b5 cinder-keeper,
+// b6 oath-warden. Block-caps (rules-level descent bars + return-to-town checkpoints, ~every 3 floors) sit on
+// b3/b6/b9; b3/b6 also carry a rest point on their descent room. Rerun: node scripts/genDefaultFloors.mjs
+//
+// Spec fields: n, seed, level, title[en,ja], block(act tag), chamberCount, packTable/sideTreasure/keepTreasure
+// (existing table ids), upTo(up-stair target room, defaults to room.b{n-1}f.exit), blockCap(→block-cap tag),
+// restPoint(→rest point on the descent room), boss[en,ja]+bossEnemy/bossHp/bossAtk/bossRole (keep is an inline
+// forced fight; role "miniboss" or "boss"), finale(b10 set-piece).
 const FLOORS = [
-  { n: 9, seed: 30509, level: 9, title: ["Votary's Sanctum", "奉者の聖域"],
-    boss: ["Ash Votary", "灰の奉者"], bossEnemy: "enemy.b8f.ash-votary", bossHp: 28, bossAtk: 6, bossEnc: "encounters.b9f.keep" },
-  { n: 10, seed: 30510, level: 10, title: ["The Inmost Stela", "黒碑の真層"],
-    boss: ["Heart of the Stela", "黒碑の主"], bossEnemy: "enemy.b10.dark-stela", bossHp: 44, bossAtk: 8, bossEnc: null, finale: true }
+  // ── Act I (block-1) ─────────────────────────────────────────────────────────────────────────────
+  { n: 2, seed: 30502, level: 2, title: ["The Branch Cisterns", "枝分かれの貯水"], block: "block-1",
+    recLevel: 2, recSize: 3, chamberCount: 8, packTable: "encounters.b2f.branches",
+    sideTreasure: "treasure.b2f.cache", keepTreasure: "treasure.b2f.risk", upTo: "room.b1f.012" },
+  { n: 3, seed: 30503, level: 3, title: ["The Chain Descent", "鎖の降り"], block: "block-1",
+    recLevel: 2, blockCap: true, restPoint: true, chamberCount: 8, packTable: "encounters.b3f.cistern",
+    sideTreasure: "treasure.b3f.side", keepTreasure: "treasure.b3f.watermark",
+    boss: ["Cistern Warden", "貯水の番人"], bossEnemy: "enemy.b3f.cistern-warden", bossHp: 17, bossAtk: 6, bossRole: "miniboss" },
+  // ── Act II (block-2) ────────────────────────────────────────────────────────────────────────────
+  { n: 4, seed: 30504, level: 4, title: ["The Dark Gallery", "闇の回廊"], block: "block-2",
+    recLevel: 2, chamberCount: 6, packTable: "encounters.b4f.dark", sideTreasure: "treasure.b4f.side",
+    keepTreasure: "treasure.b4f.dark" },
+  { n: 5, seed: 30505, level: 5, title: ["The Cinder Gate", "燠火の門"], block: "block-2",
+    recLevel: 3, chamberCount: 6, packTable: "encounters.b5f.gate", sideTreasure: "treasure.b5f.side",
+    keepTreasure: "treasure.b5f.keeper",
+    boss: ["Cinder Keeper", "燠火の守り手"], bossEnemy: "enemy.b5f.cinder-keeper", bossHp: 22, bossAtk: 5, bossRole: "miniboss" },
+  { n: 6, seed: 30506, level: 6, title: ["The Oathvault", "誓いの蔵"], block: "block-2",
+    recLevel: 3, blockCap: true, restPoint: true, chamberCount: 6, packTable: "encounters.b6f.oaths",
+    sideTreasure: "treasure.b6f.side", keepTreasure: "treasure.b6f.oaths",
+    boss: ["Oath Warden", "誓いの番人"], bossEnemy: "enemy.b6f.oath-warden", bossHp: 26, bossAtk: 8, bossRole: "miniboss" },
+  // ── Act III (block-3) ───────────────────────────────────────────────────────────────────────────
+  // Act III expects a party AT its floor level (b7), and the true-layer approach expects floor+1 (b8–b10) — so
+  // an under-levelled diver faces swelled packs (underpowerFactor) and the finale becomes the climax, instead
+  // of a party that out-levels the deepest enemies coasting through them. T29 balance calibration (2026-08-04):
+  // this is the per-floor lever that makes act3 bite (a global threat scalar can't — it hits the whole descent);
+  // measured curve b7:47 b8:42 b9:32 b10:38 (b9 真層cap = deepest), naive wipes / prepared clears / act3≤act2.
+  { n: 7, seed: 30507, level: 7, title: ["The Sealed Vaults", "封じの蔵"], block: "block-3",
+    recLevel: 7, chamberCount: 4, packTable: "encounters.b7f.vaults", sideTreasure: "treasure.b7f.side",
+    keepTreasure: "treasure.b7f.rare" },
+  { n: 8, seed: 30508, level: 8, title: ["The Last Gate", "最後の門"], block: "block-3",
+    recLevel: 9, chamberCount: 4, packTable: "encounters.b8f.gate", sideTreasure: "treasure.b8f.side",
+    keepTreasure: "treasure.b8f.final" },
+  // ── Act III true layer (T31) — B9 scenario-boss cap (bars B10), B10 真層 finale ────────────────────
+  { n: 9, seed: 30509, level: 9, title: ["Votary's Sanctum", "奉者の聖域"], block: "block-3",
+    recLevel: 10, blockCap: true, chamberCount: 4, packTable: "encounters.b9f.chambers",
+    sideTreasure: "treasure.b9f.side", keepTreasure: "treasure.b9f.keep",
+    boss: ["Ash Votary", "灰の奉者"], bossEnemy: "enemy.b8f.ash-votary", bossHp: 28, bossAtk: 6, bossRole: "boss" },
+  { n: 10, seed: 30510, level: 10, title: ["The Inmost Stela", "黒碑の真層"], block: "block-3",
+    recLevel: 11, chamberCount: 4, packTable: "encounters.b10f.chambers", sideTreasure: "treasure.b10f.side",
+    keepTreasure: "treasure.b10f.keep",
+    boss: ["Heart of the Stela", "黒碑の主"], bossEnemy: "enemy.b10.dark-stela", bossHp: 44, bossAtk: 8, bossRole: "boss", finale: true }
 ];
 
 const rid = (n, suffix) => `room.b${n}f.${suffix}`;
@@ -195,9 +242,9 @@ function buildFloor(spec) {
   const S = w.length;
   // 玄室 (Wiz-style guaranteed-fight + treasure rooms). G1–G3 seat EIGHT (7 plain + 1 keep ≥ 6) so the early
   // floors are dense with rooms to clear (playtest); deeper floors keep the leaner four. One becomes the keep.
-  const chamberCoords = n <= 3
-    ? [[9, 9], [5, 5], [5, 13], [13, 9], [9, 5], [9, 13], [13, 5], [13, 13]]
-    : [[9, 9], [5, 5], [5, 13], [13, 9]];
+  const CHAMBER_POOL = [[9, 9], [5, 5], [5, 13], [13, 9], [9, 5], [9, 13], [13, 5], [13, 13]];
+  const want = spec.chamberCount ?? (n <= 3 ? 8 : 4);
+  const chamberCoords = CHAMBER_POOL.slice(0, Math.max(1, want));
   const chambers = chamberCoords.filter(([y, x]) => y > 1 && x > 1 && y < S - 3 && x < S - 3);
   const entrance = [1, 1];
   // Braid the perfect (tree) maze so it has real loops — enclosing the 玄室 into dead-end pockets removes the
@@ -264,7 +311,7 @@ function buildFloor(spec) {
   // ---- edges: up-stair, down-stair, on-floor collapse shortcut ----
   const edges = [];
   if (n > 1) {
-    edges.push(`  - from: ${rid(n, "001")}\n    direction: ${wallDir(w, entrance)}\n    kind: stairs\n    to: ${rid(n - 1, "exit")}\n    targetFloorId: ${did(n - 1)}`);
+    edges.push(`  - from: ${rid(n, "001")}\n    direction: ${wallDir(w, entrance)}\n    kind: stairs\n    to: ${spec.upTo ?? rid(n - 1, "exit")}\n    targetFloorId: ${did(n - 1)}`);
   }
   if (!spec.finale) {
     edges.push(`  - from: ${rid(n, "exit")}\n    direction: ${wallDir(w, exit)}\n    kind: stairs\n    to: ${rid(n + 1, "001")}\n    targetFloorId: ${did(n + 1)}`);
@@ -294,29 +341,39 @@ function buildFloor(spec) {
   const room = (id, name, ja, desc, jaDesc, extra = "") =>
     `  - id: ${id}\n    name: ${name}\n    description: ${desc}\n${extra}    locales:\n      ja:\n        name: ${ja}\n        description: ${jaDesc}`;
 
+  // The landing carries a room `event` — a one-line arrival narration that drives the character-presence
+  // reaction (one rule-selected party member acknowledges the new depth). Balance-neutral flavour, but it
+  // keeps every floor's arrival a "someone reacts" beat instead of a silent drop.
+  const landingReturn = n === 1
+    ? "    stairsToTown: true\n    returnStyle: stairs\n"
+    : spec.finale
+      ? "    restPoint: true\n" // 真層 landing checkpoint (resume from town at the true-layer entrance)
+      : "";
+  const landingEvent = n === 1
+    ? "    event: Daylight thins behind you; someone in the party takes a last look back before the dark.\n"
+    : `    event: Cold ash-light pools on the landing; someone in the party marks the way down into ${spec.title[0]}.\n`;
   rooms.push(room(
     rid(n, "001"),
     n === 1 ? "Sunken Threshold" : "Ash Landing",
     n === 1 ? "沈んだ入口" : "灰の踊り場",
     n === 1 ? "The way in from the surface — a mossy stair climbs back toward daylight." : "A landing of cracked ash-stone; a stair climbs back toward the floor above.",
     n === 1 ? "地上への入口。苔むした階段が陽の光へと登っていく。" : "灰石の踊り場。階段が上の階へと登っていく。",
-    n === 1
-      ? "    stairsToTown: true\n    returnStyle: stairs\n"
-      : n === 4 || n === 7 || n === 10
-        ? "    restPoint: true\n" // act-boundary + 真層 checkpoint (resume from town), mirrors default b3/b6
-        : ""
+    landingEvent + landingReturn
   ));
   // Each plain chamber is a true 玄室: chamberGuardian gates its fight PER-ROOM (by its own chest claim),
   // so all of them fire even though they share the floor's pack table — enter, clear the guardian, and the
   // side-treasure chest is left behind on victory. (The keep below stays a once-only unique boss fight.)
   plainChambers.forEach((c, i) => {
-    // Roughly HALF the side 玄室 hide a snare-TRAPPED chest (difficulty/damage scale with depth), so a thief's
-    // investigate/disarm is worth a party slot (playtest: "盗賊による罠の処理もない"). The rest leave a plain
-    // chest. Either way the reward is claimable only after the guardian falls.
+    // Roughly HALF the side 玄室 hide a ROOM-level snare on the approach floor (detectDc/damage scale with depth),
+    // so a thief's detect/disarm is worth a party slot (playtest: "盗賊による罠の処理もない"). Room traps — not
+    // chest traps — so the counterplay-coverage sim (which measures room.trap) sees a real, escalating trap
+    // population across the descent. The rest leave a plain chamber. Either reward is claimable only after the
+    // guardian falls; the keep below keeps a chest trap so both disarm mechanics stay authored.
     const trapped = i % 2 === 1;
-    const reward = trapped
-      ? `    chamberGuardian: true\n    encounterTable: encounters.b${n}f.chambers\n    chest:\n      treasureTable: treasure.b${n}f.side\n      trap:\n        kind: snare\n        difficulty: ${11 + n}\n        damage: ${3 + n}\n`
-      : `    chamberGuardian: true\n    encounterTable: encounters.b${n}f.chambers\n    treasureTable: treasure.b${n}f.side\n`;
+    const trapField = trapped
+      ? `    trap:\n      id: trap.b${n}f.chamber${i + 1}\n      name: A pressure-plate snare\n      damage: ${3 + n}\n      detectDc: ${11 + n}\n      warning: The floorstones here sit a hair proud, sprung to bite.\n`
+      : "";
+    const reward = `${trapField}    chamberGuardian: true\n    encounterTable: ${spec.packTable}\n    treasureTable: ${spec.sideTreasure}\n`;
     rooms.push(room(
       rid(n, `0${i + 2}`),
       `Ash Chamber ${i + 1}`, `灰の間 ${i + 1}`,
@@ -331,37 +388,56 @@ function buildFloor(spec) {
     // Default's boss convention is an INLINE `encounter` with isBoss (the block-cap boss-gate the
     // rules read to bar the descent until the boss falls), NOT an encounterTable — so B10 opens only
     // after the B9 votary is cleared.
-    const field = `    encounter:\n      id: ${spec.bossEnemy}\n      name: ${spec.boss[0]}\n      hp: ${spec.bossHp}\n      attack: ${spec.bossAtk}\n      role: boss\n      isBoss: true\n`;
+    const field = `    encounter:\n      id: ${spec.bossEnemy}\n      name: ${spec.boss[0]}\n      hp: ${spec.bossHp}\n      attack: ${spec.bossAtk}\n      role: ${spec.bossRole ?? "boss"}\n      isBoss: true\n`;
     rooms.push(room(
       rid(n, "keep"), spec.boss[0], spec.boss[1],
       "A close, ash-walled keep; the only way deeper passes through it.", "灰の壁に囲まれた狭い番所。奥へはここを抜けるほかない。",
-      `${field}    chest:\n      treasureTable: treasure.b${n}f.keep\n      trap:\n        kind: snare\n        difficulty: ${13 + n}\n        damage: ${4 + n}\n`
+      `${field}    chest:\n      treasureTable: ${spec.keepTreasure}\n      trap:\n        kind: snare\n        difficulty: ${13 + n}\n        damage: ${4 + n}\n`
     ));
   } else {
     rooms.push(room(rid(n, "keep"), "Deep Grove", "奥の木立", "A quiet grove deep in the gallery.", "回廊の奥の静かな木立。",
-      `    encounterTable: encounters.b${n}f.chambers\n    chest:\n      treasureTable: treasure.b${n}f.keep\n      trap:\n        kind: snare\n        difficulty: ${13 + n}\n        damage: ${4 + n}\n`));
+      `    encounterTable: ${spec.packTable}\n    chest:\n      treasureTable: ${spec.keepTreasure}\n      trap:\n        kind: snare\n        difficulty: ${13 + n}\n        damage: ${4 + n}\n`));
   }
   if (!spec.finale) {
-    rooms.push(room(rid(n, "exit"), "Ash Descent", "灰の下り", "A shaft drops toward the next depth; a chain of iron falls away below.", "竪坑が次の深みへ落ちる。鉄の鎖が下へ垂れている。"));
+    // A block-cap floor's descent room doubles as the return-to-town checkpoint (rest point ~every 3 floors).
+    rooms.push(room(rid(n, "exit"), "Ash Descent", "灰の下り", "A shaft drops toward the next depth; a chain of iron falls away below.", "竪坑が次の深みへ落ちる。鉄の鎖が下へ垂れている。",
+      spec.restPoint ? "    restPoint: true\n" : ""));
   } else {
     rooms.push(room(rid(n, "exit"), "Beneath the Stela", "黒碑の下", "The descent ends here, beneath the black stela.s heart.", "降下はここで尽きる。黒碑の心臓の真下。",
       "    restPoint: true\n"));
   }
   rooms.push(room(rid(n, "gate"), "Suspect Wall", "怪しい壁", "A stretch of ash-wall rings hollow — search here to reveal a hidden way down.", "灰の壁の一角が虚ろに響く。ここを調べれば、下りへの隠しみちが現れるかもしれない。"));
   rooms.push(room(rid(n, "lift"), "Hidden Passage", "隠しみち", "A cramped passage behind the false wall, letting out close to the descent.", "偽りの壁の奥の狭い抜け道。下りのすぐ近くへ通じている。"));
+  // Dead-end reward niches. The FIRST is a TRAPPED CHEST (a closed chest appears on entry; investigate →
+  // disarm → open is the thief's other job, distinct from the chamber floor-snares), the SECOND a plain
+  // treasure table (a bare reward dead-end that keeps the maze's reward-pull rule honest). So each floor
+  // authors BOTH disarm mechanics: room snares in the 玄室, a chest trap in a niche.
   nooks.forEach((c, i) => rooms.push(room(rid(n, `nook${i + 1}`), `Ash Niche ${i + 1}`, `灰の窪み ${i + 1}`,
     "A dead-end niche where something was left in the drift.", "吹き溜まりに何かが残された行き止まりの窪み。",
-    `    treasureTable: treasure.b${n}f.side\n`)));
+    i === 0
+      ? `    chest:\n      treasureTable: ${spec.sideTreasure}\n      trap:\n        kind: snare\n        difficulty: ${11 + n}\n        damage: ${3 + n}\n`
+      : `    treasureTable: ${spec.sideTreasure}\n`)));
 
   // B9 = the scenario boss = the block-3 CAP (block-cap bars the descent to B10 until it falls). B10 = the
   // 真層 finale (boss-tagged → its own maze-exempt set-piece). Both sit in block-3 (Act III / true layer).
-  const tags = spec.finale ? "  - block-3\n  - finale\n  - boss" : spec.boss ? "  - block-3\n  - block-cap" : "  - block-3\n  - shortcut";
+  // Act label (block-1/2/3) + the descent-bar / set-piece tags. `boss` is the maze-exempt marker, so ONLY the
+  // b10 finale carries it — b3/b6/b9 hold inline bosses but stay generated mazes held to the full rules.
+  // block-cap (rules descent bar + checkpoint) sits on b3/b6/b9; every other non-finale floor is a shortcut floor.
+  const tagList = [spec.block ?? "block-3"];
+  if (spec.finale) {
+    tagList.push("finale", "boss");
+  } else if (spec.blockCap) {
+    tagList.push("block-cap");
+  } else {
+    tagList.push("shortcut");
+  }
+  const tags = tagList.map((tag) => `  - ${tag}`).join("\n");
   const md = `---
 id: ${did(n)}
 name: B${n}F - ${spec.title[0]}
 level: ${spec.level}
 role: ${spec.finale ? "finale" : "deep_route"}
-recommendedPartyLevel: ${Math.max(1, spec.level - 1)}
+recommendedPartyLevel: ${spec.recLevel ?? Math.max(1, spec.level - 1)}${spec.recSize ? `\nrecommendedPartySize: ${spec.recSize}` : ""}
 tags:
 ${tags}
 startRoom: ${rid(n, "001")}
@@ -392,5 +468,5 @@ ${spec.finale ? "The heartwood's guardian floor — the run's climax." : "An ash
 
 for (const spec of FLOORS) {
   const r = buildFloor(spec);
-  console.log(`g${r.n}f: ${r.cells} cells, exit=${r.exit}`);
+  console.log(`b${r.n}f: ${r.cells} cells, exit=${r.exit}`);
 }

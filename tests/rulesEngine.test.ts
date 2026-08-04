@@ -341,12 +341,13 @@ describe("rest points and scarce return", () => {
   }
 
   it("allows return to town at block-cap rest points but not mid-floor", () => {
-    for (const restRoom of ["room.b1f.warden", "room.b3f.003", "room.b6f.003"]) {
+    // T29: the block-cap caps (b3f/b6f) now seat their rest point on the regenerated DESCENT room (…exit).
+    for (const restRoom of ["room.b1f.warden", "room.b3f.exit", "room.b6f.exit"]) {
       const returned = executeCommand(dungeonAt(restRoom), defaultWorld, { type: "return_to_town" });
       expect(returned.phase, `${restRoom} should allow return`).toBe("town");
     }
 
-    const blocked = executeCommand(dungeonAt("room.b3f.002"), defaultWorld, { type: "return_to_town" });
+    const blocked = executeCommand(dungeonAt("room.b3f.02"), defaultWorld, { type: "return_to_town" });
     expect(blocked.phase).toBe("dungeon");
     expect(blocked.log.at(-1)?.tags).toContain("blocked");
   });
@@ -356,7 +357,7 @@ describe("rest points and scarce return", () => {
       .flatMap((floor) => floor.rooms)
       .filter((room) => room.restPoint || room.stairsToTown)
       .map((room) => room.id);
-    expect(restIds).toEqual(expect.arrayContaining(["room.b3f.003", "room.b6f.003"]));
+    expect(restIds).toEqual(expect.arrayContaining(["room.b3f.exit", "room.b6f.exit"]));
   });
 });
 
@@ -369,19 +370,19 @@ describe("checkpoint resume", () => {
   }
 
   it("lists only reached rest points and resumes the party there", () => {
-    const town = townWithVisited(["room.b3f.003"]);
-    expect(listUnlockedCheckpoints(town, defaultWorld).map((cp) => cp.roomId)).toEqual(["room.b3f.003"]);
+    const town = townWithVisited(["room.b3f.exit"]);
+    expect(listUnlockedCheckpoints(town, defaultWorld).map((cp) => cp.roomId)).toEqual(["room.b3f.exit"]);
 
-    const resumed = executeCommand(town, defaultWorld, { type: "resume_at_checkpoint", roomId: "room.b3f.003" });
+    const resumed = executeCommand(town, defaultWorld, { type: "resume_at_checkpoint", roomId: "room.b3f.exit" });
     expect(resumed.phase).toBe("dungeon");
-    expect(resumed.position?.roomId).toBe("room.b3f.003");
+    expect(resumed.position?.roomId).toBe("room.b3f.exit");
     expect(resumed.map.floorId).toBe("dungeon.b3f");
   });
 
   it("refuses to resume at a rest point that was never reached", () => {
     const resumed = executeCommand(townWithVisited([]), defaultWorld, {
       type: "resume_at_checkpoint",
-      roomId: "room.b6f.003"
+      roomId: "room.b6f.exit"
     });
     expect(resumed.phase).toBe("town");
     expect(resumed.position).toBeNull();
@@ -393,136 +394,12 @@ describe("runtime gates and shortcuts", () => {
     return { ...stateWithParty(), phase: "dungeon", position: { roomId, facing: "east" }, ...extra };
   }
 
-  it("locks the ash vault until the party carries the ashen key", () => {
-    const noKey = executeCommand(dungeonAt("room.b7f.002"), defaultWorld, { type: "move_forward" });
-    expect(noKey.position?.roomId).toBe("room.b7f.002");
-    expect(noKey.log.at(-1)?.tags).toContain("locked");
-
-    const withKey = executeCommand(
-      dungeonAt("room.b7f.002", {
-        inventory: [{ id: "item.ashen-key", name: "Ashen Key", kind: "key", quantity: 1 }]
-      }),
-      defaultWorld,
-      { type: "move_forward" }
-    );
-    expect(withKey.position?.roomId).toBe("room.b7f.003");
-  });
-
-  it("grants the shortcut flag and logs it when the party reaches the lifted bar", () => {
-    const atNiche = dungeonAt("room.b5f.002");
-    const facingBar = { ...atNiche, position: { ...atNiche.position!, facing: "south" as const } };
-    const atBar = executeCommand(facingBar, defaultWorld, { type: "move_forward" });
-    expect(atBar.position?.roomId).toBe("room.b5f.003");
-    expect(atBar.discoveredSecrets).toContain("flag.b5f.mid-shortcut");
-    expect(atBar.log.some((entry) => entry.tags.includes("shortcut"))).toBe(true);
-  });
-
-  it("gathers a resource once from the dry cistern", () => {
-    const at = dungeonAt("room.b3f.001");
-    const before = at.inventory.find((entry) => entry.id === "item.healing-draught")?.quantity ?? 0;
-
-    const gathered = executeCommand(at, defaultWorld, { type: "search" });
-    expect(gathered.inventory.find((entry) => entry.id === "item.healing-draught")?.quantity).toBe(before + 1);
-    expect(gathered.log.some((entry) => entry.tags.includes("item"))).toBe(true);
-
-    const again = executeCommand(gathered, defaultWorld, { type: "search" });
-    expect(again.inventory.find((entry) => entry.id === "item.healing-draught")?.quantity).toBe(before + 1);
-  });
-
-  it("bleeds the party on the hooked-corridor damage floor", () => {
-    // The Hooked Corridor sits two cells south of the landing in the maze; step in.
-    const before = dungeonAt("room.b2f.c1_2", { position: { roomId: "room.b2f.c1_2", facing: "south" } });
-    const stepped = executeCommand(before, defaultWorld, { type: "move_forward" });
-    expect(stepped.position?.roomId).toBe("room.b2f.002");
-    expect(stepped.log.some((entry) => entry.tags.includes("hazard"))).toBe(true);
-    expect(stepped.party[0].hp).toBeLessThan(before.party[0].hp);
-  });
-
-  it("teleports the party back when they step onto the one-way walk", () => {
-    // The One-Way Walk is now a trap niche off the maze; stepping in slopes you home.
-    const stepped = executeCommand(
-      dungeonAt("room.b4f.c16_11", { position: { roomId: "room.b4f.c16_11", facing: "west" } }),
-      defaultWorld,
-      { type: "move_forward" }
-    );
-    expect(stepped.position?.roomId).toBe("room.b4f.001");
-    expect(stepped.log.some((entry) => entry.tags.includes("teleport"))).toBe(true);
-  });
-
-  it("opens the B3F drop-shaft shortcut only after the winch is wound", () => {
-    // Entering the winch chamber grants the flag and logs the shortcut opening.
-    const atWinch = executeCommand(
-      dungeonAt("room.b3f.c4_5", { position: { roomId: "room.b3f.c4_5", facing: "east" } }),
-      defaultWorld,
-      { type: "move_forward" }
-    );
-    expect(atWinch.position?.roomId).toBe("room.b3f.winch");
-    expect(atWinch.discoveredSecrets).toContain("flag.b3f.winch");
-    expect(atWinch.log.some((entry) => entry.tags.includes("shortcut"))).toBe(true);
-
-    // Without the flag, the Chain Descent's shaft cage will not hold.
-    const blocked = executeCommand(
-      dungeonAt("room.b3f.003", { position: { roomId: "room.b3f.003", facing: "south" } }),
-      defaultWorld,
-      { type: "move_forward" }
-    );
-    expect(blocked.position?.roomId).toBe("room.b3f.003");
-    expect(blocked.log.at(-1)?.tags).toContain("locked");
-
-    // With the winch wound, the shortcut rides straight back to the entry.
-    const rode = executeCommand(
-      dungeonAt("room.b3f.003", {
-        position: { roomId: "room.b3f.003", facing: "south" },
-        discoveredSecrets: ["flag.b3f.winch"]
-      }),
-      defaultWorld,
-      { type: "move_forward" }
-    );
-    expect(rode.position?.roomId).toBe("room.b3f.001");
-  });
-
-  it("hides the ash-vault cache behind a secret wall until the party searches", () => {
-    const facingSecret = dungeonAt("room.b7f.c11_6", { position: { roomId: "room.b7f.c11_6", facing: "south" } });
-
-    const blocked = executeCommand(facingSecret, defaultWorld, { type: "move_forward" });
-    expect(blocked.position?.roomId).toBe("room.b7f.c11_6");
-    expect(blocked.log.at(-1)?.tags).toContain("blocked");
-
-    const searched = searchUntilFound(facingSecret, "secret:room.b7f.c11_6:south", "room.b7f.c11_6", "south");
-    expect(searched.discoveredSecrets).toContain("secret:room.b7f.c11_6:south");
-    expect(searched.log.some((entry) => entry.tags.includes("secret"))).toBe(true);
-
-    const revealed = executeCommand(
-      { ...searched, position: { roomId: "room.b7f.c11_6", facing: "south" } },
-      defaultWorld,
-      { type: "move_forward" }
-    );
-    expect(revealed.position?.roomId).toBe("room.b7f.004");
-  });
-
-  it("spins the party's facing when they reach the lanterns spinner floor", () => {
-    const spin = ["north", "east", "south", "west"] as const;
-    const spun = executeCommand(dungeonAt("room.b3f.003"), defaultWorld, { type: "use_stairs" });
-    expect(spun.position?.roomId).toBe("room.b4f.001");
-    expect(spun.position?.facing).toBe(spin[spun.turn % 4]);
-    expect(spun.map.currentFacing).toBe(spun.position?.facing);
-    expect(spun.log.some((entry) => entry.tags.includes("spinner"))).toBe(true);
-  });
-
-  it("bars a gated descent stair until the branch crank flag is set", () => {
-    const atStair = dungeonAt("room.b2f.003", { position: { roomId: "room.b2f.003", facing: "east" } });
-    const blocked = executeCommand(atStair, defaultWorld, { type: "use_stairs" });
-    expect(blocked.position?.roomId).toBe("room.b2f.003");
-    expect(blocked.log.at(-1)?.tags).toContain("locked");
-
-    const unlocked = dungeonAt("room.b2f.003", {
-      position: { roomId: "room.b2f.003", facing: "east" },
-      discoveredSecrets: ["flag.b2f.descent"]
-    });
-    const descended = executeCommand(unlocked, defaultWorld, { type: "use_stairs" });
-    expect(descended.position?.roomId).toBe("room.b3f.001");
-    expect(descended.map.floorId).toBe("dungeon.b3f");
-  });
+  // T29: the B2F–B8F bespoke runtime gimmicks (ash-vault key lock, b5f lifted-bar, dry-cistern gather, b2f
+  // hooked-corridor damage tile, b4f one-way teleport, b3f winch drop-shaft, b7f secret cache, b3f→b4f spinner,
+  // b2f gated-descent crank) were removed when those hand-authored floors were CLEAN-REGENERATED as door-choke
+  // mazes (decision (c): drop bespoke gimmicks, keep minibosses as keep-bosses). The surviving physical
+  // shortcut mechanic — a searchable `secret` wall — is exercised by the B1F reliquary test below (B1F is not
+  // regenerated) and, on the generated floors, by every floor's gate→lift hidden door (dungeonDesign gate).
 
   it("hides the B1F ashen reliquary behind a searchable secret wall", () => {
     // A dead-end corridor deep in the maze rings hollow to the east; searching it

@@ -130,7 +130,7 @@
             "map": {
               "floorId": "dungeon.b3f",
               "visitedRooms": [
-                "room.b3f.003"
+                "room.b3f.exit"
               ],
               "visitedCells": [],
               "knownExits": {},

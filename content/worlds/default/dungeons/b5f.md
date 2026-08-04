@@ -1,201 +1,239 @@
 ---
 id: dungeon.b5f
-# IMP-063 descent arc — mid band: the ash cools and dims as the party descends toward the stela's root.
-palette:
-  ceiling: "#3d382f"
-  ambient: "#251f1b"
-  fog: "#080705"
-  torch: "#ebc189"
-  ambientEnergy: 0.5
-name: B5F - Toll of Cinders
+name: B5F - The Cinder Gate
 level: 5
-role: midpoint_gate
-dangerTier: 4
+role: deep_route
 recommendedPartyLevel: 3
 tags:
-  - miniboss
-  - shortcut
   - block-2
-authorNotes: >-
-  Midpoint gate on the full 20x20 frame. Two toll halls of cinder-drift flank the
-  entry, each with a warren and a cache; the only way deeper is the Keeper's
-  Niche, a one-wide choke where the Cinder Keeper takes its toll. Beyond it the
-  Lifted Bar loops a return route back to the entry hall and drops to B6F, and a
-  walled vault hangs off it for the party that pays the price. Economy pressure by
-  design.
+  - shortcut
 startRoom: room.b5f.001
 map: |
   ###################
-  #E............#...#
-  #.#####.#.###.###.#
-  #.....#.#...#.....#
-  #.#.#.###.###.#.#.#
-  #.#..A..#....B..#.#
-  #.#.#.###.###.#####
-  #.#.....#.........#
-  #.#.#.#.....###.###
-  #.#.#.#..S....#...#
-  #.######...##.###.#
-  #.........#...#...#
-  ###.#.###.#.###.#.#
-  #...#.#..K....#.#T#
-  #####.###.###.#.###
-  #.........#V..#...#
-  #.#####.#.#####.#M#
-  #....P#.#.....#G#D#
+  #E..........#.....#
+  ###.#####.#.#.###.#
+  #...#.....#...#...#
+  #.#####.#######.#.#
+  #sS.#.B......C.##.#
+  ###.#..####.#...###
+  #....##......##...#
+  ###.###.#######.###
+  #.....D..A.##.F...#
+  ###.#...#..##..##.#
+  #...#.#..##...#...#
+  #####.#.####..#.#.#
+  #.....#.#.M...#.#.#
+  #.##..###...#.###.#
+  #...#....##.#.#...#
+  #.#.###.###.#.#.#.#
+  #1#..X#.#2..#.#...#
   ###################
 symbols:
+  1: room.b5f.nook1
+  2: room.b5f.nook2
   E: room.b5f.001
-  M: room.b5f.002
-  D: room.b5f.003
-  A: room.b5f.004
-  B: room.b5f.005
-  P: room.b5f.006
-  S: room.b5f.007
-  K: room.b5f.008
-  G: room.b5f.009
-  V: room.b5f.010
-  T: room.b5f.011
+  X: room.b5f.exit
+  M: room.b5f.keep
+  A: room.b5f.02
+  B: room.b5f.03
+  C: room.b5f.04
+  D: room.b5f.05
+  F: room.b5f.06
+  s: room.b5f.gate
+  S: room.b5f.lift
 corridor:
-  name: Toll Gallery
-  description: A gallery of gray cinder-drift, finger bones ground into the grit underfoot.
+  name: Ashen Gallery
+  description: An ash-choked passage; cold light seeps down from cracks far above.
   locales:
     ja:
-      name: 灰税の回廊
-      description: 灰色の燃え殻が吹き溜まる回廊。指骨が砂利に混じって踏み砕かれている。
+      name: 灰の回廊
+      description: 灰の詰まる通路。はるか頭上の裂け目から、冷たい光が差し込む。
 edges:
   - from: room.b5f.001
     direction: west
     kind: stairs
-    to: room.b4f.003
+    to: room.b4f.exit
     targetFloorId: dungeon.b4f
-  - from: room.b5f.003
-    direction: west
-    kind: shortcut
-    to: room.b5f.001
-  - from: room.b5f.003
-    direction: east
+  - from: room.b5f.exit
+    direction: north
     kind: stairs
     to: room.b6f.001
     targetFloorId: dungeon.b6f
-  - from: room.b5f.c17_12
-    direction: south
+  - from: room.b5f.gate
+    direction: east
     kind: secret
-    to: room.b5f.011
+    to: room.b5f.lift
+  - from: room.b5f.02
+    direction: west
+    kind: door
+  - from: room.b5f.03
+    direction: east
+    kind: door
+  - from: room.b5f.c14_6
+    direction: east
+    kind: door
+  - from: room.b5f.04
+    direction: west
+    kind: door
+  - from: room.b5f.c5_10
+    direction: south
+    kind: door
+  - from: room.b5f.c5_9
+    direction: west
+    kind: door
+  - from: room.b5f.c6_10
+    direction: east
+    kind: door
+  - from: room.b5f.05
+    direction: east
+    kind: door
+  - from: room.b5f.c13_10
+    direction: south
+    kind: door
+  - from: room.b5f.06
+    direction: east
+    kind: door
+  - from: room.b5f.c10_14
+    direction: east
+    kind: door
+  - from: room.b5f.keep
+    direction: east
+    kind: door
 rooms:
   - id: room.b5f.001
-    name: Cinder Toll Hall
-    description: A stone bowl sits on a pedestal, full of gray finger bones. Stairs climb west toward B4F; two toll halls open north and south.
+    name: Ash Landing
+    description: A landing of cracked ash-stone; a stair climbs back toward the floor above.
+    event: Cold ash-light pools on the landing; someone in the party marks the way down into The Cinder Gate.
     locales:
       ja:
-        name: 灰税の広間
-        description: 台座の石鉢には、灰色の指骨が満ちている。西の階段はB4Fへ上り、灰税の回廊が奥へ折れていく。
-  - id: room.b5f.004
-    name: North Toll Hall
-    description: The upper toll hall, cinder-drift banked in the corners where the tithe-takers wait.
-    locales:
-      ja:
-        name: 北の税の広間
-        description: 上の灰税の広間。隅に燃え殻が吹き溜まり、徴収する者がその奥に潜む。
+        name: 灰の踊り場
+        description: 灰石の踊り場。階段が上の階へと登っていく。
+  - id: room.b5f.02
+    name: Ash Chamber 1
+    description: A vaulted chamber where cold ash-light pools on the black stone.
+    chamberGuardian: true
     encounterTable: encounters.b5f.gate
     treasureTable: treasure.b5f.side
-  - id: room.b5f.005
-    name: North Toll Cache
-    description: A niche in the north hall where a coffer was left half-buried in ash.
     locales:
       ja:
-        name: 北の税の隠し
-        description: 北の広間の窪み。小箱が灰に半ば埋もれて残されている。
+        name: 灰の間 1
+        description: 冷たい灰光が黒石に淀む、天井の高い間。
+  - id: room.b5f.03
+    name: Ash Chamber 2
+    description: A vaulted chamber where cold ash-light pools on the black stone.
+    trap:
+      id: trap.b5f.chamber2
+      name: A pressure-plate snare
+      damage: 8
+      detectDc: 16
+      warning: The floorstones here sit a hair proud, sprung to bite.
+    chamberGuardian: true
+    encounterTable: encounters.b5f.gate
     treasureTable: treasure.b5f.side
-  - id: room.b5f.006
-    name: Ash-Dust Niche
-    description: A dead-end niche off the north hall, a satchel abandoned in the drift.
     locales:
       ja:
-        name: 灰塵の小間
-        description: 北の広間から外れた行き止まりの小間。吹き溜まりに鞄が捨て置かれている。
-    treasureTable: treasure.b1f.nook
-  - id: room.b5f.002
-    name: The Keeper's Niche
-    description: A narrow statue blocks half the passage and watches the other half. The only way deeper passes under its gaze.
+        name: 灰の間 2
+        description: 冷たい灰光が黒石に淀む、天井の高い間。
+  - id: room.b5f.04
+    name: Ash Chamber 3
+    description: A vaulted chamber where cold ash-light pools on the black stone.
+    chamberGuardian: true
+    encounterTable: encounters.b5f.gate
+    treasureTable: treasure.b5f.side
     locales:
       ja:
-        name: 番人の龕
-        description: 細い像が通路の半分を塞ぎ、残り半分を見張っている。奥へ続く道は、その視線の下を抜けるほかない。
+        name: 灰の間 3
+        description: 冷たい灰光が黒石に淀む、天井の高い間。
+  - id: room.b5f.05
+    name: Ash Chamber 4
+    description: A vaulted chamber where cold ash-light pools on the black stone.
+    trap:
+      id: trap.b5f.chamber4
+      name: A pressure-plate snare
+      damage: 8
+      detectDc: 16
+      warning: The floorstones here sit a hair proud, sprung to bite.
+    chamberGuardian: true
+    encounterTable: encounters.b5f.gate
+    treasureTable: treasure.b5f.side
+    locales:
+      ja:
+        name: 灰の間 4
+        description: 冷たい灰光が黒石に淀む、天井の高い間。
+  - id: room.b5f.06
+    name: Ash Chamber 5
+    description: A vaulted chamber where cold ash-light pools on the black stone.
+    chamberGuardian: true
+    encounterTable: encounters.b5f.gate
+    treasureTable: treasure.b5f.side
+    locales:
+      ja:
+        name: 灰の間 5
+        description: 冷たい灰光が黒石に淀む、天井の高い間。
+  - id: room.b5f.keep
+    name: Cinder Keeper
+    description: A close, ash-walled keep; the only way deeper passes through it.
     encounter:
       id: enemy.b5f.cinder-keeper
       name: Cinder Keeper
-      hp: 14
-      attack: 4
+      hp: 22
+      attack: 5
       role: miniboss
-      dangerTier: 4
       isBoss: true
-      tags:
-        - midpoint
-    treasureTable: treasure.b5f.keeper
-  - id: room.b5f.003
-    name: Lifted Bar
-    description: A heavy bar can be lifted to make a shorter return route. Beyond it a walled vault stands sealed, and a chain falls to B6F.
+    chest:
+      treasureTable: treasure.b5f.keeper
+      trap:
+        kind: snare
+        difficulty: 18
+        damage: 9
     locales:
       ja:
-        name: 上がる横木
-        description: 重い横木を上げれば、帰り道は短くなる。その先に壁で囲まれた宝庫が待ち、B6Fへ鎖が落ちている。
-    gates:
-      - id: gate.b5f.mid-shortcut
-        direction: west
-        kind: shortcut
-        grantsFlag: flag.b5f.mid-shortcut
-        clue: The bar opens toward the upper dust.
-        locales:
-          ja:
-            clue: 横木は上層の塵へ向かって開く。
-  - id: room.b5f.010
-    name: Toll Vault
-    description: A walled vault beyond the lifted bar, its shelf stacked with what the Keeper's toll bought back.
+        name: 燠火の守り手
+        description: 灰の壁に囲まれた狭い番所。奥へはここを抜けるほかない。
+  - id: room.b5f.exit
+    name: Ash Descent
+    description: A shaft drops toward the next depth; a chain of iron falls away below.
     locales:
       ja:
-        name: 税の宝庫
-        description: 上がる横木の先の壁で囲まれた宝庫。棚には、番人の税が贖い戻したものが積まれている。
+        name: 灰の下り
+        description: 竪坑が次の深みへ落ちる。鉄の鎖が下へ垂れている。
+  - id: room.b5f.gate
+    name: Suspect Wall
+    description: A stretch of ash-wall rings hollow — search here to reveal a hidden way down.
+    locales:
+      ja:
+        name: 怪しい壁
+        description: 灰の壁の一角が虚ろに響く。ここを調べれば、下りへの隠しみちが現れるかもしれない。
+  - id: room.b5f.lift
+    name: Hidden Passage
+    description: A cramped passage behind the false wall, letting out close to the descent.
+    locales:
+      ja:
+        name: 隠しみち
+        description: 偽りの壁の奥の狭い抜け道。下りのすぐ近くへ通じている。
+  - id: room.b5f.nook1
+    name: Ash Niche 1
+    description: A dead-end niche where something was left in the drift.
+    chest:
+      treasureTable: treasure.b5f.side
+      trap:
+        kind: snare
+        difficulty: 16
+        damage: 8
+    locales:
+      ja:
+        name: 灰の窪み 1
+        description: 吹き溜まりに何かが残された行き止まりの窪み。
+  - id: room.b5f.nook2
+    name: Ash Niche 2
+    description: A dead-end niche where something was left in the drift.
     treasureTable: treasure.b5f.side
-  - id: room.b5f.007
-    name: South Toll Hall
-    description: The lower toll hall, where the drift is deepest and something patient stirs it.
     locales:
       ja:
-        name: 南の税の広間
-        description: 下の灰税の広間。吹き溜まりが最も深く、辛抱強い何かがそれをかき乱している。
-    encounterTable: encounters.b5f.gate
-    treasureTable: treasure.b5f.side
-  - id: room.b5f.008
-    name: South Toll Cache
-    description: A low shelf in the south hall where a pouch was pressed into the cinder wall.
-    locales:
-      ja:
-        name: 南の税の隠し
-        description: 南の広間の低い棚。燃え殻の壁に小袋が押し込まれている。
-    treasureTable: treasure.b5f.side
-  - id: room.b5f.009
-    name: Cinder Niche
-    description: A dead-end pocket off the south hall, a bundle half-sunk in gray ash.
-    locales:
-      ja:
-        name: 燃え殻の小間
-        description: 南の広間から外れた行き止まりの窪み。灰色の灰に包みが半ば沈んでいる。
-    treasureTable: treasure.b1f.nook
-  - id: room.b5f.011
-    name: Toll Cache
-    description: A slot of dead air hides behind the north toll hall's east wall, its seam banked over with cold cinders — a cloth-bound cache rests within, richer than the open niches.
-    locales:
-      ja:
-        name: 通行料の隠し宝処
-        description: 北の関門の東壁の裏に、淀んだ空気の隙間が隠れている。継ぎ目は冷えた燃え殻に埋もれ、布に包まれた蓄えが中に置かれ、開けた小間よりも実り多い。
-    treasureTable: treasure.b5f.secret
+        name: 灰の窪み 2
+        description: 吹き溜まりに何かが残された行き止まりの窪み。
 ---
 
-# B5F - Toll of Cinders
+# B5F - The Cinder Gate
 
-The scenario's midpoint commitment on the full 20x20 frame. Two toll halls of
-cinder-drift flank the entry, each with a warren and a cache; the only way deeper
-is the Keeper's Niche, a one-wide choke where the Cinder Keeper takes its toll.
-Beyond it the Lifted Bar throws a long shortcut up to B2F and drops to B6F, and a
-walled vault rewards the party that paid the price.
+An ashen descent floor. Generated skeleton (V1); encounters/treasure tables in V2/V3.

@@ -53,8 +53,8 @@ func _initialize() -> void:
 	# cell and the view rebuilds for B2F (before the fix a B2F debug jump kept showing B1F walls).
 	d.set("_state", {
 		"phase": "dungeon",
-		"position": {"cellId": "cell.b2f.c1_2", "roomId": "room.b2f.c1_2", "facing": "south"},
-		"map": {"floorId": "dungeon.b2f", "currentCellId": "cell.b2f.c1_2", "visitedCells": ["cell.b2f.c1_2"]}
+		"position": {"cellId": "cell.b2f.c1_1", "roomId": "room.b2f.001", "facing": "south"},
+		"map": {"floorId": "dungeon.b2f", "currentCellId": "cell.b2f.c1_1", "visitedCells": ["cell.b2f.c1_1"]}
 	})
 	d.call("_update_view", false)
 	_check(String(d.get("_rendered_floor")) == "dungeon.b2f", "the 3D geometry follows the party to B2F (#29)")

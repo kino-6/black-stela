@@ -1,180 +1,199 @@
 ---
 id: dungeon.b8f
-name: B8F - Gate of Ash
+name: B8F - The Last Gate
 level: 8
 role: deep_route
-dangerTier: 5
-# IMP-063 descent arc — the deepest floor, at the black stela's root. Darkest, with the stela's cold
-# violet corruption creeping into the ash. Merges over the world palette (only these keys shift).
-palette:
-  ceiling: "#322c39"
-  ambient: "#221c28"
-  fog: "#08060c"
-  torch: "#d9b6b2"
-  ambientEnergy: 0.46
-  fogDensity: 0.13
-recommendedPartyLevel: 4
+recommendedPartyLevel: 9
 tags:
   - block-3
-authorNotes: >-
-  Finale floor on the full 20x20 frame. Two ash-gate halls converge on the
-  approach, thick with votary-kin and the last caches before the end. The buried
-  Black Stela Root is the one-wide choke — the Ash Votary must fall before the
-  party can pass. Beyond it the Return Scar antechamber holds a final cache and
-  the town stair that carries the first proof home.
+  - shortcut
 startRoom: room.b8f.001
 map: |
   ###################
-  #E#...#.......#...#
-  #.#.###.#.#####.###
-  #.......#.........#
-  #.#.#.#.###.#.###.#
-  #.#..A....#..B..#.#
-  #.###.#.#.###.###.#
-  #..P#...#.#.......#
-  #.######....#####.#
-  #........K......#.#
-  ###.#.##...##.#.#.#
-  #...#.....#...#.#.#
-  #.###.#.#.#.#.#.#.#
-  #.#...#..S..#.#.#T#
-  #.#######.#####.###
-  #.......#.#DM....V#
-  #.###.###.#########
-  #...#..G#.........#
+  #E#.....#.#.......#
+  #.#.#####.#.###.#.#
+  #...........#...#.#
+  #.#####.###########
+  #.#...A......B....#
+  #.###..##.###...###
+  #.#..##.....#.#...#
+  #.#.#.#.###.#.#####
+  #.#.....#..#......#
+  #.#.#.#.#M.######.#
+  #.#...#...#.......#
+  #########.#.#.#####
+  #........C.##.....#
+  #.####..#..##.###.#
+  #.......#.#.....#.#
+  #.#######.#S###.#.#
+  #..2#......s#X..#1#
   ###################
 symbols:
+  1: room.b8f.nook1
+  2: room.b8f.nook2
   E: room.b8f.001
-  M: room.b8f.exit
-  D: room.b8f.003
-  A: room.b8f.004
-  B: room.b8f.005
-  P: room.b8f.006
-  S: room.b8f.007
-  K: room.b8f.008
-  G: room.b8f.009
-  V: room.b8f.010
-  T: room.b8f.011
+  X: room.b8f.exit
+  M: room.b8f.keep
+  A: room.b8f.02
+  B: room.b8f.03
+  C: room.b8f.04
+  s: room.b8f.gate
+  S: room.b8f.lift
 corridor:
-  name: Gate Approach
-  description: A gallery that tastes of a candle just after it dies, ash hanging in the still air.
+  name: Ashen Gallery
+  description: An ash-choked passage; cold light seeps down from cracks far above.
   locales:
     ja:
-      name: 門への前庭
-      description: 蝋燭が消えた直後の味がする回廊。動かぬ空気に灰が漂う。
+      name: 灰の回廊
+      description: 灰の詰まる通路。はるか頭上の裂け目から、冷たい光が差し込む。
 edges:
   - from: room.b8f.001
     direction: west
     kind: stairs
-    to: room.b7f.001
+    to: room.b7f.exit
     targetFloorId: dungeon.b7f
-  # 10F (T31): B8 is no longer the finale — it descends to B9 (the ash-votary scenario boss). The old boss
-  # cell (M) becomes the down-stair; the ash-votary moved to B9.
   - from: room.b8f.exit
-    direction: south
+    direction: west
     kind: stairs
     to: room.b9f.001
     targetFloorId: dungeon.b9f
-  - from: room.b8f.c17_12
-    direction: south
+  - from: room.b8f.gate
+    direction: north
     kind: secret
-    to: room.b8f.011
+    to: room.b8f.lift
+  - from: room.b8f.c5_5
+    direction: west
+    kind: door
+  - from: room.b8f.02
+    direction: east
+    kind: door
+  - from: room.b8f.c14_6
+    direction: east
+    kind: door
+  - from: room.b8f.c14_5
+    direction: east
+    kind: door
+  - from: room.b8f.c13_6
+    direction: south
+    kind: door
+  - from: room.b8f.03
+    direction: west
+    kind: door
+  - from: room.b8f.c9_14
+    direction: south
+    kind: door
+  - from: room.b8f.04
+    direction: west
+    kind: door
+  - from: room.b8f.04
+    direction: north
+    kind: door
+  - from: room.b8f.keep
+    direction: south
+    kind: door
 rooms:
   - id: room.b8f.001
-    name: Ash Gate Approach
-    description: The air tastes like a candle just after it dies. Stairs climb west to B7F; two gate halls converge ahead.
+    name: Ash Landing
+    description: A landing of cracked ash-stone; a stair climbs back toward the floor above.
+    event: Cold ash-light pools on the landing; someone in the party marks the way down into The Last Gate.
     locales:
       ja:
-        name: 灰門の前庭
-        description: 空気は、蝋燭が消えた直後の味がする。西の階段はB7Fへ上り、二つの門の広間が先で交わる。
-  - id: room.b8f.004
-    name: North Gate Hall
-    description: The upper gate hall, where votary-kin drift through the hanging ash toward the buried root.
-    locales:
-      ja:
-        name: 北の門の広間
-        description: 上の門の広間。祭祀の眷属が、漂う灰の中を埋もれた根へと流れてゆく。
+        name: 灰の踊り場
+        description: 灰石の踊り場。階段が上の階へと登っていく。
+  - id: room.b8f.02
+    name: Ash Chamber 1
+    description: A vaulted chamber where cold ash-light pools on the black stone.
+    chamberGuardian: true
     encounterTable: encounters.b8f.gate
     treasureTable: treasure.b8f.side
-  - id: room.b8f.005
-    name: North Gate Cache
-    description: A niche in the north hall where a bundle was left against the coming end.
     locales:
       ja:
-        name: 北の門の隠し
-        description: 北の広間の窪み。来たる終わりに備え、包みが残されている。
+        name: 灰の間 1
+        description: 冷たい灰光が黒石に淀む、天井の高い間。
+  - id: room.b8f.03
+    name: Ash Chamber 2
+    description: A vaulted chamber where cold ash-light pools on the black stone.
+    trap:
+      id: trap.b8f.chamber2
+      name: A pressure-plate snare
+      damage: 11
+      detectDc: 19
+      warning: The floorstones here sit a hair proud, sprung to bite.
+    chamberGuardian: true
+    encounterTable: encounters.b8f.gate
     treasureTable: treasure.b8f.side
-  - id: room.b8f.006
-    name: Candle-Cold Niche
-    description: A dead-end niche off the north hall, its air colder than the rest, a satchel forgotten in it.
     locales:
       ja:
-        name: 蝋の冷えた小間
-        description: 北の広間から外れた行き止まりの小間。他より冷えた空気に、鞄が忘れ置かれている。
-    treasureTable: treasure.b1f.nook
+        name: 灰の間 2
+        description: 冷たい灰光が黒石に淀む、天井の高い間。
+  - id: room.b8f.04
+    name: Ash Chamber 3
+    description: A vaulted chamber where cold ash-light pools on the black stone.
+    chamberGuardian: true
+    encounterTable: encounters.b8f.gate
+    treasureTable: treasure.b8f.side
+    locales:
+      ja:
+        name: 灰の間 3
+        description: 冷たい灰光が黒石に淀む、天井の高い間。
+  - id: room.b8f.keep
+    name: Deep Grove
+    description: A quiet grove deep in the gallery.
+    encounterTable: encounters.b8f.gate
+    chest:
+      treasureTable: treasure.b8f.final
+      trap:
+        kind: snare
+        difficulty: 21
+        damage: 12
+    locales:
+      ja:
+        name: 奥の木立
+        description: 回廊の奥の静かな木立。
   - id: room.b8f.exit
-    name: Root Descent
-    description: The buried root of the stela plunges on into the dark; a stair follows it down toward the votary's sanctum.
+    name: Ash Descent
+    description: A shaft drops toward the next depth; a chain of iron falls away below.
     locales:
       ja:
-        name: 根の下り
-        description: 埋もれた黒碑の根が、なお暗がりへと落ちていく。階段がそれを追って、奉者の聖域へと下る。
-  - id: room.b8f.003
-    name: Return Scar
-    description: A scar in the wall opens toward the town stair only after the ash quiets, past where the buried root fell.
+        name: 灰の下り
+        description: 竪坑が次の深みへ落ちる。鉄の鎖が下へ垂れている。
+  - id: room.b8f.gate
+    name: Suspect Wall
+    description: A stretch of ash-wall rings hollow — search here to reveal a hidden way down.
     locales:
       ja:
-        name: 帰還の傷跡
-        description: 壁の傷跡は、灰が静まった後でだけ街への階段へ開く。埋もれた根が斃れた、その先にある。
-    stairsToTown: true
-    event: The ash gate grows quiet. The party can carry the first proof home.
-  - id: room.b8f.010
-    name: Scar Antechamber
-    description: An alcove off the gate approach, its shelf holding what the last party to reach the gate left behind.
+        name: 怪しい壁
+        description: 灰の壁の一角が虚ろに響く。ここを調べれば、下りへの隠しみちが現れるかもしれない。
+  - id: room.b8f.lift
+    name: Hidden Passage
+    description: A cramped passage behind the false wall, letting out close to the descent.
     locales:
       ja:
-        name: 傷跡の前室
-        description: 門への前庭から外れた窪み。棚には、門へ辿り着いた最後の隊列が残したものが置かれている。
+        name: 隠しみち
+        description: 偽りの壁の奥の狭い抜け道。下りのすぐ近くへ通じている。
+  - id: room.b8f.nook1
+    name: Ash Niche 1
+    description: A dead-end niche where something was left in the drift.
+    chest:
+      treasureTable: treasure.b8f.side
+      trap:
+        kind: snare
+        difficulty: 19
+        damage: 11
+    locales:
+      ja:
+        name: 灰の窪み 1
+        description: 吹き溜まりに何かが残された行き止まりの窪み。
+  - id: room.b8f.nook2
+    name: Ash Niche 2
+    description: A dead-end niche where something was left in the drift.
     treasureTable: treasure.b8f.side
-  - id: room.b8f.007
-    name: South Gate Hall
-    description: The lower gate hall, where the ash lies deepest and the kin gather thickest.
     locales:
       ja:
-        name: 南の門の広間
-        description: 下の門の広間。灰が最も深く積もり、眷属が最も濃く集う。
-    encounterTable: encounters.b8f.gate
-    treasureTable: treasure.b8f.side
-  - id: room.b8f.008
-    name: South Gate Cache
-    description: A low shelf in the south hall where a pouch was pressed into the cold ash.
-    locales:
-      ja:
-        name: 南の門の隠し
-        description: 南の広間の低い棚。冷えた灰に小袋が押し込まれている。
-    treasureTable: treasure.b8f.side
-  - id: room.b8f.009
-    name: Gate-Ash Niche
-    description: A dead-end pocket off the south hall, a bundle half-sunk in gray ash.
-    locales:
-      ja:
-        name: 門灰の小間
-        description: 南の広間から外れた行き止まりの窪み。灰色の灰に包みが半ば沈んでいる。
-    treasureTable: treasure.b1f.nook
-  - id: room.b8f.011
-    name: Gate Cache
-    description: A slot of dead air hides behind an ash-grey seam off the gate approach — a cloth-bound cache rests within, richer than the open niches.
-    locales:
-      ja:
-        name: 門の隠し宝処
-        description: 門への前庭の脇、積もった灰で灰色に霞む継ぎ目の裏に淀んだ空気の隙間が隠れている。布に包まれた蓄えが中に置かれ、開けた小間よりも実り多い。
-    treasureTable: treasure.b8f.secret
+        name: 灰の窪み 2
+        description: 吹き溜まりに何かが残された行き止まりの窪み。
 ---
 
-# B8F - Gate of Ash
+# B8F - The Last Gate
 
-The finale on the full 20x20 frame. Two ash-gate halls converge on the approach,
-thick with votary-kin and the last caches before the end. The buried Black Stela
-Root is the one-wide choke — the Ash Votary must fall before the party can pass.
-Beyond it the Return Scar antechamber holds a final cache and the town stair that
-carries the first proof home.
+An ashen descent floor. Generated skeleton (V1); encounters/treasure tables in V2/V3.

@@ -143,7 +143,7 @@ test("browser self-play completes the visible dungeon loop without headless shor
       // The descent is never locked on this shallow floor; thread the maze to the
       // Winding Stair and use it.
       expect(await descendB1fViaWarden(page)).toBe(true);
-      await expect(page.getByTestId("map-current")).toContainText("Landing of Split Dust");
+      await expect(page.getByTestId("map-current")).toContainText("Ash Landing");
       await capture("b2f-landing");
 
       await faceDirection(page, "west"); // the B2F landing's up-stair to B1F faces west

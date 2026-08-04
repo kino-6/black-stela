@@ -50,16 +50,11 @@ function shortcutEdges(world: ScenarioWorld, floorId: string): Array<{ from: str
 // 20×20 generated labyrinth. Every generated floor is held to them; the allowlist is where a
 // floor is a DELIBERATE exception (a small set-piece or a boss finale), documented per entry.
 const MAZE_EXEMPT = new Set<string>([
-  // Default rollout debt: only B1F was ever rebuilt to the full maze rules; B2F–B7F are the older
-  // hand-authored floors that still owe the shortcut / on-path-branch / honest-sweep work (documented
-  // rollout debt — shrink this list as they are redesigned). B8F is the boss finale (boss-exempt already).
-  "dungeon.b2f", "dungeon.b3f", "dungeon.b4f", "dungeon.b5f", "dungeon.b6f", "dungeon.b7f",
-  // T31: B8 is no longer the boss finale (the votary moved to B9), so it's now a plain hand-authored floor —
-  // it joins the maze-upgrade debt (T29) until it too is regenerated. B9/B10 ARE generated → held to the rules.
-  "dungeon.b8f",
-  // Verdant is generated (genVerdantFloors.mjs) and now meets the maze rules on EVERY floor — g2f's honest
-  // sweep debt (was 286, under the 300 floor) is cleared by a windier seed (50522 → sweep 342), so it is no
-  // longer exempt. Keep this list at default rollout debt only.
+  // T29: B2F–B8F were REGENERATED (scripts/genDefaultFloors.mjs) to the full maze rules + door-choke 玄室, so
+  // they are no longer exempt. B1F is its own 棒倒し maze (genFloorMaze.mjs) and already meets the rules; B9/B10
+  // are generated too. The b10 finale carries the `boss` tag → boss-exempt via the isMaze guard below.
+  // Verdant is generated and meets the maze rules on every floor. This allowlist is now empty — every floor is
+  // held to the rules (a boss-tagged finale is exempted structurally, not by id).
 ]);
 
 describe("dungeon design gate", () => {
@@ -70,9 +65,16 @@ describe("dungeon design gate", () => {
         const downStair = downStairRoom(world, floor.id);
         const isMaze = !MAZE_EXEMPT.has(floor.id) && !(floor.tags ?? []).includes("boss");
 
-        // Wiz-style 玄室: a room whose entry is a guaranteed fight AND that holds treasure. The early Verdant
-        // floors owe a dense set of these (playtest); the gate stops them regressing below the agreed floor.
-        const chamberFloor = /dungeon\.verdant\.g[123]f/.test(floor.id) ? 6 : 0;
+        // Wiz-style 玄室: a room whose entry is a guaranteed fight AND that holds treasure. The early floors owe a
+        // dense set of these (playtest); the gate stops them regressing below the agreed floor. T29 holds the
+        // regenerated default descent to the same 玄室 density: Act I (b2/b3) dense, Act II/III (b4–b9) leaner.
+        const chamberFloor = /dungeon\.verdant\.g[123]f/.test(floor.id)
+          ? 6
+          : /dungeon\.b[23]f$/.test(floor.id)
+            ? 6
+            : /dungeon\.b[4-9]f$/.test(floor.id)
+              ? 3
+              : 0;
 
         describe(floor.id, () => {
           it("rule 1 — dense, meaningful space (not a thin corridor)", () => {

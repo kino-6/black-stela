@@ -3,7 +3,7 @@ id: dungeon.b9f
 name: B9F - Votary's Sanctum
 level: 9
 role: deep_route
-recommendedPartyLevel: 8
+recommendedPartyLevel: 10
 tags:
   - block-3
   - block-cap
@@ -83,6 +83,7 @@ rooms:
   - id: room.b9f.001
     name: Ash Landing
     description: A landing of cracked ash-stone; a stair climbs back toward the floor above.
+    event: Cold ash-light pools on the landing; someone in the party marks the way down into Votary's Sanctum.
     locales:
       ja:
         name: 灰の踊り場
@@ -100,14 +101,15 @@ rooms:
   - id: room.b9f.03
     name: Ash Chamber 2
     description: A vaulted chamber where cold ash-light pools on the black stone.
+    trap:
+      id: trap.b9f.chamber2
+      name: A pressure-plate snare
+      damage: 12
+      detectDc: 20
+      warning: The floorstones here sit a hair proud, sprung to bite.
     chamberGuardian: true
     encounterTable: encounters.b9f.chambers
-    chest:
-      treasureTable: treasure.b9f.side
-      trap:
-        kind: snare
-        difficulty: 20
-        damage: 12
+    treasureTable: treasure.b9f.side
     locales:
       ja:
         name: 灰の間 2
@@ -166,7 +168,12 @@ rooms:
   - id: room.b9f.nook1
     name: Ash Niche 1
     description: A dead-end niche where something was left in the drift.
-    treasureTable: treasure.b9f.side
+    chest:
+      treasureTable: treasure.b9f.side
+      trap:
+        kind: snare
+        difficulty: 20
+        damage: 12
     locales:
       ja:
         name: 灰の窪み 1

@@ -113,7 +113,8 @@ describe("§9.4d disarming can fail, and failing is not the same as springing", 
     const entered = executeCommand(state, defaultWorld, { type: "enter_dungeon" });
     const atTrap: GameState = {
       ...entered,
-      position: { roomId: "room.b3f.002", facing: "north" },
+      // T29: b3f's first trapped 玄室 (regenerated door-choke chamber with a room-level snare on its floor).
+      position: { roomId: "room.b3f.03", facing: "north" },
       map: { ...entered.map, floorId: "dungeon.b3f" }
     };
     const hpBefore = atTrap.party.map((member) => member.hp);

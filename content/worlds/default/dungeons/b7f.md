@@ -1,214 +1,190 @@
 ---
 id: dungeon.b7f
-# IMP-063 descent arc — deep band: the black stela's cold violet corruption begins to bleed into the ash.
-palette:
-  ceiling: "#38323c"
-  ambient: "#241e28"
-  fog: "#08070b"
-  torch: "#dfbab4"
-  ambientEnergy: 0.48
-  fogDensity: 0.12
-name: B7F - Side Ash Vaults
+name: B7F - The Sealed Vaults
 level: 7
-role: optional
-dangerTier: 5
-recommendedPartyLevel: 4
+role: deep_route
+recommendedPartyLevel: 7
 tags:
-  - optional
-  - rare-reward
   - block-3
-authorNotes: >-
-  Optional high-risk side floor on the full 20x20 frame. The fork is the through-
-  route — stairs climb west to the B6F rest and fall east to the finale — while a
-  broad hall of vault-husks opens north with warrens, caches, and niches for the
-  party that lingers. South of the fork lies the sealed ash vault: its east slab
-  is locked to the ashen key, and its hollow south wall hides a cache behind a
-  false face. Prepared parties get a reason to return.
+  - shortcut
 startRoom: room.b7f.001
 map: |
   ###################
-  #F#.......#.......#
-  #.#.#.#.#####.###.#
-  #...#.#........B#.#
-  #.###.#####.#.###.#
-  #.........#.......#
-  #.###.#.#.#.#.###.#
-  #.....#.#.#X#.VR#.#
-  #.#####....##.###.#
-  #....G#..A..#...#P#
-  #.######...####.###
-  #.............#...#
-  #######.#.#####.###
-  #........S........#
-  #.#.#####.###.###.#
-  #.#.........#..K#.#
-  #.#####.#####.###.#
-  #.....#.....#...#H#
+  #E..#...#.......#.#
+  ###.#.#####.###...#
+  #...........#.....#
+  ###.#.#.#.#########
+  #...#B.##...#.....#
+  #.#.#..##.#.#C.##.#
+  #....##.........#.#
+  #.#.#.#.###.###.###
+  #.#.#.#.#..##.....#
+  #.###.#.#A.#..#####
+  #...#....s#.......#
+  #.#..##.#S#.#######
+  #.#.....#.M.......#
+  ###.##..#..########
+  #........#........#
+  #.#.#.#######.###.#
+  #.#.#...#X.....2#1#
   ###################
-  ####################
 symbols:
-  F: room.b7f.001
-  V: room.b7f.002
-  R: room.b7f.003
-  X: room.b7f.004
-  A: room.b7f.005
-  B: room.b7f.006
-  S: room.b7f.007
-  K: room.b7f.008
-  G: room.b7f.009
-  P: room.b7f.010
-  H: room.b7f.011
+  1: room.b7f.nook1
+  2: room.b7f.nook2
+  E: room.b7f.001
+  X: room.b7f.exit
+  M: room.b7f.keep
+  A: room.b7f.02
+  B: room.b7f.03
+  C: room.b7f.04
+  s: room.b7f.gate
+  S: room.b7f.lift
 corridor:
-  name: Quiet Vault Gallery
-  description: A low gallery of sealed niches, the ash undisturbed but for the party's own tracks.
+  name: Ashen Gallery
+  description: An ash-choked passage; cold light seeps down from cracks far above.
   locales:
     ja:
-      name: 静かな納骨の回廊
-      description: 封じられた龕が並ぶ低い回廊。灰は、隊列自身の足跡のほかに乱れがない。
+      name: 灰の回廊
+      description: 灰の詰まる通路。はるか頭上の裂け目から、冷たい光が差し込む。
 edges:
   - from: room.b7f.001
     direction: west
     kind: stairs
-    to: room.b6f.003
+    to: room.b6f.exit
     targetFloorId: dungeon.b6f
-  - from: room.b7f.001
-    direction: east
+  - from: room.b7f.exit
+    direction: west
     kind: stairs
     to: room.b8f.001
     targetFloorId: dungeon.b8f
-  - from: room.b7f.002
+  - from: room.b7f.gate
+    direction: south
+    kind: secret
+    to: room.b7f.lift
+  - from: room.b7f.02
+    direction: south
+    kind: door
+  - from: room.b7f.03
+    direction: north
+    kind: door
+  - from: room.b7f.c14_5
     direction: east
-    kind: locked
-    to: room.b7f.003
-  - from: room.b7f.c11_6
+    kind: door
+  - from: room.b7f.c14_6
     direction: south
-    kind: secret
-    to: room.b7f.004
-  - from: room.b7f.c17_16
+    kind: door
+  - from: room.b7f.04
     direction: south
-    kind: secret
-    to: room.b7f.011
+    kind: door
+  - from: room.b7f.c10_14
+    direction: south
+    kind: door
+  - from: room.b7f.keep
+    direction: east
+    kind: door
 rooms:
   - id: room.b7f.001
-    name: Fork of Quiet Vaults
-    description: A lower passage climbs west to the salted arch and falls east toward the finale; the vault gallery winds off south, and a sealed ash vault sits somewhere in its aisles.
+    name: Ash Landing
+    description: A landing of cracked ash-stone; a stair climbs back toward the floor above.
+    event: Cold ash-light pools on the landing; someone in the party marks the way down into The Sealed Vaults.
     locales:
       ja:
-        name: 静かな納骨庫の分岐
-        description: 低い通路は西の塩の迫持へ上り、東は終幕へ落ちる。納骨の回廊は南へ折れ、その通路のどこかに封灰の納骨庫が控えている。
-    gates:
-      - id: gate.b7f.descent
-        direction: east
-        kind: lock
-        requiredFlag: flag.b7f.descent
-        clue: The fall east to the finale is pinned shut; the release is set deep in the vault gallery south.
-        locales:
-          ja:
-            clue: 終幕へ東に落ちる道は栓で封じられている。その外しは、南の納骨回廊の奥にある。
-  - id: room.b7f.005
-    name: Vault Gallery Hall
-    description: The heart of the quiet gallery, where a vault-husk drags itself between the sealed niches — and a release-pin for the eastern fall is bolted to the wall beyond it.
-    locales:
-      ja:
-        name: 納骨回廊の広間
-        description: 静かな回廊の中心。封じられた龕の間を納骨の殻が身を引きずって渡り、その奥の壁に、東の落とし戸の外し栓が留められている。
-    gates:
-      - id: gate.b7f.descent-release
-        kind: shortcut
-        grantsFlag: flag.b7f.descent
-        clue: The release-pin gives; far east, the fall to the finale opens.
-        locales:
-          ja:
-            clue: 外し栓が外れる。東の彼方で、終幕への落とし戸が開く。
+        name: 灰の踊り場
+        description: 灰石の踊り場。階段が上の階へと登っていく。
+  - id: room.b7f.02
+    name: Ash Chamber 1
+    description: A vaulted chamber where cold ash-light pools on the black stone.
+    chamberGuardian: true
     encounterTable: encounters.b7f.vaults
     treasureTable: treasure.b7f.side
-  - id: room.b7f.006
-    name: Niche Cache
-    description: A sealed niche in the gallery cracked open just enough to hold a bundle.
     locales:
       ja:
-        name: 龕の隠し
-        description: 回廊の封じ龕が、包みを収めるだけ僅かに割れている。
-    treasureTable: treasure.b7f.side
-  - id: room.b7f.007
-    name: Lower Gallery Hall
-    description: The gallery's south aisle, where the ash lies deep and another husk stirs it.
-    locales:
-      ja:
-        name: 下回廊の広間
-        description: 回廊の南の通路。灰が深く積もり、別の殻がそれをかき乱している。
+        name: 灰の間 1
+        description: 冷たい灰光が黒石に淀む、天井の高い間。
+  - id: room.b7f.03
+    name: Ash Chamber 2
+    description: A vaulted chamber where cold ash-light pools on the black stone.
+    trap:
+      id: trap.b7f.chamber2
+      name: A pressure-plate snare
+      damage: 10
+      detectDc: 18
+      warning: The floorstones here sit a hair proud, sprung to bite.
+    chamberGuardian: true
     encounterTable: encounters.b7f.vaults
     treasureTable: treasure.b7f.side
-  - id: room.b7f.008
-    name: Sealed Niche Cache
-    description: A low niche in the south aisle where a satchel was pressed into the cold ash.
     locales:
       ja:
-        name: 封じ龕の隠し
-        description: 南の通路の低い龕。冷えた灰に鞄が押し込まれている。
+        name: 灰の間 2
+        description: 冷たい灰光が黒石に淀む、天井の高い間。
+  - id: room.b7f.04
+    name: Ash Chamber 3
+    description: A vaulted chamber where cold ash-light pools on the black stone.
+    chamberGuardian: true
+    encounterTable: encounters.b7f.vaults
     treasureTable: treasure.b7f.side
-  - id: room.b7f.009
-    name: West Vault Niche
-    description: A dead-end niche off the gallery's west edge, a bundle left in a cracked slab.
     locales:
       ja:
-        name: 西の龕の小間
-        description: 回廊の西端から外れた行き止まりの小間。割れた石板に包みが残されている。
-    treasureTable: treasure.b1f.nook
-  - id: room.b7f.010
-    name: East Vault Niche
-    description: A dead-end pocket off the gallery's east edge, ash banked over a stitched satchel.
+        name: 灰の間 3
+        description: 冷たい灰光が黒石に淀む、天井の高い間。
+  - id: room.b7f.keep
+    name: Deep Grove
+    description: A quiet grove deep in the gallery.
+    encounterTable: encounters.b7f.vaults
+    chest:
+      treasureTable: treasure.b7f.rare
+      trap:
+        kind: snare
+        difficulty: 20
+        damage: 11
     locales:
       ja:
-        name: 東の龕の小間
-        description: 回廊の東端から外れた行き止まりの窪み。灰が縫い綴じの鞄を覆っている。
-    treasureTable: treasure.b1f.nook
-  - id: room.b7f.002
-    name: Sealed Ash Vault
-    description: A keyhole of black glass watches from the sealed slab beyond, where the reliquary is pinned shut against everything but cooled ash.
+        name: 奥の木立
+        description: 回廊の奥の静かな木立。
+  - id: room.b7f.exit
+    name: Ash Descent
+    description: A shaft drops toward the next depth; a chain of iron falls away below.
     locales:
       ja:
-        name: 封灰の納骨庫
-        description: この先の封じ石から、黒硝子の鍵穴がこちらを見ている。聖遺物室は、冷えた灰のほかすべてを拒んで封じられている。
-    gates:
-      - id: gate.b7f.ash-vault
-        direction: east
-        kind: lock
-        requiredKeyId: item.ashen-key
-        clue: The keyhole is not metal; it wants cooled ash.
-        locales:
-          ja:
-            clue: 鍵穴は金属ではない。冷えた灰を求めている。
-  - id: room.b7f.003
-    name: Optional Reliquary
-    description: Something valuable rests here because something dangerous chose not to leave.
+        name: 灰の下り
+        description: 竪坑が次の深みへ落ちる。鉄の鎖が下へ垂れている。
+  - id: room.b7f.gate
+    name: Suspect Wall
+    description: A stretch of ash-wall rings hollow — search here to reveal a hidden way down.
     locales:
       ja:
-        name: 任意の聖遺物室
-        description: 危険なものが去らなかったから、価値あるものもここに残った。
-    treasureTable: treasure.b7f.rare
-  - id: room.b7f.004
-    name: Hidden Cache
-    description: Behind the false wall, a dry alcove hides what someone meant to reclaim.
+        name: 怪しい壁
+        description: 灰の壁の一角が虚ろに響く。ここを調べれば、下りへの隠しみちが現れるかもしれない。
+  - id: room.b7f.lift
+    name: Hidden Passage
+    description: A cramped passage behind the false wall, letting out close to the descent.
     locales:
       ja:
-        name: 隠し物置
-        description: 偽りの壁の奥、乾いた窪みに、誰かが取り戻すはずだった物が隠されている。
-    treasureTable: treasure.b7f.cache
-  - id: room.b7f.011
-    name: Sealed Cache
-    description: A slot of dead air hides behind an ash-packed seam off the south aisle — a cloth-bound cache rests within, richer than the open niches.
+        name: 隠しみち
+        description: 偽りの壁の奥の狭い抜け道。下りのすぐ近くへ通じている。
+  - id: room.b7f.nook1
+    name: Ash Niche 1
+    description: A dead-end niche where something was left in the drift.
+    chest:
+      treasureTable: treasure.b7f.side
+      trap:
+        kind: snare
+        difficulty: 18
+        damage: 10
     locales:
       ja:
-        name: 封じ龕の隠し宝処
-        description: 南の通路の脇、冷えた灰で詰めた継ぎ目の裏に淀んだ空気の隙間が隠れている。布に包まれた蓄えが中に置かれ、開けた小間よりも実り多い。
-    treasureTable: treasure.b7f.secret
+        name: 灰の窪み 1
+        description: 吹き溜まりに何かが残された行き止まりの窪み。
+  - id: room.b7f.nook2
+    name: Ash Niche 2
+    description: A dead-end niche where something was left in the drift.
+    treasureTable: treasure.b7f.side
+    locales:
+      ja:
+        name: 灰の窪み 2
+        description: 吹き溜まりに何かが残された行き止まりの窪み。
 ---
 
-# B7F - Side Ash Vaults
+# B7F - The Sealed Vaults
 
-An optional high-risk side floor on the full 20x20 frame. The fork is the
-through-route — west to the B6F rest, east to the finale — while a broad hall of
-vault-husks opens north with warrens, caches, and niches. South of the fork the
-sealed ash vault keeps its ashen-key lock and the false south wall that hides a
-cache. Optional danger gives prepared parties a reason to return.
+An ashen descent floor. Generated skeleton (V1); encounters/treasure tables in V2/V3.

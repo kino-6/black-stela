@@ -37,8 +37,11 @@ describe("descent difficulty (prepare or wipe)", () => {
     expect(value.levelsSaved).toBeGreaterThanOrEqual(5);
     // 2026-08-04 (user "B" recalibration): the availability-aware sim no longer wears the b7f endgame reward on
     // floor 1, so a prepared party clears with REALISTIC gear at Lv5, not the over-geared sim's Lv4. Still near
-    // entry (the naive party needs Lv14) — the head start is intact (levelsSaved 9); the artifact understated it.
-    expect(value.preparedMinLevel).toBeLessThanOrEqual(5);
+    // entry (the naive party needs Lv14) — the head start is intact (levelsSaved 8); the artifact understated it.
+    // T29 (2026-08-04): the regenerated B2–B8 add door-choke 玄室 (guaranteed fights = more attrition AND XP), a
+    // DENSER descent that honestly costs ~1 clear level; prepared now clears at Lv6, still a huge head start over
+    // the naive Lv14 (levelsSaved 8). Loosened 5→6 for the real content change — NOT to paper over a regression.
+    expect(value.preparedMinLevel).toBeLessThanOrEqual(6);
   });
 
   it("still threatens a prepared party (not a cakewalk once you have the right tools)", () => {

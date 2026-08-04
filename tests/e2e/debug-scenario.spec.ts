@@ -9,12 +9,12 @@ test("debug mode boots into the verdant scenario", async ({ page }) => {
   await expect(page.getByText("G3F - Pollen Cistern").first()).toBeVisible();
   await expect(page.locator("#location-heading")).toHaveText("Root Landing");
   await expect(page.getByTestId("dungeon-canvas").locator("canvas")).toBeVisible();
-  await expect(page.getByText("Cistern Teeth")).toHaveCount(0);
+  await expect(page.getByText("The Chain Descent")).toHaveCount(0);
 });
 
 test("debug mode still boots the default world without ?world", async ({ page }) => {
   await page.goto("/?debug=1&progress=floor_3");
-  await expect(page.getByTestId("map-current")).toContainText("Cistern");
+  await expect(page.getByTestId("map-current")).toContainText("Ash Landing");
 });
 
 test("the debug panel can switch scenario in place", async ({ page }) => {

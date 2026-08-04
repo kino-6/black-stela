@@ -1,6 +1,6 @@
 # First Scenario Manual Playtest Notes
 
-Scope: `Black Stela - Gate of Ash`, B1F through B8F.
+Scope: `Black Stela - Gate of Ash`, B1F through B10F.
 
 Use these notes after `npm run headless:reachability`, unit tests, and the
 player-clear E2E pass. The notes are not a substitute for gates; they capture
@@ -19,13 +19,13 @@ human DRPG feel that automation can miss.
 | Floor | Manual check |
 | --- | --- |
 | B1F - Silent Approach | The first fight, map reveal, stair return, and town loop must be understandable without debug commands. |
-| B2F - Split Dust | The route to B3F must be player-visible, and the player must still be able to walk back toward the B1F return route. |
-| B3F - Cistern Teeth | Treasure and encounter pressure should make healing meaningful without forcing a reload. |
-| B4F - Turned Lanterns | Navigation twists must be readable from room prose, minimap state, and exits; avoid hidden-only solutions. |
-| B5F - Toll of Cinders | The midpoint gate and miniboss should make preparation matter, and the shortcut should be recognizable after discovery. |
-| B6F - Narrow Oaths | Trap and ambush pressure should reward party composition rather than punish unknown mechanics. |
-| B7F - Side Ash Vaults | Optional lock/reward content should feel skippable, not required for basic progression. |
-| B8F - Gate of Ash | Deep Act III trash before the boss; the descent to the votary's sanctum must read. |
+| B2F - The Branch Cisterns | The route to B3F must be player-visible, and the player must still be able to walk back toward the B1F return route; the door-choke 玄室 should read as rooms to clear, not corridors. |
+| B3F - The Chain Descent | Block-1 cap: the Cistern Warden keep-boss gates the descent, and the descent room is a return-to-town rest point. Chamber traps should make a trap/mapping role matter. |
+| B4F - The Dark Gallery | The winding maze must be readable from room prose, minimap state, and exits; the hidden-door shortcut is optional, never the only way down. |
+| B5F - The Cinder Gate | The Cinder Keeper keep-boss should make preparation matter; the guaranteed-fight 玄室 give a prepared party room to spend resources. |
+| B6F - The Oathvault | Block-2 cap: the Oath Warden keep-boss + rest point. Trap and ambush pressure should reward party composition, not punish unknown mechanics. |
+| B7F - The Sealed Vaults | Act III opener: deep trash 玄室 before the true layer; density should feel earned, not grindy. |
+| B8F - The Last Gate | Deep Act III trash; the descent to the votary's sanctum must read, and the finale approach should feel like it is escalating. |
 | B9F - Votary's Sanctum | The scenario-clear boss (ash-votary); clearing it should open the descent to the 真層. |
 | B10F - The Inmost Stela | The 完全クリア true boss; a commitment floor (no escape charm), still winnable prepared. |
 

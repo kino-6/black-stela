@@ -507,7 +507,7 @@ function growthItemsRoute(world: ScenarioWorld): { initial: GameState; commands:
 
 // An escape charm from inside the dungeon, and a resume at a rest point already reached.
 function escapeAndResumeRoute(world: ScenarioWorld): { initial: GameState; commands: Command[] } {
-  const seeded = withDebugStartCell(createDebugStateFromProgress(world, "floor_3"), world, "room.b3f.003", "east");
+  const seeded = withDebugStartCell(createDebugStateFromProgress(world, "floor_3"), world, "room.b3f.exit", "east");
   const initial: GameState = {
     ...seeded,
     inventory: [{ id: "item.return-charm", name: "Return Charm", kind: "escape", quantity: 1 }]
@@ -516,7 +516,7 @@ function escapeAndResumeRoute(world: ScenarioWorld): { initial: GameState; comma
     initial,
     commands: [
       { type: "use_item", itemId: "item.return-charm", targetCharacterId: seeded.party[0].id }, // home
-      { type: "resume_at_checkpoint", roomId: "room.b3f.003" }                                   // back
+      { type: "resume_at_checkpoint", roomId: "room.b3f.exit" }                                   // back
     ]
   };
 }
@@ -624,12 +624,10 @@ export const SLICE_ROUTES: TraceRoute[] = [
   { name: "growth-items", worldId: "default", build: growthItemsRoute },
   { name: "escape-resume", worldId: "default", build: escapeAndResumeRoute },
   { name: "camp-techniques", worldId: "default", build: campTechniquesRoute },
-  // M4 floor features: a one-shot room TRAP, a Wizardry SPINNER, a TELEPORTER (transit only, no
-  // encounter on arrival), and a gate that GRANTS a shortcut flag on entry.
+  // M4 floor features (B1F only). T29 removed the B2F–B8F bespoke floor-feature gimmicks (b2f damage tile,
+  // b4f spinner, b4f teleporter) when those floors were clean-regenerated — Verdant already bans warps, and
+  // the default descent now uses only physical hidden-door shortcuts (exercised by the verdant + b1f traces).
   { name: "b1f-trap", worldId: "default", build: cellFeatureRoute("ready", "room.b1f.c13_4", "south", [{ type: "move_backward" }, { type: "strafe_left" }]) },
-  { name: "b2f-hazard", worldId: "default", build: cellFeatureRoute("floor_2", "room.b2f.c1_2", "south", [{ type: "strafe_right" }]) },
-  { name: "b4f-spinner", worldId: "default", build: cellFeatureRoute("floor_4", "room.b4f.c2_1", "west", [{ type: "inspect_wall" }, { type: "move_forward" }]) },
-  { name: "b4f-teleport", worldId: "default", build: cellFeatureRoute("floor_4", "room.b4f.c16_11", "west", [{ type: "open_door" }]) },
   { name: "b1f-shortcut", worldId: "default", build: cellFeatureRoute("ready", "room.b1f.c9_12", "south", [{ type: "move_backward" }]) },
   // Descending, resting and coming home. use_stairs REPOPULATES the floor arrived on (floor-scoped
   // clear state resets); return_to_town only answers on a landing or rest point, and refuses elsewhere.
@@ -649,24 +647,16 @@ export const SLICE_ROUTES: TraceRoute[] = [
       commands: [{ type: "return_to_town" }] // a town-stair landing: the party goes home
     })
   },
-  // A searchable resource node yields its item ONCE, and a room trap can be disarmed before it bites.
-  {
-    name: "b3f-gather",
-    worldId: "default",
-    build: (world: ScenarioWorld) => ({
-      initial: withDebugStartCell(createDebugStateFromProgress(world, "floor_3"), world, "room.b3f.001", "north"),
-      commands: [{ type: "search" }, { type: "search" }]
-    })
-  },
-  // IMP-029 chests: walk onto a chamber's reward cell, investigate, disarm, open — one attempt each,
-  // and an undisarmed trap springs on open without destroying the reward.
+  // IMP-029 chests: walk into a dead-end niche holding a TRAPPED chest, investigate, disarm, open — one
+  // attempt each. T29: the regenerated floors put the standalone trapped chest in a reward niche (nook1),
+  // approached from its one open (west) neighbour cell; the 玄室 themselves now guard a room-floor snare.
   {
     name: "b2f-chest",
     worldId: "default",
     build: (world: ScenarioWorld) => ({
-      initial: withDebugStartCell(createDebugStateFromProgress(world, "floor_2"), world, "room.b2f.c1_2", "south"),
+      initial: withDebugStartCell(createDebugStateFromProgress(world, "floor_2"), world, "room.b2f.c16_17", "east"),
       commands: [
-        { type: "move_forward" },        // leaves a closed chest on the cell
+        { type: "move_forward" },        // steps into nook1 — leaves a closed chest on the cell
         { type: "investigate_chest" },
         { type: "investigate_chest" },   // spent — already_tried
         { type: "disarm_chest" },
@@ -679,7 +669,8 @@ export const SLICE_ROUTES: TraceRoute[] = [
     name: "b3f-disarm",
     worldId: "default",
     build: (world: ScenarioWorld) => ({
-      initial: withDebugStartCell(createDebugStateFromProgress(world, "floor_3"), world, "room.b3f.002", "north"),
+      // T29: b3f's first trapped 玄室 (a room-level floor snare on the chamber approach).
+      initial: withDebugStartCell(createDebugStateFromProgress(world, "floor_3"), world, "room.b3f.03", "north"),
       commands: [{ type: "search" }, { type: "disarm_trap" }, { type: "disarm_trap" }]
     })
   },
@@ -699,7 +690,7 @@ export const SLICE_ROUTES: TraceRoute[] = [
         };
         const base = { ...createInitialGameState(), party: [kai] };
         return {
-          initial: withDebugStartCell(base, world, "room.b3f.002", "north"),
+          initial: withDebugStartCell(base, world, "room.b3f.03", "north"),
           commands: [{ type: "search" }, { type: "disarm_trap" }] as Command[]
         };
       })

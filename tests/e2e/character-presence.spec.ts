@@ -56,7 +56,7 @@ test("the active combat actor owns a stable large-art lane", async ({ page }, te
 });
 
 test("a room event acknowledges one rule-selected adventurer without exposing AI controls", async ({ page }, testInfo) => {
-  await page.goto("/?debug=1&progress=floor_3&at=room.b3f.003&facing=north");
+  await page.goto("/?debug=1&progress=floor_3&at=room.b3f.001&facing=north");
   const presence = page.getByTestId("event-character-presence");
   await expect(presence).toBeVisible();
   await expect(presence).toHaveAttribute("data-character-id", /.+/);
