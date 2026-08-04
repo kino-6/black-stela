@@ -15,6 +15,7 @@ const CombatRound := preload("res://scripts/rules/combat_round.gd")
 const I18n := preload("res://scripts/i18n.gd")
 const UIKit := preload("res://scripts/town/ui_kit.gd")
 const CommandMenu := preload("res://scripts/combat/command_menu.gd")
+const Techniques := preload("res://scripts/rules/techniques.gd")
 const Encounter := preload("res://scripts/encounter.gd")
 const ConfigPanel := preload("res://scripts/config_panel.gd")
 const WorldResources := preload("res://scripts/world_resources.gd")
@@ -257,6 +258,7 @@ func _rebuild_command_menu() -> void:
 		"groups": _combat().get("enemyGroups", []),
 		"inventory": _state.get("inventory", []),
 		"engine": _engine,
+		"world": _world,
 		"choose": func(kind, payload): _on_menu_choice(kind, payload),
 		"back": func(): _menu_back(),
 		"target_group_id": _target_group_id(),
@@ -326,7 +328,7 @@ func _loadout_for(actor: Dictionary) -> Array:
 					learned.append(entry.get("spellId", ""))
 	# §9.5: filtered against the exported CATALOG, not a four-entry cost literal. That literal silently
 	# removed every technique §9.4 authored from the menu — a Knight had a full line and an empty 特技 list.
-	var catalog: Dictionary = _engine.get("techniques", {})
+	var catalog: Dictionary = Techniques._resolve_technique_catalog(_engine, _world)
 	var out := []
 	for id in learned:
 		if catalog.has(String(id)) and String((catalog[String(id)] as Dictionary).get("kind", "")) != "passive" and not ((catalog[String(id)] as Dictionary).get("tags", []) as Array).has("firearm"):
@@ -372,7 +374,7 @@ func _on_menu_choice(kind: String, payload: Dictionary) -> void:
 			# §9.5: derived from the technique's declared SCOPE, not from `id == "heal"`. That literal
 			# meant every ally-target technique except heal asked for an ENEMY and then healed nobody,
 			# and a self/party technique asked a question it never needed.
-			var targeting := CommandMenu.technique_targeting(spell_id, _engine)
+			var targeting := CommandMenu.technique_targeting(spell_id, _engine, _world)
 			if targeting == "none":
 				_commit(_pending)
 				return
@@ -383,7 +385,7 @@ func _on_menu_choice(kind: String, payload: Dictionary) -> void:
 			# §9.4c: an item may perform a technique, so it follows that technique's scope — a thrown
 			# flask asks for an enemy, a charm asks for nobody. Plain consumables stay ally-targeted.
 			var item_technique := _item_technique_id(item_id)
-			var item_targeting := CommandMenu.technique_targeting(item_technique, _engine) if item_technique != "" else "ally"
+			var item_targeting := CommandMenu.technique_targeting(item_technique, _engine, _world) if item_technique != "" else "ally"
 			if item_targeting == "none":
 				_commit(_pending)
 				return

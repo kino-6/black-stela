@@ -10,6 +10,7 @@ const CombatHelpers := preload("res://scripts/rules/combat_helpers.gd")
 const CharacterStats := preload("res://scripts/rules/character_stats.gd")
 const Leveling := preload("res://scripts/rules/leveling.gd")
 const CombatEffects := preload("res://scripts/rules/combat_effects.gd")
+const Techniques := preload("res://scripts/rules/techniques.gd")
 
 const CRIT_MULTIPLIER := 1.5
 const FEAR_ACCURACY_PENALTY := 20   # matches src/domain/status.ts (was 15 — a latent parity bug)
@@ -67,7 +68,7 @@ static func declare_round(state: Dictionary, world: Dictionary, actions: Array, 
 			var held: Variant = _find_by_item_id(inventory, item_id)
 			var item_technique: Variant = null
 			if typeof(held) == TYPE_DICTIONARY and typeof(held.get("useTechnique", null)) == TYPE_STRING:
-				item_technique = (engine.get("techniques", {}) as Dictionary).get(String(held["useTechnique"]), null)
+				item_technique = Techniques._resolve_technique_catalog(engine, world).get(String(held["useTechnique"]), null)
 			if typeof(item_technique) == TYPE_DICTIONARY:
 				inventory = _consume_item(inventory, item_id)
 				var item_result := _apply_technique(item_technique, actor, action, party, enemy_groups, effects, world, turn, rnd)
@@ -91,7 +92,7 @@ static func declare_round(state: Dictionary, world: Dictionary, actions: Array, 
 		# one; that is why §9.5 also adds traces that do.
 		if kind == "cast" and typeof(action.get("spellId", null)) == TYPE_STRING:
 			var spell_id := String(action["spellId"])
-			var technique: Variant = (engine.get("techniques", {}) as Dictionary).get(spell_id, null)
+			var technique: Variant = Techniques._resolve_technique_catalog(engine, world).get(spell_id, null)
 			if typeof(technique) != TYPE_DICTIONARY or not _combat_loadout(actor, world, engine).has(spell_id):
 				continue
 			# §9.4a parity: silence stops 呪文 ONLY. A 特技 is martial, not arcane, so a silenced
@@ -800,7 +801,7 @@ static func _sync_combat_enemy(combat: Dictionary) -> Dictionary:
 ## techniques until a player edits one) — and only ones the exported catalog actually defines.
 static func _combat_loadout(actor: Dictionary, world: Dictionary, engine: Dictionary) -> Array:
 	var state := _resolve_vocation_state(actor, engine)
-	var catalog: Dictionary = engine.get("techniques", {})
+	var catalog: Dictionary = Techniques._resolve_technique_catalog(engine, world)
 	var out := []
 	for technique in state.get("loadout", []):
 		if catalog.has(String(technique)) and String((catalog[String(technique)] as Dictionary).get("kind", "")) != "passive" and not ((catalog[String(technique)] as Dictionary).get("tags", []) as Array).has("firearm"):

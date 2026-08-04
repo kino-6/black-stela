@@ -12,8 +12,8 @@ static func use_technique(state: Dictionary, world: Dictionary, engine: Dictiona
 	if String(state.get("phase", "")) == "combat":
 		return {"state": state, "events": []}
 	var actor := RosterUtil.find_by_id(state.get("party", []), character_id)
-	var technique: Dictionary = (engine.get("techniques", {}) as Dictionary).get(technique_id, {})
-	if actor.is_empty() or technique.is_empty() or not Techniques.is_camp_usable(technique_id, engine):
+	var technique: Dictionary = Techniques._resolve_technique_catalog(engine, world).get(technique_id, {})
+	if actor.is_empty() or technique.is_empty() or not Techniques.is_camp_usable(technique_id, engine, world):
 		return {"state": state, "events": []}
 	if not (Vocations.resolve_vocation_state(actor, engine).get("learned", []) as Array).has(technique_id):
 		return {"state": state, "events": []}

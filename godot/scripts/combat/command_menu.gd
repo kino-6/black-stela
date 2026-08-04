@@ -12,18 +12,18 @@ const Techniques := preload("res://scripts/rules/techniques.gd")
 
 # §9.5 deleted five hardcoded technique tables that had drifted from the rules; §9.6's refactor pulled
 # the shared reads into Techniques (rules/techniques.gd) so a scene names a technique through one place.
-static func is_skill(id: String, engine: Dictionary) -> bool:
-	return Techniques.is_skill(id, engine)
+static func is_skill(id: String, engine: Dictionary, world: Dictionary = {}) -> bool:
+	return Techniques.is_skill(id, engine, world)
 
-static func technique_label(id: String, engine: Dictionary = {}) -> String:
-	return Techniques.label(id, engine)
+static func technique_label(id: String, engine: Dictionary = {}, world: Dictionary = {}) -> String:
+	return Techniques.label(id, engine, world)
 
-static func technique_cost(id: String, engine: Dictionary) -> int:
-	return Techniques.cost(id, engine)
+static func technique_cost(id: String, engine: Dictionary, world: Dictionary = {}) -> int:
+	return Techniques.cost(id, engine, world)
 
 ## A thin alias kept so combat.gd's call site is unchanged.
-static func technique_targeting(id: String, engine: Dictionary) -> String:
-	return Techniques.targeting(id, engine)
+static func technique_targeting(id: String, engine: Dictionary, world: Dictionary = {}) -> String:
+	return Techniques.targeting(id, engine, world)
 
 ## Build the menu for `actor` at `stage`.
 ## ctx = { actor, stage, loadout, party, groups, inventory, choose: Callable(kind, payload), back: Callable }
@@ -59,7 +59,7 @@ static func _command_stage(root: VBoxContainer, ctx: Dictionary, actor: Dictiona
 	var has_skill := false
 	var has_spell := false
 	for id in loadout:
-		if is_skill(String(id), ctx.get("engine", {})):
+		if is_skill(String(id), ctx.get("engine", {}), ctx.get("world", {})):
 			has_skill = true
 		else:
 			has_spell = true
@@ -84,11 +84,11 @@ static func _technique_stage(root: VBoxContainer, ctx: Dictionary, actor: Dictio
 	var first: Button = null
 	for id in ctx.get("loadout", []):
 		var technique := String(id)
-		if (stage == "skill") != is_skill(technique, ctx.get("engine", {})):
+		if (stage == "skill") != is_skill(technique, ctx.get("engine", {}), ctx.get("world", {})):
 			continue
-		var cost := technique_cost(String(technique), ctx.get("engine", {}))
+		var cost := technique_cost(String(technique), ctx.get("engine", {}), ctx.get("world", {}))
 		var affordable := int(actor.get("mp", 0)) >= cost
-		var b := UI.button("%s  (%s %d)" % [technique_label(String(technique), ctx.get("engine", {})), I18n.t("play.mpShort"), cost], func(): ctx["choose"].call("technique", {"spellId": technique}), Vector2(280, 40), 16)
+		var b := UI.button("%s  (%s %d)" % [technique_label(String(technique), ctx.get("engine", {}), ctx.get("world", {})), I18n.t("play.mpShort"), cost], func(): ctx["choose"].call("technique", {"spellId": technique}), Vector2(280, 40), 16)
 		b.disabled = not affordable
 		root.add_child(b)
 		if first == null and affordable:

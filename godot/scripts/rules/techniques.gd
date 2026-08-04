@@ -8,24 +8,53 @@ class_name Techniques
 
 const I18n := preload("res://scripts/i18n.gd")
 
-static func _def(id: String, engine: Dictionary) -> Dictionary:
-	var entry: Variant = (engine.get("techniques", {}) as Dictionary).get(id, null)
+## The techniques usable this run: the exported built-in catalog (engine.techniques) with the active
+## world's AUTHORED techniques (world.techniques) layered on top — authored wins on a shared id. Mirrors
+## src/domain/techniques.ts resolveTechniqueCatalog and the affix/vocation merges. A world that authors
+## nothing returns the built-in catalog unchanged, so parity replays are byte-identical.
+static func _resolve_technique_catalog(engine: Dictionary, world: Dictionary) -> Dictionary:
+	var base: Dictionary = engine.get("techniques", {})
+	var authored: Array = world.get("techniques", [])
+	if authored.is_empty():
+		return base
+	var merged: Dictionary = base.duplicate()
+	for technique in authored:
+		if typeof(technique) == TYPE_DICTIONARY:
+			merged[String((technique as Dictionary).get("id", ""))] = technique
+	return merged
+
+static func _def(id: String, engine: Dictionary, world: Dictionary = {}) -> Dictionary:
+	var entry: Variant = _resolve_technique_catalog(engine, world).get(id, null)
 	return entry if typeof(entry) == TYPE_DICTIONARY else {}
 
-## The player-visible name, localized. Falls back to the raw id — a bare id on screen means the label
-## map is missing, which is the failure this module centralizes so it can only happen in one place.
-static func label(id: String, engine: Dictionary) -> String:
+## The AUTHORED display name for id in the current locale, or "" if this world does not author one.
+static func _authored_name(id: String, world: Dictionary) -> String:
+	for technique in world.get("techniques", []):
+		if typeof(technique) == TYPE_DICTIONARY and String((technique as Dictionary).get("id", "")) == id:
+			var locales: Dictionary = (technique as Dictionary).get("locales", {})
+			var loc: Dictionary = locales.get(I18n.locale(), {})
+			return String(loc.get("name", ""))
+	return ""
+
+## The player-visible name, localized. An AUTHORED technique carries its own per-locale name (read
+## straight from the world pack, exactly as vocations do); a built-in falls through to the exported
+## label map, then the raw id — a bare id on screen means the label is missing, the failure this module
+## centralizes so it can only happen in one place.
+static func label(id: String, engine: Dictionary, world: Dictionary = {}) -> String:
+	var authored := _authored_name(id, world)
+	if authored != "":
+		return authored
 	var keys: Dictionary = engine.get("techniqueLabelKeys", {})
 	return I18n.t(String(keys[id])) if keys.has(id) else id
 
 ## MP cost (the only resource combat spends today).
-static func cost(id: String, engine: Dictionary) -> int:
-	return int((_def(id, engine).get("cost", {}) as Dictionary).get("mp", 0))
+static func cost(id: String, engine: Dictionary, world: Dictionary = {}) -> int:
+	return int((_def(id, engine, world).get("cost", {}) as Dictionary).get("mp", 0))
 
 ## Whether the technique restores HP — a pure-heal has nothing to give a full-HP ally, so the target
 ## picker disables full-HP recipients and lands the cursor on the most-wounded (T18).
-static func heals(id: String, engine: Dictionary) -> bool:
-	for effect in _def(id, engine).get("effects", []):
+static func heals(id: String, engine: Dictionary, world: Dictionary = {}) -> bool:
+	for effect in _def(id, engine, world).get("effects", []):
 		if String((effect as Dictionary).get("kind", "")) == "heal":
 			return true
 	return false
@@ -33,8 +62,8 @@ static func heals(id: String, engine: Dictionary) -> bool:
 ## A class-selection screen needs the player-facing consequence before the technique's proper noun.
 ## This derives a short explanation from the same exported effect data the combat resolver consumes;
 ## it intentionally does not introduce a second per-technique description table in the Godot UI.
-static func summary(id: String, engine: Dictionary) -> String:
-	var definition := _def(id, engine)
+static func summary(id: String, engine: Dictionary, world: Dictionary = {}) -> String:
+	var definition := _def(id, engine, world)
 	var target := String(definition.get("target", ""))
 	var phrases := []
 	for effect in definition.get("effects", []):
@@ -94,13 +123,13 @@ static func _status_label(status: String) -> String:
 	return I18n.t(String(keys.get(status, "party.techniqueSummary.statusFear")))
 
 ## 特技 (skill) vs 呪文 (spell), from the catalog's own `kind`.
-static func is_skill(id: String, engine: Dictionary) -> bool:
-	return String(_def(id, engine).get("kind", "")) == "skill"
+static func is_skill(id: String, engine: Dictionary, world: Dictionary = {}) -> bool:
+	return String(_def(id, engine, world).get("kind", "")) == "skill"
 
 ## What the PLAYER must choose before this technique can be queued — "none", "ally" or "group".
 ## self / party / allEnemies need no choice at all: the resolver derives the subjects from the scope.
-static func targeting(id: String, engine: Dictionary) -> String:
-	match String(_def(id, engine).get("target", "")):
+static func targeting(id: String, engine: Dictionary, world: Dictionary = {}) -> String:
+	match String(_def(id, engine, world).get("target", "")):
 		"ally":
 			return "ally"
 		"enemyGroup":
@@ -110,8 +139,8 @@ static func targeting(id: String, engine: Dictionary) -> String:
 
 ## The camp menu may only offer effects which have an out-of-combat state meaning. Combat-duration
 ## wards/buffs have no persistent store, so allowing them here would create Godot-only behavior.
-static func is_camp_usable(id: String, engine: Dictionary) -> bool:
-	var definition := _def(id, engine)
+static func is_camp_usable(id: String, engine: Dictionary, world: Dictionary = {}) -> bool:
+	var definition := _def(id, engine, world)
 	var scope := String(definition.get("target", ""))
 	if not (scope == "self" or scope == "ally" or scope == "party"):
 		return false
