@@ -24,7 +24,7 @@ and baked scene lighting.
 | F1/F2 chest state / reward | `dungeon/treasure-chest-closed.png`, `treasure-chest-open.png`, `treasure-reward-still.png` | PNG | generated / must show acquisition centrally |
 | F1 enemy catalog | `dungeon/enemy-tl1f-{drain-rat,baton-unit,breath-collector,unmanned-stationmaster}{,-hurt}.png` | 768² RGBA | generated / data bound |
 | F2 enemy catalog | `dungeon/enemy-tl2f-{cable-hound,rain-reclaimer}{,-hurt}.png` | 768² RGBA | generated / data bound |
-| `item.tl-*`, `equip.tl-*` | `icons/item-tl-*.png`, `icons/equip-tl-*.png` | 256² RGBA | generated / data bound (all 17 item IDs, all 32 equipment IDs) |
+| `item.tl-*`, `equip.tl-*` | `icons/item-tl-*.png`, `icons/equip-tl-*.png` | 256² RGBA | generated / data bound (all 17 item IDs, all 37 equipment IDs) |
 | town / entrance / combat | `ui/town-hub.jpg`, `dungeon-entrance.png`, `combat-vignette.jpg` | 1600×900 opaque still | generated / needs runtime review |
 
 ## Deliberate gaps
@@ -50,5 +50,9 @@ and baked scene lighting.
 - The F1–F10 equipment and supply ladders are canonical scenario data: every `equip.tl-*` and `item.tl-*` ID
   owns a generated 256² RGBA icon. The pack test resolves both catalogues dynamically, so a future entry cannot
   silently fall back to Default art. Small-menu readability is still a distinct player-facing review.
+- The `鉄雨74式自動小銃` / `改札9型短機関銃` / `水門12型散弾銃` / `隔離62式指定射撃銃` /
+  `ホーム88式軽機関銃` line is intentionally fictional. Its silhouettes establish a modern-surplus firearm
+  vocabulary (curved magazine, compact receiver, pump, long marksman barrel, belt feed) without using a real
+  manufacturer or model name. Fire-mode and ammunition mechanics remain W3a rules work, not art-only promises.
 - `item.tl-universal-round` has an icon and data now; shared-ammunition consumption and alert state remain
   W3a rules work, not a fake visual feature in this asset pack.

@@ -31,6 +31,7 @@ treasureTables:
     tier: 3
     entries:
       - { itemId: equip.tl-relay-carbine, weight: 6 }
+      - { itemId: equip.tl-ironrain-74-rifle, weight: 5 }
       - { itemId: equip.tl-platform-buckler, weight: 5 }
       - { itemId: equip.tl-insulated-hood, weight: 5 }
       - { itemId: item.tl-universal-round, weight: 4, quantity: 3 }
@@ -41,6 +42,7 @@ treasureTables:
     entries:
       - { itemId: equip.tl-filter-mask, weight: 6 }
       - { itemId: equip.tl-sluice-coat, weight: 6 }
+      - { itemId: equip.tl-turnstile-9-smg, weight: 4 }
       - { itemId: item.tl-terminal-fuse, weight: 4, quantity: 2 }
       - { itemId: item.tl-field-dressing, weight: 4, quantity: 2 }
       - { itemId: item.tl-breach-wedge, weight: 3 }
@@ -49,6 +51,7 @@ treasureTables:
     tier: 5
     entries:
       - { itemId: equip.tl-sluice-shotgun, weight: 6 }
+      - { itemId: equip.tl-floodgate-12-shotgun, weight: 5 }
       - { itemId: equip.tl-relay-gloves, weight: 5 }
       - { itemId: item.tl-universal-round, weight: 4, quantity: 4 }
       - { itemId: item.tl-field-dressing, weight: 3, quantity: 2 }
@@ -74,6 +77,7 @@ treasureTables:
     tier: 8
     entries:
       - { itemId: equip.tl-control-rod, weight: 6 }
+      - { itemId: equip.tl-quarantine-62-dmr, weight: 5 }
       - { itemId: equip.tl-signal-ward, weight: 5 }
       - { itemId: equip.tl-switchboard-gloves, weight: 5 }
       - { itemId: equip.tl-dispatch-ring, weight: 5 }
@@ -84,6 +88,7 @@ treasureTables:
     tier: 9
     entries:
       - { itemId: equip.tl-evacuation-carbine, weight: 7 }
+      - { itemId: equip.tl-platform-88-lmg, weight: 5 }
       - { itemId: equip.tl-terminus-breaker, weight: 7 }
       - { itemId: equip.tl-lift-harness, weight: 6 }
       - { itemId: equip.tl-zero-line-helm, weight: 5 }

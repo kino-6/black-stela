@@ -151,7 +151,7 @@ describe("Terminal Line F1–F10 canonical pack", () => {
     if (!result.ok) return;
 
     const equipment = result.world.equipment;
-    expect(equipment.length).toBeGreaterThanOrEqual(32);
+    expect(equipment.length).toBeGreaterThanOrEqual(37);
     expect(equipment.every((piece) => piece.id.startsWith("equip.tl-"))).toBe(true);
     expect(new Set(equipment.map((piece) => piece.slot))).toEqual(
       new Set(["weapon", "offhand", "body", "head", "hands", "accessory"])
@@ -179,5 +179,18 @@ describe("Terminal Line F1–F10 canonical pack", () => {
       "item.tl-breach-wedge", "item.tl-tripwire-shim"
     ]));
     expect(treasure.get("treasure.tl9f.lift-cache")?.entries.map((entry) => entry.itemId)).toContain("equip.tl-route-seal");
+  });
+
+  it("keeps five readable fictional firearm roles in the Terminal Line equipment ladder", () => {
+    const result = loadScenarioPack(packFiles());
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    const firearms = new Map(result.world.equipment.map((equipment) => [equipment.id, equipment]));
+    expect(firearms.get("equip.tl-ironrain-74-rifle")).toMatchObject({ attackBonus: 4, accuracyBonus: 2 });
+    expect(firearms.get("equip.tl-turnstile-9-smg")).toMatchObject({ speedBonus: 2 });
+    expect(firearms.get("equip.tl-floodgate-12-shotgun")).toMatchObject({ attackBonus: 6, accuracyBonus: -1 });
+    expect(firearms.get("equip.tl-quarantine-62-dmr")).toMatchObject({ accuracyBonus: 7, speedBonus: -1 });
+    expect(firearms.get("equip.tl-platform-88-lmg")).toMatchObject({ attackBonus: 8, speedBonus: -2 });
   });
 });

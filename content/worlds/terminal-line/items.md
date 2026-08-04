@@ -247,6 +247,18 @@ equipment:
     price: 128
     sellValue: 42
     locales: { ja: { name: 中継保安カービン, description: 折り畳み銃床と整備照門を持つ、乗換保安用の短銃身銃。 } }
+  - id: equip.tl-ironrain-74-rifle
+    name: Ironrain-74 Rifle
+    description: A stamped-steel service rifle with a dark wood handguard and a curved magazine; old, simple, and made to endure a wet platform.
+    slot: weapon
+    tier: 2
+    attackBonus: 4
+    accuracyBonus: 2
+    allowedClasses: [vanguard, sellsword, bulwark, duelist, seeker, scout, cutpurse, wayfinder]
+    tags: [firearm, rifle, terminal-line]
+    price: 142
+    sellValue: 47
+    locales: { ja: { name: 鉄雨74式自動小銃, description: 打ち抜き鋼板と黒い木製ハンドガード、曲線弾倉を持つ旧式自動小銃。濡れたホームでも動くよう作られている。 } }
   - id: equip.tl-platform-buckler
     name: Platform Buckler
     description: A steel crowd-control buckler, light enough to keep a weapon hand free.
@@ -308,6 +320,31 @@ equipment:
     price: 210
     sellValue: 70
     locales: { ja: { name: 水門散弾銃, description: 詰まった水門を近距離で開けるため、保守班が備えた重い散弾銃。 } }
+  - id: equip.tl-turnstile-9-smg
+    name: Turnstile-9 SMG
+    description: A compact folded-stock submachine gun recovered from an evacuation checkpoint; it favours a quick, close response over a long sightline.
+    slot: weapon
+    tier: 3
+    attackBonus: 4
+    accuracyBonus: 2
+    speedBonus: 2
+    allowedClasses: [duelist, seeker, scout, cutpurse, wayfinder]
+    tags: [firearm, smg, terminal-line]
+    price: 194
+    sellValue: 64
+    locales: { ja: { name: 改札9型短機関銃, description: 避難改札から回収された折り畳み銃床の短機関銃。長い照準より、至近の素早い応答を選ぶ。 } }
+  - id: equip.tl-floodgate-12-shotgun
+    name: Floodgate-12 Shotgun
+    description: A short, pump-action breach shotgun with a broad wooden fore-end and a brutal steel receiver.
+    slot: weapon
+    tier: 3
+    attackBonus: 6
+    accuracyBonus: -1
+    allowedClasses: [vanguard, sellsword, bulwark, duelist]
+    tags: [firearm, shotgun, terminal-line]
+    price: 236
+    sellValue: 78
+    locales: { ja: { name: 水門12型散弾銃, description: 太い木製先台と鈍い鋼製機関部を持つ、破扉用の短い散弾銃。狭所で前へ出る者のための一挺。 } }
   - id: equip.tl-archive-staff
     name: Archive Staff
     description: A telescoping archive probe whose copper rings keep a careful hand steady.
@@ -405,6 +442,19 @@ equipment:
     price: 310
     sellValue: 103
     locales: { ja: { name: 中央局制式拳銃, description: 不自然なほど整備の行き届いた、中央局の制式短銃。 } }
+  - id: equip.tl-quarantine-62-dmr
+    name: Quarantine-62 Rifle
+    description: A long, heavy marksman's rifle from the sealed wards, with a hooded sight and a wire-wrapped stock.
+    slot: weapon
+    tier: 4
+    attackBonus: 6
+    accuracyBonus: 7
+    speedBonus: -1
+    allowedClasses: [vanguard, sellsword, duelist, seeker, scout, wayfinder]
+    tags: [firearm, marksman, terminal-line]
+    price: 338
+    sellValue: 112
+    locales: { ja: { name: 隔離62式指定射撃銃, description: 封鎖病棟の射手が残した長い銃身と覆い照門を持つ射撃銃。取り回しを失う代わりに、遠い一点を確かに捉える。 } }
   - id: equip.tl-control-rod
     name: Control Rod
     description: A signal-control rod whose ceramic core holds a measured charge.
@@ -492,6 +542,19 @@ equipment:
     tags: [firearm, ranged, current, terminal-line]
     sellValue: 175
     locales: { ja: { name: 退避誘導カービン, description: 退避路を守るため、長い銃身を持たされた誘導員用カービン。 } }
+  - id: equip.tl-platform-88-lmg
+    name: Platform-88 LMG
+    description: A belt-fed support gun with a ribbed barrel shroud and a sandbag-worn carry handle, issued to hold a terminal approach.
+    slot: weapon
+    tier: 5
+    attackBonus: 8
+    accuracyBonus: 2
+    speedBonus: -2
+    allowedClasses: [vanguard, sellsword, bulwark]
+    tags: [firearm, support-gun, terminal-line]
+    price: 430
+    sellValue: 143
+    locales: { ja: { name: ホーム88式軽機関銃, description: 放熱覆いと擦れた運搬把手を備える支援機関銃。終端へ続く入口を守るために支給された。 } }
   - id: equip.tl-terminus-breaker
     name: Terminus Breaker
     description: A heavy rail breaker whose rusted edge tears open seized machinery.
@@ -613,11 +676,14 @@ shops:
       - { itemId: equip.tl-service-pistol, price: 62 }
       - { itemId: equip.tl-rain-jacket, price: 44 }
       - { itemId: equip.tl-relay-carbine, price: 128, availability: unlocked, unlockFlag: flag.tl3f.bypass-open }
+      - { itemId: equip.tl-ironrain-74-rifle, price: 142, availability: unlocked, unlockFlag: flag.tl3f.bypass-open }
       - { itemId: equip.tl-platform-buckler, price: 86, availability: unlocked, unlockFlag: flag.tl3f.bypass-open }
       - { itemId: equip.tl-insulated-hood, price: 74, availability: unlocked, unlockFlag: flag.tl3f.bypass-open }
       - { itemId: equip.tl-callbox-knife, price: 78, availability: unlocked, unlockFlag: flag.tl3f.bypass-open }
       - { itemId: equip.tl-ticket-cutter, price: 92, availability: unlocked, unlockFlag: flag.tl3f.bypass-open }
       - { itemId: equip.tl-sluice-shotgun, price: 210, availability: unlocked, unlockFlag: flag.tl4f.sluice-open }
+      - { itemId: equip.tl-turnstile-9-smg, price: 194, availability: unlocked, unlockFlag: flag.tl4f.sluice-open }
+      - { itemId: equip.tl-floodgate-12-shotgun, price: 236, availability: unlocked, unlockFlag: flag.tl5f.loading-open }
       - { itemId: equip.tl-archive-staff, price: 185, availability: unlocked, unlockFlag: flag.tl5f.loading-open }
       - { itemId: equip.tl-filter-mask, price: 118, availability: unlocked, unlockFlag: flag.tl4f.sluice-open }
       - { itemId: equip.tl-sluice-coat, price: 198, availability: unlocked, unlockFlag: flag.tl4f.sluice-open }
@@ -626,12 +692,14 @@ shops:
       - { itemId: equip.tl-sump-talisman, price: 132, availability: unlocked, unlockFlag: flag.tl4f.sluice-open }
       - { itemId: equip.tl-porter-frame, price: 174, availability: unlocked, unlockFlag: flag.tl5f.loading-open }
       - { itemId: equip.tl-bureau-sidearm, price: 310, availability: unlocked, unlockFlag: flag.tl7f.archive-open }
+      - { itemId: equip.tl-quarantine-62-dmr, price: 338, availability: unlocked, unlockFlag: flag.tl7f.archive-open }
       - { itemId: equip.tl-control-rod, price: 295, availability: unlocked, unlockFlag: flag.tl8f.switch-open }
       - { itemId: equip.tl-clearance-vest, price: 275, availability: unlocked, unlockFlag: flag.tl7f.archive-open }
       - { itemId: equip.tl-signal-ward, price: 260, availability: unlocked, unlockFlag: flag.tl8f.switch-open }
       - { itemId: equip.tl-switchboard-gloves, price: 172, availability: unlocked, unlockFlag: flag.tl8f.switch-open }
       - { itemId: equip.tl-dispatch-ring, price: 205, availability: unlocked, unlockFlag: flag.tl8f.switch-open }
       - { itemId: equip.tl-triage-lens, price: 224, availability: unlocked, unlockFlag: flag.tl7f.archive-open }
+      - { itemId: equip.tl-platform-88-lmg, price: 430, availability: unlocked, unlockFlag: flag.tl8f.switch-open }
     locales:
       ja:
         name: シャッター工房

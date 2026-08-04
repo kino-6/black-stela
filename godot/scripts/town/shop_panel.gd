@@ -11,6 +11,7 @@ const I18n := preload("res://scripts/i18n.gd")
 const Fmt := preload("res://scripts/town_format.gd")
 const UI := preload("res://scripts/town/ui_kit.gd")
 const CharacterStats := preload("res://scripts/rules/character_stats.gd")
+const WorldResources := preload("res://scripts/world_resources.gd")
 
 static func build(ctx: Dictionary) -> Control:
 	var state: Dictionary = ctx["state"]
@@ -19,6 +20,20 @@ static func build(ctx: Dictionary) -> Control:
 	var party_gold := int(state.get("partyGold", 0))
 	var shops: Array = world.get("shops", [])
 	var shop: Dictionary = shops[0] if not shops.is_empty() else {}
+	# A world can author several counters in one market (Terminal Line's supply stall + shutter armory).
+	# The player-facing shop is one stable buy/sell surface, so merge their stock here while retaining the
+	# source shop id for the eventual purchase command. Reading only shops[0] silently made the whole armory
+	# unreachable even though the catalog and treasure data existed.
+	var market_stock: Array = []
+	for source in shops:
+		if typeof(source) != TYPE_DICTIONARY:
+			continue
+		for source_entry in (source as Dictionary).get("stock", []):
+			if typeof(source_entry) != TYPE_DICTIONARY:
+				continue
+			var entry: Dictionary = (source_entry as Dictionary).duplicate(true)
+			entry["shopId"] = String((source as Dictionary).get("id", ""))
+			market_stock.append(entry)
 
 	var root := UI.col(10)
 	root.add_child(UI.service_heading(Fmt.localized_shop_name(shop), I18n.t("town.gold", {"gold": party_gold})))
@@ -51,7 +66,7 @@ static func build(ctx: Dictionary) -> Control:
 	if mode == "sell":
 		focus_target = _sell_mode(ctx, root, world, state)
 	else:
-		focus_target = _buy_mode(ctx, root, world, state, shop, party, party_gold)
+		focus_target = _buy_mode(ctx, root, world, state, market_stock, party, party_gold)
 
 	var back := UI.button(I18n.t("town.serviceCancel"), ctx["close"], Vector2(180, 44), 18)
 	root.add_child(back)
@@ -59,7 +74,7 @@ static func build(ctx: Dictionary) -> Control:
 	return root
 
 # --- 買う ------------------------------------------------------------------------------------------
-static func _buy_mode(ctx: Dictionary, root: VBoxContainer, world: Dictionary, state: Dictionary, shop: Dictionary, party: Array, party_gold: int) -> Control:
+static func _buy_mode(ctx: Dictionary, root: VBoxContainer, world: Dictionary, state: Dictionary, market_stock: Array, party: Array, party_gold: int) -> Control:
 	var cols := UI.row()
 	cols.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	root.add_child(cols)
@@ -69,7 +84,7 @@ static func _buy_mode(ctx: Dictionary, root: VBoxContainer, world: Dictionary, s
 	cols.add_child(left)
 	left.add_child(UI.label(I18n.t("town.shopStock"), 20, UI.GOLD))
 
-	var categories := _available_categories(world, shop, state)
+	var categories := _available_categories(world, market_stock, state)
 	var active: String = String(ctx.get("shop_category", ""))
 	if active == "" or not categories.has(active):
 		active = categories[0] if not categories.is_empty() else "consumable"
@@ -83,7 +98,7 @@ static func _buy_mode(ctx: Dictionary, root: VBoxContainer, world: Dictionary, s
 	left.add_child(tabs)
 
 	var visible_stock: Array = []
-	for entry in shop.get("stock", []):
+	for entry in market_stock:
 		var item_id := String(entry.get("itemId", ""))
 		if _stock_available(entry, state) and Fmt.shop_category_for(world, item_id) == active:
 			visible_stock.append(entry)
@@ -119,7 +134,7 @@ static func _buy_mode(ctx: Dictionary, root: VBoxContainer, world: Dictionary, s
 	if selected_entry.is_empty():
 		right.add_child(UI.label(I18n.t("town.inventoryEmpty"), 16, UI.DIM))
 	else:
-		right.add_child(_selected_item_board(ctx, world, selected_entry, party, party_gold, shop))
+		right.add_child(_selected_item_board(ctx, world, selected_entry, party, party_gold))
 	return focus_target
 
 static func _stock_row(ctx: Dictionary, world: Dictionary, entry: Dictionary, item_id: String, is_selected: bool) -> Control:
@@ -135,6 +150,9 @@ static func _stock_row(ctx: Dictionary, world: Dictionary, entry: Dictionary, it
 	body.add_child(UI.label(I18n.t("town.price", {"gold": price}), 15, UI.INK))
 
 	var line := UI.row()
+	var icon := _catalog_icon(world, item_id, 58)
+	if icon != null:
+		line.add_child(icon)
 	line.add_child(UI.grow(body))
 	var inspect := UI.button(I18n.t("town.inspect"), func(): ctx["set_shop_item"].call(item_id), Vector2(132, 40), 15)
 	if is_selected:
@@ -142,7 +160,7 @@ static func _stock_row(ctx: Dictionary, world: Dictionary, entry: Dictionary, it
 	line.add_child(inspect)
 	return UI.card(line, UI.GOLD if is_selected else Color("3a4326"))
 
-static func _selected_item_board(ctx: Dictionary, world: Dictionary, entry: Dictionary, party: Array, party_gold: int, shop: Dictionary) -> Control:
+static func _selected_item_board(ctx: Dictionary, world: Dictionary, entry: Dictionary, party: Array, party_gold: int) -> Control:
 	var item_id := String(entry.get("itemId", ""))
 	var price := int(entry.get("price", 0))
 	var afford := party_gold >= price
@@ -165,8 +183,11 @@ static func _selected_item_board(ctx: Dictionary, world: Dictionary, entry: Dict
 			body.add_child(UI.label(I18n.t("town.equipWhoCan", {"names": "・".join(PackedStringArray(wearers))}), 15, UI.OK))
 	body.add_child(UI.label(I18n.t("town.price", {"gold": price}) + "　" + I18n.t("town.remainingGold", {"gold": maxi(0, party_gold - price)}), 16, UI.INK if afford else UI.BAD))
 	var line := UI.row()
+	var icon := _catalog_icon(world, item_id, 116)
+	if icon != null:
+		line.add_child(icon)
 	line.add_child(UI.grow(body))
-	var buy := UI.button(I18n.t("town.buy"), func(): ctx["dispatch"].call({"type": "buy_item", "shopId": String(shop.get("id", "")), "itemId": item_id}), Vector2(130, 46), 17)
+	var buy := UI.button(I18n.t("town.buy"), func(): ctx["dispatch"].call({"type": "buy_item", "shopId": String(entry.get("shopId", "")), "itemId": item_id}), Vector2(130, 46), 17)
 	buy.disabled = not afford
 	line.add_child(buy)
 	return UI.card(line, UI.GOLD)
@@ -219,9 +240,25 @@ static func _stock_available(stock: Dictionary, state: Dictionary) -> bool:
 		return state.get("discoveredSecrets", []).has(stock.get("unlockFlag"))
 	return stock.get("availability", "") != "unlocked"
 
-static func _available_categories(world: Dictionary, shop: Dictionary, state: Dictionary) -> Array:
+static func _catalog_icon(world: Dictionary, item_id: String, size: int) -> TextureRect:
+	var world_id := String(world.get("id", "")).trim_prefix("world.")
+	if world_id == "":
+		return null
+	var basename := item_id.replace(".", "-")
+	var texture := WorldResources.texture(WorldResources.world_asset(world_id, "icons/%s.png" % basename))
+	if texture == null:
+		return null
+	var icon := TextureRect.new()
+	icon.texture = texture
+	icon.custom_minimum_size = Vector2(size, size)
+	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return icon
+
+static func _available_categories(world: Dictionary, market_stock: Array, state: Dictionary) -> Array:
 	var seen := {}
-	for entry in shop.get("stock", []):
+	for entry in market_stock:
 		if _stock_available(entry, state):
 			seen[Fmt.shop_category_for(world, String(entry.get("itemId", "")))] = true
 	var out := []
