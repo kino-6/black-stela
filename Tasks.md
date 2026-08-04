@@ -85,10 +85,10 @@ IMP-060/061/062/063/064 completion records in `Improve.md`.
   - **[ ] P8 ドロップ増量（残・同 pass の続き）**：「全職業の全装備が概ね揃う」までドロップ率/量↑＋ランダムエンチャント
     頻度↑（content/worlds/*/ の treasure/loot table）。sim は gear ドロップをモデルしないので balance-safe。loot sim で検証。
     参考：`availability:"limited"`(scenario.ts:240) は消費側未実装＝「1個限定」は要機能追加。
-- **既知の赤（私の作業外・要対応）:** `tests/itemAlternatives.test.ts` + `tests/techniqueLines.test.ts` が
-  **terminal-line（Codex 052fdaa の未完 world; worldRegistry の glob が拾う）**で赤（unlock道具無し・fire未宣言）。
-  私の変更を stash しても再現＝既存。**#31 terminal-line F1/F2 完遂**まで、または draft world を registry/invariant
-  から除外するまで残る。truth gate(`gate:final`)がこの2件で赤なので注意。
+- **[x] terminal-line 未完world赤の解消（済・commit 4c59ef7）:** `itemAlternatives`/`techniqueLines` が Codex製
+  terminal-line で赤だった件（fire未宣言→firebolt uncastable／unlock道具・cure/focus/ward/throwable/scroll 欠落）を
+  content 完成で解消（fire[焼夷]宣言＋7品追加）。full unit 緑。⚠ `debugAutoExplore「warps backward」`は ~5s の既存
+  timing flake（単独緑）で truth gate 実行時のみ稀に出る。
 - [~] **P10 階段が見つからない（発見性）** — *論理は正常*（TS/Godot両grid に g2f.001→g1f, g2f.exit→g3f の階段セル
   存在、`verify_dungeon_controller` の stairs判定PASS）。階段セルに立てば `決定=階段` が出る。問題は**下り/上り
   階段が同じ「階段」表示で区別できず降り口が分からない**こと。
@@ -332,7 +332,7 @@ W3a → W3b → W4 → W5 を一つずつ進めること。各Wは、ここに `
     - **受入:** 全26装備IDが `icons/equip-tl-*.png` に解決し、全6slotに最低1枚の固有物体があること。pack testは
       寸法・RGBA・ID集合を検査し、通常の所持／装備画面でdefault fallbackを使わない。実機メニューでの小寸法可読性は
     controller traversalと併せて別途確認する。全26の個別アイコンを生成・投入済み。
-  - **鉄雨火器帯（Codex, 2026-08-04 完了: data + asset contract）:** ユーザー指示により、Terminal Lineの武器選択を工業工具・
+  - **鉄雨火器帯（Codex, 2026-08-04 実装済み・全migration gate保留）:** ユーザー指示により、Terminal Lineの武器選択を工業工具・
     儀礼具だけへ寄せず、架空名ながら現代的な軍用火器として読める自動小銃、短機関銃、散弾銃、指定射撃銃、軽機関銃を
     F2–F10へ加える。実在メーカー・実在モデル名は使わない。既存の共有弾・警戒度が未実装である以上、連射・リロード・
     騒音値を数値や説明で偽装せず、現行の攻撃／命中／速度／装備可能職の横選択だけに落とす。
@@ -344,7 +344,8 @@ W3a → W3b → W4 → W5 を一つずつ進めること。各Wは、ここに `
       同じ安定したcontroller focus面で読めるキャプチャを残す。headlessはcatalogとasset解決だけを証明し、見た目は証明しない。
     - **受入:** 5種すべてが `equip.tl-*` data、世界固有の256² RGBA icon、shopまたはF帯宝へ結線される。曲線弾倉の
       自動小銃、短機関銃、散弾銃、指定射撃銃、軽機関銃が小寸法で別シルエットに読め、pack testが全IDを検査する。
-      catalogは全37装備へ増補済み。Godotの鍛冶屋／装備画面の実機キャプチャはW5の全世界フィール確認で閉じる。
+      catalogは全37装備へ増補済み。Godotの通常市場で在庫を統合し、アイコン・和名・補正・装備可能者を実機キャプチャで確認済み。
+      `gate:migration` は本作業と無関係の既存UX parity 3件（party aptitude.balanced 2件／dock play.useStairs 1件）で停止中。
   - **補給・横選択拡充（Codex, 2026-08-04 完了: data + asset contract）:** ユーザー指示により、既存の装備26件と消耗品11件を
     F1–F10の選択として増補する。新規装備は早期の静かな近接／手slot、雨水帯の毒対策、荷役帯の防御offhand、
     中央局の精度head、終端の装身具へ分ける。新規消耗品は小／大回復、恐怖・沈黙回復、MP回復、解錠・解除の
