@@ -67,33 +67,24 @@ IMP-060/061/062/063/064 completion records in `Improve.md`.
   味方バーは全beat後(`combat.gd:651`)に一括更新＝アニメ中は据置。React beat は per-beat `groups`/`party`
   スナップショットを持つ(rulesEngine.ts:1239)。Godot beat に snapshot を載せ、両バーを beat 単位で駆動する。
   Gate: verify_combat_numbers 拡張 + 実機。
-- [~] **P8/P9 憧れ装備ラインナップ＋探索ユーティリティ＝「面白さGate」**（user 2026-08-04：上位武器/防具を
-  「序盤無理・頑張れば届く・最終盤で活きる」段階に、＋探索が捗るユーティリティ品/アクセサリも。これを面白さの
-  Gateとして設置）
-  - **[x] 面白さGate（済・commit）** `tests/funGate.test.ts`：世界ごとに ①憧れ武器＋防具（shop購入可・price ≥ 250 の
-    貯金目標で、最も高い武器が最強＝貯金が報われる）②探索ユーティリティ品（kind∈{utility,escape}を3種以上＋帰還手段）
-    を要求。**Default(黒碑) は基準達成でLIVE緑**（tier3 warlord-blade 340/knight-plate 320 が flag.b7f.descent で終盤unlock、
-    ユーティリティ return-charm/lock-picks/trap-shim/dust-lens/lantern-oil）。ユーティリティは両世界LIVE緑。
-  - **[ ] Verdant 憧れ帯 — user確定(2026-08-04): 「(B) sim整備して順当に調整」。腰を据えた balance pass（次セッション推奨）。**
-    調査で **3つの coupled 課題**が確定。順に「Sim整備→両世界再校正→fun content」:
-    1. **armorBonus バグ（新発見・要修正）:** verdant の防具 `bark-buckler/moss-hood/bark-plate` は `armorBonus:` を使うが
-       **equip schema(`scenario.ts:203`)に armorBonus は無く Zod が strip → 防御0**。React(`economy.ts:144`)も
-       Godot(`character_stats.gd:35`)も **`defenseBonus` しか読まない**（パリティは一致して壊れている）。修正＝verdant
-       items.md の armorBonus→defenseBonus（3箇所）。**→ verdant がtankyになり curve が緩む＝要再校正。**
-    2. **B: floor-aware loadout（sim整備の中核）:** `descentSim` の `generalLoadout`/`bestWeaponFor` が world 全カタログの
-       最強を序盤から装備＝終盤unlock装備(reaver/warlord)を floor1 から着る artifact。**tier を降下進捗の proxy** にして
-       `availableFloor(tier)=⌊(tier-1)/maxTier·N⌋`（t1→0, t2→N/3, t3→2N/3=終盤）で、各フロア時点の到達tierのみ使う。
-       実装：`equipPartyForEnemy`/`resolveFight`/`generalLoadout`/`bestWeaponFor` に **任意 uptoFloor(既定=全可)** を通し、
-       降下ループ(`descentSim.ts:537,583`)が floorIndex を渡す（exported を呼ぶ simParity は既定で不変＝壊れない）。
-    3. **両世界再校正:** 1+2 で curve が真値に直る（両世界とも終盤装備が序盤から外れ、verdant は防具が効く）。gate 閾値
-       (`descentSim.test`/`verdantBalance.test`/`difficultyGate.test`)と敵/threatScalar を **順当に**調整し、naive=全滅／
-       prepared=クリア／act-escalation の設計意図を保ったまま両世界を緑に。実測で Default `preparedMinLevel 4→5` になる等、
-       Default も動く前提で丁寧に。**ここで初めて** Verdant 憧れ帯(tier3 武器＋防具, 終盤unlock)を投入し funGate の todo を
-       解消。**P8(ドロップ増量)も同じ pass で設計**（報酬↑＝パーティ↑なので深部を相応に）。参考実測: 素朴投入で
-       verdantBalance Act-I(0.7 not>0.7)/escalation(0.657 not<0.592)、difficultyGate kit-dry/economy-flood が赤化。
-  - **参考:** `availability:"limited"`（scenario.ts:240）は消費側未実装＝「1個限定」は要機能追加。verdant候補
-    iron-edge(t2 攻+4 metal 150)/reaver-axe(t3 攻+6 metal, "keyed"=boss loot役割かも)。verdant装備は `armorBonus`、
-    default は `defenseBonus`（要確認・パリティ注意）。
+- [~] **P8/P9 憧れ装備ラインナップ＋探索ユーティリティ＝「面白さGate」**（user 2026-08-04）
+  - **[x] 面白さGate（済・commit fffd83d/2d96784）** `tests/funGate.test.ts`：世界ごとに ①憧れ武器＋防具（shop購入可・
+    price ≥ 250・最高価格武器=最強）②探索ユーティリティ(kind∈{utility,escape}≥3＋帰還手段)。**両世界LIVE緑**。
+  - **[x] B: sim整備＋両世界再校正（済・commit 6fa2785）** user「Bで順当に」。3 coupled 課題を解決:
+    1. **armorBonus バグ修正**：verdant防具が `armorBonus`(schema未定義でZod strip)→防御0だった。armorBonus→defenseBonus
+       (bark-buckler/moss-hood/bark-plate)。React/Godot 両方 `defenseBonus` を読む。
+    2. **floor-aware loadout**：`descentSim` の generalLoadout/bestWeaponFor/bestResistFor を tier=降下進捗 proxy で
+       各フロア到達tierのみに（uptoFloor 任意・既定∞、降下ループが floorIndex 渡す、simParity不変）。終盤装備を序盤に
+       着る artifact 解消。
+    3. **再校正（方針A=実測INTENT基準）**：preparedMinLevel ≤4→≤5（levelsSaved 9 健在）／「floor 1 gates」を生存ベース
+       施設差（provisioned shopped=生還・naive=沈む）／verdant scarcity を clearLevel-1（縁で押す一撃）で測定＝kit が
+       g10f で枯渇。全balance gate緑・full suite緑・simParity不変。
+  - **[x] Verdant 憧れ帯投入（済・commit 2d96784）**：iron-edge(150,中)/reaver-axe(320,t3)/ironbark-cuirass(300,t3
+    defenseBonus) を g7f/g3f unlock で shop に。availability-aware sim が tier-3 を終盤のみ装備するので **balance 緑維持**
+    （＝sim整備の狙い通り）。funGate verdant aspirational を todo→LIVE。
+  - **[ ] P8 ドロップ増量（残・同 pass の続き）**：「全職業の全装備が概ね揃う」までドロップ率/量↑＋ランダムエンチャント
+    頻度↑（content/worlds/*/ の treasure/loot table）。sim は gear ドロップをモデルしないので balance-safe。loot sim で検証。
+    参考：`availability:"limited"`(scenario.ts:240) は消費側未実装＝「1個限定」は要機能追加。
 - **既知の赤（私の作業外・要対応）:** `tests/itemAlternatives.test.ts` + `tests/techniqueLines.test.ts` が
   **terminal-line（Codex 052fdaa の未完 world; worldRegistry の glob が拾う）**で赤（unlock道具無し・fire未宣言）。
   私の変更を stash しても再現＝既存。**#31 terminal-line F1/F2 完遂**まで、または draft world を registry/invariant
@@ -341,6 +332,19 @@ W3a → W3b → W4 → W5 を一つずつ進めること。各Wは、ここに `
     - **受入:** 全26装備IDが `icons/equip-tl-*.png` に解決し、全6slotに最低1枚の固有物体があること。pack testは
       寸法・RGBA・ID集合を検査し、通常の所持／装備画面でdefault fallbackを使わない。実機メニューでの小寸法可読性は
     controller traversalと併せて別途確認する。全26の個別アイコンを生成・投入済み。
+  - **鉄雨火器帯（Codex, 2026-08-04 完了: data + asset contract）:** ユーザー指示により、Terminal Lineの武器選択を工業工具・
+    儀礼具だけへ寄せず、架空名ながら現代的な軍用火器として読める自動小銃、短機関銃、散弾銃、指定射撃銃、軽機関銃を
+    F2–F10へ加える。実在メーカー・実在モデル名は使わない。既存の共有弾・警戒度が未実装である以上、連射・リロード・
+    騒音値を数値や説明で偽装せず、現行の攻撃／命中／速度／装備可能職の横選択だけに落とす。
+    - **Human expectation:** プレイヤーが終末駅の準軍事的な探索者として、木製ハンドガードや曲線弾倉を持つ無骨な
+      自動小銃を含む、ひと目で銃器と読める装備を選べる。
+    - **Red flags / past trouble:** 工具・杖の再着色、実在銘の無断利用、未実装のフルオート／弾薬管理を説明だけで約束すること。
+      武器は所持／装備画面でdefault fallbackや小さすぎる輪郭にならない。
+    - **Browser evidence:** Godotの鍛冶屋／装備画面で、少なくとも自動小銃と短機関銃の日本語名・補正・256² iconが
+      同じ安定したcontroller focus面で読めるキャプチャを残す。headlessはcatalogとasset解決だけを証明し、見た目は証明しない。
+    - **受入:** 5種すべてが `equip.tl-*` data、世界固有の256² RGBA icon、shopまたはF帯宝へ結線される。曲線弾倉の
+      自動小銃、短機関銃、散弾銃、指定射撃銃、軽機関銃が小寸法で別シルエットに読め、pack testが全IDを検査する。
+      catalogは全37装備へ増補済み。Godotの鍛冶屋／装備画面の実機キャプチャはW5の全世界フィール確認で閉じる。
   - **補給・横選択拡充（Codex, 2026-08-04 完了: data + asset contract）:** ユーザー指示により、既存の装備26件と消耗品11件を
     F1–F10の選択として増補する。新規装備は早期の静かな近接／手slot、雨水帯の毒対策、荷役帯の防御offhand、
     中央局の精度head、終端の装身具へ分ける。新規消耗品は小／大回復、恐怖・沈黙回復、MP回復、解錠・解除の
