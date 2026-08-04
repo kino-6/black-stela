@@ -1,10 +1,13 @@
-import { PlayCircle, RotateCcw, ShieldCheck, Square, Sword, Swords } from "lucide-react";
+import { HeartPulse, PlayCircle, RotateCcw, ShieldCheck, Square, Sword, Swords } from "lucide-react";
 import type { Translator } from "../i18n";
+import type { AutoStrategy } from "../domain/tempo";
 
 interface CombatCommandDockProps {
   t: Translator;
   isTempoRunning: boolean;
-  onToggleTempo: () => void;
+  tempoStrategy: AutoStrategy;
+  onAttackAuto: () => void;
+  onDefenseAuto: () => void;
   onAllOut: () => void;
   canAllOut: boolean;
   onRepeatRound: () => void;
@@ -21,7 +24,9 @@ interface CombatCommandDockProps {
 export function CombatCommandDock({
   t,
   isTempoRunning,
-  onToggleTempo,
+  tempoStrategy,
+  onAttackAuto,
+  onDefenseAuto,
   onAllOut,
   canAllOut,
   onRepeatRound,
@@ -53,10 +58,29 @@ export function CombatCommandDock({
         {t("tempo.allOut")}
         <kbd className="key-hint">F</kbd>
       </button>
-      <button type="button" aria-pressed={isTempoRunning} onClick={onToggleTempo} data-testid="combat-auto">
-        {isTempoRunning ? <Square size={18} /> : <PlayCircle size={18} />}
-        {isTempoRunning ? t("tempo.stop") : t("tempo.auto")}
+      {/* Two auto-battle loops: 攻撃オート presses the front line; 守備オート wards/heals first, pushing
+          through danger. Pressing a running loop (or the other) stops it. */}
+      <button
+        type="button"
+        aria-pressed={isTempoRunning && tempoStrategy === "attack"}
+        onClick={onAttackAuto}
+        data-testid="combat-auto-attack"
+        title={t("tempo.autoAttackHint")}
+      >
+        {isTempoRunning && tempoStrategy === "attack" ? <Square size={18} /> : <PlayCircle size={18} />}
+        {isTempoRunning && tempoStrategy === "attack" ? t("tempo.stop") : t("tempo.autoAttack")}
         <kbd className="key-hint">R</kbd>
+      </button>
+      <button
+        type="button"
+        aria-pressed={isTempoRunning && tempoStrategy === "defense"}
+        onClick={onDefenseAuto}
+        data-testid="combat-auto-defense"
+        title={t("tempo.autoDefenseHint")}
+      >
+        {isTempoRunning && tempoStrategy === "defense" ? <Square size={18} /> : <HeartPulse size={18} />}
+        {isTempoRunning && tempoStrategy === "defense" ? t("tempo.stop") : t("tempo.autoDefense")}
+        <kbd className="key-hint">G</kbd>
       </button>
       <button
         type="button"

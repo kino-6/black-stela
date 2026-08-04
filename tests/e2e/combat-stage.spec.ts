@@ -187,7 +187,7 @@ test.describe("combat stage", () => {
       }));
     const before = await measure();
 
-    await page.getByTestId("combat-auto").click();
+    await page.getByTestId("combat-auto-attack").click();
     await expect(page.getByTestId("tempo-indicator")).toBeVisible();
     const normal = await measure();
     await page.getByTestId("tempo-speed").click();
@@ -273,7 +273,7 @@ test.describe("combat stage", () => {
     // must lock the invariant on whichever group actually loses a member, not a fixed pick.
     const history = new Map<string, { health: number[]; counts: number[] }>();
     let screenshotTaken = false;
-    await page.getByTestId("combat-auto").click();
+    await page.getByTestId("combat-auto-attack").click();
     for (let index = 0; index < 90; index += 1) {
       const marks = await page.getByTestId("combat-enemy-group").evaluateAll((els) =>
         els.map((el) => ({

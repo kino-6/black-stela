@@ -50,7 +50,7 @@ test.describe("verify: the shielded-squad fight no longer hangs", () => {
       if (await inCombat()) {
         const isKeep = (await enemyNames()).some((n) => n.includes("茨の盾"));
         // Run オート and watch the fight END. A stall would never satisfy this.
-        await page.getByTestId("combat-auto").click();
+        await page.getByTestId("combat-auto-attack").click();
         await expect
           .poll(async () => ((await inCombat()) && !(await resultUp()) ? "fighting" : "done"), {
             message: isKeep ? "the 茨の番所 keep squad hung — auto-battle never ended" : "a fight hung under auto",

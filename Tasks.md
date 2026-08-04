@@ -28,6 +28,32 @@ IMP-060/061/062/063/064 completion records in `Improve.md`.
 
 ## Active queue (process top-down)
 
+### U — 2026-08-04 実機playtest 追加要望（user 指摘、順に対応中）
+
+- [-] **U1 戦闘オートの二系統化（攻撃オート[A]／守備・回復オート[G]）** — 進行中（`feat/combat-auto-modes`）。現状「全員でかかる(F)」も
+  「オート」も攻撃のみ。全員でかかる(F,1ラウンド)は据置、**攻撃オート[A]＝自動ループ/攻撃重視（現オート置換）**、**守備オート[G]＝
+  自動ループ/ward→状態治療→回復→防御→攻撃**を新規追加、各ホットキー。parity 非対象（オート選択は presentation）。Plan:
+  `~/.claude/plans/gleaming-enchanting-sutton.md`。Gate: 新 `tempo.test`/`combat-defense-auto.spec`＋verify_combat_controller＋実機 A/G。
+- [ ] **U2 顔画像／全身画像の使い分けシステム（＋Fallback）** — *見た目の課題。user 記録依頼 2026-08-04。* 現状ワールドの
+  キャラ画像は**1枚を顔にも使い回し**ているが、**Verdant のように「顔（face）」と「全身/戦闘立ち絵（full-body / battle art）」を
+  別画像で使い分けたい**。プレイヤー取り込み側には既に `importPortrait`（顔）/`importBattleArt`（全身）の2枠がある（App.tsx）が、
+  **ワールド提供アート**は今 portraitKey（顔）1系統のみ（`content/worlds/<id>/assets/portraits/<key>.png`）。
+  → **ワールドが portraitKey ごとに顔と全身を別ファイルで供給できる仕組み**を作る（例 `assets/portraits/<key>.png`＝顔、
+  `assets/figures/<key>.png` or `assets/portraits/<key>-full.png`＝全身）。**Fallback 必須**：全身が無ければ顔へ、顔も無ければ
+  default パック（既存の `byPack[pack] ?? byPack[default]` 経路）。React（`src/ui/artAssets.ts` の glob＋`portraitUrl`／
+  `CharacterVisualPreview`）と Godot（`world_resources.gd` world_asset＋stage:assets の allowlist に figures 追加、guild/combat の
+  立ち絵表示）両対応。Gate: 両エンジンで face/full-body が別解決・欠落時 fallback、を verify＋実機。参考: Verdant の使い分け実装、
+  earlier の portrait 配線調査（12 固定 portraitKey）。
+- [ ] **U6 階段が一人称視点で描画されないバグ（世界非依存の弱点）** — *user 記録依頼 2026-08-04（後でよい）。* terminal-line でも
+  **階段セルに立っても 3D（一人称）ビューに階段が描かれない**（`階段を使う`/`決定=階段` コマンド自体は機能する＝ロジックは正常、
+  **レンダラ側の描画が弱い**）。既知の未解決項目：2026-07-27 Verdant playtest で同症状を記録済み（memory `black-stela-open-work`）。
+  world をまたいで再現＝**stairs 描画ロジックの一般的弱点**。dungeon_renderer / stairs billboard の描画条件（stairs edge 検出→
+  3D メッシュ/ビルボード配置）を見直し、全 world で階段セルに立つと降り口/上り口が視認できるように。Gate: 両 world で階段セルの
+  一人称ビューに階段が出る e2e/実機。参考: `docs/handoffs` の stairs 関連、`floor_map.gd`/`dungeon_renderer.gd` の stairs 判定。
+- **（後続キュー）** U3 = **CLASS_CAPABILITIES 外部化＋terminal-line クラスのテーマ化**（world がクラス習得技を差し替え可能に。
+  firearm はクラス習得禁止の invariant。技外部化と同 seam）。U4 = **Save 再設計**（現：固定スロット→**シナリオごとに Autosave＋任意
+  Save**）。U5 = **T30 1シナリオ N 迷宮**（下記 T30）。
+
 ### P — 2026-08-03 夜 実機playtest バッチ（最優先・player-facing）
 
 - [x] **P1 戦闘ログの対象名欠落**（「に7ダメージ！」で敵名が空）— `_enemy_ja` が撃破/ドロップ済みグループで空を返す。

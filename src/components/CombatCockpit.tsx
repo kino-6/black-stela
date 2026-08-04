@@ -14,6 +14,7 @@ import { CombatPartyStrip } from "./CombatPartyStrip";
 import { CombatLog } from "./CombatLog";
 import { CombatCommandMenu } from "./CombatCommandMenu";
 import { CombatCommandDock } from "./CombatCommandDock";
+import type { AutoStrategy } from "../domain/tempo";
 import { CharacterPresence } from "./CharacterPresence";
 
 interface CombatCockpitProps {
@@ -65,7 +66,9 @@ interface CombatCockpitProps {
 
   // Dock
   isTempoRunning: boolean;
-  onToggleTempo: () => void;
+  tempoStrategy: AutoStrategy;
+  onAttackAuto: () => void;
+  onDefenseAuto: () => void;
   onAllOut: () => void;
   canAllOut: boolean;
   onRepeatRound: () => void;
@@ -114,7 +117,9 @@ export function CombatCockpit({
   confirmRound,
   onExecuteRound,
   isTempoRunning,
-  onToggleTempo,
+  tempoStrategy,
+  onAttackAuto,
+  onDefenseAuto,
   onAllOut,
   canAllOut,
   onRepeatRound,
@@ -255,9 +260,11 @@ export function CombatCockpit({
         )}
       </div>
       <CombatCommandDock
+        tempoStrategy={tempoStrategy}
+        onAttackAuto={onAttackAuto}
+        onDefenseAuto={onDefenseAuto}
         t={t}
         isTempoRunning={isTempoRunning}
-        onToggleTempo={onToggleTempo}
         onAllOut={onAllOut}
         canAllOut={canAllOut}
         onRepeatRound={onRepeatRound}

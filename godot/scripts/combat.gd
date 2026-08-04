@@ -61,6 +61,7 @@ var _pending: Dictionary = {}        # the order being assembled for the current
 var _declared: Array = []            # orders collected so far this round
 var _last_round: Array = []          # the last declared round, for リピート
 var _auto: bool = false              # オート: keep resolving until the fight ends or danger appears
+var _auto_strategy: String = "attack"   # 攻撃オート (attack) vs 守備オート (ward/heal) — set when the loop starts
 var _run: Node = null   # the shared-state autoload when in continuous play; null under capture
 var _world_id: String = "default"
 
@@ -181,6 +182,10 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	if event.is_action_pressed("auto"):
 		_on_attack_pressed()
+	elif event.is_action_pressed("attack_auto"):
+		_on_toggle_auto("attack")
+	elif event.is_action_pressed("defense_auto"):
+		_on_toggle_auto("defense")
 	elif event.is_action_pressed("cancel"):
 		_menu_back()
 		get_viewport().set_input_as_handled()
@@ -292,10 +297,14 @@ func _rebuild_command_menu() -> void:
 	round_box.add_child(repeat)
 	if not _last_round.is_empty():
 		round_box.add_child(_caption(I18n.t("tempo.repeatRoundHint")))
-	# オート — keep resolving rounds until the fight ends or the party is in danger.
-	var auto := _command_button(I18n.t("tempo.stop") if _auto else I18n.t("tempo.auto"))
-	auto.pressed.connect(_on_toggle_auto)
-	round_box.add_child(auto)
+	# 攻撃オート / 守備オート — two auto-battle loops. Attack presses the front line (stops at danger);
+	# guard wards/cures/heals first and pushes through. Pressing a running loop stops it.
+	var attack_auto := _command_button(I18n.t("tempo.stop") if (_auto and _auto_strategy == "attack") else I18n.t("tempo.autoAttack"))
+	attack_auto.pressed.connect(_on_toggle_auto.bind("attack"))
+	round_box.add_child(attack_auto)
+	var defense_auto := _command_button(I18n.t("tempo.stop") if (_auto and _auto_strategy == "defense") else I18n.t("tempo.autoDefense"))
+	defense_auto.pressed.connect(_on_toggle_auto.bind("defense"))
+	round_box.add_child(defense_auto)
 	var retreat := _command_button(I18n.t("play.retreat"))
 	retreat.pressed.connect(_on_retreat)
 	round_box.add_child(retreat)
@@ -461,22 +470,30 @@ func _on_repeat() -> void:
 
 # オート stops itself on the conditions the React tempo guards use: the fight ending, or the party
 # taking real damage (tempo.autoStoppedDanger) — it never plays a losing fight out on the player.
-func _on_toggle_auto() -> void:
-	_auto = not _auto
-	_rebuild_command_menu()
+# Pressing a running auto (or the OTHER auto) stops it; otherwise start the loop in the requested
+# strategy. 攻撃オート presses the front line and bails at danger; 守備オート wards/heals and pushes through.
+func _on_toggle_auto(strategy: String = "attack") -> void:
 	if _auto:
-		_run_auto()
+		_auto = false
+		_rebuild_command_menu()
+		return
+	_auto_strategy = strategy
+	_auto = true
+	_rebuild_command_menu()
+	_run_auto()
 
 func _run_auto() -> void:
 	while _auto and not _busy and not _resolved and _state.get("phase", "") == "combat":
-		var orders := _all_out_actions()
+		var orders := _defense_auto_actions() if _auto_strategy == "defense" else _all_out_actions()
 		if orders.is_empty():
 			break
 		# T15: play the round out ANIMATED even under オート — the damage number lands on the target and the
 		# HP bars drain as it resolves. Auto used to skip all of that (animated=false), so the moves happened
 		# but "誰が何にどれだけ / HPバー更新" was invisible; the beat-by-beat goal was not actually met.
 		await _resolve_round_with(orders, true)
-		if _party_in_danger():
+		# 攻撃オート hands control back at danger; 守備オート keeps healing through it (a wipe ends the fight
+		# regardless, via the phase check below).
+		if _auto_strategy == "attack" and _party_in_danger():
 			_auto = false
 			_log_line(I18n.t("tempo.autoStoppedDanger"))
 			break
@@ -583,6 +600,120 @@ func _all_out_actions() -> Array:
 				"targetGroupId": group_id,
 			})
 	return actions
+
+# 守備オート: the GDScript mirror of tempo.chooseDefensiveRoundActions. Per able member (alive, not
+# injured, not asleep), in priority order — ward, cure an ally's affliction, heal the worst-hurt
+# (technique or item), a back-row member defends, else attack. Recovery TARGETS are any living ally
+# (including a sleeper, who most needs the heal). Emits only engine-resolved actions, so no parity mirror.
+func _defense_auto_actions() -> Array:
+	var group_id := _first_living_group_id()
+	if group_id == "":
+		return []
+	var catalog: Dictionary = Techniques._resolve_technique_catalog(_engine, _world)
+	var actors := []
+	var living := []
+	for member in _state.get("party", []):
+		if int(member.get("hp", 0)) > 0 and member.get("injury", null) == null:
+			living.append(member)
+			if not (member.get("status", []) as Array).has("sleep"):
+				actors.append(member)
+	if actors.is_empty():
+		return []
+
+	var has_standing_front := false
+	var worst: Dictionary = {}
+	var worst_ratio := 2.0
+	var someone_hurt := false
+	var afflicted: Dictionary = {}
+	var warded := {}
+	for member in living:
+		if String(member.get("row", "")) == "front":
+			has_standing_front = true
+		var ratio := float(int(member.get("hp", 0))) / maxf(1.0, float(int(member.get("maxHp", 1))))
+		if ratio < worst_ratio:
+			worst_ratio = ratio
+			worst = member
+		if int(member.get("hp", 0)) <= ceili(float(int(member.get("maxHp", 0))) * 0.5):
+			someone_hurt = true
+		for status in member.get("status", []):
+			if afflicted.is_empty() and String(status) in ["poison", "fear", "silence", "sleep"]:
+				afflicted = member
+		if (member.get("status", []) as Array).has("ward"):
+			warded[String(member.get("id", ""))] = true
+
+	var actions := []
+	for member in actors:
+		var mp := int(member.get("mp", 0))
+		var ward_id := ""
+		var cure_id := ""
+		var heal_id := ""
+		var heal_amount := -1
+		for id in _loadout_for(member):
+			var definition: Dictionary = catalog.get(String(id), {})
+			if definition.is_empty() or mp < int((definition.get("cost", {}) as Dictionary).get("mp", 0)):
+				continue
+			for effect in definition.get("effects", []):
+				var kind := String((effect as Dictionary).get("kind", ""))
+				if kind == "ward" and ward_id == "":
+					ward_id = String(id)
+				elif kind == "cure" and cure_id == "":
+					cure_id = String(id)
+				elif kind == "heal" and String(definition.get("target", "")) != "enemyGroup":
+					var amount := int((effect as Dictionary).get("amount", 0))
+					if amount > heal_amount:
+						heal_amount = amount
+						heal_id = String(id)
+		# 1. Ward.
+		if ward_id != "":
+			var ward_def: Dictionary = catalog.get(ward_id, {})
+			var covers := []
+			if String(ward_def.get("target", "")) == "party":
+				for m in living:
+					covers.append(String(m.get("id", "")))
+			else:
+				covers.append(String(member.get("id", "")))
+			var needs := false
+			for cid in covers:
+				if not warded.has(cid):
+					needs = true
+			if needs:
+				for cid in covers:
+					warded[cid] = true
+				actions.append(_cast_order(member, ward_id, member))
+				continue
+		# 2. Cure.
+		if cure_id != "" and not afflicted.is_empty():
+			actions.append(_cast_order(member, cure_id, afflicted))
+			continue
+		# 3. Heal (technique, else item).
+		if someone_hurt and not worst.is_empty():
+			if heal_id != "":
+				actions.append(_cast_order(member, heal_id, worst))
+				continue
+			var potion := _first_healing_item_id()
+			if potion != "":
+				actions.append({"action": "use_item", "actorId": member.get("id", ""), "itemId": potion, "targetCharacterId": worst.get("id", "")})
+				continue
+		# 4. Defend (back-row behind a standing front).
+		if String(member.get("row", "")) != "front" and has_standing_front:
+			actions.append({"action": "defend", "actorId": member.get("id", "")})
+			continue
+		# 5. Attack.
+		actions.append({"action": "attack", "actorId": member.get("id", ""), "targetGroupId": group_id})
+	return actions
+
+# A cast order targeted per the technique's scope (ally → a chosen ally; self/party → no target).
+func _cast_order(member: Dictionary, technique_id: String, ally: Dictionary) -> Dictionary:
+	var order := {"action": "cast", "actorId": member.get("id", ""), "spellId": technique_id}
+	if Techniques.targeting(technique_id, _engine, _world) == "ally":
+		order["targetCharacterId"] = ally.get("id", "")
+	return order
+
+func _first_healing_item_id() -> String:
+	for item in _state.get("inventory", []):
+		if String((item as Dictionary).get("kind", "")) == "healing" and int((item as Dictionary).get("quantity", 0)) > 0:
+			return String((item as Dictionary).get("id", ""))
+	return ""
 
 # Rebuild the beat feel from before/after: HP removed per group, defeats, then the rewards event.
 func _playback(before: Dictionary, events: Array, animated: bool) -> void:

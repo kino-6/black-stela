@@ -1,8 +1,22 @@
 import { executeCommand, meleeTargetableGroup } from "./rulesEngine";
 import { weaponReaches } from "./economy";
 import { getGridEdge, getRoom } from "./scenario";
-import type { CombatActionDeclaration, GameState, ScenarioWorld } from "./types";
+import { combatLoadout } from "./vocations";
+import { resolveTechniqueCatalog, type Technique } from "./techniques";
+import { spellTargeting } from "./spells";
+import type { Character, CombatActionDeclaration, CombatStatus, GameState, ScenarioWorld } from "./types";
 import type { Translator } from "../i18n";
+
+/** Which auto-battle strategy a tempo loop runs: aggressive (attack) or supportive (ward/heal). */
+export type AutoStrategy = "attack" | "defense";
+
+// A member who can actually take an action THIS round: alive, not down-with-injury, and not asleep
+// (a sleeper is skipped by the resolver, so assigning it the heal would just waste the role — the auto
+// re-generates every round, so the moment it wakes it acts again). Silence only blocks 呪文, so a
+// silenced member is still "able" (it can attack); the resolver drops any spell it cannot cast.
+function canAct(member: { hp: number; injury?: unknown; status?: CombatStatus[] }): boolean {
+  return member.hp > 0 && !member.injury && !(member.status ?? []).includes("sleep");
+}
 
 /**
  * Repeat / auto-action tempo rules: one step of the auto-runner given the
@@ -22,6 +36,9 @@ export interface TempoOptions {
   // When true, auto-battle hands control back at each risk point (boss / tactical
   // squad / party danger). Default false — auto just runs.
   safetyStops?: boolean;
+  // Which selector the combat loop uses. "attack" (default) hammers the front line and honours the
+  // safety stops; "defense" wards/cures/heals first and PUSHES THROUGH danger (recovering is its job).
+  strategy?: AutoStrategy;
 }
 
 // The auto-battle move for a round: every able member attacks the first living
@@ -38,7 +55,7 @@ export function chooseAutoRoundActions(state: GameState, world: ScenarioWorld): 
   // become the shielded caster after round one. Once the front falls, the back becomes targetable.
   const groups = state.combat.enemyGroups;
   const target = groups.find((group) => meleeTargetableGroup(group, groups)) ?? groups.find((group) => group.count > 0);
-  const activeParty = state.party.filter((member) => member.hp > 0 && !member.injury);
+  const activeParty = state.party.filter(canAct);
   if (!target || activeParty.length === 0) {
     return [];
   }
@@ -50,13 +67,111 @@ export function chooseAutoRoundActions(state: GameState, world: ScenarioWorld): 
   );
 }
 
+const DEFENSE_HEAL_THRESHOLD = 0.5; // heal an ally at or below half HP
+const CURABLE_STATUSES: CombatStatus[] = ["poison", "fear", "silence", "sleep"]; // ward is a buff, not curable
+
+function healAmountOf(technique: Technique): number {
+  const effect = technique.effects.find((candidate) => candidate.kind === "heal");
+  return effect && effect.kind === "heal" ? effect.amount : 0;
+}
+
+// A cast action, targeted per the technique's SCOPE (ally → a chosen ally; self/party/allEnemies → the
+// resolver derives the subjects, so no target is attached). Mirrors CombatCommandMenu's queueSpell.
+function castAction(member: Character, technique: Technique, ally: Character): CombatActionDeclaration {
+  if (spellTargeting(technique.target) === "ally") {
+    return { actorId: member.id, action: "cast", spellId: technique.id, targetCharacterId: ally.id };
+  }
+  return { actorId: member.id, action: "cast", spellId: technique.id };
+}
+
+// The DEFENSE/RECOVERY auto move for a round. Per able member, in priority order: raise a ward, lift an
+// ally's affliction, heal the worst-hurt (technique or item), a back-row member defends, else attack. It
+// only emits actions the shared engine already resolves (cast/use_item/defend/attack), so it needs no
+// parity mirror. Attack is the fallback, so the fight still progresses and ends.
+export function chooseDefensiveRoundActions(state: GameState, world: ScenarioWorld): CombatActionDeclaration[] {
+  if (state.phase !== "combat" || !state.combat) {
+    return [];
+  }
+  const groups = state.combat.enemyGroups;
+  const target = groups.find((group) => meleeTargetableGroup(group, groups)) ?? groups.find((group) => group.count > 0);
+  // Two sets: who can ACT this round (canAct — excludes asleep), and every valid RECOVERY TARGET (any
+  // living, non-injured ally — INCLUDING a sleeping one, since a sleeper is exactly who most needs the
+  // ward/cure/heal that another member casts on them).
+  const actors = state.party.filter(canAct);
+  const living = state.party.filter((member) => member.hp > 0 && !member.injury);
+  if (!target || actors.length === 0) {
+    return [];
+  }
+
+  const catalog = resolveTechniqueCatalog(world);
+  const hasStandingFront = living.some((member) => member.row === "front");
+  const worstHurt = [...living].sort((a, b) => a.hp / a.maxHp - b.hp / b.maxHp)[0];
+  const someoneHurt = living.some((member) => member.hp <= Math.ceil(member.maxHp * DEFENSE_HEAL_THRESHOLD));
+  const afflicted = living.find((member) => (member.status ?? []).some((status) => CURABLE_STATUSES.includes(status)));
+
+  // Allies already covered by a ward this round (seed with those who already carry it), so several
+  // warders do not redundantly re-cast the same cover.
+  const warded = new Set(living.filter((member) => (member.status ?? []).includes("ward")).map((member) => member.id));
+  const actions: CombatActionDeclaration[] = [];
+
+  for (const member of actors) {
+    const techniques = combatLoadout(member, world)
+      .map((id) => catalog[id])
+      .filter((technique): technique is Technique => Boolean(technique));
+    const affordable = (technique: Technique) => member.mp >= (technique.cost.mp ?? 0);
+
+    // 1. Ward — cover before the enemy acts (self or party scope).
+    const ward = techniques.find((technique) => technique.effects.some((effect) => effect.kind === "ward") && affordable(technique));
+    if (ward) {
+      const covers = ward.target === "party" ? living.map((member) => member.id) : [member.id];
+      if (covers.some((id) => !warded.has(id))) {
+        covers.forEach((id) => warded.add(id));
+        actions.push(castAction(member, ward, member));
+        continue;
+      }
+    }
+    // 2. Cure — lift an ally's affliction.
+    if (afflicted) {
+      const cure = techniques.find((technique) => technique.effects.some((effect) => effect.kind === "cure") && affordable(technique));
+      if (cure) {
+        actions.push(castAction(member, cure, afflicted));
+        continue;
+      }
+    }
+    // 3. Heal — the worst-hurt ally, biggest heal first; else a carried healing item.
+    if (someoneHurt) {
+      const heal = techniques
+        .filter((technique) => technique.effects.some((effect) => effect.kind === "heal") && spellTargeting(technique.target) !== "group" && affordable(technique))
+        .sort((a, b) => healAmountOf(b) - healAmountOf(a))[0];
+      if (heal) {
+        actions.push(castAction(member, heal, worstHurt));
+        continue;
+      }
+      const potion = state.inventory.find((item) => item.kind === "healing" && item.quantity > 0);
+      if (potion) {
+        actions.push({ actorId: member.id, action: "use_item", itemId: potion.id, targetCharacterId: worstHurt.id });
+        continue;
+      }
+    }
+    // 4. Defend — a back-row member with no reach behind a standing front line.
+    if (member.row !== "front" && hasStandingFront && !weaponReaches(member, world)) {
+      actions.push({ actorId: member.id, action: "defend" });
+      continue;
+    }
+    // 5. Attack.
+    actions.push({ actorId: member.id, action: "attack", targetGroupId: target.id });
+  }
+  return actions;
+}
+
 // Whether auto-battle should hand control back BEFORE resolving another round, and
 // the status line to show. Returns null to keep going. Used by the paced auto path.
 export function autoCombatStopStatus(state: GameState, options: TempoOptions, t: Translator): string | null {
   if (state.phase !== "combat" || !state.combat) {
     return t("tempo.autoStoppedClear");
   }
-  if (options.safetyStops) {
+  // The defense loop ignores discretionary safety stops (it heals through danger); only a wipe stops it.
+  if ((options.strategy ?? "attack") === "attack" && options.safetyStops) {
     if (state.combat.enemy.isBoss || state.combat.enemy.role === "boss" || state.combat.enemy.role === "miniboss") {
       return t("tempo.autoStoppedBoss");
     }
@@ -114,10 +229,11 @@ function runTempoCombatStep(
     return { state, keepRunning: false, status: t("tempo.autoStoppedClear") };
   }
 
-  // Discretionary safety stops (boss / tactical squad / party danger) are OFF by
-  // default — auto-battle just runs until the fight ends or no one can act. A player
-  // can re-enable them in Config (they hand control back at each risk point).
-  if (options.safetyStops) {
+  const strategy = options.strategy ?? "attack";
+  // Discretionary safety stops (boss / tactical squad / party danger) apply to the ATTACK loop only —
+  // the DEFENSE loop pushes through danger because recovering the party is exactly its job. A full wipe
+  // still stops either loop (checked after the round). The player toggles safety in Config.
+  if (strategy === "attack" && options.safetyStops) {
     if (state.combat.enemy.isBoss || state.combat.enemy.role === "boss" || state.combat.enemy.role === "miniboss") {
       return { state, keepRunning: false, status: t("tempo.autoStoppedBoss") };
     }
@@ -134,7 +250,7 @@ function runTempoCombatStep(
     }
   }
 
-  const actions = chooseAutoRoundActions(state, world);
+  const actions = strategy === "defense" ? chooseDefensiveRoundActions(state, world) : chooseAutoRoundActions(state, world);
   if (actions.length === 0) {
     return { state, keepRunning: false, status: t("tempo.autoStoppedDanger") };
   }
@@ -147,7 +263,7 @@ function runTempoCombatStep(
     return { state: next, keepRunning: false, status: t("tempo.autoStoppedClear") };
   }
 
-  if (options.safetyStops && next.party.some((member) => member.injury || member.hp <= Math.ceil(member.maxHp * 0.35))) {
+  if (strategy === "attack" && options.safetyStops && next.party.some((member) => member.injury || member.hp <= Math.ceil(member.maxHp * 0.35))) {
     return { state: next, keepRunning: false, status: t("tempo.autoStoppedDanger") };
   }
 

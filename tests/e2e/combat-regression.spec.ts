@@ -73,7 +73,7 @@ test("オート and リピート are distinct controls (Repeat disarmed until a 
   await enterCombat(page);
   // オート (continuous auto-battle) and リピート (re-run last round) are separate
   // buttons — the earlier confusion was one button that did neither clearly.
-  await expect(page.getByTestId("combat-auto")).toBeVisible();
+  await expect(page.getByTestId("combat-auto-attack")).toBeVisible();
   await expect(page.getByTestId("combat-repeat-round")).toBeVisible();
   // Nothing has been carried out yet, so リピート has nothing to repeat.
   await expect(page.getByTestId("combat-repeat-round")).toBeDisabled();
@@ -183,7 +183,7 @@ test("after all orders are set, a confirm step gates the round (default ON) (#72
 
 test("オート also plays out blow-by-blow (not instant) (#73)", async ({ page }) => {
   await enterCombat(page);
-  await page.getByTestId("combat-auto").click();
+  await page.getByTestId("combat-auto-attack").click();
   // While Auto runs, rounds animate: a floating damage number appears on the stage
   // during playback — Auto no longer resolves the whole fight in an instant.
   let sawHit = false;

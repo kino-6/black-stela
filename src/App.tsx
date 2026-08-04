@@ -52,7 +52,7 @@ import { readVault, depositToVault, removeFromVault, type VaultEntry } from "./d
 import { getGridEdge, getLocalizedRoomText, getRoom, isBossFloor } from "./domain/scenario";
 import { createIdentitySuggestion } from "./domain/identitySuggestion";
 import { executeCommand, listUnlockedCheckpoints, remapRepeatOrders, roomStairsEdge, stairGateAhead } from "./domain/rulesEngine";
-import { autoCombatStopStatus, chooseAutoRoundActions, getTempoModeForPhase, runTempoStep, type TempoMode } from "./domain/tempo";
+import { autoCombatStopStatus, chooseAutoRoundActions, chooseDefensiveRoundActions, getTempoModeForPhase, runTempoStep, type AutoStrategy, type TempoMode } from "./domain/tempo";
 import { SPELLS, isCasterClass, knownSpells, spellTargeting, type SpellId } from "./domain/spells";
 import { resolveTechniqueCatalog } from "./domain/techniques";
 import {
@@ -218,6 +218,8 @@ export function App() {
   const [saveStatus, setSaveStatus] = useState("");
   const [tempoStatus, setTempoStatus] = useState("");
   const [tempoMode, setTempoMode] = useState<TempoMode>("idle");
+  // Which auto-battle strategy the combat tempo loop runs: attack-focus [A] or ward/heal-focus [G].
+  const [tempoStrategy, setTempoStrategy] = useState<AutoStrategy>("attack");
   // Repeat/auto tempo feedback (Lane X): a visible speed tier and a live step
   // counter so the runner never reads as a stalled or hidden timer.
   const [tempoSpeed, setTempoSpeed] = useState<"normal" | "fast">("normal");
@@ -832,7 +834,9 @@ export function App() {
     setCombatOrders([]);
   }
 
-  function toggleTempoMode(preferredMode: TempoMode = getTempoModeForPhase(state.phase)) {
+  function toggleTempoMode(preferredMode: TempoMode = getTempoModeForPhase(state.phase), strategy: AutoStrategy = "attack") {
+    // Pressing a running auto's key again (or the OTHER combat auto's key) always stops it — one
+    // toggle, no accidental strategy-swap mid-loop; the player re-presses to start the mode they want.
     if (tempoMode !== "idle") {
       setTempoMode("idle");
       setTempoStatus(t("tempo.repeatStopped"));
@@ -844,6 +848,7 @@ export function App() {
       return;
     }
 
+    setTempoStrategy(strategy);
     setTempoStatus("");
     setTempoStep(0);
     setTempoMode(preferredMode);
@@ -1212,7 +1217,7 @@ export function App() {
       if (!instantCombatLog && stateRef.current.phase === "combat") {
         return;
       }
-      const result = runTempoStep(stateRef.current, tempoMode, activeWorld, t, { safetyStops: autoBattleSafety });
+      const result = runTempoStep(stateRef.current, tempoMode, activeWorld, t, { safetyStops: autoBattleSafety, strategy: tempoStrategy });
       stateRef.current = result.state;
       setState(result.state);
       setTempoStep((step) => step + 1);
@@ -1224,7 +1229,7 @@ export function App() {
     }, tempoSpeed === "fast" ? 130 : 320);
 
     return () => window.clearInterval(timer);
-  }, [tempoMode, tempoSpeed, autoBattleSafety, instantCombatLog, t]);
+  }, [tempoMode, tempoStrategy, tempoSpeed, autoBattleSafety, instantCombatLog, t]);
 
   // Auto-battle, paced: while Auto runs in combat (and playback is on), resolve one
   // round through the playback path, then let the committed state re-trigger the
@@ -1233,13 +1238,13 @@ export function App() {
     if (tempoMode === "idle" || instantCombatLog || state.phase !== "combat" || playback) {
       return;
     }
-    const stop = autoCombatStopStatus(state, { safetyStops: autoBattleSafety }, t);
+    const stop = autoCombatStopStatus(state, { safetyStops: autoBattleSafety, strategy: tempoStrategy }, t);
     if (stop) {
       setTempoMode("idle");
       setTempoStatus(stop);
       return;
     }
-    const actions = chooseAutoRoundActions(state, activeWorld);
+    const actions = tempoStrategy === "defense" ? chooseDefensiveRoundActions(state, activeWorld) : chooseAutoRoundActions(state, activeWorld);
     if (actions.length === 0) {
       setTempoMode("idle");
       return;
@@ -1249,7 +1254,7 @@ export function App() {
       resolveRound(actions, { fromAuto: true });
     }, tempoSpeed === "fast" ? 120 : 300);
     return () => window.clearTimeout(timer);
-  }, [tempoMode, instantCombatLog, state, playback, autoBattleSafety, tempoSpeed, t]);
+  }, [tempoMode, tempoStrategy, instantCombatLog, state, playback, autoBattleSafety, tempoSpeed, t]);
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
@@ -1367,6 +1372,11 @@ export function App() {
         // 全員でかかる — one press commits the whole round with the smart attack default.
         event.preventDefault();
         commitAllOutAttack();
+      } else if (state.phase === "combat" && key === "g") {
+        // 守備オート — auto-battle loop, ward/heal-focus. (攻撃オート rides the R/Space toggle above,
+        // which defaults to the attack strategy; A is reserved for WASD reticle-left.)
+        event.preventDefault();
+        toggleTempoMode("combat", "defense");
       } else if (state.phase === "dungeon" && !chestActive && (key === "w" || key === "enter")) {
         event.preventDefault();
         run({ type: "move_forward" });
@@ -2805,7 +2815,9 @@ export function App() {
                   confirmRound={confirmRound}
                   onExecuteRound={executeCombatOrders}
                   isTempoRunning={isTempoRunning}
-                  onToggleTempo={() => toggleTempoMode("combat")}
+                  tempoStrategy={tempoStrategy}
+                  onAttackAuto={() => toggleTempoMode("combat", "attack")}
+                  onDefenseAuto={() => toggleTempoMode("combat", "defense")}
                   onAllOut={commitAllOutAttack}
                   canAllOut={tempoMode === "idle" && !playback && activeParty.length > 0 && livingEnemyGroups.length > 0}
                   onRepeatRound={repeatLastRound}

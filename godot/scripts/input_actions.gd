@@ -20,8 +20,9 @@ const ACTIONS := {
 	"actor_next": [KEY_BRACKETRIGHT],
 	"target_prev": [KEY_COMMA],
 	"target_next": [KEY_PERIOD],
-	"repeat": [KEY_R],
-	"auto": [KEY_F],
+	"auto": [KEY_F],   # 全員でかかる — one all-out attack round
+	"attack_auto": [KEY_R],   # 攻撃オート — auto-battle loop, attack-focus (repeat stays a button, matching React)
+	"defense_auto": [KEY_G],   # 守備オート — auto-battle loop, ward/heal-focus
 	"auto_interrupt": [KEY_BACKSPACE],
 }
 

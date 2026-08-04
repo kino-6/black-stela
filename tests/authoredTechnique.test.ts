@@ -30,7 +30,7 @@ describe("an authored technique resolves in real combat (technique externalisati
     const enemy = terminalLine.enemies.find((candidate) => candidate.id === "enemy.tl1f.drain-rat")!;
     const combat = createCombatState(terminalLine.startRoom, enemy, 1);
     const groupId = combat.enemyGroups[0].id;
-    const hpBefore = combat.enemyGroups[0].hp;
+    const hpBefore = combat.enemyGroups[0].hpEach;
 
     const state: GameState = {
       ...(({} as unknown) as GameState),
@@ -65,7 +65,7 @@ describe("an authored technique resolves in real combat (technique externalisati
     // The authored technique landed: either the fight resolved (the lone enemy was defeated → combat is
     // cleared) or the surviving group lost HP. Both outcomes prove a data-only technique dealt damage.
     const groupAfter = after.combat?.enemyGroups[0];
-    const damaged = !after.combat || !groupAfter || groupAfter.hp < hpBefore || groupAfter.count < 1;
+    const damaged = !after.combat || !groupAfter || groupAfter.hpEach < hpBefore || groupAfter.count < 1;
     expect(damaged, "authored rifle-sight dealt no damage").toBe(true);
     // And a victory means the enemy is on the defeated ledger — the round genuinely resolved the cast.
     if (!after.combat) {
