@@ -13,6 +13,7 @@ import {
   parseScenarioWorld
 } from "../domain/scenario";
 import { BUILTIN_VOCATION_IDS } from "../domain/vocations";
+import { resolveTechniqueCatalog } from "../domain/techniques";
 import { parseScenarioPackManifest, type ScenarioPackManifest, type ScenarioValidationError } from "../domain/scenarioPack";
 import type { ScenarioWorld } from "../domain/types";
 import type { Direction, DungeonGridCell, DungeonGridEdge } from "../domain/types";
@@ -406,6 +407,32 @@ export function validateScenarioGraph(world: ScenarioWorld, filePath = "world.md
           fieldPath: `${table.id}.entries.itemId`,
           reason: `Unknown treasure item reference: ${entry.itemId}`
         });
+      }
+    }
+  }
+
+  // Every technique an item/gear/vocation NAMES must resolve against this world's catalog (built-in ⊕
+  // authored). The schema loosened these ids to free strings so a world may name its OWN techniques
+  // (content/worlds/<id>/techniques.md); this restores the "unknown technique is rejected at load"
+  // guarantee the z.enum used to give — now against the resolved catalog, not only the built-ins.
+  const techniqueCatalog = resolveTechniqueCatalog(world);
+  const techniqueExists = (id: string): boolean => Object.prototype.hasOwnProperty.call(techniqueCatalog, id);
+  for (const item of world.items) {
+    if (item.useTechnique && !techniqueExists(item.useTechnique)) {
+      errors.push({ filePath, fieldPath: `${item.id}.useTechnique`, reason: `Item names an unknown technique: ${item.useTechnique}` });
+    }
+  }
+  for (const gear of world.equipment) {
+    for (const id of [...(gear.grantsTechniques ?? []), ...(gear.grantsPassives ?? [])]) {
+      if (!techniqueExists(id)) {
+        errors.push({ filePath, fieldPath: `${gear.id}.grantsTechniques`, reason: `Equipment names an unknown technique: ${id}` });
+      }
+    }
+  }
+  for (const vocation of world.vocations) {
+    for (const id of vocation.grantsTechniques ?? []) {
+      if (!techniqueExists(id)) {
+        errors.push({ filePath, fieldPath: `${vocation.id}.grantsTechniques`, reason: `Vocation names an unknown technique: ${id}` });
       }
     }
   }

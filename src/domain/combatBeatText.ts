@@ -10,7 +10,9 @@ import type { CombatBeat } from "./types";
  * shipping a raw id on screen; §9.4 made it exported and shared. `Record<TechniqueId, …>` is what forces
  * a new technique to be NAMED before it can ship.
  */
-export const SPELL_LABEL: Record<NonNullable<CombatBeat["spellId"]>, TranslationKey> = {
+// The BUILT-IN id→i18n-key table. An AUTHORED technique carries its own per-locale name and resolves
+// through `localizeTechnique`, so this no longer has to be exhaustive over every id in play.
+export const SPELL_LABEL: Record<string, TranslationKey> = {
   heal: "play.spellHeal",
   firebolt: "play.spellFirebolt",
   sleep: "play.spellSleep",
@@ -98,16 +100,25 @@ const STATUS_LABEL: Record<string, TranslationKey> = {
   fear: "beat.statusFear"
 };
 
+/** The built-in display name for a technique id: its i18n name, or the raw id when it is not a built-in
+ *  (an AUTHORED technique resolves through localizeTechnique instead). Never throws on an unknown id —
+ *  the failure mode the old exhaustive Record could not have. */
+export function techniqueLabel(id: string, t: Translator): string {
+  const key = SPELL_LABEL[id];
+  return key ? t(key) : id;
+}
+
 export function formatCombatBeat(
   beat: CombatBeat,
   t: Translator,
   localizeEnemy: (enemyId: string) => string,
-  localizeAbility?: (enemyId: string | undefined, rawName: string) => string
+  localizeAbility?: (enemyId: string | undefined, rawName: string) => string,
+  localizeTechnique?: (id: string) => string
 ): string {
   const actor = beat.actorName ?? (beat.actorEnemyId ? localizeEnemy(beat.actorEnemyId) : "");
   const target = beat.targetName ?? (beat.targetEnemyId ? localizeEnemy(beat.targetEnemyId) : "");
   const ability = beat.spellId
-    ? t(SPELL_LABEL[beat.spellId])
+    ? localizeTechnique?.(beat.spellId) ?? techniqueLabel(beat.spellId, t)
     : beat.abilityName
       ? localizeAbility?.(beat.actorEnemyId, beat.abilityName) ?? beat.abilityName
       : "";

@@ -227,10 +227,11 @@ const scenarioItemSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
   kind: z.enum(["healing", "utility", "key", "treasure", "escape", "cure", "focus", "growth", "ward", "throwable", "scroll"]),
-  // §9.4c — the technique a ward charm / thrown flask / scroll performs. Validated against the engine
-  // catalog by the loader, so a world naming a technique that does not exist is rejected at load rather
-  // than silently doing nothing in the middle of a fight.
-  useTechnique: z.enum(Object.keys(TECHNIQUES) as [TechniqueId, ...TechniqueId[]]).optional(),
+  // §9.4c — the technique a ward charm / thrown flask / scroll performs. A free string so it may name an
+  // AUTHORED technique (content/worlds/<id>/techniques.md), not only a built-in; validateScenarioGraph
+  // rejects any id absent from the resolved catalog, so a world naming a technique that does not exist is
+  // still caught at load rather than silently doing nothing mid-fight.
+  useTechnique: z.string().min(1).optional(),
   // §9.4c — a tool that buys a better exploration attempt (lock picks, trap shims, a detection lens).
   // The TYPE and the spending rule existed since §9.2, but this schema field did not, so an authored
   // `explorationAid` was silently STRIPPED by the loader and the tool did nothing at all.
@@ -298,10 +299,11 @@ const scenarioEquipmentSchema = z.object({
       ])
     )
     .optional(),
-  /** Active combat techniques supplied by this equipped item (Terminal Line firearms). */
-  grantsTechniques: z.array(z.enum(Object.keys(TECHNIQUES) as [TechniqueId, ...TechniqueId[]])).optional(),
+  /** Active combat techniques supplied by this equipped item (Terminal Line firearms). Free strings so
+   *  they may name AUTHORED techniques; validateScenarioGraph checks each id against the resolved catalog. */
+  grantsTechniques: z.array(z.string().min(1)).optional(),
   /** Passive techniques supplied while this item is equipped. */
-  grantsPassives: z.array(z.enum(Object.keys(TECHNIQUES) as [TechniqueId, ...TechniqueId[]])).optional(),
+  grantsPassives: z.array(z.string().min(1)).optional(),
   /** The stat change from a supplied passive, exported with the world for Godot's stat pipeline. */
   passiveBonus: z.object({
     attack: z.number().int().optional(),

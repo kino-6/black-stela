@@ -24,7 +24,7 @@ import { addCharacter, createInitialGameState } from "../domain/gameState";
 import { createGuildCharacter } from "../domain/characterCreation";
 import { createInventoryItemFromCatalog } from "../domain/economy";
 import { combatLoadout } from "../domain/vocations";
-import { TECHNIQUES } from "../domain/techniques";
+import { resolveTechniqueCatalog, type Technique } from "../domain/techniques";
 import { classProficiency } from "../domain/classCapabilities";
 import { successChance, trapSkill } from "../domain/chests";
 import { withDeterministicIds } from "../domain/ids";
@@ -114,6 +114,7 @@ function goldOf(world: ScenarioWorld, itemIds: string[]): number {
 function planRound(state: GameState, world: ScenarioWorld, wardedIds: Set<string>): CombatActionDeclaration[] {
   const target = state.combat?.enemyGroups.find((group) => group.count > 0);
   if (!target) return [];
+  const techniques = resolveTechniqueCatalog(world);
   const able = state.party.filter((member) => member.hp > 0 && !member.injury);
   const hurt = able.filter((member) => member.hp / member.maxHp < 0.55).sort((a, b) => a.hp / a.maxHp - b.hp / b.maxHp)[0];
 
@@ -121,8 +122,8 @@ function planRound(state: GameState, world: ScenarioWorld, wardedIds: Set<string
     const known = combatLoadout(actor, world);
 
     // 1. A ward, once, before anything else — that is what a ward is for.
-    const ward = known.find((id) => TECHNIQUES[id].effects.some((effect) => effect.kind === "ward"));
-    if (ward && !wardedIds.has(actor.id) && actor.mp >= (TECHNIQUES[ward].cost.mp ?? 0)) {
+    const ward = known.find((id) => techniques[id].effects.some((effect) => effect.kind === "ward"));
+    if (ward && !wardedIds.has(actor.id) && actor.mp >= (techniques[ward].cost.mp ?? 0)) {
       wardedIds.add(actor.id);
       return { actorId: actor.id, action: "cast" as const, spellId: ward };
     }
@@ -140,11 +141,11 @@ function planRound(state: GameState, world: ScenarioWorld, wardedIds: Set<string
     // 2. Heal whoever is worst off, with the biggest heal this actor knows.
     if (hurt) {
       const heals = known
-        .filter((id) => TECHNIQUES[id].effects.some((effect) => effect.kind === "heal") && spellTargeting(TECHNIQUES[id].target) !== "group")
-        .sort((a, b) => healAmount(b) - healAmount(a));
-      const heal = heals.find((id) => actor.mp >= (TECHNIQUES[id].cost.mp ?? 0));
+        .filter((id) => techniques[id].effects.some((effect) => effect.kind === "heal") && spellTargeting(techniques[id].target) !== "group")
+        .sort((a, b) => healAmount(techniques[b]) - healAmount(techniques[a]));
+      const heal = heals.find((id) => actor.mp >= (techniques[id].cost.mp ?? 0));
       if (heal) {
-        const scope = spellTargeting(TECHNIQUES[heal].target);
+        const scope = spellTargeting(techniques[heal].target);
         return {
           actorId: actor.id,
           action: "cast" as const,
@@ -163,8 +164,8 @@ function planRound(state: GameState, world: ScenarioWorld, wardedIds: Set<string
   });
 }
 
-function healAmount(id: keyof typeof TECHNIQUES): number {
-  const effect = TECHNIQUES[id].effects.find((candidate) => candidate.kind === "heal");
+function healAmount(technique: Technique): number {
+  const effect = technique.effects.find((candidate) => candidate.kind === "heal");
   return effect && effect.kind === "heal" ? effect.amount : 0;
 }
 

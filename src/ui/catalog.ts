@@ -1,6 +1,7 @@
 import { getActiveWorld } from "../data/activeWorld";
 import { findBackground, findClass } from "../domain/characterCreation";
 import { getEffectiveCharacterStats } from "../domain/economy";
+import { techniqueLabel } from "../domain/combatBeatText";
 import type { Character, CombatActionDeclaration, EquippedItem, GameState, ScenarioEquipment, ScenarioShop } from "../domain/types";
 import type { Locale, TranslationKey, Translator } from "../i18n";
 import { formatCombatAction, formatCombatRow } from "./format";
@@ -63,6 +64,15 @@ export function equippedName(equipped: EquippedItem | undefined, locale: Locale,
 export function localizedEnemyGroupName(group: { enemyId: string; name: string }, locale: Locale) {
   const enemy = getActiveWorld().enemies.find((candidate) => candidate.id === group.enemyId);
   return enemy?.locales?.[locale]?.name ?? enemy?.name ?? group.name;
+}
+
+/** A technique id → display name in the active locale. An AUTHORED technique (this world's
+ *  techniques.md) carries its own `locales[locale].name`; a built-in falls through to its i18n label
+ *  (techniqueLabel). Mirrors localizedEnemyAbilityName — the seam that lets authored ids have names. */
+export function localizeTechnique(id: string, locale: Locale, t: Translator): string {
+  const authored = getActiveWorld().techniques?.find((technique) => technique.id === id);
+  const name = authored?.locales?.[locale]?.name;
+  return name ?? techniqueLabel(id, t);
 }
 
 /** The combat log carries an enemy ability's raw (English) name; resolve it to the active

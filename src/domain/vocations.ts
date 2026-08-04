@@ -7,10 +7,10 @@
 // farming weak floors is not the optimal mastery route), and learned techniques are kept forever.
 import { classCatalog, reclassCharacter } from "./characterCreation";
 import { rewardXpFor } from "./leveling";
-import { SPELLS, knownSpells, type SpellId } from "./spells";
+import { knownSpells, resolveCastableCatalog, type SpellId } from "./spells";
 import type { Character, CharacterClassId, CharacterVocationState, Enemy, EquipmentSlot, ScenarioVocation, ScenarioWorld, VocationId } from "./types";
 import { equippedTechniqueGrants } from "./economy";
-import { TECHNIQUES } from "./techniques";
+import { resolveTechniqueCatalog } from "./techniques";
 
 export const BUILTIN_VOCATION_IDS: VocationId[] = classCatalog.map((definition) => definition.id);
 
@@ -102,12 +102,14 @@ export function masteryGain(memberLevel: number, enemy: Pick<Enemy, "level" | "d
 // to its class's known spells — so combat is unchanged until a player edits a loadout.
 export function combatLoadout(character: Character, world?: ScenarioWorld): SpellId[] {
   const learned = resolveVocationState(character).loadout;
+  // Resolve against the WORLD's catalog so an AUTHORED technique (a Terminal Line firearm) is recognised
+  // — the base TECHNIQUES/SPELLS tables do not know it. Base worlds return the prebuilt tables unchanged.
+  const catalog = resolveTechniqueCatalog(world);
+  const castable = resolveCastableCatalog(world);
   const gear = world ? equippedTechniqueGrants(character, world) : [];
-  const nonGearTechniques = learned.filter(
-    (id) => !TECHNIQUES[id as keyof typeof TECHNIQUES]?.tags?.includes("firearm")
-  );
+  const nonGearTechniques = learned.filter((id) => !catalog[id]?.tags?.includes("firearm"));
   return [...nonGearTechniques, ...gear].filter(
-    (id, index, all): id is SpellId => all.indexOf(id) === index && Object.prototype.hasOwnProperty.call(SPELLS, id)
+    (id, index, all): id is SpellId => all.indexOf(id) === index && Object.prototype.hasOwnProperty.call(castable, id)
   );
 }
 

@@ -4,7 +4,7 @@ import { createGuildCharacter } from "../src/domain/characterCreation";
 import { createSquadCombatState, executeCommand } from "../src/domain/rulesEngine";
 import { createInventoryItemFromCatalog } from "../src/domain/economy";
 import { withDeterministicIds } from "../src/domain/ids";
-import { TECHNIQUES } from "../src/domain/techniques";
+import { resolveTechniqueCatalog } from "../src/domain/techniques";
 import { worldRegistry } from "../src/data/worldRegistry";
 import { defaultWorld } from "../src/data/defaultWorld";
 import type { Character, GameState } from "../src/domain/types";
@@ -136,7 +136,7 @@ describe("§9.4c the item route stays the WEAKER route", () => {
     for (const [worldId, world] of Object.entries(worldRegistry)) {
       for (const item of world.items ?? []) {
         if (!item.useTechnique) continue;
-        expect(TECHNIQUES[item.useTechnique], `${worldId}:${item.id} names a missing technique`).toBeDefined();
+        expect(resolveTechniqueCatalog(world)[item.useTechnique], `${worldId}:${item.id} names a missing technique`).toBeDefined();
         checked += 1;
       }
     }

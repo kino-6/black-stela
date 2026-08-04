@@ -1,7 +1,8 @@
 import type { AnyClassId, CharacterAptitudes, CharacterClassId } from "./types";
 import { CLASS_CAPABILITIES } from "./classCapabilities";
 import { resolveClassId } from "./classIds";
-import { TECHNIQUES, type Technique, type TechniqueEffect, type TechniqueId, type TechniqueTarget } from "./techniques";
+import { TECHNIQUES, resolveTechniqueCatalog, type Technique, type TechniqueEffect, type TechniqueId, type TechniqueTarget } from "./techniques";
+import type { ScenarioWorld } from "./types";
 
 /**
  * THE CASTABLE VIEW of the technique catalog.
@@ -21,7 +22,9 @@ import { TECHNIQUES, type Technique, type TechniqueEffect, type TechniqueId, typ
  * one place, rather than half-applied in the middle of a fight.
  */
 
-export type SpellId = TechniqueId;
+// A castable technique id. A free string (like Element), not the built-in union — a world may author
+// its own techniques (content/worlds/<id>/techniques.md), so an id need not be known at compile time.
+export type SpellId = string;
 
 export type SpellKind = "spell" | "skill";
 
@@ -72,8 +75,29 @@ export function spellTargeting(target: SpellTarget): SpellTargeting {
 export const SPELLS: Record<SpellId, Spell> = Object.fromEntries(
   Object.values(TECHNIQUES)
     .map((technique) => [technique.id, toLegacySpell(technique)] as const)
-    .filter((entry): entry is readonly [SpellId, Spell] => entry[1] !== null)
+    .filter((entry): entry is readonly [TechniqueId, Spell] => entry[1] !== null)
 ) as Record<SpellId, Spell>;
+
+/**
+ * The castable-spell view for a WORLD: toLegacySpell over the resolved catalog (built-in ⊕ authored).
+ * The world-aware analogue of SPELLS — a technique is castable only if it appears here, so an AUTHORED
+ * technique (a Terminal Line firearm) survives the loadout's castability filter. Base worlds (no authored
+ * techniques) reuse the prebuilt SPELLS unchanged, so combat resolves byte-identically.
+ */
+export function resolveCastableCatalog(world?: ScenarioWorld): Record<SpellId, Spell> {
+  const catalog = resolveTechniqueCatalog(world);
+  if (catalog === TECHNIQUES) {
+    return SPELLS;
+  }
+  const out: Record<SpellId, Spell> = {};
+  for (const technique of Object.values(catalog)) {
+    const spell = toLegacySpell(technique);
+    if (spell) {
+      out[technique.id] = spell;
+    }
+  }
+  return out;
+}
 
 /**
  * The level at which each class learns each ability, projected from the class contract. Kept in the old

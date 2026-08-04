@@ -17,7 +17,7 @@ import { acceptQuest, claimQuest } from "./commands/questCommands";
 import { applyLevelUps, rewardXpFor } from "./leveling";
 import { PARTY_SIZE_LIMIT, findClass, importAdventurer, reclassCharacter } from "./characterCreation";
 import { SPELLS, knownSpells } from "./spells";
-import { TECHNIQUES, isCampUsableTechnique, type Technique } from "./techniques";
+import { resolveTechniqueCatalog, isCampUsableTechnique, type Technique } from "./techniques";
 import { applyLastingEffects, coveringMemberId, statModifier, tickEffects, type ActiveEffect } from "./combatEffects";
 import { getCriticalChance, getEvasionChance, getInitiativeScore, getSpellPowerBonus, getStatusSpellChance } from "./combatMath";
 import { FEAR_ACCURACY_PENALTY, POISON_DAMAGE, STATUS_WEAR_OFF, statusResistPct } from "./status";
@@ -1216,6 +1216,7 @@ function declareRound(state: GameState, world: ScenarioWorld, actions: CombatAct
   }
 
   const combat = normalizeCombat(state.combat);
+  const techniqueCatalog = resolveTechniqueCatalog(world);
   const validation = validateRoundActions(state.party, combat, actions, world);
   if (validation.event) {
     return withEvents({ ...state, combat }, [validation.event]);
@@ -1423,7 +1424,7 @@ function declareRound(state: GameState, world: ScenarioWorld, actions: CombatAct
       // the class route, and it costs no MP, no class and no loadout slot: that is the whole point of
       // "an item is a valid answer to a missing class" (§8). It is weaker or one-shot instead.
       const held = inventory.find((candidate) => candidate.id === action.itemId && candidate.quantity > 0);
-      const itemTechnique = held?.useTechnique ? TECHNIQUES[held.useTechnique] : undefined;
+      const itemTechnique = held?.useTechnique ? techniqueCatalog[held.useTechnique] : undefined;
       if (held && itemTechnique) {
         inventory = inventory
           .map((candidate) => (candidate.id === held.id ? { ...candidate, quantity: candidate.quantity - 1 } : candidate))
@@ -1445,7 +1446,7 @@ function declareRound(state: GameState, world: ScenarioWorld, actions: CombatAct
     }
 
     if (action.action === "cast" && action.spellId) {
-      const technique = TECHNIQUES[action.spellId];
+      const technique = techniqueCatalog[action.spellId];
       // IMP-021C: an actor may cast only a technique on its combat loadout (which defaults to the
       // class's known spells until a player edits it).
       if (!technique || !combatLoadout(actor, world).includes(technique.id)) {
@@ -1979,7 +1980,7 @@ function useTechnique(
   state: GameState,
   world: ScenarioWorld,
   characterId: string,
-  techniqueId: Technique["id"],
+  techniqueId: string,
   targetCharacterId?: string
 ): CommandResult {
   if (state.phase === "combat") {
@@ -1987,7 +1988,7 @@ function useTechnique(
   }
 
   const actor = state.party.find((member) => member.id === characterId);
-  const technique = TECHNIQUES[techniqueId];
+  const technique = resolveTechniqueCatalog(world)[techniqueId];
   if (!actor || !technique || !isCampUsableTechnique(technique)) {
     return noChange(state);
   }

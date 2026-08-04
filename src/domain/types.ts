@@ -44,7 +44,7 @@ export type Command =
   | { type: "attack" }
   | { type: "defend" }
   | { type: "use_item"; itemId: string; targetCharacterId: string }
-  | { type: "use_technique"; characterId: string; techniqueId: TechniqueId; targetCharacterId?: string }
+  | { type: "use_technique"; characterId: string; techniqueId: string; targetCharacterId?: string }
   | { type: "discard_item"; itemId: string; plus?: number; affix?: string }
   | { type: "set_member_row"; characterId: string; row: CombatRow }
   | { type: "swap_member_rows"; characterId: string; targetCharacterId: string }
@@ -311,7 +311,7 @@ export interface InventoryItem {
    */
   kind: "healing" | "utility" | "key" | "treasure" | "equipment" | "escape" | "cure" | "focus" | "growth" | "ward" | "throwable" | "scroll";
   /** The technique this item performs when used. Spent by using it — no MP, no class, no loadout. */
-  useTechnique?: TechniqueId;
+  useTechnique?: string;
   /** Permanent growth this item grants on use (outside combat). Aptitudes and core stats raise the
    *  member; `xp` is a DIRECT grant that bypasses the out-levelling falloff by construction (it never
    *  touches the combat-reward path). This is the player's "工夫" the design keeps rewarding. */
@@ -371,7 +371,7 @@ export interface CombatBeat {
   remaining?: number; // enemies left in the target group after this blow
   crit?: boolean;
   weak?: boolean;
-  spellId?: TechniqueId; // localize ability name — widens with the catalog, no longer hand-listed here
+  spellId?: string; // localize ability name — widens with the catalog, no longer hand-listed here
   abilityName?: string; // enemy ability raw name (fallback)
   statusName?: string; // status/ailment name
   groups: { id: string; count: number; hpEach: number }[];
@@ -496,7 +496,7 @@ export type GameEvent =
   | { type: "character_leveled_up"; characterId: string; characterName: string; level: number }
   | { type: "party_defended"; enemyId: string; enemyName: string; damage: number }
   | { type: "item_used"; itemId: string; itemName: string; targetCharacterId: string; targetName: string; healAmount: number }
-  | { type: "technique_used"; techniqueId: TechniqueId; characterId: string; characterName: string; targetCharacterIds: string[]; targetNames: string[]; healAmount: number; curedStatuses: CombatStatus[] }
+  | { type: "technique_used"; techniqueId: string; characterId: string; characterName: string; targetCharacterIds: string[]; targetNames: string[]; healAmount: number; curedStatuses: CombatStatus[] }
   | { type: "item_discarded"; itemId: string; itemName: string }
   | { type: "inventory_item_gained"; itemId: string; itemName: string; quantity: number; source: "treasure" | "reward"; plus?: number; affix?: string }
   | { type: "item_bought"; itemId: string; itemName: string; gold: number }
@@ -678,7 +678,7 @@ export interface CombatActionDeclaration {
   targetGroupId?: string;
   targetCharacterId?: string;
   itemId?: string;
-  spellId?: TechniqueId; // widens with the catalog rather than being hand-listed here
+  spellId?: string; // widens with the catalog rather than being hand-listed here
 }
 
 export interface DungeonPosition {
@@ -1029,7 +1029,7 @@ export interface ScenarioItem {
   kind: "healing" | "utility" | "key" | "treasure" | "escape" | "cure" | "focus" | "growth" | "ward" | "throwable" | "scroll";
   grants?: ItemGrants;
   /** §9.4c — the technique this item performs, resolved by the same applier a class's cast uses. */
-  useTechnique?: TechniqueId;
+  useTechnique?: string;
   tier: number;
   price?: number;
   sellValue?: number;
@@ -1109,9 +1109,9 @@ export interface ScenarioEquipment {
   elementResist?: Partial<Record<string, number>>;
   allowedClasses?: AnyClassId[];
   /** Active combat techniques supplied while this piece is equipped. */
-  grantsTechniques?: TechniqueId[];
+  grantsTechniques?: string[];
   /** Automatic stat techniques supplied while this piece is equipped. */
-  grantsPassives?: TechniqueId[];
+  grantsPassives?: string[];
   /** Concrete stat payload for the supplied passive; keeps the Godot world export self-contained. */
   passiveBonus?: { attack?: number; armor?: number; accuracy?: number; speed?: number; resistance?: Partial<Record<CombatStatus, number>> };
   tags?: string[];

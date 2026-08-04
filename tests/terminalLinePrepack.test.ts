@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { loadScenarioPack } from "../src/services/scenarioPackLoader";
 import { createGuildCharacter } from "../src/domain/characterCreation";
 import { getEffectiveCharacterStats } from "../src/domain/economy";
-import { TECHNIQUES } from "../src/domain/techniques";
+import { findTechnique } from "../src/domain/techniques";
 import { combatLoadout } from "../src/domain/vocations";
 import { createCombatState, executeCommand } from "../src/domain/rulesEngine";
 import { createInitialGameState } from "../src/domain/gameState";
@@ -227,12 +227,12 @@ describe("Terminal Line F1–F10 canonical pack", () => {
     }
     for (const [family, ids] of Object.entries(lines)) {
       for (const techniqueId of ids.flatMap((id) => firearms.get(id)?.grantsTechniques ?? [])) {
-        expect(TECHNIQUES[techniqueId].tags).toContain(family);
+        expect(findTechnique(techniqueId)!.tags).toContain(family);
       }
     }
     for (const equipment of [...firearms.values()].filter((candidate) => candidate.tags?.includes("firearm"))) {
       expect(equipment.grantsTechniques, equipment.id).toHaveLength(2);
-      expect(equipment.grantsTechniques?.every((id) => equipment.tags?.some((tag) => TECHNIQUES[id].tags?.includes(tag))), equipment.id).toBe(true);
+      expect(equipment.grantsTechniques?.every((id) => equipment.tags?.some((tag) => findTechnique(id)!.tags?.includes(tag))), equipment.id).toBe(true);
     }
     const passives = new Set([...firearms.values()].flatMap((equipment) => equipment.grantsPassives ?? []));
     expect(passives).toEqual(new Set([
@@ -243,7 +243,7 @@ describe("Terminal Line F1–F10 canonical pack", () => {
       const passiveIds = equipment.grantsPassives ?? [];
       if (passiveIds.length === 0) continue;
       expect(passiveIds).toHaveLength(1);
-      expect(TECHNIQUES[passiveIds[0]].passiveBonus).toEqual(equipment.passiveBonus);
+      expect(findTechnique(passiveIds[0])!.passiveBonus).toEqual(equipment.passiveBonus);
     }
   });
 

@@ -4,7 +4,7 @@ import { PHYSICAL } from "./types";
 import { equipmentInstanceKey, plusPrimaryStat } from "./affixes";
 import { findResolvedAffix } from "./loot";
 import { effectsOn, statModifier, wardElementResist, wardStatusResist, type ActiveEffect } from "./combatEffects";
-import { TECHNIQUES, type TechniqueId } from "./techniques";
+import { resolveTechniqueCatalog } from "./techniques";
 
 export const STARTING_PARTY_GOLD = 75;
 const RECOVERY_HP_COST = 1;
@@ -115,24 +115,26 @@ export function weaponReaches(character: Character, world: ScenarioWorld): boole
 }
 
 /** Active techniques that come from currently worn equipment, in deterministic slot/id order. */
-export function equippedTechniqueGrants(character: Character, world: ScenarioWorld): TechniqueId[] {
-  const out: TechniqueId[] = [];
+export function equippedTechniqueGrants(character: Character, world: ScenarioWorld): string[] {
+  const techniques = resolveTechniqueCatalog(world);
+  const out: string[] = [];
   for (const equipped of Object.values(character.equipment)) {
     const catalog = equipped ? findEquipment(world, equipped.id) : undefined;
     for (const id of catalog?.grantsTechniques ?? []) {
-      if (TECHNIQUES[id]?.kind !== "passive" && !out.includes(id)) out.push(id);
+      if (techniques[id]?.kind !== "passive" && !out.includes(id)) out.push(id);
     }
   }
   return out;
 }
 
 /** Passive techniques supplied by worn equipment. Their bonuses resolve in `getEffectiveCharacterStats`. */
-export function equippedPassiveGrants(character: Character, world: ScenarioWorld): TechniqueId[] {
-  const out: TechniqueId[] = [];
+export function equippedPassiveGrants(character: Character, world: ScenarioWorld): string[] {
+  const techniques = resolveTechniqueCatalog(world);
+  const out: string[] = [];
   for (const equipped of Object.values(character.equipment)) {
     const catalog = equipped ? findEquipment(world, equipped.id) : undefined;
     for (const id of catalog?.grantsPassives ?? []) {
-      if (TECHNIQUES[id]?.kind === "passive" && !out.includes(id)) out.push(id);
+      if (techniques[id]?.kind === "passive" && !out.includes(id)) out.push(id);
     }
   }
   return out;

@@ -54,7 +54,7 @@ import { createIdentitySuggestion } from "./domain/identitySuggestion";
 import { executeCommand, listUnlockedCheckpoints, remapRepeatOrders, roomStairsEdge, stairGateAhead } from "./domain/rulesEngine";
 import { autoCombatStopStatus, chooseAutoRoundActions, getTempoModeForPhase, runTempoStep, type TempoMode } from "./domain/tempo";
 import { SPELLS, isCasterClass, knownSpells, spellTargeting, type SpellId } from "./domain/spells";
-import { TECHNIQUES } from "./domain/techniques";
+import { resolveTechniqueCatalog } from "./domain/techniques";
 import {
   activateControllerCancel,
   controllerFocusKey,
@@ -382,9 +382,11 @@ export function App() {
         .map((item) => ({
           id: item.id,
           label: `${item.name} ×${item.quantity}`,
-          targeting: item.useTechnique ? spellTargeting(TECHNIQUES[item.useTechnique].target) : ("ally" as const)
+          targeting: item.useTechnique
+            ? spellTargeting(resolveTechniqueCatalog(activeWorld)[item.useTechnique]?.target ?? "ally")
+            : ("ally" as const)
         })),
-    [state.inventory]
+    [state.inventory, activeWorld]
   );
   const showGuildPanel = false;
   const isTempoRunning = tempoMode !== "idle";
