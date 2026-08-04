@@ -64,7 +64,7 @@ describe("debug auto-explore", () => {
     }
     expect(state.map.visitedRooms.length).toBeGreaterThan(startVisited + 10);
     expect(depth(state.map.floorId)).toBeGreaterThanOrEqual(2); // descended off B1F on its own
-  });
+  }, 30000); // up to 400 passes of walk+fight — well over the 5s default on a slow CI runner
 
   // Regression: a floor's always-open RETURN shortcut (e.g. B5F's bar → B2F) must
   // never be treated as a forward exploration path. Before the descendOnly fix the
@@ -90,5 +90,5 @@ describe("debug auto-explore", () => {
       // And it should have made downward progress (or already been at the finale).
       expect(deepest).toBeGreaterThanOrEqual(startDepth);
     }
-  });
+  }, 30000); // five progress states × up to 30 walk+fight passes — over the 5s default on slow CI
 });

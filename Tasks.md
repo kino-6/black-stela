@@ -53,6 +53,14 @@ IMP-060/061/062/063/064 completion records in `Improve.md`.
 - **（後続キュー）** U3 = **CLASS_CAPABILITIES 外部化＋terminal-line クラスのテーマ化**（world がクラス習得技を差し替え可能に。
   firearm はクラス習得禁止の invariant。技外部化と同 seam）。U4 = **Save 再設計**（現：固定スロット→**シナリオごとに Autosave＋任意
   Save**）。U5 = **T30 1シナリオ N 迷宮**（下記 T30）。
+- [-] **CI（GitHub Actions `.github/workflows/ci.yml`）が push ごとに赤** — *user 指摘 2026-08-05。* 2ジョブとも失敗、いずれも既存赤：
+  ① **verify → Unit tests**：`tests/debugAutoExplore.test.ts` の2テスト（"blitzes down through floors" / "never warps backward"）が
+  **CI の遅いランナーで 5000ms タイムアウト**（ローカルは緑＝環境依存のタイミングフレーク、memory 記載の既知 ~5s flake）。→ 当該テストに
+  `{ timeout: 20000 }` 等を付与（テスト自体は正しい、CI が遅いだけ）。② **godot-gates → gate:migration/gate:ux-parity**：既知の4ギャップ
+  `town-party`・`town-party-items`（`aptitude.balanced`「均等」=P6由来、PartyMenuPanel）／`dungeon-dock`・`dungeon-map`
+  （stairs/地図キー＋"no room in this world matches the requested state"=ux-parity manifest が T29 再生成後の room 状態と不整合、U6隣接）。
+  → 各 required-but-missing キーを特定し、React 側surface に不足キーを供給 or manifest を現行 room 状態に更新。**Gate:** `gh run` が緑
+  （verify + godot-gates 両方）。まず timeout を確実に直し、ux-parity は各失敗を個別調査（i18n/manifest の小修正か、真のギャップで別途かを切り分け）。
 
 ### P — 2026-08-03 夜 実機playtest バッチ（最優先・player-facing）
 

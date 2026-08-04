@@ -373,8 +373,10 @@ func set_ui_state(ui: Dictionary) -> void:
 		_stand_at(func(room, _cells): return bool(room.get("stairsToTown", false)))
 	if bool(ui.get("at_rest", false)):
 		# A rest point is left by the PARTY, not built into the floor — the way home there is the marker
-		# they planted, and it says so.
-		_stand_at(func(room, _cells): return bool(room.get("restPoint", false)) and not bool(room.get("stairsToTown", false)))
+		# they planted, and it says so. Stand where that marker is the ACTUAL context action: a rest room
+		# that is not itself a staircase (a stair here would win 決定 and hide the marker — the reason this
+		# state exists is to show 帰還標を使う, so it must land somewhere the marker answers).
+		_stand_at(func(room, _cells): return bool(room.get("restPoint", false)) and not bool(room.get("stairsToTown", false)) and not _room_has_stairs(room))
 	if ui.has("auto"):
 		_auto_running = bool(ui["auto"])
 		_rebuild_dock()

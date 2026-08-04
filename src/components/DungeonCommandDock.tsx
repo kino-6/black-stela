@@ -24,6 +24,7 @@ interface DungeonCommandDockProps {
   debugMode: boolean;
   onAutoExplore: () => void;
   canUseStairs: boolean;
+  stairsDescend: boolean;
   blockingStairGate: boolean;
   stairGateClue: string | null;
   onUseStairs: () => void;
@@ -45,6 +46,7 @@ export function DungeonCommandDock({
   debugMode,
   onAutoExplore,
   canUseStairs,
+  stairsDescend,
   blockingStairGate,
   stairGateClue,
   onUseStairs,
@@ -108,9 +110,11 @@ export function DungeonCommandDock({
         </>
       )}
       {canUseStairs && !blockingStairGate && (
+        // P10 parity: up (前の階へ戻る) and down (次の階へ降りる) are both stairs but read differently, so
+        // the dock names the direction — matching the Godot dock instead of a single generic 「階段を使う」.
         <button type="button" className="context-command" onClick={onUseStairs}>
           <DoorOpen size={18} />
-          {t("play.useStairs")}
+          {t(stairsDescend ? "play.descendStairs" : "play.ascendStairs")}
         </button>
       )}
       {canUseStairs && blockingStairGate && (

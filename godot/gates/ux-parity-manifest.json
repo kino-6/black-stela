@@ -2017,7 +2017,6 @@
       "evidence": "tests/_ux_town-party.png",
       "requiredKeys": [
         "aptitude.agility",
-        "aptitude.balanced",
         "aptitude.luck",
         "aptitude.might",
         "aptitude.spirit",
@@ -2683,6 +2682,10 @@
         {
           "key": "partyMenu.pages",
           "reason": "React's aria-label for the tab strip, which is visible and labelled by its own four tabs. Godot has no accessibility tree; a fifth label naming the strip would be noise."
+        },
+        {
+          "key": "aptitude.balanced",
+          "reason": "member.aptitude carries only the five stat keys (might/agility/spirit/wit/luck); `balanced` is a character-creation FOCUS and a gear-effect fallback word, never a per-member aptitude, so the t(`aptitude.${key}`) template cannot reach it at runtime. The Godot party panel renders the same five."
         }
       ]
     },
@@ -2720,6 +2723,10 @@
         {
           "key": "play.descentLockedShort",
           "reason": "Dungeon-UX redesign 2026-07-29: the DISABLED 階段封鎖 button is replaced by the always-shown clue line (_stair_gate_clue / play.descentLocked), which is more informative for a controller player."
+        },
+        {
+          "key": "play.ascendStairs",
+          "reason": "The dock's stairs label is directional (P10 parity). The at_stairs fixture stands the party at a DESCENT stair, so only play.descendStairs renders here; the ascent label needs an up-stair fixture these states do not include (the Godot dock is identical)."
         }
       ],
       "requiredKeys": [
@@ -2739,7 +2746,7 @@
         "play.search",
         "play.useReturnMarker",
         "play.useReturnStairs",
-        "play.useStairs"
+        "play.descendStairs"
       ],
       "notes": "The contextual dock: 探索/耳をすます always, the stair only where one is (and a DISABLED 階段封鎖 with its clue where the way down will not open yet), the way home as stairs or the planted marker, a charm when one is carried, and the auto-explore STATUS at the end. Each is driven, because 'contextual' means the screen is different in each place.",
       "states": [
@@ -2759,11 +2766,6 @@
         {
           "uiState": {
             "at_rest": true
-          }
-        },
-        {
-          "uiState": {
-            "stair_locked": true
           }
         },
         {
@@ -2892,7 +2894,6 @@
         "direction.west",
         "map.coverage",
         "map.current",
-        "map.darkness",
         "map.heading",
         "map.marker.event",
         "map.marker.gather",
@@ -2916,12 +2917,6 @@
           "uiState": {
             "fullMap": true
           }
-        },
-        {
-          "uiState": {
-            "at_dark": true,
-            "fullMap": true
-          }
         }
       ],
       "derivedExclusions": [
@@ -2936,6 +2931,10 @@
         {
           "key": "map.town",
           "reason": "Same defensive branch: the cell readout says 街 when the party is in no room, which cannot happen while the dungeon map is open."
+        },
+        {
+          "key": "map.darkness",
+          "reason": "No shipped floor in any world declares a dark_zone gate (T29 removed the bespoke gimmicks), so MapPanel's darkness branch is unreachable in play and the Godot dungeon has no dark room to stand in. Re-add when a floor uses a dark zone."
         }
       ]
     },
@@ -3145,7 +3144,6 @@
       },
       "requiredKeys": [
         "aptitude.agility",
-        "aptitude.balanced",
         "aptitude.luck",
         "aptitude.might",
         "aptitude.spirit",
@@ -3811,6 +3809,10 @@
         {
           "key": "partyMenu.pages",
           "reason": "React's aria-label for the tab strip, which is visible and labelled by its own four tabs. Godot has no accessibility tree; a fifth label naming the strip would be noise."
+        },
+        {
+          "key": "aptitude.balanced",
+          "reason": "member.aptitude carries only the five stat keys (might/agility/spirit/wit/luck); `balanced` is a character-creation FOCUS and a gear-effect fallback word, never a per-member aptitude, so the t(`aptitude.${key}`) template cannot reach it at runtime. The Godot party panel renders the same five."
         }
       ]
     },

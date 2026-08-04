@@ -28,6 +28,7 @@ interface DungeonCockpitProps {
   onOpenFullMap: () => void;
   onAutoExplore: () => void;
   canUseStairs: boolean;
+  stairsDescend: boolean;
   blockingStairGate: boolean;
   stairGateClue: string | null;
   onUseStairs: () => void;
@@ -60,6 +61,7 @@ export function DungeonCockpit({
   onOpenFullMap,
   onAutoExplore,
   canUseStairs,
+  stairsDescend,
   blockingStairGate,
   stairGateClue,
   onUseStairs,
@@ -215,6 +217,7 @@ export function DungeonCockpit({
         debugMode={debugMode}
         onAutoExplore={onAutoExplore}
         canUseStairs={canUseStairs}
+        stairsDescend={stairsDescend}
         blockingStairGate={blockingStairGate}
         stairGateClue={stairGateClue}
         onUseStairs={onUseStairs}

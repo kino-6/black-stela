@@ -295,9 +295,20 @@ export function App() {
   const canUseEscapeItem =
     Boolean(escapeItem) && state.phase === "dungeon" && !isBossFloor(activeWorld, state.map.floorId);
   // A stair is used from the current cell, regardless of which way the party faces.
-  const canUseStairs = Boolean(
-    state.position && roomStairsEdge(activeWorld, state.position.roomId, state.position.facing)
-  );
+  const stairsInfo = state.position
+    ? roomStairsEdge(activeWorld, state.position.roomId, state.position.facing)
+    : null;
+  const canUseStairs = Boolean(stairsInfo);
+  // Does this stair go DOWN (deeper floor) or UP (shallower)? Compared by floor order in world.dungeons,
+  // the same rule MapPanel and the Godot dock use (P10). Unknown targets read as descent (the common case).
+  const stairsDescend = (() => {
+    const target = stairsInfo?.edge.targetFloorId;
+    const current = state.map.floorId;
+    if (!target || !current) return true;
+    const ci = activeWorld.dungeons.findIndex((d) => d.id === current);
+    const ti = activeWorld.dungeons.findIndex((d) => d.id === target);
+    return ci < 0 || ti < 0 ? true : ti > ci;
+  })();
   // A stair the party faces but can't yet use (crank not turned, floor not mapped).
   const blockingStairGate = stairGateAhead(activeWorld, state);
   const stairGateClue = blockingStairGate
@@ -2767,6 +2778,7 @@ export function App() {
                   onOpenFullMap={() => setFullMapOpen(true)}
                   onAutoExplore={() => setState((current) => debugAutoExplore(current, activeWorld))}
                   canUseStairs={canUseStairs}
+                  stairsDescend={stairsDescend}
                   blockingStairGate={Boolean(blockingStairGate)}
                   stairGateClue={stairGateClue ?? null}
                   onUseStairs={() => run({ type: "use_stairs" })}
