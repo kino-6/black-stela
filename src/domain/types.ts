@@ -928,12 +928,22 @@ export interface ScenarioWorld {
   /** Authored combat techniques, merged over the built-in engine catalog (resolveTechniqueCatalog).
    *  Lets a world ship its own ability family (e.g. Terminal Line firearms) as pure data. */
   techniques: ScenarioTechnique[];
+  /** Authored class-learned technique lines, layered over the built-in CLASS_CAPABILITIES
+   *  (resolveClassCapabilities). Lets a world re-theme what each class NATIVELY learns as data. */
+  classTechniques: ScenarioClassTechniques[];
   importPolicy?: ScenarioImportPolicy;
 }
 
 export interface AiPolicy {
   allowed: string[];
   forbidden: string[];
+}
+
+/** A world's re-skin of ONE class's native learned line (content/worlds/<id>/class-techniques.md).
+ *  Replaces that class's built-in combatTechniques; ids may be authored (world.techniques). */
+export interface ScenarioClassTechniques {
+  classId: string;
+  combatTechniques: { level: number; techniqueId: string }[];
 }
 
 export interface DungeonFloor {

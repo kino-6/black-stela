@@ -4,7 +4,7 @@ import { createGuildCharacter } from "../src/domain/characterCreation";
 import { createSquadCombatState, executeCommand } from "../src/domain/rulesEngine";
 import { withDeterministicIds } from "../src/domain/ids";
 import { CLASS_CAPABILITIES } from "../src/domain/classCapabilities";
-import { TECHNIQUES } from "../src/domain/techniques";
+import { TECHNIQUES, findTechnique } from "../src/domain/techniques";
 import { defaultWorld } from "../src/data/defaultWorld";
 import { worldRegistry } from "../src/data/worldRegistry";
 import type { Character, CombatStatus, GameState } from "../src/domain/types";
@@ -216,10 +216,10 @@ describe("§9.4b the roster holds together", () => {
   it("never grants a technique nobody can pay for, and never one the castable view refuses", () => {
     for (const [classId, capabilities] of Object.entries(CLASS_CAPABILITIES)) {
       for (const grant of capabilities.combatTechniques) {
-        const technique = TECHNIQUES[grant.techniqueId];
+        const technique = findTechnique(grant.techniqueId);
         expect(technique, `${classId} grants a missing ${grant.techniqueId}`).toBeDefined();
         // Combat can only spend MP today, so a grant costing an item or HP would be unusable.
-        expect(technique.cost.itemId ?? technique.cost.hp ?? technique.cost.usesPerExpedition).toBeUndefined();
+        expect(technique?.cost.itemId ?? technique?.cost.hp ?? technique?.cost.usesPerExpedition).toBeUndefined();
       }
     }
   });

@@ -1,6 +1,5 @@
-import type { AnyClassId, CharacterClassId, CombatRow, EquipmentSlot } from "./types";
+import type { AnyClassId, CharacterClassId, CombatRow, EquipmentSlot, ScenarioWorld } from "./types";
 import { resolveClassId } from "./classIds";
-import type { TechniqueId } from "./techniques";
 
 /**
  * WHAT A CLASS CAN DO — the class contract, in rules rather than in prose.
@@ -35,10 +34,12 @@ export type Proficiency = "untrained" | "trained" | "specialist";
  */
 export type ExplorationAction = "investigate" | "disarm" | "unlock" | "detectSecret" | "escape" | "map";
 
-/** A technique the class learns, and the level it arrives at. */
+/** A technique the class learns, and the level it arrives at. `techniqueId` is a free string (like
+ *  Element) so a WORLD may re-skin a class's line with its OWN authored techniques (resolveClassCapabilities);
+ *  the built-in CLASS_CAPABILITIES literal below still uses built-in ids. */
 export interface ClassTechniqueGrant {
   level: number;
-  techniqueId: TechniqueId;
+  techniqueId: string;
 }
 
 /**
@@ -193,6 +194,30 @@ export const CLASS_CAPABILITIES: Record<CharacterClassId, ClassCapabilities> = {
 
 export function classCapabilities(classId: AnyClassId): ClassCapabilities | undefined {
   return CLASS_CAPABILITIES[resolveClassId(classId)];
+}
+
+/**
+ * The class contract for a RUN: the built-in CLASS_CAPABILITIES with the active world's authored class
+ * lines layered on top. A world (content/worlds/<id>/class-techniques.md) may REPLACE a class's
+ * `combatTechniques` with its own themed line — a Terminal Line "技術員" learns current-attacks instead
+ * of the Mage's firebolt. Mirrors resolveTechniqueCatalog / resolveVocationCatalog: when the world
+ * authors none, the built-in table is returned by reference (byte-identical base path). Only the learned
+ * line is overridden; exploration/equipment/row/weakness stay the class's built-in identity. A re-skinned
+ * line MUST keep each technique's `kind` (spell vs skill) — the MP/気力 pool is seeded from the base class.
+ */
+export function resolveClassCapabilities(world?: ScenarioWorld): Record<CharacterClassId, ClassCapabilities> {
+  const authored = world?.classTechniques;
+  if (!authored || authored.length === 0) {
+    return CLASS_CAPABILITIES;
+  }
+  const merged = { ...CLASS_CAPABILITIES };
+  for (const entry of authored) {
+    const classId = resolveClassId(entry.classId as AnyClassId);
+    if (merged[classId]) {
+      merged[classId] = { ...merged[classId], combatTechniques: entry.combatTechniques };
+    }
+  }
+  return merged;
 }
 
 /** What a class knows about an exploration action. An unlisted action is untrained — never forbidden. */

@@ -81,6 +81,7 @@ const blockedWorld: ScenarioWorld = {
   vocations: [],
   affixes: [],
   techniques: [],
+  classTechniques: [],
   dungeons: [
     {
       id: "dungeon.blocked",
@@ -115,6 +116,7 @@ const loopWorld: ScenarioWorld = {
   vocations: [],
   affixes: [],
   techniques: [],
+  classTechniques: [],
   dungeons: [
     {
       id: "dungeon.loop",

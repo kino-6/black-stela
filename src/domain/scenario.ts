@@ -1,7 +1,7 @@
 import yaml from "js-yaml";
 import { expandFloorMap, isMapFloor } from "./floorMap";
 import { z } from "zod";
-import type { Direction, DungeonFloor, DungeonGridCell, DungeonGridEdge, ScenarioAffix, ScenarioQuest, ScenarioTechnique, ScenarioVocation, ScenarioWorld } from "./types";
+import type { Direction, DungeonFloor, DungeonGridCell, DungeonGridEdge, ScenarioAffix, ScenarioClassTechniques, ScenarioQuest, ScenarioTechnique, ScenarioVocation, ScenarioWorld } from "./types";
 import { TECHNIQUES, validateTechnique, type Technique, type TechniqueId } from "./techniques";
 
 const directionSchema = z.enum(["north", "east", "south", "west"]);
@@ -222,6 +222,16 @@ const scenarioTechniqueSchema = z
       ctx.addIssue({ code: z.ZodIssueCode.custom, message: problem });
     }
   });
+
+// Authored class-learned lines (content/worlds/<id>/class-techniques.md). Each entry REPLACES one
+// class's built-in combatTechniques with themed ids (resolveClassCapabilities). techniqueId is a free
+// string; validateScenarioGraph checks it resolves and is not a firearm (a class never natively learns one).
+const scenarioClassTechniquesSchema = z.object({
+  classId: z.string().min(1),
+  combatTechniques: z
+    .array(z.object({ level: z.number().int().positive(), techniqueId: z.string().min(1) }))
+    .default([])
+});
 
 const scenarioItemSchema = z.object({
   id: z.string().min(1),
@@ -593,7 +603,8 @@ export const scenarioWorldSchema = z.object({
   quests: z.array(scenarioQuestSchema).default([]),
   vocations: z.array(scenarioVocationSchema).default([]),
   affixes: z.array(scenarioAffixSchema).default([]),
-  techniques: z.array(scenarioTechniqueSchema).default([])
+  techniques: z.array(scenarioTechniqueSchema).default([]),
+  classTechniques: z.array(scenarioClassTechniquesSchema).default([])
 });
 
 export const scenarioItemsSchema = z.object({
@@ -632,6 +643,10 @@ export const scenarioAffixesSchema = z.object({
 
 export const scenarioTechniquesSchema = z.object({
   techniques: z.array(scenarioTechniqueSchema).default([])
+});
+
+export const scenarioClassTechniquesFileSchema = z.object({
+  classTechniques: z.array(scenarioClassTechniquesSchema).default([])
 });
 
 interface FrontMatterDocument<T> {
@@ -675,7 +690,7 @@ export function parseScenarioWorld(
   data: Partial<
     Pick<
       ScenarioWorld,
-      "items" | "equipment" | "shops" | "enemies" | "encounterTables" | "treasureTables" | "progressionFlags" | "quests" | "vocations" | "affixes" | "techniques"
+      "items" | "equipment" | "shops" | "enemies" | "encounterTables" | "treasureTables" | "progressionFlags" | "quests" | "vocations" | "affixes" | "techniques" | "classTechniques"
     >
   > = {}
 ): ScenarioWorld {
@@ -700,7 +715,8 @@ export function parseScenarioWorld(
     quests: data.quests ?? [],
     vocations: data.vocations ?? [],
     affixes: data.affixes ?? [],
-    techniques: data.techniques ?? []
+    techniques: data.techniques ?? [],
+    classTechniques: data.classTechniques ?? []
   }) as ScenarioWorld;
 }
 
@@ -741,6 +757,10 @@ export function parseScenarioAffixes(markdown: string): { affixes: ScenarioAffix
 
 export function parseScenarioTechniques(markdown: string): { techniques: ScenarioTechnique[] } {
   return parseMarkdownFrontMatter(markdown, scenarioTechniquesSchema).data as { techniques: ScenarioTechnique[] };
+}
+
+export function parseScenarioClassTechniques(markdown: string): { classTechniques: ScenarioClassTechniques[] } {
+  return parseMarkdownFrontMatter(markdown, scenarioClassTechniquesFileSchema).data as { classTechniques: ScenarioClassTechniques[] };
 }
 
 export function getRoom(world: ScenarioWorld, roomId: string) {

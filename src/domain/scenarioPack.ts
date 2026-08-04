@@ -18,7 +18,8 @@ export const scenarioPackManifestSchema = z.object({
       quests: z.string().min(1).optional(),
       vocations: z.string().min(1).optional(),
       affixes: z.string().min(1).optional(),
-      techniques: z.string().min(1).optional()
+      techniques: z.string().min(1).optional(),
+      classTechniques: z.string().min(1).optional()
     })
     .default({}),
   compatibility: z.object({
