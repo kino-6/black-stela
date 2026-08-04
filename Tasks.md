@@ -51,8 +51,11 @@ IMP-060/061/062/063/064 completion records in `Improve.md`.
     実効果を出す」アサート追加、緑。
   - **[x] 候補ソート（済・commit, Godot）:** party_panel.gd で装備可能を先頭・不可を後方（disabled=淡色＋理由）に
     sort_custom。verify_dungeon_controller「ineligible stays visible with a reason」緑維持。
-  - **[ ] 残: React候補ソートのパリティ**（PartyMenuPanel の候補リストも equippable-first に）＋ 候補順序の
-    専用アサート（現状は sort が自明＋回帰テストで担保）。
+  - **[判断] React候補パリティ = 意図的差異として据え置き（2026-08-04）:** React `PartyMenuPanel.carriedEquipment`
+    は元々 **usable のみに filter**（ineligible 非表示）＝Godot（理由付きで下に淡色表示）との構造差は*私の作業前から*
+    の既存もの。React では全候補が装備可能なので「equippable-first」は自明。ユーザーの P6 決定（不可品を下に淡色）は
+    **reviewed の Godot ビルドで充足済み**。React（oracle・非review）を Godot の slot ベース理由付き表示に合わせるのは
+    構造 refactor で低価値・破壊リスクありのため据え置き。必要なら別途。
   - **（参考）根因メモ:** `town_format.gd:format_equipment_effect`（=React `describeEquipmentEffect`/
     `format.ts formatBonusParts`）は **攻/防/命/速の4statしか出さず**、hp/mp/resistBonus/elementResist/regen を持つ
     装身具は parts 空→`format_bonus_parts` が `I18n.t("aptitude.balanced")`＝「均等」にフォールバック。つまり
@@ -63,10 +66,12 @@ IMP-060/061/062/063/064 completion records in `Improve.md`.
     現行「ineligible stays visible with a reason」テストと両立させつつ、装備可能→装備不可の順にソートし不可品を
     グレーアウト＋理由（例「装身具のみ」）を各行に。godot party_panel.gd（候補リスト構築）+ React PartyMenuPanel/
     ShopPanel。Gate: verify_dungeon_controller に「候補は装備可能が先頭・不可は淡色で理由付き」アサート追加。
-- [ ] **P7 戦闘アニメ中に敵味方HPバーが減らない** — Godot beats は player→敵beatのみ(`combat_round.gd:138`)。
-  味方バーは全beat後(`combat.gd:651`)に一括更新＝アニメ中は据置。React beat は per-beat `groups`/`party`
-  スナップショットを持つ(rulesEngine.ts:1239)。Godot beat に snapshot を載せ、両バーを beat 単位で駆動する。
-  Gate: verify_combat_numbers 拡張 + 実機。
+- [x] **P7 戦闘アニメ中に味方HPバーが減らない（済・commit 9abf878）** — 敵ターンが beat 無しで party に damage
+  → 味方バーが全beat後に一括更新だった。`combat_round.gd` が **敵→味方 beat**（`{attackerGroupId, targetMemberId,
+  damage}`）を発行（ability damage + basic swing）、`combat.gd` playback が `_drain_member_bar`/`_member_by_id` で
+  被弾メンバーのバーを per-beat tween。player-beat（敵バー drain）→ enemy-beat（味方バー drain）の順でアニメ中に両側
+  が落ちる。beat後の一括アニメは fallback のみ（played_party_beat で二重防止）。parity は beats drop で不変。
+  Gate: verify_combat_controller/numbers/parity/gate:godot-runtime 全緑。
 - [~] **P8/P9 憧れ装備ラインナップ＋探索ユーティリティ＝「面白さGate」**（user 2026-08-04）
   - **[x] 面白さGate（済・commit fffd83d/2d96784）** `tests/funGate.test.ts`：世界ごとに ①憧れ武器＋防具（shop購入可・
     price ≥ 250・最高価格武器=最強）②探索ユーティリティ(kind∈{utility,escape}≥3＋帰還手段)。**両世界LIVE緑**。
