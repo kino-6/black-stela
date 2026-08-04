@@ -211,7 +211,7 @@ equipment:
     description: A small round shield of layered bark; light enough for a quick hand.
     slot: offhand
     tier: 1
-    armorBonus: 2
+    defenseBonus: 2
     price: 42
     sellValue: 14
     tags: [shield, bark]
@@ -224,7 +224,7 @@ equipment:
     description: A hood matted with living moss; it softens a blow and steadies the head.
     slot: head
     tier: 1
-    armorBonus: 1
+    defenseBonus: 1
     hpBonus: 3
     price: 46
     sellValue: 15
@@ -238,7 +238,7 @@ equipment:
     description: Overlapping bark scutes, grown to fit; heavy but sure.
     slot: body
     tier: 2
-    armorBonus: 4
+    defenseBonus: 4
     price: 95
     sellValue: 30
     tags: [armor, bark]

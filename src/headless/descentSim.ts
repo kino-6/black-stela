@@ -236,7 +236,34 @@ function partyAtLevel(party: Character[], level: number): Character[] {
 
 // The element this enemy is MOST weak to, and a world weapon that deals it (if one exists). This
 // is the "prepared" party's offense: carry the right tool and swap to it per fight.
-function bestWeaponFor(world: ScenarioWorld, enemy: Enemy): string | undefined {
+
+// GEAR AVAILABILITY (availability-aware sim, user "B" 2026-08-04). A realistic climbing party does NOT own a
+// world's endgame reward from floor 1 — that gear is unlocked/looted only deep in the descent. Modelling the
+// mid/prepared loadout as "the best piece the whole catalog has" let the sim wear the g7f/b7f tier-3 piece
+// throughout and silently eased the calibrated curve. We gate the loadout by gear TIER as a proxy for descent
+// progress: tier-1 from the top, the top tier only in the last third. `uptoFloor` (0-based) is the floor being
+// simulated; it defaults to Infinity so callers that don't pass it (simParity) keep the whole-catalog behaviour.
+function maxGearTier(world: ScenarioWorld): number {
+  return world.equipment.reduce((max, gear) => Math.max(max, gear.tier ?? 1), 1);
+}
+function gearReachedByFloor(
+  gear: { tier?: number },
+  uptoFloor: number,
+  floorCount: number,
+  maxTier: number
+): boolean {
+  if (!Number.isFinite(uptoFloor)) return true;
+  const tier = Math.max(1, gear.tier ?? 1);
+  const availableFloor = maxTier <= 1 ? 0 : Math.floor(((tier - 1) / maxTier) * floorCount);
+  return availableFloor <= uptoFloor;
+}
+
+function bestWeaponFor(
+  world: ScenarioWorld,
+  enemy: Enemy,
+  uptoFloor = Infinity,
+  floorCount = 1
+): string | undefined {
   const weaknesses = enemy.weaknesses ?? {};
   let bestElement: string | undefined;
   let bestMult = 1.0001; // must actually be a weakness (>1) to bother
@@ -249,11 +276,19 @@ function bestWeaponFor(world: ScenarioWorld, enemy: Enemy): string | undefined {
   if (!bestElement) {
     return undefined;
   }
-  return world.equipment.find((gear) => gear.slot === "weapon" && gear.element === bestElement)?.id;
+  const maxTier = maxGearTier(world);
+  return world.equipment.find(
+    (gear) => gear.slot === "weapon" && gear.element === bestElement && gearReachedByFloor(gear, uptoFloor, floorCount, maxTier)
+  )?.id;
 }
 
 // A body/charm that resists this enemy's elemental THREAT (its damage abilities), if one exists.
-function bestResistFor(world: ScenarioWorld, enemy: Enemy): string | undefined {
+function bestResistFor(
+  world: ScenarioWorld,
+  enemy: Enemy,
+  uptoFloor = Infinity,
+  floorCount = 1
+): string | undefined {
   const threats = new Set(
     (enemy.abilities ?? [])
       .map((ability) => (ability.effect.kind === "damage" ? ability.effect.element : undefined))
@@ -262,44 +297,62 @@ function bestResistFor(world: ScenarioWorld, enemy: Enemy): string | undefined {
   if (threats.size === 0) {
     return undefined;
   }
+  const maxTier = maxGearTier(world);
   return world.equipment.find(
-    (gear) => gear.slot !== "weapon" && Object.entries(gear.elementResist ?? {}).some(([el, m]) => threats.has(el) && (m ?? 1) < 1)
+    (gear) =>
+      gear.slot !== "weapon" &&
+      gearReachedByFloor(gear, uptoFloor, floorCount, maxTier) &&
+      Object.entries(gear.elementResist ?? {}).some(([el, m]) => threats.has(el) && (m ?? 1) < 1)
   )?.id;
 }
 
-// The single best GENERAL loadout a realistic player wears for the whole descent: the highest-attack
-// weapon and the highest-defense body the world offers, chosen ONCE (not per enemy). No element
-// matching — that is the `prepared` upper bound. Memoised per world so the scan is not repeated per fight.
-const generalLoadoutCache = new WeakMap<ScenarioWorld, { weapon?: string; body?: string }>();
-function generalLoadout(world: ScenarioWorld): { weapon?: string; body?: string } {
-  const cached = generalLoadoutCache.get(world);
+// The best GENERAL loadout a realistic player wears at a given DEPTH: the highest-attack weapon and
+// highest-defense body the world offers among gear TIER-reachable by `uptoFloor`. No element matching — that
+// is the `prepared` upper bound. Memoised per (world, uptoFloor) so the scan is not repeated per fight.
+const generalLoadoutCache = new WeakMap<ScenarioWorld, Map<number, { weapon?: string; body?: string }>>();
+function generalLoadout(world: ScenarioWorld, uptoFloor = Infinity, floorCount = 1): { weapon?: string; body?: string } {
+  let byFloor = generalLoadoutCache.get(world);
+  if (!byFloor) {
+    byFloor = new Map();
+    generalLoadoutCache.set(world, byFloor);
+  }
+  const cached = byFloor.get(uptoFloor);
   if (cached) {
     return cached;
   }
+  const maxTier = maxGearTier(world);
   const bestBy = (predicate: (slot: string) => boolean, score: (gear: (typeof world.equipment)[number]) => number) =>
     world.equipment
-      .filter((gear) => predicate(gear.slot))
+      .filter((gear) => predicate(gear.slot) && gearReachedByFloor(gear, uptoFloor, floorCount, maxTier))
       .sort((a, b) => score(b) - score(a))[0]?.id;
   const loadout = {
     weapon: bestBy((slot) => slot === "weapon", (gear) => gear.attackBonus ?? 0),
     body: bestBy((slot) => slot === "body", (gear) => gear.defenseBonus ?? 0)
   };
-  generalLoadoutCache.set(world, loadout);
+  byFloor.set(uptoFloor, loadout);
   return loadout;
 }
 
 // Kit the party for THIS enemy. Prepared: the counter weapon + the resisting armour where they exist,
 // swapped per fight. Mid: one fixed general loadout, worn all descent. Naive: the starter loadout, no
 // counterplay — the loadout of a party that read nothing.
-export function equipPartyForEnemy(party: Character[], world: ScenarioWorld, enemy: Enemy, policy: SimPolicy): Character[] {
+export function equipPartyForEnemy(
+  party: Character[],
+  world: ScenarioWorld,
+  enemy: Enemy,
+  policy: SimPolicy,
+  uptoFloor = Infinity,
+  floorCount = 1
+): Character[] {
   // Naive keeps the party's own starter loadout untouched — the point is only that it brought no
   // COUNTERPLAY, so the existing (naive) balance curve is unchanged.
   if (policy === "naive") {
     return party;
   }
-  // Mid wears the best general weapon + body, chosen once — the party a real player fields.
+  // Mid wears the best general weapon + body REACHABLE at this depth, chosen for the floor — the party a real
+  // player fields, not one wearing the endgame reward from floor 1.
   if (policy === "mid") {
-    const { weapon, body } = generalLoadout(world);
+    const { weapon, body } = generalLoadout(world, uptoFloor, floorCount);
     if (!weapon && !body) {
       return party;
     }
@@ -316,11 +369,11 @@ export function equipPartyForEnemy(party: Character[], world: ScenarioWorld, ene
   // ever adds. Take the counter weapon only when its base is at least the general weapon's (its weakness
   // multiplier is then pure upside); otherwise keep the general weapon. Take the resisting body where one
   // exists (worth more than raw defence vs an elemental threat), else keep the best-defence general body.
-  const general = generalLoadout(world);
-  const counterWeapon = bestWeaponFor(world, enemy);
+  const general = generalLoadout(world, uptoFloor, floorCount);
+  const counterWeapon = bestWeaponFor(world, enemy, uptoFloor, floorCount);
   const attackOf = (id?: string) => (id ? world.equipment.find((gear) => gear.id === id)?.attackBonus ?? 0 : -Infinity);
   const weapon = attackOf(counterWeapon) >= attackOf(general.weapon) ? counterWeapon : general.weapon;
-  const resist = bestResistFor(world, enemy);
+  const resist = bestResistFor(world, enemy, uptoFloor, floorCount);
   const body = resist ?? general.body;
   if (!weapon && !body) {
     return party;
@@ -434,9 +487,11 @@ export function resolveFight(
   world: ScenarioWorld,
   encounter: PlannedEncounter,
   policy: SimPolicy = "naive",
-  provision?: ProvisionOptions
+  provision?: ProvisionOptions,
+  uptoFloor = Infinity,
+  floorCount = 1
 ): { state: GameState; midFightLow: number; midFightMpLow: number } {
-  const kitted = { ...state, party: equipPartyForEnemy(state.party, world, encounter.enemy, policy) };
+  const kitted = { ...state, party: equipPartyForEnemy(state.party, world, encounter.enemy, policy, uptoFloor, floorCount) };
   const readyState = kitted.combatConclusion
     ? executeCommand(kitted, world, { type: "continue_after_combat" })
     : kitted;
@@ -534,7 +589,8 @@ export function simulateDescent(
   // The world's own dungeon order (registry orders by floor level): b1..b8 for the
   // default world, g1..g8 for verdant, etc. Falls back to the default constant.
   const descentOrder = world.dungeons.length > 0 ? world.dungeons.map((dungeon) => dungeon.id) : DESCENT_ORDER;
-  for (const floorId of descentOrder) {
+  for (let floorIndex = 0; floorIndex < descentOrder.length; floorIndex += 1) {
+    const floorId = descentOrder[floorIndex];
     if (heal === "town") {
       party = party.map((member) => ({ ...member, hp: member.maxHp, mp: member.maxMp, injury: undefined, status: [] }));
       // A town trip also restocks — scarcity only bites on a `none` one-push, which is what the Gate reads.
@@ -580,7 +636,7 @@ export function simulateDescent(
       // play (the sim used the RAW count and so under-modelled a small party). With a floor that authors no
       // recommendation this is a no-op, so the full-party curve — and its Gate — is unchanged.
       const scaledCount = scaledEncounterCount(encounter.count, party, floor);
-      const outcome = resolveFight(workState, world, { ...encounter, count: scaledCount }, policy, provision);
+      const outcome = resolveFight(workState, world, { ...encounter, count: scaledCount }, policy, provision, floorIndex, descentOrder.length);
       workState = outcome.state;
       party = workState.party;
       inventory = workState.inventory;

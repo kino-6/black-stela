@@ -45,12 +45,19 @@ describe("difficulty axes — party-size & resource-economy", () => {
       // the "Act I teaches gently" act-curve gates — those measure a LEVELLED party at its clear level,
       // where floor 1 is genuinely gentle; THIS measures the fresh Lv1 party, for whom it is a wall.
       it("floor 1 gates on facilities — a fresh Lv1 party is all-but-wiped, a shopped party clears", () => {
+        // The facility difference is SURVIVAL, not the floor-1 trough. With REALISTIC gear (the availability-aware
+        // sim wears only tier-1 on floor 1, not the endgame reward it used to bake in), a fresh party's floor-1 dip
+        // is scary for both — but the SHOPPED party (gear + a provisioned kit) SUSTAINS the descent while the naive
+        // party cannot. The old ≥0.3-trough check only held under the over-geared sim (user "B" recalibration 2026-08-04).
         const naive = simulateDescent(world, { heal: "town", policy: "naive", startLevel: 1 });
-        const shopped = simulateDescent(world, { heal: "town", policy: "mid", startLevel: 1 });
-        // 施設なし: a blind first dive is a near-wipe (cannot be cleared without buying gear/heals first).
+        const shopped = simulateDescent(world, { heal: "town", policy: "mid", startLevel: 1, provision: { healThreshold: 0.6 } });
+        // 施設なし: a blind first dive is a near-wipe on floor 1, and cannot sustain the descent.
         expect(naive.floors[0].lowestHpPct).toBeLessThanOrEqual(0.2);
-        // 施設あり: a shopped party clears floor 1 with margin (facility use IS the path, not a faceroll).
-        expect(shopped.floors[0].lowestHpPct).toBeGreaterThanOrEqual(0.3);
+        expect(naive.survived).toBe(false);
+        // 施設あり: a shopped, provisioned party CAN sustain it — facility use IS the path, not a faceroll —
+        // and fares no worse than the naive party on floor 1.
+        expect(shopped.survived).toBe(true);
+        expect(shopped.floors[0].downed).toBeLessThanOrEqual(naive.floors[0].downed);
       });
     });
   }
@@ -66,7 +73,11 @@ describe("resource-economy scarcity (worlds with an authored economy)", () => {
     }
     describe(id, () => {
       const clearLevel = minClearLevel(world, "prepared");
-      const run = simulateDescent(world, { heal: "none", policy: "prepared", startLevel: clearLevel, provision: true });
+      // Scarcity is the RETREAT-TRIGGER of a one-push that pushes PAST comfort — measured one level under the
+      // comfortable clear level. At the clear level itself a prepared, properly-armoured party is self-sufficient
+      // and never rations dry (the armorBonus→defenseBonus fix made verdant's armour actually work); the bite that
+      // empties the kit in the final act is the edge push (user "B" recalibration 2026-08-04).
+      const run = simulateDescent(world, { heal: "none", policy: "prepared", startLevel: Math.max(1, clearLevel - 1), provision: true });
       const floors = world.dungeons.map((d) => d.id);
       const lastAct = new Set(floors.slice(Math.floor((floors.length * 2) / 3))); // final third
 

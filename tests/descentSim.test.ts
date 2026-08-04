@@ -35,7 +35,10 @@ describe("descent difficulty (prepare or wipe)", () => {
     // the naive party WIPES, prepared clears near entry (Lv3), and the deep floors bite (asserted in
     // the tests around this one). Verdant's swing GREW to 11 under the same model.
     expect(value.levelsSaved).toBeGreaterThanOrEqual(5);
-    expect(value.preparedMinLevel).toBeLessThanOrEqual(4);
+    // 2026-08-04 (user "B" recalibration): the availability-aware sim no longer wears the b7f endgame reward on
+    // floor 1, so a prepared party clears with REALISTIC gear at Lv5, not the over-geared sim's Lv4. Still near
+    // entry (the naive party needs Lv14) — the head start is intact (levelsSaved 9); the artifact understated it.
+    expect(value.preparedMinLevel).toBeLessThanOrEqual(5);
   });
 
   it("still threatens a prepared party (not a cakewalk once you have the right tools)", () => {
