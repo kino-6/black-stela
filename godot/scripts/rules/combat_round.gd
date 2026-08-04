@@ -175,6 +175,8 @@ static func declare_round(state: Dictionary, world: Dictionary, actions: Array, 
 				var resist_mult: float = float((tstats.get("elementResist", {}) as Dictionary).get(effect.get("element", ""), 1.0))
 				var dmg_a: int = maxi(0, roundi(raw_a * resist_mult))
 				party = _damage_party_member(party, target_id, dmg_a, injured_events)
+				if dmg_a > 0:
+					beats.append({"attackerGroupId": group_id, "targetMemberId": target_id, "damage": dmg_a, "crit": false})
 			else:
 				var resist_pct := _status_resist_pct(tstats.get("resistance", {}), effect.get("status", ""))
 				var roll_a := CombatRng.roll_percent("%d:%d:%s:%s:ability-resist" % [turn, rnd, group_id, target_id])
@@ -198,6 +200,9 @@ static func declare_round(state: Dictionary, world: Dictionary, actions: Array, 
 		var group_damage := CombatEffects.stat_modifier(effects, group_id, "damage")
 		var dmg := CombatRng.roll_damage("%d:%d:%s:%s:damage" % [turn, rnd, group_id, target_id], maxi(1, int(group.get("damageMin", 0)) + group_damage), maxi(1, int(group.get("damageMax", 0)) + group_damage), armor)
 		party = _damage_party_member(party, target_id, dmg, injured_events)
+		# P7: presentation beat for the enemy basic swing so the ally bar drains during playback.
+		if dmg > 0:
+			beats.append({"attackerGroupId": group_id, "targetMemberId": target_id, "damage": dmg, "crit": false})
 
 		var inflicts: Variant = group.get("inflicts", null)
 		if typeof(inflicts) == TYPE_DICTIONARY:

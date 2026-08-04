@@ -578,6 +578,7 @@ func _playback(before: Dictionary, events: Array, animated: bool) -> void:
 			struck.append({"gid": String(gid), "removed": removed, "x_frac": float(snap.get("x_frac", 0.5)), "name": String(snap.get("name_ja", snap.get("name", ""))), "before": int(snap.get("hp", 0))})
 	struck.sort_custom(func(a, b): return a["x_frac"] < b["x_frac"])
 
+	var played_party_beat := false   # P7: did the beats drain the ally bars per-beat? (then don't re-animate after)
 	if animated:
 		var beats := _round_beats(events)
 		if not beats.is_empty():
@@ -587,7 +588,27 @@ func _playback(before: Dictionary, events: Array, animated: bool) -> void:
 			var running := {}   # gid -> running pooled HP, so each beat drains the bar it hits (T21)
 			for gid0 in before:
 				running[gid0] = int((before[gid0] as Dictionary).get("hp", 0))
+			var party_running := {}   # P7: member id -> running HP, so the ally bar drains as the enemy beats land
+			for mid0 in _party_before:
+				party_running[mid0] = int(_party_before[mid0])
 			for beat in beats:
+				# P7: enemy→party beats (added in combat_round.gd) drain the STRUCK MEMBER's bar during playback,
+				# not in one snap after the round — the ally bars now visibly fall with each blow.
+				var member_id := String((beat as Dictionary).get("targetMemberId", ""))
+				if member_id != "":
+					played_party_beat = true
+					var mdmg := int((beat as Dictionary).get("damage", 0))
+					var hit_member := _member_by_id(member_id)
+					var mname := String(hit_member.get("name", ""))
+					var attacker := _enemy_ja(_group_by_id(String((beat as Dictionary).get("attackerGroupId", ""))))
+					_set_log("%sの攻撃！" % attacker)
+					await get_tree().create_timer(0.2).timeout
+					_spawn_member_damage(member_id, mdmg)
+					party_running[member_id] = maxi(0, int(party_running.get(member_id, 0)) - mdmg)
+					_drain_member_bar(hit_member, int(party_running[member_id]))
+					_set_log("%sに%dダメージ！" % [mname, mdmg])
+					await get_tree().create_timer(0.32).timeout
+					continue
 				var gid := String((beat as Dictionary).get("targetGroupId", ""))
 				var dmg := int((beat as Dictionary).get("damage", 0))
 				var actor := String((beat as Dictionary).get("actorName", ""))
@@ -645,16 +666,19 @@ func _playback(before: Dictionary, events: Array, animated: bool) -> void:
 			if loss > 0:
 				party_hit = true
 				break
-	if party_hit and animated:
+	# If the enemy→party beats already drained the ally bars per-blow (P7), do NOT re-animate here — just sync
+	# each bar to its true post-round value (no second popup, no "敵の反撃" banner). The animated path below is
+	# the fallback for when no per-member beats were emitted.
+	if party_hit and animated and not played_party_beat:
 		_set_log("敵の反撃！")
 		await get_tree().create_timer(0.3).timeout
 	for member in _state.get("party", []):
 		var mid := String(member.get("id", ""))
 		var loss := int(_party_before.get(mid, int(member.get("hp", 0)))) - int(member.get("hp", 0))
-		_refresh_member(member, animated)
-		if animated and loss > 0:
+		_refresh_member(member, animated and not played_party_beat)
+		if animated and loss > 0 and not played_party_beat:
 			_spawn_member_damage(mid, loss)
-	if party_hit and animated:
+	if party_hit and animated and not played_party_beat:
 		await get_tree().create_timer(0.5).timeout
 
 	if not rewards.is_empty():
@@ -843,6 +867,29 @@ func _group_by_id(gid: String) -> Dictionary:
 		if String(g.get("id", "")) == gid:
 			return g
 	return {}
+
+func _member_by_id(id: String) -> Dictionary:
+	for member in _state.get("party", []):
+		if String(member.get("id", "")) == id:
+			return member
+	return {}
+
+# P7: drain ONE party member's HP bar to `hp` (the running value as the enemy beats land), mirroring
+# _refresh_member's main-fill + lagging-ghost tween. Used per-beat so the ally bars fall during playback.
+func _drain_member_bar(member: Dictionary, hp: int) -> void:
+	var refs: Variant = _party_slots.get(member.get("id", ""), null)
+	if typeof(refs) != TYPE_DICTIONARY:
+		return
+	var main := refs["bar"] as ProgressBar
+	var ghost := refs["ghost"] as ProgressBar
+	var shown := maxi(0, hp)
+	(refs["label"] as Label).text = "HP %d/%d" % [shown, int(member.get("maxHp", 1))]
+	if main:
+		create_tween().tween_property(main, "value", float(shown), 0.18).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	if ghost:
+		var gt := create_tween()
+		gt.tween_interval(0.16)
+		gt.tween_property(ghost, "value", float(shown), 0.52).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 
 func _member_by_name(nm: String) -> Dictionary:
 	for member in _state.get("party", []):
