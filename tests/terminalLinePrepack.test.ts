@@ -5,7 +5,8 @@ import { loadScenarioPack } from "../src/services/scenarioPackLoader";
 import { createGuildCharacter } from "../src/domain/characterCreation";
 import { getEffectiveCharacterStats } from "../src/domain/economy";
 import { resolveTechniqueCatalog } from "../src/domain/techniques";
-import { combatLoadout } from "../src/domain/vocations";
+import { CLASS_CAPABILITIES, resolveClassCapabilities } from "../src/domain/classCapabilities";
+import { combatLoadout, resolveVocationCatalog } from "../src/domain/vocations";
 import { createCombatState, executeCommand } from "../src/domain/rulesEngine";
 import { createInitialGameState } from "../src/domain/gameState";
 
@@ -292,5 +293,59 @@ describe("Terminal Line F1–F10 canonical pack", () => {
       actions: [{ actorId: withoutRifle.id, action: "cast", spellId: "rifle-brace", targetGroupId: groupId }]
     });
     expect(afterUnequippedShot.party[0].mp).toBe(withoutRifle.mp);
+  });
+
+  it("re-skins the eight basic class NAMES without disturbing the base ids", () => {
+    const result = loadScenarioPack(packFiles());
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    const byId = new Map(resolveVocationCatalog(result.world).map((vocation) => [vocation.id, vocation]));
+    const expected: Record<string, string> = {
+      warrior: "Security Officer", knight: "Containment Guard", swordmaster: "Special Agent",
+      thief: "Infiltrator", priest: "Field Medic", chanter: "Signals Operator",
+      mage: "Demolition Tech", occultist: "Disruptor"
+    };
+    for (const [id, name] of Object.entries(expected)) {
+      const vocation = byId.get(id);
+      expect(vocation, id).toBeDefined();
+      expect(vocation?.tier, id).toBe("basic");
+      expect(vocation?.name, id).toBe(name);
+    }
+  });
+
+  it("re-skins every class technique line: themed ids, all resolvable, no firearm, kind-preserving", () => {
+    const result = loadScenarioPack(packFiles());
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    const catalog = resolveTechniqueCatalog(result.world);
+    const resolved = resolveClassCapabilities(result.world);
+
+    for (const classId of Object.keys(CLASS_CAPABILITIES) as (keyof typeof CLASS_CAPABILITIES)[]) {
+      const base = CLASS_CAPABILITIES[classId].combatTechniques;
+      const line = resolved[classId].combatTechniques;
+
+      // Every class is re-skinned (not the base line) and keeps the base level bands 1:1.
+      expect(line.length, classId).toBe(base.length);
+      expect(line.map((grant) => grant.level), classId).toEqual(base.map((grant) => grant.level));
+      expect(line.every((grant) => grant.techniqueId.startsWith("tl-")), classId).toBe(true);
+
+      for (let i = 0; i < line.length; i += 1) {
+        const themed = catalog[line[i].techniqueId];
+        const original = catalog[base[i].techniqueId];
+        expect(themed, `${classId}:${line[i].techniqueId}`).toBeDefined();
+        // A class never natively learns a firearm — that invariant is gear-only.
+        expect(themed.tags ?? [], line[i].techniqueId).not.toContain("firearm");
+        // kind parity: MP / 気力 pool is seeded from the BASE class, so a re-skin must keep the kind.
+        expect(themed.kind, `${classId}:${line[i].techniqueId}`).toBe(original.kind);
+      }
+    }
+
+    // The runtime path (combatLoadout → knownSpells → resolveClassCapabilities) seeds the themed line:
+    // a Terminal Line warrior opens with the security officer's own techniques, not the base fantasy ones.
+    const hero = createGuildCharacter({ name: "試", classId: "vanguard", backgroundId: "watch", traitIds: ["steady"] });
+    expect(hero.classId).toBe("warrior");
+    expect(combatLoadout(hero, result.world)).toEqual(["tl-riot-strike", "tl-armor-breach"]);
   });
 });
