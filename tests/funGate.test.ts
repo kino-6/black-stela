@@ -47,8 +47,11 @@ function shopArmor(world: ScenarioWorld) {
     .filter((e): e is NonNullable<typeof e> => !!e && ARMOR_SLOTS.has(e.slot ?? ""));
 }
 
-// The aspirational ladder — LIVE for the worlds that already meet the standard.
-describe.each(["default"])("fun gate — aspirational ladder — %s", (worldId) => {
+// The aspirational ladder — LIVE for every world. Verdant was raised to it once the sim became
+// availability-aware (2026-08-04 "B"): its endgame reaver-axe (320G) + ironbark cuirass (300G) unlock only at
+// the G7F shortcut, and the sim no longer fields them from floor 1, so adding them left the calibrated curve
+// green — the whole point of the sim整備.
+describe.each(WORLDS)("fun gate — aspirational ladder — %s", (worldId) => {
   const world = getWorldById(worldId)!;
 
   it("offers an aspirational WEAPON worth saving for (buyable, ≥ the save-up price)", () => {
@@ -68,11 +71,6 @@ describe.each(["default"])("fun gate — aspirational ladder — %s", (worldId) 
     expect(priciest.attackBonus ?? 0).toBeGreaterThanOrEqual(strongest.attackBonus ?? 0);
   });
 });
-
-// Verdant's aspirational tier is a documented, difficulty-integrated task — not a silent gap.
-it.todo(
-  "fun gate — verdant: raise the grove shop to an aspirational weapon+armor ladder (needs a Verdant difficulty re-tune; see Tasks.md P8/P9)"
-);
 
 // The utility lineup — EVERY world must make exploring easier, incl. a way home. LIVE for all worlds.
 describe.each(WORLDS)("fun gate — utility lineup — %s", (worldId) => {

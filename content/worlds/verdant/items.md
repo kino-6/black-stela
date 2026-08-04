@@ -285,6 +285,7 @@ equipment:
     tier: 3
     attackBonus: 6
     element: metal
+    price: 320
     sellValue: 120
     allowedClasses: [vanguard, sellsword, bulwark]
     tags: [axe, metal, keyed]
@@ -313,6 +314,23 @@ equipment:
       ja:
         name: 樹心の護符
         description: 朽ちた樹心を彫った結び目。森の樹液の奔流と胞子を退ける。
+  # The grove's ASPIRATIONAL body armour — the endgame save-up piece (fun gate). A forged-iron frame the wet
+  # wood cannot rot, plated in bark. Tier 3 (so the availability-aware sim only fields it in the last act, not
+  # from floor 1), sold once the deep G7F shortcut opens. `defenseBonus` (NOT armorBonus — that field is
+  # stripped by the equip schema; see the 2026-08-04 armour fix).
+  - id: equip.verdant.ironbark-cuirass
+    name: Ironbark Cuirass
+    description: Bark plates lashed over a forged-iron frame; the grove's wet rot cannot reach the metal beneath.
+    slot: body
+    tier: 3
+    defenseBonus: 5
+    price: 300
+    sellValue: 100
+    tags: [heavy, metal, bark]
+    locales:
+      ja:
+        name: 鉄樺の胸当て
+        description: 鍛鉄の芯に樹皮の板を重ねた鎧。森の湿りも、内の金までは朽ちさせられない。
 shops:
   - id: shop.verdant.grove
     name: Grovekeeper's Stall
@@ -339,6 +357,11 @@ shops:
       - { itemId: item.verdant.bark-scroll, price: 150, availability: unlocked, unlockFlag: flag.verdant.g3f.shortcut }
       - { itemId: item.verdant.greater-sap, price: 75, availability: unlocked, unlockFlag: flag.verdant.g3f.shortcut }
       - { itemId: equip.verdant.bark-plate, price: 95, availability: unlocked, unlockFlag: flag.verdant.g3f.shortcut }
+      # Aspirational ladder (fun gate): a mid metal blade once the deep opens, then the endgame save-up pair —
+      # the reaver-axe and the ironbark cuirass — unlocked only at the G7F shortcut.
+      - { itemId: equip.verdant.iron-edge, price: 150, availability: unlocked, unlockFlag: flag.verdant.g3f.shortcut }
+      - { itemId: equip.verdant.reaver-axe, price: 320, availability: unlocked, unlockFlag: flag.verdant.g7f.shortcut }
+      - { itemId: equip.verdant.ironbark-cuirass, price: 300, availability: unlocked, unlockFlag: flag.verdant.g7f.shortcut }
       - { itemId: equip.verdant.iron-edge, price: 150, availability: unlocked, unlockFlag: flag.verdant.g3f.shortcut }
       - { itemId: equip.verdant.heartwood-ward, price: 140, availability: unlocked, unlockFlag: flag.verdant.g3f.shortcut }
       - { itemId: item.verdant.heartsap-tonic, price: 180, availability: unlocked, unlockFlag: flag.verdant.g3f.shortcut }
