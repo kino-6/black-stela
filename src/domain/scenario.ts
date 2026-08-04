@@ -1,8 +1,8 @@
 import yaml from "js-yaml";
 import { expandFloorMap, isMapFloor } from "./floorMap";
 import { z } from "zod";
-import type { Direction, DungeonFloor, DungeonGridCell, DungeonGridEdge, ScenarioAffix, ScenarioQuest, ScenarioVocation, ScenarioWorld } from "./types";
-import { TECHNIQUES, type TechniqueId } from "./techniques";
+import type { Direction, DungeonFloor, DungeonGridCell, DungeonGridEdge, ScenarioAffix, ScenarioQuest, ScenarioTechnique, ScenarioVocation, ScenarioWorld } from "./types";
+import { TECHNIQUES, validateTechnique, type Technique, type TechniqueId } from "./techniques";
 
 const directionSchema = z.enum(["north", "east", "south", "west"]);
 const floorRoleSchema = z.enum([
@@ -152,6 +152,76 @@ const scenarioVocationSchema = z.object({
   grantsTechniques: z.array(z.string().min(1)).optional(),
   locales: z.record(z.object({ name: z.string().min(1).optional(), signature: z.string().min(1).optional() })).optional()
 });
+
+// ── Authored techniques (content/worlds/<id>/techniques.md) ─────────────────────────────────────────
+// A Zod mirror of the Technique interface (domain/techniques.ts). A world may author only the effect
+// KINDS the resolver already implements — externalising DEFINITIONS, never new mechanics. The honesty
+// rules are NOT duplicated here: the post-parse refine calls the canonical validateTechnique so the
+// authoring guardrail can never fork from the code path.
+const combatStatusSchema = z.enum(["poison", "fear", "silence", "sleep", "ward"]);
+const techniqueStatSchema = z.enum(["attack", "damage", "armor", "accuracy", "speed", "evasion"]);
+const techniqueDurationSchema = z.union([
+  z.object({ kind: z.literal("instant") }),
+  z.object({ kind: z.literal("rounds"), rounds: z.number().int() }),
+  z.object({ kind: z.literal("combat") })
+]);
+const techniqueEffectSchema = z.discriminatedUnion("kind", [
+  z.object({ kind: z.literal("heal"), amount: z.number().int(), scalesWithSpellPower: z.boolean().optional() }),
+  z.object({
+    kind: z.literal("damage"),
+    min: z.number().int(),
+    max: z.number().int(),
+    element: z.string().min(1),
+    scalesWithSpellPower: z.boolean().optional(),
+    bonusVsStatus: z
+      .object({ statuses: z.array(combatStatusSchema), bonusMin: z.number().int(), bonusMax: z.number().int(), consume: z.boolean().optional() })
+      .optional()
+  }),
+  z.object({ kind: z.literal("status"), status: combatStatusSchema, duration: techniqueDurationSchema.optional() }),
+  z.object({ kind: z.literal("cure"), statuses: z.array(combatStatusSchema) }),
+  z.object({
+    kind: z.literal("ward"),
+    statusResist: z.record(combatStatusSchema, z.number()).optional(),
+    elementResist: z.record(z.string().min(1), z.number()).optional(),
+    duration: techniqueDurationSchema.optional()
+  }),
+  z.object({ kind: z.literal("buff"), stat: techniqueStatSchema, amount: z.number().int(), duration: techniqueDurationSchema.optional() }),
+  z.object({ kind: z.literal("debuff"), stat: techniqueStatSchema, amount: z.number().int(), duration: techniqueDurationSchema.optional() }),
+  z.object({ kind: z.literal("cover"), duration: techniqueDurationSchema.optional() })
+]);
+const passiveTechniqueBonusSchema = z.object({
+  attack: z.number().int().optional(),
+  armor: z.number().int().optional(),
+  accuracy: z.number().int().optional(),
+  speed: z.number().int().optional(),
+  resistance: z.record(combatStatusSchema, z.number()).optional()
+});
+const scenarioTechniqueSchema = z
+  .object({
+    id: z.string().min(1),
+    kind: z.enum(["spell", "skill", "passive"]),
+    target: z.enum(["self", "ally", "party", "enemyGroup", "allEnemies"]),
+    cost: z
+      .object({
+        mp: z.number().int().optional(),
+        hp: z.number().int().optional(),
+        itemId: z.string().min(1).optional(),
+        usesPerExpedition: z.number().int().optional()
+      })
+      .default({}),
+    effects: z.array(techniqueEffectSchema).default([]),
+    duration: techniqueDurationSchema.default({ kind: "instant" }),
+    tags: z.array(z.string().min(1)).optional(),
+    passiveBonus: passiveTechniqueBonusSchema.optional(),
+    // Per-locale display name (the built-in table lives in SPELL_LABEL/i18n; authored techniques carry
+    // their own, exactly like authored vocations and enemy abilities).
+    locales: z.record(z.string(), z.object({ name: z.string().min(1).optional() })).optional()
+  })
+  .superRefine((technique, ctx) => {
+    for (const problem of validateTechnique(technique as unknown as Technique)) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: problem });
+    }
+  });
 
 const scenarioItemSchema = z.object({
   id: z.string().min(1),
@@ -520,7 +590,8 @@ export const scenarioWorldSchema = z.object({
   progressionFlags: z.array(progressionFlagSchema).default([]),
   quests: z.array(scenarioQuestSchema).default([]),
   vocations: z.array(scenarioVocationSchema).default([]),
-  affixes: z.array(scenarioAffixSchema).default([])
+  affixes: z.array(scenarioAffixSchema).default([]),
+  techniques: z.array(scenarioTechniqueSchema).default([])
 });
 
 export const scenarioItemsSchema = z.object({
@@ -555,6 +626,10 @@ export const scenarioVocationsSchema = z.object({
 
 export const scenarioAffixesSchema = z.object({
   affixes: z.array(scenarioAffixSchema).default([])
+});
+
+export const scenarioTechniquesSchema = z.object({
+  techniques: z.array(scenarioTechniqueSchema).default([])
 });
 
 interface FrontMatterDocument<T> {
@@ -598,7 +673,7 @@ export function parseScenarioWorld(
   data: Partial<
     Pick<
       ScenarioWorld,
-      "items" | "equipment" | "shops" | "enemies" | "encounterTables" | "treasureTables" | "progressionFlags" | "quests" | "vocations" | "affixes"
+      "items" | "equipment" | "shops" | "enemies" | "encounterTables" | "treasureTables" | "progressionFlags" | "quests" | "vocations" | "affixes" | "techniques"
     >
   > = {}
 ): ScenarioWorld {
@@ -622,7 +697,8 @@ export function parseScenarioWorld(
     progressionFlags: data.progressionFlags ?? [],
     quests: data.quests ?? [],
     vocations: data.vocations ?? [],
-    affixes: data.affixes ?? []
+    affixes: data.affixes ?? [],
+    techniques: data.techniques ?? []
   }) as ScenarioWorld;
 }
 
@@ -659,6 +735,10 @@ export function parseScenarioVocations(markdown: string): { vocations: ScenarioV
 
 export function parseScenarioAffixes(markdown: string): { affixes: ScenarioAffix[] } {
   return parseMarkdownFrontMatter(markdown, scenarioAffixesSchema).data as { affixes: ScenarioAffix[] };
+}
+
+export function parseScenarioTechniques(markdown: string): { techniques: ScenarioTechnique[] } {
+  return parseMarkdownFrontMatter(markdown, scenarioTechniquesSchema).data as { techniques: ScenarioTechnique[] };
 }
 
 export function getRoom(world: ScenarioWorld, roomId: string) {

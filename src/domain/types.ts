@@ -2,9 +2,9 @@
 // back. That cycle is erased at build time; the discipline this file keeps is that it never imports a
 // module which imports the ENGINE (see the exploration mirrors below for the same reasoning).
 import type { ActiveEffect } from "./combatEffects";
-import type { TechniqueId } from "./techniques";
+import type { ScenarioTechnique, TechniqueId } from "./techniques";
 
-export type { ActiveEffect, TechniqueId };
+export type { ActiveEffect, ScenarioTechnique, TechniqueId };
 
 export type Direction = "north" | "east" | "south" | "west";
 
@@ -925,6 +925,9 @@ export interface ScenarioWorld {
   vocations: ScenarioVocation[];
   /** Authored equipment affixes, merged with the built-in pool (resolveAffixCatalog). */
   affixes: ScenarioAffix[];
+  /** Authored combat techniques, merged over the built-in engine catalog (resolveTechniqueCatalog).
+   *  Lets a world ship its own ability family (e.g. Terminal Line firearms) as pure data. */
+  techniques: ScenarioTechnique[];
   importPolicy?: ScenarioImportPolicy;
 }
 

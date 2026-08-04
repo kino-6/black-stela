@@ -1,4 +1,4 @@
-import type { CombatStatus, Element } from "./types";
+import type { CombatStatus, Element, ScenarioWorld } from "./types";
 
 /**
  * THE TECHNIQUE CATALOG — the data shape a class's combat promise is written in.
@@ -1019,6 +1019,47 @@ export const TECHNIQUES: Record<TechniqueId, Technique> = {
 
 export function findTechnique(id: string): Technique | undefined {
   return Object.prototype.hasOwnProperty.call(TECHNIQUES, id) ? TECHNIQUES[id as TechniqueId] : undefined;
+}
+
+/**
+ * An AUTHORED technique — the data shape a world writes in content/worlds/<id>/techniques.md. It is a
+ * Technique plus per-locale display names (the built-in catalog gets its names from SPELL_LABEL/i18n;
+ * an authored one carries its own, exactly as authored vocations/enemy-abilities do). Its id is a free
+ * string, so a world can name a technique the engine never defined.
+ */
+export interface ScenarioTechnique extends Omit<Technique, "id"> {
+  id: string;
+  locales?: Partial<Record<string, { name?: string }>>;
+}
+
+/**
+ * The techniques usable this run: the built-in engine catalog (TECHNIQUES) with the active world's
+ * AUTHORED techniques layered on top — authored wins on a shared id, exactly as resolveVocationCatalog
+ * (vocations.ts) and resolveAffixCatalog (loot.ts) merge their built-ins with world data. When a world
+ * authors nothing (every base world), the base catalog is returned unchanged, so combat resolves
+ * byte-identically and parity traces are untouched.
+ */
+export function resolveTechniqueCatalog(world?: ScenarioWorld): Record<string, Technique> {
+  const authored = world?.techniques;
+  if (!authored || authored.length === 0) {
+    return TECHNIQUES;
+  }
+  const merged: Record<string, Technique> = { ...TECHNIQUES };
+  for (const technique of authored) {
+    merged[technique.id] = technique as Technique;
+  }
+  return merged;
+}
+
+/** Look an id up in a resolved catalog (built-in ⊕ authored); the world-aware sibling of findTechnique. */
+export function findTechniqueIn(catalog: Record<string, Technique>, id: string): Technique | undefined {
+  return Object.prototype.hasOwnProperty.call(catalog, id) ? catalog[id] : undefined;
+}
+
+/** The authored display name for a technique in `locale`, or undefined if the world does not author one. */
+export function authoredTechniqueName(world: ScenarioWorld | undefined, id: string, locale: string): string | undefined {
+  const authored = world?.techniques?.find((technique) => technique.id === id);
+  return authored?.locales?.[locale]?.name ?? undefined;
 }
 
 export function techniqueMpCost(technique: Technique): number {

@@ -9,6 +9,7 @@ import {
   parseScenarioItems,
   parseScenarioProgression,
   parseScenarioQuests,
+  parseScenarioTechniques,
   parseScenarioTreasure,
   parseScenarioVocations,
   parseScenarioWorld
@@ -52,6 +53,7 @@ function buildWorld(worldId: string, files: Record<string, string>): ScenarioWor
   const quests = files["quests"] ? parseScenarioQuests(files["quests"]) : { quests: [] };
   const vocations = files["vocations"] ? parseScenarioVocations(files["vocations"]) : { vocations: [] };
   const affixes = files["affixes"] ? parseScenarioAffixes(files["affixes"]) : { affixes: [] };
+  const techniques = files["techniques"] ? parseScenarioTechniques(files["techniques"]) : { techniques: [] };
 
   // Dungeons in descent order: by each floor's `level` front-matter, then by name.
   const dungeonMarkdowns = Object.entries(files)
@@ -69,7 +71,8 @@ function buildWorld(worldId: string, files: Record<string, string>): ScenarioWor
     progressionFlags: progression.progressionFlags,
     quests: quests.quests,
     vocations: vocations.vocations,
-    affixes: affixes.affixes
+    affixes: affixes.affixes,
+    techniques: techniques.techniques
   });
 
   // A scenario's art pack defaults to its OWN folder (its content/worlds/<id>/assets),

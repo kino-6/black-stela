@@ -7,6 +7,7 @@ import {
   parseScenarioAffixes,
   parseScenarioProgression,
   parseScenarioQuests,
+  parseScenarioTechniques,
   parseScenarioTreasure,
   parseScenarioVocations,
   parseScenarioWorld
@@ -89,7 +90,7 @@ function loadCatalogData(
   const data: Partial<
     Pick<
       ScenarioWorld,
-      "items" | "equipment" | "shops" | "enemies" | "encounterTables" | "treasureTables" | "progressionFlags" | "quests" | "vocations" | "affixes"
+      "items" | "equipment" | "shops" | "enemies" | "encounterTables" | "treasureTables" | "progressionFlags" | "quests" | "vocations" | "affixes" | "techniques"
     >
   > = {};
 
@@ -182,6 +183,18 @@ function loadCatalogData(
   );
   if (affixes) {
     data.affixes = affixes.affixes;
+  }
+
+  const techniques = parseOptionalDataFile(
+    files,
+    rootPath,
+    manifest.dataFiles.techniques,
+    "dataFiles.techniques",
+    parseScenarioTechniques,
+    errors
+  );
+  if (techniques) {
+    data.techniques = techniques.techniques;
   }
 
   return data;
