@@ -2,10 +2,18 @@
 treasureTables:
   - id: treasure.b1f.safe
     tier: 1
+    # P8 (2026-08-04): early side chests were pure potions, so 1–2F treasure-hunting handed no GEAR
+    # ("戦利品が寂しい"). Seed a spread of tier-1 gear across slots so a shallow chest can be a real upgrade.
     entries:
       - itemId: item.healing-draught
-        weight: 10
+        weight: 8
         quantity: 1
+      - itemId: equip.short-bow
+        weight: 3
+      - itemId: equip.iron-cap
+        weight: 3
+      - itemId: equip.grip-gloves
+        weight: 2
   - id: treasure.b1f.nook
     tier: 1
     entries:
@@ -13,6 +21,12 @@ treasureTables:
         weight: 6
       - itemId: item.lantern-oil
         weight: 4
+      - itemId: equip.split-buckler
+        weight: 3
+      - itemId: equip.chalk-cord
+        weight: 2
+      - itemId: equip.long-spear
+        weight: 2
   - id: treasure.b1f.chamber
     tier: 1
     entries:
@@ -45,6 +59,12 @@ treasureTables:
         weight: 6
       - itemId: item.lantern-oil
         weight: 4
+      - itemId: equip.ring-mail
+        weight: 3
+      - itemId: equip.padded-jack
+        weight: 2
+      - itemId: equip.black-thread-ring
+        weight: 2
   - id: treasure.b3f.watermark
     tier: 2
     entries:

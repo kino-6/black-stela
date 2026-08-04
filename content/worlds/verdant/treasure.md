@@ -12,6 +12,7 @@ treasureTables:
       - { itemId: equip.verdant.thorn-lash, weight: 3 }
       - { itemId: equip.verdant.bark-buckler, weight: 3 }
       - { itemId: equip.verdant.moss-hood, weight: 3 }
+      - { itemId: equip.verdant.vinewrap-gloves, weight: 3 }
   - id: treasure.verdant.g1.keep
     tier: 1
     # The G1 keep (a guardian fight) reliably yields GEAR — spread across the whip, body, offhand and head,

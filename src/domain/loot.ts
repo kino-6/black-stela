@@ -82,8 +82,10 @@ export function findResolvedAffix(world: ScenarioWorld, affixId: string | undefi
 // The rarity a drop rolls, biased deeper by floor. Kept modest — most drops are common.
 function rollRarity(seed: string, floor: number): ItemRarity {
   const roll = hashSeed(`${seed}:rarity`) % 100;
-  const epicChance = Math.min(6, 1 + Math.floor(floor / 3)); // 1%..6%
-  const rareChance = Math.min(24, 10 + floor); // 10%..24%
+  // 2026-08-04 (P8): enchanted drops were too rare to notice ("ランダムエンチャント全然見ない") — a rare+
+  // (affixed) drop now lands ~1-in-5 in the shallows and ~1-in-3 deep, while commons still dominate (loot.test).
+  const epicChance = Math.min(9, 2 + Math.floor(floor / 2)); // 2%..9%
+  const rareChance = Math.min(30, 15 + floor); // 15%..30%
   if (roll < epicChance) return "epic";
   if (roll < epicChance + rareChance) return "rare";
   return "common";

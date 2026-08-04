@@ -233,6 +233,22 @@ equipment:
       ja:
         name: 苔の頭巾
         description: 生きた苔が絡む頭巾。打撃をやわらげ、頭を守る。
+  # A HANDS piece for the grove (P8): verdant had none of its own, so a hands-slot build could never find gear
+  # treasure-hunting here — only the shared starter gloves. Modest tier-1 grip/quickness, droppable from G1.
+  - id: equip.verdant.vinewrap-gloves
+    name: Vinewrap Gloves
+    description: Supple gloves bound in living vine; they steady a grip and quicken the draw.
+    slot: hands
+    tier: 1
+    accuracyBonus: 1
+    speedBonus: 1
+    price: 40
+    sellValue: 13
+    tags: [hands, vine]
+    locales:
+      ja:
+        name: 蔓巻きの手甲
+        description: 生きた蔓を巻いた柔らかな手甲。握りを安定させ、抜き手を速める。
   - id: equip.verdant.bark-plate
     name: Bark Plate
     description: Overlapping bark scutes, grown to fit; heavy but sure.
