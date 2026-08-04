@@ -177,26 +177,17 @@ func _class_label(class_id: String) -> String:
 ## The portrait a member's card shows — a builtin/imported ref, else the class figure from the pack (the
 ## Default eight-class library is the shared fallback). Mirrors dungeon.gd/_portrait_path so the town card
 ## resolves the same face as the crawl. (The 4th copy of this — a future WorldResources extraction.)
+var _backgrounds_cache: Array = []
+func _backgrounds() -> Array:
+	if _backgrounds_cache.is_empty():
+		_backgrounds_cache = ((_run.character_data if _run else WorldResources.read_json("res://data/character-data.json")) as Dictionary).get("backgrounds", [])
+	return _backgrounds_cache
+
 func _portrait_path(member: Dictionary) -> String:
-	var portrait_ref := String(member.get("portraitRef", ""))
-	const BUILTIN_PREFIX := "builtin://portrait/"
-	if portrait_ref.begins_with(BUILTIN_PREFIX):
-		var chosen := _asset("portraits/%s.png" % portrait_ref.trim_prefix(BUILTIN_PREFIX))
-		if FileAccess.file_exists(chosen):
-			return chosen
-	var class_id := String(member.get("classId", "warrior"))
-	var legacy: Dictionary = engine().get("legacyClassMapping", {})
-	class_id = String(legacy.get(class_id, class_id))
-	var known := false
-	for class_def in engine().get("classes", []):
-		if String((class_def as Dictionary).get("id", "")) == class_id:
-			known = true
-			break
-	if not known:
-		class_id = "warrior"
-	var sub := "characters/adventurer-%s-base.png" % class_id
-	var pack_path := _asset(sub)
-	return pack_path if FileAccess.file_exists(pack_path) else "res://assets/worlds/default/%s" % sub
+	# The FACE the card shows: an explicit builtin pick, else the background's own face (both packs ship
+	# all twelve via the Default fallback). A member's card shows a face, consistent with the combat HUD,
+	# the crawl token, and the results screen — the full-body figure belongs to the combat spotlight.
+	return _asset("portraits/%s.png" % WorldResources.portrait_key(member, _backgrounds()))
 
 # --- the one mutation path: the ported rules, the same ones the parity gate proves ----------------
 func dispatch(command: Dictionary) -> Array:

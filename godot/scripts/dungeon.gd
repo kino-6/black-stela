@@ -474,30 +474,17 @@ func _rebuild_party_hud() -> void:
 	for member in members:
 		_party_hud.add_child(DungeonHud.party_token(member, _world, WorldResources.portrait_texture(String(member.get("portraitRef", "")), _portrait_path(member))))
 
+var _backgrounds_cache: Array = []
+func _backgrounds() -> Array:
+	if _backgrounds_cache.is_empty():
+		_backgrounds_cache = ((_run.character_data if _run else WorldResources.read_json("res://data/character-data.json")) as Dictionary).get("backgrounds", [])
+	return _backgrounds_cache
+
 func _portrait_path(member: Dictionary) -> String:
-	var portrait_ref := String(member.get("portraitRef", ""))
-	const BUILTIN_PREFIX := "builtin://portrait/"
-	if portrait_ref.begins_with(BUILTIN_PREFIX):
-		var key := portrait_ref.trim_prefix(BUILTIN_PREFIX)
-		var chosen := _asset("portraits/%s.png" % key)
-		if FileAccess.file_exists(chosen):
-			return chosen
-	# Portrait identity follows the same twelve-to-eight resolver as the rules. A legacy save keeps its
-	# face, but it resolves to its real current discipline — never to a nearest-archetype placeholder.
-	var class_id := String(member.get("classId", "warrior"))
-	var legacy: Dictionary = _engine.get("legacyClassMapping", {})
-	class_id = String(legacy.get(class_id, class_id))
-	var known := false
-	for class_def in _engine.get("classes", []):
-		if String((class_def as Dictionary).get("id", "")) == class_id:
-			known = true
-			break
-	if not known:
-		class_id = "warrior"
-	var sub := "characters/adventurer-%s-base.png" % class_id
-	var pack_path := _asset(sub)
-	# Scenario packs may override a class figure; the Default eight-class library is the shared fallback.
-	return pack_path if FileAccess.file_exists(pack_path) else "res://assets/worlds/default/%s" % sub
+	# The FACE the crawl token shows: an explicit builtin pick, else the background's own face (both packs
+	# ship all twelve via the Default fallback). A token is a compact avatar — it shows a face, consistent
+	# with the combat HUD, the town card, and results. The full-body figure belongs to the combat spotlight.
+	return _asset("portraits/%s.png" % WorldResources.portrait_key(member, _backgrounds()))
 
 func _rebuild_dock() -> void:
 	if _dock_host == null:

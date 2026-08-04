@@ -17,7 +17,19 @@ const assetModules = import.meta.glob("../../content/worlds/*/assets/**/*.{png,j
 
 // pack (world folder) -> basename (no extension) -> hashed url
 const byPack: Record<string, Record<string, string>> = {};
+// The full-body standing art lives in a PARALLEL `assets/bodies/` folder and is keyed by the SAME
+// portraitKey as the square face in `assets/portraits/` — so `portraits/gate.png` (face) and
+// `bodies/gate.png` (full-body) share the basename `gate`. The flat basename index above would let
+// one clobber the other, so bodies get their own index and are excluded from the flat one. Faces stay
+// in `byPack`; bodies resolve through `bodyUrl`. Both keep the single-hop pack→default fallback.
+const byPackBody: Record<string, Record<string, string>> = {};
 for (const [path, url] of Object.entries(assetModules)) {
+  const bodyMatch = path.match(/\/worlds\/([^/]+)\/assets\/bodies\/([^/]+)\.(?:png|jpg)$/i);
+  if (bodyMatch) {
+    const [, pack, name] = bodyMatch;
+    (byPackBody[pack] ??= {})[name] = url;
+    continue;
+  }
   const match = path.match(/\/worlds\/([^/]+)\/assets\/(?:.*\/)?([^/]+)\.(?:png|jpg)$/i);
   if (!match) {
     continue;
@@ -123,8 +135,17 @@ export function catalogIconUrl(id: string, pack: string = activePack): string | 
 }
 
 // ---- Portraits (bare keys: cloak, coin, gate…) ------------------------------------
+// The FACE: the square avatar art in `assets/portraits/<key>.png`, shown wherever a compact face is
+// wanted (roster tiles, party HUD tokens, results, character sheet).
 export function portraitUrl(key: string, pack: string = activePack): string | undefined {
   return resolveOrNull(key, pack) ?? undefined;
+}
+
+// The FULL BODY: the tall standing art in `assets/bodies/<key>.png`, shown where a character owns the
+// screen (combat spotlight / dungeon presence). Same key as the face, own single-hop pack→default
+// fallback; undefined when neither pack ships a body for this key (callers then fall back to the face).
+export function bodyUrl(key: string, pack: string = activePack): string | undefined {
+  return byPackBody[pack]?.[key] ?? byPackBody[DEFAULT_PACK]?.[key] ?? undefined;
 }
 
 // ---- Dungeon block textures (themed wall/floor sets) ------------------------------

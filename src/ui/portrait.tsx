@@ -1,6 +1,6 @@
 import { findBackground } from "../domain/characterCreation";
 import type { CharacterBackgroundId, CharacterVisualProfile } from "../domain/types";
-import { portraitUrl } from "./artAssets";
+import { bodyUrl, portraitUrl } from "./artAssets";
 import { resolveCharacterVisual, type CharacterVisualContext } from "./characterVisual";
 
 // Shared across every surface that shows a face (guild creation, party HUD, camp,
@@ -30,7 +30,13 @@ export function renderPortraitContent({
   const background = findBackground(backgroundId);
   // Portraits are global character-creation art; they follow the active art pack
   // (set on the resolver whenever the scenario changes) rather than a fixed world.
-  const portraitAssetUrl = portraitUrl(background.portraitKey);
+  //
+  // FACE vs FULL BODY: where the character OWNS the screen (context "battle" = combat spotlight /
+  // dungeon presence) we prefer the tall standing art from `assets/bodies/<key>.png`; everywhere else
+  // (tokens, sheets) we want the square face. When a pack ships no body for this key, bodyUrl is
+  // undefined and we fall through to the face — so a face-only pack renders exactly as before.
+  const packBodyUrl = context === "battle" ? bodyUrl(background.portraitKey) : undefined;
+  const portraitAssetUrl = packBodyUrl ?? portraitUrl(background.portraitKey);
   if (portraitAssetUrl) {
     return (
       <img

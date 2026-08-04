@@ -30,6 +30,39 @@ static func world_asset(world_id: String, sub: String) -> String:
 	var path := "res://assets/worlds/%s/%s" % [world_id, sub]
 	return path if FileAccess.file_exists(path) else "res://assets/worlds/default/%s" % sub
 
+## The portrait KEY for a member (mirror of React portrait.tsx / result.gd _portrait_key): an explicit
+## builtin face pick wins, else the background's default key, else "gate". `backgrounds` is the exported
+## character-data.json "backgrounds" array — passed in so this stays a single table, never a copy.
+static func portrait_key(member: Dictionary, backgrounds: Array) -> String:
+	var ref := String(member.get("portraitRef", ""))
+	const BUILTIN := "builtin://portrait/"
+	if ref.begins_with(BUILTIN):
+		return ref.trim_prefix(BUILTIN)
+	var id := String(member.get("backgroundId", "watch"))
+	for bg in backgrounds:
+		if String((bg as Dictionary).get("id", "")) == id:
+			return String((bg as Dictionary).get("portraitKey", "gate"))
+	return "gate"
+
+## The FACE: the square avatar art at portraits/<key>.png (this world, else Default's — which ships all
+## twelve, so a face slot always resolves). Small tokens/cards use this so an avatar shows a FACE, never a
+## tall standing figure squeezed into a token.
+static func face_path(world_id: String, key: String) -> String:
+	return world_asset(world_id, "portraits/%s.png" % (key if key != "" else "gate"))
+
+## The FULL BODY: the tall standing art at bodies/<key>.png (this world, else Default's), or "" when no
+## pack ships a body for this key. Used where a character OWNS the screen (combat spotlight); callers fall
+## back to the class figure, then the face, so a body-less pack renders exactly as before.
+static func body_path(world_id: String, key: String) -> String:
+	if key == "":
+		return ""
+	var sub := "bodies/%s.png" % key
+	var path := "res://assets/worlds/%s/%s" % [world_id, sub]
+	if FileAccess.file_exists(path):
+		return path
+	var dflt := "res://assets/worlds/default/%s" % sub
+	return dflt if FileAccess.file_exists(dflt) else ""
+
 # Decoded imported portraits, cached by the data-URL's md5 so a scene rebuild never re-decodes.
 static var _portrait_cache: Dictionary = {}
 

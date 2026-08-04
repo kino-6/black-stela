@@ -5,7 +5,7 @@
 // the Godot maze rendered untextured flat colour for the whole migration and the packaged build would
 // have shipped that way. Staging is now part of `npm run export:godot`, so what the player sees cannot
 // drift from what was authored.
-import { cpSync, existsSync, mkdirSync, readdirSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, readdirSync, rmSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -14,7 +14,7 @@ const contentRoot = join(here, "..", "content", "worlds");
 const godotRoot = join(here, "..", "godot", "assets", "worlds");
 
 // Per-world art the runtime loads at play time (Image.load_from_file), by subdirectory.
-const SUBDIRS = ["dungeon", "ui", "npc", "title", "portraits", "icons", "characters", "minimap"];
+const SUBDIRS = ["dungeon", "ui", "npc", "title", "portraits", "bodies", "characters", "icons", "minimap"];
 
 let copied = 0;
 for (const worldId of readdirSync(contentRoot)) {
@@ -22,8 +22,12 @@ for (const worldId of readdirSync(contentRoot)) {
   if (!existsSync(from)) continue;
   for (const sub of SUBDIRS) {
     const src = join(from, sub);
-    if (!existsSync(src)) continue;
     const dest = join(godotRoot, worldId, sub);
+    // Mirror deletions: each staged subdir is rebuilt fresh from content, so art removed upstream (e.g.
+    // Terminal Line's portraits/ after the tall figures moved to bodies/) cannot linger in the generated
+    // staging and shadow the pack→default fallback with a stale file.
+    rmSync(dest, { recursive: true, force: true });
+    if (!existsSync(src)) continue;
     mkdirSync(dest, { recursive: true });
     cpSync(src, dest, { recursive: true });
     copied += readdirSync(src).length;

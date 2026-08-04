@@ -1142,20 +1142,27 @@ func _acting_name() -> String:
 			return member.get("name", "?")
 	return "?"
 
+var _backgrounds_cache: Array = []
+func _backgrounds() -> Array:
+	if _backgrounds_cache.is_empty():
+		_backgrounds_cache = ((_run.character_data if _run else _read_json("res://data/character-data.json")) as Dictionary).get("backgrounds", [])
+	return _backgrounds_cache
+
+# The FACE for a party HUD token / result — a compact avatar. An explicit builtin pick wins, else the
+# background's own face; both packs ship all twelve faces through the Default fallback, so a token always
+# shows a FACE, never a tall standing figure squeezed into a small frame. (Imported data URLs still ride
+# the web-profile path in portrait_texture and fall back here.)
 func _portrait_path(member: Dictionary) -> String:
-	# A recruit may explicitly choose one of the built-in faces.  It is deliberately independent of
-	# backgroundId: background explains where the character came from, not what every cartographer or
-	# apothecary must look like.  Imported data URLs still belong to the web profile path and fall back
-	# safely here, while this stable built-in URI survives saves and exports.
-	var portrait_ref := String(member.get("portraitRef", ""))
-	const BUILTIN_PREFIX := "builtin://portrait/"
-	if portrait_ref.begins_with(BUILTIN_PREFIX):
-		var key := portrait_ref.trim_prefix(BUILTIN_PREFIX)
-		var chosen := _asset("portraits/%s.png" % key)
-		if FileAccess.file_exists(chosen):
-			return chosen
-	# Keep portrait lookup on the canonical class id. The legacy mapping comes from the same exported
-	# engine data as the rule port, so an older save gets its current discipline's own master.
+	return WorldResources.face_path(_run.world_id if _run else _world_id, WorldResources.portrait_key(member, _backgrounds()))
+
+# The FULL-BODY spotlight figure — the acting member owning the screen. This world's bodies/<key>.png
+# first, then the class figure library (Default's eight), then the face so the panel is never empty.
+func _figure_path(member: Dictionary) -> String:
+	var body := WorldResources.body_path(_run.world_id if _run else _world_id, WorldResources.portrait_key(member, _backgrounds()))
+	if body != "":
+		return body
+	# Keep the class figure on the canonical class id. The legacy mapping comes from the same exported
+	# engine data as the rule port, so an older save gets its current discipline's own figure.
 	var class_id := String(member.get("classId", "warrior"))
 	var legacy: Dictionary = _engine.get("legacyClassMapping", {})
 	class_id = String(legacy.get(class_id, class_id))
@@ -1168,7 +1175,10 @@ func _portrait_path(member: Dictionary) -> String:
 		class_id = "warrior"
 	var sub := "characters/adventurer-%s-base.png" % class_id
 	var pack_path := _asset(sub)
-	return pack_path if FileAccess.file_exists(pack_path) else "res://assets/worlds/default/%s" % sub
+	if FileAccess.file_exists(pack_path):
+		return pack_path
+	var dflt := "res://assets/worlds/default/%s" % sub
+	return dflt if FileAccess.file_exists(dflt) else _portrait_path(member)
 
 func _hp_text(member: Dictionary) -> String:
 	# A DOWNED member is stored at hp:1 + injury (so they can be revived), but showing "HP 1" read as
@@ -1321,7 +1331,7 @@ func _set_spotlight_member(member: Dictionary) -> void:
 		return
 	if _actor_figure is Node and (_actor_figure as Node).is_inside_tree():
 		(_actor_figure as Node).queue_free()
-	_actor_figure = CombatStage.actor_figure(member, _enemy_stage_rect, WorldResources.portrait_texture(String(member.get("portraitRef", "")), _portrait_path(member)))
+	_actor_figure = CombatStage.actor_figure(member, _enemy_stage_rect, WorldResources.portrait_texture(String(member.get("portraitRef", "")), _figure_path(member)))
 	_stage_layer.add_child(_actor_figure)
 
 # The creature's apparent scale from its DATA size class (small/medium/large) — tuned here, never by

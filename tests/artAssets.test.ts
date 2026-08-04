@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { createHash } from "node:crypto";
+import { existsSync } from "node:fs";
 import {
   asset,
+  bodyUrl,
   catalogIconUrl,
   cssArtVariables,
   getEnemySpriteTextureUrl,
@@ -356,6 +358,55 @@ describe("art resolver", () => {
 
     expect(hashes).toHaveLength(8);
     expect(new Set(hashes).size).toBe(hashes.length);
+  });
+});
+
+// The face-vs-full-body split (U2): the square face lives in assets/portraits/<key>.png and the tall
+// standing figure in a PARALLEL assets/bodies/<key>.png, keyed by the same portraitKey. bodyUrl is its
+// own single-hop pack→default index so the shared basename never collides with the face.
+describe("face vs full-body portrait art", () => {
+  const portraitKeys = [
+    "gate", "ruin", "vial", "coin", "map", "ward",
+    "road", "pit", "ink", "grave", "dock", "cloak"
+  ] as const;
+
+  it("resolves a pack's full-body art from assets/bodies, distinct from its face", () => {
+    // Terminal Line ships all twelve full-body figures under assets/bodies/.
+    for (const key of portraitKeys) {
+      const body = bodyUrl(key, "terminal-line");
+      expect(body, `terminal-line body ${key}`).toBeDefined();
+      // Its face slot is empty (the tall art moved to bodies/), so the face falls back to the default
+      // pack's square portrait — a DIFFERENT url than the body, proving the two slots are independent.
+      expect(bodyUrl(key, "terminal-line"), key).not.toBe(portraitUrl(key, "terminal-line"));
+    }
+  });
+
+  it("returns undefined body for a face-only pack so callers fall through to the face", () => {
+    // Default and Verdant ship no assets/bodies/ folder; a missing body must degrade, never throw.
+    for (const key of ["gate", "cloak"] as const) {
+      expect(bodyUrl(key, "default"), key).toBeUndefined();
+      expect(bodyUrl(key, "verdant"), key).toBeUndefined();
+    }
+  });
+
+  it("keeps the single-hop pack→default fallback for bodies", () => {
+    // An unknown pack resolves exactly as the default pack would (both undefined today — default has no
+    // bodies — but the fallback path is exercised, matching portraitUrl's contract).
+    expect(bodyUrl("gate", "no-such-pack")).toBe(bodyUrl("gate", "default"));
+  });
+
+  it("ships twelve tall (2:3) Terminal Line bodies and no leftover face in portraits/", () => {
+    for (const key of portraitKeys) {
+      expect(
+        pngSize(new URL(`../content/worlds/terminal-line/assets/bodies/${key}.png`, import.meta.url)),
+        key
+      ).toEqual({ width: 1024, height: 1536 });
+      // The tall art was MOVED out of portraits/, not copied — the face slot is genuinely empty.
+      expect(
+        existsSync(new URL(`../content/worlds/terminal-line/assets/portraits/${key}.png`, import.meta.url)),
+        `stale face ${key}`
+      ).toBe(false);
+    }
   });
 });
 
