@@ -15,7 +15,7 @@ static func use_technique(state: Dictionary, world: Dictionary, engine: Dictiona
 	var technique: Dictionary = Techniques._resolve_technique_catalog(engine, world).get(technique_id, {})
 	if actor.is_empty() or technique.is_empty() or not Techniques.is_camp_usable(technique_id, engine, world):
 		return {"state": state, "events": []}
-	if not (Vocations.resolve_vocation_state(actor, engine).get("learned", []) as Array).has(technique_id):
+	if not (Vocations.resolve_vocation_state(actor, engine, world).get("learned", []) as Array).has(technique_id):
 		return {"state": state, "events": []}
 	var statuses: Array = actor.get("status", [])
 	if int(actor.get("hp", 0)) <= 0 or actor.get("injury", null) != null or statuses.has("sleep"):

@@ -140,7 +140,7 @@ static func resolve(state: Dictionary, command: Dictionary, world: Dictionary = 
 		"change_vocation":
 			return Vocations.change_vocation(state, world, engine, command.get("characterId", ""), command.get("vocationId", ""))
 		"set_loadout":
-			return Vocations.set_loadout_command(state, engine, command.get("characterId", ""), command.get("loadout", []))
+			return Vocations.set_loadout_command(state, world, engine, command.get("characterId", ""), command.get("loadout", []))
 		_:
 			# Not yet ported — a no-op keeps the replay honest (the harness will flag the hash mismatch).
 			return {"state": state, "events": []}

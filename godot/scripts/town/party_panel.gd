@@ -101,7 +101,7 @@ static func build(ctx: Dictionary) -> Control:
 			if String(candidate.get("id", "")) == String(member.get("id", "")):
 				selected_sfocus = _first_button(rr)
 		sbody.add_child(UI.card(sroster))
-		var spell_page := _spells_page(ctx, engine, member)
+		var spell_page := _spells_page(ctx, world, engine, member)
 		sbody.add_child(spell_page["control"])
 		var sfoot := UI.row()
 		var sback := UI.button(I18n.t("partyMenu.close"), ctx["close"], Vector2(180, 44), 18)
@@ -277,7 +277,7 @@ static func _roster_row(ctx: Dictionary, candidate: Dictionary, selected: Dictio
 	var world: Dictionary = ctx.get("world", {})
 	var engine: Dictionary = ctx.get("engine", {})
 	var row_label := I18n.t("play.frontRow") if String(candidate.get("row", "front")) == "front" else I18n.t("play.backRow")
-	var voc: Dictionary = Vocations.resolve_vocation_state(candidate, engine)
+	var voc: Dictionary = Vocations.resolve_vocation_state(candidate, engine, world)
 	var job := Vocations.localized_vocation_name(world, engine, String(voc.get("current", "")), "ja")
 	body.add_child(UI.label("%s ・ %s" % [row_label, job], 13, UI.DIM))
 	# T11 — the face, so a member reads at a glance.
@@ -425,7 +425,7 @@ static func _equipment_page(ctx: Dictionary, world: Dictionary, party: Array, me
 		var catalog: Variant = Fmt.find_equipment(world, selected_item.get("id", ""))
 		if typeof(catalog) == TYPE_DICTIONARY:
 			for passive_id in (catalog as Dictionary).get("grantsPassives", []):
-				comparison.add_child(UI.label("%s：%s" % [I18n.t("partyMenu.equipmentPassive"), Techniques.label(String(passive_id), ctx.get("engine", {}))], 15, UI.OK))
+				comparison.add_child(UI.label("%s：%s" % [I18n.t("partyMenu.equipmentPassive"), Techniques.label(String(passive_id), ctx.get("engine", {}), world)], 15, UI.OK))
 		var usable := typeof(catalog) == TYPE_DICTIONARY and Fmt.is_usable_by(catalog as Dictionary, member)
 		if not usable:
 			comparison.add_child(UI.label(I18n.t("partyMenu.equipmentIncompatible"), 15, UI.BAD))
@@ -712,11 +712,11 @@ static func _exploration_aid_label(actions: Variant) -> String:
 # Recovery and cure arts have a deterministic exploration meaning, so they are usable from this menu.
 # Combat-only techniques remain visible as reference material rather than pretending they persist outside
 # a round. The route is actor → technique → target → command; candidate selection itself costs nothing.
-static func _spells_page(ctx: Dictionary, engine: Dictionary, member: Dictionary) -> Dictionary:
+static func _spells_page(ctx: Dictionary, world: Dictionary, engine: Dictionary, member: Dictionary) -> Dictionary:
 	var col := UI.col(6)
 	col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	col.add_child(UI.label("%s — %s" % [String(member.get("name", "")), I18n.t("partyMenu.tabs.spells")], 19, UI.GOLD))
-	var voc: Dictionary = Vocations.resolve_vocation_state(member, engine)
+	var voc: Dictionary = Vocations.resolve_vocation_state(member, engine, world)
 	var learned: Array = voc.get("learned", [])
 	if learned.is_empty():
 		col.add_child(UI.label(I18n.t("partyMenu.noSpells"), 15, UI.DIM))
@@ -724,19 +724,19 @@ static func _spells_page(ctx: Dictionary, engine: Dictionary, member: Dictionary
 	var spells := []
 	var skills := []
 	for tid in learned:
-		if Techniques.is_skill(String(tid), engine):
+		if Techniques.is_skill(String(tid), engine, world):
 			skills.append(String(tid))
 		else:
 			spells.append(String(tid))
 	var selected_id := String(ctx.get("party_technique_id", ""))
-	if selected_id != "" and learned.has(selected_id) and Techniques.is_camp_usable(selected_id, engine):
+	if selected_id != "" and learned.has(selected_id) and Techniques.is_camp_usable(selected_id, engine, world):
 		var back := UI.button(I18n.t("partyMenu.back"), func(): ctx["set_party_technique"].call(""), Vector2(180, 38), 15)
 		col.add_child(back)
-		col.add_child(UI.label(Techniques.label(selected_id, engine), 20, UI.GOLD))
-		var summary := Techniques.summary(selected_id, engine)
+		col.add_child(UI.label(Techniques.label(selected_id, engine, world), 20, UI.GOLD))
+		var summary := Techniques.summary(selected_id, engine, world)
 		if summary != "":
 			col.add_child(UI.label(summary, 15, UI.DIM))
-		var target_mode := Techniques.targeting(selected_id, engine)
+		var target_mode := Techniques.targeting(selected_id, engine, world)
 		var party: Array = (ctx["state"] as Dictionary).get("party", [])
 		var target_focus: Control = back
 		if target_mode == "ally":
@@ -744,7 +744,7 @@ static func _spells_page(ctx: Dictionary, engine: Dictionary, member: Dictionary
 			# T18: a pure-heal cannot help a full-HP ally — disable those targets, and land the cursor on the
 			# MOST-wounded valid target (not the top of the list). After a cast the panel re-renders and this
 			# recomputes, so the cursor moves to the next-most-wounded instead of snapping back to the top.
-			var is_heal := Techniques.heals(selected_id, engine)
+			var is_heal := Techniques.heals(selected_id, engine, world)
 			var best_wounded: Control = null
 			var lowest_pct := 2.0
 			for target_v in party:
@@ -768,46 +768,46 @@ static func _spells_page(ctx: Dictionary, engine: Dictionary, member: Dictionary
 			target_focus = action
 		return {"control": col, "focus": target_focus}
 	var focus: Control = null
-	focus = _tech_group(col, I18n.t("partyMenu.spellsGroup"), spells, engine, ctx, member, focus)
-	focus = _tech_group(col, I18n.t("partyMenu.skillsGroup"), skills, engine, ctx, member, focus)
+	focus = _tech_group(col, I18n.t("partyMenu.spellsGroup"), spells, world, engine, ctx, member, focus)
+	focus = _tech_group(col, I18n.t("partyMenu.skillsGroup"), skills, world, engine, ctx, member, focus)
 	return {"control": col, "focus": focus}
 
-static func _tech_group(host: Control, title: String, ids: Array, engine: Dictionary, ctx: Dictionary, member: Dictionary, focus: Control) -> Control:
+static func _tech_group(host: Control, title: String, ids: Array, world: Dictionary, engine: Dictionary, ctx: Dictionary, member: Dictionary, focus: Control) -> Control:
 	if ids.is_empty():
 		return focus
 	host.add_child(UI.label(title, 16, UI.DIM))
 	for id in ids:
 		var row := UI.row()
 		var technique_id := String(id)
-		var camp_usable := Techniques.is_camp_usable(technique_id, engine)
+		var camp_usable := Techniques.is_camp_usable(technique_id, engine, world)
 		var name_control: Control
 		if camp_usable:
-			var active := _can_use_camp_technique(member, technique_id, engine)
-			var technique_button := UI.button(Techniques.label(technique_id, engine), func(): ctx["set_party_technique"].call(technique_id), Vector2(240, 36), 16)
+			var active := _can_use_camp_technique(member, technique_id, engine, world)
+			var technique_button := UI.button(Techniques.label(technique_id, engine, world), func(): ctx["set_party_technique"].call(technique_id), Vector2(240, 36), 16)
 			technique_button.disabled = not active
 			name_control = technique_button
 			if focus == null and active:
 				focus = technique_button
 		else:
-			name_control = UI.label(Techniques.label(technique_id, engine), 16, UI.INK)
+			name_control = UI.label(Techniques.label(technique_id, engine, world), 16, UI.INK)
 		row.add_child(UI.grow(name_control))
-		var mp := Techniques.cost(technique_id, engine)
+		var mp := Techniques.cost(technique_id, engine, world)
 		if mp > 0:
 			row.add_child(UI.label("MP %d" % mp, 14, UI.DIM))
 		host.add_child(row)
-		var summary := Techniques.summary(technique_id, engine)
+		var summary := Techniques.summary(technique_id, engine, world)
 		if summary != "":
 			host.add_child(UI.label("　%s" % summary, 13, UI.DIM))
 	return focus
 
-static func _can_use_camp_technique(member: Dictionary, technique_id: String, engine: Dictionary) -> bool:
+static func _can_use_camp_technique(member: Dictionary, technique_id: String, engine: Dictionary, world: Dictionary = {}) -> bool:
 	var statuses: Array = member.get("status", [])
 	if int(member.get("hp", 0)) <= 0 or member.get("injury", null) != null or statuses.has("sleep"):
 		return false
-	var definition: Dictionary = (engine.get("techniques", {}) as Dictionary).get(technique_id, {})
+	var definition: Dictionary = Techniques._resolve_technique_catalog(engine, world).get(technique_id, {})
 	if String(definition.get("kind", "")) == "spell" and statuses.has("silence"):
 		return false
-	return int(member.get("mp", 0)) >= Techniques.cost(technique_id, engine)
+	return int(member.get("mp", 0)) >= Techniques.cost(technique_id, engine, world)
 
 static func _first_button(node: Node) -> Control:
 	if node is Button:

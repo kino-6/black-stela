@@ -439,7 +439,7 @@ static func _victory(state: Dictionary, world: Dictionary, combat: Dictionary, p
 	var grown := []
 	var level_events := []
 	for member in party:
-		var rewarded := _reward_member(member, groups, gold, defeated_names, engine)
+		var rewarded := _reward_member(member, groups, gold, defeated_names, engine, world)
 		grown.append(rewarded["character"])
 		level_events.append_array(rewarded["events"])
 	var level_ups := []
@@ -535,7 +535,7 @@ static func _find_room(world: Dictionary, room_id: String) -> Variant:
 				return room
 	return null
 
-static func _reward_member(member: Dictionary, groups: Array, gold: int, defeated_names: Array, engine: Dictionary) -> Dictionary:
+static func _reward_member(member: Dictionary, groups: Array, gold: int, defeated_names: Array, engine: Dictionary, world: Dictionary = {}) -> Dictionary:
 	var m: Dictionary = member.duplicate(true)
 	var level := int(member.get("level", 1))
 
@@ -548,7 +548,7 @@ static func _reward_member(member: Dictionary, groups: Array, gold: int, defeate
 	var mastery_points := 0
 	for g in groups:
 		mastery_points += _reward_xp_for(MASTERY_BASE_PER_FIGHT, level, g)
-	m["vocation"] = _apply_mastery(_resolve_vocation_state(member, engine), mastery_points, engine)
+	m["vocation"] = _apply_mastery(_resolve_vocation_state(member, engine, world), mastery_points, engine)
 
 	var mem: Dictionary = (member.get("memory", {}) as Dictionary).duplicate(true)
 	mem["notableVictories"] = _unique_concat(mem.get("notableVictories", []), defeated_names)
@@ -572,11 +572,11 @@ static func _xp_falloff(member_level: int, target_level: int) -> float:
 		return 1.0
 	return maxf(FALLOFF_FLOOR, pow(FALLOFF_PER_LEVEL, over))
 
-static func _resolve_vocation_state(member: Dictionary, engine: Dictionary) -> Dictionary:
+static func _resolve_vocation_state(member: Dictionary, engine: Dictionary, world: Dictionary = {}) -> Dictionary:
 	if typeof(member.get("vocation", null)) == TYPE_DICTIONARY:
 		return member["vocation"]
 	var class_id: String = member.get("classId", "")
-	var learned := _known_spells(class_id, int(member.get("level", 1)), engine)
+	var learned := _known_spells(class_id, int(member.get("level", 1)), engine, world)
 	return {
 		"current": class_id,
 		"mastery": {},
@@ -585,13 +585,13 @@ static func _resolve_vocation_state(member: Dictionary, engine: Dictionary) -> D
 		"loadout": learned.duplicate()
 	}
 
-static func _known_spells(class_id: String, level: int, engine: Dictionary) -> Array:
-	var abilities: Variant = (engine.get("classAbilities", {}) as Dictionary).get(class_id, [])
+# The class line, world-resolved (a world may re-skin it) — Techniques.class_line returns the base
+# engine.classAbilities line when the world authors none, so base worlds are byte-identical.
+static func _known_spells(class_id: String, level: int, engine: Dictionary, world: Dictionary = {}) -> Array:
 	var out := []
-	if typeof(abilities) == TYPE_ARRAY:
-		for entry in abilities:
-			if level >= int(entry.get("level", 0)):
-				out.append(entry.get("spellId", ""))
+	for entry in Techniques.class_line(class_id, engine, world):
+		if level >= int((entry as Dictionary).get("level", 0)):
+			out.append((entry as Dictionary).get("spellId", ""))
 	return out
 
 static func _apply_mastery(state: Dictionary, points: int, engine: Dictionary) -> Dictionary:
@@ -800,7 +800,7 @@ static func _sync_combat_enemy(combat: Dictionary) -> Dictionary:
 ## An actor may cast only a technique on its combat loadout (which defaults to the class's known
 ## techniques until a player edits one) — and only ones the exported catalog actually defines.
 static func _combat_loadout(actor: Dictionary, world: Dictionary, engine: Dictionary) -> Array:
-	var state := _resolve_vocation_state(actor, engine)
+	var state := _resolve_vocation_state(actor, engine, world)
 	var catalog: Dictionary = Techniques._resolve_technique_catalog(engine, world)
 	var out := []
 	for technique in state.get("loadout", []):

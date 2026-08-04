@@ -330,11 +330,10 @@ func _loadout_for(actor: Dictionary) -> Array:
 	var vocation: Variant = actor.get("vocation", null)
 	var learned: Array = (vocation as Dictionary).get("loadout", []) if typeof(vocation) == TYPE_DICTIONARY else []
 	if learned.is_empty():
-		var abilities: Variant = (_engine.get("classAbilities", {}) as Dictionary).get(String(actor.get("classId", "")), [])
-		if typeof(abilities) == TYPE_ARRAY:
-			for entry in abilities:
-				if int(actor.get("level", 1)) >= int(entry.get("level", 0)):
-					learned.append(entry.get("spellId", ""))
+		# The class line, world-resolved (a themed world may re-skin it); base worlds get engine.classAbilities.
+		for entry in Techniques.class_line(String(actor.get("classId", "")), _engine, _world):
+			if int(actor.get("level", 1)) >= int((entry as Dictionary).get("level", 0)):
+				learned.append((entry as Dictionary).get("spellId", ""))
 	# §9.5: filtered against the exported CATALOG, not a four-entry cost literal. That literal silently
 	# removed every technique §9.4 authored from the menu — a Knight had a full line and an empty 特技 list.
 	var catalog: Dictionary = Techniques._resolve_technique_catalog(_engine, _world)

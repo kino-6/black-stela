@@ -27,6 +27,27 @@ static func _def(id: String, engine: Dictionary, world: Dictionary = {}) -> Dict
 	var entry: Variant = _resolve_technique_catalog(engine, world).get(id, null)
 	return entry if typeof(entry) == TYPE_DICTIONARY else {}
 
+## The class's LEARNED line for this run: a world's re-skin (world.classTechniques) over the exported
+## engine.classAbilities. Mirrors src/domain/spells.ts resolveClassAbilities — authored wins on classId,
+## castable-filtered (drop passive / item-or-hp-cost, like resolveCastableCatalog). A world that authors no
+## class line returns engine.classAbilities[class_id] unchanged, so base worlds replay byte-identically.
+static func class_line(class_id: String, engine: Dictionary, world: Dictionary = {}) -> Array:
+	for entry in world.get("classTechniques", []):
+		if typeof(entry) == TYPE_DICTIONARY and String((entry as Dictionary).get("classId", "")) == class_id:
+			var catalog := _resolve_technique_catalog(engine, world)
+			var out := []
+			for grant in (entry as Dictionary).get("combatTechniques", []):
+				var id := String((grant as Dictionary).get("techniqueId", ""))
+				var definition: Dictionary = catalog.get(id, {})
+				if definition.is_empty() or String(definition.get("kind", "")) == "passive":
+					continue
+				var cost: Dictionary = definition.get("cost", {})
+				if cost.has("itemId") or cost.has("hp") or cost.has("usesPerExpedition"):
+					continue
+				out.append({"level": int((grant as Dictionary).get("level", 0)), "spellId": id})
+			return out
+	return (engine.get("classAbilities", {}) as Dictionary).get(class_id, [])
+
 ## The AUTHORED display name for id in the current locale, or "" if this world does not author one.
 static func _authored_name(id: String, world: Dictionary) -> String:
 	for technique in world.get("techniques", []):

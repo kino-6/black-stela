@@ -17,8 +17,8 @@ const Techniques := preload("res://scripts/rules/techniques.gd")
 
 const STAT_ORDER := ["maxHp", "maxMp", "attack", "damageMin", "damageMax", "accuracy", "armor", "speed"]
 
-static func _technique_name(id: String, engine: Dictionary = {}) -> String:
-	return Techniques.label(id, engine)
+static func _technique_name(id: String, engine: Dictionary = {}, world: Dictionary = {}) -> String:
+	return Techniques.label(id, engine, world)
 
 static func build(ctx: Dictionary) -> Control:
 	var state: Dictionary = ctx["state"]
@@ -50,7 +50,7 @@ static func build(ctx: Dictionary) -> Control:
 		picker.add_child(b)
 	root.add_child(picker)
 
-	var voc_state: Dictionary = Vocations.resolve_vocation_state(member, engine)
+	var voc_state: Dictionary = Vocations.resolve_vocation_state(member, engine, world)
 	var catalog: Array = Vocations.resolve_vocation_catalog(world, engine)
 	var mastered_rank := int(engine.get("masteredRank", 5))
 
@@ -136,7 +136,7 @@ static func _overview(ctx: Dictionary, world: Dictionary, engine: Dictionary, me
 			var tid := String(technique)
 			var in_loadout := loadout.has(tid)
 			var line := UI.row()
-			line.add_child(UI.grow(UI.label(_technique_name(tid, engine), 15, UI.INK if in_loadout else UI.DIM)))
+			line.add_child(UI.grow(UI.label(_technique_name(tid, engine, world), 15, UI.INK if in_loadout else UI.DIM)))
 			var next_loadout := []
 			if in_loadout:
 				for t2 in loadout:
@@ -235,7 +235,7 @@ static func _vocation_preview(ctx: Dictionary, world: Dictionary, engine: Dictio
 		var grow_row := UI.row()
 		grow_row.add_child(UI.label(I18n.t("career.grants"), 14, UI.DIM))
 		for technique in grants:
-			grow_row.add_child(UI.label(_technique_name(String(technique), engine), 14, UI.INK))
+			grow_row.add_child(UI.label(_technique_name(String(technique), engine, world), 14, UI.INK))
 		col.add_child(grow_row)
 
 	# What reclassing keeps (level + learned techniques) — the DQ3 "half your stats?" fear, answered up front.

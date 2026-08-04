@@ -6,12 +6,13 @@ extends RefCounted
 ## (nothing forgotten). The class catalog + mastery knobs ride on the engine bag.
 
 const CharacterCreation := preload("res://scripts/rules/character_creation.gd")
+const Techniques := preload("res://scripts/rules/techniques.gd")
 
 static func _mastered_rank(engine: Dictionary) -> int:
 	return int(engine.get("masteredRank", 5))
 
-static func _known_spells(class_id: String, level: int, engine: Dictionary) -> Array:
-	var abilities: Variant = (engine.get("classAbilities", {}) as Dictionary).get(class_id, [])
+static func _known_spells(class_id: String, level: int, engine: Dictionary, world: Dictionary = {}) -> Array:
+	var abilities: Variant = Techniques.class_line(class_id, engine, world)
 	var out := []
 	if typeof(abilities) == TYPE_ARRAY:
 		for entry in abilities:
@@ -41,9 +42,9 @@ static func find_vocation(world: Dictionary, engine: Dictionary, id: String) -> 
 	return null
 
 # Materialise a default vocation state from the class when the character has none.
-static func resolve_vocation_state(character: Dictionary, engine: Dictionary) -> Dictionary:
+static func resolve_vocation_state(character: Dictionary, engine: Dictionary, world: Dictionary = {}) -> Dictionary:
 	var class_id: String = character.get("classId", "")
-	var class_line := _known_spells(class_id, int(character.get("level", 1)), engine)
+	var class_line := _known_spells(class_id, int(character.get("level", 1)), engine, world)
 
 	if typeof(character.get("vocation", null)) == TYPE_DICTIONARY:
 		# §9.4b, mirroring src/domain/vocations.ts: LEVELLING MUST STILL TEACH. Stored vocation state is
@@ -81,7 +82,7 @@ static func can_adopt_vocation(character: Dictionary, vocation_id: String, world
 	var vocation: Variant = find_vocation(world, engine, vocation_id)
 	if typeof(vocation) != TYPE_DICTIONARY:
 		return false
-	var state := resolve_vocation_state(character, engine)
+	var state := resolve_vocation_state(character, engine, world)
 	var requires: Dictionary = vocation.get("requires", {})
 	if int(requires.get("minLevel", 0)) > 0 and int(character.get("level", 1)) < int(requires.get("minLevel", 0)):
 		return false
@@ -125,8 +126,8 @@ static func change_character_vocation(character: Dictionary, vocation: Dictionar
 		builtin_ids[def.get("id", "")] = true
 	var is_basic_class: bool = vocation.get("tier", "") == "basic" and builtin_ids.has(vocation.get("id", ""))
 	var rebuilt: Dictionary = CharacterCreation.reclass_character(character, vocation.get("id", ""), world, engine) if is_basic_class else character.duplicate(true)
-	var prior_state := resolve_vocation_state(rebuilt, engine)
-	var class_techniques := _known_spells(rebuilt.get("classId", ""), int(rebuilt.get("level", 1)), engine) if is_basic_class else []
+	var prior_state := resolve_vocation_state(rebuilt, engine, world)
+	var class_techniques := _known_spells(rebuilt.get("classId", ""), int(rebuilt.get("level", 1)), engine, world) if is_basic_class else []
 	var with_class: Dictionary = prior_state.duplicate(true)
 	var learned := []
 	for t in prior_state.get("learned", []):
@@ -177,7 +178,7 @@ static func change_vocation(state: Dictionary, world: Dictionary, engine: Dictio
 	var vocation: Variant = find_vocation(world, engine, vocation_id)
 	if typeof(member) != TYPE_DICTIONARY or typeof(vocation) != TYPE_DICTIONARY or not can_adopt_vocation(member, vocation_id, world, engine):
 		return {"state": state, "events": []}
-	if resolve_vocation_state(member, engine).get("current", "") == vocation_id:
+	if resolve_vocation_state(member, engine, world).get("current", "") == vocation_id:
 		return {"state": state, "events": []}
 	var changed := change_character_vocation(member, vocation, world, engine)
 	var next: Dictionary = state.duplicate(true)
@@ -189,7 +190,7 @@ static func change_vocation(state: Dictionary, world: Dictionary, engine: Dictio
 	var event := {"type": "vocation_changed", "characterId": character_id, "characterName": member.get("name", ""), "vocationId": vocation_id, "vocationName": localized_vocation_name(world, engine, vocation_id, "en")}
 	return {"state": next, "events": [event]}
 
-static func set_loadout_command(state: Dictionary, engine: Dictionary, character_id: String, loadout: Array) -> Dictionary:
+static func set_loadout_command(state: Dictionary, world: Dictionary, engine: Dictionary, character_id: String, loadout: Array) -> Dictionary:
 	if state.get("phase", "") != "town":
 		return {"state": state, "events": []}
 	var member: Variant = null
@@ -199,7 +200,7 @@ static func set_loadout_command(state: Dictionary, engine: Dictionary, character
 			break
 	if typeof(member) != TYPE_DICTIONARY:
 		return {"state": state, "events": []}
-	var next_vocation := set_loadout(resolve_vocation_state(member, engine), loadout, engine)
+	var next_vocation := set_loadout(resolve_vocation_state(member, engine, world), loadout, engine)
 	var next: Dictionary = state.duplicate(true)
 	var party := []
 	for candidate in next.get("party", []):

@@ -178,12 +178,12 @@ func _growth_delta_text(member: Dictionary, level: int) -> String:
 func _new_techniques_text(member: Dictionary, level: int) -> String:
 	var class_id := String(member.get("classId", ""))
 	var eng := _engine()
-	var now: Array = Vocations._known_spells(class_id, level, eng)
-	var before: Array = Vocations._known_spells(class_id, level - 1, eng)
+	var now: Array = Vocations._known_spells(class_id, level, eng, _world)
+	var before: Array = Vocations._known_spells(class_id, level - 1, eng, _world)
 	var fresh := []
 	for id in now:
 		if not before.has(id):
-			fresh.append(Techniques.label(String(id), eng))
+			fresh.append(Techniques.label(String(id), eng, _world))
 	return "%s %s" % [I18n.t("result.learned"), "・".join(PackedStringArray(fresh))] if not fresh.is_empty() else ""
 
 func _xp_to_next(member: Dictionary, level: int) -> int:
