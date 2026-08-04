@@ -204,6 +204,52 @@ equipment:
       ja:
         name: 保安拳銃
         description: 駅の保安員が携えた小型拳銃。狭い通路で照準を合わせやすい旧式の作りだ。
+  - id: equip.tl-platform-38-rifle
+    name: Type 38 Infantry Rifle
+    description: A long wooden bolt-action rifle left in a sealed station armoury. Its fixed magazine and narrow sights still reward a patient, deliberate hand.
+    slot: weapon
+    tier: 1
+    attackBonus: 3
+    accuracyBonus: 3
+    speedBonus: -1
+    allowedClasses: [vanguard, sellsword, duelist, seeker, scout, wayfinder]
+    tags: [firearm, rifle, bolt-action, terminal-line]
+    price: 82
+    sellValue: 27
+    locales:
+      ja:
+        name: 三八式歩兵銃
+        description: 封鎖された駅武器庫に残された、長い木製銃床のボルトアクション小銃。固定弾倉と細い照星は、急がない射手の手に応える。
+  - id: equip.tl-drain-5-smg
+    name: Drain-5 SMG
+    description: A compact receiver and straight magazine issued to drain crews for the first close alarm.
+    slot: weapon
+    tier: 1
+    attackBonus: 1
+    accuracyBonus: 1
+    speedBonus: 2
+    allowedClasses: [duelist, seeker, scout, cutpurse, wayfinder]
+    tags: [firearm, smg, terminal-line]
+    price: 74
+    sellValue: 24
+    locales:
+      ja:
+        name: 排水5型短機関銃
+        description: 排水班が最初の警報に備えて持った、直線弾倉の小型短機関銃。狭い場所で素早く構えるための旧式だ。
+  - id: equip.tl-maintenance-10-shotgun
+    name: Maintenance-10 Shotgun
+    description: A short double-barrel work shotgun, scarred by locker doors and emergency hinges.
+    slot: weapon
+    tier: 1
+    attackBonus: 3
+    allowedClasses: [vanguard, sellsword, bulwark, duelist]
+    tags: [firearm, shotgun, terminal-line]
+    price: 94
+    sellValue: 31
+    locales:
+      ja:
+        name: 保守10型散弾銃
+        description: ロッカー扉と非常蝶番に傷を残した、短い二連式の作業散弾銃。最初の一歩を前衛へ渡す。
   - id: equip.tl-crowbar
     name: Maintenance Crowbar
     description: A steel maintenance bar, balanced for prying doors and close, quiet strikes.
@@ -247,11 +293,47 @@ equipment:
     price: 128
     sellValue: 42
     locales: { ja: { name: 中継保安カービン, description: 折り畳み銃床と整備照門を持つ、乗換保安用の短銃身銃。 } }
+  - id: equip.tl-concourse-6-pistol
+    name: Concourse-6 Pistol
+    description: A six-shot interchange pistol with a squared slide and broad, rain-safe controls.
+    slot: weapon
+    tier: 2
+    attackBonus: 2
+    accuracyBonus: 3
+    allowedClasses: [vanguard, sellsword, duelist, seeker, scout, cutpurse]
+    tags: [firearm, pistol, terminal-line]
+    price: 116
+    sellValue: 38
+    locales: { ja: { name: 広場6型拳銃, description: 角張った遊底と濡れた手でも扱える大きな操作部を持つ、乗換広場の六発拳銃。 } }
+  - id: equip.tl-ticket-7-smg
+    name: Ticket-7 SMG
+    description: A stamped-metal short gun with a side-folding wire stock and a doubled inspection sight.
+    slot: weapon
+    tier: 2
+    attackBonus: 3
+    accuracyBonus: 2
+    speedBonus: 2
+    allowedClasses: [duelist, seeker, scout, cutpurse, wayfinder]
+    tags: [firearm, smg, terminal-line]
+    price: 148
+    sellValue: 49
+    locales: { ja: { name: 切符7型短機関銃, description: 横折れの線材銃床と二重の点検照門を持つ、打ち抜き鋼板の短機関銃。 } }
+  - id: equip.tl-pump-8-shotgun
+    name: Pump-8 Shotgun
+    description: A rain-sealed pump shotgun with a grooved wooden fore-end and a tube magazine under the barrel.
+    slot: weapon
+    tier: 2
+    attackBonus: 4
+    allowedClasses: [vanguard, sellsword, bulwark, duelist]
+    tags: [firearm, shotgun, terminal-line]
+    price: 166
+    sellValue: 55
+    locales: { ja: { name: 排水8型散弾銃, description: 溝入りの木製先台と銃身下の管状弾倉を備える、防雨仕様のポンプ散弾銃。 } }
   - id: equip.tl-ironrain-74-rifle
     name: Ironrain-74 Rifle
     description: A stamped-steel service rifle with a dark wood handguard and a curved magazine; old, simple, and made to endure a wet platform.
     slot: weapon
-    tier: 2
+    tier: 3
     attackBonus: 4
     accuracyBonus: 2
     allowedClasses: [vanguard, sellsword, bulwark, duelist, seeker, scout, cutpurse, wayfinder]
@@ -333,13 +415,27 @@ equipment:
     price: 194
     sellValue: 64
     locales: { ja: { name: 改札9型短機関銃, description: 避難改札から回収された折り畳み銃床の短機関銃。長い照準より、至近の素早い応答を選ぶ。 } }
+  - id: equip.tl-relay-11-pistol
+    name: Relay-11 Pistol
+    description: A heavy eleven-shot service pistol rebuilt around a relay-safe frame and a luminous maintenance sight.
+    slot: weapon
+    tier: 3
+    attackBonus: 3
+    accuracyBonus: 4
+    speedBonus: 1
+    allowedClasses: [vanguard, sellsword, duelist, seeker, scout, cutpurse, wayfinder]
+    tags: [firearm, pistol, relay, terminal-line]
+    price: 204
+    sellValue: 68
+    locales: { ja: { name: 中継11型拳銃, description: 中継器に耐える機関部と保守用の淡い照門を組み込んだ、重い十一発拳銃。 } }
   - id: equip.tl-floodgate-12-shotgun
     name: Floodgate-12 Shotgun
     description: A short, pump-action breach shotgun with a broad wooden fore-end and a brutal steel receiver.
     slot: weapon
-    tier: 3
+    tier: 4
     attackBonus: 6
-    accuracyBonus: -1
+    accuracyBonus: 1
+    speedBonus: -1
     allowedClasses: [vanguard, sellsword, bulwark, duelist]
     tags: [firearm, shotgun, terminal-line]
     price: 236
@@ -442,6 +538,19 @@ equipment:
     price: 310
     sellValue: 103
     locales: { ja: { name: 中央局制式拳銃, description: 不自然なほど整備の行き届いた、中央局の制式短銃。 } }
+  - id: equip.tl-bureau-17-smg
+    name: Bureau-17 SMG
+    description: A disciplined compact gun from bureau escorts, with a flat receiver, protected sights, and a rigid folding stock.
+    slot: weapon
+    tier: 4
+    attackBonus: 5
+    accuracyBonus: 4
+    speedBonus: 2
+    allowedClasses: [duelist, seeker, scout, cutpurse, wayfinder]
+    tags: [firearm, smg, bureau, terminal-line]
+    price: 324
+    sellValue: 108
+    locales: { ja: { name: 中央局17型短機関銃, description: 平たい機関部、覆い照門、硬い折り畳み銃床を備えた、中央局随行員の短機関銃。 } }
   - id: equip.tl-quarantine-62-dmr
     name: Quarantine-62 Rifle
     description: A long, heavy marksman's rifle from the sealed wards, with a hooded sight and a wire-wrapped stock.
@@ -555,6 +664,45 @@ equipment:
     price: 430
     sellValue: 143
     locales: { ja: { name: ホーム88式軽機関銃, description: 放熱覆いと擦れた運搬把手を備える支援機関銃。終端へ続く入口を守るために支給された。 } }
+  - id: equip.tl-zero-line-heavy-pistol
+    name: Zero Line Heavy Pistol
+    description: A thick-framed final-escort sidearm, its squared weight and deep sights made for the last platform.
+    slot: weapon
+    tier: 5
+    attackBonus: 7
+    accuracyBonus: 5
+    speedBonus: -1
+    allowedClasses: [vanguard, sellsword, duelist, seeker, scout, cutpurse, wayfinder]
+    tags: [firearm, pistol, terminus, terminal-line]
+    price: 406
+    sellValue: 135
+    locales: { ja: { name: 零番線重拳銃, description: 厚い機関部と深い照門を持つ、最終随行員用の重拳銃。終着ホームで最後まで構え続ける。 } }
+  - id: equip.tl-zero-line-21-smg
+    name: Zero Line-21 SMG
+    description: A final-issue compact gun with a vented shroud, telescoping stock, and a curved reserve magazine.
+    slot: weapon
+    tier: 5
+    attackBonus: 6
+    accuracyBonus: 5
+    speedBonus: 3
+    allowedClasses: [duelist, seeker, scout, cutpurse, wayfinder]
+    tags: [firearm, smg, terminus, terminal-line]
+    price: 418
+    sellValue: 139
+    locales: { ja: { name: 零番線21型短機関銃, description: 放熱覆い、伸縮銃床、曲線予備弾倉を備える、零番線の最終支給短機関銃。 } }
+  - id: equip.tl-terminus-14-shotgun
+    name: Terminus-14 Shotgun
+    description: A heavy final-platform shotgun with a ribbed heat guard and a reinforced breach collar.
+    slot: weapon
+    tier: 5
+    attackBonus: 8
+    accuracyBonus: 1
+    speedBonus: -2
+    allowedClasses: [vanguard, sellsword, bulwark, duelist]
+    tags: [firearm, shotgun, terminus, terminal-line]
+    price: 446
+    sellValue: 148
+    locales: { ja: { name: 終端14型散弾銃, description: 放熱覆いと補強薬室を備えた、最終ホーム用の重散弾銃。通路を退かない者に渡される。 } }
   - id: equip.tl-terminus-breaker
     name: Terminus Breaker
     description: A heavy rail breaker whose rusted edge tears open seized machinery.
@@ -674,8 +822,14 @@ shops:
     stock:
       - { itemId: equip.tl-crowbar, price: 38 }
       - { itemId: equip.tl-service-pistol, price: 62 }
+      - { itemId: equip.tl-platform-38-rifle, price: 82 }
+      - { itemId: equip.tl-drain-5-smg, price: 74 }
+      - { itemId: equip.tl-maintenance-10-shotgun, price: 94 }
       - { itemId: equip.tl-rain-jacket, price: 44 }
       - { itemId: equip.tl-relay-carbine, price: 128, availability: unlocked, unlockFlag: flag.tl3f.bypass-open }
+      - { itemId: equip.tl-concourse-6-pistol, price: 116, availability: unlocked, unlockFlag: flag.tl3f.bypass-open }
+      - { itemId: equip.tl-ticket-7-smg, price: 148, availability: unlocked, unlockFlag: flag.tl3f.bypass-open }
+      - { itemId: equip.tl-pump-8-shotgun, price: 166, availability: unlocked, unlockFlag: flag.tl3f.bypass-open }
       - { itemId: equip.tl-ironrain-74-rifle, price: 142, availability: unlocked, unlockFlag: flag.tl3f.bypass-open }
       - { itemId: equip.tl-platform-buckler, price: 86, availability: unlocked, unlockFlag: flag.tl3f.bypass-open }
       - { itemId: equip.tl-insulated-hood, price: 74, availability: unlocked, unlockFlag: flag.tl3f.bypass-open }
@@ -683,6 +837,7 @@ shops:
       - { itemId: equip.tl-ticket-cutter, price: 92, availability: unlocked, unlockFlag: flag.tl3f.bypass-open }
       - { itemId: equip.tl-sluice-shotgun, price: 210, availability: unlocked, unlockFlag: flag.tl4f.sluice-open }
       - { itemId: equip.tl-turnstile-9-smg, price: 194, availability: unlocked, unlockFlag: flag.tl4f.sluice-open }
+      - { itemId: equip.tl-relay-11-pistol, price: 204, availability: unlocked, unlockFlag: flag.tl5f.loading-open }
       - { itemId: equip.tl-floodgate-12-shotgun, price: 236, availability: unlocked, unlockFlag: flag.tl5f.loading-open }
       - { itemId: equip.tl-archive-staff, price: 185, availability: unlocked, unlockFlag: flag.tl5f.loading-open }
       - { itemId: equip.tl-filter-mask, price: 118, availability: unlocked, unlockFlag: flag.tl4f.sluice-open }
@@ -692,6 +847,7 @@ shops:
       - { itemId: equip.tl-sump-talisman, price: 132, availability: unlocked, unlockFlag: flag.tl4f.sluice-open }
       - { itemId: equip.tl-porter-frame, price: 174, availability: unlocked, unlockFlag: flag.tl5f.loading-open }
       - { itemId: equip.tl-bureau-sidearm, price: 310, availability: unlocked, unlockFlag: flag.tl7f.archive-open }
+      - { itemId: equip.tl-bureau-17-smg, price: 324, availability: unlocked, unlockFlag: flag.tl7f.archive-open }
       - { itemId: equip.tl-quarantine-62-dmr, price: 338, availability: unlocked, unlockFlag: flag.tl7f.archive-open }
       - { itemId: equip.tl-control-rod, price: 295, availability: unlocked, unlockFlag: flag.tl8f.switch-open }
       - { itemId: equip.tl-clearance-vest, price: 275, availability: unlocked, unlockFlag: flag.tl7f.archive-open }
@@ -700,6 +856,10 @@ shops:
       - { itemId: equip.tl-dispatch-ring, price: 205, availability: unlocked, unlockFlag: flag.tl8f.switch-open }
       - { itemId: equip.tl-triage-lens, price: 224, availability: unlocked, unlockFlag: flag.tl7f.archive-open }
       - { itemId: equip.tl-platform-88-lmg, price: 430, availability: unlocked, unlockFlag: flag.tl8f.switch-open }
+      - { itemId: equip.tl-evacuation-carbine, price: 390, availability: unlocked, unlockFlag: flag.tl8f.switch-open }
+      - { itemId: equip.tl-zero-line-heavy-pistol, price: 406, availability: unlocked, unlockFlag: flag.tl8f.switch-open }
+      - { itemId: equip.tl-zero-line-21-smg, price: 418, availability: unlocked, unlockFlag: flag.tl8f.switch-open }
+      - { itemId: equip.tl-terminus-14-shotgun, price: 446, availability: unlocked, unlockFlag: flag.tl8f.switch-open }
     locales:
       ja:
         name: シャッター工房

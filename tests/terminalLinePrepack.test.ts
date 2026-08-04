@@ -151,7 +151,7 @@ describe("Terminal Line F1–F10 canonical pack", () => {
     if (!result.ok) return;
 
     const equipment = result.world.equipment;
-    expect(equipment.length).toBeGreaterThanOrEqual(37);
+    expect(equipment.length).toBeGreaterThanOrEqual(48);
     expect(equipment.every((piece) => piece.id.startsWith("equip.tl-"))).toBe(true);
     expect(new Set(equipment.map((piece) => piece.slot))).toEqual(
       new Set(["weapon", "offhand", "body", "head", "hands", "accessory"])
@@ -181,16 +181,23 @@ describe("Terminal Line F1–F10 canonical pack", () => {
     expect(treasure.get("treasure.tl9f.lift-cache")?.entries.map((entry) => entry.itemId)).toContain("equip.tl-route-seal");
   });
 
-  it("keeps five readable fictional firearm roles in the Terminal Line equipment ladder", () => {
+  it("keeps four five-step firearm update lines, including the Type 38 infantry rifle", () => {
     const result = loadScenarioPack(packFiles());
     expect(result.ok).toBe(true);
     if (!result.ok) return;
 
     const firearms = new Map(result.world.equipment.map((equipment) => [equipment.id, equipment]));
-    expect(firearms.get("equip.tl-ironrain-74-rifle")).toMatchObject({ attackBonus: 4, accuracyBonus: 2 });
-    expect(firearms.get("equip.tl-turnstile-9-smg")).toMatchObject({ speedBonus: 2 });
-    expect(firearms.get("equip.tl-floodgate-12-shotgun")).toMatchObject({ attackBonus: 6, accuracyBonus: -1 });
-    expect(firearms.get("equip.tl-quarantine-62-dmr")).toMatchObject({ accuracyBonus: 7, speedBonus: -1 });
-    expect(firearms.get("equip.tl-platform-88-lmg")).toMatchObject({ attackBonus: 8, speedBonus: -2 });
+    const lines = {
+      sidearm: ["equip.tl-service-pistol", "equip.tl-concourse-6-pistol", "equip.tl-relay-11-pistol", "equip.tl-bureau-sidearm", "equip.tl-zero-line-heavy-pistol"],
+      longGun: ["equip.tl-platform-38-rifle", "equip.tl-relay-carbine", "equip.tl-ironrain-74-rifle", "equip.tl-quarantine-62-dmr", "equip.tl-evacuation-carbine"],
+      smg: ["equip.tl-drain-5-smg", "equip.tl-ticket-7-smg", "equip.tl-turnstile-9-smg", "equip.tl-bureau-17-smg", "equip.tl-zero-line-21-smg"],
+      shotgun: ["equip.tl-maintenance-10-shotgun", "equip.tl-pump-8-shotgun", "equip.tl-sluice-shotgun", "equip.tl-floodgate-12-shotgun", "equip.tl-terminus-14-shotgun"]
+    };
+    for (const ids of Object.values(lines)) {
+      expect(ids.map((id) => firearms.get(id)?.slot)).toEqual(["weapon", "weapon", "weapon", "weapon", "weapon"]);
+      expect(ids.map((id) => firearms.get(id)?.tier)).toEqual([1, 2, 3, 4, 5]);
+      expect(ids.every((id) => firearms.get(id)?.tags?.includes("firearm"))).toBe(true);
+    }
+    expect(firearms.get("equip.tl-platform-38-rifle")?.locales?.ja?.name).toBe("三八式歩兵銃");
   });
 });

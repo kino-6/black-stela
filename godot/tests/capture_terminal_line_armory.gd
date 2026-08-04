@@ -2,7 +2,8 @@ extends SceneTree
 ## Visual evidence for Terminal Line's fictional firearm selection. Run WITHOUT --headless:
 ##   godot --path godot/ --script res://tests/capture_terminal_line_armory.gd -- /absolute/out.png
 ## The state unlocks the full armory catalog and selects the late-game DMR, while the stable controller
-## focus remains on the weapon list. This captures the normal service surface, not a debug overlay.
+## focus remains on the weapon list and selects the user-requested Type 38 infantry rifle. This captures the
+## normal service surface, not a debug overlay.
 
 const UxFixture := preload("res://tests/ux_fixture.gd")
 
@@ -25,7 +26,7 @@ func _initialize() -> void:
 		"service": "shop",
 		"shop_mode": "buy",
 		"shop_category": "weapon",
-		"shop_item_id": "equip.tl-quarantine-62-dmr"
+		"shop_item_id": "equip.tl-platform-38-rifle"
 	})
 	for _frame in 10:
 		await process_frame

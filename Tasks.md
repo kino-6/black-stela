@@ -148,6 +148,17 @@ IMP-060/061/062/063/064 completion records in `Improve.md`.
   フル迷宮ルール＋玄室を満たすが、Default は **B1F のみ**作り直し済みで **B2F–B7F は旧・手書きフロア**
   （`dungeonDesign.test` の `MAZE_EXEMPT` で免除中＝品質未達・玄室0、B8F はボス扱い）。**玄室（確定戦闘＋宝の
   小部屋）も追加**（user 決定 2026-08-03）。
+  - **▶ 2026-08-04 追記（B 後・focused session でやる。user「別セッションで腰を据えて」）:**
+    - **10F は既に確定・実装済み**（T31 完了、commits 65d5a5f/18a0dc5）：両世界 10 階（B9/G9=シナリオクリア boss、
+      B10/G10=真層・完全クリア真ボス）。なので下記「8 vs 10」論点は**決着済み＝10F**。B9/B10 のフロアデータ・ボスも commit 済。
+      T29 は **B2F–B8F の迷宮品質＋玄室** に集中すればよい（B1F は済、B9/B10 は生成器で追加済）。
+    - **balance の前提が B で変わった**：`descentSim` は **availability-aware**（tier=降下進捗 proxy、終盤装備を序盤に着ない）
+      になり、armorBonus バグも解消済み。**玄室追加（確定戦闘＝XP/attrition 増）の影響は corrected sim で再測定すること。**
+      過去2回 revert の「incremental 不可／balance cliff／act2<act1」知見は **B 前の sim** に基づくので、B 後は数値が違う。
+      方針は不変：**稼ぎ許容・naive=全滅／prepared=クリア／act escalation を保ったまま、gate は過度に緩めず順当に**。
+    - **未コミットの generator 作業**：`scripts/genDefaultFloors.mjs` に早期セッションの chamberCount refactor（chamberCount/
+      packTable/sideTreasure/keepTreasure/upTo 等の spec フィールド＋玄室数可変）が**未コミットで残存**。使えるなら再利用、
+      崩れていれば `git checkout` して genVerdantFloors から作り直す。
   - **手法（調査確定 2026-08-03）:** `genFloorMaze.mjs` は open chamber しか作れず両世界の `chamberGuardian.test`
     （door-choke）を満たさない。**`genVerdantFloors.mjs` を fork した `genDefaultFloors.mjs`**（唯一 door-choke
     玄室を出力）で各階の完全 .md を生成する。既存の default 遭遇/宝テーブルを再利用（新規オーサリング不要）。
@@ -357,7 +368,7 @@ W3a → W3b → W4 → W5 を一つずつ進めること。各Wは、ここに `
       自動小銃、短機関銃、散弾銃、指定射撃銃、軽機関銃が小寸法で別シルエットに読め、pack testが全IDを検査する。
       catalogは全37装備へ増補済み。Godotの通常市場で在庫を統合し、アイコン・和名・補正・装備可能者を実機キャプチャで確認済み。
       `gate:migration` は本作業と無関係の既存UX parity 3件（party aptitude.balanced 2件／dock play.useStairs 1件）で停止中。
-  - **制式火器更新系列（Codex, 2026-08-04 実装中）:** ユーザー指示により、単発の銃器カタログを「拾った一挺」だけで
+  - **制式火器更新系列（Codex, 2026-08-04 実装済み・全migration gate保留）:** ユーザー指示により、単発の銃器カタログを「拾った一挺」だけで
     終わらせず、同じ役割を維持したままF1–F10で更新していく系列へ拡張する。通常の購入・比較で理解しやすい
     **拳銃／長銃／短機関銃／散弾銃**を各5段階にする。長銃のF1は歴史銃をそのまま商品化せず、Terminal Lineに残った
     `三八式歩兵銃`（長い木製銃床・ボルトアクション・固定弾倉）として登場させる。軽機関銃は支援火器の終盤横選択として
@@ -370,7 +381,9 @@ W3a → W3b → W4 → W5 を一つずつ進めること。各Wは、ここに `
     - **受入:** 4カテゴリ各5機種（20件）がF1–F10の購入・宝へ結線される。各IDにown-basenameの256² RGBA iconを
       生成し、同一カテゴリでも銃床／弾倉／銃身／機関部の進化が小寸法で区別できる。各系列は攻撃・命中・速度・
       装備可能職の既存パラメータで横選択を残す。pack testは4×5の集合、三八式、icon解決、深度ごとの入手を検査し、
-      通常市場のcontroller focus面を実機キャプチャで再確認する。
+      通常市場のcontroller focus面を実機キャプチャで再確認する。48装備、4系列×5、11枚の新規iconを投入済み。
+      三八式歩兵銃を選択した1920相当の市場キャプチャで、和名・木製長銃の輪郭・補正・装備可能者・安定focusを確認済み。
+      `gate:migration` は本作業と無関係の既存UX parity 3件（party aptitude.balanced 2件／dock play.useStairs 1件）で停止中。
   - **補給・横選択拡充（Codex, 2026-08-04 完了: data + asset contract）:** ユーザー指示により、既存の装備26件と消耗品11件を
     F1–F10の選択として増補する。新規装備は早期の静かな近接／手slot、雨水帯の毒対策、荷役帯の防御offhand、
     中央局の精度head、終端の装身具へ分ける。新規消耗品は小／大回復、恐怖・沈黙回復、MP回復、解錠・解除の

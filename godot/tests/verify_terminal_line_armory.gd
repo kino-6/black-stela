@@ -23,7 +23,12 @@ func _initialize() -> void:
 	for _frame in 6:
 		await process_frame
 	var text := _text_of(town)
-	for name in ["鉄雨74式自動小銃", "改札9型短機関銃", "水門12型散弾銃", "隔離62式指定射撃銃", "ホーム88式軽機関銃"]:
+	for name in [
+		"保安拳銃", "広場6型拳銃", "中継11型拳銃", "中央局制式拳銃", "零番線重拳銃",
+		"三八式歩兵銃", "中継保安カービン", "鉄雨74式自動小銃", "隔離62式指定射撃銃", "退避誘導カービン",
+		"排水5型短機関銃", "切符7型短機関銃", "改札9型短機関銃", "中央局17型短機関銃", "零番線21型短機関銃",
+		"保守10型散弾銃", "排水8型散弾銃", "水門散弾銃", "水門12型散弾銃", "終端14型散弾銃"
+	]:
 		_check(text.contains(name), "weapon catalog exposes %s" % name)
 	_check(text.contains("装備できる:"), "selected firearm names compatible party members")
 	var focus := get_root().gui_get_focus_owner()

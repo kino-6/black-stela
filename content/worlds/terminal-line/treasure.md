@@ -11,11 +11,17 @@ treasureTables:
     entries:
       - { itemId: item.tl-transit-key-fragment, weight: 10 }
       - { itemId: equip.tl-service-pistol, weight: 5 }
+      - { itemId: equip.tl-platform-38-rifle, weight: 4 }
+      - { itemId: equip.tl-drain-5-smg, weight: 4 }
+      - { itemId: equip.tl-maintenance-10-shotgun, weight: 4 }
       - { itemId: equip.tl-rain-jacket, weight: 4 }
   - id: treasure.tl2f.platform-cache
     tier: 2
     entries:
       - { itemId: equip.tl-crowbar, weight: 5 }
+      - { itemId: equip.tl-concourse-6-pistol, weight: 4 }
+      - { itemId: equip.tl-ticket-7-smg, weight: 4 }
+      - { itemId: equip.tl-pump-8-shotgun, weight: 4 }
       - { itemId: equip.tl-rain-jacket, weight: 4 }
       - { itemId: item.tl-field-dressing, weight: 5 }
       - { itemId: item.tl-universal-round, weight: 4, quantity: 3 }
@@ -43,6 +49,7 @@ treasureTables:
       - { itemId: equip.tl-filter-mask, weight: 6 }
       - { itemId: equip.tl-sluice-coat, weight: 6 }
       - { itemId: equip.tl-turnstile-9-smg, weight: 4 }
+      - { itemId: equip.tl-relay-11-pistol, weight: 4 }
       - { itemId: item.tl-terminal-fuse, weight: 4, quantity: 2 }
       - { itemId: item.tl-field-dressing, weight: 4, quantity: 2 }
       - { itemId: item.tl-breach-wedge, weight: 3 }
@@ -69,6 +76,7 @@ treasureTables:
     tier: 7
     entries:
       - { itemId: equip.tl-bureau-sidearm, weight: 6 }
+      - { itemId: equip.tl-bureau-17-smg, weight: 5 }
       - { itemId: equip.tl-clearance-vest, weight: 6 }
       - { itemId: item.tl-universal-round, weight: 4, quantity: 4 }
       - { itemId: item.tl-field-dressing, weight: 3, quantity: 2 }
@@ -89,6 +97,9 @@ treasureTables:
     entries:
       - { itemId: equip.tl-evacuation-carbine, weight: 7 }
       - { itemId: equip.tl-platform-88-lmg, weight: 5 }
+      - { itemId: equip.tl-zero-line-heavy-pistol, weight: 5 }
+      - { itemId: equip.tl-zero-line-21-smg, weight: 5 }
+      - { itemId: equip.tl-terminus-14-shotgun, weight: 5 }
       - { itemId: equip.tl-terminus-breaker, weight: 7 }
       - { itemId: equip.tl-lift-harness, weight: 6 }
       - { itemId: equip.tl-zero-line-helm, weight: 5 }
