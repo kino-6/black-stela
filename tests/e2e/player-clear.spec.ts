@@ -75,7 +75,7 @@ test("visible controls can descend to B2F and still return through the authored 
 
   // The B2F landing's up-stair to B1F faces west; turn to it and climb back.
   await faceDirection(page, "west");
-  await page.getByRole("button", { name: "Use stairs" }).click();
+  await page.getByRole("button", { name: /Descend to the next floor|Return to the floor above/ }).click();
 
   // Climbing back up lands on the stair cell; thread to the return marker.
   await expect(page.getByRole("heading", { name: "Winding Stair" })).toBeVisible();

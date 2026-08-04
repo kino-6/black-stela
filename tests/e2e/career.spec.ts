@@ -50,8 +50,6 @@ test.describe("town career service", () => {
       await expectFitsViewport(page, "career after loadout toggle");
     }
 
-    await page.screenshot({ path: "/private/tmp/claude-501/-Users-kinoshitayuki-work-black-stela/49ea553a-6563-4a3b-9e1d-476f1621a177/scratchpad/career-1280.png" });
-
     // Cancel returns to town.
     await page.keyboard.press("Escape");
     await expect(page.getByTestId("town-cockpit")).toBeVisible();

@@ -147,7 +147,7 @@ test("browser self-play completes the visible dungeon loop without headless shor
       await capture("b2f-landing");
 
       await faceDirection(page, "west"); // the B2F landing's up-stair to B1F faces west
-      await clickCommand("Use stairs");
+      await clickCommand(/Descend to the next floor|Return to the floor above/);
       await expect(page.getByRole("heading", { name: "Winding Stair" })).toBeVisible();
       await capture("b1f-return-stair");
     });

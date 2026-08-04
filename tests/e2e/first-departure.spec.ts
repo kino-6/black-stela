@@ -44,7 +44,7 @@ test.describe("first departure", () => {
 
     // Go below, come back through the authored return marker.
     await descendB1fViaWarden(page);
-    await page.getByRole("button", { name: "Use stairs" }).click();
+    await page.getByRole("button", { name: /Descend to the next floor|Return to the floor above/ }).click();
     await walkB1fStairToMarker(page);
     await page.getByRole("button", { name: "Use return marker" }).click();
 

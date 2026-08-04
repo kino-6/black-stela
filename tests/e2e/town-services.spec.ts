@@ -16,7 +16,7 @@ async function runExpedition(page: Page) {
   await page.keyboard.press("w");
   await resolveVisibleCombat(page);
   await descendB1fViaWarden(page);
-  await page.getByRole("button", { name: "Use stairs" }).click();
+  await page.getByRole("button", { name: /Descend to the next floor|Return to the floor above/ }).click();
   await walkB1fStairToMarker(page);
   await page.getByRole("button", { name: "Use return marker" }).click();
   await expect(page.getByTestId("town-cockpit")).toBeVisible();

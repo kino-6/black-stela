@@ -366,7 +366,7 @@ export async function walkB1fToStair(page: Page) {
 export async function descendB1fViaWarden(page: Page) {
   const current = async () => (await page.getByTestId("map-current").textContent().catch(() => "")) ?? "";
   await walkB1fToStair(page);
-  const stairs = page.getByRole("button", { name: "Use stairs" });
+  const stairs = page.getByRole("button", { name: /Descend to the next floor|Return to the floor above/ });
   if (await stairs.isVisible().catch(() => false)) {
     await stairs.click();
     await page.waitForTimeout(160);
