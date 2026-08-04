@@ -859,7 +859,8 @@ export const ja = {
     unknown: "不明",
     marker: {
       return: "帰還階段",
-      stairs: "階段",
+      stairs: "上り階段",
+      descend: "下り階段",
       spinner: "回転床",
       teleporter: "転移床",
       hazard: "刃の床",

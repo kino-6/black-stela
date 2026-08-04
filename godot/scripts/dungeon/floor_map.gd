@@ -20,7 +20,7 @@ const FACING_GLYPH := {"north": "▲", "east": "▶", "south": "▼", "west": "�
 # marker id -> glyph. The i18n key is "map.marker.<id>", so the legend and the cell cannot disagree.
 const MARKERS := {
 	"return": "⌂", "spinner": "◎", "teleporter": "✧", "hazard": "✖",
-	"gather": "❦", "stairs": "≡", "event": "!", "trap": "✓", "treasure": "◆"
+	"gather": "❦", "stairs": "≡", "descend": "▼", "event": "!", "trap": "✓", "treasure": "◆"
 }
 
 const VISITED_BG := Color("1c2314")
@@ -159,6 +159,24 @@ static func _blank() -> Control:
 	return c
 
 ## Marker precedence, in React's order (cellMarker): the first thing true about a cell is what it is.
+# Down = the stairs' target floor sits LATER in the world's dungeon order than the floor being mapped.
+static func _stairs_descends(world: Dictionary, state: Dictionary, target_floor_id: String) -> bool:
+	if target_floor_id == "":
+		return true
+	var current := String((state.get("map", {}) as Dictionary).get("floorId", ""))
+	var dungeons: Array = world.get("dungeons", [])
+	var ci := -1
+	var ti := -1
+	for i in dungeons.size():
+		var id := String((dungeons[i] as Dictionary).get("id", ""))
+		if id == current:
+			ci = i
+		if id == target_floor_id:
+			ti = i
+	if ci < 0 or ti < 0:
+		return true
+	return ti > ci
+
 static func _marker(cell: Dictionary, world: Dictionary, state: Dictionary) -> String:
 	var room := _room(world, String(cell.get("roomId", "")))
 	if room.is_empty():
@@ -177,7 +195,9 @@ static func _marker(cell: Dictionary, world: Dictionary, state: Dictionary) -> S
 	for dir in DIRECTIONS:
 		var edge: Variant = (cell.get("edges", {}) as Dictionary).get(dir, null)
 		if typeof(edge) == TYPE_DICTIONARY and String(edge.get("kind", "")) == "stairs":
-			return "stairs"
+			# Down (descend) and up (back to the previous floor) both used the same ≡ so the descent could not be
+			# picked out on a fully-explored map (playtest 2026-08-03「階段が探せない」). Split by target depth.
+			return "descend" if _stairs_descends(world, state, String(edge.get("targetFloorId", ""))) else "stairs"
 	if room.get("event", null) != null:
 		return "event"
 	var trap: Variant = room.get("trap", null)

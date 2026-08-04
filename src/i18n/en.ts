@@ -857,7 +857,8 @@ export const en = {
     unknown: "Unknown",
     marker: {
       return: "Return stair",
-      stairs: "Stairs",
+      stairs: "Ascent stairs",
+      descend: "Descent stairs",
       spinner: "Spinner floor",
       teleporter: "Teleporter",
       hazard: "Damage floor",

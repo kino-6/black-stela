@@ -23,7 +23,7 @@ const directionOffsets: Record<Direction, { x: number; y: number }> = {
 };
 
 type EdgeKind = "open" | "wall" | "door" | "locked" | "stairs";
-type CellMarker = "return" | "stairs" | "spinner" | "teleporter" | "hazard" | "gather" | "event" | "trap" | "treasure" | null;
+type CellMarker = "return" | "stairs" | "descend" | "spinner" | "teleporter" | "hazard" | "gather" | "event" | "trap" | "treasure" | null;
 
 interface MiniMapCell {
   id: string;
@@ -188,7 +188,20 @@ function edgeRenderKind(edge: DungeonGridEdge | undefined, secretRevealed = fals
   }
 }
 
-function cellMarker(room: DungeonRoom, state: GameState, edges: Record<Direction, EdgeKind>): CellMarker {
+// Down = the cell's stairs edge targets a floor LATER in the world's dungeon order than the mapped floor. Lets
+// the map pick the descent apart from the way back — both used to read as a single "stairs" (playtest「階段が探せない」).
+function stairsDescends(cell: GridCell, state: GameState, world: ScenarioWorld): boolean {
+  const current = state.map.floorId;
+  const stairsEdge = DIRECTIONS.map((d) => cell.edges[d]).find((e) => e?.kind === "stairs" && e.targetFloorId);
+  const target = stairsEdge?.targetFloorId;
+  if (!target || !current) return true;
+  const ci = world.dungeons.findIndex((d) => d.id === current);
+  const ti = world.dungeons.findIndex((d) => d.id === target);
+  if (ci < 0 || ti < 0) return true;
+  return ti > ci;
+}
+
+function cellMarker(room: DungeonRoom, state: GameState, edges: Record<Direction, EdgeKind>, descends = false): CellMarker {
   if (room.stairsToTown) {
     return "return";
   }
@@ -205,7 +218,7 @@ function cellMarker(room: DungeonRoom, state: GameState, edges: Record<Direction
     return "gather";
   }
   if (DIRECTIONS.some((direction) => edges[direction] === "stairs")) {
-    return "stairs";
+    return descends ? "descend" : "stairs";
   }
   if (room.event) {
     return "event";
@@ -278,7 +291,7 @@ function buildMiniMapCell(
     y: cell.y - originY,
     status: cell.roomId === currentRoomId ? "current" : "visited",
     edges,
-    marker: cellMarker(room, state, edges),
+    marker: cellMarker(room, state, edges, stairsDescends(cell, state, world)),
     label: getLocalizedRoomText(world, cell.roomId, locale).name
   };
 }

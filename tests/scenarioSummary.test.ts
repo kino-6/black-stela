@@ -19,7 +19,7 @@ describe("scenario summary", () => {
       returnAnchorCount: 3,
       nextFloorLinkCount: 9,
       lockCount: 4,
-      lootReferenceCount: 68,
+      lootReferenceCount: 92,
       missingJapaneseRooms: 0,
       pacing: {
         midpointFloor: "dungeon.b5f",
