@@ -82,9 +82,15 @@ IMP-060/061/062/063/064 completion records in `Improve.md`.
   - **[x] Verdant 憧れ帯投入（済・commit 2d96784）**：iron-edge(150,中)/reaver-axe(320,t3)/ironbark-cuirass(300,t3
     defenseBonus) を g7f/g3f unlock で shop に。availability-aware sim が tier-3 を終盤のみ装備するので **balance 緑維持**
     （＝sim整備の狙い通り）。funGate verdant aspirational を todo→LIVE。
-  - **[ ] P8 ドロップ増量（残・同 pass の続き）**：「全職業の全装備が概ね揃う」までドロップ率/量↑＋ランダムエンチャント
-    頻度↑（content/worlds/*/ の treasure/loot table）。sim は gear ドロップをモデルしないので balance-safe。loot sim で検証。
-    参考：`availability:"limited"`(scenario.ts:240) は消費側未実装＝「1個限定」は要機能追加。
+  - **[x] P8 ドロップ増量（済・commit e20ed32）**：①`rollRarity` でエンチャント率↑（rare+ が浅層 ~1/5・深層 ~1/3、
+    commons 優位維持）②verdant に hands 装備(蔓巻きの手甲)追加で全スロット droppable ③default b1f/b2f の純消耗品
+    side chest に tier適正 gear を seed（早期 loot の gear 化）。**新 gate `tests/lootGenerosity.test.ts`**（両世界：
+    rare+ ≥15% かつ <50%／全装備スロット droppable）。loot/treasure/affix 全緑。参考：`availability:"limited"`
+    (scenario.ts:240) は消費側未実装＝「1個限定」は要機能追加（別件）。深部 side table（b3-b8 の 0% gear）の更なる
+    volume 底上げは追ってでも可。
+- **⚠ Codex WIP の赤（私の作業外）:** `terminalLinePrepack.test.ts`（commit `d432b1a` で Codex が追加）が 2件赤
+  （terminal-line の icon 256²RGBA 不足／firearm role 数）。私の変更を stash しても再現＝Codex の arsenal 構築中 WIP。
+  Codex lane。
 - **[x] terminal-line 未完world赤の解消（済・commit 4c59ef7）:** `itemAlternatives`/`techniqueLines` が Codex製
   terminal-line で赤だった件（fire未宣言→firebolt uncastable／unlock道具・cure/focus/ward/throwable/scroll 欠落）を
   content 完成で解消（fire[焼夷]宣言＋7品追加）。full unit 緑。⚠ `debugAutoExplore「warps backward」`は ~5s の既存
@@ -346,6 +352,20 @@ W3a → W3b → W4 → W5 を一つずつ進めること。各Wは、ここに `
       自動小銃、短機関銃、散弾銃、指定射撃銃、軽機関銃が小寸法で別シルエットに読め、pack testが全IDを検査する。
       catalogは全37装備へ増補済み。Godotの通常市場で在庫を統合し、アイコン・和名・補正・装備可能者を実機キャプチャで確認済み。
       `gate:migration` は本作業と無関係の既存UX parity 3件（party aptitude.balanced 2件／dock play.useStairs 1件）で停止中。
+  - **制式火器更新系列（Codex, 2026-08-04 実装中）:** ユーザー指示により、単発の銃器カタログを「拾った一挺」だけで
+    終わらせず、同じ役割を維持したままF1–F10で更新していく系列へ拡張する。通常の購入・比較で理解しやすい
+    **拳銃／長銃／短機関銃／散弾銃**を各5段階にする。長銃のF1は歴史銃をそのまま商品化せず、Terminal Lineに残った
+    `三八式歩兵銃`（長い木製銃床・ボルトアクション・固定弾倉）として登場させる。軽機関銃は支援火器の終盤横選択として
+    残し、未実装の弾薬・連射・騒音ルールを数値や説明で約束しない。
+    - **Human expectation:** 序盤に手にした拳銃、古い小銃、短機関銃、散弾銃が、終端へ近づくほど一目で同系統の
+      上位機種へ替わっていく。三八式歩兵銃は、終末駅に残された旧制式の長銃として木部と長い銃身で読める。
+    - **Red flags / past trouble:** 既存iconの色替えだけ、同名の数値違い、実装されていないフルオート／リロード効果の
+      偽装、1カテゴリだけがすべての職と数値で最適になること。三八式の実在銘はユーザーが明示指定した一挺に限り、
+      他の機種名は世界固有の架空名にする。
+    - **受入:** 4カテゴリ各5機種（20件）がF1–F10の購入・宝へ結線される。各IDにown-basenameの256² RGBA iconを
+      生成し、同一カテゴリでも銃床／弾倉／銃身／機関部の進化が小寸法で区別できる。各系列は攻撃・命中・速度・
+      装備可能職の既存パラメータで横選択を残す。pack testは4×5の集合、三八式、icon解決、深度ごとの入手を検査し、
+      通常市場のcontroller focus面を実機キャプチャで再確認する。
   - **補給・横選択拡充（Codex, 2026-08-04 完了: data + asset contract）:** ユーザー指示により、既存の装備26件と消耗品11件を
     F1–F10の選択として増補する。新規装備は早期の静かな近接／手slot、雨水帯の毒対策、荷役帯の防御offhand、
     中央局の精度head、終端の装身具へ分ける。新規消耗品は小／大回復、恐怖・沈黙回復、MP回復、解錠・解除の
