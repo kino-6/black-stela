@@ -1,5 +1,5 @@
 import type { AnyClassId, CharacterAptitudes, CharacterClassId } from "./types";
-import { CLASS_CAPABILITIES } from "./classCapabilities";
+import { CLASS_CAPABILITIES, resolveClassCapabilities } from "./classCapabilities";
 import { resolveClassId } from "./classIds";
 import { TECHNIQUES, resolveTechniqueCatalog, type Technique, type TechniqueEffect, type TechniqueId, type TechniqueTarget } from "./techniques";
 import type { ScenarioWorld } from "./types";
@@ -117,9 +117,36 @@ export const CLASS_ABILITIES: Partial<Record<CharacterClassId, { level: number; 
       .filter(([, grants]) => grants.length > 0)
   );
 
-export function knownSpells(classId: AnyClassId, level: number): SpellId[] {
+/**
+ * The world-aware analogue of CLASS_ABILITIES: the same {level, spellId} projection, but over the
+ * world's resolved class lines (a world may re-theme what a class learns). When the world authors no
+ * class lines, the prebuilt base CLASS_ABILITIES is returned by reference — byte-identical, so base
+ * worlds and every world-less caller behave exactly as before.
+ */
+export function resolveClassAbilities(world?: ScenarioWorld): Partial<Record<CharacterClassId, { level: number; spellId: SpellId }[]>> {
+  const capabilities = resolveClassCapabilities(world);
+  if (capabilities === CLASS_CAPABILITIES) {
+    return CLASS_ABILITIES;
+  }
+  const castable = resolveCastableCatalog(world);
+  return Object.fromEntries(
+    Object.entries(capabilities)
+      .map(([classId, capability]) => [
+        classId,
+        capability.combatTechniques
+          .filter((grant) => Object.prototype.hasOwnProperty.call(castable, grant.techniqueId))
+          .map((grant) => ({ level: grant.level, spellId: grant.techniqueId }))
+      ] as const)
+      .filter(([, grants]) => grants.length > 0)
+  );
+}
+
+export function knownSpells(classId: AnyClassId, level: number, world?: ScenarioWorld): SpellId[] {
   // Resolved: an adventurer stored as a 斥候 knows what a 盗賊 knows (characterCreation §8.3 mapping).
-  return (CLASS_ABILITIES[resolveClassId(classId)] ?? []).filter((entry) => level >= entry.level).map((entry) => entry.spellId);
+  // A `world` re-themes the class line (resolveClassAbilities); omitted, the base line — the byte-identical
+  // path that every existing caller and parity trace runs on.
+  const abilities = world ? resolveClassAbilities(world) : CLASS_ABILITIES;
+  return (abilities[resolveClassId(classId)] ?? []).filter((entry) => level >= entry.level).map((entry) => entry.spellId);
 }
 
 // True only for arcane spellcasters — a class whose abilities include an actual

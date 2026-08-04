@@ -1,10 +1,10 @@
 import { useEffect, useRef } from "react";
-import type { Character, CombatConclusion } from "../domain/types";
-import type { Translator } from "../i18n";
+import type { Character, CombatConclusion, ScenarioWorld } from "../domain/types";
+import type { Locale, Translator } from "../i18n";
 import { renderPortraitContent } from "../ui/portrait";
+import { localizeTechnique } from "../ui/catalog";
 import { growthForLevel, xpForLevel } from "../domain/leveling";
-import { SPELLS, knownSpells, type SpellId } from "../domain/spells";
-import { SPELL_LABEL as SPELL_LABEL_KEY } from "../domain/combatBeatText";
+import { knownSpells, type SpellId } from "../domain/spells";
 
 // What a single level added, as "HP+5 · MP+2 · 攻撃+1 …" for the fields that moved (T5) — the same growth
 // curve applyLevelUps banks, so it needs no new event data.
@@ -22,23 +22,26 @@ function growthDetail(member: Character, level: number, t: Translator): string {
 }
 
 // Techniques/spells first usable AT this level — the class line known now minus the line one level ago.
-function newTechniques(member: Character, level: number, t: Translator): string {
-  const now = knownSpells(member.classId, level);
-  const before = new Set(knownSpells(member.classId, level - 1));
-  const fresh = now.filter((id) => !before.has(id)).map((id: SpellId) => (id in SPELLS ? t(SPELL_LABEL_KEY[id]) : id));
+// Resolved against the active world, so a re-themed class shows ITS learned technique's name (not a raw id).
+function newTechniques(member: Character, level: number, t: Translator, world: ScenarioWorld, locale: Locale): string {
+  const now = knownSpells(member.classId, level, world);
+  const before = new Set(knownSpells(member.classId, level - 1, world));
+  const fresh = now.filter((id) => !before.has(id)).map((id: SpellId) => localizeTechnique(id, locale, t));
   return fresh.length ? `${t("result.learned")} ${fresh.join("・")}` : "";
 }
 
 interface CombatResultPanelProps {
   result: CombatConclusion;
   party: Character[];
+  world: ScenarioWorld;
+  locale: Locale;
   t: Translator;
   onDismiss: () => void;
 }
 
 // Hold victory on the battlefield as a game-state transition, not a floating
 // application notification. Rewards and growth share one stable controller surface.
-export function CombatResultPanel({ result, party, t, onDismiss }: CombatResultPanelProps) {
+export function CombatResultPanel({ result, party, world, locale, t, onDismiss }: CombatResultPanelProps) {
   const buttonRef = useRef<HTMLButtonElement | null>(null);
   useEffect(() => {
     buttonRef.current?.focus();
@@ -105,8 +108,8 @@ export function CombatResultPanel({ result, party, t, onDismiss }: CombatResultP
                         {member && growthDetail(member, entry.level, t) && (
                           <span className="combat-result-growth-stats">{growthDetail(member, entry.level, t)}</span>
                         )}
-                        {member && newTechniques(member, entry.level, t) && (
-                          <span className="combat-result-growth-learned">{newTechniques(member, entry.level, t)}</span>
+                        {member && newTechniques(member, entry.level, t, world, locale) && (
+                          <span className="combat-result-growth-learned">{newTechniques(member, entry.level, t, world, locale)}</span>
                         )}
                         {member && (
                           <span className="combat-result-growth-xp">

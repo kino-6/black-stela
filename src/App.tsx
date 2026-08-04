@@ -1738,6 +1738,8 @@ export function App() {
                 enemyNames: state.combatConclusion.enemyIds.map(localizeEnemyName)
               }}
               party={state.party}
+              world={activeWorld}
+              locale={locale}
               t={t}
               onDismiss={() => run({ type: "continue_after_combat" })}
             />

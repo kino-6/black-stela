@@ -449,6 +449,18 @@ export function validateScenarioGraph(world: ScenarioWorld, filePath = "world.md
       }
     }
   }
+  // A world's re-skinned class line must name techniques that resolve — and NEVER a firearm. Firearms are
+  // gear-granted only ("a firearm exists only while its weapon is equipped", terminalLinePrepack); a class
+  // that natively LEARNED one would carry it with no weapon, breaking that invariant.
+  for (const entry of world.classTechniques) {
+    for (const grant of entry.combatTechniques) {
+      if (!techniqueExists(grant.techniqueId)) {
+        errors.push({ filePath, fieldPath: `${entry.classId}.combatTechniques`, reason: `Class line names an unknown technique: ${grant.techniqueId}` });
+      } else if ((techniqueCatalog[grant.techniqueId].tags ?? []).includes("firearm")) {
+        errors.push({ filePath, fieldPath: `${entry.classId}.combatTechniques`, reason: `A class cannot natively learn a firearm (gear-granted only): ${grant.techniqueId}` });
+      }
+    }
+  }
 
   // IMP-021A: every advanced vocation's prerequisites must resolve (to a built-in class or another
   // authored vocation), and the unlock graph must have no cycles — else an "advanced" job could gate

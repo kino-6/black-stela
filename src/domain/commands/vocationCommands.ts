@@ -25,7 +25,7 @@ export function changeVocationCommand(state: GameState, world: ScenarioWorld, ch
   if (!member || !vocation || !canAdoptVocation(member, vocationId, world)) {
     return noChange(state);
   }
-  if (resolveVocationState(member).current === vocationId) {
+  if (resolveVocationState(member, world).current === vocationId) {
     return noChange(state);
   }
   const changed = changeCharacterVocation(member, vocation, world);
@@ -40,7 +40,7 @@ export function changeVocationCommand(state: GameState, world: ScenarioWorld, ch
 }
 
 // Set an adventurer's bounded combat loadout (a subset of learned techniques). Town only.
-export function setLoadoutCommand(state: GameState, characterId: string, loadout: string[]): CommandResult {
+export function setLoadoutCommand(state: GameState, world: ScenarioWorld, characterId: string, loadout: string[]): CommandResult {
   if (state.phase !== "town") {
     return noChange(state);
   }
@@ -48,7 +48,7 @@ export function setLoadoutCommand(state: GameState, characterId: string, loadout
   if (!member) {
     return noChange(state);
   }
-  const nextVocation = setLoadout(resolveVocationState(member), loadout);
+  const nextVocation = setLoadout(resolveVocationState(member, world), loadout);
   return {
     state: {
       ...state,

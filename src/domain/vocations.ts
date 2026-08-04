@@ -60,8 +60,10 @@ export function findVocation(world: ScenarioWorld, id: VocationId): ResolvedVoca
 // learned techniques, and the loadout defaults to ALL of them (T32 removed the old 6-slot cap — a
 // class may now carry as many combat techniques as it learns, and the player trims the set by choice,
 // not by a hard limit).
-export function resolveVocationState(character: Character): CharacterVocationState {
-  const classLine = knownSpells(character.classId, character.level) as string[];
+export function resolveVocationState(character: Character, world?: ScenarioWorld): CharacterVocationState {
+  // The class's native line at the current level — re-themed if the active world re-skins the class
+  // (knownSpells honours world.classTechniques). Omitted, the base line — byte-identical.
+  const classLine = knownSpells(character.classId, character.level, world) as string[];
 
   if (character.vocation) {
     // LEVELLING MUST STILL TEACH. The stored state is only ever written by a vocation CHANGE, so a
@@ -101,7 +103,7 @@ export function masteryGain(memberLevel: number, enemy: Pick<Enemy, "level" | "d
 // For a character that has never touched the vocation UI, resolveVocationState defaults the loadout
 // to its class's known spells — so combat is unchanged until a player edits a loadout.
 export function combatLoadout(character: Character, world?: ScenarioWorld): SpellId[] {
-  const learned = resolveVocationState(character).loadout;
+  const learned = resolveVocationState(character, world).loadout;
   // Resolve against the WORLD's catalog so an AUTHORED technique (a Terminal Line firearm) is recognised
   // — the base TECHNIQUES/SPELLS tables do not know it. Base worlds return the prebuilt tables unchanged.
   const catalog = resolveTechniqueCatalog(world);
@@ -128,7 +130,7 @@ export function canAdoptVocation(character: Character, vocationId: VocationId, w
   if (!vocation) {
     return false;
   }
-  const state = resolveVocationState(character);
+  const state = resolveVocationState(character, world);
   if (vocation.requires?.minLevel && character.level < vocation.requires.minLevel) {
     return false;
   }
@@ -178,7 +180,7 @@ export function vocationStatModifiers(
   character: Character,
   world: ScenarioWorld
 ): NonNullable<ScenarioVocation["statModifiers"]> {
-  const state = resolveVocationState(character);
+  const state = resolveVocationState(character, world);
   return findVocation(world, state.current)?.statModifiers ?? {};
 }
 
@@ -190,8 +192,8 @@ export function vocationStatModifiers(
 export function changeCharacterVocation(character: Character, vocation: ResolvedVocation, world: ScenarioWorld): Character {
   const isBasicClass = vocation.tier === "basic" && BUILTIN_VOCATION_IDS.includes(vocation.id);
   const rebuilt = isBasicClass ? reclassCharacter(character, vocation.id as CharacterClassId, world) : character;
-  const priorState = resolveVocationState(rebuilt);
-  const classTechniques = isBasicClass ? (knownSpells(rebuilt.classId, rebuilt.level) as string[]) : [];
+  const priorState = resolveVocationState(rebuilt, world);
+  const classTechniques = isBasicClass ? (knownSpells(rebuilt.classId, rebuilt.level, world) as string[]) : [];
   const withClassTechniques: CharacterVocationState = {
     ...priorState,
     learned: Array.from(new Set([...priorState.learned, ...classTechniques]))

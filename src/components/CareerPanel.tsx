@@ -69,7 +69,7 @@ export function CareerPanel({
   if (!member) {
     return null;
   }
-  const state = resolveVocationState(member);
+  const state = resolveVocationState(member, world);
   const catalog = resolveVocationCatalog(world);
   const currentName = localizedVocationName(world, state.current, locale);
 

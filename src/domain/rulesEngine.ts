@@ -269,7 +269,7 @@ export function resolveCommand(state: GameState, world: ScenarioWorld, command: 
     case "change_vocation":
       return changeVocationCommand(state, world, command.characterId, command.vocationId);
     case "set_loadout":
-      return setLoadoutCommand(state, command.characterId, command.loadout);
+      return setLoadoutCommand(state, world, command.characterId, command.loadout);
     case "appraise_item":
       return appraiseItemCommand(state, command.instanceId);
     case "toggle_item_lock":
@@ -1518,7 +1518,7 @@ function declareRound(state: GameState, world: ScenarioWorld, actions: CombatAct
         ...member,
         xp: member.xp + memberXpFromGroups(combat.enemyGroups, member.level),
         gold: member.gold + gold,
-        vocation: applyMastery(resolveVocationState(member), memberMasteryFromGroups(combat.enemyGroups, member.level)),
+        vocation: applyMastery(resolveVocationState(member, world), memberMasteryFromGroups(combat.enemyGroups, member.level)),
         memory: {
           ...member.memory,
           notableVictories: Array.from(new Set([...member.memory.notableVictories, ...defeatedNames]))
@@ -1800,7 +1800,7 @@ function debugForceVictory(state: GameState, world: ScenarioWorld): CommandResul
       ...member,
       xp: member.xp + memberXpFromGroups(combat.enemyGroups, member.level),
       gold: member.gold + gold,
-      vocation: applyMastery(resolveVocationState(member), memberMasteryFromGroups(combat.enemyGroups, member.level)),
+      vocation: applyMastery(resolveVocationState(member, world), memberMasteryFromGroups(combat.enemyGroups, member.level)),
       memory: {
         ...member.memory,
         notableVictories: Array.from(new Set([...member.memory.notableVictories, ...defeatedNames]))
@@ -1992,7 +1992,7 @@ function useTechnique(
   if (!actor || !technique || !isCampUsableTechnique(technique)) {
     return noChange(state);
   }
-  if (!resolveVocationState(actor).learned.includes(techniqueId)) {
+  if (!resolveVocationState(actor, world).learned.includes(techniqueId)) {
     return noChange(state);
   }
   if (actor.hp <= 0 || actor.injury || actor.status?.includes("sleep") || (technique.kind === "spell" && actor.status?.includes("silence"))) {
