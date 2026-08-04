@@ -29,8 +29,10 @@ and baked scene lighting.
 
 ## Deliberate gaps
 
-- F1/F2 use the shared party portrait and class-figure fallback. Terminal Line still needs its own 12
-  portraits and eight base/action class figures before player-facing art acceptance.
+- Character portraits: Terminal Line now ships its own full set of 12 face portraits at
+  `assets/portraits/<portraitKey>.png` (gate, ruin, vial, coin, map, ward, road, pit, ink, grave, dock,
+  cloak — 1024×1536, cover-cropped by both engines). The default-pack fallback remains the feature that
+  covers any key a world omits. Eight base/action class figures are still shared fallbacks.
 - F3–F10 now select the prepared block2–4 depth bands through their map tags. Their encounter catalog is
   also bound to own-basename sprites, not renamed F1/F2 fallbacks. Each file below is a 768² RGBA clean-alpha
   base/hurt pair; hurt is a same-footprint impact color pass so the combat lane does not jump.
