@@ -197,7 +197,8 @@ equipment:
     attackBonus: 1
     accuracyBonus: 3
     allowedClasses: [vanguard, sellsword, duelist, seeker, scout, cutpurse]
-    tags: [firearm, terminal-line]
+    grantsTechniques: [pistol-draw, pistol-aimed]
+    tags: [firearm, pistol, terminal-line]
     price: 62
     sellValue: 20
     locales:
@@ -213,6 +214,7 @@ equipment:
     accuracyBonus: 3
     speedBonus: -1
     allowedClasses: [vanguard, sellsword, duelist, seeker, scout, wayfinder]
+    grantsTechniques: [rifle-rest, rifle-sight]
     tags: [firearm, rifle, bolt-action, terminal-line]
     price: 82
     sellValue: 27
@@ -229,6 +231,7 @@ equipment:
     accuracyBonus: 1
     speedBonus: 2
     allowedClasses: [duelist, seeker, scout, cutpurse, wayfinder]
+    grantsTechniques: [smg-sweep, smg-push]
     tags: [firearm, smg, terminal-line]
     price: 74
     sellValue: 24
@@ -243,6 +246,7 @@ equipment:
     tier: 1
     attackBonus: 3
     allowedClasses: [vanguard, sellsword, bulwark, duelist]
+    grantsTechniques: [shotgun-breach, shotgun-close]
     tags: [firearm, shotgun, terminal-line]
     price: 94
     sellValue: 31
@@ -289,7 +293,10 @@ equipment:
     attackBonus: 3
     accuracyBonus: 4
     allowedClasses: [vanguard, sellsword, bulwark, duelist, seeker, scout, cutpurse, wayfinder]
-    tags: [firearm, ranged, terminal-line]
+    grantsTechniques: [rifle-brace, rifle-hamper]
+    grantsPassives: [steady-sight]
+    passiveBonus: { accuracy: 4 }
+    tags: [firearm, rifle, ranged, terminal-line]
     price: 128
     sellValue: 42
     locales: { ja: { name: 中継保安カービン, description: 折り畳み銃床と整備照門を持つ、乗換保安用の短銃身銃。 } }
@@ -301,6 +308,9 @@ equipment:
     attackBonus: 2
     accuracyBonus: 3
     allowedClasses: [vanguard, sellsword, duelist, seeker, scout, cutpurse]
+    grantsTechniques: [pistol-suppress, pistol-pin]
+    grantsPassives: [quick-draw]
+    passiveBonus: { speed: 2 }
     tags: [firearm, pistol, terminal-line]
     price: 116
     sellValue: 38
@@ -314,6 +324,7 @@ equipment:
     accuracyBonus: 2
     speedBonus: 2
     allowedClasses: [duelist, seeker, scout, cutpurse, wayfinder]
+    grantsTechniques: [smg-turnstile, smg-scatter]
     tags: [firearm, smg, terminal-line]
     price: 148
     sellValue: 49
@@ -325,6 +336,7 @@ equipment:
     tier: 2
     attackBonus: 4
     allowedClasses: [vanguard, sellsword, bulwark, duelist]
+    grantsTechniques: [shotgun-pump, shotgun-stagger]
     tags: [firearm, shotgun, terminal-line]
     price: 166
     sellValue: 55
@@ -337,6 +349,7 @@ equipment:
     attackBonus: 4
     accuracyBonus: 2
     allowedClasses: [vanguard, sellsword, bulwark, duelist, seeker, scout, cutpurse, wayfinder]
+    grantsTechniques: [rifle-cutline, rifle-scan]
     tags: [firearm, rifle, terminal-line]
     price: 142
     sellValue: 47
@@ -398,7 +411,10 @@ equipment:
     attackBonus: 5
     accuracyBonus: 1
     allowedClasses: [vanguard, sellsword, bulwark, duelist]
-    tags: [firearm, close, terminal-line]
+    grantsTechniques: [shotgun-sluice, shotgun-brace]
+    grantsPassives: [breach-brace]
+    passiveBonus: { armor: 2 }
+    tags: [firearm, shotgun, close, terminal-line]
     price: 210
     sellValue: 70
     locales: { ja: { name: 水門散弾銃, description: 詰まった水門を近距離で開けるため、保守班が備えた重い散弾銃。 } }
@@ -411,6 +427,9 @@ equipment:
     accuracyBonus: 2
     speedBonus: 2
     allowedClasses: [duelist, seeker, scout, cutpurse, wayfinder]
+    grantsTechniques: [smg-rainline, smg-crossfire]
+    grantsPassives: [close-control]
+    passiveBonus: { speed: 2, accuracy: 1 }
     tags: [firearm, smg, terminal-line]
     price: 194
     sellValue: 64
@@ -424,6 +443,7 @@ equipment:
     accuracyBonus: 4
     speedBonus: 1
     allowedClasses: [vanguard, sellsword, duelist, seeker, scout, cutpurse, wayfinder]
+    grantsTechniques: [pistol-relay, pistol-mark]
     tags: [firearm, pistol, relay, terminal-line]
     price: 204
     sellValue: 68
@@ -437,6 +457,7 @@ equipment:
     accuracyBonus: 1
     speedBonus: -1
     allowedClasses: [vanguard, sellsword, bulwark, duelist]
+    grantsTechniques: [shotgun-floodgate, shotgun-gate]
     tags: [firearm, shotgun, terminal-line]
     price: 236
     sellValue: 78
@@ -534,7 +555,10 @@ equipment:
     attackBonus: 5
     accuracyBonus: 5
     allowedClasses: [vanguard, sellsword, bulwark, duelist, seeker, scout, cutpurse, wayfinder]
-    tags: [firearm, ranged, bureau, terminal-line]
+    grantsTechniques: [pistol-bureau, pistol-seal]
+    grantsPassives: [sidearm-discipline]
+    passiveBonus: { accuracy: 2 }
+    tags: [firearm, pistol, ranged, bureau, terminal-line]
     price: 310
     sellValue: 103
     locales: { ja: { name: 中央局制式拳銃, description: 不自然なほど整備の行き届いた、中央局の制式短銃。 } }
@@ -547,6 +571,7 @@ equipment:
     accuracyBonus: 4
     speedBonus: 2
     allowedClasses: [duelist, seeker, scout, cutpurse, wayfinder]
+    grantsTechniques: [smg-bureau, smg-lockdown]
     tags: [firearm, smg, bureau, terminal-line]
     price: 324
     sellValue: 108
@@ -560,7 +585,8 @@ equipment:
     accuracyBonus: 7
     speedBonus: -1
     allowedClasses: [vanguard, sellsword, duelist, seeker, scout, wayfinder]
-    tags: [firearm, marksman, terminal-line]
+    grantsTechniques: [rifle-quarantine, rifle-coldshot]
+    tags: [firearm, rifle, marksman, terminal-line]
     price: 338
     sellValue: 112
     locales: { ja: { name: 隔離62式指定射撃銃, description: 封鎖病棟の射手が残した長い銃身と覆い照門を持つ射撃銃。取り回しを失う代わりに、遠い一点を確かに捉える。 } }
@@ -648,7 +674,10 @@ equipment:
     accuracyBonus: 5
     element: current
     allowedClasses: [vanguard, sellsword, bulwark, duelist, seeker, scout, cutpurse, wayfinder]
-    tags: [firearm, ranged, current, terminal-line]
+    grantsTechniques: [rifle-evac, rifle-longwatch]
+    grantsPassives: [last-platform-stance]
+    passiveBonus: { attack: 1, resistance: { fear: 15 } }
+    tags: [firearm, rifle, ranged, current, terminal-line]
     sellValue: 175
     locales: { ja: { name: 退避誘導カービン, description: 退避路を守るため、長い銃身を持たされた誘導員用カービン。 } }
   - id: equip.tl-platform-88-lmg
@@ -660,7 +689,10 @@ equipment:
     accuracyBonus: 2
     speedBonus: -2
     allowedClasses: [vanguard, sellsword, bulwark]
-    tags: [firearm, support-gun, terminal-line]
+    grantsTechniques: [smg-zero, smg-breakthrough]
+    grantsPassives: [last-platform-stance]
+    passiveBonus: { attack: 1, resistance: { fear: 15 } }
+    tags: [firearm, smg, support-gun, terminal-line]
     price: 430
     sellValue: 143
     locales: { ja: { name: ホーム88式軽機関銃, description: 放熱覆いと擦れた運搬把手を備える支援機関銃。終端へ続く入口を守るために支給された。 } }
@@ -673,6 +705,9 @@ equipment:
     accuracyBonus: 5
     speedBonus: -1
     allowedClasses: [vanguard, sellsword, duelist, seeker, scout, cutpurse, wayfinder]
+    grantsTechniques: [pistol-terminal, pistol-lastword]
+    grantsPassives: [last-platform-stance]
+    passiveBonus: { attack: 1, resistance: { fear: 15 } }
     tags: [firearm, pistol, terminus, terminal-line]
     price: 406
     sellValue: 135
@@ -686,6 +721,9 @@ equipment:
     accuracyBonus: 5
     speedBonus: 3
     allowedClasses: [duelist, seeker, scout, cutpurse, wayfinder]
+    grantsTechniques: [smg-zero, smg-breakthrough]
+    grantsPassives: [last-platform-stance]
+    passiveBonus: { attack: 1, resistance: { fear: 15 } }
     tags: [firearm, smg, terminus, terminal-line]
     price: 418
     sellValue: 139
@@ -699,6 +737,9 @@ equipment:
     accuracyBonus: 1
     speedBonus: -2
     allowedClasses: [vanguard, sellsword, bulwark, duelist]
+    grantsTechniques: [shotgun-terminus, shotgun-final]
+    grantsPassives: [last-platform-stance]
+    passiveBonus: { attack: 1, resistance: { fear: 15 } }
     tags: [firearm, shotgun, terminus, terminal-line]
     price: 446
     sellValue: 148

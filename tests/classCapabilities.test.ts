@@ -534,9 +534,11 @@ describe("technique catalog — the model can carry the families the design call
     };
     expect(toLegacySpell(scroll)).toBeNull();
 
-    // ...while everything currently shipped does fit, which is why play is unchanged.
+    // ...while every active technique currently shipped does fit. Equipment-bound passives resolve
+    // through effective stats, never by pretending to be a selectable combat command.
     for (const technique of Object.values(TECHNIQUES)) {
-      expect(toLegacySpell(technique), technique.id).not.toBeNull();
+      if (technique.kind === "passive") expect(toLegacySpell(technique), technique.id).toBeNull();
+      else expect(toLegacySpell(technique), technique.id).not.toBeNull();
     }
   });
 });

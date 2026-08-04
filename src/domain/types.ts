@@ -1105,6 +1105,12 @@ export interface ScenarioEquipment {
    *  prepared party is not hurt by the threat it expected. Multiplied across worn gear. */
   elementResist?: Partial<Record<string, number>>;
   allowedClasses?: AnyClassId[];
+  /** Active combat techniques supplied while this piece is equipped. */
+  grantsTechniques?: TechniqueId[];
+  /** Automatic stat techniques supplied while this piece is equipped. */
+  grantsPassives?: TechniqueId[];
+  /** Concrete stat payload for the supplied passive; keeps the Godot world export self-contained. */
+  passiveBonus?: { attack?: number; armor?: number; accuracy?: number; speed?: number; resistance?: Partial<Record<CombatStatus, number>> };
   tags?: string[];
   price?: number;
   sellValue?: number;

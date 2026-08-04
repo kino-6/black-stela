@@ -111,14 +111,14 @@ function goldOf(world: ScenarioWorld, itemIds: string[]): number {
  * Priorities, in order: revive nobody (there is no revive), heal anyone badly hurt, put up a ward that
  * is not yet up, then attack.
  */
-function planRound(state: GameState, wardedIds: Set<string>): CombatActionDeclaration[] {
+function planRound(state: GameState, world: ScenarioWorld, wardedIds: Set<string>): CombatActionDeclaration[] {
   const target = state.combat?.enemyGroups.find((group) => group.count > 0);
   if (!target) return [];
   const able = state.party.filter((member) => member.hp > 0 && !member.injury);
   const hurt = able.filter((member) => member.hp / member.maxHp < 0.55).sort((a, b) => a.hp / a.maxHp - b.hp / b.maxHp)[0];
 
   return able.map((actor) => {
-    const known = combatLoadout(actor);
+    const known = combatLoadout(actor, world);
 
     // 1. A ward, once, before anything else — that is what a ward is for.
     const ward = known.find((id) => TECHNIQUES[id].effects.some((effect) => effect.kind === "ward"));
@@ -186,7 +186,7 @@ function fight(
     combat: createCombatState("sim", enemy, count)
   };
   for (let round = 0; round < 60 && current.phase === "combat"; round += 1) {
-    const actions = planRound(current, wardedIds);
+    const actions = planRound(current, world, wardedIds);
     if (actions.length === 0) break;
     current = executeCommand(current, world, { type: "declare_round", actions });
     sample?.(current);

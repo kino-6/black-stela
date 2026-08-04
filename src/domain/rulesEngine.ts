@@ -1448,7 +1448,7 @@ function declareRound(state: GameState, world: ScenarioWorld, actions: CombatAct
       const technique = TECHNIQUES[action.spellId];
       // IMP-021C: an actor may cast only a technique on its combat loadout (which defaults to the
       // class's known spells until a player edits it).
-      if (!technique || !combatLoadout(actor).includes(technique.id)) {
+      if (!technique || !combatLoadout(actor, world).includes(technique.id)) {
         continue;
       }
       if (technique.kind === "spell" && actor.status?.includes("silence")) {

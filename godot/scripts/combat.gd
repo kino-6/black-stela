@@ -329,9 +329,26 @@ func _loadout_for(actor: Dictionary) -> Array:
 	var catalog: Dictionary = _engine.get("techniques", {})
 	var out := []
 	for id in learned:
-		if catalog.has(String(id)):
+		if catalog.has(String(id)) and String((catalog[String(id)] as Dictionary).get("kind", "")) != "passive" and not ((catalog[String(id)] as Dictionary).get("tags", []) as Array).has("firearm"):
 			out.append(String(id))
+	var equipment: Dictionary = actor.get("equipment", {})
+	for equipped in equipment.values():
+		if typeof(equipped) != TYPE_DICTIONARY:
+			continue
+		var catalog_item: Variant = _equipment_entry(String((equipped as Dictionary).get("id", "")))
+		if typeof(catalog_item) != TYPE_DICTIONARY:
+			continue
+		for id in (catalog_item as Dictionary).get("grantsTechniques", []):
+			var technique := String(id)
+			if catalog.has(technique) and String((catalog[technique] as Dictionary).get("kind", "")) != "passive" and not out.has(technique):
+				out.append(technique)
 	return out
+
+func _equipment_entry(item_id: String) -> Variant:
+	for entry in _world.get("equipment", []):
+		if typeof(entry) == TYPE_DICTIONARY and String((entry as Dictionary).get("id", "")) == item_id:
+			return entry
+	return null
 
 func _on_menu_choice(kind: String, payload: Dictionary) -> void:
 	if _busy or _resolved:

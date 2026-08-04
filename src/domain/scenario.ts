@@ -228,6 +228,18 @@ const scenarioEquipmentSchema = z.object({
       ])
     )
     .optional(),
+  /** Active combat techniques supplied by this equipped item (Terminal Line firearms). */
+  grantsTechniques: z.array(z.enum(Object.keys(TECHNIQUES) as [TechniqueId, ...TechniqueId[]])).optional(),
+  /** Passive techniques supplied while this item is equipped. */
+  grantsPassives: z.array(z.enum(Object.keys(TECHNIQUES) as [TechniqueId, ...TechniqueId[]])).optional(),
+  /** The stat change from a supplied passive, exported with the world for Godot's stat pipeline. */
+  passiveBonus: z.object({
+    attack: z.number().int().optional(),
+    armor: z.number().int().optional(),
+    accuracy: z.number().int().optional(),
+    speed: z.number().int().optional(),
+    resistance: z.record(z.enum(["poison", "fear", "silence", "sleep", "ward"]), z.number()).optional()
+  }).optional(),
   tags: z.array(z.string().min(1)).default([]),
   price: z.number().int().nonnegative().optional(),
   sellValue: z.number().int().nonnegative().optional(),

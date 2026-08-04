@@ -2,6 +2,12 @@ import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { loadScenarioPack } from "../src/services/scenarioPackLoader";
+import { createGuildCharacter } from "../src/domain/characterCreation";
+import { getEffectiveCharacterStats } from "../src/domain/economy";
+import { TECHNIQUES } from "../src/domain/techniques";
+import { combatLoadout } from "../src/domain/vocations";
+import { createCombatState, executeCommand } from "../src/domain/rulesEngine";
+import { createInitialGameState } from "../src/domain/gameState";
 
 const root = resolve(process.cwd(), "content/worlds/terminal-line");
 const dungeon = resolve(root, "assets/dungeon");
@@ -199,5 +205,91 @@ describe("Terminal Line F1–F10 canonical pack", () => {
       expect(ids.every((id) => firearms.get(id)?.tags?.includes("firearm"))).toBe(true);
     }
     expect(firearms.get("equip.tl-platform-38-rifle")?.locales?.ja?.name).toBe("三八式歩兵銃");
+  });
+
+  it("binds ten real active techniques to each firearm family and six automatic firearm passives", () => {
+    const result = loadScenarioPack(packFiles());
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    const firearms = new Map(result.world.equipment.map((equipment) => [equipment.id, equipment]));
+    const lines = {
+      pistol: ["equip.tl-service-pistol", "equip.tl-concourse-6-pistol", "equip.tl-relay-11-pistol", "equip.tl-bureau-sidearm", "equip.tl-zero-line-heavy-pistol"],
+      rifle: ["equip.tl-platform-38-rifle", "equip.tl-relay-carbine", "equip.tl-ironrain-74-rifle", "equip.tl-quarantine-62-dmr", "equip.tl-evacuation-carbine"],
+      smg: ["equip.tl-drain-5-smg", "equip.tl-ticket-7-smg", "equip.tl-turnstile-9-smg", "equip.tl-bureau-17-smg", "equip.tl-zero-line-21-smg"],
+      shotgun: ["equip.tl-maintenance-10-shotgun", "equip.tl-pump-8-shotgun", "equip.tl-sluice-shotgun", "equip.tl-floodgate-12-shotgun", "equip.tl-terminus-14-shotgun"]
+    };
+
+    for (const ids of Object.values(lines)) {
+      const active = ids.flatMap((id) => firearms.get(id)?.grantsTechniques ?? []);
+      expect(active, ids.join(", ")).toHaveLength(10);
+      expect(new Set(active).size, ids.join(", ")).toBe(10);
+    }
+    for (const [family, ids] of Object.entries(lines)) {
+      for (const techniqueId of ids.flatMap((id) => firearms.get(id)?.grantsTechniques ?? [])) {
+        expect(TECHNIQUES[techniqueId].tags).toContain(family);
+      }
+    }
+    for (const equipment of [...firearms.values()].filter((candidate) => candidate.tags?.includes("firearm"))) {
+      expect(equipment.grantsTechniques, equipment.id).toHaveLength(2);
+      expect(equipment.grantsTechniques?.every((id) => equipment.tags?.some((tag) => TECHNIQUES[id].tags?.includes(tag))), equipment.id).toBe(true);
+    }
+    const passives = new Set([...firearms.values()].flatMap((equipment) => equipment.grantsPassives ?? []));
+    expect(passives).toEqual(new Set([
+      "quick-draw", "sidearm-discipline", "steady-sight", "close-control", "breach-brace", "last-platform-stance"
+    ]));
+
+    for (const equipment of firearms.values()) {
+      const passiveIds = equipment.grantsPassives ?? [];
+      if (passiveIds.length === 0) continue;
+      expect(passiveIds).toHaveLength(1);
+      expect(TECHNIQUES[passiveIds[0]].passiveBonus).toEqual(equipment.passiveBonus);
+    }
+  });
+
+  it("makes firearm techniques and their passive stats exist only while their source weapon is equipped", () => {
+    const result = loadScenarioPack(packFiles());
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    const hero = createGuildCharacter({ name: "試射手", classId: "vanguard", backgroundId: "watch", traitIds: ["steady"] });
+    const withRifle = { ...hero, equipment: { ...hero.equipment, weapon: { id: "equip.tl-relay-carbine" } } };
+    expect(combatLoadout(withRifle, result.world)).toEqual(expect.arrayContaining(["rifle-brace", "rifle-hamper"]));
+
+    const withoutRifle = {
+      ...withRifle,
+      equipment: { ...withRifle.equipment, weapon: { id: "equip.tl-crowbar" } },
+      vocation: { current: "warrior", mastery: {}, progress: {}, learned: ["rifle-brace"], loadout: ["rifle-brace"] }
+    };
+    expect(combatLoadout(withoutRifle, result.world)).not.toEqual(expect.arrayContaining(["rifle-brace", "rifle-hamper"]));
+
+    const worldWithoutPassive = {
+      ...result.world,
+      equipment: result.world.equipment.map((equipment) => equipment.id === "equip.tl-relay-carbine" ? { ...equipment, passiveBonus: undefined } : equipment)
+    };
+    expect(getEffectiveCharacterStats(withRifle, result.world).accuracy).toBe(getEffectiveCharacterStats(withRifle, worldWithoutPassive).accuracy + 4);
+
+    // Use the final guardian so a successful shot cannot immediately award a level-up and refill MP;
+    // this assertion is about the cost actually being paid, not post-victory growth.
+    const enemy = result.world.enemies.at(-1)!;
+    const fight = {
+      ...createInitialGameState(),
+      phase: "combat" as const,
+      party: [withRifle],
+      combat: createCombatState("room.tl1f.entry", enemy, 1)
+    };
+    const groupId = fight.combat.enemyGroups[0].id;
+    const afterRifleShot = executeCommand(fight, result.world, {
+      type: "declare_round",
+      actions: [{ actorId: withRifle.id, action: "cast", spellId: "rifle-brace", targetGroupId: groupId }]
+    });
+    expect(afterRifleShot.party[0].mp).toBe(withRifle.mp - 3);
+
+    const invalidFight = { ...fight, party: [withoutRifle] };
+    const afterUnequippedShot = executeCommand(invalidFight, result.world, {
+      type: "declare_round",
+      actions: [{ actorId: withoutRifle.id, action: "cast", spellId: "rifle-brace", targetGroupId: groupId }]
+    });
+    expect(afterUnequippedShot.party[0].mp).toBe(withoutRifle.mp);
   });
 });

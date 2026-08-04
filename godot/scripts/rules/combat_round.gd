@@ -92,7 +92,7 @@ static func declare_round(state: Dictionary, world: Dictionary, actions: Array, 
 		if kind == "cast" and typeof(action.get("spellId", null)) == TYPE_STRING:
 			var spell_id := String(action["spellId"])
 			var technique: Variant = (engine.get("techniques", {}) as Dictionary).get(spell_id, null)
-			if typeof(technique) != TYPE_DICTIONARY or not _combat_loadout(actor, engine).has(spell_id):
+			if typeof(technique) != TYPE_DICTIONARY or not _combat_loadout(actor, world, engine).has(spell_id):
 				continue
 			# §9.4a parity: silence stops 呪文 ONLY. A 特技 is martial, not arcane, so a silenced
 			# front-liner can still strike.
@@ -798,13 +798,27 @@ static func _sync_combat_enemy(combat: Dictionary) -> Dictionary:
 
 ## An actor may cast only a technique on its combat loadout (which defaults to the class's known
 ## techniques until a player edits one) — and only ones the exported catalog actually defines.
-static func _combat_loadout(actor: Dictionary, engine: Dictionary) -> Array:
+static func _combat_loadout(actor: Dictionary, world: Dictionary, engine: Dictionary) -> Array:
 	var state := _resolve_vocation_state(actor, engine)
 	var catalog: Dictionary = engine.get("techniques", {})
 	var out := []
 	for technique in state.get("loadout", []):
-		if catalog.has(String(technique)):
+		if catalog.has(String(technique)) and String((catalog[String(technique)] as Dictionary).get("kind", "")) != "passive" and not ((catalog[String(technique)] as Dictionary).get("tags", []) as Array).has("firearm"):
 			out.append(String(technique))
+	# Terminal Line's firearm techniques belong to the WEAPON, not the class technique list. This is
+	# deliberately derived from worn equipment in both runtimes, so changing to a crowbar removes them
+	# before an order can resolve.
+	var equipment: Dictionary = actor.get("equipment", {})
+	for equipped in equipment.values():
+		if typeof(equipped) != TYPE_DICTIONARY:
+			continue
+		var item: Variant = CharacterStats._find_by_id(world.get("equipment", []), (equipped as Dictionary).get("id", ""))
+		if typeof(item) != TYPE_DICTIONARY:
+			continue
+		for technique in (item as Dictionary).get("grantsTechniques", []):
+			var id := String(technique)
+			if catalog.has(id) and String((catalog[id] as Dictionary).get("kind", "")) != "passive" and not out.has(id):
+				out.append(id)
 	return out
 
 static func _with_member_status(party: Array, member_id: String, status: String) -> Array:

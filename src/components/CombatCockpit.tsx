@@ -207,7 +207,7 @@ export function CombatCockpit({
           <CombatCommandMenu
             actor={selectedActor}
             livingGroups={livingEnemyGroups}
-            spells={combatLoadout(selectedActor)}
+            spells={combatLoadout(selectedActor, world)}
             abilityKind={isCasterClass(selectedActor.classId) ? "spell" : "skill"}
             localizeGroup={(group) => localizedEnemyGroupName(group, locale)}
             canAttack={

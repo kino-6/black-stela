@@ -42,6 +42,17 @@ static func effective(character: Dictionary, world: Dictionary, effects: Array =
 			attack_element = catalog["element"]
 		_mul_element_resist(element_resist, catalog.get("elementResist", {}))
 
+		# Equipment-bound passives are exported with the world, so the Godot stat pipeline does not need
+		# a second copy of Terminal Line's technique catalog. They disappear as soon as their source gear
+		# is removed, exactly like the TypeScript `getEffectiveCharacterStats` path.
+		var passive: Variant = catalog.get("passiveBonus", null)
+		if typeof(passive) == TYPE_DICTIONARY:
+			attack_bonus += int(passive.get("attack", 0))
+			defense_bonus += int(passive.get("armor", 0))
+			accuracy_bonus += int(passive.get("accuracy", 0))
+			speed_bonus += int(passive.get("speed", 0))
+			_add_resist(resistance, passive.get("resistance", {}))
+
 		# An explicit null `plus` (a UI building a hypothetical loadout) must read as 0. int(null) aborts the
 		# whole function and it silently returns {} — which showed up as an equip preview claiming every stat
 		# dropped to zero. Never let a nullable field reach int() unguarded.

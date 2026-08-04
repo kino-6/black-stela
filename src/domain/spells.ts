@@ -40,7 +40,7 @@ export interface Spell {
  * Project one technique into the castable view, or `null` if combat cannot pay for it yet.
  */
 export function toLegacySpell(technique: Technique): Spell | null {
-  if (technique.cost.itemId || technique.cost.hp || technique.cost.usesPerExpedition) {
+  if (technique.kind === "passive" || technique.cost.itemId || technique.cost.hp || technique.cost.usesPerExpedition) {
     return null;
   }
   return {

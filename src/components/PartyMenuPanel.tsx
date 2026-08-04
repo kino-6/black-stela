@@ -15,6 +15,7 @@ import {
 } from "../ui/catalog";
 import { formatEquipmentSlot, formatInventoryEffect } from "../ui/format";
 import { renderPortraitContent } from "../ui/portrait";
+import { SPELL_LABEL } from "../domain/combatBeatText";
 
 type PartyMenuPage = "status" | "equipment" | "items" | "valuables";
 
@@ -354,6 +355,9 @@ export function PartyMenuPanel({ state, world, locale, t, onCommand, onClose }: 
                     <h3>{selectedItem.kind === "equipment" ? describeEquipmentInstance(selectedItem.id, locale, t, selectedItem.plus, selectedItem.affix) : localizedCatalogName(selectedItem.id, locale)}</h3>
                     <p>{localizedCatalogDescription(selectedItem.id, locale) || (selectedEquipment ? formatInventoryEffect(selectedItem, t) : describeConsumable(selectedItem, t))}</p>
                     {selectedEquipment && <p>{formatInventoryEffect(selectedItem, t)}</p>}
+                    {selectedEquipment?.grantsPassives?.map((passive) => (
+                      <p key={passive}>{t("partyMenu.equipmentPassive")}: {t(SPELL_LABEL[passive])}</p>
+                    ))}
                     <div className="party-item-actions">
                       {canUse && (
                         <button type="button" onClick={() => onCommand({ type: "use_item", itemId: selectedItem.id, targetCharacterId: member.id })}>

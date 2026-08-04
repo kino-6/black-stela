@@ -9,6 +9,8 @@ import { classCatalog, reclassCharacter } from "./characterCreation";
 import { rewardXpFor } from "./leveling";
 import { SPELLS, knownSpells, type SpellId } from "./spells";
 import type { Character, CharacterClassId, CharacterVocationState, Enemy, EquipmentSlot, ScenarioVocation, ScenarioWorld, VocationId } from "./types";
+import { equippedTechniqueGrants } from "./economy";
+import { TECHNIQUES } from "./techniques";
 
 export const BUILTIN_VOCATION_IDS: VocationId[] = classCatalog.map((definition) => definition.id);
 
@@ -98,8 +100,15 @@ export function masteryGain(memberLevel: number, enemy: Pick<Enemy, "level" | "d
 // The techniques usable in combat this fight: the bounded loadout, resolved to real spells/skills.
 // For a character that has never touched the vocation UI, resolveVocationState defaults the loadout
 // to its class's known spells — so combat is unchanged until a player edits a loadout.
-export function combatLoadout(character: Character): SpellId[] {
-  return resolveVocationState(character).loadout.filter((id): id is SpellId => Object.prototype.hasOwnProperty.call(SPELLS, id));
+export function combatLoadout(character: Character, world?: ScenarioWorld): SpellId[] {
+  const learned = resolveVocationState(character).loadout;
+  const gear = world ? equippedTechniqueGrants(character, world) : [];
+  const nonGearTechniques = learned.filter(
+    (id) => !TECHNIQUES[id as keyof typeof TECHNIQUES]?.tags?.includes("firearm")
+  );
+  return [...nonGearTechniques, ...gear].filter(
+    (id, index, all): id is SpellId => all.indexOf(id) === index && Object.prototype.hasOwnProperty.call(SPELLS, id)
+  );
 }
 
 export function masteryRank(state: CharacterVocationState, vocationId: VocationId): number {

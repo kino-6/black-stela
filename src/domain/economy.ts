@@ -4,6 +4,7 @@ import { PHYSICAL } from "./types";
 import { equipmentInstanceKey, plusPrimaryStat } from "./affixes";
 import { findResolvedAffix } from "./loot";
 import { effectsOn, statModifier, wardElementResist, wardStatusResist, type ActiveEffect } from "./combatEffects";
+import { TECHNIQUES, type TechniqueId } from "./techniques";
 
 export const STARTING_PARTY_GOLD = 75;
 const RECOVERY_HP_COST = 1;
@@ -113,6 +114,30 @@ export function weaponReaches(character: Character, world: ScenarioWorld): boole
   return catalog?.tags?.includes("reach") ?? false;
 }
 
+/** Active techniques that come from currently worn equipment, in deterministic slot/id order. */
+export function equippedTechniqueGrants(character: Character, world: ScenarioWorld): TechniqueId[] {
+  const out: TechniqueId[] = [];
+  for (const equipped of Object.values(character.equipment)) {
+    const catalog = equipped ? findEquipment(world, equipped.id) : undefined;
+    for (const id of catalog?.grantsTechniques ?? []) {
+      if (TECHNIQUES[id]?.kind !== "passive" && !out.includes(id)) out.push(id);
+    }
+  }
+  return out;
+}
+
+/** Passive techniques supplied by worn equipment. Their bonuses resolve in `getEffectiveCharacterStats`. */
+export function equippedPassiveGrants(character: Character, world: ScenarioWorld): TechniqueId[] {
+  const out: TechniqueId[] = [];
+  for (const equipped of Object.values(character.equipment)) {
+    const catalog = equipped ? findEquipment(world, equipped.id) : undefined;
+    for (const id of catalog?.grantsPassives ?? []) {
+      if (TECHNIQUES[id]?.kind === "passive" && !out.includes(id)) out.push(id);
+    }
+  }
+  return out;
+}
+
 /**
  * §9.4: the same stat block, with any wards/buffs/debuffs currently running on this character folded in
  * (combatEffects.ts). Optional and defaulting to none, so every out-of-combat caller — the guild, the
@@ -157,6 +182,19 @@ export function getEffectiveCharacterStats(
     // commit to shrugging off one threat entirely, at the cost of the slots it took.
     for (const [element, value] of Object.entries(catalog.elementResist ?? {})) {
       elementResist[element] = (elementResist[element] ?? 1) * (value ?? 1);
+    }
+
+    // Gear-bound passives use the same effective-stat pipeline as the gear itself. They do not enter
+    // the combat loadout and vanish immediately when the source item is changed.
+    const passive = catalog.passiveBonus;
+    if (passive) {
+      attackBonus += passive.attack ?? 0;
+      defenseBonus += passive.armor ?? 0;
+      accuracyBonus += passive.accuracy ?? 0;
+      speedBonus += passive.speed ?? 0;
+      for (const [status, value] of Object.entries(passive.resistance ?? {})) {
+        resistance[status as CombatStatus] = (resistance[status as CombatStatus] ?? 0) + (value ?? 0);
+      }
     }
 
     // A numeric "+N" upgrade reinforces the slot's primary stat.

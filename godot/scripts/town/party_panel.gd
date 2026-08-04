@@ -423,6 +423,9 @@ static func _equipment_page(ctx: Dictionary, world: Dictionary, party: Array, me
 		comparison.add_child(UI.label("%s：%s" % [I18n.t("partyMenu.equipmentCandidate"), Fmt.describe_equipment_instance(world, selected_item.get("id", ""), selected_item.get("plus", null), selected_item.get("affix", null))], 16, UI.INK))
 		comparison.add_child(UI.prose(Fmt.localized_catalog_description(world, selected_item.get("id", "")), 14, UI.DIM, 720))
 		var catalog: Variant = Fmt.find_equipment(world, selected_item.get("id", ""))
+		if typeof(catalog) == TYPE_DICTIONARY:
+			for passive_id in (catalog as Dictionary).get("grantsPassives", []):
+				comparison.add_child(UI.label("%s：%s" % [I18n.t("partyMenu.equipmentPassive"), Techniques.label(String(passive_id), ctx.get("engine", {}))], 15, UI.OK))
 		var usable := typeof(catalog) == TYPE_DICTIONARY and Fmt.is_usable_by(catalog as Dictionary, member)
 		if not usable:
 			comparison.add_child(UI.label(I18n.t("partyMenu.equipmentIncompatible"), 15, UI.BAD))
