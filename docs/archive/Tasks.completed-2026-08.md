@@ -434,3 +434,25 @@ These are DONE + gate-green + committed; see the named commits/gates in each ent
   T9 鍛冶屋 real-build capture (`capture_blacksmith.gd` + 3 shots in `docs/evidence/t9-blacksmith-2026-08-03/`,
   self-verified); T13 no-purchase-vs-purchased B1F play record (sim:balance troughs + browser player-clear).
   Handoff: `docs/handoffs/2026-08-03-t9-t13-evidence.md`. `c006e43`. **Codex visual/feel sign-off pending.**
+
+---
+
+## 2026-08-05 — U-series (実機playtest 追加要望) + CI 復旧 — all DONE + merged to main
+
+- **U1 戦闘オート二系統化** (`5175ebc`) — 攻撃オート[R]／守備オート[G] の2ループ。全員でかかる(F,1ラウンド)据置。
+  tempo.ts `chooseDefensiveRoundActions`＋strategy、App.tsx G hotkey、Godot combat.gd `_defense_auto_actions`。
+- **U2 顔/全身ポートレート使い分け** (`7a6514f`) — 顔=`assets/portraits/<key>.png`（正方形）／全身=新設 `assets/bodies/<key>.png`
+  （2:3、同 portraitKey）。小トークン=顔、戦闘スポット＋presence=全身（body→クラス立ち絵→顔 fallback）。React byPackBody/bodyUrl、
+  Godot WorldResources.face_path/body_path。stage:assets に bodies 追加＋削除ミラー化。
+- **U3 CLASS_CAPABILITIES 外部化＋terminal-line 全8職テーマ化** (`75453a8`→`c642e76`) — `world.classTechniques` が base
+  CLASS_CAPABILITIES を classId 単位で置換（未 authored は参照同一＝byte 不変）。knownSpells/resolveVocationState に world 貫通、
+  kind パリティ厳守、firearm クラス習得禁止 invariant。terminal-line 8職改名＋48テーマ技（base 1:1 re-skin）。
+- **ポートレート選択プール** (`403dcbf`) — `ScenarioWorld.portraits: string[]`（作成時の選択プール拡張）。body-only figure も
+  顔枠で top-crop 表示。terminal-line chara-13..32（20枚）宣言＝プール32個。React face step に swatch grid、Godot _face_keys 拡張。
+- **U4 Save 再設計** (`a2c3cd1`) — 固定スロット→**シナリオ別 autosave＋手動3スロット**。envelope 不変＝parity 0-fail。
+  slot id `auto:<worldId>` / `manual:<worldId>:<n>`（saveData.ts＋save_game.gd 共有）。React: per-scenario autosave、Continue=最新、
+  新 SaveBrowser（全 save load/削除）、記録の間に手動3スロット。Godot: string slot id＋list_slots、title 全 save 列挙。
+- **CI（GitHub Actions）赤の完全復旧** (`d816280`) — unit timeout（debugAutoExplore 30s）＋chests RNG非依存化、postcss 脆弱性
+  audit fix、ux-parity 4ギャップ（aptitude.balanced 幻＋map.darkness dead content を exclusion、play.useStairs=P10 方向別ラベルの
+  React 側完成、useReturnMarker=at_rest room 修正）、e2e stairs ラベル改名の5 spec 修正、playwright retries:CI?2、tempo 系 e2e は
+  **freeze-tempo test seam**（localStorage フラグで tempo interval 早期 return）で決定化。**CI 完全 green 確認済**。

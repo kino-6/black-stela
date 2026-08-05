@@ -28,127 +28,25 @@ IMP-060/061/062/063/064 completion records in `Improve.md`.
 
 ## Active queue (process top-down)
 
-### U — 2026-08-04 実機playtest 追加要望（user 指摘、順に対応中）
+### U — 2026-08-04〜 実機playtest 追加要望（user 指摘）
 
-- [-] **U1 戦闘オートの二系統化（攻撃オート[A]／守備・回復オート[G]）** — 進行中（`feat/combat-auto-modes`）。現状「全員でかかる(F)」も
-  「オート」も攻撃のみ。全員でかかる(F,1ラウンド)は据置、**攻撃オート[A]＝自動ループ/攻撃重視（現オート置換）**、**守備オート[G]＝
-  自動ループ/ward→状態治療→回復→防御→攻撃**を新規追加、各ホットキー。parity 非対象（オート選択は presentation）。Plan:
-  `~/.claude/plans/gleaming-enchanting-sutton.md`。Gate: 新 `tempo.test`/`combat-defense-auto.spec`＋verify_combat_controller＋実機 A/G。
-- [ ] **U2 顔画像／全身画像の使い分けシステム（＋Fallback）** — *見た目の課題。user 記録依頼 2026-08-04。* 現状ワールドの
-  キャラ画像は**1枚を顔にも使い回し**ているが、**Verdant のように「顔（face）」と「全身/戦闘立ち絵（full-body / battle art）」を
-  別画像で使い分けたい**。プレイヤー取り込み側には既に `importPortrait`（顔）/`importBattleArt`（全身）の2枠がある（App.tsx）が、
-  **ワールド提供アート**は今 portraitKey（顔）1系統のみ（`content/worlds/<id>/assets/portraits/<key>.png`）。
-  → **ワールドが portraitKey ごとに顔と全身を別ファイルで供給できる仕組み**を作る（例 `assets/portraits/<key>.png`＝顔、
-  `assets/figures/<key>.png` or `assets/portraits/<key>-full.png`＝全身）。**Fallback 必須**：全身が無ければ顔へ、顔も無ければ
-  default パック（既存の `byPack[pack] ?? byPack[default]` 経路）。React（`src/ui/artAssets.ts` の glob＋`portraitUrl`／
-  `CharacterVisualPreview`）と Godot（`world_resources.gd` world_asset＋stage:assets の allowlist に figures 追加、guild/combat の
-  立ち絵表示）両対応。Gate: 両エンジンで face/full-body が別解決・欠落時 fallback、を verify＋実機。参考: Verdant の使い分け実装、
-  earlier の portrait 配線調査（12 固定 portraitKey）。
-- [ ] **U6 階段が一人称視点で描画されないバグ（世界非依存の弱点）** — *user 記録依頼 2026-08-04（後でよい）。* terminal-line でも
-  **階段セルに立っても 3D（一人称）ビューに階段が描かれない**（`階段を使う`/`決定=階段` コマンド自体は機能する＝ロジックは正常、
-  **レンダラ側の描画が弱い**）。既知の未解決項目：2026-07-27 Verdant playtest で同症状を記録済み（memory `black-stela-open-work`）。
-  world をまたいで再現＝**stairs 描画ロジックの一般的弱点**。dungeon_renderer / stairs billboard の描画条件（stairs edge 検出→
+**✅ DONE + merged to main（2026-08-05、詳細は `docs/archive/Tasks.completed-2026-08.md`）:** U1 戦闘オート二系統化 ·
+U2 顔/全身ポートレート使い分け · U3 CLASS_CAPABILITIES 外部化＋terminal-line 全8職テーマ化 · U4 Save 再設計（シナリオ別
+autosave＋手動3スロット＋Load browser） · ポートレート選択プール（world.portraits、chara 素材20枚） · CI（GitHub Actions）
+赤の完全復旧。
+
+- [ ] **U5 = T30 — 1シナリオに N 個の迷宮を持てるようにする** — 現在 world は迷宮1本（下記 P 節 T30 に詳細）。scenario/world
+  モデルの単一迷宮チェーン前提を洗い出し、N 迷宮を定義・遷移できるように。Gate: N 迷宮 world が load＋踏破可能、parity＋world tests 緑。
+- [ ] **U6 階段が一人称視点で描画されないバグ（世界非依存の弱点）** — *user 記録依頼 2026-08-04。* **階段セルに立っても 3D
+  （一人称）ビューに階段が描かれない**（`階段を使う`/`決定=階段` コマンド自体は機能＝ロジックは正常、**レンダラ側が弱い**）。
+  Verdant / terminal-line で再現＝world をまたぐ一般的弱点。`dungeon_renderer.gd` / stairs billboard の描画条件（stairs edge 検出→
   3D メッシュ/ビルボード配置）を見直し、全 world で階段セルに立つと降り口/上り口が視認できるように。Gate: 両 world で階段セルの
-  一人称ビューに階段が出る e2e/実機。参考: `docs/handoffs` の stairs 関連、`floor_map.gd`/`dungeon_renderer.gd` の stairs 判定。
-- **（後続キュー）** U3 = **CLASS_CAPABILITIES 外部化＋terminal-line クラスのテーマ化**（world がクラス習得技を差し替え可能に。
-  firearm はクラス習得禁止の invariant。技外部化と同 seam）。U4 = **Save 再設計**（現：固定スロット→**シナリオごとに Autosave＋任意
-  Save**）。U5 = **T30 1シナリオ N 迷宮**（下記 T30）。
-- [-] **CI（GitHub Actions `.github/workflows/ci.yml`）が push ごとに赤** — *user 指摘 2026-08-05。* 2ジョブとも失敗、いずれも既存赤：
-  ① **verify → Unit tests**：`tests/debugAutoExplore.test.ts` の2テスト（"blitzes down through floors" / "never warps backward"）が
-  **CI の遅いランナーで 5000ms タイムアウト**（ローカルは緑＝環境依存のタイミングフレーク、memory 記載の既知 ~5s flake）。→ 当該テストに
-  `{ timeout: 20000 }` 等を付与（テスト自体は正しい、CI が遅いだけ）。② **godot-gates → gate:migration/gate:ux-parity**：既知の4ギャップ
-  `town-party`・`town-party-items`（`aptitude.balanced`「均等」=P6由来、PartyMenuPanel）／`dungeon-dock`・`dungeon-map`
-  （stairs/地図キー＋"no room in this world matches the requested state"=ux-parity manifest が T29 再生成後の room 状態と不整合、U6隣接）。
-  → 各 required-but-missing キーを特定し、React 側surface に不足キーを供給 or manifest を現行 room 状態に更新。**Gate:** `gh run` が緑
-  （verify + godot-gates 両方）。まず timeout を確実に直し、ux-parity は各失敗を個別調査（i18n/manifest の小修正か、真のギャップで別途かを切り分け）。
+  一人称ビューに階段が出る e2e/実機。参考: `floor_map.gd`/`dungeon_renderer.gd` の stairs 判定。
 
 ### P — 2026-08-03 夜 実機playtest バッチ（最優先・player-facing）
 
-- [x] **P1 戦闘ログの対象名欠落**（「に7ダメージ！」で敵名が空）— `_enemy_ja` が撃破/ドロップ済みグループで空を返す。
-  スナップショット時(生存中)に `name_ja` を保存し beat/撃破ログで live→snapshot フォールバック。**「〜を撃破」の
-  英語名**も同時解消。Gate: `gate:godot-runtime`（combat_controller）+ 実機。
-- [x] **P2 町Escは迷宮メニュー（隊列メニュー）を開く**（設定でない）＋**設定パネル中央寄せバグ**（`PRESET_CENTER`
-  を size 確定前適用→右下に伸びる→`CenterContainer`）。Gate: `gate:godot-runtime`（town_controller）+ 実機。
-- [x] **P3 affixキーリーク**（`affix.affix.verdant.thorn-fanged 茨の鞭` 生表示・二重prefix）— `I18n.t("affix."+id)`
-  が authored affix(id既に`affix.`)を二重化。`Fmt.localized_affix_label(world,id)` を新設し town_format/dungeon/
-  chest_panel の3箇所を差し替え（world.affixes の ja ラベル優先、built-inはbare id）。「ランダムエンチャント
-  見えない」の一因。Gate: chest_loot_label + 実機。
-- [x] **P4 全体図「立ち去る」→「地図を閉じる」**（`play.chestLeave`誤用→`play.closeMap`、値も「地図を閉じる」）。
-- [x] **P5 ランタイムSCRIPT ERROR自動検出Gate**（ユーザー要望「毎回指摘、Gateで検出して」）— `get_viewport()`
-  null（`_input`でシーン遷移後の`set_input_as_handled`）＋ tree外`grab_focus`。consume-before-dispatch へ並替、
-  `_grab_focus_safe`ガード、`_ensure_focus_in`のviewport null塞ぎ。**新Gate `gate:godot-runtime`**（scripts/
-  godot-runtime-gate.mjs：controller/loop scenes をheadless起動しSCRIPT ERROR系シグネチャで fail）。緑確認済。
-- [~] **P6 装備メニュー：装備不可の候補を出さない＋「均等」表示の是正**
-  - **[x] 「均等」廃止（済・commit）:** `_gear_effect_summary`（godot town_format）＋ `gearEffectSummary`（React
-    format.ts）で hp/mp/再生/耐性(ward) も要約。ward護符は「HP +4 / 耐性」と出て「均等」は消滅。真に無効果のみ
-    「変化なし」。i18n に effectHp/Mp/Regen/Ward 追加（ja+en）。Gate: verify_chest_loot_label に「gearは均等を出さず
-    実効果を出す」アサート追加、緑。
-  - **[x] 候補ソート（済・commit, Godot）:** party_panel.gd で装備可能を先頭・不可を後方（disabled=淡色＋理由）に
-    sort_custom。verify_dungeon_controller「ineligible stays visible with a reason」緑維持。
-  - **[判断] React候補パリティ = 意図的差異として据え置き（2026-08-04）:** React `PartyMenuPanel.carriedEquipment`
-    は元々 **usable のみに filter**（ineligible 非表示）＝Godot（理由付きで下に淡色表示）との構造差は*私の作業前から*
-    の既存もの。React では全候補が装備可能なので「equippable-first」は自明。ユーザーの P6 決定（不可品を下に淡色）は
-    **reviewed の Godot ビルドで充足済み**。React（oracle・非review）を Godot の slot ベース理由付き表示に合わせるのは
-    構造 refactor で低価値・破壊リスクありのため据え置き。必要なら別途。
-  - **（参考）根因メモ:** `town_format.gd:format_equipment_effect`（=React `describeEquipmentEffect`/
-    `format.ts formatBonusParts`）は **攻/防/命/速の4statしか出さず**、hp/mp/resistBonus/elementResist/regen を持つ
-    装身具は parts 空→`format_bonus_parts` が `I18n.t("aptitude.balanced")`＝「均等」にフォールバック。つまり
-    *aptitude用語の誤用*であると同時に *効果表示が不完全*。修正＝**gearの全効果（hp/mp/resist/element/regen）を
-    要約表示**し、真に無効果のときだけ中立表記（「均等」は使わない）。godot+React両方（パリティ）。Gate:
-    town_format のユニット or verify_dungeon_controller に「resist装身具の効果が"均等"でなく実効果を出す」アサート。
-  - **候補の並べ替え（user確定 2026-08-04）:** **装備可能を上・装備不可を下に淡色（＋理由）**。フィルタで消さず、
-    現行「ineligible stays visible with a reason」テストと両立させつつ、装備可能→装備不可の順にソートし不可品を
-    グレーアウト＋理由（例「装身具のみ」）を各行に。godot party_panel.gd（候補リスト構築）+ React PartyMenuPanel/
-    ShopPanel。Gate: verify_dungeon_controller に「候補は装備可能が先頭・不可は淡色で理由付き」アサート追加。
-- [x] **P7 戦闘アニメ中に味方HPバーが減らない（済・commit 9abf878）** — 敵ターンが beat 無しで party に damage
-  → 味方バーが全beat後に一括更新だった。`combat_round.gd` が **敵→味方 beat**（`{attackerGroupId, targetMemberId,
-  damage}`）を発行（ability damage + basic swing）、`combat.gd` playback が `_drain_member_bar`/`_member_by_id` で
-  被弾メンバーのバーを per-beat tween。player-beat（敵バー drain）→ enemy-beat（味方バー drain）の順でアニメ中に両側
-  が落ちる。beat後の一括アニメは fallback のみ（played_party_beat で二重防止）。parity は beats drop で不変。
-  Gate: verify_combat_controller/numbers/parity/gate:godot-runtime 全緑。
-- [~] **P8/P9 憧れ装備ラインナップ＋探索ユーティリティ＝「面白さGate」**（user 2026-08-04）
-  - **[x] 面白さGate（済・commit fffd83d/2d96784）** `tests/funGate.test.ts`：世界ごとに ①憧れ武器＋防具（shop購入可・
-    price ≥ 250・最高価格武器=最強）②探索ユーティリティ(kind∈{utility,escape}≥3＋帰還手段)。**両世界LIVE緑**。
-  - **[x] B: sim整備＋両世界再校正（済・commit 6fa2785）** user「Bで順当に」。3 coupled 課題を解決:
-    1. **armorBonus バグ修正**：verdant防具が `armorBonus`(schema未定義でZod strip)→防御0だった。armorBonus→defenseBonus
-       (bark-buckler/moss-hood/bark-plate)。React/Godot 両方 `defenseBonus` を読む。
-    2. **floor-aware loadout**：`descentSim` の generalLoadout/bestWeaponFor/bestResistFor を tier=降下進捗 proxy で
-       各フロア到達tierのみに（uptoFloor 任意・既定∞、降下ループが floorIndex 渡す、simParity不変）。終盤装備を序盤に
-       着る artifact 解消。
-    3. **再校正（方針A=実測INTENT基準）**：preparedMinLevel ≤4→≤5（levelsSaved 9 健在）／「floor 1 gates」を生存ベース
-       施設差（provisioned shopped=生還・naive=沈む）／verdant scarcity を clearLevel-1（縁で押す一撃）で測定＝kit が
-       g10f で枯渇。全balance gate緑・full suite緑・simParity不変。
-  - **[x] Verdant 憧れ帯投入（済・commit 2d96784）**：iron-edge(150,中)/reaver-axe(320,t3)/ironbark-cuirass(300,t3
-    defenseBonus) を g7f/g3f unlock で shop に。availability-aware sim が tier-3 を終盤のみ装備するので **balance 緑維持**
-    （＝sim整備の狙い通り）。funGate verdant aspirational を todo→LIVE。
-  - **[x] P8 ドロップ増量（済・commit e20ed32）**：①`rollRarity` でエンチャント率↑（rare+ が浅層 ~1/5・深層 ~1/3、
-    commons 優位維持）②verdant に hands 装備(蔓巻きの手甲)追加で全スロット droppable ③default b1f/b2f の純消耗品
-    side chest に tier適正 gear を seed（早期 loot の gear 化）。**新 gate `tests/lootGenerosity.test.ts`**（両世界：
-    rare+ ≥15% かつ <50%／全装備スロット droppable）。loot/treasure/affix 全緑。参考：`availability:"limited"`
-    (scenario.ts:240) は消費側未実装＝「1個限定」は要機能追加（別件）。深部 side table（b3-b8 の 0% gear）の更なる
-    volume 底上げは追ってでも可。
-- **⚠ Codex WIP の赤（私の作業外）:** `terminalLinePrepack.test.ts`（commit `d432b1a` で Codex が追加）が 2件赤
-  （terminal-line の icon 256²RGBA 不足／firearm role 数）。私の変更を stash しても再現＝Codex の arsenal 構築中 WIP。
-  Codex lane。
-- **[x] terminal-line 未完world赤の解消（済・commit 4c59ef7）:** `itemAlternatives`/`techniqueLines` が Codex製
-  terminal-line で赤だった件（fire未宣言→firebolt uncastable／unlock道具・cure/focus/ward/throwable/scroll 欠落）を
-  content 完成で解消（fire[焼夷]宣言＋7品追加）。full unit 緑。⚠ `debugAutoExplore「warps backward」`は ~5s の既存
-  timing flake（単独緑）で truth gate 実行時のみ稀に出る。
-- [~] **P10 階段が見つからない（発見性）** — *論理は正常*（TS/Godot両grid に g2f.001→g1f, g2f.exit→g3f の階段セル
-  存在、`verify_dungeon_controller` の stairs判定PASS）。階段セルに立てば `決定=階段` が出る。問題は**下り/上り
-  階段が同じ「階段」表示で区別できず降り口が分からない**こと。
-  - **[x] ラベル区別（済・commit）:** context ラベル＆ dock を、目的階の world.dungeons 順序で **「次の階へ降りる」
-    / 「前の階へ戻る」** に出し分け（`_stairs_target_floor_id` + `_stairs_is_descent`）。Gate: verify_dungeon_controller
-    に方向判定アサート（b2f→b3f=降下 / b2f→b1f=上昇）追加、緑。
-  - **[ ] 地図記号の下り/上り区別（残）:** full map / minimap で下り階段と帰還(上り)階段を別記号・別色にし、
-    100%踏破後でも降り口が一目で分かるようにする（floor_map.gd）。これが「探せない」核心の残り半分。
-
----
-
-  B1Fで**必ず全滅**させる調整は**不要**（現状で無購入10%相当・購入済み64%、施設差は十分）。旧タスクの
-  「施設なしでは1Fを突破できない」は実測と矛盾。受入条件を **「無購入フルパーティは薄氷でB1Fを生還できても、
-  継続探索・B2進出は成立しない。帰還して準備する必然がある」** に直し、その実機証跡を追加する。難易度の
-  再チューニングはしない（descentSim ゲートは現状維持）。
+- [x] **P1–P8 実機playtest バッチ — DONE + pushed**（戦闘ログ対象名 / 町Esc / affixキー / 全体図 / ランタイム
+  ERROR 検出Gate / 装備効果サマリ / 味方HPバー drain / ドロップ増量 等）。詳細は `docs/archive/Tasks.completed-2026-08.md`。
 
 - [-] **玄室 landmark visual tuning** (Codex art-lane) — 3rd pass done, Codex re-review PENDING
   - **Codex NG #2 (2026-08-03):** even with the muted pass, the closed door read as a dark CORRIDOR from the
@@ -178,94 +76,8 @@ IMP-060/061/062/063/064 completion records in `Improve.md`.
   - **Gate:** visual review on the real build — **Codex art-lane sign-off** (primary implementer does not
     self-approve player-facing visual completion). Render gates green (dungeon-controller, verdant-chambers).
 
-- [-] **T29 — Default B2F–B8F を Verdant 同等の迷宮品質＋玄室に作り直す** — Verdant は全 g1–g8 が生成で
-  フル迷宮ルール＋玄室を満たすが、Default は **B1F のみ**作り直し済みで **B2F–B7F は旧・手書きフロア**
-  （`dungeonDesign.test` の `MAZE_EXEMPT` で免除中＝品質未達・玄室0、B8F はボス扱い）。**玄室（確定戦闘＋宝の
-  小部屋）も追加**（user 決定 2026-08-03）。
-  - **✅ 実装 DONE（2026-08-04, focused session, gates 緑・未コミット）:** `genDefaultFloors.mjs` を b2–b10 生成に拡張
-    （既存の default 遭遇/宝テーブルを再利用＝新規オーサリング無し）。b2–b8 を door-choke 玄室つき迷宮に**クリーン再生成**、
-    ミニボスは keep ボスとして保持（b3 cistern-warden / b5 cinder-keeper / b6 oath-warden）。block-cap＝b3/b6/b9、rest point は
-    b3/b6 の descent room。玄室は room-level snare（thief 対策＝coverageSim/roomHazards が測る room.trap を再供給）、niche1 は
-    trapped chest（chest 罠 parity を保持）、landing は arrival narration `event`（character-presence 復活）。
-    **バランス（B 後 corrected sim で再測定）:** 玄室追加で降下が密になり prepared clearLevel が 5→6（naive=14, levelsSaved 8）。
-    act 曲線は **per-floor recommendedPartyLevel** で修正（Act III＝floor level、真層 b8–b10＝floor+1 で under-leveled diver に pack を
-    膨らませ、**b9 真層cap を最深 32% の climax に**）。global scalar では直せない（全降下に効く）ため per-floor データが正解。
-    `descentSim.test` の `preparedMinLevel<=5→<=6` のみ緩和（密な降下の実測に合わせた**順当な**1点更新、gate 骨抜きにせず）。
-    **緑:** full unit 865／e2e（bespoke gimmick テストは削除、rest-point/checkpoint/trace/e2e は再生成 room へ張り替え）／
-    `dungeonDesign`(免除リスト空・b2–b9 に玄室 gate 追加)／`chamberGuardian`／`difficultyGate`／`verify_parity` 0-fail／
-    `gate:godot-runtime` 8/8／実機 FPV キャプチャ。b9/b10 は rec-level と玄室 trap 様式のみ変更（構造は T31 の commit と一致）。
-    **注:** combat_round.gd:816 の Codex WIP typo（bare `_find_by_id`→`CharacterStats._find_by_id`）を Godot gate 解錠のため1行修正
-    （T29外・Codex lane）。**未コミット**（user 依頼待ち）。並行 Codex の firearm WIP が同一ツリーに同居＝T29コミットには含めない。
-  - **▶ 2026-08-04 追記（B 後・focused session でやる。user「別セッションで腰を据えて」）:**
-    - **10F は既に確定・実装済み**（T31 完了、commits 65d5a5f/18a0dc5）：両世界 10 階（B9/G9=シナリオクリア boss、
-      B10/G10=真層・完全クリア真ボス）。なので下記「8 vs 10」論点は**決着済み＝10F**。B9/B10 のフロアデータ・ボスも commit 済。
-      T29 は **B2F–B8F の迷宮品質＋玄室** に集中すればよい（B1F は済、B9/B10 は生成器で追加済）。
-    - **balance の前提が B で変わった**：`descentSim` は **availability-aware**（tier=降下進捗 proxy、終盤装備を序盤に着ない）
-      になり、armorBonus バグも解消済み。**玄室追加（確定戦闘＝XP/attrition 増）の影響は corrected sim で再測定すること。**
-      過去2回 revert の「incremental 不可／balance cliff／act2<act1」知見は **B 前の sim** に基づくので、B 後は数値が違う。
-      方針は不変：**稼ぎ許容・naive=全滅／prepared=クリア／act escalation を保ったまま、gate は過度に緩めず順当に**。
-    - **未コミットの generator 作業**：`scripts/genDefaultFloors.mjs` に早期セッションの chamberCount refactor（chamberCount/
-      packTable/sideTreasure/keepTreasure/upTo 等の spec フィールド＋玄室数可変）が**未コミットで残存**。使えるなら再利用、
-      崩れていれば `git checkout` して genVerdantFloors から作り直す。
-  - **手法（調査確定 2026-08-03）:** `genFloorMaze.mjs` は open chamber しか作れず両世界の `chamberGuardian.test`
-    （door-choke）を満たさない。**`genVerdantFloors.mjs` を fork した `genDefaultFloors.mjs`**（唯一 door-choke
-    玄室を出力）で各階の完全 .md を生成する。既存の default 遭遇/宝テーブルを再利用（新規オーサリング不要）。
-  - **要確定（user 判断・離席中のため保留）:**
-    1. **階数 8 vs 10** — user 記憶では「10F（9F=シナリオクリア／10F=完全クリア）」だが、**現行の正式設計は
-       8階**（dungeon-areas.md／descentSim／全ゲート）。10階化は幕構成・トラフ目標・9F/10F の内容とボス・全
-       ゲートの再バランスを伴う設計変更。**先に 8/10 を確定**（B8=フィナーレか、B10=フィナーレかで B7/B8 設計が変わる）。
-    2. **既存の作り込みの扱い** — Default の B3/B5/B6 ミニボス、B2/B4/B7 の lock 降下・クランク・鍵付き金庫・
-       spinner・dark_zone・squad 等の**bespoke ギミックは Verdant 生成器には無い**。純生成すると失われる。
-       **(a) 均一な Verdant 風で置換** か **(b) 生成迷宮＋玄室に既存ギミックを再配線** かを確定。
-  - **判断確定（user 2026-08-03）:** **(c) クリーン再生成（Verdant風で統一）** — bespoke ギミックは捨て、
-    ミニボスは keep ボスとして保持。B8 も再生成対象（B7–B10 が Act III/真層）。
-  - **試行と発見（2026-08-03、コミットせず revert）:** `genDefaultFloors.mjs` を table 再利用に拡張し b2–b10 を
-    生成→ **2つの障壁**を確認。① **バランスが崩れる**：再生成フロアの玄室（確定戦闘）で curve が段差化
-    （b4f が 6%＝target 60-42% を大きく割る崖、深部 b8/b9≈2%・b10 mid WIPE）＝閾値でなく per-floor 玄室/pack の
-    実バランス再チューニングが必要。② **25テストが赤**：純 bespoke 13（rulesEngine "runtime gates and shortcuts"＝
-    lock/teleport/spinner/dark_zone/secret/damage-tile/gather/key-vault、削除でOK）＋ **実機能**（block-cap 構造・
-    rest point・checkpoint 復帰・trap disarm・debug traces・summary）の更新が必要。→ **腰を据えた1パス**（生成器
-    再構築＋玄室/pack バランス再調整＋feel レビュー＋テスト整理）で実施すべきと判断し、崩れた状態をコミットせず退避。
-  - **フロア単位の試行（b2 のみ、2026-08-03、これも revert）:** 生成器を floor 単位＋玄室数可変に拡張し b2f を
-    再生成（77%、Act I 帯内・up/down stair 修正・chamberGuardian/maze ルール緑）。だが **`descentSim` の act 曲線
-    テストが赤**：曲線は**グローバルな clearLevel 相対**で測るため、b2 に玄室（確定戦闘）を足すだけで clearLevel が
-    整数ジャンプ→中盤(act2)が clearLevel 相対で軽くなり `act2<act1` が崩れる（玄室2個でも同じ）。加えて underpower
-    係数（フロアの推奨Lv依存）と summary count も要更新。→ **結論：T29 は incremental 不可**。default の難易度は
-    グローバル指標なので、**全フロアの玄室/pack を一括で調整＋難易度ゲート（act 曲線・underpower）を玄室前提に
-    再キャリブレーション**する holistic 1パスが必要。かつ**設計上の緊張**：default は Verdant 並みの玄室密度を
-    curve を壊さずには入れられない（玄室=確定戦闘で XP/attrition が増える）。玄室数・ゲート厳格度は**難易度設計判断**。
-  - **Gate:** `dungeonDesign.test`（各階を免除リストから外し、密度・ループ・正直スイープ300–360・on-path分岐・
-    近道・玄室）＋ `chamberGuardian.test`（door-choke）＋ `difficultyGate`/balance sim ＋ `verify_parity`/
-    `verify_flow` 緑＋各階の実機キャプチャ。
-  - **注:** 下記 T31 で両世界が10階化されるため、対象は **B2–B10**（B9/B10 は新規、作り込み保持は B2–B8）。
-
-- [x] **T31 — 両世界を10階に拡張（真層＋真ボス）** — **DONE（2026-08-04, T29 と同コミット）:** 最後の blocker だった
-  「並行 T29 の B2F 再生成で `descentSim` 幕別圧力テストが赤」は T29 完遂で解消（per-floor recommendedPartyLevel で act 曲線を
-  修正、b9 真層cap が最深 climax、全 balance/parity/godot-runtime gate 緑）。debug progress を floor_9/10 に拡張して真層を実機
-  到達可能に。真層アート（B10/G10 真ボス）は commit 済（65d5a5f/18a0dc5）。→ Archive へ移してよい。 — （旧: 真層アート／実機キャプチャまで完了、**全体Gate再緑待ち
-  （2026-08-03）**。**Verdant**(`18a0dc5`)：
-  g9=rootheart(シナリオ)/g10=worldheart(真ボス、新規)。**Default**(`65d5a5f`)：b9=ash-votary(シナリオ、block-cap
-  でb10を封鎖)/b10=dark-stela(真ボス、新規、`genDefaultFloors.mjs`)。両世界ともdescentSim自動10階化、全ゲート10F化、
-  prepared非全滅・act曲線維持。並行T29のB2F再生成で `descentSim` の幕別圧力テストが赤のため、T31を完了／push扱いには
-  しない（T31自身のアート・fixture・asset gateは緑）。
-  - **T31アートとフィール確認（Codex, 2026-08-03）:** B10「黒碑の主」とG10「世界樹の芯」を clean-alpha の base/hurt
-    スプライトへ置換。両世界に真層専用 `stone-wall/floor-block4.jpg` を追加し、React/Godotとも**10Fだけ**block4を選ぶ。
-    B10は低輝度の専用パレットで黒曜石の継ぎ目と歩行面を可読に維持。実ランナーで B10/G10 の迷宮と真ボス戦のキャプチャを
-    再撮影し、深層パーティに対する接地・シルエット・画面内の読みやすさを確認。`dungeonView`、asset gate、floor_10
-    fixture、export、Godot boot はアート反映時に緑。現在は並行T29のB2F再生成で全体再検証を保留している。
-  - user 決定 2026-08-03。現行8階を **10階**へ**地続きで延伸**。
-  構成：3階ごとの雰囲気帯 B1–3 / B4–6 / B7–9（3幕）＋ **B10=真層（完全クリア）**。**B9=シナリオボス**（現
-  フィナーレ ash-votary / rootheart を移設、既存アート流用）、**B10=真ボス**（新規）。B7/B8→Act III 深部トラッシュ、
-  ボスは B9 へ。Verdant も同様（G1–G10、G9=rootheart、G10=新真ボス）。
-  - **やること:** (1) Verdant は `genVerdantFloors` の FLOORS を10化して g9/g10 生成（生成世界なので容易）。
-    (2) Default は b9/b10 追加（T29 の生成器と併せて）。(3) B10/G10 の**真ボス敵データ**を `enemies.md` に作成
-    ＋遭遇/宝テーブル、(4) 幕再マップ（dungeon-areas.md 済）、(5) `descentSim`/`dungeonDesign`/`difficultyGate`/
-    trough 目標を **10階へ延伸**（地続き）、(6) B10 は B9 撃破後に開く導線。
-  - **アセット（Codex 発注済 `docs/handoffs/2026-08-03-10f-assets-request.md`）:** B10/G10 真ボスのスプライト
-    （base+hurt）が critical path（無いと透明）。真層テクスチャは当面 block3 流用で可（後追い）。
-  - **Gate:** `descentSim.test`/`difficultyGate`（10階の act 曲線・地続きトラフ・prepared 非全滅）＋
-    `dungeonDesign`/`chamberGuardian`（新階も）＋ `verify_parity`/`verify_flow` ＋ 世界レジストリが g9/g10・b9/b10
-    をロード＋ B9→B10 導線の e2e ＋各新階の実機キャプチャ。
+- [x] **T29 Default B2F–B8F 迷宮＋玄室 再生成 / T31 両世界10階拡張（真層＋真ボス）— DONE + merged** (`6a23dba`)。
+  詳細は `docs/archive/Tasks.completed-2026-08.md`。
 
 - [ ] **T30 — 1シナリオに N 個の迷宮を持てるようにする（T29 後）** — 現在 world は迷宮1本（8階の降下）だが、
   1シナリオが複数の独立した迷宮を持てるようにする。world データモデル・ダンジョンレジストリ・町からの入口
@@ -274,27 +86,7 @@ IMP-060/061/062/063/064 completion records in `Improve.md`.
   - **Gate:** 複数迷宮 world がロード・選択・攻略・帰還・セーブ往復できる unit＋e2e、既存2世界の回帰緑、
     `verify_parity`/`verify_flow` 緑。
 
-- [x] **T32 — 「職ごとに6枠の戦闘セット」制約を撤廃（user 決定 2026-08-04）DONE（未コミット）** — 職の戦闘
-  コマンド（特技/呪文）を6枠に制限するハードリミット `LOADOUT_LIMIT = 6` を **完全撤去**。戦闘セット（loadout）は
-  「習得技のうち6件までの部分集合」ではなく、**既定で全習得技が戦闘で使える**。curate/並べ替えの余地は保持（プレイヤーが
-  自分でメニューを短くできる＝「一覧地獄」対策の手段は残す）。**現行コンテンツは全職 ≤6 技なので `slice(0,6)` は元々全件を
-  返しており、この変更は既存データ・parity トレースに対して no-op**、>6 技を持つ将来の職/銃技だけを解禁する。
-  - **撤去箇所:** TS = `vocations.ts`（定数削除＋resolveVocationState/adoptVocationState/setLoadout の cap 4箇所）・
-    `export-engine-data.ts`（`loadoutLimit` export 削除）・`CareerPanel.tsx`（`full`判定＋`loadoutFull`コピー削除）・
-    `techniques.ts`（コメント）・i18n（`career.loadout` から `/{max}` 削除、`loadoutFull` キー削除）・
-    `classCapabilities.test.ts`（`.toBe(6)` → §5「six to ten」レンジ `[6,10]`）。
-    Godot = `rules/vocations.gd`（`_loadout_limit` 削除＋cap 3箇所）・`rules/combat_round.gd`（`_resolve_vocation_state`
-    の `learned.slice(0,limit)`→`duplicate()`）・`town/career_panel.gd`（`loadout_limit` 引数＋`full`判定削除）。
-    engine/i18n data を `export:engine`/`export:i18n` で再生成（`loadoutLimit`/`loadoutFull` 消滅を確認）。
-  - **Gate（全緑）:** 新規 unit `vocations.test.ts`「carries MORE than six techniques into combat — no loadout cap
-    (T32)」＋「folds newly-learned techniques into the loadout past six」で combatLoadout/setLoadout/resolveVocationState が
-    8技を切らないことを実証。full unit 867緑・tsc緑。Godot verify_parity 0-fail（no-op 確認）・verify_combat_controller・
-    verify_town_controller 緑・gate:godot-runtime 8/8緑。e2e career.spec/combat.spec 緑。
-  - **注:** 現在 >6 技の職は未出荷（銃技/terminal-line 帯で登場予定）。撤去は「潜在能力の解禁」＝実機の見た目は既存職では
-    不変（career の「戦闘セット（X）」表示が `/6` を落とすのみ）。>6 職が来たら combat command menu のスクロール/
-    カテゴリ整理（「一覧地獄」対策）を UX として詰める。
-
----
+- [x] **T32 職ごと6枠戦闘セット制約の撤廃 — DONE + merged** (`b89e6e5`)。詳細は archive。
 
 ## 将来世界プログラム — 封鎖線（仮称、現行キュー外）
 
