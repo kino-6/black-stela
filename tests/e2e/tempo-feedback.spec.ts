@@ -8,13 +8,13 @@ import { test, expect } from "@playwright/test";
 test("auto-explore shows a live tempo indicator with speed and stop", async ({ page }) => {
   await page.goto("/?debug=1&progress=floor_2");
 
-  // Wait for the dock to be interactive before clicking — on slow CI the click could otherwise
-  // land before the dungeon scene has mounted, and auto never starts.
-  const dock = page.getByTestId("dungeon-command-window");
-  await expect(dock).toBeVisible();
-
-  // Start auto-explore from the dungeon dock (the Repeat/tempo button).
-  await dock.getByRole("button", { name: "Auto", exact: true }).click();
+  // The dungeon scene must be mounted before we drive it — on CI's software renderer a click on the
+  // tempo button raced the scene mount and auto never started. Wait for the canvas, then start the
+  // runner with its KEYBOARD toggle (Space): IMP-026 binds R/Space on the window regardless of focus,
+  // so it does not depend on button hit-testing the way a click does. (The button path is the same
+  // toggleTempoMode; the Stop click below still exercises a button.)
+  await expect(page.getByTestId("dungeon-canvas").first()).toBeVisible();
+  await page.keyboard.press("Space");
 
   // The live indicator appears with the active mode and a step readout. Auto-explore steps on its own,
   // so on a slow CI renderer the first frames can pass before the assert — give it generous room.
