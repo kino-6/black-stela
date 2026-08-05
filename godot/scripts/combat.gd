@@ -248,7 +248,7 @@ func _rebuild_command_menu() -> void:
 	var actors := _actors()
 	if actors.is_empty() or _actor_index >= actors.size():
 		_cmd_box.add_child(UIKit.label(I18n.t("play.combatCommands"), 20, GOLD))
-		var go := _command_button(I18n.t("tempo.allOut"))
+		var go := _command_button(I18n.t("tempo.allOut"), "F")
 		go.pressed.connect(_on_attack_pressed)
 		_cmd_box.add_child(go)
 		go.call_deferred("grab_focus")
@@ -285,7 +285,7 @@ func _rebuild_command_menu() -> void:
 	round_box.add_theme_constant_override("separation", 3)
 	# 全員でかかる stays reachable: the one-press round for when there is nothing to decide.
 	round_box.add_child(UIKit.label(I18n.t("play.combatCommands"), 13, DIM))
-	var allout := _command_button(I18n.t("tempo.allOut"))
+	var allout := _command_button(I18n.t("tempo.allOut"), "F")
 	allout.pressed.connect(_on_attack_pressed)
 	round_box.add_child(allout)
 	round_box.add_child(_caption(I18n.t("tempo.allOutHint")))
@@ -299,10 +299,10 @@ func _rebuild_command_menu() -> void:
 		round_box.add_child(_caption(I18n.t("tempo.repeatRoundHint")))
 	# 攻撃オート / 守備オート — two auto-battle loops. Attack presses the front line (stops at danger);
 	# guard wards/cures/heals first and pushes through. Pressing a running loop stops it.
-	var attack_auto := _command_button(I18n.t("tempo.stop") if (_auto and _auto_strategy == "attack") else I18n.t("tempo.autoAttack"))
+	var attack_auto := _command_button(I18n.t("tempo.stop") if (_auto and _auto_strategy == "attack") else I18n.t("tempo.autoAttack"), "R")
 	attack_auto.pressed.connect(_on_toggle_auto.bind("attack"))
 	round_box.add_child(attack_auto)
-	var defense_auto := _command_button(I18n.t("tempo.stop") if (_auto and _auto_strategy == "defense") else I18n.t("tempo.autoDefense"))
+	var defense_auto := _command_button(I18n.t("tempo.stop") if (_auto and _auto_strategy == "defense") else I18n.t("tempo.autoDefense"), "G")
 	defense_auto.pressed.connect(_on_toggle_auto.bind("defense"))
 	round_box.add_child(defense_auto)
 	var retreat := _command_button(I18n.t("play.retreat"))
@@ -1212,9 +1212,12 @@ func _centered(control: Control) -> Control:
 	c.add_child(control)
 	return c
 
-func _command_button(text: String) -> Button:
+func _command_button(text: String, key_hint: String = "") -> Button:
 	var b := Button.new()
-	b.text = text
+	# Round-level commands carry a keyboard shortcut (F/R/G) that the React dock shows as a chip on the
+	# button — mirror it here so the key is discoverable in play, not just in the manual (playtest 2026-08-05:
+	# "オート・全員でかかる のショートカットキーがメニューに表示されない、どれがどれか分からん").
+	b.text = "%s  [%s]" % [text, key_hint] if key_hint != "" else text
 	b.custom_minimum_size = Vector2(420, 40)
 	b.alignment = HORIZONTAL_ALIGNMENT_LEFT
 	b.add_theme_font_size_override("font_size", 19)

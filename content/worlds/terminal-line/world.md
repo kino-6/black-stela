@@ -90,8 +90,8 @@ startRoom: room.tl1f.entrance
 entrances:
   - id: main
     startRoom: room.tl1f.entrance
-    label: Descend the black stela
-    locales: { ja: { label: 黒碑へ潜る } }
+    label: Descend to Platform Zero
+    locales: { ja: { label: 零番線へ降りる } }
   - id: depot
     startRoom: room.tl-depot1.gate
     label: Enter the freight depot

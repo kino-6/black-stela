@@ -48,6 +48,7 @@ import {
   toPortableAdventurer,
   traitCatalog
 } from "./domain/characterCreation";
+import { localizedVocationName } from "./domain/vocations";
 import { readVault, depositToVault, removeFromVault, type VaultEntry } from "./domain/adventurerVault";
 import { getGridEdge, getLocalizedRoomText, getRoom, isBossFloor } from "./domain/scenario";
 import { createIdentitySuggestion } from "./domain/identitySuggestion";
@@ -455,6 +456,10 @@ export function App() {
   const selectedProfileStats = getEffectiveCharacterStats(selectedProfile, activeWorld);
   // IMP-028: the class step's stable detail pane reads from the class under the cursor.
   const selectedClass = classCatalog.find((classDef) => classDef.id === draft.classId) ?? classCatalog[0];
+  // The label a class wears in THIS world: a world may re-skin a basic class (terminal-line's 戦士 → 保安隊員),
+  // so creation/roster read the world's vocation name, not the bare class label. Falls back to the class label
+  // when the world does not re-skin it — base worlds are unchanged (playtest 2026-08-05).
+  const classLabel = (classId: CharacterClassId): string => localizedVocationName(activeWorld, classId, locale);
   const availableShopCategories = useMemo(
     () => SHOP_CATEGORY_ORDER.filter((category) => (townShop?.stock ?? []).some((stock) => shopCategoryFor(stock.itemId) === category)),
     [townShop?.stock]
@@ -468,8 +473,8 @@ export function App() {
     ? state.inventory.map((item) => `${localizedCatalogName(item.id, locale)} x${item.quantity}`).join(" / ")
     : t("town.noLoot");
   const suggestedRecruit = useMemo(
-    () => createSuggestedRecruitForParty(state.party, state.turn, locale),
-    [locale, state.party, state.turn]
+    () => createSuggestedRecruitForParty(state.party, state.turn, locale, activeWorld),
+    [locale, state.party, state.turn, activeWorld]
   );
   const suggestedRecruitClass = findClass(suggestedRecruit.classId);
   const suggestedRecruitBackground = findBackground(suggestedRecruit.backgroundId);
@@ -1692,7 +1697,7 @@ export function App() {
                   <div>
                     <h3>{member.name}</h3>
                     <p>
-                      {member.title} / {findClass(member.classId).label[locale]} / {findBackground(member.backgroundId).label[locale]}
+                      {member.title} / {classLabel(member.classId)} / {findBackground(member.backgroundId).label[locale]}
                     </p>
                     <small>{member.traitIds.map((traitId) => findTrait(traitId).label[locale]).join(" · ")}</small>
                     <small>
@@ -1739,7 +1744,7 @@ export function App() {
                     onChange={(event) => setDraft((current) => ({ ...current, classId: event.target.value as CharacterDraft["classId"] }))}
                   >
                     {classCatalog.map((classDef) => (
-                      <option key={classDef.id} value={classDef.id}>{classDef.label[locale]}</option>
+                      <option key={classDef.id} value={classDef.id}>{classLabel(classDef.id)}</option>
                     ))}
                   </select>
                 </label>
@@ -1810,14 +1815,14 @@ export function App() {
                   visualProfile: draft.visualProfile,
                   context: "profile",
                   backgroundId: draft.backgroundId,
-                  fallback: draft.name || findClass(draft.classId).label[locale],
+                  fallback: draft.name || classLabel(draft.classId),
                   alt: t("party.portraitPreview"),
                   testId: "portrait-preview"
                 })}
               </div>
               <div className="recruit-review" aria-label={t("party.review")}>
                 <strong>{draft.name || t("party.namePlaceholder")}</strong>
-                <span>{findClass(draft.classId).label[locale]} · {findBackground(draft.backgroundId).label[locale]} · {findTrait(draft.traitId).label[locale]}</span>
+                <span>{classLabel(draft.classId)} · {findBackground(draft.backgroundId).label[locale]} · {findTrait(draft.traitId).label[locale]}</span>
               </div>
               <button type="submit" disabled={state.party.length >= PARTY_SIZE_LIMIT}>{t("party.add")}</button>
             </form>
@@ -1931,14 +1936,14 @@ export function App() {
                               visualProfile: draft.visualProfile,
                               context: "token",
                               backgroundId: draft.backgroundId,
-                              fallback: draft.name || findClass(draft.classId).label[locale],
+                              fallback: draft.name || classLabel(draft.classId),
                               alt: t("party.portraitPreview"),
                               testId: "guild-preview-portrait"
                             })}
                           </div>
                           <div className="guild-preview-summary">
                             <strong>{draft.name || t("party.namePlaceholder")}</strong>
-                            <span>{findClass(draft.classId).label[locale]} · {formatCombatRow(draftPreview.row, t)}</span>
+                            <span>{classLabel(draft.classId)} · {formatCombatRow(draftPreview.row, t)}</span>
                             <span className="guild-preview-stats">
                               HP {draftPreview.maxHp} · {t("party.damage")} {draftPreview.damageMin}-{draftPreview.damageMax} · {t("party.speed")} {draftPreview.speed}
                             </span>
@@ -1986,7 +1991,7 @@ export function App() {
                                         setGuildCreationStep("face");
                                       }}
                                     >
-                                      <strong>{classDef.label[locale]}</strong>
+                                      <strong>{classLabel(classDef.id)}</strong>
                                       <span className="guild-class-option-row">{formatCombatRow(classDef.rowPreference, t)}</span>
                                     </button>
                                   </li>
@@ -1994,7 +1999,7 @@ export function App() {
                               })}
                             </ul>
                             <div className="guild-class-detail" data-testid="guild-class-detail" aria-live="polite">
-                              <h5>{selectedClass.label[locale]}</h5>
+                              <h5>{classLabel(selectedClass.id)}</h5>
                               <p className="guild-class-signature">{selectedClass.description[locale]}</p>
                               <dl className="guild-class-facts">
                                 <div>
@@ -2041,7 +2046,7 @@ export function App() {
                               portraitRef={draft.portraitRef}
                               visualProfile={draft.visualProfile}
                               backgroundId={draft.backgroundId}
-                              fallback={draft.name || findClass(draft.classId).label[locale]}
+                              fallback={draft.name || classLabel(draft.classId)}
                               accentColor={draft.accentColor}
                               t={t}
                               onShiftFocus={shiftDraftPortraitFocus}
@@ -2254,7 +2259,7 @@ export function App() {
                           </label>
                           <section className="recruit-review" aria-label={t("party.review")}>
                             <strong>{draft.name || t("party.namePlaceholder")}</strong>
-                            <span>{findClass(draft.classId).label[locale]} · {findBackground(draft.backgroundId).label[locale]} · {findTrait(draft.traitId).label[locale]}</span>
+                            <span>{classLabel(draft.classId)} · {findBackground(draft.backgroundId).label[locale]} · {findTrait(draft.traitId).label[locale]}</span>
                             <small>{formatAptitudes(draftPreview.aptitude, t)}</small>
                           </section>
                           <div className="flow-actions">
@@ -2551,7 +2556,7 @@ export function App() {
                                   <div>
                                     <strong>{entry.adventurer.identity.name}</strong>
                                     <span>
-                                      {findClass(entry.adventurer.build.classId).label[locale]} · Lv{entry.adventurer.progress.level}
+                                      {classLabel(entry.adventurer.build.classId)} · Lv{entry.adventurer.progress.level}
                                     </span>
                                     <small>{t("party.vaultOrigin", { world: entry.adventurer.origin.worldTitle })}</small>
                                   </div>
@@ -2624,7 +2629,7 @@ export function App() {
                                   .filter((classDef) => classDef.id !== selectedProfile.classId)
                                   .map((classDef) => (
                                     <option key={classDef.id} value={classDef.id}>
-                                      {classDef.label[locale]}
+                                      {classLabel(classDef.id)}
                                     </option>
                                   ))}
                               </select>

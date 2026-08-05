@@ -49,7 +49,7 @@ static func empty_bonus() -> Dictionary:
 ## Deal a COMPLETE random adventurer into the draft — class, face, 来歴/気質, a fully-SPENT bonus pool, and a
 ## name — the Godot mirror of React's createQuickRecruit, for a player who would rather be dealt a recruit
 ## than build one step by step. The pool is spent in full so the result is immediately registerable.
-static func randomize(draft: Dictionary, data: Dictionary, class_ids: Array, seed: int) -> void:
+static func randomize(draft: Dictionary, data: Dictionary, class_ids: Array, seed: int, extra_faces: Array = []) -> void:
 	# Pick each field DIRECTLY off the seed (not a +1 nudge from the default) so class/来歴/気質/顔 all vary —
 	# mirrors React's createQuickRecruit (roll, roll/3, roll/7, …).
 	if not class_ids.is_empty():
@@ -60,7 +60,10 @@ static func randomize(draft: Dictionary, data: Dictionary, class_ids: Array, see
 	var traits: Array = data.get("traits", [])
 	if not traits.is_empty():
 		draft["traitId"] = String(traits[int(abs(seed / 7)) % traits.size()].get("id", ""))
-	var faces := face_keys(data)
+	# When the world ships its own creation figures (terminal-line's platform crowd), deal one of THOSE so
+	# 見繕う hands back a portrait of this world — not a default-pack background face. A world with no pool
+	# keeps the shared background faces (base unchanged); mirrors React createSuggestedRecruitForParty.
+	var faces: Array = extra_faces if not extra_faces.is_empty() else face_keys(data)
 	if not faces.is_empty():
 		draft["portraitKey"] = String(faces[int(abs(seed / 11)) % faces.size()])
 	# Deal the NAME/title/notes off the SAME varying seed as everything else — otherwise identitySeed stays

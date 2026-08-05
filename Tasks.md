@@ -45,6 +45,26 @@ IMP-060/061/062/063/064 completion records in `Improve.md`.
   受入→仕分け→保税倉庫、`world.entrances` で町に2ポータル、既存 enemy/item 再利用の farm 遭遇＋売却装備、boss なしで再戦可＝稼ぎ周回）。
   town 2ポータル＋depot FPV 実機確認。**残（任意）:** 上下階段矢印グリフは配列順のまま（別グループ跨ぎは descent 既定＝無害）で据置。
 
+### V — 2026-08-05 実機playtest 追加要望（terminal-line 実機、user 指摘）
+
+terminal-line を実機（Godot build）で遊んで出た 4 件。React+Godot 両建てで対応（played-build は React が真だが
+実機は Godot なので両方直す）。**Gate:** `npm run build`＋`npm run test`（React、緑）＋`npm run gate:godot`（parity/parse）
+＋実機での目視。**状態（2026-08-05）:** 4件とも実装済み・build+test(889)+gate:godot 全緑。**commit は未（依頼時に実施）** →
+緑＋commit で `[x]`＋Archive。`export:godot` 済みなので `npm run play` で即再テスト可（godot/data は gitignore・自動再生成）。
+
+- [-] **V1 第一ダンジョンの入口名が「黒碑へ潜る」= 別世界だった** — `terminal-line/world.md` の main entrance を
+  `零番線へ降りる / Descend to Platform Zero` へ。godot/data は gitignore（`export:godot` で自動再生成）。
+- [-] **V2 作成/名簿の職業名が terminal-line 用に変わらない（戦士のまま）** — 世界が basic class を再スキンした
+  ときはその vocation 名を出す。React: `localizedVocationName(activeWorld,id,locale)` を guild 作成・名簿・転職・
+  `formatCharacterSummary`/`formatCharacterTitle`（`getActiveWorld()` 経由）に配線。Godot: `guild.gd _class_label`／
+  `town.gd _class_label` が `world.vocations` を優先。base world は class label へフォールバック＝不変。
+- [-] **V3 見繕い（quick-recruit）のポートレートが terminal-line 用でない** — 世界が `world.portraits` を持つときは
+  そこから配る。React: `createSuggestedRecruitForParty(...,world)` が pool から portraitRef を seed 選択。Godot:
+  `guild_draft.randomize(...,extra_faces)` に `_world.portraits` を渡し、pool 優先で portraitKey を選ぶ。
+- [-] **V4 戦闘のオート/全員でかかるのショートカットキーがメニューに出ない（どれがどれか不明）** — React dock は
+  既に F/R/G の kbd chip を出していたが Godot combat.gd は素のラベルだった。`_command_button(text, key_hint)` に
+  key chip を追加し 全員でかかる[F]／攻撃オート[R]／守備オート[G] を表示（`input_actions.gd` の実バインドと一致）。
+
 ### P — 2026-08-03 夜 実機playtest バッチ（最優先・player-facing）
 
 - [x] **P1–P8 実機playtest バッチ — DONE + pushed**（戦闘ログ対象名 / 町Esc / affixキー / 全体図 / ランタイム

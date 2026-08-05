@@ -168,6 +168,11 @@ func _world_title() -> String:
 func _class_label(class_id: String) -> String:
 	var legacy: Dictionary = engine().get("legacyClassMapping", {})
 	var id := String(legacy.get(class_id, class_id))
+	# A world may re-skin a basic class (terminal-line's 戦士 → 保安隊員); prefer its vocation name so the town
+	# party card reads the themed class, falling back to the base class label (React localizedVocationName parity).
+	for vocation in _world.get("vocations", []):
+		if String((vocation as Dictionary).get("id", "")) == id:
+			return Fmt.localized_vocation_name(_world, vocation)
 	for class_def in engine().get("classes", []):
 		if String((class_def as Dictionary).get("id", "")) == id:
 			var label: Variant = (class_def as Dictionary).get("label", {})

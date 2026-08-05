@@ -12,7 +12,8 @@ import type {
   CharacterBackgroundId,
   CharacterClassId,
   CharacterTraitId,
-  CharacterVisualProfile
+  CharacterVisualProfile,
+  ScenarioWorld
 } from "../domain/types";
 import type { Locale } from "../i18n";
 
@@ -85,7 +86,7 @@ export function getAllocatedBonusPoints(bonus: CharacterAptitudes) {
 }
 
 // Suggest the next recruit that best rounds out the current party's coverage.
-export function createSuggestedRecruitForParty(party: Character[], turn: number, locale: Locale) {
+export function createSuggestedRecruitForParty(party: Character[], turn: number, locale: Locale, world?: ScenarioWorld) {
   const classId = chooseSuggestedClassId(party);
   const background = backgroundCatalog[(party.length + turn) % backgroundCatalog.length];
   const trait = traitCatalog[(party.length * 3 + turn + 1) % traitCatalog.length];
@@ -97,6 +98,14 @@ export function createSuggestedRecruitForParty(party: Character[], turn: number,
     traitId: trait.id
   });
 
+  // A world that ships its own creation figures (terminal-line's platform crowd) should hand the quick
+  // recruit ONE of those, not a default-pack background face — otherwise 見繕い pulls a portrait that is
+  // visibly not of this world (playtest 2026-08-05). Deterministic on the same seed so the proposal is
+  // stable across re-renders. A world without a pool keeps the background/class default (base unchanged).
+  const pool = world?.portraits ?? [];
+  const portraitRef =
+    pool.length > 0 ? `builtin://portrait/${pool[(turn + party.length) % pool.length]}` : undefined;
+
   return createGuildCharacter({
     ...identity,
     classId,
@@ -104,7 +113,8 @@ export function createSuggestedRecruitForParty(party: Character[], turn: number,
     traitIds: [trait.id],
     method: "quick",
     seed: `guild-suggestion:${turn}:${party.length}:${classId}`,
-    registeredAtTurn: turn
+    registeredAtTurn: turn,
+    portraitRef
   });
 }
 

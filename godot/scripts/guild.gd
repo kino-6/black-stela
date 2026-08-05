@@ -978,7 +978,9 @@ func _random_recruit() -> void:
 		var fresh_class: bool = not used_classes.has(String(deal.get("classId", "")))
 		if fresh_name and (fresh_class or attempt >= 48):
 			break
-	Draft.randomize(_draft, _data, eligible, chosen)
+	# Hand 見繕う the world's own figure pool so a themed world (terminal-line) deals a platform figure, not a
+	# default-pack background face (playtest 2026-08-05; React createSuggestedRecruitForParty parity).
+	Draft.randomize(_draft, _data, eligible, chosen, _world.get("portraits", []))
 	_register()
 	if _party().size() < PARTY_MAX:
 		_enter_step("briefing")
@@ -1141,6 +1143,12 @@ func _aptitude_line(aptitude: Dictionary) -> String:
 	return "  ".join(PackedStringArray(parts))
 
 func _class_label(id: String) -> String:
+	# A world may re-skin a basic class (terminal-line's 戦士 → 保安隊員). Prefer the world's vocation name so
+	# creation/roster show the themed class; fall back to the base class label when the world does not re-skin
+	# it, so base worlds are unchanged (React localizedVocationName parity, playtest 2026-08-05).
+	for vocation in _world.get("vocations", []):
+		if String((vocation as Dictionary).get("id", "")) == id:
+			return Fmt.localized_vocation_name(_world, vocation)
 	return Draft.label_ja(_data.get("classes", []), id)
 
 func _row_label(row: String) -> String:

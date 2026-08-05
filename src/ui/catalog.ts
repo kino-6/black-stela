@@ -1,5 +1,6 @@
 import { getActiveWorld } from "../data/activeWorld";
 import { findBackground, findClass } from "../domain/characterCreation";
+import { localizedVocationName } from "../domain/vocations";
 import { getEffectiveCharacterStats } from "../domain/economy";
 import { techniqueLabel } from "../domain/combatBeatText";
 import type { Character, CombatActionDeclaration, EquippedItem, GameState, ScenarioEquipment, ScenarioShop } from "../domain/types";
@@ -131,7 +132,9 @@ export function formatCombatOrder(order: CombatActionDeclaration, state: GameSta
 
 export function formatCharacterTitle(title: string, classId: GameState["party"][number]["classId"], locale: Locale) {
   const classDef = findClass(classId);
-  return title === classDef.label.en ? classDef.label[locale] : title;
+  // A default title (the class's own English name, minted at creation) displays the world's re-skinned
+  // vocation name so terminal-line reads 保安隊員, not 戦士; a chosen 二つ名 is shown verbatim.
+  return title === classDef.label.en ? localizedVocationName(getActiveWorld(), classId, locale) : title;
 }
 
 export function formatCharacterSummary(
@@ -140,12 +143,14 @@ export function formatCharacterSummary(
   t: Translator,
   options: { includeRow?: boolean } = {}
 ) {
-  const classDef = findClass(member.classId);
+  // The class label honours a world that re-skins the basic class (terminal-line's 戦士 → 保安隊員); a
+  // world that does not re-skin falls back to the base class label, so base worlds are unchanged.
+  const classLabel = localizedVocationName(getActiveWorld(), member.classId, locale);
   const title = formatCharacterTitle(member.title, member.classId, locale);
   const row = options.includeRow === false ? "" : formatCombatRow(member.row, t);
   const parts = isDefaultClassTitle(member.title, member.classId)
-    ? [classDef.label[locale], row]
-    : [title, classDef.label[locale], row];
+    ? [classLabel, row]
+    : [title, classLabel, row];
 
   return Array.from(new Set(parts.filter(Boolean))).join(" / ");
 }
