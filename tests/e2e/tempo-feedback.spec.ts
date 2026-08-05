@@ -27,12 +27,15 @@ test("auto-explore shows a live tempo indicator with speed and stop", async ({ p
   await expect(indicator).toContainText("Auto-explore");
   await expect(page.getByTestId("tempo-step")).toBeVisible();
 
-  // Speed is a visible tier that toggles.
+  // Speed is a visible tier that toggles. NOTE force:true — a frozen clock also freezes
+  // requestAnimationFrame, and Playwright's actionability "stable" check needs two rAF frames to confirm
+  // the element is not moving. It never gets them here, so it would wait forever on an element that is in
+  // fact perfectly static. Force bypasses that check; the freeze guarantees nothing actually moves.
   await expect(page.getByTestId("tempo-speed")).toContainText("×1");
-  await page.getByTestId("tempo-speed").click();
+  await page.getByTestId("tempo-speed").click({ force: true });
   await expect(page.getByTestId("tempo-speed")).toContainText("×2");
 
   // Stop is immediate: the indicator disappears.
-  await page.getByTestId("tempo-stop").click();
+  await page.getByTestId("tempo-stop").click({ force: true });
   await expect(page.getByTestId("tempo-indicator")).toHaveCount(0);
 });
