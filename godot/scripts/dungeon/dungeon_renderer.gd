@@ -260,6 +260,50 @@ static func _add_stairs(parent: Node, base: Vector3, tex_path: String, kind: Str
 		_add_downshaft_art(root, art_material)
 	else:
 		_add_ladder_shaft_art(root, art_material)
+	# U6: a stair is a CURRENT-CELL action, so it must read from ANY facing — the edge geometry above is
+	# only seen when the party happens to look at the stair edge (playtest: standing on the cell facing
+	# away shows a plain corridor). Add a stairhead marker at the cell centre so the way down/up is always
+	# visible under the party's feet, whichever way they turn.
+	_add_stair_floor_marker(parent, base, kind, art_material, wall_material)
+
+# The always-visible stairhead for a stair cell (U6). A flat floor plate is HIDDEN by the party HUD (the
+# near floor sits behind it), so the marker needs VERTICAL presence: a railed stairwell at the cell
+# centre — four corner posts joined by top rails, with a small stair PLACARD hung high — whose upper part
+# rises above the HUD line and reads as "stairs here" from ANY facing, complementing the edge descent view.
+static func _add_stair_floor_marker(parent: Node, base: Vector3, kind: String, art_material: Material, wall_material: Material) -> void:
+	var size := CELL * 0.62
+	var half := size / 2.0
+	# Tall enough that the frame's upper rails rise ABOVE the party HUD (which hides the near floor) and
+	# above eye level, so the stairhead reads from any facing — an open frame, not a solid box.
+	var rail_h := 2.05 if kind == "down" else 2.25 # an up-stair reads as a taller landing/ladder head
+	var root := Node3D.new()
+	root.name = "StairFloor_%s" % kind
+	root.position = base
+	parent.add_child(root)
+
+	# A small stair PLACARD hung HIGH in the frame, on TWO perpendicular quads (a cross): movement is
+	# cardinal, so one face is always head-on whichever way the party turns — no billboard, never edge-on.
+	# High and small so it clears the HUD as an always-visible "stairs here" sign WITHOUT dominating the
+	# real edge descent seen when facing it.
+	var sign := 0.9
+	for rot_y in [0.0, PI / 2.0]:
+		var art := MeshInstance3D.new()
+		var quad := QuadMesh.new()
+		quad.size = Vector2(sign, sign)
+		art.mesh = quad
+		art.material_override = art_material
+		art.position = Vector3(0, rail_h - sign / 2.0, 0)
+		art.rotation.y = rot_y
+		root.add_child(art)
+
+	# Four corner posts + top rails: a guard railing around the stairwell mouth, tall enough to clear the HUD.
+	for sx in [-1.0, 1.0]:
+		for sz in [-1.0, 1.0]:
+			_add_box(root, Vector3(0.12, rail_h, 0.12), wall_material, Vector3(sx * half, rail_h / 2.0, sz * half))
+	for sz in [-1.0, 1.0]:
+		_add_box(root, Vector3(size, 0.1, 0.1), wall_material, Vector3(0, rail_h, sz * half))
+	for sx in [-1.0, 1.0]:
+		_add_box(root, Vector3(0.1, 0.1, size), wall_material, Vector3(sx * half, rail_h, 0))
 
 static func _add_stair_well(root: Node3D, wall_material: Material) -> void:
 	# Local -Z goes through the active stair edge for every `_edge_rotation` direction. The outer wall strips,
