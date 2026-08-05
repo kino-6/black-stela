@@ -8,6 +8,11 @@
   manual/visual check. A task is not `[x]` until its gate is green **and** it is committed.
 - **Done → Archive.** Once a task is `[x]` + gate green + committed, move it OUT of this file to
   `docs/archive/Tasks.completed-*.md`. This file holds only open / in-progress work.
+- **Groom on EVERY status change (user rule 2026-08-05).** Whenever you touch a task's status (`[ ]`→`[-]`,
+  `[-]`→`[x]`, add a new task, …), do a short grooming pass in the SAME edit: move any freshly-`[x]` items
+  to the archive (leave a one-line pointer if useful), collapse stale/verbose done blocks, and delete dead
+  notes — so this file never re-bloats between big cleanups. Grooming is not a separate later chore; it
+  rides along with the status update that triggered it.
 - **One at a time.** Process the active queue top-down; finish (verify + gate + commit) before starting
   the next. Newest requests append to the bottom of the queue unless re-prioritised.
 - **Build / verify:** `npm run export:godot && npm run play` (godot/data is gitignored). Truth gate
