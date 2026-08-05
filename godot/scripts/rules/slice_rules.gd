@@ -70,7 +70,7 @@ static func resolve(state: Dictionary, command: Dictionary, world: Dictionary = 
 		"open_chest":
 			return Chests.open_chest(state, world, engine)
 		"enter_dungeon":
-			return ExplorationCommands._enter_dungeon(state, world)
+			return ExplorationCommands._enter_dungeon(state, world, String(command.get("startRoom", "")))
 		"resume_at_checkpoint":
 			return ExplorationCommands._resume_at_checkpoint(state, world, command.get("roomId", ""))
 		"use_item":

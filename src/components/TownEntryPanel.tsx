@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Anvil, ArrowLeft, ClipboardList, DoorOpen, Gem, GraduationCap, Hammer, HeartPulse, Landmark, ScrollText, ShoppingBag, Store, Users, UsersRound } from "lucide-react";
 import type { Character, Command, ScenarioWorld } from "../domain/types";
-import { getLocalizedRoomText } from "../domain/scenario";
+import { getLocalizedRoomText, resolveEntrances } from "../domain/scenario";
 import type { Locale, Translator } from "../i18n";
 
 interface Checkpoint {
@@ -168,17 +168,28 @@ export function TownEntryPanel({
               <HeartPulse size={18} />
               {t("town.recovery")}
             </button>
-            <button
-              type="button"
-              className="primary-action"
-              data-testid="town-enter-dungeon"
-              ref={enterDungeonRef}
-              disabled={partyEmpty}
-              onClick={() => onCommand({ type: "enter_dungeon" })}
-            >
-              <DoorOpen size={18} />
-              {t("play.enterDungeon")}
-            </button>
+            {/* T30/U5: one portal per dungeon. A single-dungeon world resolves to exactly one entrance,
+                so the button is identical to before (default startRoom, generic 迷宮に入る label). */}
+            {resolveEntrances(world).map((entrance, index) => {
+              const single = index === 0;
+              const label = single && !entrance.label && !entrance.locales
+                ? t("play.enterDungeon")
+                : entrance.locales?.[locale]?.label ?? entrance.label ?? t("play.enterDungeon");
+              return (
+                <button
+                  key={entrance.id}
+                  type="button"
+                  className="primary-action"
+                  data-testid={single ? "town-enter-dungeon" : `town-enter-dungeon-${entrance.id}`}
+                  ref={single ? enterDungeonRef : undefined}
+                  disabled={partyEmpty}
+                  onClick={() => onCommand({ type: "enter_dungeon", startRoom: entrance.startRoom })}
+                >
+                  <DoorOpen size={18} />
+                  {label}
+                </button>
+              );
+            })}
           </>
         ) : (
           <>

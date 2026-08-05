@@ -14,6 +14,7 @@ var world: Dictionary = {}
 var engine: Dictionary = {}
 var last_rewards: Dictionary = {}   # set by combat victory, read by the result screen
 var loot_baseline: Dictionary = {}  # {itemId: qty} snapshot taken at descent so town shows loot GAINED
+var pending_entrance_room: String = ""  # T30/U5: the town portal chosen for the NEXT fresh descent (transient)
                                     # this expedition, not the supplies the party carried down (playtest #3).
                                     # Transient/presentation-only — deliberately NOT in the hashed run state.
 var character_data: Dictionary = {} # class/background/trait catalogs (character-data.json)

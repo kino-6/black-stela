@@ -19,16 +19,22 @@ extends RefCounted
 
 const PASSAGE_KINDS := ["open", "door", "one_way"]
 
-## Returns {"position": {...}, "map": {...}} for a dungeon (re)entry.
-static func plan(state: Dictionary, world: Dictionary) -> Dictionary:
+## Returns {"position": {...}, "map": {...}} for a dungeon (re)entry. `entrance_room` (T30/U5) chooses a
+## portal for a FRESH landing; empty ⇒ the world's default start room.
+static func plan(state: Dictionary, world: Dictionary, entrance_room: String = "") -> Dictionary:
 	var pos: Dictionary = state.get("position", {}) if typeof(state.get("position", null)) == TYPE_DICTIONARY else {}
 	# Victory resume: position is still on the fight cell (combat cleared but position left intact).
 	if String(pos.get("cellId", "")) != "":
 		return {"position": pos, "map": state.get("map", {})}
 
-	# Fresh landing at the world's first floor.
+	# Fresh landing at the chosen portal (T30/U5), or the world's first floor by default.
 	var start_room: String = world.get("startRoom", "room.b1f.001")
-	var start_dungeon: String = world.get("startDungeon", "dungeon.b1f")
+	if entrance_room != "" and _is_entrance_room(world, entrance_room):
+		start_room = entrance_room
+	# The dungeon group of the landing room — its own floor's group, so a second dungeon lands on its floor.
+	var start_dungeon: String = _floor_id_for_room(world, start_room)
+	if start_dungeon == "":
+		start_dungeon = world.get("startDungeon", "dungeon.b1f")
 	var cell := cell_for_room(world, start_room)
 	var cell_id: String = String(cell.get("id", "")) if not cell.is_empty() else ""
 	var open_dirs := open_dirs_for(cell)
@@ -87,3 +93,21 @@ static func _with(arr: Array, value: String) -> Array:
 	if value != "" and not out.has(value):
 		out.append(value)
 	return out
+
+# T30/U5: whether `room_id` is one of this world's town portals. No authored `entrances` ⇒ startRoom only.
+static func _is_entrance_room(world: Dictionary, room_id: String) -> bool:
+	var authored: Array = world.get("entrances", [])
+	if authored.is_empty():
+		return room_id == String(world.get("startRoom", ""))
+	for entrance in authored:
+		if String((entrance as Dictionary).get("startRoom", "")) == room_id:
+			return true
+	return false
+
+# The floor (dungeon) id that owns `room_id`, or "" if none — mirrors scenario.ts getFloorIdForRoom.
+static func _floor_id_for_room(world: Dictionary, room_id: String) -> String:
+	for dungeon in world.get("dungeons", []):
+		for room in (dungeon as Dictionary).get("rooms", []):
+			if String((room as Dictionary).get("id", "")) == room_id:
+				return String((dungeon as Dictionary).get("id", ""))
+	return ""

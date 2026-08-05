@@ -513,6 +513,9 @@ export const scenePaletteSchema = z.object({
 
 export const dungeonFloorSchema = z.object({
   id: z.string().min(1),
+  // T30/U5: the dungeon GROUP this floor belongs to (floors sharing a group form one descent chain).
+  // Omitted ⇒ the world's single default dungeon.
+  dungeon: z.string().min(1).optional(),
   name: z.string().min(1),
   // Optional per-floor palette override for the descent arc (IMP-063). Merges over the world palette.
   palette: scenePaletteSchema.optional(),
@@ -592,6 +595,17 @@ export const scenarioWorldSchema = z.object({
   palette: scenePaletteSchema.optional(),
   startDungeon: z.string().min(1),
   startRoom: z.string().min(1),
+  // T30/U5: extra town portals into additional dungeons. Omitted ⇒ one dungeon at startRoom.
+  entrances: z
+    .array(
+      z.object({
+        id: z.string().min(1),
+        startRoom: z.string().min(1),
+        label: z.string().min(1).optional(),
+        locales: z.record(z.object({ label: z.string().min(1).optional() })).optional()
+      })
+    )
+    .optional(),
   aiPolicy: z.object({
     allowed: z.array(z.string()).default([]),
     forbidden: z.array(z.string()).default([])
@@ -809,6 +823,40 @@ export function getExit(world: ScenarioWorld, roomId: string, direction: Directi
 
 export function getFloorForRoom(world: ScenarioWorld, roomId: string) {
   return world.dungeons.find((dungeon) => dungeon.rooms.some((room) => room.id === roomId)) ?? null;
+}
+
+// ── T30/U5: multiple dungeons per scenario ──────────────────────────────────────────────────────────
+// The dungeon GROUP a floor belongs to. A floor with no explicit `dungeon` falls into the world's single
+// default dungeon, whose id is the start floor's own id — so every existing (ungrouped) world is one
+// dungeon and nothing about it changes.
+export function dungeonGroupOfFloor(world: ScenarioWorld, floorId: string | null | undefined): string {
+  const floor = world.dungeons.find((dungeon) => dungeon.id === floorId);
+  return floor?.dungeon ?? world.startDungeon;
+}
+
+export function dungeonGroupOfRoom(world: ScenarioWorld, roomId: string): string {
+  return dungeonGroupOfFloor(world, getFloorIdForRoom(world, roomId));
+}
+
+// The town portals into this world's dungeons. A world that authors no `entrances` has exactly one — the
+// canonical startRoom — so the town shows a single "enter" button exactly as before.
+export interface ResolvedEntrance {
+  id: string;
+  startRoom: string;
+  dungeon: string;
+  label?: string;
+  locales?: Record<string, { label?: string }>;
+}
+
+export function resolveEntrances(world: ScenarioWorld): ResolvedEntrance[] {
+  const authored = world.entrances ?? [];
+  if (authored.length === 0) {
+    return [{ id: "main", startRoom: world.startRoom, dungeon: world.startDungeon }];
+  }
+  return authored.map((entrance) => ({
+    ...entrance,
+    dungeon: dungeonGroupOfRoom(world, entrance.startRoom)
+  }));
 }
 
 export function getFloorIdForRoom(world: ScenarioWorld, roomId: string) {

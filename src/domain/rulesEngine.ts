@@ -25,6 +25,7 @@ import { chestAt, disarmChest, investigateChest, makeChest, openChest, roomChest
 import { resolveClassId } from "./characterCreation";
 import { consumeAid, resolveAttempt, type AttemptRecord, type ExplorationAid } from "./exploration";
 import {
+  dungeonGroupOfRoom,
   getExit,
   getFloorForRoom,
   getFloorIdForRoom,
@@ -33,6 +34,7 @@ import {
   getKnownGridDirections,
   getRoom,
   isBossFloor,
+  resolveEntrances,
   secretKey
 } from "./scenario";
 import {
@@ -196,7 +198,7 @@ export function resolveCommand(state: GameState, world: ScenarioWorld, command: 
   }
   switch (command.type) {
     case "enter_dungeon":
-      return enterDungeon(state, world);
+      return enterDungeon(state, world, command.startRoom);
     case "bench_member":
       return benchMember(state, command.characterId);
     case "recall_member":
@@ -545,7 +547,7 @@ function evacuateDownedParty(state: GameState): CommandResult {
   return withEvents(evacuated, [{ type: "party_wiped", rescueFee: 0 }]);
 }
 
-function enterDungeon(state: GameState, world: ScenarioWorld): CommandResult {
+function enterDungeon(state: GameState, world: ScenarioWorld, entranceRoom?: string): CommandResult {
   if (state.party.length === 0) {
     return logOnly(state, { type: "command_blocked", reason: "party_required", command: "enter_dungeon" });
   }
@@ -556,23 +558,30 @@ function enterDungeon(state: GameState, world: ScenarioWorld): CommandResult {
     return logOnly(state, { type: "command_blocked", reason: "party_downed", command: "enter_dungeon" });
   }
 
+  // T30/U5: enter at the CHOSEN portal (a scenario may offer several), defaulting to the world's single
+  // entrance. An unknown/foreign room falls back to the default rather than crashing — a save or a stale
+  // button can never strand the party outside a room.
+  const validEntrance = entranceRoom && resolveEntrances(world).some((entrance) => entrance.startRoom === entranceRoom);
+  const startRoomId = validEntrance ? (entranceRoom as string) : world.startRoom;
+  const defaultFloor = dungeonGroupOfRoom(world, startRoomId) || world.startDungeon;
+
   // Face the party into the dungeon: toward the entrance's actual open exit, not
   // a hardcoded east. Prefer east when available so floors built around an eastward
   // trunk read unchanged; otherwise turn to the way on (a corner maze mouth).
-  const entranceExits = Object.keys(getRoom(world, world.startRoom).exits ?? {}) as Direction[];
+  const entranceExits = Object.keys(getRoom(world, startRoomId).exits ?? {}) as Direction[];
   const entranceFacing: Direction = entranceExits.includes("east") ? "east" : entranceExits[0] ?? "east";
-  const roomVisit = visitRoom(state, world, world.startRoom, entranceFacing);
-  const startCell = getGridCellForRoom(world, world.startRoom);
+  const roomVisit = visitRoom(state, world, startRoomId, entranceFacing);
+  const startCell = getGridCellForRoom(world, startRoomId);
   let next: GameState = {
     ...state,
     phase: "dungeon",
     position: {
-      roomId: world.startRoom,
+      roomId: startRoomId,
       cellId: startCell?.id,
       facing: entranceFacing
     },
     combat: null,
-    party: markExpeditionStarted(state.party, roomVisit.map.floorId ?? world.startDungeon, state.turn + 1),
+    party: markExpeditionStarted(state.party, roomVisit.map.floorId ?? defaultFloor, state.turn + 1),
     map: roomVisit.map,
     floorClearedEnemies: [],
     openedDoors: [],
@@ -582,7 +591,7 @@ function enterDungeon(state: GameState, world: ScenarioWorld): CommandResult {
     expeditions: state.expeditions + 1,
     turn: state.turn + 1
   };
-  const startRoom = getRoom(world, world.startRoom);
+  const startRoom = getRoom(world, startRoomId);
   // IMP-029 — the entrance landing's reward (if any) becomes a chest, not auto-loot.
   const chest = roomHasEncounter(startRoom)
     ? { state: next, events: [] as GameEvent[] }
@@ -592,7 +601,7 @@ function enterDungeon(state: GameState, world: ScenarioWorld): CommandResult {
   return withEvents(next, [
     {
       type: "dungeon_entered",
-      roomId: world.startRoom,
+      roomId: startRoomId,
       facing: entranceFacing
     },
     ...roomVisit.events,

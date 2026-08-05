@@ -38,6 +38,10 @@ for (const [path, markdown] of Object.entries(markdownFiles)) {
 }
 
 const floorLevel = (markdown: string): number => Number(markdown.match(/^level:\s*(\d+)/m)?.[1] ?? Number.MAX_SAFE_INTEGER);
+// T30/U5: a floor's dungeon GROUP from front-matter (blank for single-dungeon worlds). Floors are ordered
+// group-then-level so a scenario's several dungeons stay contiguous (each an ordered descent), instead of
+// interleaving by level. Single-dungeon worlds have one (empty) group ⇒ order is unchanged.
+const floorGroup = (markdown: string): string => (markdown.match(/^dungeon:\s*(\S+)/m)?.[1] ?? "");
 
 function buildWorld(worldId: string, files: Record<string, string>): ScenarioWorld {
   const worldMarkdown = files["world"];
@@ -57,10 +61,14 @@ function buildWorld(worldId: string, files: Record<string, string>): ScenarioWor
   const techniques = files["techniques"] ? parseScenarioTechniques(files["techniques"]) : { techniques: [] };
   const classTechniques = files["class-techniques"] ? parseScenarioClassTechniques(files["class-techniques"]) : { classTechniques: [] };
 
-  // Dungeons in descent order: by each floor's `level` front-matter, then by name.
+  // Dungeons in descent order: by each floor's dungeon GROUP, then `level`, then name (T30/U5). A
+  // single-dungeon world has one empty group, so this reduces to the old level-then-name order.
   const dungeonMarkdowns = Object.entries(files)
     .filter(([relKey]) => relKey.startsWith("dungeons/"))
-    .sort(([aKey, aMd], [bKey, bMd]) => floorLevel(aMd) - floorLevel(bMd) || aKey.localeCompare(bKey))
+    .sort(
+      ([aKey, aMd], [bKey, bMd]) =>
+        floorGroup(aMd).localeCompare(floorGroup(bMd)) || floorLevel(aMd) - floorLevel(bMd) || aKey.localeCompare(bKey)
+    )
     .map(([, markdown]) => markdown);
 
   const world = parseScenarioWorld(worldMarkdown, dungeonMarkdowns, {

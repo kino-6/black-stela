@@ -373,11 +373,19 @@ func _build_square() -> void:
 			var k := String(key)
 			menu.add_child(UI.button(I18n.t(String(LOCATION_LABEL[k])), func(): _go_location(k), Vector2(200, 56), 18))
 		menu.add_child(UI.button(I18n.t("town.recovery"), func(): _open_service("recovery"), Vector2(200, 56), 18))
-		var descend := UI.button(I18n.t("play.enterDungeon"), func(): _on_descend(), Vector2(280, 56), 20)
-		descend.disabled = party_empty
-		menu.add_child(descend)
-		# The cursor lands on the command the player came here to give.
-		focus_target = descend if not party_empty else null
+		# T30/U5: one portal per dungeon. A single-dungeon world resolves to one entrance = the generic
+		# 迷宮に入る button, unchanged. The cursor lands on the FIRST portal (the command a party came to give).
+		var entrances := _entrances()
+		for i in entrances.size():
+			var entrance: Dictionary = entrances[i]
+			var start_room := String(entrance.get("startRoom", ""))
+			var single := entrances.size() == 1
+			var label := I18n.t("play.enterDungeon") if single else _entrance_label(entrance)
+			var portal := UI.button(label, func(): _on_descend(start_room), Vector2(280, 56), 20)
+			portal.disabled = party_empty
+			menu.add_child(portal)
+			if i == 0:
+				focus_target = portal if not party_empty else null
 	else:
 		menu.add_child(UI.button(I18n.t("town.backToHub"), func(): _go_location(""), Vector2(160, 56), 18))
 		for key in LOCATIONS[_location]:
@@ -719,11 +727,27 @@ func _unhandled_input(event: InputEvent) -> void:
 		_open_service("party")
 		get_viewport().set_input_as_handled()
 
-func _on_descend() -> void:
+# The town portals into this world's dungeons (T30/U5). A world with no authored `entrances` has exactly
+# one — its startRoom — so the town shows a single button. Mirrors scenario.ts resolveEntrances.
+func _entrances() -> Array:
+	var authored: Array = _world.get("entrances", [])
+	if authored.is_empty():
+		return [{"id": "main", "startRoom": String(_world.get("startRoom", ""))}]
+	return authored
+
+func _entrance_label(entrance: Dictionary) -> String:
+	var locales: Dictionary = entrance.get("locales", {})
+	var loc: Dictionary = locales.get(I18n.locale(), {}) if typeof(locales) == TYPE_DICTIONARY else {}
+	return String(loc.get("label", entrance.get("label", I18n.t("play.enterDungeon"))))
+
+func _on_descend(entrance_room: String = "") -> void:
 	# Remember what the party carries DOWN, so the return ledger can show what it actually brought back
 	# (playtest #3: an untouched starting potion was reported as "持ち帰った物").
 	if _run:
 		_run.loot_baseline = _inventory_counts(state())
+		# T30/U5: the chosen portal, honoured by dungeon_entry.plan for the fresh landing (default = the
+		# world's start room). Cleared once consumed so a later re-descend does not reuse it.
+		_run.set("pending_entrance_room", entrance_room)
 		# COUNT THE DESCENT. In the rules this lives in the enter_dungeon command (expeditions += 1), but the
 		# Godot descent enters the dungeon scene directly (dungeon_entry.plan) and bypasses that command, so
 		# expeditions never advanced — town then greeted a returning party with "初めて潜る前に" forever

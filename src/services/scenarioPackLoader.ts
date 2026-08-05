@@ -11,7 +11,9 @@ import {
   parseScenarioTechniques,
   parseScenarioTreasure,
   parseScenarioVocations,
-  parseScenarioWorld
+  parseScenarioWorld,
+  resolveEntrances,
+  dungeonGroupOfFloor
 } from "../domain/scenario";
 import { BUILTIN_VOCATION_IDS } from "../domain/vocations";
 import { resolveTechniqueCatalog } from "../domain/techniques";
@@ -667,7 +669,10 @@ function isAdjacent(source: DungeonGridCell, target: DungeonGridCell, direction:
 
 function collectReachableRooms(world: ScenarioWorld) {
   const reachable = new Set<string>();
-  const pending = [world.startRoom];
+  // T30/U5: a scenario may have several dungeons, each with its own town portal — seed the BFS from EVERY
+  // entrance so rooms in a second dungeon are not falsely "unreachable". One-dungeon worlds seed from the
+  // single startRoom exactly as before.
+  const pending = resolveEntrances(world).map((entrance) => entrance.startRoom);
 
   while (pending.length > 0) {
     const roomId = pending.shift()!;
@@ -731,6 +736,13 @@ function findMissingFloorProgression(world: ScenarioWorld) {
   return world.dungeons.flatMap((dungeon, index) => {
     const next = world.dungeons[index + 1];
     if (!next) {
+      return [];
+    }
+
+    // T30/U5: a progression link is only required between floors of the SAME dungeon. The boundary between
+    // two independent dungeons (different groups) is not a missing descent — those are separate chains, each
+    // reached from its own town portal.
+    if (dungeonGroupOfFloor(world, dungeon.id) !== dungeonGroupOfFloor(world, next.id)) {
       return [];
     }
 

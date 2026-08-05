@@ -12,7 +12,7 @@ export type Direction = "north" | "east" | "south" | "west";
 export type RoomEntryMotion = "backward" | "left" | "right";
 
 export type Command =
-  | { type: "enter_dungeon" }
+  | { type: "enter_dungeon"; startRoom?: string }
   | { type: "bench_member"; characterId: string }
   | { type: "recall_member"; characterId: string }
   | { type: "reclass_member"; characterId: string; classId: AnyClassId }
@@ -915,6 +915,12 @@ export interface ScenarioWorld {
   palette?: ScenePalette;
   startDungeon: string;
   startRoom: string;
+  /** T30/U5: a scenario may offer MORE THAN ONE dungeon, each entered from its own town portal. When
+   *  omitted, the world has a single dungeon entered at startRoom (every existing world). When set, each
+   *  entrance names the room a party lands in; the dungeon it belongs to is that room's floor's `dungeon`
+   *  group. startDungeon/startRoom stay the DEFAULT entrance so saves and the single-button path never
+   *  change. See resolveEntrances(). */
+  entrances?: ScenarioEntrance[];
   aiPolicy: AiPolicy;
   dungeons: DungeonFloor[];
   items: ScenarioItem[];
@@ -944,6 +950,15 @@ export interface AiPolicy {
   forbidden: string[];
 }
 
+/** One town portal into a dungeon (T30/U5). `startRoom` is the room a party lands in on entry; its floor's
+ *  `dungeon` group is the dungeon this portal opens. `label`/`locales` name the portal in town. */
+export interface ScenarioEntrance {
+  id: string;
+  startRoom: string;
+  label?: string;
+  locales?: Record<string, { label?: string }>;
+}
+
 /** A world's re-skin of ONE class's native learned line (content/worlds/<id>/class-techniques.md).
  *  Replaces that class's built-in combatTechniques; ids may be authored (world.techniques). */
 export interface ScenarioClassTechniques {
@@ -953,6 +968,9 @@ export interface ScenarioClassTechniques {
 
 export interface DungeonFloor {
   id: string;
+  /** T30/U5: the dungeon GROUP this floor belongs to. Floors sharing a group form one descent chain;
+   *  different groups are independent dungeons. Omitted ⇒ the world's single default dungeon. */
+  dungeon?: string;
   name: string;
   /** Per-locale floor name — a JA route shows `locales.ja.name` (e.g. 蔦の回廊) instead of the English
    *  authored `name` (IMP-056). */

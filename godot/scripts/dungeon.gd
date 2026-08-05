@@ -94,7 +94,12 @@ func _enter_at_landing() -> void:
 	# #12 "map resets on return" bug.
 	_state["phase"] = "dungeon"
 	_state["combat"] = null
-	var plan: Dictionary = DungeonEntry.plan(_state, _world)
+	# T30/U5: honour the town portal chosen for a fresh landing (default = the world's start room), then
+	# clear it so a later re-descend does not reuse a stale choice.
+	var entrance_room := String(_run.get("pending_entrance_room")) if _run else ""
+	if _run:
+		_run.set("pending_entrance_room", "")
+	var plan: Dictionary = DungeonEntry.plan(_state, _world, entrance_room)
 	_state["position"] = plan["position"]
 	_state["map"] = plan["map"]
 

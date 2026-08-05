@@ -676,14 +676,30 @@ static func _mark_expedition_started(party: Array, floor_id: Variant, turn: int)
 
 # Face the party into the dungeon toward the entrance's ACTUAL open exit, preferring east so floors
 # built around an eastward trunk read unchanged.
-static func _enter_dungeon(state: Dictionary, world: Dictionary) -> Dictionary:
+# Whether `room_id` is one of this world's town portals (T30/U5). A world that authors no `entrances` has
+# exactly one — its startRoom. Mirrors scenario.ts resolveEntrances().
+static func _is_entrance_room(world: Dictionary, room_id: String) -> bool:
+	var authored: Array = world.get("entrances", [])
+	if authored.is_empty():
+		return room_id == String(world.get("startRoom", ""))
+	for entrance in authored:
+		if String((entrance as Dictionary).get("startRoom", "")) == room_id:
+			return true
+	return false
+
+static func _enter_dungeon(state: Dictionary, world: Dictionary, entrance_room: String = "") -> Dictionary:
 	if (state.get("party", []) as Array).is_empty():
 		return RulesUtil.log_only(state, {"type": "command_blocked", "reason": "party_required", "command": "enter_dungeon"})
 	# A party with NO able member (all wounded / at 0 HP) must not descend — recover at the infirmary first
 	# (playtest 2026-07-29). Mirrors rulesEngine.ts enterDungeon.
 	if Exploration.able_members(state.get("party", [])).is_empty():
 		return RulesUtil.log_only(state, {"type": "command_blocked", "reason": "party_downed", "command": "enter_dungeon"})
+	# T30/U5: enter at the CHOSEN portal (a scenario may offer several), defaulting to the world's single
+	# entrance. An unknown/foreign room falls back to the default — a save or stale button never strands
+	# the party. Mirrors rulesEngine.ts enterDungeon.
 	var start_room_id := String(world.get("startRoom", ""))
+	if entrance_room != "" and _is_entrance_room(world, entrance_room):
+		start_room_id = entrance_room
 	var start_room: Variant = _room(world, start_room_id)
 	var exits: Dictionary = start_room.get("exits", {}) if typeof(start_room) == TYPE_DICTIONARY else {}
 	var facing := "east"

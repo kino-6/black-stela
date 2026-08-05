@@ -553,6 +553,9 @@ export function simulateDescent(
     /** Carry & auto-use the world's affordable consumable kit (the resource-economy axis). `true`
      *  uses the default medic threshold; pass an object to set it. */
     provision?: boolean | ProvisionOptions;
+    /** T30/U5: which dungeon group to dive. Omitted ⇒ the world's default dungeon. A scenario with several
+     *  dungeons is simulated ONE dungeon at a time (each is an independent dive), never as one long chain. */
+    dungeonId?: string;
   } = {}
 ): DescentSimResult {
   const heal = options.heal ?? "town";
@@ -588,7 +591,11 @@ export function simulateDescent(
 
   // The world's own dungeon order (registry orders by floor level): b1..b8 for the
   // default world, g1..g8 for verdant, etc. Falls back to the default constant.
-  const descentOrder = world.dungeons.length > 0 ? world.dungeons.map((dungeon) => dungeon.id) : DESCENT_ORDER;
+  // T30/U5: scope to ONE dungeon group so a multi-dungeon world dives each independently rather than
+  // as one 2N-floor chain. Single-dungeon worlds have all floors in the default group ⇒ unchanged.
+  const targetDungeon = options.dungeonId ?? world.startDungeon;
+  const groupFloors = world.dungeons.filter((dungeon) => (dungeon.dungeon ?? world.startDungeon) === targetDungeon);
+  const descentOrder = groupFloors.length > 0 ? groupFloors.map((dungeon) => dungeon.id) : DESCENT_ORDER;
   for (let floorIndex = 0; floorIndex < descentOrder.length; floorIndex += 1) {
     const floorId = descentOrder[floorIndex];
     if (heal === "town") {
