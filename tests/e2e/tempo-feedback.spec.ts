@@ -6,20 +6,24 @@ import { test, expect } from "@playwright/test";
  * and an always-available immediate Stop.
  */
 test("auto-explore shows a live tempo indicator with speed and stop", async ({ page }) => {
+  // The tempo runner is a setInterval that walks the floor and STOPS itself on reaching the stairs or a
+  // fight (App.tsx). This test is about the live INDICATOR + its speed/stop controls, not the walk — but
+  // a real walk finishes the small floor fast (faster still on a slow CI renderer between assertions),
+  // so the indicator would vanish mid-test. Freeze the clock: the runner still starts (mode is set
+  // synchronously on toggle) but its interval never fires, so it never self-terminates and the indicator,
+  // speed tier, and Stop are all stable and deterministic. Advance once past load so app init flushes.
+  await page.clock.install();
   await page.goto("/?debug=1&progress=floor_2");
-
-  // The dungeon scene must be mounted before we drive it — on CI's software renderer a click on the
-  // tempo button raced the scene mount and auto never started. Wait for the canvas, then start the
-  // runner with its KEYBOARD toggle (Space): IMP-026 binds R/Space on the window regardless of focus,
-  // so it does not depend on button hit-testing the way a click does. (The button path is the same
-  // toggleTempoMode; the Stop click below still exercises a button.)
+  await page.clock.runFor(1000);
   await expect(page.getByTestId("dungeon-canvas").first()).toBeVisible();
+
+  // Start the runner with its KEYBOARD toggle (Space): IMP-026 binds R/Space on the window regardless of
+  // focus, so it does not depend on hit-testing a button that may not be wired yet on a slow renderer.
   await page.keyboard.press("Space");
 
-  // The live indicator appears with the active mode and a step readout. Auto-explore steps on its own,
-  // so on a slow CI renderer the first frames can pass before the assert — give it generous room.
+  // The live indicator appears with the active mode and a step readout.
   const indicator = page.getByTestId("tempo-indicator");
-  await expect(indicator).toBeVisible({ timeout: 15_000 });
+  await expect(indicator).toBeVisible();
   await expect(indicator).toContainText("Auto-explore");
   await expect(page.getByTestId("tempo-step")).toBeVisible();
 
