@@ -93,8 +93,17 @@ test("guild registration supports quick and detailed recruits without roster sco
   await expect(page.getByTestId("profile-portrait")).toBeVisible();
   await expect(page.getByLabel("Party coverage")).toHaveCount(0);
 
+  // U4: the autosave is per-scenario now (key `black-stela:save:auto:<worldId>`), not one global
+  // `autosave` slot — scan every save key for the persisted recruit rather than a fixed key.
   await expect
-    .poll(async () => page.evaluate(() => window.localStorage.getItem("black-stela:save:autosave") ?? ""))
+    .poll(async () =>
+      page.evaluate(() =>
+        Object.keys(window.localStorage)
+          .filter((key) => key.startsWith("black-stela:save:"))
+          .map((key) => window.localStorage.getItem(key) ?? "")
+          .join("")
+      )
+    )
     .toContain("Lena");
   await page.reload();
   await page.getByRole("button", { name: "Continue" }).click();
