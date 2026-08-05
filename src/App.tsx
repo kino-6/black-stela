@@ -1241,6 +1241,13 @@ export function App() {
     }
 
     const timer = window.setInterval(() => {
+      // TEST SEAM: a live-indicator e2e must OBSERVE the running tempo (its mode/step/speed/stop), but the
+      // runner walks the floor and stops itself on reaching the stairs — so on a slow CI renderer the
+      // indicator vanishes mid-assertion. This flag keeps the runner "active" (mode stays non-idle, the
+      // indicator stays up) without ANY stepping, so those tests are deterministic. Never set in real play.
+      if (typeof window !== "undefined" && window.localStorage.getItem("black-stela:test:freeze-tempo") === "on") {
+        return;
+      }
       // Paced (playback) combat rounds are driven by the dedicated effect below so
       // Auto plays out blow-by-blow; the interval only handles dungeon auto-move and
       // instant-mode combat.

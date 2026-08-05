@@ -78,6 +78,12 @@ test("town, shop, config, and repeat surfaces remain controller reachable", asyn
 });
 
 test("repeat mode can be started and stopped from the compact auto status", async ({ page }) => {
+  // Freeze the tempo runner (test seam): this asserts the auto STATUS (started/stopped), not the walk, and
+  // an un-frozen runner reaches the stairs/combat and flips itself off before the assertion on a slow CI
+  // renderer. Frozen, it stays on until we press R again.
+  await page.addInitScript(() => {
+    window.localStorage.setItem("black-stela:test:freeze-tempo", "on");
+  });
   await startNewExpedition(page);
   await registerAdventurer(page, { name: "Mira" });
   await page.getByRole("button", { name: "Back to town" }).click();
