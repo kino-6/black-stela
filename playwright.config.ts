@@ -6,8 +6,10 @@ const playwrightBaseUrl = `http://127.0.0.1:${playwrightPort}`;
 export default defineConfig({
   testDir: "./tests/e2e",
   // Wandering encounters mean a scripted walk now fights its way through, so a path that
-  // used to be pure movement can include several rounds of combat playback.
-  timeout: 90_000,
+  // used to be pure movement can include several rounds of combat playback. CI runs on
+  // software rendering (LIBGL_ALWAYS_SOFTWARE) — every frame is far slower than a local GPU,
+  // so a walk-until-combat that finishes in ~40s locally can exhaust 90s there. Give CI room.
+  timeout: process.env.CI ? 180_000 : 90_000,
   // A browser walk over authored floors is inherently timing/RNG-sensitive: a wandering
   // encounter can miss, a view can paint a frame late. On CI, retry so an occasional flake
   // does not red the whole gate — a genuinely broken spec still fails all three attempts.

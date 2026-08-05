@@ -8,12 +8,18 @@ import { test, expect } from "@playwright/test";
 test("auto-explore shows a live tempo indicator with speed and stop", async ({ page }) => {
   await page.goto("/?debug=1&progress=floor_2");
 
-  // Start auto-explore from the dungeon dock (the Repeat/tempo button).
-  await page.getByTestId("dungeon-command-window").getByRole("button", { name: "Auto", exact: true }).click();
+  // Wait for the dock to be interactive before clicking — on slow CI the click could otherwise
+  // land before the dungeon scene has mounted, and auto never starts.
+  const dock = page.getByTestId("dungeon-command-window");
+  await expect(dock).toBeVisible();
 
-  // The live indicator appears with the active mode and a step readout.
+  // Start auto-explore from the dungeon dock (the Repeat/tempo button).
+  await dock.getByRole("button", { name: "Auto", exact: true }).click();
+
+  // The live indicator appears with the active mode and a step readout. Auto-explore steps on its own,
+  // so on a slow CI renderer the first frames can pass before the assert — give it generous room.
   const indicator = page.getByTestId("tempo-indicator");
-  await expect(indicator).toBeVisible();
+  await expect(indicator).toBeVisible({ timeout: 15_000 });
   await expect(indicator).toContainText("Auto-explore");
   await expect(page.getByTestId("tempo-step")).toBeVisible();
 
