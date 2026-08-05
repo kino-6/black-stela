@@ -63,6 +63,13 @@ describe("dungeon design gate", () => {
       for (const floor of world.dungeons) {
         const graph = analyzeFloorGraph(world, floor.id);
         const downStair = downStairRoom(world, floor.id);
+        // An OPTIONAL side dungeon (a floor with its own `dungeon` group — e.g. the Terminal Line freight
+        // depot, a compact farm loop by design) is a deliberately different shape from the main descent, so
+        // it is not held to the maze-quality rules here. World-level rules (safe landing, etc.) still cover
+        // it, and the scenario loader still validates its reachability/progression.
+        if (floor.dungeon) {
+          continue;
+        }
         const isMaze = !MAZE_EXEMPT.has(floor.id) && !(floor.tags ?? []).includes("boss");
 
         // Wiz-style 玄室: a room whose entry is a guaranteed fight AND that holds treasure. The early floors owe a

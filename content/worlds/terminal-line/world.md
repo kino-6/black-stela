@@ -84,6 +84,18 @@ palette:
   torchRange: 10
 startDungeon: dungeon.tl1f
 startRoom: room.tl1f.entrance
+# T30/U5: two town portals. The main line is the black-stela descent; the freight depot is an optional
+# side dungeon (3 floors) a mid-game party drops into to grind salvage. The first entrance stays the
+# canonical startRoom so saves and the default descent are unchanged.
+entrances:
+  - id: main
+    startRoom: room.tl1f.entrance
+    label: Descend the black stela
+    locales: { ja: { label: 黒碑へ潜る } }
+  - id: depot
+    startRoom: room.tl-depot1.gate
+    label: Enter the freight depot
+    locales: { ja: { label: 貨物基地へ入る } }
 aiPolicy:
   allowed: [environmental_flavor, radio-fragments]
   forbidden: [move_pc, mutate_state, invent_rewards, reveal_hidden_routes]

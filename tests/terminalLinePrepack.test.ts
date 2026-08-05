@@ -8,6 +8,7 @@ import { resolveTechniqueCatalog } from "../src/domain/techniques";
 import { CLASS_CAPABILITIES, resolveClassCapabilities } from "../src/domain/classCapabilities";
 import { combatLoadout, resolveVocationCatalog } from "../src/domain/vocations";
 import { createCombatState, executeCommand } from "../src/domain/rulesEngine";
+import { dungeonGroupOfFloor, resolveEntrances } from "../src/domain/scenario";
 import { createInitialGameState } from "../src/domain/gameState";
 
 const root = resolve(process.cwd(), "content/worlds/terminal-line");
@@ -86,15 +87,27 @@ describe("Terminal Line F1–F10 canonical pack", () => {
 
     expect(result.world.id).toBe("world.terminal-line");
     expect(result.world.dungeons.map((floor) => floor.id)).toEqual([
+      // The ten-floor main descent, then the optional three-floor "depot" side dungeon (T30/U5),
+      // ordered group-then-level (main's empty group sorts before "depot").
       "dungeon.tl1f", "dungeon.tl2f", "dungeon.tl3f", "dungeon.tl4f", "dungeon.tl5f",
-      "dungeon.tl6f", "dungeon.tl7f", "dungeon.tl8f", "dungeon.tl9f", "dungeon.tl10f"
+      "dungeon.tl6f", "dungeon.tl7f", "dungeon.tl8f", "dungeon.tl9f", "dungeon.tl10f",
+      "dungeon.tl-depot1", "dungeon.tl-depot2", "dungeon.tl-depot3"
     ]);
+    // Two town portals: the main descent + the depot side dungeon.
+    expect(resolveEntrances(result.world).map((entrance) => entrance.id)).toEqual(["main", "depot"]);
+    expect(dungeonGroupOfFloor(result.world, "dungeon.tl-depot2")).toBe("depot");
     expect(result.world.enemies.map((enemy) => enemy.id)).toEqual(enemyIds);
     expect(result.world.dungeons[0].grid?.cells.length).toBeGreaterThanOrEqual(80);
-    for (const floor of result.world.dungeons) expect(floor.grid?.cells.length).toBeGreaterThanOrEqual(80);
+    // The ≥80-cell maze rule is a MAIN-DESCENT quality gate; the optional depot side dungeon is a compact
+    // farm loop by design, so it is exempt (only the ungrouped main floors must be full mazes).
+    for (const floor of result.world.dungeons.filter((floor) => !floor.dungeon)) {
+      expect(floor.grid?.cells.length, floor.id).toBeGreaterThanOrEqual(80);
+    }
     expect(result.world.dungeons[0].rooms.some((room) => room.id === "room.tl1f.signal-office" && room.event)).toBe(true);
     expect(result.world.dungeons[1].rooms.some((room) => room.id === "room.tl2f.power-terminal" && (room.gates?.length ?? 0) > 0)).toBe(true);
-    expect(result.world.dungeons.at(-1)?.rooms.some((room) => room.id === "room.tl10f.zero-core" && room.chamberGuardian)).toBe(true);
+    // The main descent's finale is F10 (now no longer the array tail — the depot floors follow it).
+    const finale = result.world.dungeons.find((floor) => floor.id === "dungeon.tl10f");
+    expect(finale?.rooms.some((room) => room.id === "room.tl10f.zero-core" && room.chamberGuardian)).toBe(true);
   });
 
   it("delivers every F1-F10 enemy as a 768-square RGBA base/hurt pair", () => {

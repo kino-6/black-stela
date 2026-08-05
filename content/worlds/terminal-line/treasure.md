@@ -115,6 +115,40 @@ treasureTables:
       - { itemId: item.tl-transit-key-fragment, weight: 4 }
       - { itemId: item.tl-universal-round, weight: 3, quantity: 6 }
       - { itemId: item.tl-dispatch-stimulant, weight: 3 }
+
+  # ── depot side dungeon (T30/U5): salvage that pays in sellable gear — the "稼ぎ" of a farm run ──
+  - id: treasure.tl-depot.salvage
+    tier: 3
+    entries:
+      - { itemId: equip.tl-turnstile-9-smg, weight: 5 }
+      - { itemId: equip.tl-relay-11-pistol, weight: 5 }
+      - { itemId: equip.tl-sluice-coat, weight: 4 }
+      - { itemId: equip.tl-porter-frame, weight: 4 }
+      - { itemId: item.tl-field-dressing, weight: 5, quantity: 2 }
+      - { itemId: item.tl-universal-round, weight: 5, quantity: 4 }
+  - id: treasure.tl-depot.bonded
+    tier: 4
+    entries:
+      - { itemId: equip.tl-bureau-17-smg, weight: 5 }
+      - { itemId: equip.tl-quarantine-62-dmr, weight: 4 }
+      - { itemId: equip.tl-clearance-vest, weight: 4 }
+      - { itemId: equip.tl-dispatch-ring, weight: 4 }
+      - { itemId: item.tl-trauma-seal, weight: 4 }
+  - id: treasure.tl-depot.office
+    tier: 3
+    entries:
+      - { itemId: equip.tl-ironrain-74-rifle, weight: 4 }
+      - { itemId: equip.tl-records-charm, weight: 4 }
+      - { itemId: item.tl-dispatch-stimulant, weight: 5 }
+      - { itemId: item.tl-universal-round, weight: 5, quantity: 3 }
+  - id: treasure.tl-depot.vault
+    tier: 5
+    entries:
+      - { itemId: equip.tl-floodgate-12-shotgun, weight: 5 }
+      - { itemId: equip.tl-zero-line-21-smg, weight: 4 }
+      - { itemId: equip.tl-clearance-vest, weight: 4 }
+      - { itemId: equip.tl-lift-harness, weight: 4 }
+      - { itemId: item.tl-trauma-seal, weight: 4, quantity: 2 }
 ---
 
 # 補給ロッカーと封鎖配給箱

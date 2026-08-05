@@ -98,6 +98,42 @@ encounterTables:
     floorId: dungeon.tl10f
     entries:
       - { enemyId: enemy.tl10f.zero-line-stationmaster, weight: 10, minCount: 1, maxCount: 1 }
+
+  # ── depot side dungeon (T30/U5): farmable mid-game packs, reusing existing mid-tier enemies ──
+  - id: encounters.tl-depot1.receiving
+    floorId: dungeon.tl-depot1
+    groupsMax: 2
+    entries:
+      - { enemyId: enemy.tl1f.drain-rat, weight: 8, minCount: 3, maxCount: 5 }
+      - { enemyId: enemy.tl5f.ration-porter, weight: 8, minCount: 1, maxCount: 3 }
+      - { enemyId: enemy.tl4f.silt-lamprey, weight: 5, minCount: 1, maxCount: 2 }
+  - id: encounters.tl-depot1.foreman
+    floorId: dungeon.tl-depot1
+    entries:
+      - { enemyId: enemy.tl5f.ration-porter, weight: 10, minCount: 2, maxCount: 4 }
+  - id: encounters.tl-depot2.sorting
+    floorId: dungeon.tl-depot2
+    groupsMax: 2
+    entries:
+      - { enemyId: enemy.tl5f.cold-store-widow, weight: 8, minCount: 1, maxCount: 3 }
+      - { enemyId: enemy.tl4f.pump-sentinel, weight: 7, minCount: 1, maxCount: 2 }
+      - { enemyId: enemy.tl5f.ration-porter, weight: 5, minCount: 1, maxCount: 2 }
+  - id: encounters.tl-depot2.office
+    floorId: dungeon.tl-depot2
+    entries:
+      - { enemyId: enemy.tl5f.ration-porter, weight: 8, minCount: 2, maxCount: 3 }
+      - { enemyId: enemy.tl5f.cold-store-widow, weight: 6, minCount: 1, maxCount: 2 }
+  - id: encounters.tl-depot3.strongroom
+    floorId: dungeon.tl-depot3
+    groupsMax: 2
+    entries:
+      - { enemyId: enemy.tl7f.clearance-bailiff, weight: 8, minCount: 1, maxCount: 2 }
+      - { enemyId: enemy.tl6f.quarantine-orderly, weight: 6, minCount: 1, maxCount: 2 }
+  - id: encounters.tl-depot3.vault
+    floorId: dungeon.tl-depot3
+    entries:
+      - { enemyId: enemy.tl6f.archive-pallbearer, weight: 10, minCount: 1, maxCount: 1 }
+      - { enemyId: enemy.tl7f.clearance-bailiff, weight: 6, minCount: 1, maxCount: 2 }
 ---
 
 # 終端隔離線の遭遇

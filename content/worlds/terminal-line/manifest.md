@@ -15,6 +15,9 @@ dungeons:
   - dungeons/tl8f.md
   - dungeons/tl9f.md
   - dungeons/tl10f.md
+  - dungeons/tl-depot1.md
+  - dungeons/tl-depot2.md
+  - dungeons/tl-depot3.md
 dataFiles:
   items: items.md
   enemies: enemies.md
