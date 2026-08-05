@@ -15,6 +15,7 @@ const I18n := preload("res://scripts/i18n.gd")
 const Fmt := preload("res://scripts/town_format.gd")
 const UI := preload("res://scripts/town/ui_kit.gd")
 const SliceRules := preload("res://scripts/rules/slice_rules.gd")
+const SaveGame := preload("res://scripts/rules/save_game.gd")
 const DungeonHud := preload("res://scripts/dungeon/dungeon_hud.gd")
 const ConfigPanel := preload("res://scripts/config_panel.gd")
 
@@ -81,7 +82,7 @@ func _ready() -> void:
 	# Autosave 1 — arriving in town with a party (playtest: the build never autosaved, so every run started
 	# from the beginning). An empty brand-new town (no party yet) is not worth a save.
 	if _run and not _run.state.get("party", []).is_empty():
-		_run.save_to_slot(1)
+		_run.save_autosave()
 	_build()
 
 func _acquire_state() -> void:
@@ -577,12 +578,23 @@ func _close_menu() -> void:
 		child.queue_free()
 	_rebuild()
 
-# Manual save (slot 3) from the 記録の間 — the town/stairs autosaves are 1 and 2.
-func _save_run() -> void:
+# A player-made save into one of this scenario's three manual slots (記録の間). The town/stairs autosave
+# rolls into the scenario's own autosave separately.
+func _save_manual(index: int) -> void:
 	if _run:
-		_run.save_to_slot(3)
-		_event_text = I18n.t("save.saved", {"slot": "%s 3" % I18n.t("save.slot")})
+		_run.save_manual(index)
+		_event_text = I18n.t("save.savedToSlot", {"slot": I18n.t("save.manualSlot", {"n": index})})
 		_rebuild()
+
+# This scenario's three manual slots resolved to their current save summaries (empty ⇒ no "savedAt"), for
+# the records-room Save UI. Mirrors App.tsx manualSlotSummaries.
+func _manual_slots() -> Array:
+	var world_id := String(_world.get("id", _world_id))
+	var out: Array = []
+	for i in range(1, SaveGame.MANUAL_SLOTS_PER_WORLD + 1):
+		var summary: Dictionary = SaveGame.slot_summary(SaveGame.manual_slot_id(world_id, i)) if _run else {"empty": true}
+		out.append({"index": i, "savedAt": String(summary.get("savedAt", "")) if not bool(summary.get("empty", true)) else ""})
+	return out
 
 func _service_ctx() -> Dictionary:
 	return {
@@ -591,7 +603,8 @@ func _service_ctx() -> Dictionary:
 		"engine": engine(),
 		"event_text": _event_text,
 		"dispatch": func(command): _dispatch_service_command(command),
-		"save_run": func(): _save_run(),
+		"manual_slots": _manual_slots(),
+		"save_manual": func(index): _save_manual(int(index)),
 		"close": func(): _close_service(),
 		"selected_member": func(): return selected_member(),
 		# Keep party inspection separate from the shared service-selection callback: roster selection retains

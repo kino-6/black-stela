@@ -118,7 +118,16 @@ import { defaultWorld } from "./data/defaultWorld";
 import { setActiveWorld } from "./data/activeWorld";
 import { listScenarios, getWorldById, getWorldByScenarioId, mergeBaseCatalog } from "./data/worldRegistry";
 import { ScenarioPicker } from "./components/ScenarioPicker";
-import { fromSaveDataV1, toSaveDataV1 } from "./domain/saveData";
+import { SaveBrowser } from "./components/SaveBrowser";
+import {
+  autosaveSlotId,
+  fromSaveDataV1,
+  isAutosaveSlot,
+  manualSlotId,
+  manualSlotIndex,
+  MANUAL_SLOTS_PER_WORLD,
+  toSaveDataV1
+} from "./domain/saveData";
 import { LocalStorageSaveRepository, type SaveSlotSummary } from "./services/saveRepository";
 import { createTranslator, createWorldTranslator, type Locale, type Translator } from "./i18n";
 import {
@@ -148,9 +157,11 @@ import { cssArtVariables, portraitUrl, setActiveArtPack } from "./ui/artAssets";
 type GuildCreationStep = "briefing" | "class" | "face" | "background" | "trait" | "bonus" | "name";
 type GuildOfferState = "ask" | "suggestion" | "dismissed";
 type TownMode = "guild" | "shop" | "recovery" | "records" | "quests" | "career" | "loot" | "workshop" | "blacksmith" | "entry";
-type AppScreen = "title" | "config" | "scenario" | "game";
+type AppScreen = "title" | "config" | "scenario" | "load" | "game";
 
-const AUTO_SAVE_SLOT = "autosave";
+// A scratch slot id the DEBUG panel's manual Save/Load buttons target. Real play uses per-scenario slots
+// (autosaveSlotId / manualSlotId); this is only the debug panel's default pick.
+const DEBUG_SCRATCH_SLOT = "debug-scratch";
 // The active art pack for this world, resolved once. Passed explicitly to every
 // resolver call (portraits, icons, CSS vars, dungeon scene) so rendering never
 // depends on the resolver's module-level active-pack timing.
@@ -213,7 +224,7 @@ export function App() {
       root.style.setProperty(name, value);
     }
   }, [activeWorld, artPack]);
-  const [saveSlotId, setSaveSlotId] = useState(AUTO_SAVE_SLOT);
+  const [saveSlotId, setSaveSlotId] = useState(DEBUG_SCRATCH_SLOT);
   const [saveSlots, setSaveSlots] = useState<SaveSlotSummary[]>(() => createBrowserSaveRepository()?.list() ?? []);
   const [saveStatus, setSaveStatus] = useState("");
   const [tempoStatus, setTempoStatus] = useState("");
@@ -266,9 +277,18 @@ export function App() {
   );
   const [scenarioImportStatus, setScenarioImportStatus] = useState("");
   const [scenarioImportErrors, setScenarioImportErrors] = useState<ScenarioValidationError[]>([]);
-  const autosaveSummary = saveSlots.find((slot) => slot.slotId === AUTO_SAVE_SLOT);
-  const hasAutosave = autosaveSummary?.status === "valid";
-  const hasCorruptAutosave = autosaveSummary?.status === "corrupt";
+  // U4: saves are per-scenario now (one rolling autosave + three manual slots each), so the title's
+  // Continue resumes the NEWEST valid save across every scenario, and a Load browser lists the rest.
+  const validSaves = useMemo(
+    () =>
+      saveSlots
+        .filter((slot): slot is Extract<SaveSlotSummary, { status: "valid" }> => slot.status === "valid")
+        .sort((a, b) => b.savedAt.localeCompare(a.savedAt)),
+    [saveSlots]
+  );
+  const newestSave = validSaves[0];
+  const hasAutosave = validSaves.length > 0; // "there is something to Continue" (name kept for TitleScreen)
+  const hasCorruptAutosave = saveSlots.some((slot) => slot.status === "corrupt");
 
   const roomText = useMemo(() => {
     if (!state.position) {
@@ -1153,9 +1173,33 @@ export function App() {
     }
   }
 
+  // U4: a player-made save into one of this scenario's three manual slots (from the town records room).
+  // The autosave keeps rolling separately; these are the deliberate checkpoints the player controls.
+  function saveToManualSlot(index: number) {
+    if (!saveRepository) {
+      setSaveStatus(t("save.unavailable"));
+      return;
+    }
+    saveRepository.write(manualSlotId(activeWorld.id, index), toSaveDataV1(state, activeWorld, { locale }));
+    setSaveSlots(saveRepository.list());
+    setSaveStatus(t("save.savedToSlot", { slot: t("save.manualSlot", { n: index }) }));
+  }
+
+  // This scenario's three manual slots, each resolved to its current save (or undefined when empty), for
+  // the records-room Save UI.
+  const manualSlotSummaries = useMemo(
+    () =>
+      Array.from({ length: MANUAL_SLOTS_PER_WORLD }, (_, i) => {
+        const slotId = manualSlotId(activeWorld.id, i + 1);
+        const summary = saveSlots.find((slot) => slot.slotId === slotId);
+        return { index: i + 1, slotId, summary: summary?.status === "valid" ? summary : undefined };
+      }),
+    [saveSlots, activeWorld]
+  );
+
   // T6: delete a save from the title (parity with the Godot title's per-slot 削除). The title button gates
   // this behind a はい、削除する / やめる confirm so a save is never one stray press from gone.
-  function deleteSave(slotId = AUTO_SAVE_SLOT) {
+  function deleteSave(slotId = DEBUG_SCRATCH_SLOT) {
     if (!saveRepository) {
       setSaveStatus(t("save.unavailable"));
       return;
@@ -1501,9 +1545,12 @@ export function App() {
       return;
     }
 
-    saveRepository.write(AUTO_SAVE_SLOT, toSaveDataV1(state, activeWorld, { locale }));
+    // Per-scenario autosave: keyed by the active world so switching scenarios never clobbers another's
+    // autosave. A world with no id (shouldn't happen) would collapse to one shared key, which is the old
+    // behavior — safe.
+    saveRepository.write(autosaveSlotId(activeWorld.id), toSaveDataV1(state, activeWorld, { locale }));
     setSaveSlots(saveRepository.list());
-  }, [debugMode, locale, saveRepository, scenarioValidationErrors.length, screen, state]);
+  }, [debugMode, locale, saveRepository, scenarioValidationErrors.length, screen, state, activeWorld]);
 
   // Shared by both cockpits — it sits between the message pane and the command dock in
   // each, so the halves take it as a slot rather than each rebuilding it.
@@ -1533,7 +1580,17 @@ export function App() {
           onBack={() => setScreen("title")}
         />
       )}
-      {screen !== "game" && screen !== "scenario" && (
+      {screen === "load" && (
+        <SaveBrowser
+          saves={validSaves}
+          t={t}
+          locale={locale}
+          onLoad={(slotId) => loadGame(slotId)}
+          onDelete={(slotId) => deleteSave(slotId)}
+          onBack={() => setScreen("title")}
+        />
+      )}
+      {(screen === "title" || screen === "config") && (
         <TitleScreen
           screen={screen}
           t={t}
@@ -1543,8 +1600,9 @@ export function App() {
           hasCorruptAutosave={hasCorruptAutosave}
           autoBattleSafety={autoBattleSafety}
           onNewGame={beginNewGame}
-          onContinue={() => loadGame(AUTO_SAVE_SLOT)}
-          onDeleteSave={() => deleteSave(AUTO_SAVE_SLOT)}
+          onContinue={() => newestSave && loadGame(newestSave.slotId)}
+          onOpenLoad={() => setScreen("load")}
+          onDeleteSave={() => newestSave && deleteSave(newestSave.slotId)}
           onToggleConfig={() => setScreen(screen === "config" ? "title" : "config")}
           onChangeLocale={changeLocale}
           onToggleAutoBattleSafety={(enabled) => {
@@ -2782,7 +2840,15 @@ export function App() {
                 />
               )}
               {townMode === "records" && (
-                <RecordsPanel t={t} log={state.log} enemyRecord={state.enemyRecord} locale={locale} world={activeWorld} />
+                <RecordsPanel
+                  t={t}
+                  log={state.log}
+                  enemyRecord={state.enemyRecord}
+                  locale={locale}
+                  world={activeWorld}
+                  manualSlots={manualSlotSummaries}
+                  onSaveToSlot={saveToManualSlot}
+                />
               )}
               {townMode === "records" && (
                 <>

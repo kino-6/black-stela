@@ -69,12 +69,14 @@ func _initialize() -> void:
 	# 5. DISK round-trip (playtest) — the play scenes autosave to a disk slot; the build never called write
 	#    before, so every run started over. Write a slot and read it back with its WORLD preserved, so
 	#    run_state.load_slot can restore a Verdant save onto the Verdant world (not the default).
+	# U4: a per-scenario manual slot id (mirrors src/domain/saveData.ts manualSlotId).
+	var disk_slot := SaveGame.manual_slot_id("verdant", 2)
 	var disk_state := {"phase": "dungeon", "partyGold": 321, "party": [{"id": "rt", "name": "RT"}], "quests": [], "chests": []}
-	if not SaveGame.write_slot(9, disk_state, {"id": "verdant", "title": "Verdant Gallery"}, "2026-07-27", "ja"):
+	if not SaveGame.write_slot(disk_slot, disk_state, {"id": "verdant", "title": "Verdant Gallery"}, "2026-07-27", "ja"):
 		print("[save] DISK write failed")
 		failures += 1
 	else:
-		var disk_loaded: Dictionary = SaveGame.read_slot(9)
+		var disk_loaded: Dictionary = SaveGame.read_slot(disk_slot)
 		var disk_scenario: Dictionary = (disk_loaded.get("envelope", {}) as Dictionary).get("scenario", {})
 		if not bool(disk_loaded.get("ok", false)):
 			print("[save] DISK read failed — %s" % disk_loaded.get("error", "?"))
@@ -87,12 +89,15 @@ func _initialize() -> void:
 			failures += 1
 		else:
 			print("[save] DISK slot round-trip preserves world + state")
+		# list_slots surfaces the save it just wrote, keyed by its slot id.
+		if not SaveGame.list_slots().any(func(s): return String(s.get("slotId", "")) == disk_slot):
+			print("[save] list_slots did not surface the written slot"); failures += 1
 		# T6 — delete_slot removes the slot; slot_summary then reports it empty (no undo, no file left behind).
-		if not SaveGame.delete_slot(9):
+		if not SaveGame.delete_slot(disk_slot):
 			print("[save] delete_slot did not report success"); failures += 1
-		elif not bool(SaveGame.slot_summary(9).get("empty", false)):
+		elif not bool(SaveGame.slot_summary(disk_slot).get("empty", false)):
 			print("[save] delete_slot left the slot listed (T6)"); failures += 1
-		elif FileAccess.file_exists(SaveGame.slot_path(9)):
+		elif FileAccess.file_exists(SaveGame.slot_path(disk_slot)):
 			print("[save] delete_slot left the file on disk (T6)"); failures += 1
 		else:
 			print("[save] delete_slot removes the slot (T6)")

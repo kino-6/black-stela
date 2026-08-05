@@ -2,6 +2,13 @@ import type { GameState, ScenarioWorld } from "../domain/types";
 import { projectEventToLog } from "../domain/replayLog";
 import { bestiaryEntries } from "../domain/bestiary";
 import type { Locale, Translator } from "../i18n";
+import type { SaveSlotSummary } from "../services/saveRepository";
+
+type ManualSlot = {
+  index: number;
+  slotId: string;
+  summary?: Extract<SaveSlotSummary, { status: "valid" }>;
+};
 
 interface RecordsPanelProps {
   t: Translator;
@@ -9,15 +16,42 @@ interface RecordsPanelProps {
   enemyRecord: GameState["enemyRecord"];
   locale: Locale;
   world: ScenarioWorld;
+  manualSlots: ManualSlot[];
+  onSaveToSlot: (index: number) => void;
 }
 
-// The town records service — recent log entries, plus the IMP-022D bestiary: the enemies the party
-// has met, and (once defeated) their weaknesses and rare-drop sources. Coarse only — no exact HP.
-export function RecordsPanel({ t, log, enemyRecord, locale, world }: RecordsPanelProps) {
+// The town records service (記録の間) — the manual Save slots for this scenario, recent log entries, plus
+// the IMP-022D bestiary: the enemies the party has met, and (once defeated) their weaknesses and
+// rare-drop sources. Coarse only — no exact HP.
+export function RecordsPanel({ t, log, enemyRecord, locale, world, manualSlots, onSaveToSlot }: RecordsPanelProps) {
   const bestiary = bestiaryEntries(world, enemyRecord, locale);
   return (
     <section className="town-service" aria-labelledby="records-heading" data-testid="records-panel">
       <h3 id="records-heading">{t("town.recordsHeading")}</h3>
+
+      <div className="records-save" data-testid="records-save">
+        <h4>{t("save.menuTitle")}</h4>
+        <ul className="save-slot-list">
+          {manualSlots.map((slot) => (
+            <li key={slot.slotId} className="save-slot-row" data-testid={`manual-slot-${slot.index}`}>
+              <div className="save-slot-info">
+                <span className="save-slot-name">{t("save.manualSlot", { n: slot.index })}</span>
+                <span className="save-slot-time">
+                  {slot.summary ? new Date(slot.summary.savedAt).toLocaleString(locale) : t("save.emptyManual")}
+                </span>
+              </div>
+              <button
+                type="button"
+                className="primary-action"
+                data-testid={`manual-save-${slot.index}`}
+                onClick={() => onSaveToSlot(slot.index)}
+              >
+                {slot.summary ? t("save.overwrite") : t("save.saveHere")}
+              </button>
+            </li>
+          ))}
+        </ul>
+      </div>
 
       <div className="bestiary" data-testid="bestiary">
         <h4>{t("bestiary.heading")}</h4>

@@ -15,6 +15,7 @@ interface TitleScreenProps {
   debugMode?: boolean;
   onNewGame: () => void;
   onContinue: () => void;
+  onOpenLoad: () => void;
   onDeleteSave: () => void;
   onToggleConfig: () => void;
   onChangeLocale: (locale: Locale) => void;
@@ -37,6 +38,7 @@ export function TitleScreen({
   debugMode,
   onNewGame,
   onContinue,
+  onOpenLoad,
   onDeleteSave,
   onToggleConfig,
   onChangeLocale,
@@ -64,6 +66,9 @@ export function TitleScreen({
         </button>
         <button type="button" disabled={!hasAutosave} onClick={onContinue}>
           {t("title.continue")}
+        </button>
+        <button type="button" disabled={!hasAutosave} data-testid="title-load" onClick={onOpenLoad}>
+          {t("title.loadGame")}
         </button>
         {hasAutosave && !confirmingDelete && (
           <button type="button" data-testid="title-delete-save" onClick={() => setConfirmingDelete(true)}>

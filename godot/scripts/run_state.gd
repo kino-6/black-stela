@@ -24,17 +24,27 @@ const SliceRules := preload("res://scripts/rules/slice_rules.gd")
 const SaveGame := preload("res://scripts/rules/save_game.gd")
 
 # --- persistence -----------------------------------------------------------------------------------
-# Slots: 1 = town autosave, 2 = stairs autosave, 3 = manual save. The play scenes call these; the title
-# lists every non-empty slot under 続きから. Nothing was ever written before (the build had the save RULES
-# and the LOAD, but no scene ever CALLED write) — so every run started from the beginning (playtest).
-func save_to_slot(slot: int) -> void:
+# U4: saves are per-scenario now. The town/stairs autosave rolls into one slot PER WORLD, and the records
+# room writes up to three manual slots per world. The title lists every valid save (newest first); its
+# Continue takes the head, its browser lists the rest. (Before any of this the build had the save RULES
+# and the LOAD but no scene ever CALLED write — so every run started from the beginning.)
+func save_to_slot(slot_id: String) -> void:
 	ensure_loaded()
-	SaveGame.write_slot(slot, state, world, Time.get_datetime_string_from_system(), "ja")
+	SaveGame.write_slot(slot_id, state, world, Time.get_datetime_string_from_system(), "ja")
+
+# The active scenario's rolling autosave (town entry / stair change), keyed by the world's own id so
+# switching scenarios never clobbers another's autosave.
+func save_autosave() -> void:
+	save_to_slot(SaveGame.autosave_slot_id(String(world.get("id", world_id))))
+
+# A player-made save into one of the active scenario's manual slots (records room).
+func save_manual(index: int) -> void:
+	save_to_slot(SaveGame.manual_slot_id(String(world.get("id", world_id)), index))
 
 # Load a slot into THIS run — restoring the world it was saved in (the old load kept only the state, so a
 # non-default save loaded with the wrong world). Returns false if the slot is empty/corrupt.
-func load_slot(slot: int) -> bool:
-	var loaded: Dictionary = SaveGame.read_slot(slot)
+func load_slot(slot_id: String) -> bool:
+	var loaded: Dictionary = SaveGame.read_slot(slot_id)
 	if not bool(loaded.get("ok", false)):
 		return false
 	var envelope: Dictionary = loaded.get("envelope", {})

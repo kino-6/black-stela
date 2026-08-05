@@ -473,3 +473,35 @@ export function parseSaveData(input: unknown): SaveDataV1 {
 export function fromSaveDataV1(input: SaveDataV1 | unknown): GameState {
   return parseSaveData(input).state;
 }
+
+// ── Slot ids (U4: per-scenario autosave + manual saves) ──────────────────────────────────────────────
+// A save's storage slot is a free-form string in every backend (localStorage key suffix / a sanitized
+// user:// filename). The SAVE ENVELOPE is unchanged — worldId already lives inside it — so slot naming is
+// a pure storage/UI concern the parity gate does not touch. The scheme is shared by both runtimes so a
+// slot written by one reads by the other:
+//   auto:<worldId>        — the ONE rolling autosave for a scenario (per-scenario, so switching worlds
+//                           never clobbers another's autosave).
+//   manual:<worldId>:<n>  — a player-made save; n is 1..MANUAL_SLOTS_PER_WORLD.
+export const MANUAL_SLOTS_PER_WORLD = 3;
+
+export function autosaveSlotId(worldId: string): string {
+  return `auto:${worldId}`;
+}
+
+export function manualSlotId(worldId: string, index: number): string {
+  return `manual:${worldId}:${index}`;
+}
+
+export function isAutosaveSlot(slotId: string): boolean {
+  return slotId.startsWith("auto:");
+}
+
+export function isManualSlot(slotId: string): boolean {
+  return slotId.startsWith("manual:");
+}
+
+// The manual slot's 1-based number for display ("Save 2"), or null if the id is not a manual slot.
+export function manualSlotIndex(slotId: string): number | null {
+  const match = slotId.match(/^manual:.+:(\d+)$/);
+  return match ? Number(match[1]) : null;
+}

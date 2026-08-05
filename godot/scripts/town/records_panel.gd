@@ -16,10 +16,22 @@ static func build(ctx: Dictionary) -> Control:
 	var root := UI.col(10)
 	root.add_child(UI.service_heading(I18n.t("town.recordsHeading"), I18n.t("town.gold", {"gold": int(state.get("partyGold", 0))})))
 
-	# Manual save (slot 3) — the 記録の間 is where a run is written to the ledger by hand; town/stairs
-	# autosave to slots 1/2 on their own.
-	if ctx.has("save_run"):
-		root.add_child(UI.button(I18n.t("save.save"), func(): (ctx["save_run"] as Callable).call(), Vector2(200, 44), 17))
+	# Manual Save — the 記録の間 is where a run is written to the ledger by hand, into one of this
+	# scenario's three slots (the town/stairs autosave rolls into the scenario's own autosave separately).
+	if ctx.has("save_manual"):
+		root.add_child(UI.label(I18n.t("save.menuTitle"), 20, UI.GOLD))
+		var save_manual: Callable = ctx["save_manual"]
+		for slot in ctx.get("manual_slots", []):
+			var index := int((slot as Dictionary).get("index", 0))
+			var saved_at := String((slot as Dictionary).get("savedAt", ""))
+			var row := UI.row()
+			row.add_child(UI.grow(UI.label(I18n.t("save.manualSlot", {"n": index}), 16, UI.INK)))
+			row.add_child(UI.label(saved_at if saved_at != "" else I18n.t("save.emptyManual"), 13, UI.DIM))
+			row.add_child(UI.button(
+				I18n.t("save.overwrite") if saved_at != "" else I18n.t("save.saveHere"),
+				func(): save_manual.call(index), Vector2(160, 40), 15
+			))
+			root.add_child(row)
 
 	# --- bestiary ---
 	root.add_child(UI.label(I18n.t("bestiary.heading"), 20, UI.GOLD))

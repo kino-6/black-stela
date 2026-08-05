@@ -23,8 +23,8 @@ var _config_open: bool = false
 var _settings: Dictionary = {}
 var _status: String = ""
 var _force_corrupt: bool = false   # gate seam: render the unreadable-save line without breaking a real slot
-var _pending_delete: int = 0       # the slot armed for deletion, awaiting a confirm (T6)
-var _slot_overrides: Dictionary = {}  # T6 test seam: slot-number string → fabricated slot_summary
+var _pending_delete: String = ""   # the slot id armed for deletion, awaiting a confirm (T6)
+var _slot_overrides: Dictionary = {}  # test seam: {"__list__": [fabricated slot_summary, …]}
 
 func _ready() -> void:
 	await get_tree().process_frame
@@ -48,7 +48,7 @@ func set_ui_state(ui: Dictionary) -> void:
 	if ui.has("slots"):
 		_slot_overrides = ui["slots"]
 	if ui.has("pending_delete"):
-		_pending_delete = int(ui["pending_delete"])
+		_pending_delete = String(ui["pending_delete"])
 	_rebuild()
 
 func set_world_override(world_id: String) -> void:
@@ -99,29 +99,35 @@ func _rebuild() -> void:
 	var start := UI.button(I18n.t("title.newGame"), func(): _on_start(), Vector2(420, 58), 26)
 	box.add_child(_centered(start))
 
-	# 続きから: one row per non-empty slot, plus the corrupt ones reported rather than hidden.
+	# 続きから / セーブ一覧: U4 lists every valid save (its own autosave + up to three manual slots per
+	# scenario), newest first — the head IS the one-tap Continue, the rest are the load browser. Corrupt
+	# saves are reported rather than hidden.
+	box.add_child(_centered(UI.label(I18n.t("title.loadGame"), 15, DIM)))
 	var corrupt := _force_corrupt
 	var continues := 0
-	for slot in [1, 2, 3]:
-		var summary: Dictionary = _slot_overrides.get(str(slot), SaveGame.slot_summary(slot))
+	var saves: Array = _slot_overrides.get("__list__", null) if _slot_overrides.has("__list__") else SaveGame.list_slots()
+	for entry in saves:
+		var summary: Dictionary = entry
+		var slot_id := String(summary.get("slotId", ""))
 		if bool(summary.get("empty", true)):
 			corrupt = corrupt or bool(summary.get("corrupt", false))
 			continue
 		continues += 1
 		var row := UI.row()
-		var b := UI.button("%s %s %d — %s ・ %s ・ %s" % [
-			I18n.t("title.continue"), I18n.t("save.slot"), slot, String(summary.get("title", "")),
+		var verb := I18n.t("title.continue") if continues == 1 else I18n.t("save.load")
+		var b := UI.button("%s — %s ・ %s ・ %s ・ %s" % [
+			verb, String(summary.get("title", "")), _slot_label(slot_id),
 			I18n.t("town.partyReady", {"count": int(summary.get("party", 0))}),
 			I18n.t("town.gold", {"gold": int(summary.get("gold", 0))})
-		], func(): _on_continue(slot), Vector2(470, 48), 18)
+		], func(): _on_continue(slot_id), Vector2(470, 48), 18)
 		row.add_child(b)
 		# T6 — delete a slot from the title, with a confirm step (irreversible). The 削除 button arms it; はい
 		# does it, やめる backs out. Never a one-press destroy.
-		if _pending_delete == slot:
-			row.add_child(UI.button(I18n.t("title.deleteConfirm"), func(): _delete_slot(slot), Vector2(96, 48), 16))
-			row.add_child(UI.button(I18n.t("title.deleteCancel"), func(): _pending_delete = 0; _rebuild(), Vector2(96, 48), 16))
+		if _pending_delete == slot_id:
+			row.add_child(UI.button(I18n.t("title.deleteConfirm"), func(): _delete_slot(slot_id), Vector2(96, 48), 16))
+			row.add_child(UI.button(I18n.t("title.deleteCancel"), func(): _pending_delete = ""; _rebuild(), Vector2(96, 48), 16))
 		else:
-			row.add_child(UI.button(I18n.t("title.deleteSlot"), func(): _pending_delete = slot; _rebuild(), Vector2(96, 48), 16))
+			row.add_child(UI.button(I18n.t("title.deleteSlot"), func(): _pending_delete = slot_id; _rebuild(), Vector2(96, 48), 16))
 		box.add_child(_centered(row))
 	if continues == 0:
 		# The command still has to be VISIBLE and legible as unavailable — React renders it disabled
@@ -150,19 +156,26 @@ func _toggle_config() -> void:
 	_config_open = not _config_open
 	_rebuild()
 
+# The player-facing name for a slot id — Autosave / Save N, never the raw id.
+func _slot_label(slot_id: String) -> String:
+	if SaveGame.is_autosave_slot(slot_id):
+		return I18n.t("save.autosave")
+	var index := SaveGame.manual_slot_index(slot_id)
+	return I18n.t("save.manualSlot", {"n": index}) if index > 0 else slot_id
+
 # Delete a save slot after the confirm (T6). Irreversible; disarms and rebuilds so the row disappears.
-func _delete_slot(slot: int) -> void:
-	SaveGame.delete_slot(slot)
-	_pending_delete = 0
-	_status = I18n.t("title.deleteDone", {"slot": slot})
+func _delete_slot(slot_id: String) -> void:
+	SaveGame.delete_slot(slot_id)
+	_pending_delete = ""
+	_status = I18n.t("title.deleteDone", {"slot": _slot_label(slot_id)})
 	_rebuild()
 
 # Continue: load the slot into the shared run and drop the party back where they stood.
-func _on_continue(slot: int) -> void:
+func _on_continue(slot_id: String) -> void:
 	var run := get_node_or_null("/root/Run")
 	# load_slot restores the world the save was made in AND its state (the old path kept only the state, so
 	# a Verdant save loaded onto the default world — its rooms/cells would not exist).
-	if run == null or not bool(run.call("load_slot", slot)):
+	if run == null or not bool(run.call("load_slot", slot_id)):
 		_status = I18n.t("save.corrupt")
 		_rebuild()
 		return

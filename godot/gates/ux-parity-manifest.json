@@ -1968,6 +1968,10 @@
         "bestiary.unknown",
         "bestiary.weaknesses",
         "log.turn",
+        "save.emptyManual",
+        "save.manualSlot",
+        "save.menuTitle",
+        "save.saveHere",
         "town.logCount",
         "town.recordsHeading"
       ],
@@ -2005,6 +2009,12 @@
           "fixture": {
             "enemyRecord": {}
           }
+        }
+      ],
+      "derivedExclusions": [
+        {
+          "key": "save.overwrite",
+          "reason": "Only rendered over a manual slot that ALREADY holds a save (React and Godot both show 上書き vs ここに記録). The records-room gate state has empty slots (no active run), so only save.saveHere is reachable there."
         }
       ]
     },
@@ -4158,6 +4168,7 @@
         "title.deleteCancel",
         "title.deleteConfirm",
         "title.deleteSlot",
+        "title.loadGame",
         "title.menu",
         "title.newGame"
       ],
@@ -4177,29 +4188,35 @@
         {
           "uiState": {
             "slots": {
-              "1": {
-                "empty": false,
-                "corrupt": false,
-                "title": "黒碑門",
-                "party": 3,
-                "gold": 120
-              }
+              "__list__": [
+                {
+                  "slotId": "auto:world.default",
+                  "empty": false,
+                  "corrupt": false,
+                  "title": "黒碑門",
+                  "party": 3,
+                  "gold": 120
+                }
+              ]
             },
-            "pending_delete": 0
+            "pending_delete": ""
           }
         },
         {
           "uiState": {
             "slots": {
-              "1": {
-                "empty": false,
-                "corrupt": false,
-                "title": "黒碑門",
-                "party": 3,
-                "gold": 120
-              }
+              "__list__": [
+                {
+                  "slotId": "auto:world.default",
+                  "empty": false,
+                  "corrupt": false,
+                  "title": "黒碑門",
+                  "party": 3,
+                  "gold": 120
+                }
+              ]
             },
-            "pending_delete": 1
+            "pending_delete": "auto:world.default"
           }
         }
       ],

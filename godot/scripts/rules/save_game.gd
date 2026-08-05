@@ -93,29 +93,56 @@ static func normalize_state(raw: Dictionary) -> Dictionary:
 	state["chests"] = chests
 	return state
 
-# --- disk -------------------------------------------------------------------------------------------
-static func slot_path(slot: int) -> String:
-	return "user://save-%d.json" % slot
+# --- slot ids (U4: per-scenario autosave + manual saves) --------------------------------------------
+# Mirrors src/domain/saveData.ts. A slot id is a free-form string shared with the React build:
+#   auto:<worldId>        — the one rolling autosave for a scenario
+#   manual:<worldId>:<n>  — a player-made save, n = 1..MANUAL_SLOTS_PER_WORLD
+const MANUAL_SLOTS_PER_WORLD := 3
 
-static func write_slot(slot: int, state: Dictionary, world: Dictionary, saved_at: String, locale: String = "ja") -> bool:
-	var file := FileAccess.open(slot_path(slot), FileAccess.WRITE)
+static func autosave_slot_id(world_id: String) -> String:
+	return "auto:%s" % world_id
+
+static func manual_slot_id(world_id: String, index: int) -> String:
+	return "manual:%s:%d" % [world_id, index]
+
+static func is_autosave_slot(slot_id: String) -> bool:
+	return slot_id.begins_with("auto:")
+
+## The manual slot's 1-based number, or 0 if the id is not a manual slot.
+static func manual_slot_index(slot_id: String) -> int:
+	var parts := slot_id.split(":")
+	return int(parts[parts.size() - 1]) if parts.size() >= 3 and parts[0] == "manual" else 0
+
+# --- disk -------------------------------------------------------------------------------------------
+# The slot id rides in the filename so a directory scan can list every save. Only ':' is unsafe in a
+# filename, and it never appears in a worldId, so map it to '~' reversibly.
+const _SLOT_PREFIX := "bs-save-"
+
+static func slot_path(slot_id: String) -> String:
+	return "user://%s%s.json" % [_SLOT_PREFIX, slot_id.replace(":", "~")]
+
+static func _slot_id_from_file(file_name: String) -> String:
+	return file_name.trim_prefix(_SLOT_PREFIX).trim_suffix(".json").replace("~", ":")
+
+static func write_slot(slot_id: String, state: Dictionary, world: Dictionary, saved_at: String, locale: String = "ja") -> bool:
+	var file := FileAccess.open(slot_path(slot_id), FileAccess.WRITE)
 	if file == null:
-		push_error("[save] cannot write slot %d" % slot)
+		push_error("[save] cannot write slot %s" % slot_id)
 		return false
 	file.store_string(JSON.stringify(to_save_data(state, world, saved_at, locale), "  "))
 	file.close()
 	return true
 
-static func read_slot(slot: int) -> Dictionary:
-	var path := slot_path(slot)
+static func read_slot(slot_id: String) -> Dictionary:
+	var path := slot_path(slot_id)
 	if not FileAccess.file_exists(path):
 		return {"ok": false, "error": "empty"}
 	return parse_save_data(JSON.parse_string(FileAccess.get_file_as_string(path)))
 
 ## Delete a save slot (T6). Irreversible — the caller confirms first. Returns true if the slot is now gone
 ## (removed, or already empty). An empty slot is a no-op success, never an error.
-static func delete_slot(slot: int) -> bool:
-	var path := slot_path(slot)
+static func delete_slot(slot_id: String) -> bool:
+	var path := slot_path(slot_id)
 	if not FileAccess.file_exists(path):
 		return true
 	var dir := DirAccess.open("user://")
@@ -123,17 +150,17 @@ static func delete_slot(slot: int) -> bool:
 		return false
 	return dir.remove(path.trim_prefix("user://")) == OK
 
-## Slot headline for the title screen's continue list — never raw ids or implementation wording.
-static func slot_summary(slot: int) -> Dictionary:
-	var loaded := read_slot(slot)
+## Slot headline for the title screen — never raw ids or implementation wording.
+static func slot_summary(slot_id: String) -> Dictionary:
+	var loaded := read_slot(slot_id)
 	if not bool(loaded.get("ok", false)):
-		# A slot that EXISTS but will not load is not the same as an empty one: React says so on the
-		# title screen (save.corrupt) rather than silently offering three empty slots.
-		return {"slot": slot, "empty": true, "corrupt": String(loaded.get("error", "")) != "empty"}
+		# A slot that EXISTS but will not load is not the same as an empty one: the title says so
+		# (save.corrupt) rather than silently offering an empty slot.
+		return {"slotId": slot_id, "empty": true, "corrupt": String(loaded.get("error", "")) != "empty"}
 	var envelope: Dictionary = loaded.get("envelope", {})
 	var state: Dictionary = loaded.get("state", {})
 	return {
-		"slot": slot,
+		"slotId": slot_id,
 		"empty": false,
 		"title": String((envelope.get("scenario", {}) as Dictionary).get("title", "")),
 		"savedAt": String(envelope.get("savedAt", "")),
@@ -141,3 +168,23 @@ static func slot_summary(slot: int) -> Dictionary:
 		"gold": int(state.get("partyGold", 0)),
 		"turn": int(state.get("turn", 0))
 	}
+
+## Every valid save on disk, NEWEST FIRST — the title's Continue takes the head, the browser lists all.
+static func list_slots() -> Array:
+	var out: Array = []
+	var dir := DirAccess.open("user://")
+	if dir == null:
+		return out
+	dir.list_dir_begin()
+	var name := dir.get_next()
+	while name != "":
+		if not dir.current_is_dir() and name.begins_with(_SLOT_PREFIX) and name.ends_with(".json"):
+			var summary := slot_summary(_slot_id_from_file(name))
+			# A valid save OR a corrupt one (a file that will not load) — never a phantom. The title lists
+			# the valid ones and warns about corrupt ones, as React does; both must therefore surface here.
+			if not bool(summary.get("empty", false)) or bool(summary.get("corrupt", false)):
+				out.append(summary)
+		name = dir.get_next()
+	dir.list_dir_end()
+	out.sort_custom(func(a, b): return String(a.get("savedAt", "")) > String(b.get("savedAt", "")))
+	return out

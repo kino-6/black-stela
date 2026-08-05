@@ -4,7 +4,12 @@ import { addCharacter, createCharacter, createInitialGameState } from "../src/do
 import { executeCommand } from "../src/domain/rulesEngine";
 import {
   LATEST_SAVE_SCHEMA_VERSION,
+  autosaveSlotId,
   fromSaveDataV1,
+  isAutosaveSlot,
+  isManualSlot,
+  manualSlotId,
+  manualSlotIndex,
   migrateSaveData,
   parseSaveData,
   parseSaveDataV1,
@@ -111,5 +116,38 @@ describe("save data", () => {
     expect(() => migrateSaveData({ ...save, schemaVersion: LATEST_SAVE_SCHEMA_VERSION + 1 })).toThrow(
       /newer than this build supports/
     );
+  });
+});
+
+// U4: per-scenario slot ids. The SAVE ENVELOPE is unchanged (worldId lives inside it); these ids are the
+// storage/UI keys that make autosave per-scenario and give the player three manual slots each.
+describe("save slot ids (U4)", () => {
+  it("keys the autosave per world so scenarios never clobber each other", () => {
+    expect(autosaveSlotId("world.default")).toBe("auto:world.default");
+    expect(autosaveSlotId("world.terminal-line")).toBe("auto:world.terminal-line");
+    expect(autosaveSlotId("world.default")).not.toBe(autosaveSlotId("world.verdant"));
+  });
+
+  it("numbers a world's manual slots and reads the number back", () => {
+    expect(manualSlotId("world.verdant", 2)).toBe("manual:world.verdant:2");
+    expect(manualSlotIndex("manual:world.verdant:2")).toBe(2);
+    expect(manualSlotIndex("auto:world.verdant")).toBeNull();
+    expect(manualSlotIndex("not-a-slot")).toBeNull();
+  });
+
+  it("classifies a slot id as autosave vs manual", () => {
+    expect(isAutosaveSlot(autosaveSlotId("world.default"))).toBe(true);
+    expect(isManualSlot(autosaveSlotId("world.default"))).toBe(false);
+    expect(isManualSlot(manualSlotId("world.default", 1))).toBe(true);
+    expect(isAutosaveSlot(manualSlotId("world.default", 1))).toBe(false);
+  });
+
+  it("round-trips a manual save under its own slot id, tagged with its world", () => {
+    const save = toSaveDataV1(progressedState(), defaultWorld);
+    const slotId = manualSlotId(defaultWorld.id, 3);
+    // The slot id and the envelope's worldId agree — the loader restores THIS scenario.
+    expect(manualSlotIndex(slotId)).toBe(3);
+    expect(save.scenario.worldId).toBe(defaultWorld.id);
+    expect(fromSaveDataV1(save)).toEqual(save.state);
   });
 });
