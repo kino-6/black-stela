@@ -37,11 +37,10 @@ autosave＋手動3スロット＋Load browser） · ポートレート選択プ�
 
 - [ ] **U5 = T30 — 1シナリオに N 個の迷宮を持てるようにする** — 現在 world は迷宮1本（下記 P 節 T30 に詳細）。scenario/world
   モデルの単一迷宮チェーン前提を洗い出し、N 迷宮を定義・遷移できるように。Gate: N 迷宮 world が load＋踏破可能、parity＋world tests 緑。
-- [ ] **U6 階段が一人称視点で描画されないバグ（世界非依存の弱点）** — *user 記録依頼 2026-08-04。* **階段セルに立っても 3D
-  （一人称）ビューに階段が描かれない**（`階段を使う`/`決定=階段` コマンド自体は機能＝ロジックは正常、**レンダラ側が弱い**）。
-  Verdant / terminal-line で再現＝world をまたぐ一般的弱点。`dungeon_renderer.gd` / stairs billboard の描画条件（stairs edge 検出→
-  3D メッシュ/ビルボード配置）を見直し、全 world で階段セルに立つと降り口/上り口が視認できるように。Gate: 両 world で階段セルの
-  一人称ビューに階段が出る e2e/実機。参考: `floor_map.gd`/`dungeon_renderer.gd` の stairs 判定。
+- [x] **U6 階段が一人称視点で描画されないバグ — DONE + merged** (`222249f`)。原因＝stairs 幾何を stair EDGE のみに配置＝
+  edge を向いた時だけ見え、背けると消えた。修正＝**セル中心に「stairhead」marker**（HUD が近接床を隠すので縦方向に立てる：
+  4隅ポスト＋top rail＋高所に stair placard を直交2 quad で＝全 facing で正面）。Gate: `verify_stairs_render.gd`（headless・全 world、
+  StairFloor marker がセル中心に出るか）を gate:migration に登録。default(石螺旋)/verdant(根)/terminal-line(金属) 実機で toward/away 両方確認。
 
 ### P — 2026-08-03 夜 実機playtest バッチ（最優先・player-facing）
 
