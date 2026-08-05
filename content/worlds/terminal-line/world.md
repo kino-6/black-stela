@@ -33,6 +33,30 @@ balance:
   wanderingEncounterPct: 12
   wanderingCooldownSteps: 6
 assetPack: terminal-line
+# Extra selectable figures offered at creation, beyond the twelve shared background faces. Each names a
+# full-body standing figure at assets/bodies/<key>.png (no matching square face — the picker/token
+# top-crop the standing art). Twenty Terminal Line platform figures.
+portraits:
+  - chara-13
+  - chara-14
+  - chara-15
+  - chara-16
+  - chara-17
+  - chara-18
+  - chara-19
+  - chara-20
+  - chara-21
+  - chara-22
+  - chara-23
+  - chara-24
+  - chara-25
+  - chara-26
+  - chara-27
+  - chara-28
+  - chara-29
+  - chara-30
+  - chara-31
+  - chara-32
 copy:
   en:
     town.departureHeading: "Before the last platform closes"

@@ -906,6 +906,11 @@ export interface ScenarioWorld {
   /** Art pack folder under content/worlds/<assetPack>/assets (defaults to "default").
    *  Lets a scenario ship its own atmosphere pack. */
   assetPack?: string;
+  /** Extra selectable portrait keys this world offers at character creation, BEYOND the twelve
+   *  background faces every world shares. Each key names art the world ships under assets/bodies/<key>.png
+   *  (and optionally assets/portraits/<key>.png for a matching face); the guild face picker lists these
+   *  after the shared twelve. A body-only key still shows a face — the token top-crops the standing art. */
+  portraits?: string[];
   /** Scene colour for this world's dungeon (see ScenePalette). */
   palette?: ScenePalette;
   startDungeon: string;

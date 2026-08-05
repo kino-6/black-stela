@@ -583,6 +583,10 @@ export const scenarioWorldSchema = z.object({
     })
     .optional(),
   assetPack: z.string().min(1).optional(),
+  // Extra selectable portrait keys offered at creation, beyond the twelve shared background faces. Each
+  // names art under this world's assets/bodies/<key>.png (+ optional portraits/<key>.png face). Bare
+  // basenames only — no path or extension, matching the portraitKey convention.
+  portraits: z.array(z.string().min(1)).optional(),
   // Per-scenario scene colour (fog/lights/wall+floor+ceiling tint). Omitted → default ash. A floor may
   // override any of these (dungeonFloorSchema.palette) for the descent arc (IMP-063).
   palette: scenePaletteSchema.optional(),

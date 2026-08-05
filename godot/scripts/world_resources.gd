@@ -45,10 +45,19 @@ static func portrait_key(member: Dictionary, backgrounds: Array) -> String:
 	return "gate"
 
 ## The FACE: the square avatar art at portraits/<key>.png (this world, else Default's — which ships all
-## twelve, so a face slot always resolves). Small tokens/cards use this so an avatar shows a FACE, never a
-## tall standing figure squeezed into a token.
+## twelve, so a background face always resolves). Small tokens/cards use this so an avatar shows a FACE.
+## A world may offer an EXTRA figure (a world.portraits key) that ships only a body — there the face falls
+## back to that standing art (bodies/<key>.png), so a body-only figure still shows something in a token.
 static func face_path(world_id: String, key: String) -> String:
-	return world_asset(world_id, "portraits/%s.png" % (key if key != "" else "gate"))
+	var safe_key := key if key != "" else "gate"
+	var face := "res://assets/worlds/%s/portraits/%s.png" % [world_id, safe_key]
+	if FileAccess.file_exists(face):
+		return face
+	var dflt := "res://assets/worlds/default/portraits/%s.png" % safe_key
+	if FileAccess.file_exists(dflt):
+		return dflt
+	var body := body_path(world_id, safe_key)
+	return body if body != "" else "res://assets/worlds/default/portraits/gate.png"
 
 ## The FULL BODY: the tall standing art at bodies/<key>.png (this world, else Default's), or "" when no
 ## pack ships a body for this key. Used where a character OWNS the screen (combat spotlight); callers fall

@@ -410,6 +410,35 @@ describe("face vs full-body portrait art", () => {
   });
 });
 
+// The selectable portrait pool (chara feature): a world may offer EXTRA figures beyond the twelve shared
+// background faces via world.portraits. Each is a body-only figure — a face token top-crops the body.
+describe("world portrait pool", () => {
+  const extraKeys = Array.from({ length: 20 }, (_, i) => `chara-${13 + i}`); // chara-13 .. chara-32
+
+  it("declares twenty extra selectable figures on the Terminal Line world", () => {
+    const world = worldRegistry["terminal-line"];
+    expect(world.portraits).toEqual(extraKeys);
+  });
+
+  it("ships every declared figure as a 2:3 body, with NO square face (body-only)", () => {
+    for (const key of extraKeys) {
+      expect(
+        pngSize(new URL(`../content/worlds/terminal-line/assets/bodies/${key}.png`, import.meta.url)),
+        key
+      ).toEqual({ width: 1024, height: 1536 });
+      // A body-only figure: bodyUrl resolves it, portraitUrl (the square face) does not — so the render
+      // path must fall the face token back to the body (portrait.tsx bodyAsFace).
+      expect(bodyUrl(key, "terminal-line"), key).toBeDefined();
+      expect(portraitUrl(key, "terminal-line"), `${key} has no square face`).toBeUndefined();
+    }
+  });
+
+  it("keeps every base world free of an extra pool (the twelve faces are the whole pool)", () => {
+    expect(worldRegistry["default"].portraits ?? []).toEqual([]);
+    expect(worldRegistry["verdant"].portraits ?? []).toEqual([]);
+  });
+});
+
 describe("adventurer source-art contract", () => {
   it("ships every class, species, gender, and pose as a distinct 1024x1536 RGBA master", () => {
     const hashes: string[] = [];

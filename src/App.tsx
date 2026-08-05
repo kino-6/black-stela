@@ -1022,6 +1022,25 @@ export function App() {
     setGuildCreationStep("name");
   }
 
+  // The selectable portrait pool at creation: the twelve shared background faces first, then any extra
+  // figures THIS world offers (world.portraits — e.g. Terminal Line's platform figures). A pick is stored
+  // as a stable builtin:// ref that survives saves/exports and clears any earlier upload.
+  const portraitPool = useMemo(() => {
+    const shared = backgroundCatalog.map((background) => background.portraitKey);
+    const extra = activeWorld.portraits ?? [];
+    return Array.from(new Set([...shared, ...extra]));
+  }, [activeWorld]);
+
+  function chooseBuiltinPortrait(key: string) {
+    setDraft((current) => ({
+      ...current,
+      portraitRef: `builtin://portrait/${key}`,
+      // Choosing a built-in figure drops any uploaded face — the two are alternatives, and leaving the
+      // upload in baseRef would keep overriding the pick. Keep the focus the profile already carries.
+      visualProfile: { ...normalizeVisualProfile(current.visualProfile), baseRef: undefined }
+    }));
+  }
+
   async function importPortrait(file: File | undefined) {
     if (!file) {
       return;
@@ -1962,6 +1981,32 @@ export function App() {
                               t={t}
                               onShiftFocus={shiftDraftPortraitFocus}
                             />
+                            {/* The pickable pool: the twelve shared faces plus this world's own figures.
+                                Selecting one sets a builtin:// ref; the preview above reflects it live. */}
+                            <div className="portrait-pool" data-testid="portrait-pool" role="radiogroup" aria-label={t("party.chooseFace")}>
+                              {portraitPool.map((key) => {
+                                const selected = draft.portraitRef === `builtin://portrait/${key}`;
+                                return (
+                                  <button
+                                    type="button"
+                                    key={key}
+                                    className={`portrait-pool-option${selected ? " is-selected" : ""}`}
+                                    role="radio"
+                                    aria-checked={selected}
+                                    aria-label={key}
+                                    data-testid={`portrait-option-${key}`}
+                                    onClick={() => chooseBuiltinPortrait(key)}
+                                  >
+                                    {renderPortraitContent({
+                                      portraitRef: `builtin://portrait/${key}`,
+                                      backgroundId: draft.backgroundId,
+                                      context: "token",
+                                      fallback: key
+                                    })}
+                                  </button>
+                                );
+                              })}
+                            </div>
                             <div className="visual-imports">
                               <label className="portrait-import">
                                 {t("party.portrait")}

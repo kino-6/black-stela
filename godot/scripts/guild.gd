@@ -1075,12 +1075,18 @@ func _preview_figure_path() -> String:
 	return pack_path if FileAccess.file_exists(pack_path) else "res://assets/worlds/default/%s" % sub
 
 func _draft_portrait_path() -> String:
-	var key := String(_draft.get("portraitKey", "gate"))
-	var path := _asset("portraits/%s.png" % key)
-	return path if FileAccess.file_exists(path) else _asset("portraits/gate.png")
+	# The chosen face preview: face art, or the world's body art for a body-only figure (face_path folds
+	# both, ending at the shared gate face).
+	var world_id: String = _run.world_id if _run else String(_world.get("id", "default")).trim_prefix("world.")
+	return WorldResources.face_path(world_id, String(_draft.get("portraitKey", "gate")))
 
 func _face_keys() -> Array:
-	return Draft.face_keys(_data)
+	# The twelve shared background faces, then any EXTRA figures this world offers (world.portraits).
+	var keys: Array = Draft.face_keys(_data)
+	for key in _world.get("portraits", []):
+		if not keys.has(String(key)):
+			keys.append(String(key))
+	return keys
 
 ## A section header (来歴 / 顔 / 気質) with its own 見繕う button on the right — the per-facet random of #6.
 func _section_head(title: String, reroll_key: String, on_reroll: Callable) -> Control:
@@ -1097,9 +1103,12 @@ func _face_pool() -> Control:
 	grid.add_theme_constant_override("h_separation", 6)
 	grid.add_theme_constant_override("v_separation", 6)
 	var selected := String(_draft.get("portraitKey", "gate"))
+	var world_id: String = _run.world_id if _run else String(_world.get("id", "default")).trim_prefix("world.")
 	for key in _face_keys():
 		var b := UI.button("", func(): _select_portrait(String(key)), Vector2(66, 66), 12)
-		b.icon = _texture(_asset("portraits/%s.png" % String(key)))
+		# face_path falls back to the world's body art for a body-only figure, so every swatch shows
+		# something — the whole 2:3 figure letterboxed into the square by expand_icon.
+		b.icon = _texture(WorldResources.face_path(world_id, String(key)))
 		b.expand_icon = true
 		b.tooltip_text = "顔を選ぶ"
 		b.add_theme_stylebox_override("normal", UI.panel_style(Color("11140dcc"), UI.GOLD if String(key) == selected else Color("3a4326")))
