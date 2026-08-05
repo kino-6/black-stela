@@ -30,17 +30,14 @@ IMP-060/061/062/063/064 completion records in `Improve.md`.
 
 ### U — 2026-08-04〜 実機playtest 追加要望（user 指摘）
 
-**✅ DONE + merged to main（2026-08-05、詳細は `docs/archive/Tasks.completed-2026-08.md`）:** U1 戦闘オート二系統化 ·
-U2 顔/全身ポートレート使い分け · U3 CLASS_CAPABILITIES 外部化＋terminal-line 全8職テーマ化 · U4 Save 再設計（シナリオ別
-autosave＋手動3スロット＋Load browser） · ポートレート選択プール（world.portraits、chara 素材20枚） · CI（GitHub Actions）
-赤の完全復旧。
-
-- [ ] **U5 = T30 — 1シナリオに N 個の迷宮を持てるようにする** — 現在 world は迷宮1本（下記 P 節 T30 に詳細）。scenario/world
-  モデルの単一迷宮チェーン前提を洗い出し、N 迷宮を定義・遷移できるように。Gate: N 迷宮 world が load＋踏破可能、parity＋world tests 緑。
-- [x] **U6 階段が一人称視点で描画されないバグ — DONE + merged** (`222249f`)。原因＝stairs 幾何を stair EDGE のみに配置＝
-  edge を向いた時だけ見え、背けると消えた。修正＝**セル中心に「stairhead」marker**（HUD が近接床を隠すので縦方向に立てる：
-  4隅ポスト＋top rail＋高所に stair placard を直交2 quad で＝全 facing で正面）。Gate: `verify_stairs_render.gd`（headless・全 world、
-  StairFloor marker がセル中心に出るか）を gate:migration に登録。default(石螺旋)/verdant(根)/terminal-line(金属) 実機で toward/away 両方確認。
+**✅ U シリーズ全完遂 + merged to main（2026-08-05、詳細は `docs/archive/Tasks.completed-2026-08.md`）:** U1 戦闘オート
+二系統化 · U2 顔/全身ポートレート使い分け · U3 CLASS_CAPABILITIES 外部化＋terminal-line 全8職テーマ化 · U4 Save 再設計
+（シナリオ別 autosave＋手動3スロット＋Load browser） · **U5=T30 1シナリオ N 迷宮**（`world.entrances`＋`DungeonFloor.dungeon`
+グループ、町に迷宮ごとの入口、validator/sim を per-group 化、back-compat＝既存 world 不変・nDungeons.test 6本、`9e866f3`） ·
+**U6 階段 FPV 描画**（セル中心 stairhead marker で全 facing 可視、`verify_stairs_render` gate、`222249f`） · ポートレート選択
+プール（world.portraits、chara 素材20枚） · CI（GitHub Actions）赤の完全復旧。
+- **U5 残（follow-up・任意）:** 実際に「2つ目の迷宮」を持つ world は未オーサリング（機構のみ＝nDungeons.test で実証）。上下階段
+  矢印のグリフは配列順比較のまま（別グループ跨ぎは descent 既定＝無害）で据置。実 world に第2迷宮を足すのはコンテンツ作業。
 
 ### P — 2026-08-03 夜 実機playtest バッチ（最優先・player-facing）
 
@@ -78,12 +75,7 @@ autosave＋手動3スロット＋Load browser） · ポートレート選択プ�
 - [x] **T29 Default B2F–B8F 迷宮＋玄室 再生成 / T31 両世界10階拡張（真層＋真ボス）— DONE + merged** (`6a23dba`)。
   詳細は `docs/archive/Tasks.completed-2026-08.md`。
 
-- [ ] **T30 — 1シナリオに N 個の迷宮を持てるようにする（T29 後）** — 現在 world は迷宮1本（8階の降下）だが、
-  1シナリオが複数の独立した迷宮を持てるようにする。world データモデル・ダンジョンレジストリ・町からの入口
-  （どの迷宮へ潜るか選択）・セーブ（現在の迷宮 id）・階段/帰還の各迷宮スコープを拡張。既存の単一迷宮世界は
-  そのまま動く後方互換を維持。
-  - **Gate:** 複数迷宮 world がロード・選択・攻略・帰還・セーブ往復できる unit＋e2e、既存2世界の回帰緑、
-    `verify_parity`/`verify_flow` 緑。
+- [x] **T30 — 1シナリオ N 迷宮の機構 — DONE + merged**（= U 節 U5、`9e866f3`）。詳細は archive。
 
 - [x] **T32 職ごと6枠戦闘セット制約の撤廃 — DONE + merged** (`b89e6e5`)。詳細は archive。
 

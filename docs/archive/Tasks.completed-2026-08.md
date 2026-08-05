@@ -456,3 +456,20 @@ These are DONE + gate-green + committed; see the named commits/gates in each ent
   audit fix、ux-parity 4ギャップ（aptitude.balanced 幻＋map.darkness dead content を exclusion、play.useStairs=P10 方向別ラベルの
   React 側完成、useReturnMarker=at_rest room 修正）、e2e stairs ラベル改名の5 spec 修正、playwright retries:CI?2、tempo 系 e2e は
   **freeze-tempo test seam**（localStorage フラグで tempo interval 早期 return）で決定化。**CI 完全 green 確認済**。
+
+## 2026-08-05 — U5/T30 (N dungeons) + U6 (stairs FPV) — DONE + merged
+
+- **U6 stairs first-person render** (`222249f`) — stair geometry was on the stair EDGE only, so it
+  vanished when the party stood on the cell facing away. Added a stairhead marker at the CELL CENTRE
+  (railed frame + high stair placard on crossed quads, tall enough to clear the party HUD) visible from
+  any facing. Gate `verify_stairs_render.gd` (headless, all worlds); rendered default/verdant/terminal-line
+  toward + away.
+- **U5 = T30 — N dungeons per scenario** (`9e866f3`) — a world may define multiple independent dungeons,
+  each with its own town portal. Engine was already floor-scoped (nav/map/save key on map.floorId+position),
+  so contained + save/parity-safe. Additive data: `DungeonFloor.dungeon?` (group), `ScenarioWorld.entrances?`
+  (portals); startDungeon/startRoom stay the default. enter_dungeon gains optional startRoom (React+Godot
+  command + Godot played-build town→dungeon_entry.plan via run.pending_entrance_room); town renders one
+  button per portal. Validators/sim per-group (reachability from every entrance, progression same-group only,
+  descentSim dungeonId, worldRegistry group-then-level sort). nDungeons.test 6 tests; existing worlds
+  byte-unchanged (unit 889, parity 0-fail). Follow-up: authoring a real 2nd dungeon in a shipped world is
+  content; up/down arrow glyphs still array-order (harmless cross-group).
