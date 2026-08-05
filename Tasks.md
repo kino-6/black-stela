@@ -41,8 +41,9 @@ IMP-060/061/062/063/064 completion records in `Improve.md`.
 グループ、町に迷宮ごとの入口、validator/sim を per-group 化、back-compat＝既存 world 不変・nDungeons.test 6本、`9e866f3`） ·
 **U6 階段 FPV 描画**（セル中心 stairhead marker で全 facing 可視、`verify_stairs_render` gate、`222249f`） · ポートレート選択
 プール（world.portraits、chara 素材20枚） · CI（GitHub Actions）赤の完全復旧。
-- **U5 残（follow-up・任意）:** 実際に「2つ目の迷宮」を持つ world は未オーサリング（機構のみ＝nDungeons.test で実証）。上下階段
-  矢印のグリフは配列順比較のまま（別グループ跨ぎは descent 既定＝無害）で据置。実 world に第2迷宮を足すのはコンテンツ作業。
+- **U5 実コンテンツ DONE:** terminal-line に**2つ目の迷宮＝貨物基地（3層・中盤の息抜き＆稼ぎ場）**を実装 merge 済（`d935c85`、
+  受入→仕分け→保税倉庫、`world.entrances` で町に2ポータル、既存 enemy/item 再利用の farm 遭遇＋売却装備、boss なしで再戦可＝稼ぎ周回）。
+  town 2ポータル＋depot FPV 実機確認。**残（任意）:** 上下階段矢印グリフは配列順のまま（別グループ跨ぎは descent 既定＝無害）で据置。
 
 ### P — 2026-08-03 夜 実機playtest バッチ（最優先・player-facing）
 
