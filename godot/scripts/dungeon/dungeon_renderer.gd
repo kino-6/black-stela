@@ -190,7 +190,7 @@ static func _build_geometry(parent: Node, world: Dictionary, state: Dictionary, 
 			# The pack ships stair-up/stair-down art; draw it so a stair cell is VISIBLE in the first-person
 			# view instead of a plain dead-end the 階段を使う command only hints at (playtest: asset delivered,
 			# never rendered).
-			var stair := _stairs_info(cell, floor_dungeon)
+			var stair := _stairs_info(cell, floor_dungeon, rooms_by_id.get(String(cell.get("roomId", "")), {}))
 			if not stair.is_empty():
 				_add_stairs(
 					parent,
@@ -211,7 +211,7 @@ static func _is_chamber(edges: Dictionary) -> bool:
 # A cell carries stairs when one of its edges is a `stairs` edge.  Keep the edge direction with the art:
 # stairs are a current-cell action in the rules, but visually they must lead to the traversable edge rather
 # than sit under the party at the centre of the tile.
-static func _stairs_info(cell: Dictionary, floor_id: String) -> Dictionary:
+static func _stairs_info(cell: Dictionary, floor_id: String, room: Dictionary = {}) -> Dictionary:
 	var depth := _floor_depth(floor_id)
 	for dir in ["north", "south", "east", "west"]:
 		var edge: Variant = cell.get("edges", {}).get(dir, null)
@@ -222,7 +222,23 @@ static func _stairs_info(cell: Dictionary, floor_id: String) -> Dictionary:
 				"direction": dir,
 				"target": target,  # "" = an up-stair that exits to TOWN (vs a shallower floor)
 			}
+	# A room whose way home is a STAIRCASE (stairsToTown + returnStyle "stairs" — every floor's entrance)
+	# carries no stairs EDGE, only the flag. Draw the up-stair art anyway so the return is VISIBLE in the
+	# first-person view, not merely offered by the 帰還 command (playtest 2026-08-05: 1F の街へ帰還する階段が画面
+	# から消えている). A returnStyle "marker" (a planted rest-point marker) is NOT a staircase — no stair art.
+	if bool(room.get("stairsToTown", false)) and String(room.get("returnStyle", "stairs")) != "marker":
+		return {"kind": "up", "direction": _first_wall_dir(cell), "target": ""}
 	return {}
+
+# The wall an edgeless town-return staircase embeds into: the first solid (non-passage) side, preferring the
+# SOUTH wall (entrances face south by convention, so the way home reads as behind the party). The U6 cell-
+# centre stairhead marker makes it visible from any facing regardless of which wall the shaft art sits on.
+static func _first_wall_dir(cell: Dictionary) -> String:
+	var edges: Dictionary = cell.get("edges", {})
+	for dir in ["south", "north", "east", "west"]:
+		if not _is_passage(edges.get(dir, null)):
+			return dir
+	return "south"
 
 # Kept as a small compatibility helper for any focused renderer tests or tools that only need the artwork
 # choice. New rendering code must use _stairs_info so it does not discard the physical stair direction.
