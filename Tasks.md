@@ -20,7 +20,14 @@ Archived history: `docs/archive/Tasks.completed-2026-08.md` (T1–T32, P1–P8, 
 `docs/archive/Tasks.completed-2026-07.md` (earlier marathons), IMP records in `Improve.md`.
 
 **Recently shipped (all merged, detail in archive):** U1–U6 + portrait pool + CI recovery + terminal-line
-depot dungeon · V1–V5 terminal-line playtest fixes (`0e7d06e`/`c4e5490`) · P1–P8 · T29/T31 · T30 · T32.
+depot dungeon · V1–V5 terminal-line playtest fixes (`0e7d06e`/`c4e5490`) · **V6 town-return staircase now
+renders in the Godot FPV** (`stairsToTown`/returnStyle stairs was invisible; `5a08124`) · **V7 特技/呪文 の
+ダメージで敵HPバーがラウンド中に減る**（technique/spell hits emit presentation beats → both bars drain with the
+number, not one snap after the round; Godot combat_round.gd/combat.gd; React parity note below） · P1–P8 ·
+T29/T31 · T30 · T32.
+
+**Follow-up note:** V7 fixed Godot only. If the same 特技-hit HP-bar lag shows in the React build, mirror it
+in `src/domain/combatRound.ts` (emit a beat per technique-damaged group) + CombatCockpit playback.
 
 ---
 

@@ -772,7 +772,12 @@ func _playback(before: Dictionary, events: Array, animated: bool) -> void:
 				if not acting.is_empty():
 					_set_spotlight_member(acting)
 				# 1) the action, past tense ("リオが棘虫に切りかかった。") — wording mirrors React's beat.hit
-				_set_log("%sが%sに%s。" % [actor, target_name, _attack_verb(actor, crit)])
+				# A technique/spell beat names no melee verb (the 特技 was already named at the command); a basic
+				# swing keeps its verb. Both then land the number and drain the bar below (playtest 2026-08-05).
+				if bool((beat as Dictionary).get("technique", false)):
+					_set_log("%sが%sを狙った。" % [actor, target_name])
+				else:
+					_set_log("%sが%sに%s。" % [actor, target_name, _attack_verb(actor, crit)])
 				await get_tree().create_timer(0.24).timeout
 				# 2) the damage: floating number ON the creature + its bar drains + a popup-style line with ！
 				_pop_enemy_damage(gid, dmg, crit)

@@ -107,6 +107,11 @@ static func declare_round(state: Dictionary, world: Dictionary, actions: Array, 
 			party = result["party"]
 			enemy_groups = result["enemyGroups"]
 			effects = result["effects"]
+			# Presentation beat per enemy group the technique/spell damaged, so its HP bar drains WITH the
+			# number during playback (not one snap after the round). `technique` flags a NEUTRAL verb — the
+			# 特技 was already named at the command, so playback must not print a melee swing verb for it.
+			for hit in result.get("hits", []):
+				beats.append({"actorName": String(actor.get("name", "")), "targetGroupId": String((hit as Dictionary).get("targetGroupId", "")), "damage": int((hit as Dictionary).get("damage", 0)), "crit": false, "technique": true})
 			continue
 
 		if kind != "attack" or action.get("targetGroupId", null) == null:
@@ -329,6 +334,9 @@ static func _apply_technique(technique: Dictionary, actor: Dictionary, action: D
 	# A DRAIN — an enemy-scope technique carrying a heal — restores the CASTER. Without this the heal
 	# half would resolve against an empty ally set and silently do nothing.
 	var heal_ids: Array = ally_ids if not ally_ids.is_empty() else [String(actor.get("id", ""))]
+	# Which enemy groups this technique DAMAGED, so the caller can emit a presentation beat per hit and the
+	# target's HP bar drains WITH the number during playback (playtest 2026-08-05: 特技のダメージでバーが減らない).
+	var hits := []
 
 	for effect_v in technique.get("effects", []):
 		var effect: Dictionary = effect_v
@@ -381,6 +389,8 @@ static func _apply_technique(technique: Dictionary, actor: Dictionary, action: D
 							enemy_groups = _strip_group_status(enemy_groups, String(target["id"]), hit_status)
 				var damage := CombatRng.chip_through_resistance(roundi((raw + spell_power + bonus) * weak), spell_seed)
 				enemy_groups = CombatHelpers.damage_group(enemy_groups, String(target["id"]), damage)
+				if damage > 0:
+					hits.append({"targetGroupId": String(target["id"]), "damage": damage})
 
 		elif effect_kind == "status":
 			for target_id in group_ids:
@@ -400,7 +410,7 @@ static func _apply_technique(technique: Dictionary, actor: Dictionary, action: D
 			for subject_id in subjects:
 				effects = CombatEffects.apply_lasting(effects, String(subject_id), single)
 
-	return {"party": party, "enemyGroups": enemy_groups, "effects": effects}
+	return {"party": party, "enemyGroups": enemy_groups, "effects": effects, "hits": hits}
 
 static func _find_by_item_id(inventory: Array, item_id: String) -> Variant:
 	for item in inventory:
