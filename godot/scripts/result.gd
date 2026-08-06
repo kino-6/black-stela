@@ -140,7 +140,9 @@ func _level_up_row(entry: Dictionary) -> Control:
 	portrait.custom_minimum_size = Vector2(64, 76)
 	portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-	portrait.texture = WorldResources.portrait_texture(String(member.get("portraitRef", "")), _asset("portraits/%s.png" % _portrait_key(member)))
+	# face_path (not the bare portraits/<key>.png) so a body-only figure (a world.portraits key like chara-13,
+	# no square face) top-crops its standing art instead of blanking (playtest 2026-08-05).
+	portrait.texture = WorldResources.portrait_texture(String(member.get("portraitRef", "")), WorldResources.face_path(_world_id, _portrait_key(member)))
 	row.add_child(UI.card(portrait, Color(String(member.get("accentColor", "#c9a765")))))
 
 	var lvl := int(entry.get("level", 1))

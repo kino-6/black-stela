@@ -24,7 +24,9 @@ static func _roster_portrait(member: Dictionary, world: Dictionary) -> Texture2D
 	if ref.begins_with(BUILTIN):
 		key = ref.trim_prefix(BUILTIN)
 	var world_id := String(world.get("id", "default")).trim_prefix("world.")
-	return WorldResources.portrait_texture(ref, WorldResources.world_asset(world_id, "portraits/%s.png" % key))
+	# face_path (not the bare portraits/<key>.png) so a body-only figure (a world.portraits key like chara-13,
+	# no square face) top-crops its standing art instead of blanking (playtest 2026-08-05).
+	return WorldResources.portrait_texture(ref, WorldResources.face_path(world_id, key))
 
 const APTITUDES := ["might", "agility", "spirit", "wit", "luck"]
 

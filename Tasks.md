@@ -55,6 +55,17 @@ Descend to Platform Zero」。**V2** 作成/名簿/転職/サマリの職業名�
 Godot `guild_draft.randomize(extra_faces)`）。**V4** Godot 戦闘の 全員でかかる[F]/攻撃オート[R]/守備オート[G] に
 ショートカット chip 追加（React dock は既存）。**Gate:** build + test(889) + gate:godot（parity+30+ headless）全緑。
 
+- [-] **V5 見繕う後の登録メンバー顔がブランク（V3 の派生）** — Godot の committed-member 顔解決5経路
+  （`guild _member_portrait_path`／`town _portrait_path`／`dungeon _portrait_path`／`result`／`party_panel _roster_portrait`）が
+  `portraits/<key>.png` だけを見ており、body-only 図像（world.portraits の chara-13 等＝顔無し）で存在しない default 顔へ落ちて
+  空になっていた。5経路すべて `WorldResources.face_path(world_id, key)`（顔→世界body→default gate の畳み込み、顔ステップと同一）
+  へ変更。headless probe で `face_path→bodies/chara-13.png` が res/load=true を確認、guild/town/dungeon/combat/parity verify 緑。
+  **Gate:** verify_guild/town/dungeon_controller + parity（緑）。※`.import` は gitignore・実機は起動時に自動生成。
+
+**設計メモ（将来・W3a の代替、user 2026-08-05）:** 銃器の「必須弾薬管理」は面倒として**廃案**。代わりに **(a) 特殊弾頭＝状況を変える
+戦略消耗品アイテム**（例 貫通/焼夷/閃光、既存 damage/status/debuff effect で解決、通常攻撃は弾不要）、**(b) 警戒度＝世界樹風に
+エンカウント率をカラー表示**（＋雰囲気に合うレーダー的オブジェクト画像）— どちらも面倒さゼロで戦略性のみ足す方向。着手は未承認。
+
 ### P — 2026-08-03 夜 実機playtest バッチ（最優先・player-facing）
 
 - [x] **P1–P8 実機playtest バッチ — DONE + pushed**（戦闘ログ対象名 / 町Esc / affixキー / 全体図 / ランタイム

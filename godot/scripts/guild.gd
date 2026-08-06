@@ -839,13 +839,12 @@ func _set_roster(open: bool) -> void:
 
 # A member's built-in portrait PATH (fallback when they carry no imported data-URL portrait).
 func _member_portrait_path(member: Dictionary) -> String:
-	var ref := String(member.get("portraitRef", ""))
-	var key := "gate"
-	const BUILTIN := "builtin://portrait/"
-	if ref.begins_with(BUILTIN):
-		key = ref.substr(BUILTIN.length())
-	var path := _asset("portraits/%s.png" % key)
-	return path if FileAccess.file_exists(path) else _asset("portraits/gate.png")
+	# Resolve through face_path so a body-only figure (a world.portraits key like chara-13 that ships only
+	# bodies/<key>.png and no square face) still renders. The old portraits/<key>.png-only path fell to a
+	# non-existent default face and blanked for those figures (playtest 2026-08-05: 見繕う → blank portrait).
+	# face_path folds face → world body → default gate — same chain as the 顔 step and React face ?? body.
+	var world_id: String = _run.world_id if _run else _world_id
+	return WorldResources.face_path(world_id, WorldResources.portrait_key(member, _data.get("backgrounds", [])))
 
 func _member_by_id(id: String) -> Dictionary:
 	if id == "":

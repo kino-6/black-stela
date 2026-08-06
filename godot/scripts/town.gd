@@ -191,9 +191,9 @@ func _backgrounds() -> Array:
 
 func _portrait_path(member: Dictionary) -> String:
 	# The FACE the card shows: an explicit builtin pick, else the background's own face (both packs ship
-	# all twelve via the Default fallback). A member's card shows a face, consistent with the combat HUD,
-	# the crawl token, and the results screen — the full-body figure belongs to the combat spotlight.
-	return _asset("portraits/%s.png" % WorldResources.portrait_key(member, _backgrounds()))
+	# all twelve via the Default fallback). Resolved through face_path so a body-only figure (a world.portraits
+	# key like chara-13, no square face) top-crops its standing art instead of blanking (playtest 2026-08-05).
+	return WorldResources.face_path(_run.world_id if _run else _world_id, WorldResources.portrait_key(member, _backgrounds()))
 
 # --- the one mutation path: the ported rules, the same ones the parity gate proves ----------------
 func dispatch(command: Dictionary) -> Array:

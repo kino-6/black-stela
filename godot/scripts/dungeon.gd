@@ -489,9 +489,11 @@ func _backgrounds() -> Array:
 
 func _portrait_path(member: Dictionary) -> String:
 	# The FACE the crawl token shows: an explicit builtin pick, else the background's own face (both packs
-	# ship all twelve via the Default fallback). A token is a compact avatar — it shows a face, consistent
-	# with the combat HUD, the town card, and results. The full-body figure belongs to the combat spotlight.
-	return _asset("portraits/%s.png" % WorldResources.portrait_key(member, _backgrounds()))
+	# ship all twelve via the Default fallback). Resolved through face_path so a body-only figure (a
+	# world.portraits key like chara-13, no square face) top-crops its standing art instead of blanking
+	# (playtest 2026-08-05). face_path folds face → world body → default gate.
+	var world_id := String(_run.world_id) if _run else String(_world.get("id", "default")).trim_prefix("world.")
+	return WorldResources.face_path(world_id, WorldResources.portrait_key(member, _backgrounds()))
 
 func _rebuild_dock() -> void:
 	if _dock_host == null:
