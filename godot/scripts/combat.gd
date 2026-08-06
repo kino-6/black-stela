@@ -499,6 +499,15 @@ func _run_auto() -> void:
 	if _state.get("phase", "") != "combat":
 		_auto = false
 	_rebuild_command_menu()
+	# オート kept the command panel HIDDEN during its rounds (playback shows it only when `not _auto`, so the
+	# menu never flashes between auto rounds). When オート STOPS on its own — danger detected — and the fight
+	# is still going, control returns to the player, but the panel was never re-shown: the turn indicator read
+	# "次の行動を選ぶ" over an empty dock (playtest 2026-08-06). Show and focus it here now that _auto is false.
+	if _cmd_panel and not _busy and not _resolved and _state.get("phase", "") == "combat":
+		_cmd_panel.show()
+		var b := _first_command_button()
+		if b:
+			b.grab_focus()
 
 # "Danger" = anyone below a third of their HP, or already wounded.
 func _party_in_danger() -> bool:
