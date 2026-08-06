@@ -265,15 +265,22 @@ func _briefing_step() -> Control:
 	var col := UI.col(10)
 	var head := UI.row()
 	var master := TextureRect.new()
-	master.custom_minimum_size = Vector2(132, 184)
+	# A LARGER standing guild master — the briefing card used to hold only a small head + two buttons, leaving
+	# the whole panel below it an empty black void (playtest 2026-08-06). The full-length NPC now anchors the
+	# panel and the world's own tagline fills the copy beside him, so the step reads as a place, not a stub.
+	master.custom_minimum_size = Vector2(320, 500)
 	master.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	# Fit the WHOLE figure — the guild master is full-length NPC art, so COVERED cropped his head/feet.
 	master.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	master.texture = _texture(_asset("characters/npc-guild-master.png"))
 	head.add_child(master)
-	var speech := UI.col(6)
+	var speech := UI.col(8)
 	speech.add_child(UI.label(I18n.t("party.guildMaster"), 20, UI.GOLD))
 	speech.add_child(UI.prose(I18n.t("party.guildBriefing"), 18, UI.INK, 720))
+	# The world's tagline as atmospheric flavor — gives the briefing world-specific voice and fills the panel.
+	var tagline := _world_tagline()
+	if tagline != "":
+		speech.add_child(UI.prose(tagline, 16, UI.DIM, 720))
 	head.add_child(UI.grow(speech))
 	col.add_child(head)
 
@@ -1140,6 +1147,10 @@ func _aptitude_line(aptitude: Dictionary) -> String:
 	for key in APTITUDE_KEYS:
 		parts.append("%s %d" % [I18n.t("aptitude.%s" % key), int(aptitude.get(key, 0))])
 	return "  ".join(PackedStringArray(parts))
+
+func _world_tagline() -> String:
+	var ja: Dictionary = (_world.get("locales", {}) as Dictionary).get("ja", {})
+	return String(ja.get("tagline", _world.get("tagline", "")))
 
 func _class_label(id: String) -> String:
 	# A world may re-skin a basic class (terminal-line's 戦士 → 保安隊員). Prefer the world's vocation name so
