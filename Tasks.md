@@ -35,6 +35,15 @@ faint enemy bar, or count snap-back appears in the React build, mirror there: te
 
 ## Active queue (process top-down)
 
+### X — 2026-08-06 自己検出（裏画面検証 / capture→read PNG、[[black-stela-visual-self-verify]]）
+
+**✅ X1–X3 全完遂 + merged（裏画面ループで検出→修正→PNG目視で確認）:** **X1** 戦闘の敵HPバー整理（全幅の選択
+グロー帯を撤去→各creature 1本ずつの赤バー＋選択は▼矢印＆body発光、`2bd52e7`） · **X2** ギルド「説明」ステップの空白を
+大きなギルドマスター立ち絵＋世界タグラインで埋めた（`3bd1c5d`） · **X3** 町の全幅フラット暗幕を下重みグラデ暗幕へ→
+背景アートが読める（default 劇的改善／terminal-line も良好、`b00401f`）。
+- **Codex follow-up（任意）:** default の `ui/town-hub.jpg` 自体が暗め — 本当に明るくするならアセット再生成（グラデ暗幕で
+  実用上は解消済み）。
+
 - [-] **玄室 landmark visual tuning** (Codex art-lane) — 3rd pass done, **Codex re-review PENDING**. Latest
   NG (#3, 2026-08-03): the grand portal OVERSHOT (reads as a boss castle-gate) and the interior still shows a
   pale green circular cap under the HUD. Fix list: shrink the portal to ~1.1–1.3× a normal wood-and-stone door;
