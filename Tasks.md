@@ -20,14 +20,16 @@ Archived history: `docs/archive/Tasks.completed-2026-08.md` (T1–T32, P1–P8, 
 `docs/archive/Tasks.completed-2026-07.md` (earlier marathons), IMP records in `Improve.md`.
 
 **Recently shipped (all merged, detail in archive):** U1–U6 + portrait pool + CI recovery + terminal-line
-depot dungeon · V1–V5 terminal-line playtest fixes (`0e7d06e`/`c4e5490`) · **V6 town-return staircase now
-renders in the Godot FPV** (`stairsToTown`/returnStyle stairs was invisible; `5a08124`) · **V7 特技/呪文 の
-ダメージで敵HPバーがラウンド中に減る**（technique/spell hits emit presentation beats → both bars drain with the
-number, not one snap after the round; Godot combat_round.gd/combat.gd; React parity note below） · P1–P8 ·
-T29/T31 · T30 · T32.
+depot dungeon · V1–V5 terminal-line playtest fixes (`0e7d06e`/`c4e5490`) · **V6–V10 Godot combat/UX playtest
+batch** (2026-08-06): V6 town-return staircase renders in the FPV (`5a08124`) · V7 特技/呪文 hits emit beats so
+HP drains mid-round (`a1b5556`) · V8 command dock re-shown when オート auto-stops (`67ae75a`) · V9 enemy HP bar
+given a visible crimson fill (drain was happening but invisible; `397d19c`) · V10 enemy count no longer
+"resets" — playback drives the bar from the real `damage_group` model, not a pooled reconstruction (`c3bc510`)
+· P1–P8 · T29/T31 · T30 · T32.
 
-**Follow-up note:** V7 fixed Godot only. If the same 特技-hit HP-bar lag shows in the React build, mirror it
-in `src/domain/combatRound.ts` (emit a beat per technique-damaged group) + CombatCockpit playback.
+**Follow-up note (React parity, unverified):** V7/V9/V10 fixed the GODOT build. If the same 特技-hit HP-bar lag,
+faint enemy bar, or count snap-back appears in the React build, mirror there: technique-damage beats in
+`src/domain/combatRound.ts`, enemy-bar fill in the combat stage, and a real-HP (not pooled) playback drain.
 
 ---
 
