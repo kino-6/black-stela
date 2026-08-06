@@ -137,6 +137,18 @@ static func enemy_mark(host: Node, group: Dictionary, centre_x: float, slot_w: f
 			unit_bar.max_value = float(max_hp_each)
 			unit_bar.value = float(max_hp_each) if i > 0 else clampf(float(hp_each), 0.0, float(max_hp_each))
 			unit_bar.show_percentage = false
+			# A plain ProgressBar renders as a near-invisible grey line on this dark stage, so an enemy's HP
+			# looked like it never changed even as it drained (playtest 2026-08-06: 敵HPバーが減って見えない).
+			# Give it a VISIBLE crimson fill over a dark track — the party's own bars style theirs the same
+			# way (combat_party_hud _raw_bar) — so the value it already carries reads as a draining bar.
+			var hp_fill := StyleBoxFlat.new()
+			hp_fill.bg_color = Color("c2513f")
+			hp_fill.set_corner_radius_all(2)
+			var hp_bg := StyleBoxFlat.new()
+			hp_bg.bg_color = Color("140f0b")
+			hp_bg.set_corner_radius_all(2)
+			unit_bar.add_theme_stylebox_override("fill", hp_fill)
+			unit_bar.add_theme_stylebox_override("background", hp_bg)
 			# Cap the bar to the unit SPACING, not just the body width: a tightly-packed rank has step < body,
 			# so a fixed 120px bar under each unit overran the next unit's and the bars stacked into a smear
 			# (playtest 2026-08-03: 戦闘時HPバーが重なる). Keep a 6px gap so adjacent bars never touch.
