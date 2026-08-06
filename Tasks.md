@@ -44,6 +44,13 @@ faint enemy bar, or count snap-back appears in the React build, mirror there: te
 - **Codex follow-up（任意）:** default の `ui/town-hub.jpg` 自体が暗め — 本当に明るくするならアセット再生成（グラデ暗幕で
   実用上は解消済み）。
 
+**✅ X4 迷宮の開幕ログが世界外れ（2026-08-07、`f25ecb3`）:** 迷宮の最初のログ行が全世界ハードコードの「地下に踏み入った。
+松明の灯が石を照らす。」で、タイル張りの地下鉄駅に松明＆石が出ていた。世界固有の `town.firstDescend` コピー（terminal-line:
+「防火扉が上がった。雨水が古い駅へ流れ落ちている。」）を読むよう修正（未定義世界は base i18n へフォールバック）。裏画面で確認。
+
+**裏画面スイープ結果（2026-08-07、問題なし）:** 装備メニュー・道具使用メニューは整然（スロット/効果プレビュー/対象可否が明瞭）。
+戦闘の敵バーは満タン/削れ両状態でクリーン（X1確認）。迷宮FPVで V6 帰還ハシゴの描画も実画面で確認。
+
 - [-] **玄室 landmark visual tuning** (Codex art-lane) — 3rd pass done, **Codex re-review PENDING**. Latest
   NG (#3, 2026-08-03): the grand portal OVERSHOT (reads as a boss castle-gate) and the interior still shows a
   pale green circular cap under the HUD. Fix list: shrink the portal to ~1.1–1.3× a normal wood-and-stone door;
