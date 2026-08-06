@@ -104,16 +104,11 @@ static func enemy_mark(host: Node, group: Dictionary, centre_x: float, slot_w: f
 	var rank_w := body_w + step * float(bodies - 1)
 	var start_x := slot_w / 2.0 - rank_w / 2.0
 
-	# A soft grounded glow marks the SELECTED group instead of a hard box around one sprite (playtest: the
-	# framed box read as clutter). Under the rank, faded gold, so the target is unmistakable but the creature
-	# still owns the frame.
-	if selected and not dead:
-		var glow := ColorRect.new()
-		glow.color = Color(GOLD, 0.16)
-		glow.position = Vector2(start_x - 10.0, floor_y - 14.0)
-		glow.size = Vector2(rank_w + 20.0, 20.0)
-		glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		mark.add_child(glow)
+	# Selection is marked by the ▼ arrow (below) plus a warm brightening of the group's own bodies — NOT a
+	# full-width glow band. The old band spanned the whole rank and read as a second horizontal bar competing
+	# with the HP bars beneath it (playtest 2026-08-06: 敵HPバーの見た目が乱雑). The creature is the target; light
+	# it, don't underline it.
+	var body_tint := Color(1.16, 1.10, 0.92) if (selected and not dead) else Color(1, 1, 1, 1)
 
 	# Back-to-front: add rear bodies first so the front (index 0, the chipped unit) overlaps on top.
 	for i in range(bodies - 1, -1, -1):
@@ -127,7 +122,7 @@ static func enemy_mark(host: Node, group: Dictionary, centre_x: float, slot_w: f
 		body.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		body.size = Vector2(bw, bh)
 		body.position = Vector2(bx + (body_w - bw) / 2.0, floor_y - bh - 8.0 * float(i))
-		body.modulate = Color(1, 1, 1, 0.26) if dead else Color(1, 1, 1, 1)
+		body.modulate = Color(1, 1, 1, 0.26) if dead else body_tint
 		mark.add_child(body)
 
 		# Each living body carries its own thin HP cue: the front unit shows its real chipped HP, the rest
@@ -155,9 +150,11 @@ static func enemy_mark(host: Node, group: Dictionary, centre_x: float, slot_w: f
 			var bar_w := minf(bw, 120.0)
 			if bodies > 1:
 				bar_w = clampf(step - 6.0, 22.0, bar_w)
-			unit_bar.custom_minimum_size = Vector2(bar_w, 5)
-			unit_bar.size = Vector2(bar_w, 5)
-			unit_bar.position = Vector2(bx + (body_w - bar_w) / 2.0, floor_y + 4.0)
+			unit_bar.custom_minimum_size = Vector2(bar_w, 6)
+			unit_bar.size = Vector2(bar_w, 6)
+			# Sit the bar a touch below the feet line, clear of the selection glow that hugs the feet above it,
+			# and centred under its own body so the pack reads as "one bar per creature", not scattered.
+			unit_bar.position = Vector2(bx + (body_w - bar_w) / 2.0, floor_y + 8.0)
 			mark.add_child(unit_bar)
 
 	# The arrow rides above the selected rank (clamped onto the stage); the name sits once under the group,
