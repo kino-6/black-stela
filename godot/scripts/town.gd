@@ -253,8 +253,21 @@ func _build() -> void:
 	back.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 	back.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(back)
-	var scrim := ColorRect.new()
-	scrim.color = Color(0.043, 0.051, 0.035, 0.62)
+	# A bottom-weighted GRADIENT scrim, not a flat 0.62 dark wash: the flat scrim darkened the WHOLE backdrop
+	# evenly, crushing a dark town's upper art (default's hall) into near-black (playtest 2026-08-06). Now the
+	# top stays light so the environment reads, and it deepens toward the bottom where the party cards and
+	# destination buttons need a readable ground. (A genuinely dark backdrop asset is still a Codex retake.)
+	var scrim_grad := Gradient.new()
+	scrim_grad.set_color(0, Color(0.043, 0.051, 0.035, 0.22))
+	scrim_grad.set_color(1, Color(0.043, 0.051, 0.035, 0.78))
+	var scrim_tex := GradientTexture2D.new()
+	scrim_tex.gradient = scrim_grad
+	scrim_tex.fill_from = Vector2(0, 0)
+	scrim_tex.fill_to = Vector2(0, 1)
+	var scrim := TextureRect.new()
+	scrim.texture = scrim_tex
+	scrim.stretch_mode = TextureRect.STRETCH_SCALE
+	scrim.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	scrim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(scrim)
 
