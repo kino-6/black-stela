@@ -22,6 +22,7 @@ const WorldResources := preload("res://scripts/world_resources.gd")
 const CombatPartyHud := preload("res://scripts/combat/combat_party_hud.gd")
 const CombatPlayback := preload("res://scripts/combat/combat_playback.gd")
 const CombatStage := preload("res://scripts/combat/combat_stage.gd")
+const CombatHelpers := preload("res://scripts/rules/combat_helpers.gd")
 const Fmt := preload("res://scripts/town_format.gd")
 
 const BG := Color("0b0d09")
@@ -50,6 +51,11 @@ var _stage_slot_w: float = 0.0
 var _stage_group_total: int = 0
 var _stage_group_index: Dictionary = {}  # groupId -> its slot index
 var _party_before: Dictionary = {}   # memberId -> HP before the round, for the animated party-damage read (T22)
+var _pb_before_groups: Array = []    # deep copy of the enemy groups BEFORE the round — playback re-applies
+									 # each beat's damage to THIS via the real damage_group rule (front-first,
+									 # overkill wasted), so the drained pack matches the post-round state exactly
+									 # instead of a pooled reconstruction that over-counts kills (playtest 2026-08-06:
+									 # 敵が2体まで減ってから次ターンで5体に戻る).
 const HURT_ALLY := Color("8fb6e0")   # cooler tint for damage numbers landing on a party member (vs HURT on enemies)
 var _enemy_stage_rect: Rect2 = Rect2()
 var _busy: bool = false
@@ -542,6 +548,7 @@ func _resolve_round_with(orders: Array, animated: bool) -> void:
 	if _cmd_panel:
 		_cmd_panel.hide()
 	var before := _enemy_snapshot()
+	_pb_before_groups = _combat().get("enemyGroups", []).duplicate(true)   # real groups, for the playback drain
 	_party_before = _snapshot_party()   # HP before the enemy turn, so playback can animate each member's loss (T22)
 	_last_round = orders.duplicate(true)
 	var result := CombatRound.declare_round(_state, _world, orders, _engine)
@@ -562,6 +569,7 @@ func _resolve_round(animated: bool) -> void:
 		_cmd_panel.hide()
 
 	var before := _enemy_snapshot()
+	_pb_before_groups = _combat().get("enemyGroups", []).duplicate(true)   # real groups, for the playback drain
 	_party_before = _snapshot_party()   # HP before the enemy turn, so playback can animate each member's loss (T22)
 	var actions := _all_out_actions()
 	if actions.is_empty():
@@ -743,9 +751,11 @@ func _playback(before: Dictionary, events: Array, animated: bool) -> void:
 			# Per-MEMBER beats (誰が→何に→どれだけ): narrate the actor's completed blow, THEN land the number
 			# on the struck creature and drain that group's bar. Two steps, in that order, so the past-tense
 			# verb and its damage popup read together (playtest desync feedback).
-			var running := {}   # gid -> running pooled HP, so each beat drains the bar it hits (T21)
-			for gid0 in before:
-				running[gid0] = int((before[gid0] as Dictionary).get("hp", 0))
+			# Re-apply each beat's damage to the REAL pre-round groups with the SAME rule the fight used
+			# (damage_group: front-first, overkill wasted) so the drained pack matches the post-round state
+			# EXACTLY — not a pooled reconstruction that over-counts kills then snaps back at round end
+			# (playtest 2026-08-06: 敵が2体まで減って次ターンで5体に戻る).
+			var pb_groups: Array = _pb_before_groups.duplicate(true)
 			var party_running := {}   # P7: member id -> running HP, so the ally bar drains as the enemy beats land
 			for mid0 in _party_before:
 				party_running[mid0] = int(_party_before[mid0])
@@ -790,8 +800,8 @@ func _playback(before: Dictionary, events: Array, animated: bool) -> void:
 				await get_tree().create_timer(0.24).timeout
 				# 2) the damage: floating number ON the creature + its bar drains + a popup-style line with ！
 				_pop_enemy_damage(gid, dmg, crit)
-				running[gid] = maxi(0, int(running.get(gid, 0)) - dmg)
-				_drain_enemy_group(gid, int(running[gid]))
+				pb_groups = CombatHelpers.damage_group(pb_groups, gid, dmg)
+				_redraw_enemy_group(pb_groups, gid)
 				_set_log("%sに%dダメージ！" % [target_name, dmg])
 				await get_tree().create_timer(0.34).timeout
 		else:
@@ -799,6 +809,7 @@ func _playback(before: Dictionary, events: Array, animated: bool) -> void:
 			for hit in struck:
 				var is_crit: bool = int(hit["removed"]) >= int(hit["before"]) * 0.6
 				_spawn_damage_number_at(int(hit["removed"]), float(hit["x_frac"]), is_crit)
+				_redraw_enemy_group(_combat().get("enemyGroups", []), String(hit["gid"]))   # drain from the REAL post-round state
 				_set_log("%s に %d ダメージ。" % [String(hit["name"]), int(hit["removed"])])
 				await get_tree().create_timer(0.32).timeout
 
@@ -1068,17 +1079,6 @@ func _snapshot_party() -> Dictionary:
 
 # A synthetic copy of `group` reduced to a running pooled HP, so a mid-playback rebuild shows the pack's
 # bar drained (and the odd unit fallen) in step with its damage number, before the round's end rebuild.
-func _group_at_hp(group: Dictionary, hp_now: int) -> Dictionary:
-	var g := group.duplicate(true)
-	var max_each := maxi(1, int(group.get("maxHpEach", group.get("hpEach", 1))))
-	var initial := maxi(1, int(group.get("initialCount", group.get("count", 1))))
-	var count := clampi(int(ceil(float(maxi(0, hp_now)) / float(max_each))), 0, initial)
-	if hp_now > 0:
-		count = maxi(1, count)
-	g["count"] = count
-	g["hpEach"] = (maxi(0, hp_now - (count - 1) * max_each)) if count > 0 else 0
-	return g
-
 # Land the damage number ON the struck creature (its mark's real screen centre, high on the body) — not at
 # a stage fraction that ignored the HUD band (T21: the number floated at top-centre, off the creature).
 func _pop_enemy_damage(gid: String, amount: int, is_crit: bool) -> void:
@@ -1089,15 +1089,16 @@ func _pop_enemy_damage(gid: String, amount: int, is_crit: bool) -> void:
 	var r := (mark as Control).get_global_rect()
 	CombatPlayback.damage_number_at(_damage_layer, Vector2(r.position.x + r.size.x * 0.5, r.position.y + r.size.y * 0.26), amount, is_crit)
 
-# Redraw a struck group's mark at a running HP so its bar drains as the beats land (T21).
-func _drain_enemy_group(gid: String, hp_now: int) -> void:
+# Redraw a struck group's mark from a groups array carrying its REAL count/hpEach, so the bodies and the
+# front unit's bar drain in step with the beats — and end exactly on the post-round state (no snap-back).
+func _redraw_enemy_group(groups: Array, gid: String) -> void:
 	var idx := int(_stage_group_index.get(gid, -1))
 	if idx < 0:
 		return
-	var group := _group_by_id(gid)
-	if group.is_empty():
-		return
-	_place_enemy_mark(idx, _group_at_hp(group, hp_now))
+	for g in groups:
+		if String((g as Dictionary).get("id", "")) == gid:
+			_place_enemy_mark(idx, g)
+			return
 
 # T15: the per-hit beats the round emitted ({actorName, targetGroupId, damage, crit}), so playback can
 # name WHO struck each target (誰が) — not just the per-group total.
