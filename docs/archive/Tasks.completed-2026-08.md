@@ -473,3 +473,33 @@ These are DONE + gate-green + committed; see the named commits/gates in each ent
   descentSim dungeonId, worldRegistry group-then-level sort). nDungeons.test 6 tests; existing worlds
   byte-unchanged (unit 889, parity 0-fail). Follow-up: authoring a real 2nd dungeon in a shipped world is
   content; up/down arrow glyphs still array-order (harmless cross-group).
+
+---
+
+## 2026-08-04〜05 — U / V シリーズ + terminal-line 世界プログラム（W）進捗（2026-08-05 groom で移設）
+
+- [x] **U1–U6 + ポートレート選択プール + CI 復旧 — DONE + merged.** U1 戦闘オート二系統化（攻撃/守備） · U2 顔/全身
+  ポートレート使い分け（`assets/bodies/`、face は body 上端 top-crop フォールバック） · U3 CLASS_CAPABILITIES 外部化
+  ＋terminal-line 全8職テーマ化（保安隊員 等、`world.classTechniques`／`resolveClassCapabilities`、銃は装備由来のみ） ·
+  U4 Save 再設計（`auto:<worldId>`＋`manual:<worldId>:<n>`×3＋Load browser） · **U5=T30 1シナリオ N 迷宮**
+  （`world.entrances`＋`DungeonFloor.dungeon` グループ、町に迷宮ごと入口、validator/sim を per-group 化、
+  nDungeons.test 6本、`9e866f3`） · **U6 階段 FPV 描画**（セル中心 stairhead marker、`verify_stairs_render`、`222249f`） ·
+  ポートレート選択プール（`world.portraits`、chara 素材20枚）。CI（GitHub Actions）赤の完全復旧（autosave キー刷新の
+  e2e 追随、`153b659`）。
+- [x] **U5 実コンテンツ — 貨物基地（terminal-line 2つ目の迷宮、3層・中盤の息抜き＆稼ぎ場）— DONE + merged** (`d935c85`):
+  受入→仕分け→保税倉庫、`world.entrances` で町に2ポータル、既存 enemy/item 再利用の farm 遭遇＋売却装備、boss なしで再戦可。
+  残（任意）: 上下階段矢印グリフは配列順のまま（別グループ跨ぎは descent 既定＝無害）。
+- [x] **V1–V5 terminal-line 実機playtest — DONE + merged** (`0e7d06e` / `c4e5490`)。React+Godot 両建て（base world は
+  フォールバックで不変）。**V1** 入口名 黒碑→「零番線へ降りる / Descend to Platform Zero」。**V2** 作成/名簿/転職/サマリの
+  職業名が世界の再スキン反映（React `localizedVocationName`/`getActiveWorld()`、Godot `guild.gd`/`town.gd _class_label`）。
+  **V3** 見繕いが `world.portraits` からポートレート配布（React `createSuggestedRecruitForParty(world)`、Godot
+  `guild_draft.randomize(extra_faces)`）。**V4** Godot 戦闘に 全員でかかる[F]/攻撃オート[R]/守備オート[G] chip。**V5** 見繕う後の
+  登録メンバー顔ブランク（V3派生）を修正＝committed-member 顔解決5経路（guild/town/dungeon/result/party_panel）を
+  `WorldResources.face_path`（顔→世界body→default gate）へ統一。Gate: build+test(889)+gate:godot 全緑。
+- **terminal-line（封鎖線）W0/W1 — Codex 投入済み:** 表示名「終端隔離線 — 零番線」、world id `terminal-line`。F1/F2＋乗換広場を
+  canonical pack 化、`world.md`/`manifest.md`/全 data file、renderer 固定 basename、enemy base/hurt、item/equip icon。
+- **W4 Codex 完了バンド（terminal-line F3–F10）:** 19×19 maze・上下階段・帰還点・端末イベント・宝・進行・経済を投入。
+  深層敵帯（F3 中継保守 / F4–F6 雨水・補給・記録 / F7–F10 統制・昇降・終端の固有 catalog、own-basename 768² base/hurt、
+  F10 専用守護者）。装備帯＋装備アイコン帯（全 `equip.tl-*` に 256² RGBA icon）。鉄雨火器帯（自動小銃/短機関銃/散弾銃/
+  指定射撃銃/軽機関銃、架空名）。制式火器更新系列（拳銃/長銃/短機関銃/散弾銃 各5段、長銃 F1＝三八式歩兵銃、計48装備）。
+  補給・横選択拡充（全32装備・全17物資）。※実在銘は三八式のみ（user 明示指定）、未実装の弾薬/連射/騒音は数値・説明で偽装しない。
