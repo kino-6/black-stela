@@ -188,7 +188,7 @@ func _build_overlays() -> void:
 	log_panel.custom_minimum_size = Vector2(size.x - 420, 52)
 	log_panel.size = Vector2(size.x - 420, 52)
 	log_panel.add_theme_stylebox_override("panel", _panel_style(Color("11140deb"), GOLD))
-	_log_label = _label("地下に踏み入った。松明の灯が石を照らす。", 20, INK)
+	_log_label = _label(_descent_line(), 20, INK)
 	_log_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	log_panel.add_child(_log_label)
 	add_child(log_panel)
@@ -637,6 +637,14 @@ func _escape_item() -> String:
 		if String(item.get("kind", "")) == "escape" and int(item.get("quantity", 0)) > 0:
 			return String(item.get("id", ""))
 	return ""
+
+# The opening log line: the WORLD's own descent copy (town.firstDescend), not a hardcoded fantasy line.
+# The log used to read "松明の灯が石を照らす" (torchlight on stone) even in a tiled subway station
+# (playtest 2026-08-06). Falls back to the base i18n line (world-agnostic) when a world omits its own.
+func _descent_line() -> String:
+	var copy: Dictionary = (_world.get("copy", {}) as Dictionary).get(I18n.locale(), {})
+	var line := String(copy.get("town.firstDescend", ""))
+	return line if line.strip_edges() != "" else I18n.t("town.firstDescend")
 
 func _current_room() -> Variant:
 	if _state.get("position", null) == null:
