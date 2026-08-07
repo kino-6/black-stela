@@ -684,12 +684,20 @@ func _build_service() -> void:
 	scrim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_service_layer.add_child(scrim)
 
+	# A CenterContainer + a CONTENT-HEIGHT panel: the panel used to be a fixed 1740×960 for EVERY service, so
+	# a short counter (施療院/記録/依頼) left most of the screen an empty black void (playtest 2026-08-07). Keeping
+	# the width (the counters lay out two columns across it) but letting the height fit the content, then
+	# centring it, turns a short service into a compact centred card while a full one (shop/party) still fills.
+	var center := CenterContainer.new()
+	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	center.offset_top = 40
+	center.offset_bottom = -40
+	_service_layer.add_child(center)
 	var panel := PanelContainer.new()
 	var panel_bg := Color("14180f66") if blacksmith_backdrop else UI.PANEL_BG
 	panel.add_theme_stylebox_override("panel", UI.panel_style(panel_bg, UI.GOLD))
-	panel.position = Vector2(90, 60)
-	panel.custom_minimum_size = Vector2(1740, 960)
-	_service_layer.add_child(panel)
+	panel.custom_minimum_size = Vector2(1740, 0)
+	center.add_child(panel)
 
 	var ctx := _service_ctx()
 	var body: Control = null
