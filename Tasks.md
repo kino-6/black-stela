@@ -48,8 +48,15 @@ faint enemy bar, or count snap-back appears in the React build, mirror there: te
 松明の灯が石を照らす。」で、タイル張りの地下鉄駅に松明＆石が出ていた。世界固有の `town.firstDescend` コピー（terminal-line:
 「防火扉が上がった。雨水が古い駅へ流れ落ちている。」）を読むよう修正（未定義世界は base i18n へフォールバック）。裏画面で確認。
 
-**裏画面スイープ結果（2026-08-07、問題なし）:** 装備メニュー・道具使用メニューは整然（スロット/効果プレビュー/対象可否が明瞭）。
-戦闘の敵バーは満タン/削れ両状態でクリーン（X1確認）。迷宮FPVで V6 帰還ハシゴの描画も実画面で確認。
+**✅ X5 町の施設パネルの巨大空白（2026-08-07、`2fb3410`）:** サービスパネルが全施設で固定1740×960だったため、短い施設
+（施療院 ~90%／記録 ~50%／依頼 ~55%）が画面の大半を黒い空白にしていた。CenterContainer＋高さを content 駆動に（幅は
+二列カウンター用に1740維持）→ 短い施設はコンパクトな中央カード（背後に町が見える）、長い施設（ショップ/隊列）は従来通り
+充填＋スクロール。裏画面で recovery/shop/quests を確認。
+
+**裏画面スイープ結果（2026-08-07）:** ショップ（terminal-line 火器＝アイコン/和名/補正/装備可否が明瞭）・装備メニュー・道具
+使用メニュー・依頼掲示板は良好。戦闘の敵バーは満タン/削れ両状態でクリーン（X1確認）。迷宮FPVで V6 帰還ハシゴ描画も確認。
+- **未修正の軽微ネタ（任意）:** 記録の間の「魔物図鑑／記録された魔物はいない」の**「魔物」**は terminal-line（機械敵）に非テーマ
+  （X4 の松明と同種）。共有 i18n ラベルなので、中立語（例「敵性体」）へ寄せるか per-world copy 対応が要る。
 
 - [-] **玄室 landmark visual tuning** (Codex art-lane) — 3rd pass done, **Codex re-review PENDING**. Latest
   NG (#3, 2026-08-03): the grand portal OVERSHOT (reads as a boss castle-gate) and the interior still shows a
