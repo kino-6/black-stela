@@ -807,6 +807,8 @@ func _playback(before: Dictionary, events: Array, animated: bool) -> void:
 				await get_tree().create_timer(0.24 if shot_index == 0 else 0.08).timeout
 				# 2) the damage: floating number ON the creature + its bar drains + a popup-style line with ！
 				_pop_enemy_damage(gid, dmg, crit)
+				if is_gun:
+					_spawn_gun_fx(gid, _gun_family(acting))
 				pb_groups = CombatHelpers.damage_group(pb_groups, gid, dmg)
 				_redraw_enemy_group(pb_groups, gid)
 				_set_log("%sに%dダメージ！" % [target_name, dmg])
@@ -1095,6 +1097,55 @@ func _pop_enemy_damage(gid: String, amount: int, is_crit: bool) -> void:
 		return
 	var r := (mark as Control).get_global_rect()
 	CombatPlayback.damage_number_at(_damage_layer, Vector2(r.position.x + r.size.x * 0.5, r.position.y + r.size.y * 0.26), amount, is_crit)
+
+# The firearm family the member wields ("pistol"/"rifle"/"smg"/"shotgun"), for the gun-fx overlay — "" for
+# a non-firearm. Read straight off the world equipment tags so a scenario tunes it by tagging its guns.
+func _gun_family(member: Dictionary) -> String:
+	var weapon: Variant = (member.get("equipment", {}) as Dictionary).get("weapon", null)
+	if typeof(weapon) != TYPE_DICTIONARY:
+		return ""
+	var wid := String((weapon as Dictionary).get("id", ""))
+	for e in _world.get("equipment", []):
+		if typeof(e) == TYPE_DICTIONARY and String((e as Dictionary).get("id", "")) == wid:
+			var tags: Array = (e as Dictionary).get("tags", [])
+			if not tags.has("firearm"):
+				return ""
+			for fam in ["smg", "shotgun", "rifle", "pistol"]:
+				if tags.has(fam):
+					return fam
+			return "pistol"
+	return ""
+
+# A brief muzzle flash on the shooter + an impact on the struck creature, from the scenario's own gun-fx
+# (assets/effects/fx-tl-<family>-<kind>.png). Small, high on the body, faded fast — never covers the HP bar
+# below the feet or the whole silhouette, and never a full-screen flash (Codex fx contract, D3).
+func _spawn_gun_fx(gid: String, family: String) -> void:
+	if family == "":
+		return
+	var mark: Variant = _enemy_marks.get(gid, null)
+	if mark is Control:
+		var r := (mark as Control).get_global_rect()
+		var impact := _texture(_asset("effects/fx-tl-%s-impact.png" % family))
+		if impact:
+			_spawn_fx_texture(impact, Vector2(r.position.x + r.size.x * 0.5, r.position.y + r.size.y * 0.32), minf(r.size.x * 0.5, 260.0), 0.26)
+	var muzzle := _texture(_asset("effects/fx-tl-%s-muzzle.png" % family))
+	if muzzle and _actor_figure is Control:
+		var fr := (_actor_figure as Control).get_global_rect()
+		_spawn_fx_texture(muzzle, Vector2(fr.position.x + fr.size.x * 0.82, fr.position.y + fr.size.y * 0.42), 150.0, 0.16)
+
+func _spawn_fx_texture(tex: Texture2D, centre: Vector2, size: float, life: float) -> void:
+	var fx := TextureRect.new()
+	fx.texture = tex
+	fx.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	fx.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	fx.custom_minimum_size = Vector2(size, size)
+	fx.size = Vector2(size, size)
+	fx.position = centre - Vector2(size, size) * 0.5
+	fx.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_damage_layer.add_child(fx)
+	var tw := create_tween()
+	tw.tween_property(fx, "modulate:a", 0.0, life).from(1.0)
+	tw.tween_callback(fx.queue_free)
 
 # Redraw a struck group's mark from a groups array carrying its REAL count/hpEach, so the bodies and the
 # front unit's bar drain in step with the beats — and end exactly on the post-round state (no snap-back).
