@@ -4,7 +4,7 @@ encounterTables:
     floorId: dungeon.tl1f
     groupsMax: 2
     entries:
-      - { enemyId: enemy.tl1f.drain-rat, weight: 10, minCount: 2, maxCount: 4 }
+      - { enemyId: enemy.tl1f.drain-rat, weight: 10, minCount: 4, maxCount: 7 }
       - { enemyId: enemy.tl1f.baton-unit, weight: 6, minCount: 1, maxCount: 2 }
       - { enemyId: enemy.tl1f.breath-collector, weight: 4, minCount: 1, maxCount: 1 }
   - id: encounters.tl1f.stationmaster
@@ -15,14 +15,14 @@ encounterTables:
     floorId: dungeon.tl2f
     groupsMax: 2
     entries:
-      - { enemyId: enemy.tl2f.cable-hound, weight: 10, minCount: 1, maxCount: 3 }
+      - { enemyId: enemy.tl2f.cable-hound, weight: 10, minCount: 2, maxCount: 5 }
       - { enemyId: enemy.tl2f.rain-reclaimer, weight: 7, minCount: 1, maxCount: 2 }
       - { enemyId: enemy.tl1f.breath-collector, weight: 4, minCount: 1, maxCount: 1 }
   - id: encounters.tl3f.relay
     floorId: dungeon.tl3f
     groupsMax: 2
     entries:
-      - { enemyId: enemy.tl3f.relay-tick, weight: 10, minCount: 2, maxCount: 4 }
+      - { enemyId: enemy.tl3f.relay-tick, weight: 10, minCount: 3, maxCount: 6 }
       - { enemyId: enemy.tl3f.platform-auditor, weight: 8, minCount: 1, maxCount: 2 }
       - { enemyId: enemy.tl2f.rain-reclaimer, weight: 4, minCount: 1, maxCount: 1 }
   - id: encounters.tl3f.transfer-warden
@@ -33,7 +33,7 @@ encounterTables:
     floorId: dungeon.tl4f
     groupsMax: 2
     entries:
-      - { enemyId: enemy.tl4f.silt-lamprey, weight: 10, minCount: 2, maxCount: 4 }
+      - { enemyId: enemy.tl4f.silt-lamprey, weight: 10, minCount: 3, maxCount: 6 }
       - { enemyId: enemy.tl4f.pump-sentinel, weight: 8, minCount: 1, maxCount: 2 }
       - { enemyId: enemy.tl3f.platform-auditor, weight: 4, minCount: 1, maxCount: 1 }
   - id: encounters.tl5f.depot
@@ -42,7 +42,7 @@ encounterTables:
     entries:
       - { enemyId: enemy.tl5f.ration-porter, weight: 9, minCount: 1, maxCount: 2 }
       - { enemyId: enemy.tl5f.cold-store-widow, weight: 8, minCount: 1, maxCount: 2 }
-      - { enemyId: enemy.tl4f.silt-lamprey, weight: 5, minCount: 1, maxCount: 3 }
+      - { enemyId: enemy.tl4f.silt-lamprey, weight: 5, minCount: 3, maxCount: 6 }
   - id: encounters.tl6f.records
     floorId: dungeon.tl6f
     groupsMax: 2
@@ -104,9 +104,9 @@ encounterTables:
     floorId: dungeon.tl-depot1
     groupsMax: 2
     entries:
-      - { enemyId: enemy.tl1f.drain-rat, weight: 8, minCount: 3, maxCount: 5 }
+      - { enemyId: enemy.tl1f.drain-rat, weight: 8, minCount: 4, maxCount: 7 }
       - { enemyId: enemy.tl5f.ration-porter, weight: 8, minCount: 1, maxCount: 3 }
-      - { enemyId: enemy.tl4f.silt-lamprey, weight: 5, minCount: 1, maxCount: 2 }
+      - { enemyId: enemy.tl4f.silt-lamprey, weight: 5, minCount: 3, maxCount: 6 }
   - id: encounters.tl-depot1.foreman
     floorId: dungeon.tl-depot1
     entries:
