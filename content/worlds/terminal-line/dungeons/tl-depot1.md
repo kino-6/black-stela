@@ -47,8 +47,8 @@ edges:
 rooms:
   - id: room.tl-depot1.gate
     name: Freight Shutter
-    description: A cargo shutter propped on a jack, opening off the interchange back-of-house. The way home is the goods lift behind you.
-    locales: { ja: { name: 貨物シャッター, description: ジャッキで支えた貨物シャッターが、乗換場の裏手へ開く。帰り道は背後の荷役リフトだ。 } }
+    description: A cargo shutter propped on a jack, opening off the interchange back-of-house. The same shutter is the way home.
+    locales: { ja: { name: 貨物シャッター, description: ジャッキで支えた貨物シャッターが、乗換場の裏手へ開く。同じシャッターが、そのまま帰り道になる。 } }
     stairsToTown: true
     returnStyle: stairs
   - id: room.tl-depot1.receiving-dock
@@ -78,11 +78,10 @@ rooms:
     description: A freight stair drops toward the sorting yard, where the real salvage is graded.
     locales: { ja: { name: 貨物階段, description: 貨物階段が、仕分けヤードへ落ちていく。本当の回収品は、その先で選別される。 } }
   - id: room.tl-depot1.return-lift
-    name: Goods Lift
-    description: The goods lift still climbs to the interchange — a clean way back up with a full pack.
-    locales: { ja: { name: 荷役リフト, description: 荷役リフトはまだ乗換場まで上がる。荷を積んで戻るには、綺麗な帰り道だ。 } }
-    stairsToTown: true
-    returnStyle: stairs
+    name: Dead Goods Lift
+    description: The goods lift sits dead in its shaft, its car stranded a floor below. A crate of unshipped salvage was left on the landing.
+    locales: { ja: { name: 停止した荷役リフト, description: 荷役リフトは昇降路で停止し、かごは一つ下の階に取り残されている。踊り場には、積み残しの回収品が置かれたままだ。 } }
+    treasureTable: treasure.tl-depot.salvage
   - id: room.tl-depot1.lost-property
     name: Lost Property Cage
     description: A wire cage of unclaimed freight. Someone's loss, the party's earnings.
