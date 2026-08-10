@@ -19,7 +19,7 @@ static func resolve_class_id(id: Variant, data: Dictionary) -> String:
 	var mapping: Dictionary = data.get("legacyClassMapping", {})
 	return String(mapping.get(wanted, "warrior"))
 
-static func create(input: Dictionary, data: Dictionary) -> Dictionary:
+static func create(input: Dictionary, data: Dictionary, world: Dictionary = {}) -> Dictionary:
 	# A stored id may be a LEGACY one (the twelve → eight consolidation). Resolve it exactly as the oracle
 	# does — an unresolved id used to fall through to an empty class and mint a character made of zeros.
 	var class_id := resolve_class_id(input.get("classId", "warrior"), data)
@@ -45,7 +45,14 @@ static func create(input: Dictionary, data: Dictionary) -> Dictionary:
 	var mp := _base_max_mp(class_id, aptitude, data.get("mpModeByClass", {}))
 
 	# equipment is an ORDERED array of {slot, id} (class-insertion order) so startingEquipment matches TS.
+	# A world may hand its own kit to a re-skinned basic class (terminal-line's 保安隊員 → a station sidearm),
+	# REPLACING the base class's fantasy gear (TS resolveStartingLoadout). Dict order preserves authored order.
 	var loadout: Array = class_def.get("equipment", [])
+	var authored: Dictionary = _world_starting_equipment(world, class_id)
+	if not authored.is_empty():
+		loadout = []
+		for slot in authored:
+			loadout.append({"slot": String(slot), "id": String(authored[slot])})
 	var equipment := {}
 	var starting := []
 	for entry in loadout:
@@ -143,6 +150,14 @@ static func _find(items: Array, id: String) -> Dictionary:
 	for item in items:
 		if typeof(item) == TYPE_DICTIONARY and item.get("id", "") == id:
 			return item
+	return {}
+
+# The world's own starting kit for the re-skinned BASIC vocation matching this class ("" / {} when none).
+static func _world_starting_equipment(world: Dictionary, class_id: String) -> Dictionary:
+	for v in world.get("vocations", []):
+		if typeof(v) == TYPE_DICTIONARY and String(v.get("id", "")) == class_id and String(v.get("tier", "")) == "basic":
+			var kit: Variant = v.get("startingEquipment", {})
+			return kit if typeof(kit) == TYPE_DICTIONARY else {}
 	return {}
 
 const Leveling := preload("res://scripts/rules/leveling.gd")

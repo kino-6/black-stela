@@ -150,6 +150,7 @@ const scenarioVocationSchema = z.object({
     .optional(),
   allowedSlots: z.array(equipmentSlotSchema).optional(),
   grantsTechniques: z.array(z.string().min(1)).optional(),
+  startingEquipment: z.record(equipmentSlotSchema, z.string().min(1)).optional(),
   locales: z.record(z.object({ name: z.string().min(1).optional(), signature: z.string().min(1).optional() })).optional()
 });
 

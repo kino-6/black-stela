@@ -451,7 +451,7 @@ export function App() {
     seed: `bonus:${draft.bonusSeed}`,
     method: "detailed",
     registeredAtTurn: state.turn
-  }), [draft, state.turn, t]);
+  }, activeWorld), [draft, state.turn, t, activeWorld]);
   const selectedProfile = state.party.find((member) => member.id === selectedProfileId) ?? state.party[0] ?? draftPreview;
   const selectedProfileStats = getEffectiveCharacterStats(selectedProfile, activeWorld);
   // IMP-028: the class step's stable detail pane reads from the class under the cursor.
@@ -916,7 +916,7 @@ export function App() {
       seed: `bonus:${draft.bonusSeed}`,
       method: "detailed",
       registeredAtTurn: state.turn
-    });
+    }, activeWorld);
     setState((current) =>
       current.party.length < PARTY_SIZE_LIMIT
         ? addCharacter(current, character)

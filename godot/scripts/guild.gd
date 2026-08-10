@@ -1056,7 +1056,7 @@ func _build_character() -> Dictionary:
 		"bonusAptitude": _draft.get("bonusAptitude", {}),
 		"portraitRef": "builtin://portrait/%s" % String(_draft.get("portraitKey", "gate")),
 		"seed": "guild:%d" % int(_draft.get("bonusSeed", 1)),
-	}, _data)
+	}, _data, _world)
 	# create() ports the BUILD MATH only; the written identity is the draft's. Blanks fall back the way
 	# createGuildCharacter does — to the origin's note and the calling's name — except in Japanese, since
 	# an English default would be the raw-English leak AGENTS.md bars from normal play.

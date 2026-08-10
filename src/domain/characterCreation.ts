@@ -377,7 +377,21 @@ export const starterTemplates: Record<StarterTemplateId, { label: LocalizedLabel
 const defaultAptitude: CharacterAptitudes = { might: 2, agility: 2, spirit: 2, wit: 2, luck: 2 };
 const quickNames = ["Mira", "Rook", "Vale", "Sei", "Bran", "Kest", "Lio", "Ash", "Nera", "Orn", "Tess", "Galt"];
 
-export function createGuildCharacter(input: GuildCharacterInput): Character {
+// The kit a fresh character of `classId` starts with: the active world's own starting equipment for the
+// re-skinned basic vocation (terminal-line's 保安隊員 → a pistol + station gear) when it authors one, else
+// the base class's default. Present overrides REPLACE the base kit outright so no fantasy slot leaks through.
+export function resolveStartingLoadout(
+  classId: AnyClassId,
+  world?: ScenarioWorld
+): Partial<Record<EquipmentSlot, string>> {
+  const authored = world?.vocations.find((v) => v.id === classId && v.tier === "basic")?.startingEquipment;
+  if (authored && Object.keys(authored).length > 0) {
+    return { ...authored };
+  }
+  return { ...findClass(classId).equipment };
+}
+
+export function createGuildCharacter(input: GuildCharacterInput, world?: ScenarioWorld): Character {
   const trimmedName = input.name.trim();
   if (!trimmedName) {
     throw new Error("Character name is required.");
@@ -389,7 +403,7 @@ export function createGuildCharacter(input: GuildCharacterInput): Character {
   const traits = traitIds.map(findTrait);
   const aptitude = buildAptitude(classDef, input.aptitudeFocus ?? "balanced", background, traits, input.bonusAptitude);
   const stats = deriveStats(classDef, aptitude);
-  const loadout: Partial<Record<EquipmentSlot, string>> = { ...classDef.equipment };
+  const loadout: Partial<Record<EquipmentSlot, string>> = resolveStartingLoadout(classDef.id, world);
 
   return {
     id: newId(),

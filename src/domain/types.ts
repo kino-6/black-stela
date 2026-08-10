@@ -1118,6 +1118,11 @@ export interface ScenarioVocation {
   allowedSlots?: EquipmentSlot[];
   /** Technique ids learned on adopting this vocation and kept forever after. */
   grantsTechniques?: string[];
+  /** The kit a character CREATED as this (basic) vocation starts with — a world overriding a base class
+   *  (terminal-line's 保安隊員) gives its own gear here instead of the fantasy class default. When present it
+   *  REPLACES the base class equipment outright (so a re-skinned class cannot leak, say, a fantasy buckler
+   *  in a slot the world did not name); list every slot the vocation should start with. */
+  startingEquipment?: Partial<Record<EquipmentSlot, string>>;
   locales?: Partial<Record<string, { name?: string; signature?: string }>>;
 }
 

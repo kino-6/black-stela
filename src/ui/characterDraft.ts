@@ -115,7 +115,7 @@ export function createSuggestedRecruitForParty(party: Character[], turn: number,
     seed: `guild-suggestion:${turn}:${party.length}:${classId}`,
     registeredAtTurn: turn,
     portraitRef
-  });
+  }, world);
 }
 
 export function chooseSuggestedClassId(party: Character[]): CharacterClassId {
