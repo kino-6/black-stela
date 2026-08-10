@@ -35,6 +35,22 @@ faint enemy bar, or count snap-back appears in the React build, mirror there: te
 
 ## Active queue (process top-down)
 
+### Y/D — 2026-08-10 terminal-line 実機playtest（銃の手触り＋初期装備）
+
+**✅ Y1 depot F1 の帰還階段が2つ → 1つに（`1b24c63`）:** tl-depot1 が gate と荷役リフトの両方を stairsToTown にしていて
+マップに⌂が2つ。gate を唯一の到着＝帰還に、リフトは死んだ salvage 部屋へ。
+**✅ Y2 初期装備をシナリオ定義化（`e64e7b1`）:** ScenarioVocation.startingEquipment（present=base職の装備を丸ごと置換）＋
+`resolveStartingLoadout`/`createGuildCharacter(input, world?)`＋Godot `create(input,data,world)` parity。terminal-line は
+保安拳銃/SMG/バール/小盾＋レインジャケットで開始（ファンタジー装備の漏れ無し）。base world 不変。
+**✅ D1 銃の基本攻撃＝掃射（薙ぎ倒し）＋射撃ナレーション（`57d9bc4`）:** `weaponShots`（smg3/shotgun2/lmg4/その他1、`shots`で
+上書き可）で基本攻撃が複数発を撃ち、前列→次グループへ薙ぎ倒す。shot0 は旧単発と完全一致（seed 同一）→ 近接＆全 parity trace 不変。
+beat に `firearm`/`shotIndex`、playback は銃を「撃った」ナレ＋バースト2発目以降は数字のみ。TS↔Godot ミラー。SMG が8体horde→5体。
+**✅ D2 早期フロアを大群化（`7e3d823`）:** 低HP swarm（排水ネズミ hp6 等）を F1–F4 で4–7体パックに→ F1 遭遇が5–8体（旧2–4）。
+enemy turn はグループ1回なので大群=HPスポンジ（火力スパイクではない）。groupsMax は2据置＝深層は3列化しない。
+- [~] **D3 銃撃エフェクトのシナリオ配線（Codex アセット12枚 到着済み）** — `fx-tl-<family>-<muzzle|travel|impact>.png` を
+  戦闘playbackの銃shotに重ねる（family=武器tag pistol/rifle/smg/shotgun）。HPバー/敵シルエットを覆わない・全画面フラッシュ禁止。
+  **Gate:** 銃撃コンバット PNG 目視（エフェクトが出る・遮らない）。
+
 ### X — 2026-08-06 自己検出（裏画面検証 / capture→read PNG、[[black-stela-visual-self-verify]]）
 
 **✅ X1–X3 全完遂 + merged（裏画面ループで検出→修正→PNG目視で確認）:** **X1** 戦闘の敵HPバー整理（全幅の選択
@@ -100,6 +116,19 @@ scenario id→own-basename→寸法→用途→生成/実機状態、壁床扉�
   terminal-line 限定）を TS/翻訳/combat beat/loadout resolver に実装・`terminalLinePrepack` 緑・Web build 緑。残: 全
   `export:godot` が default B3F `room.b3f.003` trace 不整合で `export:traces` から進めず、Godot 実機 capture/controller/
   selfplay 未完了。**Gate:** data test・Godot parity trace・1920/1280 capture・selfplay。
+  - [~] **終端火器銃撃エフェクト（Codex, 2026-08-10）:** 拳銃／長銃／短機関銃／散弾銃に各3種、計12枚の透過PNGを生成する。
+    `muzzle`（発射口の低輝度火花）、`travel`（弾道）、`impact`（命中／跳弾）を系列固有の形にし、銃器アイコンではなく
+    戦闘ビートの重ね描き用アセットとして置く。拳銃は小さな一点、長銃は細い直進、短機関銃は短い制圧列、散弾銃は近距離の扇形とする。
+    - **Human expectation:** 攻撃が単なる浮動数字ではなく、持っている銃の種類を一目で感じられる。ただし敵やHPバーを隠さず、
+      反射的に目を傷めない。
+    - **Non-goals:** 弾倉・リロード・発射数・騒音・遮蔽など、まだルール化していない機構を絵だけで約束しない。強い全画面フラッシュは禁止。
+    - **Red flags:** 常時残る光、白飛び、敵シルエット／ターゲットカーソル／HPバーを覆う大きな絵、実体のない巨大レーザー、
+      カテゴリ差のない単なる色違い。
+    - **Asset contract:** `content/worlds/terminal-line/assets/effects/fx-tl-<family>-<kind>.png`、512² RGBA、中央主体・余白あり。
+      sourceの色は暖色〜鈍い金属色、ランタイムで短時間だけ局所表示する前提。`ART.md`へ用途を追記し、stage導入後は
+      1920/1280でcommand／HP bar／敵シルエットに重ならないことをcaptureする。
+    - **Headless/browser parity:** 今回の生成は素材存在・alpha・寸法だけを検証できる。発火位置・時間・controller flowの証明は
+      combat stageへ配線する次タスクでの実機capture/selfplayを要する。
 - [ ] **W5 — 実機仕上げ（Claude+Codex）:** `ART.md`↔ID表 照合で未配線/default fallback/未確認hurt/開封済み保管庫/見えない
   導線をゼロ化。Claude=ルール/セーブ/日本語 最終確認。debug/import UI を通常プレイに露出させない。**Gate:** `gate:final`、
   `gate:migration`、Godot clean boot、controller/selfplay、1280/1920 キャプチャ＋独立レビュー。
