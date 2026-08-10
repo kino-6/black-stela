@@ -47,9 +47,10 @@ faint enemy bar, or count snap-back appears in the React build, mirror there: te
 beat に `firearm`/`shotIndex`、playback は銃を「撃った」ナレ＋バースト2発目以降は数字のみ。TS↔Godot ミラー。SMG が8体horde→5体。
 **✅ D2 早期フロアを大群化（`7e3d823`）:** 低HP swarm（排水ネズミ hp6 等）を F1–F4 で4–7体パックに→ F1 遭遇が5–8体（旧2–4）。
 enemy turn はグループ1回なので大群=HPスポンジ（火力スパイクではない）。groupsMax は2据置＝深層は3列化しない。
-- [~] **D3 銃撃エフェクトのシナリオ配線（Codex アセット12枚 到着済み）** — `fx-tl-<family>-<muzzle|travel|impact>.png` を
-  戦闘playbackの銃shotに重ねる（family=武器tag pistol/rifle/smg/shotgun）。HPバー/敵シルエットを覆わない・全画面フラッシュ禁止。
-  **Gate:** 銃撃コンバット PNG 目視（エフェクトが出る・遮らない）。
+**✅ D3 銃撃エフェクトのシナリオ配線（`b137ea5`）:** Codex の12枚（fx-tl-<family>-<muzzle/travel/impact>）を戦闘 playback の
+銃shotに配線。銃ビートで射手のスポットライトに muzzle、被弾creatureに impact を短時間（~0.2s）重ねる（family=武器tag、
+小さく体の高い位置＝HPバー/シルエット/全画面フラッシュを覆わない）。近接は不変。instrumentation で family=smg＋mark/figure
+＋imported texture を確認、combat-controller 緑。※0.2sの短命なので synthetic capture では捉えにくいが実機60fpsで視認。
 
 ### X — 2026-08-06 自己検出（裏画面検証 / capture→read PNG、[[black-stela-visual-self-verify]]）
 
