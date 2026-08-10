@@ -114,6 +114,31 @@ export function weaponReaches(character: Character, world: ScenarioWorld): boole
   return catalog?.tags?.includes("reach") ?? false;
 }
 
+// How many shots a wielder's BASIC attack fires — the "mow-down" feel of an automatic weapon. A firearm
+// sprays several rounds (each landing on the current front unit and spilling onto the next as bodies fall),
+// while a melee weapon strikes once. Derived from the weapon's own tags so a scenario tunes it by tagging:
+// support-gun/lmg = 4, smg = 3, shotgun = 2 (a wide blast), pistol/rifle/dmr = 1 precise shot. A weapon may
+// pin an exact count with an explicit `shots`. Non-firearms (and empty hands) are always single-strike.
+export function weaponShots(character: Character, world: ScenarioWorld): number {
+  const weapon = character.equipment.weapon;
+  const catalog = weapon ? findEquipment(world, weapon.id) : undefined;
+  const tags = catalog?.tags ?? [];
+  if (typeof catalog?.shots === "number" && catalog.shots > 0) return Math.min(catalog.shots, 6);
+  if (!tags.includes("firearm")) return 1;
+  if (tags.includes("support-gun") || tags.includes("lmg")) return 4;
+  if (tags.includes("smg")) return 3;
+  if (tags.includes("shotgun")) return 2;
+  return 1;
+}
+
+// Whether the wielded weapon is a gun — playback narrates a shot, not a melee swing (a single-shot pistol
+// is still a firearm even though weaponShots is 1, so this is separate from the shot count).
+export function weaponIsFirearm(character: Character, world: ScenarioWorld): boolean {
+  const weapon = character.equipment.weapon;
+  const catalog = weapon ? findEquipment(world, weapon.id) : undefined;
+  return catalog?.tags?.includes("firearm") ?? false;
+}
+
 /** Active techniques that come from currently worn equipment, in deterministic slot/id order. */
 export function equippedTechniqueGrants(character: Character, world: ScenarioWorld): string[] {
   const techniques = resolveTechniqueCatalog(world);

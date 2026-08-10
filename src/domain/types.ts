@@ -371,6 +371,8 @@ export interface CombatBeat {
   remaining?: number; // enemies left in the target group after this blow
   crit?: boolean;
   weak?: boolean;
+  firearm?: boolean; // a gun shot — playback narrates shooting, not a melee verb
+  shotIndex?: number; // 0 = first shot of a burst; >0 = follow-up rounds of the same sweep
   spellId?: string; // localize ability name — widens with the catalog, no longer hand-listed here
   abilityName?: string; // enemy ability raw name (fallback)
   statusName?: string; // status/ailment name
@@ -1153,6 +1155,9 @@ export interface ScenarioEquipment {
   /** Concrete stat payload for the supplied passive; keeps the Godot world export self-contained. */
   passiveBonus?: { attack?: number; armor?: number; accuracy?: number; speed?: number; resistance?: Partial<Record<CombatStatus, number>> };
   tags?: string[];
+  /** Shots a BASIC attack fires with this weapon — the automatic-weapon "mow-down" (see weaponShots). When
+   *  omitted it derives from the firearm tag (smg 3 / shotgun 2 / support-gun 4 / else 1). */
+  shots?: number;
   price?: number;
   sellValue?: number;
   locales?: LocalizedNameDescription;

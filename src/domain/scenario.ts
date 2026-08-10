@@ -324,6 +324,7 @@ const scenarioEquipmentSchema = z.object({
     resistance: z.record(z.enum(["poison", "fear", "silence", "sleep", "ward"]), z.number()).optional()
   }).optional(),
   tags: z.array(z.string().min(1)).default([]),
+  shots: z.number().int().positive().optional(),
   price: z.number().int().nonnegative().optional(),
   sellValue: z.number().int().nonnegative().optional(),
   locales: localizedNameDescriptionSchema.optional()

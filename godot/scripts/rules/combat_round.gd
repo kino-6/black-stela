@@ -8,6 +8,7 @@ class_name CombatRound
 const CombatRng := preload("res://scripts/rules/combat_rng.gd")
 const CombatHelpers := preload("res://scripts/rules/combat_helpers.gd")
 const CharacterStats := preload("res://scripts/rules/character_stats.gd")
+const Economy := preload("res://scripts/rules/economy.gd")
 const Leveling := preload("res://scripts/rules/leveling.gd")
 const CombatEffects := preload("res://scripts/rules/combat_effects.gd")
 const Techniques := preload("res://scripts/rules/techniques.gd")
@@ -128,20 +129,32 @@ static func declare_round(state: Dictionary, world: Dictionary, actions: Array, 
 		if CombatRng.roll_percent(hit_seed) > eff_acc:
 			continue
 
-		var attack_seed := "%d:%d:%s:%s:damage" % [turn, rnd, actor["id"], group["id"]]
-		# A sundered pack takes more from EVERY weapon in the party, not just the caster's.
-		var group_armor := maxi(0, int(group.get("armor", 0)) + CombatEffects.stat_modifier(effects, String(group["id"]), "armor"))
-		var raw := CombatRng.roll_damage(attack_seed, int(stats["damageMin"]), int(stats["damageMax"]), group_armor)
-		var enemy_def: Variant = CharacterStats._find_by_id(world.get("enemies", []), group.get("enemyId", ""))
-		var tags: Variant = enemy_def.get("tags", []) if typeof(enemy_def) == TYPE_DICTIONARY else []
-		var species := CombatHelpers.character_species_multiplier(actor, world, tags)
-		var elem := CombatRng.element_multiplier(group.get("weaknesses", {}), stats["attackElement"])
-		var weakened := CombatRng.chip_through_resistance(roundi(raw * elem * species), attack_seed)
-		var crit := CombatRng.roll_percent("%d:%d:%s:%s:crit" % [turn, rnd, actor["id"], group["id"]]) < CombatHelpers.get_critical_chance(actor)
-		var damage := roundi(weakened * CRIT_MULTIPLIER) if crit else weakened
-		enemy_groups = CombatHelpers.damage_group(enemy_groups, group["id"], damage)
-		if damage > 0:
-			beats.append({"actorName": String(actor.get("name", "")), "targetGroupId": String(group["id"]), "damage": damage, "crit": crit})
+		# A firearm sprays `shots` rounds; melee strikes once. Each round lands on the current front group
+		# (the chosen target, then the next living group as bodies fall) so an automatic weapon MOWS ACROSS a
+		# horde (approach D). Shot 0 reproduces the old single strike EXACTLY (same seeds) so melee — and every
+		# parity trace — is unchanged; only shot > 0 is new. Mirrors TS rulesEngine.
+		var shots := _weapon_shots(actor, world)
+		var is_firearm := _weapon_is_firearm(actor, world)
+		var sweep_id := String(group["id"])
+		for shot in range(shots):
+			var tgt: Variant = _find_living_group(enemy_groups, sweep_id)
+			if typeof(tgt) != TYPE_DICTIONARY:
+				break
+			sweep_id = String(tgt["id"])
+			var attack_seed := ("%d:%d:%s:%s:damage" % [turn, rnd, actor["id"], sweep_id]) if shot == 0 else ("%d:%d:%s:%s:damage:%d" % [turn, rnd, actor["id"], sweep_id, shot])
+			var group_armor := maxi(0, int(tgt.get("armor", 0)) + CombatEffects.stat_modifier(effects, sweep_id, "armor"))
+			var raw := CombatRng.roll_damage(attack_seed, int(stats["damageMin"]), int(stats["damageMax"]), group_armor)
+			var enemy_def: Variant = CharacterStats._find_by_id(world.get("enemies", []), tgt.get("enemyId", ""))
+			var tags: Variant = enemy_def.get("tags", []) if typeof(enemy_def) == TYPE_DICTIONARY else []
+			var species := CombatHelpers.character_species_multiplier(actor, world, tags)
+			var elem := CombatRng.element_multiplier(tgt.get("weaknesses", {}), stats["attackElement"])
+			var weakened := CombatRng.chip_through_resistance(roundi(raw * elem * species), attack_seed)
+			var crit_seed := ("%d:%d:%s:%s:crit" % [turn, rnd, actor["id"], sweep_id]) if shot == 0 else ("%d:%d:%s:%s:crit:%d" % [turn, rnd, actor["id"], sweep_id, shot])
+			var crit := CombatRng.roll_percent(crit_seed) < CombatHelpers.get_critical_chance(actor)
+			var damage := roundi(weakened * CRIT_MULTIPLIER) if crit else weakened
+			enemy_groups = CombatHelpers.damage_group(enemy_groups, sweep_id, damage)
+			if damage > 0:
+				beats.append({"actorName": String(actor.get("name", "")), "targetGroupId": sweep_id, "damage": damage, "crit": crit, "firearm": is_firearm, "shotIndex": shot})
 
 	var living := enemy_groups.filter(func(g): return int(g.get("count", 0)) > 0)
 	if living.is_empty():
@@ -647,6 +660,50 @@ static func _find_group(groups: Array, id: String) -> Variant:
 		if String(group.get("id", "")) == id and int(group.get("count", 0)) > 0:
 			return group
 	return null
+
+# The group a sweep's next shot lands on: the preferred (current) target if still alive, else the first
+# living group — so a burst spills onto the next pack as the one in front falls. Null when nothing lives.
+static func _find_living_group(groups: Array, prefer_id: String) -> Variant:
+	var preferred: Variant = _find_group(groups, prefer_id)
+	if typeof(preferred) == TYPE_DICTIONARY:
+		return preferred
+	for group in groups:
+		if int(group.get("count", 0)) > 0:
+			return group
+	return null
+
+# Shots a wielder's BASIC attack fires — the automatic-weapon "mow-down" (mirror of economy.ts weaponShots):
+# an explicit `shots`, else firearm tags (support-gun/lmg 4, smg 3, shotgun 2, else 1); non-firearms strike once.
+static func _weapon_is_firearm(actor: Dictionary, world: Dictionary) -> bool:
+	var weapon: Variant = (actor.get("equipment", {}) as Dictionary).get("weapon", null)
+	if typeof(weapon) != TYPE_DICTIONARY:
+		return false
+	var catalog: Variant = Economy.find_equipment(world, String((weapon as Dictionary).get("id", "")))
+	if typeof(catalog) != TYPE_DICTIONARY:
+		return false
+	return ((catalog as Dictionary).get("tags", []) as Array).has("firearm")
+
+static func _weapon_shots(actor: Dictionary, world: Dictionary) -> int:
+	var equipment: Dictionary = actor.get("equipment", {})
+	var weapon: Variant = equipment.get("weapon", null)
+	if typeof(weapon) != TYPE_DICTIONARY:
+		return 1
+	var catalog: Variant = Economy.find_equipment(world, String((weapon as Dictionary).get("id", "")))
+	if typeof(catalog) != TYPE_DICTIONARY:
+		return 1
+	var s: Variant = (catalog as Dictionary).get("shots", null)
+	if (typeof(s) == TYPE_INT or typeof(s) == TYPE_FLOAT) and int(s) > 0:
+		return mini(int(s), 6)
+	var tags: Array = (catalog as Dictionary).get("tags", [])
+	if not tags.has("firearm"):
+		return 1
+	if tags.has("support-gun") or tags.has("lmg"):
+		return 4
+	if tags.has("smg"):
+		return 3
+	if tags.has("shotgun"):
+		return 2
+	return 1
 
 static func _has_status(actor: Dictionary, status: String) -> bool:
 	var list: Variant = actor.get("status", [])

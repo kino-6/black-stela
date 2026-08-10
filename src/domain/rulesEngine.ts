@@ -48,7 +48,9 @@ import {
   findEquipment,
   getEffectiveCharacterStats,
   removeInventoryItem,
-  weaponReaches
+  weaponReaches,
+  weaponShots,
+  weaponIsFirearm
 } from "./economy";
 import { EQUIPMENT_AFFIXES, equipmentInstanceKey } from "./affixes";
 import { getQuestProgress, recordQuestKills } from "./quests";
@@ -1497,22 +1499,44 @@ function declareRound(state: GameState, world: ScenarioWorld, actions: CombatAct
       continue;
     }
 
-    const attackSeed = `${state.turn}:${combat.round}:${actor.id}:${group.id}:damage`;
-    // A sundered pack (armor debuff) takes more from every weapon in the party, not just the caster's.
-    const groupArmor = Math.max(0, group.armor + statModifier(effects, group.id, "armor"));
-    const rawDamage = rollDamage(attackSeed, actorStats.damageMin, actorStats.damageMax, groupArmor);
-    // IMP-022: a species-bane affix multiplies damage against the matching enemy family.
-    const speciesMult = characterSpeciesMultiplier(actor, world, world.enemies.find((candidate) => candidate.id === group.enemyId)?.tags);
-    const weakened = chipThroughResistance(Math.round(rawDamage * elementMultiplier(group.weaknesses, actorStats.attackElement) * speciesMult), attackSeed);
-    const critChance = getCriticalChance(actor);
-    const crit = rollPercent(`${state.turn}:${combat.round}:${actor.id}:${group.id}:crit`) < critChance;
-    const damage = crit ? Math.round(weakened * CRIT_MULTIPLIER) : weakened;
-    enemyGroups = damageGroup(enemyGroups, group.id, damage);
-    const updated = enemyGroups.find((candidate) => candidate.id === group.id);
-    beat(
-      `${actor.name} ${crit ? "crits" : "hits"} ${group.name} for ${damage}. ${updated?.count ?? 0} remain.`,
-      { kind: "hit", actorId: actor.id, actorName: actor.name, targetGroupId: group.id, targetEnemyId: group.enemyId, damage, remaining: updated?.count ?? 0, crit }
-    );
+    // A firearm sprays `shots` rounds; a melee weapon strikes once. Each round lands on the current front
+    // group — the chosen target first, then the next living group as bodies fall — so an automatic weapon
+    // MOWS ACROSS a horde (approach D). Shot 0 reproduces the old single strike EXACTLY (same target, same
+    // `:damage`/`:crit` seeds), so a melee attacker's result — and every existing parity trace — is unchanged;
+    // only the follow-up rounds (shot > 0) are new, keyed by shot index.
+    const shots = weaponShots(actor, world);
+    const firearm = weaponIsFirearm(actor, world);
+    let sweepTargetId: string | undefined = group.id;
+    for (let shot = 0; shot < shots; shot++) {
+      const tgt =
+        enemyGroups.find((candidate) => candidate.id === sweepTargetId && candidate.count > 0) ??
+        enemyGroups.find((candidate) => candidate.count > 0);
+      if (!tgt) {
+        break;
+      }
+      sweepTargetId = tgt.id;
+      const attackSeed = shot === 0
+        ? `${state.turn}:${combat.round}:${actor.id}:${tgt.id}:damage`
+        : `${state.turn}:${combat.round}:${actor.id}:${tgt.id}:damage:${shot}`;
+      // A sundered pack (armor debuff) takes more from every weapon in the party, not just the caster's.
+      const groupArmor = Math.max(0, tgt.armor + statModifier(effects, tgt.id, "armor"));
+      const rawDamage = rollDamage(attackSeed, actorStats.damageMin, actorStats.damageMax, groupArmor);
+      // IMP-022: a species-bane affix multiplies damage against the matching enemy family.
+      const speciesMult = characterSpeciesMultiplier(actor, world, world.enemies.find((candidate) => candidate.id === tgt.enemyId)?.tags);
+      const weakened = chipThroughResistance(Math.round(rawDamage * elementMultiplier(tgt.weaknesses, actorStats.attackElement) * speciesMult), attackSeed);
+      const critChance = getCriticalChance(actor);
+      const critSeed = shot === 0
+        ? `${state.turn}:${combat.round}:${actor.id}:${tgt.id}:crit`
+        : `${state.turn}:${combat.round}:${actor.id}:${tgt.id}:crit:${shot}`;
+      const crit = rollPercent(critSeed) < critChance;
+      const damage = crit ? Math.round(weakened * CRIT_MULTIPLIER) : weakened;
+      enemyGroups = damageGroup(enemyGroups, tgt.id, damage);
+      const updated = enemyGroups.find((candidate) => candidate.id === tgt.id);
+      beat(
+        `${actor.name} ${crit ? "crits" : "hits"} ${tgt.name} for ${damage}. ${updated?.count ?? 0} remain.`,
+        { kind: "hit", actorId: actor.id, actorName: actor.name, targetGroupId: tgt.id, targetEnemyId: tgt.enemyId, damage, remaining: updated?.count ?? 0, crit, firearm, shotIndex: shot }
+      );
+    }
   }
 
   const livingGroups = enemyGroups.filter((group) => group.count > 0);
