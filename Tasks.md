@@ -39,10 +39,23 @@ ux-parity fix (`88cb96c`) · 玄室/W2/W4/W5 実装確認・active queue clear (
 
 ## Active queue (process top-down)
 
-- [ ] **#15 — tl1f 隣接 gated ショートカット追加.** user は「隣接gated通路（推奨）」を選択。ただしこのタイル迷路は隣接
-  `.` セルが自動開通のため、迷路構造の編集（壁タイル→通路セル or filler 調整）が要る。良い配置の解析途中で BLK-1/
-  ブランチ整理に割り込まれ中断。再開時: `scripts/shortcut_analysis.mjs` を JSON 構造（world.world.dungeons）に直して
-  「迷路距離が遠い2地点を壁1枚で繋ぐ」箇所を選定 → edge+gate(requiredFlag: flag.tl1f.signal-routed) → floor graph/実機で検証。
+**（空 — Claude レーンで実装できる項目は完了。）** #15 は下記のとおり **user の設計判断待ち**（実装ではなく方針の決定が要る）ため
+active queue には置かない。
+
+### #15 — tl1f 近道は「設計判断待ち」（調査完了・実装は user 決定後）
+
+**調査結論（実機・gate で確定）:** gated shortcut の機構自体は動く（信号を通すまで `movement_blocked`、通した後に帰還↔降り口が
+1歩で繋がるのを rulesEngine で確認済み）。**しかし `shortcut` エッジは `floor_map.gd _is_passage` が常に「壁」として描画する**
+＝開通してもマップ上は壁のまま＝「壁に入ると2セル跳ぶ」**map-invisible warp**。これは #8 と同種で、Codex の **D9 ガード
+（`verify_grid_transit.gd`: terminal-line で `kind:shortcut` エッジを全面禁止）が正しく弾く**。gating しても warp 性は消えない。
+実装済みだった shortcut-edge 版は revert 済み（grid-transit 緑に復帰）。
+
+**map-visible にする正しい実装は迷路構造の編集**（壁セル 17,16 を通路セルにして 帰還(17,15)↔降り口(17,17) を open 辺＋方向
+gate で繋ぐ）だが、これは **可視マップに縦通路を1本足す設計変更**であり、以下は user の判断が要る:
+- (a) 迷路にセルを足す map 変更を許容する（→ 私が 17,16 通路化＋gate＋floor graph 再検証で実装）、
+- (b) D9 を「ungated shortcut のみ禁止」に精緻化し gated warp を許容する（map は壁のまま＝earned だが不可視、という妥協）、
+- (c) tl1f は近道なしのまま（D9 の現行スタンス、#8 撤去後は健全）。
+推奨は (a)（唯一 map-visible）だが可視マップが変わるため一言確認したい。
 
 ### 完了（このセッション 2026-08-12、Archive 待ち）
 
