@@ -491,6 +491,9 @@ static func _item_page(ctx: Dictionary, world: Dictionary, member: Dictionary, p
 	var state: Dictionary = ctx["state"]
 	var visible := []
 	for item in state.get("inventory", []):
+		# A depleted stack (quantity 0) is dead data — hide it so it never shows as ×0/使用できる.
+		if int(item.get("quantity", 1)) <= 0:
+			continue
 		var is_valuable := VALUABLE_KINDS.has(String(item.get("kind", "")))
 		if (page == "valuables") == is_valuable:
 			visible.append(item)

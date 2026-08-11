@@ -41,9 +41,40 @@ export interface TempoOptions {
   strategy?: AutoStrategy;
 }
 
-// The auto-battle move for a round: every able member attacks the first living
-// group; a back-row member with no reach and a standing front line defends. Shared
-// by the instant tempo step and the paced (playback) auto path in the view.
+// Auto spends only the top half of a pool on offensive arts — below this reserve fraction of max MP it
+// falls back to basic attacks, so it never drains a caster dry and leaves nothing for wards/heals/emergencies.
+const AUTO_MP_RESERVE = 0.5;
+
+// The base potency of a technique's damage effect (min/max midpoint), used to pick the strongest
+// affordable offensive art. Base values scale with spell power in play, so the ordering — not the number — is what matters.
+function damageMidpointOf(technique: Technique): number {
+  const effect = technique.effects.find((candidate) => candidate.kind === "damage");
+  return effect && effect.kind === "damage" ? (effect.min + effect.max) / 2 : 0;
+}
+
+// The strongest offensive art a member can throw this round WITHOUT dipping below the MP reserve — or
+// undefined to fall back to a basic attack. Casting needs no melee reach, so this also lets a walled-off
+// back-row caster contribute instead of merely defending.
+function pickAutoOffensive(member: Character, world: ScenarioWorld, catalog: Record<string, Technique>): Technique | undefined {
+  const reserve = Math.ceil(member.maxMp * AUTO_MP_RESERVE);
+  return combatLoadout(member, world)
+    .map((id) => catalog[id])
+    .filter((technique): technique is Technique => Boolean(technique))
+    .filter((technique) => {
+      // Only 呪文 (spells): a spell's damage resolves cleanly through the cast path, so auto stays a real,
+      // terminating round. Martial 特技 route differently and an auto-cast of one could resolve to a no-op
+      // (an empty round that never ends the fight), so they stay on the reliable basic attack.
+      const hitsEnemies = technique.target === "enemyGroup" || technique.target === "allEnemies";
+      const cost = technique.cost.mp ?? 0;
+      return technique.kind === "spell" && hitsEnemies && cost > 0 && technique.effects.some((effect) => effect.kind === "damage") && member.mp - cost >= reserve;
+    })
+    .sort((a, b) => damageMidpointOf(b) - damageMidpointOf(a))[0];
+}
+
+// The auto-battle move for a round: each able member throws its strongest affordable offensive art while
+// MP stays above the reserve, otherwise a basic attack at the first reachable group; a back-row member with
+// neither an art nor reach (behind a standing front line) defends. Shared by the instant tempo step and the
+// paced (playback) auto path in the view.
 export function chooseAutoRoundActions(state: GameState, world: ScenarioWorld): CombatActionDeclaration[] {
   if (state.phase !== "combat" || !state.combat) {
     return [];
@@ -59,12 +90,20 @@ export function chooseAutoRoundActions(state: GameState, world: ScenarioWorld): 
   if (!target || activeParty.length === 0) {
     return [];
   }
+  const catalog = resolveTechniqueCatalog(world);
   const hasStandingFront = activeParty.some((member) => member.row === "front");
-  return activeParty.map((member) =>
-    member.row === "front" || !hasStandingFront || weaponReaches(member, world)
+  return activeParty.map((member) => {
+    const offensive = pickAutoOffensive(member, world, catalog);
+    if (offensive) {
+      // enemyGroup arts pick the reachable group; allEnemies (and any wider scope) let the resolver derive subjects.
+      return spellTargeting(offensive.target) === "group"
+        ? { actorId: member.id, action: "cast", spellId: offensive.id, targetGroupId: target.id }
+        : { actorId: member.id, action: "cast", spellId: offensive.id };
+    }
+    return member.row === "front" || !hasStandingFront || weaponReaches(member, world)
       ? { actorId: member.id, action: "attack", targetGroupId: target.id }
-      : { actorId: member.id, action: "defend" }
-  );
+      : { actorId: member.id, action: "defend" };
+  });
 }
 
 const DEFENSE_HEAL_THRESHOLD = 0.5; // heal an ally at or below half HP

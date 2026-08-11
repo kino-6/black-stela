@@ -86,14 +86,18 @@ static func enemy_mark(host: Node, group: Dictionary, centre_x: float, slot_w: f
 	mark.position = Vector2(centre_x - slot_w / 2.0, stage_rect.position.y)
 	mark.size = Vector2(slot_w, stage_rect.size.y)
 
-	# Bodies: draw the LIVING units so the pack visibly shrinks as they fall (a wiped group keeps one faded
-	# body until the stage rebuilds). Cap how many stand abreast — a broad rank overlaps into a mass. A lone
-	# enemy is drawn LARGE and central (the choice-A "creatures are the screen"); a big pack shrinks so it fits.
+# Bodies: draw the LIVING units so the pack visibly shrinks as they fall (a wiped group keeps one faded
+# body until the stage rebuilds). The number of *slots* is fixed from the encounter's initial count, however:
+# using the live `count` for shrink/spacing made survivors visibly grow and jump together every time one
+# body fell. Cap both at five to avoid a broad rank becoming an unreadable mass.  The live bodies still
+# centre beneath their group label: a pack is allowed to close ranks as members fall, but it never grows.
 	var bodies := 1 if dead else mini(maxi(alive, 1), 5)
+	var initial := maxi(int(group.get("initialCount", alive)), alive)
+	var layout_bodies := mini(maxi(initial, 1), 5)
 	var shrink := 1.0
-	if bodies >= 5: shrink = 0.6
-	elif bodies >= 3: shrink = 0.74
-	elif bodies == 2: shrink = 0.9
+	if layout_bodies >= 5: shrink = 0.6
+	elif layout_bodies >= 3: shrink = 0.74
+	elif layout_bodies == 2: shrink = 0.9
 	var floor_y := stage_rect.size.y * 0.74          # the common floor line the feet stand on
 	var body_h := minf(stage_rect.size.y * 0.76, 410.0) * clampf(size_scale, 0.6, 1.7) * shrink
 	body_h = minf(body_h, floor_y - 8.0)             # never let the tallest body clip off the stage top
@@ -123,6 +127,7 @@ static func enemy_mark(host: Node, group: Dictionary, centre_x: float, slot_w: f
 		body.size = Vector2(bw, bh)
 		body.position = Vector2(bx + (body_w - bw) / 2.0, floor_y - bh - 8.0 * float(i))
 		body.modulate = Color(1, 1, 1, 0.26) if dead else body_tint
+		body.set_meta("enemy_body_index", i)
 		mark.add_child(body)
 
 		# Each living body carries its own thin HP cue: the front unit shows its real chipped HP, the rest

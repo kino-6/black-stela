@@ -98,9 +98,19 @@ shipped binary:
    "combat background is FC-black."
 8. Open the full-map modal → send `ui_cancel` (Esc) → assert the modal **closed**.
    → kills "Esc doesn't close the map."
-9. Return to town via the marker → **re-enter the dungeon** → assert the explored
-   map (`visitedCells`) **persisted**. → kills "map resets on return" AND closes
-   the loop that every prior gate ended one step before.
+9. Return to town via a deep-floor marker → **re-enter the dungeon** → assert the
+   entire automap record (`visitedCells`, `visitedRooms`, known/blocked exits and
+   secret-search records) **persisted across the floor change**. The active
+   `floorId` may change what is drawn, never what the party knows. Return must
+   also preserve durable expedition state (inventory, gold, claimed treasure,
+   discovered secrets and resolved traps). → kills "map resets on return" AND
+   closes the loop that every prior gate ended one step before.
+
+   No ordinary scenario command may impose an unannounced rollback of durable
+   progress. A deliberate loss mechanic (for example a stated curse) must be
+   authored in scenario data, explained before confirmation, and add an explicit
+   allowlisted assertion to this gate; silently deleting a collection or map
+   record is a failure.
 
 `gate:play` runs on the **real Godot build**, not headless-rules, not React.
 

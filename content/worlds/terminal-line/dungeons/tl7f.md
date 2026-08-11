@@ -52,15 +52,14 @@ corridor:
   locales: { ja: { name: 局舎の環状廊下, description: 曇りガラスと金属扉が、人を隔てるための執務室を分けている。 } }
 edges:
   - { from: room.tl7f.bureau-landing, direction: west, kind: stairs, to: room.tl6f.down-stair, targetFloorId: dungeon.tl6f }
-  - { from: room.tl7f.service-archive, direction: north, kind: shortcut, to: room.tl7f.service-control }
   - { from: room.tl7f.down-stair, direction: north, kind: stairs, to: room.tl8f.control-landing, targetFloorId: dungeon.tl8f }
 rooms:
   - { id: room.tl7f.bureau-landing, name: Bureau Landing, description: The reinforced stair opens onto an office ring with every nameplate removed., locales: { ja: { name: 中央局の踊り場, description: 補強階段の先には、名札をすべて外した執務環がある。 } } }
   - id: room.tl7f.service-archive
     name: Service Archive
-    description: A records hatch provides a short route through the office perimeter.
-    locales: { ja: { name: 保守書庫, description: 記録用の保守口が、外縁執務区を短く抜ける道になる。 } }
-    gates: [{ id: gate.tl7f.archive, kind: shortcut, grantsFlag: flag.tl7f.archive-open, clue: The service archive opens a return corridor. }]
+    description: A records hatch keeps the maintenance clearance for the office perimeter.
+    locales: { ja: { name: 保守書庫, description: 記録用の保守口には、外縁執務区の保守許可が保管されている。 } }
+    gates: [{ id: gate.tl7f.archive, kind: shortcut, grantsFlag: flag.tl7f.archive-open, clue: The service archive logs a return-route clearance. }]
   - { id: room.tl7f.outer-office-hall, name: Outer Office Hall, description: Closed desks face one another under a muted evacuation map., locales: { ja: { name: 外縁執務広間, description: 閉じた机列が、色を失った避難地図の下で向かい合う。 } }, encounterTable: encounters.tl7f.bureau }
   - id: room.tl7f.clearance-terminal
     name: Clearance Terminal

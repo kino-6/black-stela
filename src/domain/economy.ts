@@ -139,6 +139,23 @@ export function weaponIsFirearm(character: Character, world: ScenarioWorld): boo
   return catalog?.tags?.includes("firearm") ?? false;
 }
 
+/** The presentation family for a worn gun.  This is deliberately data/tag-derived: weapon display names
+ * are localised prose and must never become a combat-renderer contract. */
+export function weaponFirearmFamily(character: Character, world: ScenarioWorld): "pistol" | "rifle" | "smg" | "shotgun" | undefined {
+  const weapon = character.equipment.weapon;
+  if (!weapon) return undefined;
+  const tags = findEquipment(world, weapon.id)?.tags ?? [];
+  if (!tags.includes("firearm")) return undefined;
+  return firearmFamilyFromTags(tags);
+}
+
+export function firearmFamilyFromTags(tags: readonly string[]): "pistol" | "rifle" | "smg" | "shotgun" | undefined {
+  for (const family of ["smg", "shotgun", "rifle", "pistol"] as const) {
+    if (tags.includes(family)) return family;
+  }
+  return undefined;
+}
+
 /** Active techniques that come from currently worn equipment, in deterministic slot/id order. */
 export function equippedTechniqueGrants(character: Character, world: ScenarioWorld): string[] {
   const techniques = resolveTechniqueCatalog(world);

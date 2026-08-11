@@ -111,8 +111,20 @@ static func declare_round(state: Dictionary, world: Dictionary, actions: Array, 
 			# Presentation beat per enemy group the technique/spell damaged, so its HP bar drains WITH the
 			# number during playback (not one snap after the round). `technique` flags a NEUTRAL verb — the
 			# 特技 was already named at the command, so playback must not print a melee swing verb for it.
+			# Firearm techniques are equipment-granted in Terminal Line.  They used to be emitted as generic
+			# technique beats, which made every generated muzzle/travel/impact asset unreachable even though
+			# the player had deliberately selected a shooting technique.  The presentation flag belongs on
+			# the beat (not inferred from a name), so a future non-firearm technique can never accidentally
+			# draw gunfire just because its Japanese copy mentions a shot.
+			var technique_firearm := ((technique.get("tags", []) as Array).has("firearm"))
+			var technique_family := _firearm_family_from_tags(technique.get("tags", []) as Array) if technique_firearm else ""
 			for hit in result.get("hits", []):
-				beats.append({"actorName": String(actor.get("name", "")), "targetGroupId": String((hit as Dictionary).get("targetGroupId", "")), "damage": int((hit as Dictionary).get("damage", 0)), "crit": false, "technique": true})
+				var technique_beat := {"actorName": String(actor.get("name", "")), "targetGroupId": String((hit as Dictionary).get("targetGroupId", "")), "damage": int((hit as Dictionary).get("damage", 0)), "crit": false, "technique": true}
+				if technique_firearm:
+					technique_beat["firearm"] = true
+					technique_beat["firearmFamily"] = technique_family
+					technique_beat["shotIndex"] = 0
+				beats.append(technique_beat)
 			continue
 
 		if kind != "attack" or action.get("targetGroupId", null) == null:
@@ -135,6 +147,7 @@ static func declare_round(state: Dictionary, world: Dictionary, actions: Array, 
 		# parity trace — is unchanged; only shot > 0 is new. Mirrors TS rulesEngine.
 		var shots := _weapon_shots(actor, world)
 		var is_firearm := _weapon_is_firearm(actor, world)
+		var firearm_family := _weapon_firearm_family(actor, world) if is_firearm else ""
 		var sweep_id := String(group["id"])
 		for shot in range(shots):
 			var tgt: Variant = _find_living_group(enemy_groups, sweep_id)
@@ -154,7 +167,10 @@ static func declare_round(state: Dictionary, world: Dictionary, actions: Array, 
 			var damage := roundi(weakened * CRIT_MULTIPLIER) if crit else weakened
 			enemy_groups = CombatHelpers.damage_group(enemy_groups, sweep_id, damage)
 			if damage > 0:
-				beats.append({"actorName": String(actor.get("name", "")), "targetGroupId": sweep_id, "damage": damage, "crit": crit, "firearm": is_firearm, "shotIndex": shot})
+				var attack_beat := {"actorName": String(actor.get("name", "")), "targetGroupId": sweep_id, "damage": damage, "crit": crit, "firearm": is_firearm, "shotIndex": shot}
+				if is_firearm:
+					attack_beat["firearmFamily"] = firearm_family
+				beats.append(attack_beat)
 
 	var living := enemy_groups.filter(func(g): return int(g.get("count", 0)) > 0)
 	if living.is_empty():
@@ -682,6 +698,23 @@ static func _weapon_is_firearm(actor: Dictionary, world: Dictionary) -> bool:
 	if typeof(catalog) != TYPE_DICTIONARY:
 		return false
 	return ((catalog as Dictionary).get("tags", []) as Array).has("firearm")
+
+## Presentation family is authored by tags, never by item-name heuristics.  Keep it beside the firearm
+## check so the rules and the playback beat agree on what weapon was actually used.
+static func _weapon_firearm_family(actor: Dictionary, world: Dictionary) -> String:
+	var weapon: Variant = (actor.get("equipment", {}) as Dictionary).get("weapon", null)
+	if typeof(weapon) != TYPE_DICTIONARY:
+		return ""
+	var catalog: Variant = Economy.find_equipment(world, String((weapon as Dictionary).get("id", "")))
+	if typeof(catalog) != TYPE_DICTIONARY:
+		return ""
+	return _firearm_family_from_tags((catalog as Dictionary).get("tags", []) as Array)
+
+static func _firearm_family_from_tags(tags: Array) -> String:
+	for family in ["smg", "shotgun", "rifle", "pistol"]:
+		if tags.has(family):
+			return family
+	return ""
 
 static func _weapon_shots(actor: Dictionary, world: Dictionary) -> int:
 	var equipment: Dictionary = actor.get("equipment", {})

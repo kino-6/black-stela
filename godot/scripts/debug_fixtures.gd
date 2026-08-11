@@ -23,11 +23,16 @@ const TRACES := {
 const VERDANT_CHAMBER_FIXTURES := ["verdant_chamber_closed", "verdant_chamber_cleared"]
 const VERDANT_CHAMBER_FLOOR := "dungeon.verdant.g1f"
 
+# Constructed fixtures that stand the party ON a Terminal Line stair FACING it — so the descent/ascent art
+# can be judged in one selection instead of walking the floor to find it (user 2026-08-11).
+const STAIR_FIXTURES := ["terminal_line_down_stair", "terminal_line_up_stair"]
+
 ## The fixture names offered — used by the panel and validated by the boot flag.
 static func names() -> Array:
 	var all := TRACES.keys()
 	all.append_array(VERDANT_CHAMBER_FIXTURES)
-	for n in range(2, 9):
+	all.append_array(STAIR_FIXTURES)
+	for n in range(2, 11):
 		all.append("floor_%d" % n)   # deep-floor review starts (IMP-062)
 	return all
 
@@ -39,6 +44,8 @@ static func load_into(run: Object, name: String) -> String:
 		return ""
 	if name in VERDANT_CHAMBER_FIXTURES:
 		return _load_verdant_chamber(run, name)
+	if name in STAIR_FIXTURES:
+		return _load_terminal_stair(run, name)
 	if name.begins_with("floor_"):
 		return _load_deep_floor(run, name)
 	run.ensure_loaded()
@@ -115,7 +122,41 @@ static func _load_verdant_chamber(run: Object, name: String) -> String:
 	run.state = state
 	return "res://scenes/dungeon.tscn"
 
-## floor_N (N=2..8): stand a DEPTH-APPROPRIATE party on floor N of the CURRENT world so a reviewer can
+## Stand the party ON a Terminal Line stair cell, FACING its stair edge, so a reviewer sees the descent/ascent
+## art in one selection. Down = tl1f's platform stairs; up = tl2f's emergency stair.
+static func _load_terminal_stair(run: Object, name: String) -> String:
+	run.world_id = "terminal-line"
+	run.reset()
+	var is_down := name == "terminal_line_down_stair"
+	var floor_id := "dungeon.tl1f" if is_down else "dungeon.tl2f"
+	var room_id := "room.tl1f.down-stair" if is_down else "room.tl2f.up-stair"
+	var target: Dictionary = {}
+	for dungeon in run.world.get("dungeons", []):
+		if String((dungeon as Dictionary).get("id", "")) != floor_id:
+			continue
+		for cell in ((dungeon as Dictionary).get("grid", {}) as Dictionary).get("cells", []):
+			if String((cell as Dictionary).get("roomId", "")) == room_id:
+				target = cell
+	if target.is_empty():
+		return ""
+	var facing := "south"
+	for dir in ["north", "south", "east", "west"]:
+		var e: Variant = (target.get("edges", {}) as Dictionary).get(dir, null)
+		if typeof(e) == TYPE_DICTIONARY and String((e as Dictionary).get("kind", "")) == "stairs":
+			facing = dir
+	var cid := String(target.get("id", ""))
+	var state: Dictionary = run.state
+	state["phase"] = "dungeon"
+	state["combat"] = null
+	state["position"] = {"cellId": cid, "roomId": room_id, "facing": facing}
+	state["map"] = {
+		"floorId": floor_id, "currentCellId": cid, "currentRoomId": room_id, "currentFacing": facing,
+		"visitedCells": [cid], "visitedRooms": [room_id], "knownExits": {},
+	}
+	run.state = state
+	return "res://scenes/dungeon.tscn"
+
+## floor_N (N=2..10): stand a DEPTH-APPROPRIATE party on floor N of the CURRENT world so a reviewer can
 ## actually see mid/late floor geometry, the full map (M), and encounters — not just B1F (IMP-062, the user's
 ## "中盤・終盤のセーブがないので1Fしか確認できてない"). World-parametrized: pick the world in the debug panel
 ## first (default or verdant), then the floor. The generic review party is levelled via the ported Leveling so

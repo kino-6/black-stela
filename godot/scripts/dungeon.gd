@@ -782,7 +782,13 @@ func _apply(result: Dictionary) -> void:
 		_busy = true
 		# A dark fade carries the encounter line into the battle scene. There is no bright flash and no
 		# unexplained empty frame between the dungeon and the first combat command.
-		await SceneManager.fade_to_dark("res://scenes/combat.tscn")
+		# Resolve the autoload at runtime.  A direct `SceneManager` global made this scene fail to compile when
+		# a gate instantiated it outside the normal autoload tree, which in turn disabled the core-loop gate.
+		var scene_manager := get_node_or_null("/root/SceneManager")
+		if scene_manager:
+			await scene_manager.fade_to_dark("res://scenes/combat.tscn")
+		elif is_inside_tree():
+			get_tree().change_scene_to_file("res://scenes/combat.tscn")
 		return
 	# A return-to-town command nulls the position; its caller changes scene to the town right after this.
 	# Do NOT rebuild the dungeon we are leaving — _update_view reads the now-null position and crashed
@@ -1166,7 +1172,9 @@ func _update_view(animate: bool) -> void:
 	var stair := DungeonRenderer._stairs_info(cell, floor_id)
 	if String(stair.get("direction", "")) == facing:
 		match String(stair.get("kind", "")):
-			"down": look.y -= 0.58
+			# Stand at the lip and look INTO the well.  The previous shallow glance left all real treads below
+			# the party HUD, exposing only the black recess and making an otherwise physical stair look empty.
+			"down": look.y -= 1.10
 			"up": look.y += 0.42
 	if _camera:
 		# Slide the eye back from cell-centre (opposite facing) so a faced wall/door sits at a natural
@@ -1290,6 +1298,9 @@ func _event_line(e: Dictionary) -> String:
 		"chest_unlocked":
 			return I18n.t("events.chestUnlocked%s" % ("Success" if bool(e.get("success", false)) else "Fail"), {"name": String(e.get("handlerName", "隊列"))})
 		"chest_trap_sprung":
+			var trap_status := String(e.get("status", ""))
+			if trap_status != "":
+				return I18n.t("events.chestTrapSprungAiled", {"trap": ChestPanel._trap_name(String(e.get("trapKind", ""))), "damage": int(e.get("damage", 0)), "ailment": I18n.t("partyMenu.status.%s" % trap_status)})
 			return I18n.t("events.chestTrapSprung", {"trap": ChestPanel._trap_name(String(e.get("trapKind", ""))), "damage": int(e.get("damage", 0))})
 		"command_blocked_chest":
 			if String(e.get("reason", "")) == "locked": return I18n.t("play.chestLockedNote")

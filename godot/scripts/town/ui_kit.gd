@@ -8,16 +8,24 @@ extends RefCounted
 
 const GOLD := Color("c9a765")
 const INK := Color("e6e2d4")
-const DIM := Color("9a927e")
-const OK := Color("9db06a")
-const BAD := Color("c96a5a")
+const DIM := Color("bcb49e")   # secondary text — raised from 9a927e for contrast (menus read too faint, 2026-08-11)
+const OK := Color("aec37a")
+const BAD := Color("d47a68")
 const PANEL_BG := Color("14180ff9")
 const ROW_BG := Color("11140dcc")
+
+# A global font scale. Held at 1.0: a blanket enlargement pushed fixed-layout screens (title menu, the combat
+# command panel's 退却) off-screen — the real readability fix is REDUCING information density per screen so
+# text can grow WITH room, not scaling every screen blindly (user 2026-08-11「情報が多すぎ」). Kept as a single
+# knob for any future calibrated bump, but not used to paper over crowding.
+const FONT_SCALE := 1.0
+static func _sz(size: int) -> int:
+	return int(round(size * FONT_SCALE))
 
 static func label(text: String, size: int, col: Color = INK) -> Label:
 	var l := Label.new()
 	l.text = text
-	l.add_theme_font_size_override("font_size", size)
+	l.add_theme_font_size_override("font_size", _sz(size))
 	l.add_theme_color_override("font_color", col)
 	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	return l
@@ -34,7 +42,7 @@ static func button(text: String, cb: Callable, min_size: Vector2 = Vector2(150, 
 	var b := Button.new()
 	b.text = text
 	b.custom_minimum_size = min_size
-	b.add_theme_font_size_override("font_size", size)
+	b.add_theme_font_size_override("font_size", _sz(size))
 	b.add_theme_stylebox_override("normal", panel_style(ROW_BG, Color("3a4326")))
 	b.add_theme_stylebox_override("hover", panel_style(Color("1c2314e0"), Color("5a6a3a")))
 	b.add_theme_stylebox_override("focus", panel_style(Color("22301aef"), GOLD))

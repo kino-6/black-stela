@@ -101,6 +101,19 @@ export function successChance(skill: number, difficulty: number, base: number): 
   return clamp(base + skill * 3 - difficulty * 3, 5, 95);
 }
 
+/**
+ * Lockpicking deliberately has its own curve.  Trap checks retain their established, sharper
+ * `successChance` curve; applying that curve to locks made a normal Lv1 Terminal Line party hit the
+ * 95% cap regardless of who touched the chest.  Here aptitude still matters, but the first fifteen
+ * points describe an ordinary pair of hands rather than a reason to auto-open every shallow lock.
+ *
+ * One skill point is worth two percentage points after that baseline.  Class training (+8) therefore
+ * beats a standard consumable tool (+6) without making either untrained attempts or paid tools useless.
+ */
+export function unlockChance(skill: number, difficulty: number): number {
+  return clamp(40 + (skill - 15) * 2 - difficulty, 5, 95);
+}
+
 /** A fresh closed chest from an authored (or back-compat plain) scenario chest. */
 export function makeChest(cellId: string, roomId: string, chest: ScenarioChest): ChestState {
   return {
@@ -154,17 +167,17 @@ export function disarmChest(chest: ChestState, handler: Character | null, seed: 
 export function unlockChest(chest: ChestState, handler: Character | null, seed: string, aidBonus = 0): ChestState {
   if (chest.unlockAttempted || chest.phase === "opened" || !chest.lock || chest.unlocked) return chest;
   const skill = (handler ? unlockSkill(handler) : 0) + aidBonus;
-  const success = rollPercent(`${seed}:unlock`) < successChance(skill, chest.lock.difficulty, 45);
+  const success = rollPercent(`${seed}:unlock`) < unlockChance(skill, chest.lock.difficulty);
   return { ...chest, unlockAttempted: true, unlocked: success };
 }
 
-/** Open the chest. If the trap is present and not disarmed it TRIPS (returns damage) — but the reward is
- *  never destroyed; the caller still grants it. The chest becomes opened (reward can be taken once). */
-export function openChest(chest: ChestState): { chest: ChestState; trapSprung: boolean; damage: number; blocked?: "locked" } {
+/** Open the chest. A locked chest can be FORCED — the lock never destroys the reward, it only delays; a
+ *  still-locked chest is pried open and any undisarmed trap TRIPS (that is the cost of forcing). Picking the
+ *  lock cleanly is how the trap is avoided. If a trap trips it returns damage; the reward is still granted. */
+export function openChest(chest: ChestState): { chest: ChestState; trapSprung: boolean; damage: number } {
   if (chest.phase === "opened") {
     return { chest, trapSprung: false, damage: 0 };
   }
-  if (chest.lock && !chest.unlocked) return { chest, trapSprung: false, damage: 0, blocked: "locked" };
   const trapSprung = Boolean(chest.trap) && !chest.disarmed && !chest.sprung;
   const damage = trapSprung ? chest.trap!.damage : 0;
   return {

@@ -1,7 +1,7 @@
 import type { GameState, ScenarioWorld } from "../domain/types";
 import { floorName } from "../domain/scenario";
 import type { Locale, Translator } from "../i18n";
-import { FloorMapView } from "./MapPanel";
+import { FloorMapView, floorCoordinate } from "./MapPanel";
 
 interface FloorMapOverlayProps {
   state: GameState;
@@ -24,6 +24,7 @@ export function FloorMapOverlay({ state, world, locale, t, onClose }: FloorMapOv
         <header className="floor-map-head">
           <h3>{t("play.fullMapTitle")}</h3>
           <span>{floorName(world, state.map.floorId, locale)}</span>
+          {floorCoordinate(state, world) && <span className="floor-map-coord">{floorCoordinate(state, world)}</span>}
         </header>
         <div className="floor-map-scroll">
           <FloorMapView state={state} world={world} locale={locale} t={t} />

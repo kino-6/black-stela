@@ -51,7 +51,8 @@ static func party_token(member: Dictionary, world: Dictionary, portrait_tex: Tex
 		body.add_child(_gauge(float(int(member.get("mp", 0))) / float(max_mp), Color("6a86b0")))
 
 	var numbers := UIKit.row()
-	numbers.add_child(UIKit.label(I18n.t("play.memberStatus"), 11, DIM))
+	# (play.memberStatus was a screen-reader-only aria-label in the React HUD; ported here it rendered as a
+	# meaningless visible caption in front of the stats, so it is dropped — the numbers speak for themselves.)
 	numbers.add_child(UIKit.label("%s %d-%d" % [I18n.t("party.damage"), int(stats.get("damageMin", 0)), int(stats.get("damageMax", 0))], 12, DIM))
 	numbers.add_child(UIKit.label("%s %d" % [I18n.t("party.armor"), int(stats.get("armor", 0))], 12, DIM))
 	numbers.add_child(UIKit.label("%s %d" % [I18n.t("party.speed"), int(stats.get("speed", 0))], 12, DIM))

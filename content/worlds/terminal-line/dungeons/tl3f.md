@@ -52,7 +52,6 @@ corridor:
   locales: { ja: { name: 乗換配線路, description: 濡れたコンクリートの奥で、転轍盤のリレー音だけが小さく続く。 } }
 edges:
   - { from: room.tl3f.transfer-landing, direction: west, kind: stairs, to: room.tl2f.up-stair, targetFloorId: dungeon.tl2f }
-  - { from: room.tl3f.bypass-shutter, direction: north, kind: shortcut, to: room.tl3f.signal-splice }
   - { from: room.tl3f.down-stair, direction: north, kind: stairs, to: room.tl4f.rainworks-landing, targetFloorId: dungeon.tl4f }
 rooms:
   - id: room.tl3f.transfer-landing
@@ -61,9 +60,9 @@ rooms:
     locales: { ja: { name: 中継踊り場, description: ボルト留めの階段が乾いた中継踊り場へ着く。浸水ホームは、はっきり上に残っている。 } }
   - id: room.tl3f.bypass-shutter
     name: Bypass Shutter
-    description: A hand-cranked shutter opens a maintenance bypass after the route is read.
-    locales: { ja: { name: 迂回シャッター, description: 経路を読めば、手回しシャッターで保守用の抜け道を開けられる。 } }
-    gates: [{ id: gate.tl3f.bypass, kind: shortcut, grantsFlag: flag.tl3f.bypass-open, clue: The shutter turns toward a short relay route. }]
+    description: A hand-cranked shutter records an old maintenance bypass after the route is read.
+    locales: { ja: { name: 迂回シャッター, description: 経路を読めば、手回しシャッターは古い保守経路を記録する。 } }
+    gates: [{ id: gate.tl3f.bypass, kind: shortcut, grantsFlag: flag.tl3f.bypass-open, clue: The shutter logs a relay-route clearance. }]
   - id: room.tl3f.relay-hall
     name: Relay Hall
     description: A public transfer hall has become a maze of unplugged signal cabinets.
@@ -98,7 +97,7 @@ rooms:
     name: Cable Cache
     description: A sealed cable drum holds a small reserve above the waterline.
     locales: { ja: { name: ケーブル保管棚, description: 封をされたケーブルドラムに、水位線より高い予備品が残る。 } }
-    chest: { treasureTable: treasure.tl3f.relay-cache, trap: { kind: gas, difficulty: 13, damage: 5 } }
+    chest: { treasureTable: treasure.tl3f.relay-cache, trap: { kind: gas, difficulty: 13, damage: 5, status: poison } }
   - id: room.tl3f.flood-locker
     name: Flood Locker
     description: A locker at the end of the wet spur contains a stamped access plate.

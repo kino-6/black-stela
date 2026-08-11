@@ -156,6 +156,13 @@ only ash-world direction and asset-specific lists below.
 
 ## 3. Current inventory (what already exists)
 
+### T31 — 真層（B10）
+
+| File | Size | Use | 状態 |
+| --- | --- | --- | --- |
+| `dungeon/stone-wall-block4.jpg` / `stone-floor-block4.jpg` | 1024² JPG | B10だけの黒曜・灰鉱脈テクスチャ | generated / depth-10 wired |
+| `dungeon/enemy-b10-dark-stela.png` / `-hurt.png` | 768² RGBA | 真ボス「黒碑の主」base/hurt | generated / asset gate required |
+
 `content/worlds/default/assets/` — **141 assets total** (49 `dungeon/` incl. 14
 enemy sprites + 14 hurt frames + return/stair props + block/fallback textures +
 door + trap/stela/support props, 46 `icons/`, 12 `portraits/`, 14 `characters/`, 9

@@ -36,6 +36,9 @@ func _initialize() -> void:
 		_check(down.position.z > 5.0 * CELL + 1.2, "descent is placed at its south stair threshold")
 		_check(_children_named(down, "StairStep_") == 5, "descent has five physical treads, not a wall decal")
 		_check(_child_mesh(down, "StairArtwork_Downshaft") is PlaneMesh, "descent artwork is laid into the shaft floor")
+		var down_art := down.get_node_or_null("StairArtwork_Downshaft") as MeshInstance3D
+		_check(down_art != null and down_art.position.z <= -0.05 and down_art.position.z >= -CELL * 0.46,
+			"descent artwork stays inside the shallow stairwell, never beyond its rear wall")
 	if up:
 		_check(String(up.get_meta("stair_geometry", "")) == "ladder_well", "ascent owns a recessed ladder well")
 		_check(up.position.x > 8.0 * CELL + 1.0, "ascent is placed at its east stairs edge")

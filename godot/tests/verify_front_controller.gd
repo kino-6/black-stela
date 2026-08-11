@@ -11,6 +11,7 @@ extends SceneTree
 var _failures := 0
 
 func _initialize() -> void:
+	get_root().size = Vector2i(1280, 720)
 	await _check_title()
 	await _check_result()
 
@@ -88,6 +89,42 @@ func _check_result() -> void:
 		_fail("result: the defeated creature was not named in Japanese")
 	else:
 		print("[front-controller] result: the defeated creature is named from the world catalog")
+
+	# A full party can level together. This used to create six tall rows with the reached level stranded
+	# at the far right, pushing the one controller command below a 720px viewport. The conclusion may
+	# scroll exceptional bulk records internally, but its next action must never leave the play surface.
+	var party: Array = result.get("_party")
+	var all_growth := []
+	if party.size() < 6:
+		_fail("result: six-person growth fixture has fewer than six members")
+	else:
+		for member in party.slice(0, 6):
+			all_growth.append({
+				"characterId": String(member.get("id", "")),
+				"name": String(member.get("name", "")),
+				"level": 3,
+			})
+		result.call("set_ui_state", {"result": {
+			"enemyIds": ["enemy.b1f.ash-slime"],
+			"enemyNames": ["Ash Slime"],
+			"xp": 18,
+			"gold": 21,
+			"levelUps": all_growth,
+		}})
+		for i in 4:
+			await process_frame
+		var continue_button := _find_text(result, "探索へ戻る")
+		if continue_button == null or not (continue_button is Control):
+			_fail("result: six-person growth has no 探索へ戻る command")
+		else:
+			var viewport := get_root().get_visible_rect()
+			var bounds := (continue_button as Control).get_global_rect()
+			if bounds.position.y < 0.0 or bounds.end.y > viewport.size.y:
+				_fail("result: six-person growth pushed 探索へ戻る outside the 1280×720 viewport")
+			elif _focused() != continue_button:
+				_fail("result: six-person growth lost focus from 探索へ戻る")
+			else:
+				print("[front-controller] result: six-person growth remains compact and focused at 1280×720")
 
 	# ...and the un-levelled result drops the section rather than showing an empty box.
 	result.call("set_ui_state", {"no_growth": true})

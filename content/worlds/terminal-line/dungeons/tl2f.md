@@ -9,6 +9,14 @@ recommendedPartyLevel: 2
 recommendedPartySize: 3
 recommendedClearLevel: 3
 tags: [branching, transit, block-1]
+palette:
+  # Presentation only. The grid remains normally walkable; this declares that the entire platform level is
+  # ankle-deep instead of relying on the room title and prose to communicate the flood.
+  standingWater:
+    depth: 0.045
+    tint: "#183942"
+    waterline: 0.22
+    reflection: "#9db8b2"
 authorNotes: >-
   A 19x19 rod-falling maze, seed 20260805, with four carved platform and maintenance chambers.
   The landing is safe; the looped platform, a power terminal, and a sealed office make supplies and
@@ -83,7 +91,7 @@ rooms:
     name: Sealed Platform Office
     description: A small office is sealed behind a thick service door, not a fortress gate. Its lock is tied to the power terminal nearby.
     locales: { ja: { name: 封鎖ホーム事務所, description: 小さな事務所が厚い保守扉の奥に封じられている。要塞の門ではない。近くの電源端末と錠がつながっている。 } }
-    chest: { treasureTable: treasure.tl2f.sealed-cache, lock: { difficulty: 12 }, trap: { kind: snare, difficulty: 12, damage: 5 } }
+    chest: { treasureTable: treasure.tl2f.sealed-cache, lock: { difficulty: 12 }, trap: { kind: needle, difficulty: 12, damage: 5, status: poison } }
     gates:
       - id: gate.tl2f.office-power
         kind: lock
@@ -94,7 +102,7 @@ rooms:
     name: Lost Luggage Bay
     description: A luggage cart has tipped into the water. The dry cases at its top are worth searching.
     locales: { ja: { name: 遺失手荷物置場, description: 荷物台車が水に倒れ込んでいる。上に残った乾いた鞄には、探す価値がある。 } }
-    chest: { treasureTable: treasure.tl2f.platform-cache, trap: { kind: gas, difficulty: 11, damage: 4 } }
+    chest: { treasureTable: treasure.tl2f.platform-cache, trap: { kind: gas, difficulty: 11, damage: 4, status: poison } }
   - id: room.tl2f.hound-run
     name: Cable Hound Run
     description: Ceramic teeth scrape the platform tiles. The hounds have chewed a quick route through the cable trough.
@@ -119,7 +127,6 @@ rooms:
     name: Cable Culvert
     description: A low drainage culvert runs under the platform. It is unpleasant, but it joins the far side without a fight.
     locales: { ja: { name: 配線暗渠, description: 低い排水暗渠がホームの下を通る。不快な道だが、戦わずに反対側へ回り込める。 } }
-    damageTile: 1
   - id: room.tl2f.up-stair
     name: Emergency Stair Up
     description: A bolted stair rises toward the outer gates. It is visibly fixed to the landing above, not floating from a wall.

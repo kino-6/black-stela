@@ -47,6 +47,12 @@ static func select_trap_handler(party: Array) -> Variant:
 static func success_chance(skill: int, difficulty: int, base: int) -> int:
 	return _clamp_int(base + skill * 3 - difficulty * 3, 5, 95)
 
+## Lockpicking uses a gentler, role-readable curve than traps.  An ordinary Lv1 aptitude is a baseline,
+## not an automatic 95% open; class training (+8) remains stronger than a standard consumable tool (+6).
+## Keep byte-for-byte parity with src/domain/chests.ts unlockChance.
+static func unlock_chance(skill: int, difficulty: int) -> int:
+	return _clamp_int(40 + (skill - 15) * 2 - difficulty, 5, 95)
+
 static func chest_at(state: Dictionary, cell_id: Variant) -> Variant:
 	for chest in state.get("chests", []):
 		if chest.get("cellId", "") == cell_id:
@@ -168,7 +174,7 @@ static func unlock(state: Dictionary, world: Dictionary = {}, engine: Dictionary
 		return _blocked(state, String(attempt["refused"]))
 	var handler: Variant = attempt.get("actor", null)
 	var seed_text := "%s:%s" % [String(chest.get("cellId", "")), String(chest.get("roomId", ""))]
-	var success := roll_percent("%s:unlock" % seed_text) < success_chance(int(attempt.get("skill", 0)), difficulty, 45)
+	var success := roll_percent("%s:unlock" % seed_text) < unlock_chance(int(attempt.get("skill", 0)), difficulty)
 	var updated: Dictionary = chest.duplicate(true)
 	updated["unlockAttempted"] = true
 	updated["unlocked"] = success
@@ -194,9 +200,9 @@ static func open_chest(state: Dictionary, world: Dictionary, engine: Dictionary)
 		return _blocked(state, "no_chest")
 	if chest.get("phase", "") == "opened":
 		return _blocked(state, "already_open")
-	if typeof(chest.get("lock", null)) == TYPE_DICTIONARY and not bool(chest.get("unlocked", false)):
-		return _blocked(state, "locked")
-
+	# A locked chest is no longer a dead-end: it can be FORCED. Forcing does not clear the trap, so opening a
+	# still-locked chest springs any undisarmed trap below (that IS the cost) — the lock only ever delays, it
+	# never destroys the reward, matching the trap rule. Picking the lock cleanly is how you avoid the trap.
 	var resolved := _resolve_opened_chest(state, world, engine, chest)
 	var next: Dictionary = resolved["state"]
 	next["turn"] = int(next.get("turn", 0)) + 1
@@ -216,7 +222,9 @@ static func _resolve_opened_chest(state: Dictionary, world: Dictionary, engine: 
 
 	var events := []
 	if trap_sprung:
-		# An already-wounded member is not hit again; nobody is killed by a chest.
+		# The HP hit plus the trap's world-authored ailment (poison/fear/silence/sleep) on the whole party. An
+		# already-wounded member is spared both; nobody is killed by a chest. Mirrors rulesEngine.resolveOpenedChest.
+		var ailment := String((chest["trap"] as Dictionary).get("status", ""))
 		var hurt := []
 		for member in next.get("party", []):
 			if member.get("injury", null) != null:
@@ -224,9 +232,17 @@ static func _resolve_opened_chest(state: Dictionary, world: Dictionary, engine: 
 			else:
 				var m: Dictionary = member.duplicate(true)
 				m["hp"] = maxi(1, int(m.get("hp", 0)) - damage)
+				if ailment != "":
+					var statuses: Array = (m.get("status", []) as Array).duplicate()
+					if not statuses.has(ailment):
+						statuses.append(ailment)
+					m["status"] = statuses
 				hurt.append(m)
 		next["party"] = hurt
-		events.append({"type": "chest_trap_sprung", "trapKind": (chest["trap"] as Dictionary).get("kind", ""), "damage": damage})
+		var sprung_event := {"type": "chest_trap_sprung", "trapKind": (chest["trap"] as Dictionary).get("kind", ""), "damage": damage}
+		if ailment != "":
+			sprung_event["status"] = ailment
+		events.append(sprung_event)
 
 	var room_id := String(chest.get("roomId", ""))
 	var item: Variant = null

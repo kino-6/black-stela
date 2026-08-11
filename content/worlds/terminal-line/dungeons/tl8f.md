@@ -52,15 +52,14 @@ corridor:
   locales: { ja: { name: 管制配線路, description: 乗客を導かなくなった信号灯の下で、ケーブル溝が床を分けている。 } }
 edges:
   - { from: room.tl8f.control-landing, direction: west, kind: stairs, to: room.tl7f.down-stair, targetFloorId: dungeon.tl7f }
-  - { from: room.tl8f.platform-bypass, direction: north, kind: shortcut, to: room.tl8f.switch-control }
   - { from: room.tl8f.down-stair, direction: north, kind: stairs, to: room.tl9f.lift-landing, targetFloorId: dungeon.tl9f }
 rooms:
   - { id: room.tl8f.control-landing, name: Control Landing, description: The office stair reaches a silent floor of railway relays., locales: { ja: { name: 管制区の踊り場, description: 局舎の階段は、鉄道リレーだけが沈黙する床へ着く。 } } }
   - id: room.tl8f.platform-bypass
     name: Platform Bypass
-    description: A switchboard cuts through to the far console ring.
-    locales: { ja: { name: ホーム迂回線, description: 分電盤を通れば、遠い操作卓へ短く抜けられる。 } }
-    gates: [{ id: gate.tl8f.switch, kind: shortcut, grantsFlag: flag.tl8f.switch-open, clue: A switchboard reconnects a control-room bypass. }]
+    description: A switchboard retains the clearance record for the far console ring.
+    locales: { ja: { name: ホーム迂回線, description: 分電盤には、遠い操作卓へ通じた迂回経路の許可記録が残る。 } }
+    gates: [{ id: gate.tl8f.switch, kind: shortcut, grantsFlag: flag.tl8f.switch-open, clue: A switchboard logs a control-route clearance. }]
   - { id: room.tl8f.signal-hall, name: Signal Hall, description: Station signals cycle for a train that never arrives., locales: { ja: { name: 信号広間, description: 来ない列車のために、駅信号だけが巡回している。 } }, encounterTable: encounters.tl8f.control }
   - id: room.tl8f.train-terminal
     name: Train Terminal
@@ -72,7 +71,7 @@ rooms:
   - { id: room.tl8f.signal-locker, name: Signal Locker, description: A dead-end equipment locker preserves a calibrated tool., locales: { ja: { name: 信号機材ロッカー, description: 行き止まりの機材ロッカーに、調整済みの工具が残る。 } }, treasureTable: treasure.tl8f.control-cache }
   - { id: room.tl8f.dispatch-chamber, name: Dispatch Chamber, description: A deep control chamber keeps the final route alive., locales: { ja: { name: 指令室, description: 深い管制室が、最後の経路だけを生かしている。 } }, encounterTable: encounters.tl8f.dispatch-guard, chamberGuardian: true }
   - { id: room.tl8f.cable-cache, name: Cable Cache, description: A spare coil and sealed pack rest at the end of the trench., locales: { ja: { name: 予備ケーブル棚, description: 溝の奥に、予備コイルと封じた補給袋が残る。 } }, treasureTable: treasure.tl8f.control-cache }
-  - { id: room.tl8f.window-ledge, name: Signal Window Ledge, description: A narrow ledge holds an overlooked maintenance cache., locales: { ja: { name: 信号窓の棚, description: 狭い窓棚に、見落とされた保守箱がある。 } }, chest: { treasureTable: treasure.tl8f.control-cache, trap: { kind: snare, difficulty: 23, damage: 9 } } }
+  - { id: room.tl8f.window-ledge, name: Signal Window Ledge, description: A narrow ledge holds an overlooked maintenance cache., locales: { ja: { name: 信号窓の棚, description: 狭い窓棚に、見落とされた保守箱がある。 } }, chest: { treasureTable: treasure.tl8f.control-cache, trap: { kind: needle, difficulty: 23, damage: 9, status: poison } } }
   - { id: room.tl8f.return-marker, name: Control Emergency Link, description: A hardwired emergency link returns the party to the hub by design., locales: { ja: { name: 管制区の非常回線, description: 有線の非常回線は、意図して一行を拠点へ戻す。 } }, stairsToTown: true, returnStyle: marker }
   - { id: room.tl8f.down-stair, name: Liftworks Stair, description: A visible stair descends beside the surface-lift machinery., locales: { ja: { name: 昇降機区への階段, description: 地上昇降機の機械脇を、見える階段が下る。 } } }
 ---

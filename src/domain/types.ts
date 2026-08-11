@@ -372,6 +372,9 @@ export interface CombatBeat {
   crit?: boolean;
   weak?: boolean;
   firearm?: boolean; // a gun shot — playback narrates shooting, not a melee verb
+  /** Family of the firearm that produced this beat. Presentation uses this authored tag to choose its
+   * local muzzle / travel / impact art, rather than guessing from an item name. */
+  firearmFamily?: "pistol" | "rifle" | "smg" | "shotgun";
   shotIndex?: number; // 0 = first shot of a burst; >0 = follow-up rounds of the same sweep
   spellId?: string; // localize ability name — widens with the catalog, no longer hand-listed here
   abilityName?: string; // enemy ability raw name (fallback)
@@ -471,7 +474,7 @@ export type GameEvent =
       difficultyBand?: DifficultyBandName;
       itemConsumed?: string;
     }
-  | { type: "chest_trap_sprung"; trapKind: ChestTrapKind; damage: number }
+  | { type: "chest_trap_sprung"; trapKind: ChestTrapKind; damage: number; status?: CombatStatus }
   | { type: "chest_opened" }
   | { type: "command_blocked_chest"; reason: "no_chest" | "guarded" | "already_open" | "already_tried" | "no_trap" | "locked" | "actor_unavailable" }
   | { type: "room_event_triggered"; roomId: string; text: string }
@@ -769,7 +772,10 @@ export type ChestTrapKind = "needle" | "gas" | "rune" | "snare";
  *  bare `treasureTable` and no `chest` loads as a safe plain chest (back-compat). */
 export interface ScenarioChest {
   treasureTable: string;
-  trap?: { kind: ChestTrapKind; difficulty: number; damage: number };
+  /** `status` is the scenario-authored ailment a sprung trap inflicts on the WHOLE party (poison/fear/
+   *  silence/sleep) — so each world picks the EFFECT of its own traps instead of the engine hardcoding one
+   *  per kind (a subway line's trap is not a forest snare). Omit for a plain HP-only trap. */
+  trap?: { kind: ChestTrapKind; difficulty: number; damage: number; status?: CombatStatus };
   /** A physical lock is independent of a trap: it requires an unlock attempt before the lid opens. */
   lock?: { difficulty: number };
 }
@@ -783,7 +789,7 @@ export interface ChestState {
   roomId: string;
   treasureTable: string;
   /** The authored trap, or null for a plain chest. `sprung`/`disarmed` track its resolution. */
-  trap: { kind: ChestTrapKind; difficulty: number; damage: number } | null;
+  trap: { kind: ChestTrapKind; difficulty: number; damage: number; status?: CombatStatus } | null;
   lock: { difficulty: number } | null;
   phase: ChestPhase;
   /** Whether an investigation has been spent, and what it concluded. "uncertain" never lies "clear". */
@@ -861,6 +867,18 @@ export interface ScenePalette {
   ambientEnergy?: number;
   fogDensity?: number;
   torchRange?: number;
+  /** Optional, authored shallow standing water for a floor. This is presentation only: it makes a flooded
+   * route legible in the first-person scene without silently changing movement, combat, or save rules. */
+  standingWater?: {
+    /** Visual height above the floor, in metres. Keep shallow (0.01–0.12): this is a walkable flooded route. */
+    depth: number;
+    /** Low-saturation water tint; renderer multiplies it under the floor lighting. */
+    tint?: string;
+    /** Height of the restrained stain at the base of adjoining walls. */
+    waterline?: number;
+    /** Dim local reflection streak; never use it as a glow or screen flash. */
+    reflection?: string;
+  };
 }
 
 export interface ScenarioWorld {

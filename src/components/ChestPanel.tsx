@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { KeyRound, Search, Unlock } from "lucide-react";
 import type { Character, ChestState, Command } from "../domain/types";
-import { successChance, trapSkill, unlockSkill } from "../domain/chests";
+import { successChance, trapSkill, unlockChance, unlockSkill } from "../domain/chests";
 import type { Translator } from "../i18n";
 
 type ChestAction = "investigate" | "disarm" | "unlock";
@@ -35,7 +35,7 @@ function actionCommand(action: ChestAction, characterId: string): Command {
 function chanceFor(action: ChestAction, member: Character, chest: ChestState) {
   if (action === "investigate") return successChance(trapSkill(member), chest.trap?.difficulty ?? 0, 55);
   if (action === "disarm") return successChance(trapSkill(member), chest.trap?.difficulty ?? 0, 45);
-  return successChance(unlockSkill(member), chest.lock?.difficulty ?? 0, 45);
+  return unlockChance(unlockSkill(member), chest.lock?.difficulty ?? 0);
 }
 
 // IMP-029 — the current-cell chest command surface. Occupies the SAME command region as the movement
@@ -147,9 +147,11 @@ export function ChestPanel({ chest, party, t, onCommand, onLeave }: ChestPanelPr
               {t("play.chestUnlock")}
             </button>
           )}
-          <button type="button" ref={chest.investigated && !knownTrapped && !locked ? firstRef : undefined} className="dungeon-command" data-testid="chest-open" disabled={locked} onClick={() => onCommand({ type: "open_chest" })}>
+          {/* A locked chest is FORCED open, never blocked — forcing springs any undisarmed trap as its cost,
+              so a failed lockpick is never a dead-end. Picking the lock cleanly is how the trap is avoided. */}
+          <button type="button" ref={chest.investigated && !knownTrapped && (!locked || chest.unlockAttempted) ? firstRef : undefined} className="dungeon-command" data-testid="chest-open" onClick={() => onCommand({ type: "open_chest" })}>
             <Unlock size={18} />
-            {t("play.chestOpen")}
+            {locked ? t("play.chestForceOpen") : t("play.chestOpen")}
           </button>
           <button type="button" className="dungeon-command" data-testid="chest-leave" onClick={onLeave}>
             {t("play.chestLeave")}

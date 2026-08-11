@@ -64,6 +64,23 @@ func _run() -> void:
 			var hr: Rect2 = h["rect"]
 			_check(not mr.intersects(hr), "enemy mark %s clears the %s" % [str(mr), h["name"]])
 
+	# The same five-unit group after three kills must lose the rear bodies, not re-run its pack layout with
+	# `count=2`.  Recalculated shrink/spacing made the two survivors grow and jump, which looks like enemy
+	# resizing rather than attrition.  `initialCount` is encounter truth and is intentionally stable here.
+	var layout_host := Control.new()
+	var full_mark := CombatStage.enemy_mark(layout_host, {"count": 5, "initialCount": 5, "hpEach": 10, "maxHpEach": 10}, 450.0, 600.0, Rect2(0, 0, 900, 540), false, null, "固定隊形", 50, 50)
+	var depleted_mark := CombatStage.enemy_mark(layout_host, {"count": 2, "initialCount": 5, "hpEach": 10, "maxHpEach": 10}, 450.0, 600.0, Rect2(0, 0, 900, 540), false, null, "固定隊形", 20, 50)
+	var full_front := _body(full_mark, 0)
+	var full_second := _body(full_mark, 1)
+	var depleted_front := _body(depleted_mark, 0)
+	var depleted_second := _body(depleted_mark, 1)
+	_check(full_front != null and depleted_front != null and full_front.size.is_equal_approx(depleted_front.size) and is_equal_approx(full_front.position.y, depleted_front.position.y), "the front survivor keeps its initial size and floor height after a pack member falls")
+	_check(full_second != null and depleted_second != null and full_second.size.is_equal_approx(depleted_second.size) and is_equal_approx(full_second.position.y, depleted_second.position.y), "the second survivor keeps its initial size and floor height after a pack member falls")
+	_check(_body(depleted_mark, 2) == null and _body(depleted_mark, 3) == null and _body(depleted_mark, 4) == null, "only the three rear bodies disappear from the five-unit layout")
+	full_mark.free()
+	depleted_mark.free()
+	layout_host.free()
+
 	# A selected target used to spawn a `set_loops()` tween. Build that exact pure stage fragment rather than
 	# relying on the fixture's current combat phase to happen to select an enemy.
 	var tween_baseline := get_processed_tweens().size()
@@ -88,6 +105,12 @@ func _tagged(node: Node, meta: String) -> Array:
 	for c in node.get_children():
 		out.append_array(_tagged(c, meta))
 	return out
+
+func _body(mark: Control, index: int) -> TextureRect:
+	for child in mark.get_children():
+		if child is TextureRect and child.has_meta("enemy_body_index") and int(child.get_meta("enemy_body_index")) == index:
+			return child as TextureRect
+	return null
 
 func _check(ok: bool, label: String) -> void:
 	if ok:

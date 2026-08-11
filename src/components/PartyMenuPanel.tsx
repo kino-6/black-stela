@@ -59,12 +59,13 @@ export function PartyMenuPanel({ state, world, locale, t, onCommand, onClose }: 
   const [selectedItemKey, setSelectedItemKey] = useState("");
   const [discardPending, setDiscardPending] = useState(false);
   const member = state.party.find((candidate) => candidate.id === selectedMemberId) ?? state.party[0];
+  // A depleted stack (quantity 0) is dead data — hide it so it never shows as ×0/usable.
   const items = useMemo(
-    () => state.inventory.filter((item) => !["key", "treasure", "escape"].includes(item.kind)),
+    () => state.inventory.filter((item) => !["key", "treasure", "escape"].includes(item.kind) && (item.quantity ?? 1) > 0),
     [state.inventory]
   );
   const valuables = useMemo(
-    () => state.inventory.filter((item) => ["key", "treasure", "escape"].includes(item.kind)),
+    () => state.inventory.filter((item) => ["key", "treasure", "escape"].includes(item.kind) && (item.quantity ?? 1) > 0),
     [state.inventory]
   );
   const visibleItems = page === "valuables" ? valuables : items;

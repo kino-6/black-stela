@@ -58,6 +58,13 @@ const enemyIds = [
   "enemy.tl10f.zero-line-stationmaster"
 ];
 
+const firearmEffectBasenames = [
+  "fx-tl-pistol-muzzle", "fx-tl-pistol-travel", "fx-tl-pistol-impact",
+  "fx-tl-rifle-muzzle", "fx-tl-rifle-travel", "fx-tl-rifle-impact",
+  "fx-tl-smg-muzzle", "fx-tl-smg-travel", "fx-tl-smg-impact",
+  "fx-tl-shotgun-muzzle", "fx-tl-shotgun-travel", "fx-tl-shotgun-impact"
+];
+
 function pngInfo(path: string) {
   const png = readFileSync(path);
   return {
@@ -116,6 +123,13 @@ describe("Terminal Line F1–F10 canonical pack", () => {
         const info = pngInfo(resolve(dungeon, `${basename}${suffix}.png`));
         expect(info).toEqual({ width: 768, height: 768, colorType: 6 });
       }
+    }
+  });
+
+  it("ships three restrained RGBA firearm effect frames for each gun family", () => {
+    expect(firearmEffectBasenames).toHaveLength(12);
+    for (const basename of firearmEffectBasenames) {
+      expect(pngInfo(resolve(root, "assets/effects", `${basename}.png`))).toEqual({ width: 512, height: 512, colorType: 6 });
     }
   });
 
@@ -296,14 +310,17 @@ describe("Terminal Line F1–F10 canonical pack", () => {
     const groupId = fight.combat.enemyGroups[0].id;
     const afterRifleShot = executeCommand(fight, result.world, {
       type: "declare_round",
-      actions: [{ actorId: withRifle.id, action: "cast", spellId: "rifle-brace", targetGroupId: groupId }]
+      actions: [{ actorId: withRifle.id, action: "cast", spellId: "rifle-hamper", targetGroupId: groupId }]
     });
     expect(afterRifleShot.party[0].mp).toBe(withRifle.mp - 3);
+    const rifleBeat = afterRifleShot.log.flatMap((entry) => entry.event?.type === "combat_round_resolved" ? entry.event.beats ?? [] : [])
+      .find((beat) => beat.spellId === "rifle-hamper" && beat.damage && beat.damage > 0);
+    expect(rifleBeat).toMatchObject({ firearm: true, firearmFamily: "rifle", shotIndex: 0 });
 
     const invalidFight = { ...fight, party: [withoutRifle] };
     const afterUnequippedShot = executeCommand(invalidFight, result.world, {
       type: "declare_round",
-      actions: [{ actorId: withoutRifle.id, action: "cast", spellId: "rifle-brace", targetGroupId: groupId }]
+      actions: [{ actorId: withoutRifle.id, action: "cast", spellId: "rifle-hamper", targetGroupId: groupId }]
     });
     expect(afterUnequippedShot.party[0].mp).toBe(withoutRifle.mp);
   });

@@ -51,15 +51,14 @@ corridor:
   locales: { ja: { name: 配給箱の通路, description: 空の配給箱が、人を養うための倉庫に狭い通路を残している。 } }
 edges:
   - { from: room.tl5f.ration-landing, direction: west, kind: stairs, to: room.tl4f.down-stair, targetFloorId: dungeon.tl4f }
-  - { from: room.tl5f.loading-cut-through, direction: north, kind: shortcut, to: room.tl5f.cold-store }
   - { from: room.tl5f.down-stair, direction: north, kind: stairs, to: room.tl6f.records-landing, targetFloorId: dungeon.tl6f }
 rooms:
   - { id: room.tl5f.ration-landing, name: Ration Landing, description: The rainworks stair meets a dry receiving shelf., locales: { ja: { name: 配給庫の踊り場, description: 雨水処理区からの階段は、乾いた受入棚に着く。 } } }
   - id: room.tl5f.loading-cut-through
     name: Loading Cut-through
-    description: A rolling door opens a short path through the stacked crates.
-    locales: { ja: { name: 搬入口の抜け道, description: 荷役扉を開ければ、積み箱を横切る短い道ができる。 } }
-    gates: [{ id: gate.tl5f.loading, kind: shortcut, grantsFlag: flag.tl5f.loading-open, clue: A loading latch joins two crate lanes. }]
+    description: A rolling door bears the clearance stamp for a former loading cut-through.
+    locales: { ja: { name: 搬入口の抜け道, description: 荷役扉には、かつての搬入口経路の通行印が残る。 } }
+    gates: [{ id: gate.tl5f.loading, kind: shortcut, grantsFlag: flag.tl5f.loading-open, clue: A loading latch records a crate-lane clearance. }]
   - { id: room.tl5f.distribution-hall, name: Distribution Hall, description: Broken ticket printers stamp food tallies onto the floor., locales: { ja: { name: 配給広間, description: 壊れた整理券機が、食料の数を床へ打ち続けている。 } }, encounterTable: encounters.tl5f.depot }
   - id: room.tl5f.allocation-terminal
     name: Allocation Terminal

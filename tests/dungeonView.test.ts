@@ -28,18 +28,22 @@ describe("DungeonView render layout", () => {
     const block1 = getDungeonBlockTextureUrls("dungeon.b1f");
     const block2 = getDungeonBlockTextureUrls("dungeon.b4f");
     const block3 = getDungeonBlockTextureUrls("dungeon.b7f");
+    const block4 = getDungeonBlockTextureUrls("dungeon.b10f");
 
     expect(block1.wall).not.toBe(block2.wall);
     expect(block2.wall).not.toBe(block3.wall);
+    expect(block3.wall).not.toBe(block4.wall);
     expect(block1.floor).not.toBe(block2.floor);
     expect(block2.floor).not.toBe(block3.floor);
+    expect(block3.floor).not.toBe(block4.floor);
   });
 
   it("selects Verdant block textures for g-prefixed floor ids", () => {
     for (const [floorId, block] of [
       ["dungeon.verdant.g1f", 1],
       ["dungeon.verdant.g4f", 2],
-      ["dungeon.verdant.g7f", 3]
+      ["dungeon.verdant.g7f", 3],
+      ["dungeon.verdant.g10f", 4]
     ] as const) {
       expect(getDungeonBlockTextureUrls(floorId, "verdant")).toEqual({
         wall: asset(`stone-wall-block${block}`, "verdant"),

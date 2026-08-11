@@ -55,8 +55,7 @@ corridor:
       name: 濡れた改札回廊
       description: 低い駅灯が白灰のタイルに繰り返し映る。黒いゴム床の継ぎ目を、雨水が細く流れている。
 edges:
-  - { from: room.tl1f.security-corridor, direction: west, kind: shortcut, to: room.tl1f.service-hatch }
-  - { from: room.tl1f.down-stair, direction: east, kind: stairs, to: room.tl2f.platform-landing, targetFloorId: dungeon.tl2f }
+  - { from: room.tl1f.down-stair, direction: east, kind: stairs, to: room.tl2f.up-stair, targetFloorId: dungeon.tl2f }
 rooms:
   - id: room.tl1f.entrance
     name: Raised Fire Shutter
@@ -69,19 +68,12 @@ rooms:
     description: A narrow lane of broken gates. A baton unit blocks the dry, direct line toward the signal office.
     locales: { ja: { name: 保安通路, description: 壊れた改札機が狭い通路をつくる。無線室への乾いた近道を、保安棒ユニットが塞いでいる。 } }
     encounterTable: encounters.tl1f.outer-gate
-    gates:
-      - id: gate.tl1f.security-shutter
-        kind: shortcut
-        grantsFlag: flag.tl1f.security-shortcut
-        clue: A manual shutter release leads back toward the return marker.
-        locales: { ja: { clue: 手動シャッターを上げれば、帰還標識へ短く抜けられる。 } }
   - id: room.tl1f.flooded-concourse
     name: Flooded Concourse
     description: An ankle-deep detour beneath dark timetable boards. The way is slower, but old lockers remain above the waterline.
     locales: { ja: { name: 浸水コンコース, description: 消えた時刻表の下を、くるぶしまで水に浸かって回り込む。遅い道だが、古いロッカーはまだ水面より高い。 } }
-    damageTile: 1
     treasureTable: treasure.tl1f.locker
-    event: The flooded route trades time and a little health for supplies without forcing the security corridor.
+    event: The flooded route trades time for supplies without forcing the security corridor.
   - id: room.tl1f.signal-office
     name: Signal Office
     description: A cracked platform display repeats a destination with no train number. A maintenance line answers from below.
@@ -121,7 +113,7 @@ rooms:
     description: A sealed lost-property box rests above the tide mark, heavy with forgotten work gear.
     locales: { ja: { name: 遺失物の保管箱, description: 水位線より高い棚に、封をされた遺失物箱が残る。中には忘れられた作業用具の重みがある。 } }
     treasureTable: treasure.tl1f.locker
-    chest: { treasureTable: treasure.tl1f.locker, trap: { kind: gas, difficulty: 10, damage: 3 } }
+    chest: { treasureTable: treasure.tl1f.locker, trap: { kind: gas, difficulty: 10, damage: 3, status: poison } }
   - id: room.tl1f.return-marker
     name: Emergency Call Point
     description: A battered emergency phone and a steady evacuation lamp mark a route back to the Interchange Square.
@@ -130,8 +122,8 @@ rooms:
     returnStyle: marker
   - id: room.tl1f.service-hatch
     name: Service Hatch
-    description: A narrow hatch opens behind the security shutter. It is a useful shortcut, not a mystery gate.
-    locales: { ja: { name: 保守口, description: 保安シャッターの裏に、狭い保守口が開く。これは謎の門ではなく、戻り道を短くする抜け道だ。 } }
+    description: A narrow service hatch off the lower corridor, its dry cabling still clipped to the wall.
+    locales: { ja: { name: 保守口, description: 下の通路から分かれた狭い保守口。乾いた配線が、まだ壁に留められている。 } }
   - id: room.tl1f.down-stair
     name: Platform Service Stairs
     description: Steel steps descend beside the platform edge toward the flooded lower level. Nothing bars the way down.

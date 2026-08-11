@@ -27,6 +27,8 @@ const VISITED_BG := Color("1c2314")
 const CURRENT_BG := Color("3a4a22")
 const UNSEEN_BG := Color("0e1009")
 const WALL := Color("6d7a4a")
+const GRID_LINE := Color("39421f")   # the faint マス目 seen between cells (1px separation reveals it)
+const COORD_COL := Color("8a9a5a")    # the A1 ruler letters/numbers down the edges
 
 static func build(state: Dictionary, world: Dictionary) -> Control:
 	var map: Dictionary = state.get("map", {})
@@ -46,6 +48,10 @@ static func build(state: Dictionary, world: Dictionary) -> Control:
 	var facing: Variant = map.get("currentFacing", (state.get("position", {}) as Dictionary).get("facing", null))
 	if typeof(facing) == TYPE_STRING and DIRECTIONS.has(facing):
 		here.add_child(UI.label("%s %s" % [FACING_GLYPH[facing], I18n.t("direction.%s" % facing)], 16, UI.GOLD))
+	# The party's grid coordinate (Wizardry-style), so a spot can be named — "B4", not "over there".
+	var coord := _current_coord(world, floor_id, map)
+	if coord != "":
+		here.add_child(UI.label(coord, 16, COORD_COL))
 	col.add_child(here)
 
 	# A dark zone is the one place the map cannot help: it says so rather than drawing a lie.
@@ -102,11 +108,25 @@ static func _grid(state: Dictionary, world: Dictionary, cells: Array) -> Control
 	if by_pos.is_empty():
 		return UI.label(I18n.t("map.unseen"), 18, UI.DIM)
 
+	# Coordinates are ABSOLUTE to the floor's own origin (its min x/y across ALL cells), not the visited
+	# box — so a cell's A1 label is stable no matter how much has been explored, the way a Wizardry map reads.
+	var floor_min_x := 1 << 30
+	var floor_min_y := 1 << 30
+	for cell in cells:
+		floor_min_x = mini(floor_min_x, int(cell.get("x", 0)))
+		floor_min_y = mini(floor_min_y, int(cell.get("y", 0)))
+
 	var grid := GridContainer.new()
-	grid.columns = max_x - min_x + 1
-	grid.add_theme_constant_override("h_separation", 0)
-	grid.add_theme_constant_override("v_separation", 0)
+	grid.columns = (max_x - min_x + 1) + 1   # +1 for the row-number ruler down the left
+	# A 1px gap between cells, filled by the faint GRID_LINE behind the grid — the マス目 the player counts.
+	grid.add_theme_constant_override("h_separation", 1)
+	grid.add_theme_constant_override("v_separation", 1)
+	# Header row: a blank corner, then a column letter (A, B, …) over each visited column.
+	grid.add_child(_ruler_cell(""))
+	for x in range(min_x, max_x + 1):
+		grid.add_child(_ruler_cell(_col_letter(x - floor_min_x)))
 	for y in range(min_y, max_y + 1):
+		grid.add_child(_ruler_cell(str(y - floor_min_y + 1)))   # row number down the left
 		for x in range(min_x, max_x + 1):
 			var pos := Vector2i(x, y)
 			if by_pos.has(pos):
@@ -114,7 +134,54 @@ static func _grid(state: Dictionary, world: Dictionary, cells: Array) -> Control
 			else:
 				# Never walked, never seen — the map is the party's RECORD, not the floor's truth.
 				grid.add_child(_blank())
-	return grid
+
+	# The faint grid showing through the 1px separations.
+	var frame := PanelContainer.new()
+	var frame_style := StyleBoxFlat.new()
+	frame_style.bg_color = GRID_LINE
+	frame_style.set_content_margin_all(0)
+	frame.add_theme_stylebox_override("panel", frame_style)
+	frame.add_child(grid)
+	return frame
+
+# A ruler square carrying an A1 coordinate letter/number (or the empty top-left corner).
+static func _ruler_cell(text: String) -> Control:
+	var label := UI.label(text, 13, COORD_COL)
+	label.custom_minimum_size = Vector2(CELL_PX, CELL_PX)
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	return label
+
+# Column index → spreadsheet-style letters (0→A … 25→Z, 26→AA), so wide floors never collide.
+static func _col_letter(index: int) -> String:
+	var out := ""
+	var n := index
+	while true:
+		out = String.chr(65 + (n % 26)) + out
+		n = n / 26 - 1
+		if n < 0:
+			break
+	return out
+
+# The party's current cell as an A1 coordinate on the floor's absolute grid, or "" when off the floor.
+static func _current_coord(world: Dictionary, floor_id: Variant, map: Dictionary) -> String:
+	var current := String(map.get("currentCellId", ""))
+	if current == "":
+		return ""
+	var cells := _floor_cells(world, floor_id)
+	if cells.is_empty():
+		return ""
+	var floor_min_x := 1 << 30
+	var floor_min_y := 1 << 30
+	var here: Variant = null
+	for cell in cells:
+		floor_min_x = mini(floor_min_x, int(cell.get("x", 0)))
+		floor_min_y = mini(floor_min_y, int(cell.get("y", 0)))
+		if String(cell.get("id", "")) == current:
+			here = cell
+	if here == null:
+		return ""
+	return "%s%d" % [_col_letter(int(here.get("x", 0)) - floor_min_x), int(here.get("y", 0)) - floor_min_y + 1]
 
 static func _cell(cell: Dictionary, is_current: bool, world: Dictionary, state: Dictionary) -> Control:
 	var panel := PanelContainer.new()
@@ -154,9 +221,15 @@ static func _cell(cell: Dictionary, is_current: bool, world: Dictionary, state: 
 	return panel
 
 static func _blank() -> Control:
-	var c := Control.new()
-	c.custom_minimum_size = Vector2(CELL_PX, CELL_PX)
-	return c
+	# A dark square (not transparent) so an unseen cell reads as a void with only the faint マス目 around it,
+	# instead of being filled by the grid-line colour showing through.
+	var panel := PanelContainer.new()
+	panel.custom_minimum_size = Vector2(CELL_PX, CELL_PX)
+	var style := StyleBoxFlat.new()
+	style.bg_color = UNSEEN_BG
+	style.set_content_margin_all(0)
+	panel.add_theme_stylebox_override("panel", style)
+	return panel
 
 ## Marker precedence, in React's order (cellMarker): the first thing true about a cell is what it is.
 # Down = the stairs' target floor sits LATER in the world's dungeon order than the floor being mapped.

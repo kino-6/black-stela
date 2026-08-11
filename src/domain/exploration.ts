@@ -1,6 +1,6 @@
 import type { Character, GameState, InventoryItem } from "./types";
 import { proficiencyBonus, type ExplorationAction, type Proficiency } from "./classCapabilities";
-import { characterProficiency, trapSkill } from "./chests";
+import { characterProficiency, trapSkill, unlockSkill } from "./chests";
 
 /**
  * WHO TRIED, AND WITH WHAT — the resolution layer for exploration attempts.
@@ -149,7 +149,9 @@ export function resolveAttempt(
   // §7B: the recorded proficiency aggregates over mastered basic classes, so an event names the training
   // that actually applied — not just the base class (see characterProficiency).
   const proficiency = actor ? characterProficiency(actor, request.action) : "untrained";
-  const skill = (actor ? trapSkill(actor) : 0) + (aid?.bonus ?? 0);
+  // Lockpicking has its own proficiency.  Reading trapSkill for every action made the declared `unlock`
+  // capability cosmetic whenever class contracts later diverged (and made TS disagree with Godot).
+  const skill = (actor ? (request.action === "unlock" ? unlockSkill(actor) : trapSkill(actor)) : 0) + (aid?.bonus ?? 0);
 
   return {
     record: {

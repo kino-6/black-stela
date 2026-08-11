@@ -29,7 +29,10 @@ static func build(chest: Dictionary, party: Array, inventory: Array, world: Dict
 		root.add_child(UI.label(I18n.t("play.chestChooseHandler", {"action": _action_label(pending_action)}), 17, UI.GOLD))
 		var best: Button = null
 		var best_chance := -1
+		var best_member := {}
 		var aids := _aids_for_action(inventory, world, pending_action)
+		# One row per member — the bare attempt. The carried tools are NOT repeated per member (that stacked a
+		# nameless「…で試す」after every name); they are offered once below, applied to the recommended handler.
 		for member in party:
 			var able := int(member.get("hp", 0)) > 0 and member.get("injury", null) == null
 			var chance := _chance(member, engine, chest, pending_action) if able else 0
@@ -37,20 +40,23 @@ static func build(chest: Dictionary, party: Array, inventory: Array, world: Dict
 			var button := UI.button("%s　%s %d%%" % [String(member.get("name", "?")), I18n.t("play.chestChance"), chance], func(): on_command.call({"type": _command_for(pending_action), "characterId": member_id}), Vector2(360, 40), 16)
 			button.disabled = not able
 			actions.add_child(button)
-			# Tools are alternatives to a specialist, not an invisible bonus. The normal handler remains first
-			# and focused; each carried aid exposes its own improved chance and is spent only when chosen.
-			for aid in aids:
-				var bonus := int(aid.get("bonus", 0))
-				var aided_chance := _chance(member, engine, chest, pending_action, bonus) if able else 0
-				var aid_name := Fmt.localized_catalog_name(world, String(aid.get("id", "")))
-				var aid_command := {"type": _command_for(pending_action), "characterId": member_id, "itemId": String(aid.get("id", ""))}
-				var aid_label := I18n.t("play.chestUseAid", {"item": aid_name, "chance": I18n.t("play.chestChance"), "rate": aided_chance})
-				var aid_button := UI.button(aid_label, func(): on_command.call(aid_command), Vector2(420, 34), 14)
-				aid_button.disabled = not able
-				actions.add_child(aid_button)
 			if able and chance > best_chance:
 				best_chance = chance
 				best = button
+				best_member = member
+		# Tools are alternatives to a specialist, not an invisible bonus — offered ONCE, spent only when chosen,
+		# and applied to the recommended handler so the row names who wields it and its improved chance.
+		if not best_member.is_empty():
+			var best_id := String(best_member.get("id", ""))
+			var best_name := String(best_member.get("name", "?"))
+			for aid in aids:
+				var bonus := int(aid.get("bonus", 0))
+				var aided_chance := _chance(best_member, engine, chest, pending_action, bonus)
+				var aid_name := Fmt.localized_catalog_name(world, String(aid.get("id", "")))
+				var aid_command := {"type": _command_for(pending_action), "characterId": best_id, "itemId": String(aid.get("id", ""))}
+				# Tool name FIRST (a gate matches on the「…で試す」prefix), the recommended wielder named in parens.
+				var aid_label := "%s（%s）" % [I18n.t("play.chestUseAid", {"item": aid_name, "chance": I18n.t("play.chestChance"), "rate": aided_chance}), best_name]
+				actions.add_child(UI.button(aid_label, func(): on_command.call(aid_command), Vector2(420, 38), 15))
 		focus = best
 		var back := UI.button(I18n.t("play.chestBack"), on_back, Vector2(300, 40), 16)
 		actions.add_child(back)
@@ -67,10 +73,11 @@ static func build(chest: Dictionary, party: Array, inventory: Array, world: Dict
 		if locked and not bool(chest.get("unlockAttempted", false)):
 			var unlock := _action_button(actions, "unlock", on_begin)
 			if focus == null: focus = unlock
-		var open := UI.button(I18n.t("play.chestOpen"), func(): on_command.call({"type": "open_chest"}), Vector2(300, 42), 17)
-		open.disabled = locked
+		# A locked chest is FORCED open, not blocked — 「こじ開ける」 always works, springing any undisarmed
+		# trap as its cost, so a failed lockpick is never a dead-end. Picking the lock cleanly avoids the trap.
+		var open := UI.button(I18n.t("play.chestForceOpen") if locked else I18n.t("play.chestOpen"), func(): on_command.call({"type": "open_chest"}), Vector2(300, 42), 17)
 		actions.add_child(open)
-		if focus == null and not open.disabled: focus = open
+		if focus == null: focus = open
 		actions.add_child(UI.button(I18n.t("play.chestLeave"), on_leave, Vector2(300, 42), 17))
 	root.add_child(actions)
 	return {"control": UI.card(root, UI.GOLD), "focus": focus}
@@ -122,7 +129,9 @@ static func _difficulty(chest: Dictionary, action: String) -> int:
 	return int((source as Dictionary).get("difficulty", 0)) if typeof(source) == TYPE_DICTIONARY else 0
 
 static func _chance(member: Dictionary, engine: Dictionary, chest: Dictionary, action: String, bonus: int = 0) -> int:
-	return Chests.success_chance(Exploration.attempt_skill(member, engine, action) + bonus, _difficulty(chest, action), 55 if action == "investigate" else 45)
+	var skill := Exploration.attempt_skill(member, engine, action) + bonus
+	var difficulty := _difficulty(chest, action)
+	return Chests.unlock_chance(skill, difficulty) if action == "unlock" else Chests.success_chance(skill, difficulty, 55 if action == "investigate" else 45)
 
 static func _aids_for_action(inventory: Array, world: Dictionary, action: String) -> Array:
 	var found := []
@@ -155,6 +164,9 @@ static func _opened_note(chest: Dictionary, events: Array) -> String:
 		if typeof(event) == TYPE_DICTIONARY and String((event as Dictionary).get("type", "")) == "chest_trap_sprung":
 			# Name the trap kind and the damage — a bare "罠が作動した" left the player unsure what sprang or
 			# whether it cost anything (playtest 2026-07-31 IMP-061; the penalty is real, feedback was missing).
+			var opened_status := String((event as Dictionary).get("status", ""))
+			if opened_status != "":
+				return I18n.t("play.chestTrapOpenedAiled", {"trap": _trap_name(String((event as Dictionary).get("trapKind", ""))), "damage": int((event as Dictionary).get("damage", 0)), "ailment": I18n.t("partyMenu.status.%s" % opened_status)})
 			return I18n.t("play.chestTrapOpened", {"trap": _trap_name(String((event as Dictionary).get("trapKind", ""))), "damage": int((event as Dictionary).get("damage", 0))})
 	if bool(chest.get("disarmed", false)):
 		return I18n.t("play.chestDisarmedOpened")
