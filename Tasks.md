@@ -39,12 +39,13 @@ ux-parity fix (`88cb96c`) · 玄室/W2/W4/W5 実装確認・active queue clear (
 
 ## Active queue (process top-down)
 
-- [ ] **BLK-1 — feat/n-dungeons の class 状態を green に整合（a9a8dad 半完成の後始末）.** `pre-push` gate が検知:
-  a9a8dad は D6（解錠帯域）の enabler として Swordmaster を `exploration:{unlock:"trained"}` にしたが、旧
-  トリップワイヤ2件が未更新で赤 — `classCapabilities.test.ts`（swordmaster unlock を "untrained" と主張）と
-  `coverageSim.test.ts §9.4e`（`hasSecondaryExplorationClass()===false` かつ traps に secondary party 無しと主張）。
-  D6 でこれらは false/stale に。`partyPlans("traps")` は filler に既に swordmaster を含むため、secondary/none の
-  カテゴリが混濁する = coverage model の設計判断を伴う。**方向（keep+finish / back-out）は user 確認待ち。** Gate: `npm run gate:prepush` green.
+- [ ] **#17 — 拠点（町）を WASD で操作可能に.** ダンジョンは WASD 移動できるのに拠点メニューは矢印のみで不便（user
+  2026-08-12）。町の各画面（ギルド/宿/店/酒場/隊列など）のカーソル移動・決定を WASD にもバインド（W=上/S=下/A=左/
+  D=右、既存の矢印・Enter は温存）。`controller-first-ui` skill 準拠。Gate: `verify_town_controller.gd` /
+  `verify_controller_coverage.gd` に WASD カバレッジ assert を追加（矢印のみでなく WASD でも到達できることを FAIL 可能に）。
+- [ ] **#18 — 「装備する」に矢印だけで到達できるように（Tab 必須を解消）.** パーティ/キャラ画面で「装備する」の選択が
+  Tab を押さないと到達できず不便（user 2026-08-12）。装備アクションを主フォーカス順（矢印/WASD の巡回）に含める。Tab は
+  補助として温存可。`controller-first-ui` skill 準拠。Gate: 該当 controller の verify に「Tab 無しで装備到達」assert 追加。
 - [ ] **#15 — tl1f 隣接 gated ショートカット追加.** user は「隣接gated通路（推奨）」を選択。ただしこのタイル迷路は隣接
   `.` セルが自動開通のため、迷路構造の編集（壁タイル→通路セル or filler 調整）が要る。良い配置の解析途中で BLK-1/
   ブランチ整理に割り込まれ中断。再開時: `scripts/shortcut_analysis.mjs` を JSON 構造（world.world.dungeons）に直して
@@ -52,6 +53,10 @@ ux-parity fix (`88cb96c`) · 玄室/W2/W4/W5 実装確認・active queue clear (
 
 ### 完了（このセッション 2026-08-12、Archive 待ち）
 
+- [x] **BLK-1 — a9a8dad 半完成の class 状態を green に整合.** 判明: Swordmaster の trained は `unlock`（宝箱）のみで
+  `disarm`（罠）は不変 → coverage の3問題(recovery/ward/traps)は無変化・balance判断不要。純テスト整合で解決:
+  `classCapabilities.test.ts`（swordmaster unlock → "trained"）・`coverageSim.test.ts §9.4e`
+  （`hasSecondaryExplorationClass()` → true、trapsキーは維持、コメント刷新）。`gate:prepush` green。
 - [x] **ブランチ整理.** local 33本・remote 14本の merged ブランチを削除（全て main に取り込み済み＝損失なし）。未マージの
   作業ブランチ `feat/n-dungeons` のみ温存。open PR 無しを確認済み。
 - [x] **pre-push gate 新設.** `scripts/gate-prepush.mjs`（typecheck+unit を並列）・`.githooks/pre-push`・

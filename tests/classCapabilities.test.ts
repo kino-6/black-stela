@@ -281,7 +281,9 @@ describe("class capabilities — existing behaviour is preserved", () => {
 
     // characterProficiency reports the SPECIFIC action the record will name.
     expect(characterProficiency(withThief, "unlock")).toBe("specialist");
-    expect(characterProficiency(swordmaster, "unlock")).toBe("untrained");
+    // D6 (2026-08-12): the Swordmaster is TRAINED at mechanical locks — the middle band the lockpicking
+    // gate needs (untrained < trained < specialist). This is UNLOCK only; on disarm/traps it stays untrained.
+    expect(characterProficiency(swordmaster, "unlock")).toBe("trained");
   });
 });
 

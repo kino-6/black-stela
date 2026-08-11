@@ -79,13 +79,14 @@ describe("§9.4e the specialist is still the best answer", () => {
 });
 
 describe("§9.4e what the roster does NOT cover", () => {
-  it("records that exploration has no second-best class, only tools", () => {
-    // §4 gives exploration proficiency to the Thief and to nobody else, so recovery and ward each have a
-    // real secondary class while traps have only specialist / item / none. That asymmetry is deliberate
-    // for now but it IS an asymmetry: it means the item route is the only alternative to one class.
-    // If a second exploration-capable class is ever added, this test fails and the trap plans grow a
-    // `secondary` party — which is the reminder to write one.
-    expect(hasSecondaryExplorationClass()).toBe(false);
+  it("records that TRAPS (disarm) has no second-best class, only tools", () => {
+    // D6 (2026-08-12) gave the Swordmaster a TRAINED `unlock` band, so a second exploration-capable class
+    // now exists — but at UNLOCK (a chest problem), not at any of the three coverage problems below. On
+    // DISARM/investigate/detect the Thief is still the only proficient class, so traps keep specialist /
+    // item / none while recovery and ward each still have a real secondary. This tripwire now guards that
+    // split: if a class ever gains `disarm`/recovery/ward proficiency, the matching plan must grow a
+    // `secondary` party — the reminder to write one.
+    expect(hasSecondaryExplorationClass()).toBe(true);
     expect(Object.keys(partyPlans("traps", defaultWorld)).sort()).toEqual(["item", "none", "specialist"]);
     expect(Object.keys(partyPlans("recovery", defaultWorld)).sort()).toEqual(["item", "none", "secondary", "specialist"]);
   });
