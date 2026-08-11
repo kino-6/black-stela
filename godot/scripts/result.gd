@@ -158,7 +158,7 @@ func _level_up_card(entry: Dictionary) -> Control:
 	var member := _find_member(entry)
 	var row := UI.row()
 	row.name = "GrowthRecord"
-	row.custom_minimum_size = Vector2(0, 62)
+	row.custom_minimum_size = Vector2(0, 74)
 
 	var portrait := TextureRect.new()
 	portrait.custom_minimum_size = Vector2(44, 56)
@@ -178,13 +178,15 @@ func _level_up_card(entry: Dictionary) -> Control:
 	# What actually CHANGED at this level (playtest T5: "レベルアップ" alone said nothing): the stat gains,
 	# any newly-usable 特技/呪文, and the EXP to the next level. These stay adjacent to the reached level
 	# rather than becoming a duplicated right-hand column.
+	# Growth text was 14/13px and cramped on the result screen (user #20). Bump the stat-gain and 習得 lines to
+	# 16 and the EXP line to 15 — the readable answer to "何が変わったのか" — with the card taller to match.
 	var delta := _growth_delta_text(member, lvl)
 	if delta != "":
-		copy.add_child(UI.label(delta, 14, UI.INK))
+		copy.add_child(UI.label(delta, 16, UI.INK))
 	var learned := _new_techniques_text(member, lvl)
 	if learned != "":
-		copy.add_child(UI.label(learned, 14, UI.OK))
-	copy.add_child(UI.label("%s %d" % [I18n.t("partyMenu.xpToNext"), _xp_to_next(member, lvl)], 13, UI.DIM))
+		copy.add_child(UI.label(learned, 16, UI.OK))
+	copy.add_child(UI.label("%s %d" % [I18n.t("partyMenu.xpToNext"), _xp_to_next(member, lvl)], 15, UI.DIM))
 	row.add_child(UI.grow(copy))
 	var card := UI.card(row, Color(String(member.get("accentColor", "#3a4326"))))
 	card.name = "GrowthRecord"

@@ -125,6 +125,14 @@ func _check_result() -> void:
 				_fail("result: six-person growth lost focus from 探索へ戻る")
 			else:
 				print("[front-controller] result: six-person growth remains compact and focused at 1280×720")
+			# #20: the stat-gain line was 14px and cramped — it must stay readable (>=16px). Guards a shrink back.
+			var growth_line := _find_text(result, "HP+")
+			if growth_line is Label:
+				var fs := (growth_line as Label).get_theme_font_size("font_size")
+				if fs < 16:
+					_fail("result: growth stat line font is %dpx (< 16 — cramped, #20)" % fs)
+				else:
+					print("[front-controller] result: growth stat line reads at %dpx ≥ 16 (#20)" % fs)
 
 	# ...and the un-levelled result drops the section rather than showing an empty box.
 	result.call("set_ui_state", {"no_growth": true})

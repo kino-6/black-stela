@@ -45,11 +45,6 @@ ux-parity fix (`88cb96c`) · 玄室/W2/W4/W5 実装確認・active queue clear (
   効果説明は formula/効果から**機械的に生成**して「治す状態異常が説明に必ず載る」ことを保証。Gate（user 明示）: 効果を持つ全
   アイテムについて「効果説明に、そのアイテムが実際に治す/対象とする状態異常・効果が明記されている」ことを FAIL 可能に検証する
   ユニット/parity テストを新設（フレバーのみで効果不明のアイテムを赤にする）。React 真実源→Godot parity 両対応。
-- [ ] **#20 — 勝利/レベルアップ（戦闘後）画面の文字が小さい — UI/UX 改善.** 成長カードのステータス上昇行（HP+8 MP+2
-  攻撃+1 威力+1 命中+1 防御+1 速度+1）が小さく詰まって可読性が低い（user 2026-08-12, 実機スクショ）。フォントサイズ・行間・
-  カード内レイアウトを見直し、6人ぶんを画面内に収めつつ各行を読みやすく（アイコン/区切り/グルーピング検討）。React 真実源
-  （combat aftermath / level-up）→ Godot parity 両対応。実機PNGで前後比較（discipline: 実画面を READ）。Gate: はみ出し
-  （画面内フィット）assert は controller/レイアウト verify に、最小フォントサイズの下限 assert を追加できれば尚可。
 - [ ] **#15 — tl1f 隣接 gated ショートカット追加.** user は「隣接gated通路（推奨）」を選択。ただしこのタイル迷路は隣接
   `.` セルが自動開通のため、迷路構造の編集（壁タイル→通路セル or filler 調整）が要る。良い配置の解析途中で BLK-1/
   ブランチ整理に割り込まれ中断。再開時: `scripts/shortcut_analysis.mjs` を JSON 構造（world.world.dungeons）に直して
@@ -57,6 +52,9 @@ ux-parity fix (`88cb96c`) · 玄室/W2/W4/W5 実装確認・active queue clear (
 
 ### 完了（このセッション 2026-08-12、Archive 待ち）
 
+- [x] **#20 — 勝利/レベルアップ画面の文字を読みやすく.** ステータス上昇行 14→16px、習得 14→16px、EXP 13→15px、カード高
+  62→74。`result.gd`。Lv8 の 7項目長行（HP+8 MP+2 攻撃+1 …速度+1）が最小 1280×720 でも収まるのを実機PNGで確認。Gate:
+  `verify_front_controller.gd` に「growth 行 ≥16px」assert（**14px で FAIL・16px で PASS**）＋既存の 6人フィットガード維持。
 - [x] **#17 — 拠点/全メニューを WASD で操作可能に.** W/A/S/D を組み込み `ui_up/down/left/right` に append（矢印温存）。
   ダンジョン移動と非競合: メニュー開時は `dungeon._input` が早期 return（キー未消費）→ GUI が ui_* 処理、閉時は移動を
   `set_input_as_handled` で先に消費。Gate: `verify_town_controller.gd` に「物理 S キーで focus が ↓ 同様に動く」assert
