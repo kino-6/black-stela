@@ -515,3 +515,8 @@ These are DONE + gate-green + committed; see the named commits/gates in each ent
 - **W2/W4:** 構造/深層/火器アセット生成済み・配線済み。`export:godot` 全通（旧 B3F trace ブロッカー解消）、`gate:migration` 全緑（90 PASS、verify_stairs_render/flooded_platform/terminal_line_armory/firearm_fx 含む）。実機見え方の最終レビューは user/Codex。
 - **W5:** 実機仕上げの自動ゲート（gate:final e2e 緑・gate:migration 緑・clean boot・controller/selfplay）は全緑。独立レビュー（人）は user/Codex。
 - **W3a:** 廃案の後継（特殊弾頭 or 警戒度）は **未承認の将来アイデア**＝設計判断待ち。実装せず「将来メモ」へ退避（Tasks.md）。
+
+## 2026-08-12 — Tasks.md active queue CLEARED（残りは全て人の判断待ち＝設計メモ/deferred へ移設）
+Claude 実行可能な Tasks.md 作業は全完了・全ゲート緑・commit 済（`a9a8dad`/`88cb96c`/`30beb83`）。以下は backlog タスクではなく **deferred 設計メモ**として保管（着手には user 承認が必要、詳細は `docs/design/ballistic-world-program.md`）:
+- **W3a 弾薬/戦略の後継案（未承認）:** (a) 特殊弾頭＝戦略消耗品（既存 damage/status/debuff effect、Claude レーン完結、承認あれば即着手可）· (b) 警戒度＝世界樹風エンカウント率カラー表示（一部 Codex アート依存）。採否は設計判断。
+- **玄室 / W2 / W4 / W5 の最終審美サインオフ:** 実装・配線・ゲート緑・実機PNG提示は完了。残るは user/Codex の**目視サインオフ**（人）。NG が出たら該当項目を Tasks.md に再オープンする。fixture: `verdant_chamber_closed`/`cleared` / `terminal_line_down_stair`/`up_stair` / capture_deep_floors 等で一発確認可。
