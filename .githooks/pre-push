@@ -1,0 +1,6 @@
+#!/bin/sh
+# Pre-push gate — runs the fast half of CI (typecheck + unit, in parallel) before any push reaches the
+# remote, so a red build/unit is caught locally (user rule 2026-08-12). Bypass once with `git push
+# --no-verify`; escalate to the full gate with `GATE_FULL=1 git push`. Installed via `core.hooksPath`
+# (set by package.json's `prepare` script on `npm install`, or `git config core.hooksPath .githooks`).
+exec npm run --silent gate:prepush

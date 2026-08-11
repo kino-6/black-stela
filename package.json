@@ -10,7 +10,9 @@
     "package": "npm run export:godot && npm run package:web && npm run package:macos",
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "typecheck": "tsc -b",
     "preview": "vite preview --host 127.0.0.1",
+    "prepare": "git config core.hooksPath .githooks || true",
     "test": "vitest run",
     "test:e2e": "playwright test",
     "selfplay:browser": "playwright test tests/e2e/selfplay.spec.ts --workers=1",
@@ -54,6 +56,7 @@
     "gate:prefs": "npm run export:i18n && godot --headless --path godot/ --script res://tests/verify_config_prefs.gd",
     "gate:package-smoke": "npm run stage:assets && npm run import:assets && node scripts/gate-package-smoke.mjs",
     "gate:changed": "node scripts/gate-changed.mjs",
+    "gate:prepush": "node scripts/gate-prepush.mjs",
     "gate:godot": "npm run export:godot && npm run import:assets && npm run ux:evidence && npm run gate:migration",
     "gate:ci": "npm run build && npm run test && npm run gate:godot"
   },
