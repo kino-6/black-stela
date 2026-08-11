@@ -362,6 +362,7 @@ export const en = {
     discard: "Discard",
     confirmDiscard: "Discard one?",
     protectedItem: "This item cannot be discarded here.",
+    effectLabel: "Effect",
     restoreHp: "Restore {amount} HP",
     restoreMp: "Restore {amount} MP",
     cures: "Cure {statuses}",

@@ -39,12 +39,6 @@ ux-parity fix (`88cb96c`) · 玄室/W2/W4/W5 実装確認・active queue clear (
 
 ## Active queue (process top-down)
 
-- [ ] **#19 — アイテム/効果説明でフレバーと効果を明瞭に分離（Gate 必須）.** 例「外傷封止〜」の説明は何の状態異常を治すのか
-  不明（user 2026-08-12）。cure/focus/heal 等の効果を持つアイテムは、**フレバーテキスト**（雰囲気）と**効果説明**（何を治す/
-  上げるか＝対象の状態異常名・数値）を別フィールドとして明確に分離し、UI で別表示。世界データ（items.md）は copy を持てるが、
-  効果説明は formula/効果から**機械的に生成**して「治す状態異常が説明に必ず載る」ことを保証。Gate（user 明示）: 効果を持つ全
-  アイテムについて「効果説明に、そのアイテムが実際に治す/対象とする状態異常・効果が明記されている」ことを FAIL 可能に検証する
-  ユニット/parity テストを新設（フレバーのみで効果不明のアイテムを赤にする）。React 真実源→Godot parity 両対応。
 - [ ] **#15 — tl1f 隣接 gated ショートカット追加.** user は「隣接gated通路（推奨）」を選択。ただしこのタイル迷路は隣接
   `.` セルが自動開通のため、迷路構造の編集（壁タイル→通路セル or filler 調整）が要る。良い配置の解析途中で BLK-1/
   ブランチ整理に割り込まれ中断。再開時: `scripts/shortcut_analysis.mjs` を JSON 構造（world.world.dungeons）に直して
@@ -52,6 +46,11 @@ ux-parity fix (`88cb96c`) · 玄室/W2/W4/W5 実装確認・active queue clear (
 
 ### 完了（このセッション 2026-08-12、Archive 待ち）
 
+- [x] **#19 — アイテムのフレバーと効果を明瞭に分離（Gate 付き）.** 根因: React(357)/Godot(564) 共に「フレバーがあれば
+  効果生成文を破棄」＝フレバー OR 効果。→ 両方を別行表示（フレバー=DIM、効果=「効果: …」INK）に。`describeConsumable` を
+  `catalog.ts` へ抽出し空時 "" 返し、Godot `_describe_consumable` も同様、i18n `partyMenu.effectLabel`。Gate2本:
+  (1) `itemEffectCopy.test.ts`（全世界=terminal-line含む、効果アイテムは効果明記・cure は各状態名を明記）、
+  (2) `verify_town_controller.gd`（items 詳細に「効果:」行が出る、**修正前 FAIL・修正後 PASS**）。実機PNGでフレバー＋効果を確認。
 - [x] **#20 — 勝利/レベルアップ画面の文字を読みやすく.** ステータス上昇行 14→16px、習得 14→16px、EXP 13→15px、カード高
   62→74。`result.gd`。Lv8 の 7項目長行（HP+8 MP+2 攻撃+1 …速度+1）が最小 1280×720 でも収まるのを実機PNGで確認。Gate:
   `verify_front_controller.gd` に「growth 行 ≥16px」assert（**14px で FAIL・16px で PASS**）＋既存の 6人フィットガード維持。

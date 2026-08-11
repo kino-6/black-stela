@@ -364,6 +364,7 @@ export const ja = {
     discard: "捨てる",
     confirmDiscard: "1個捨てる？",
     protectedItem: "ここでは捨てられない。",
+    effectLabel: "効果",
     restoreHp: "HPを{amount}回復",
     restoreMp: "MPを{amount}回復",
     cures: "{statuses}を治す",

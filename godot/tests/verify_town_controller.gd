@@ -145,6 +145,16 @@ func _initialize() -> void:
 							await process_frame
 						if _all_text(town).contains("partyMenu."):
 							_fail("party %s tab leaked a raw partyMenu.* i18n key (T18)" % menu_page)
+					# #19: flavour must not HIDE the mechanical effect. The item detail shows a labelled 効果: line
+					# separately from the authored flavour. Pre-fix it showed flavour OR effect, so a flavoured
+					# heal/cure item stated its mood and never said what it does. (「今は効果なし」 has no colon.)
+					town.call("set_ui_state", {"service": "party", "party_page": "items"})
+					for i in 3:
+						await process_frame
+					if not _all_text(town).contains(I18n.t("partyMenu.effectLabel") + ":"):
+						_fail("party items: an item with an effect shows no 効果: line — flavour is hiding it (#19)")
+					else:
+						print("[town-controller] party items: flavour and the 効果: line are shown separately (#19)")
 					# Then the 呪文/特技 CAST view — it once rendered a bare "partyMenu.back" as its back button.
 					# Find a member who knows a heal, drive their cast target list, and assert it is localized.
 					var heal_cast_seen := false

@@ -7,6 +7,7 @@ import { xpForLevel } from "../domain/leveling";
 import type { Command, EquipmentSlot, GameState, InventoryItem, ScenarioWorld } from "../domain/types";
 import type { Locale, TranslationKey, Translator } from "../i18n";
 import {
+  describeConsumable,
   describeEquipmentInstance,
   equippedName,
   formatCharacterSummary,
@@ -38,19 +39,6 @@ const pages: { id: PartyMenuPage; icon: typeof UserRound; label: TranslationKey 
 
 function itemKey(item: InventoryItem) {
   return `${item.id}:${item.plus ?? 0}:${item.affix ?? ""}`;
-}
-
-function describeConsumable(item: InventoryItem, t: Translator) {
-  const effects = [
-    item.healAmount ? t("partyMenu.restoreHp", { amount: item.healAmount }) : "",
-    item.restoreMp ? t("partyMenu.restoreMp", { amount: item.restoreMp }) : "",
-    item.curesStatuses?.length
-      ? t("partyMenu.cures", {
-          statuses: item.curesStatuses.map((status) => t(`partyMenu.status.${status}` as TranslationKey)).join("・")
-        })
-      : ""
-  ].filter(Boolean);
-  return effects.join(" / ") || t("partyMenu.noDescription");
 }
 
 export function PartyMenuPanel({ state, world, locale, t, onCommand, onClose }: PartyMenuPanelProps) {
@@ -351,11 +339,18 @@ export function PartyMenuPanel({ state, world, locale, t, onCommand, onClose }: 
                 ))}
               </div>
               <div className="party-item-detail">
-                {selectedItem && (
+                {selectedItem && (() => {
+                  // Flavour and effect are DISTINCT lines: the authored prose sets the mood, the generated
+                  // effect line names what actually happens (HP回復 N / 治療 <status>…) so it is never hidden
+                  // behind flavour (user #19). Equipment states its stat delta; a consumable states its effect.
+                  const flavor = localizedCatalogDescription(selectedItem.id, locale);
+                  const effect = selectedEquipment ? formatInventoryEffect(selectedItem, t) : describeConsumable(selectedItem, t);
+                  return (
                   <>
                     <h3>{selectedItem.kind === "equipment" ? describeEquipmentInstance(selectedItem.id, locale, t, selectedItem.plus, selectedItem.affix) : localizedCatalogName(selectedItem.id, locale)}</h3>
-                    <p>{localizedCatalogDescription(selectedItem.id, locale) || (selectedEquipment ? formatInventoryEffect(selectedItem, t) : describeConsumable(selectedItem, t))}</p>
-                    {selectedEquipment && <p>{formatInventoryEffect(selectedItem, t)}</p>}
+                    {flavor && <p className="party-item-flavor">{flavor}</p>}
+                    {effect && <p className="party-item-effect">{t("partyMenu.effectLabel")}: {effect}</p>}
+                    {!flavor && !effect && <p>{t("partyMenu.noDescription")}</p>}
                     {selectedEquipment?.grantsPassives?.map((passive) => (
                       <p key={passive}>{t("partyMenu.equipmentPassive")}: {t(SPELL_LABEL[passive])}</p>
                     ))}
@@ -394,7 +389,8 @@ export function PartyMenuPanel({ state, world, locale, t, onCommand, onClose }: 
                       {!canDiscard && page === "valuables" && <p>{t("partyMenu.protectedItem")}</p>}
                     </div>
                   </>
-                )}
+                  );
+                })()}
               </div>
             </section>
           )}

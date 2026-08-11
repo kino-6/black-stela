@@ -561,10 +561,17 @@ static func _item_page(ctx: Dictionary, world: Dictionary, member: Dictionary, p
 	if not selected.is_empty():
 		var is_equipment := String(selected.get("kind", "")) == "equipment"
 		detail.add_child(UI.label(Fmt.describe_equipment_instance(world, selected.get("id", ""), selected.get("plus", null), selected.get("affix", null)) if is_equipment else Fmt.localized_catalog_name(world, selected.get("id", "")), 22, UI.GOLD))
-		var description := Fmt.localized_catalog_description(world, selected.get("id", ""))
-		detail.add_child(UI.prose(description if description != "" else _describe_consumable(selected), 15, UI.DIM, 700))
-		if is_equipment:
-			detail.add_child(UI.label(Fmt.format_inventory_effect(selected), 15, UI.INK))
+		# Flavour and effect are SEPARATE lines: the authored prose (flavour) never hides the generated effect
+		# line that names what actually happens — esp. WHICH status a cure removes (user #19). Ported from
+		# PartyMenuPanel.tsx: flavour in DIM, effect labelled "効果:" in INK; noDescription only if truly empty.
+		var flavor := Fmt.localized_catalog_description(world, selected.get("id", ""))
+		var effect := Fmt.format_inventory_effect(selected) if is_equipment else _describe_consumable(selected)
+		if flavor != "":
+			detail.add_child(UI.prose(flavor, 15, UI.DIM, 700))
+		if effect != "":
+			detail.add_child(UI.label("%s: %s" % [I18n.t("partyMenu.effectLabel"), effect], 15, UI.INK))
+		if flavor == "" and effect == "":
+			detail.add_child(UI.prose(I18n.t("partyMenu.noDescription"), 15, UI.DIM, 700))
 		detail.add_child(UI.gap(6))
 
 		var kind := String(selected.get("kind", ""))
@@ -658,7 +665,9 @@ static func _item_key(item: Dictionary) -> String:
 		return ""
 	return "%s|%s|%s" % [String(item.get("id", "")), str(item.get("plus", "")), str(item.get("affix", ""))]
 
-# What a consumable DOES, in the player's words, when the catalog has no description.
+# The MECHANICAL effect of a consumable, generated from its fields (mirrors PartyMenuPanel.describeConsumable).
+# Returns "" when there is no effect to state — the caller decides the fallback — so flavour and effect stay
+# distinct lines (user #19).
 static func _describe_consumable(item: Dictionary) -> String:
 	var parts := []
 	if item.get("healAmount", null) != null:
@@ -671,7 +680,7 @@ static func _describe_consumable(item: Dictionary) -> String:
 		for status in cures:
 			names.append(I18n.t("partyMenu.status.%s" % String(status)))
 		parts.append(I18n.t("partyMenu.cures", {"statuses": "・".join(PackedStringArray(names))}))
-	return " / ".join(PackedStringArray(parts)) if not parts.is_empty() else I18n.t("partyMenu.noDescription")
+	return " / ".join(PackedStringArray(parts))
 
 # The UI preview deliberately mirrors ItemCommands' outside-combat eligibility and caps. It is a display
 # projection only; the canonical resolver refuses a no-benefit command again before changing state.
