@@ -49,6 +49,16 @@ func _check_terminal_line_has_no_implicit_transit(world: Dictionary) -> void:
 				_check(typeof(edge) != TYPE_DICTIONARY or String(edge.get("kind", "")) != "shortcut", "terminal-line/%s: %s %s is not an implicit shortcut warp" % [floor.get("id", "?"), cell.get("id", "?"), direction])
 
 func _check_terminal_line_moves_are_contiguous(world: Dictionary, engine: Dictionary) -> void:
+	# A gated OPEN edge (e.g. tl1f's routed evacuation shutter) is still a CONTIGUOUS adjacent passage — it is
+	# just locked until its flag is set. Grant every gate's requiredFlag so contiguity is measured with the
+	# passage OPEN; a still-gated move would look like a wall and wrongly fail this "moves are contiguous" check.
+	var all_flags := []
+	for floor in world.get("dungeons", []):
+		for room in floor.get("rooms", []):
+			for gate in room.get("gates", []):
+				var f := String((gate as Dictionary).get("requiredFlag", ""))
+				if f != "" and not all_flags.has(f):
+					all_flags.append(f)
 	for floor in world.get("dungeons", []):
 		for cell in (floor.get("grid", {}) as Dictionary).get("cells", []):
 			for direction in (cell.get("edges", {}) as Dictionary):
@@ -61,7 +71,7 @@ func _check_terminal_line_moves_are_contiguous(world: Dictionary, engine: Dictio
 				var state := {
 					"phase": "dungeon", "combat": null, "turn": 0,
 					"party": [{"id": "grid-transit-gate", "hp": 99, "maxHp": 99, "mp": 0, "maxMp": 0, "row": "front"}],
-					"inventory": [], "discoveredSecrets": [], "resolvedTraps": [], "openedDoors": [], "floorClaimedTreasures": [], "chests": [],
+					"inventory": [], "discoveredSecrets": all_flags, "resolvedTraps": [], "openedDoors": [], "floorClaimedTreasures": [], "chests": [],
 					"position": {"cellId": from_id, "roomId": from_room, "facing": direction},
 					"map": {"floorId": floor.get("id", ""), "currentCellId": from_id, "currentRoomId": from_room, "currentFacing": direction,
 						"visitedCells": [from_id], "visitedRooms": [from_room], "knownExits": {}, "blockedExits": {}, "secretCandidates": {}},

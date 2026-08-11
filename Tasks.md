@@ -39,25 +39,17 @@ ux-parity fix (`88cb96c`) · 玄室/W2/W4/W5 実装確認・active queue clear (
 
 ## Active queue (process top-down)
 
-**（空 — Claude レーンで実装できる項目は完了。）** #15 は下記のとおり **user の設計判断待ち**（実装ではなく方針の決定が要る）ため
-active queue には置かない。
-
-### #15 — tl1f 近道は「設計判断待ち」（調査完了・実装は user 決定後）
-
-**調査結論（実機・gate で確定）:** gated shortcut の機構自体は動く（信号を通すまで `movement_blocked`、通した後に帰還↔降り口が
-1歩で繋がるのを rulesEngine で確認済み）。**しかし `shortcut` エッジは `floor_map.gd _is_passage` が常に「壁」として描画する**
-＝開通してもマップ上は壁のまま＝「壁に入ると2セル跳ぶ」**map-invisible warp**。これは #8 と同種で、Codex の **D9 ガード
-（`verify_grid_transit.gd`: terminal-line で `kind:shortcut` エッジを全面禁止）が正しく弾く**。gating しても warp 性は消えない。
-実装済みだった shortcut-edge 版は revert 済み（grid-transit 緑に復帰）。
-
-**map-visible にする正しい実装は迷路構造の編集**（壁セル 17,16 を通路セルにして 帰還(17,15)↔降り口(17,17) を open 辺＋方向
-gate で繋ぐ）だが、これは **可視マップに縦通路を1本足す設計変更**であり、以下は user の判断が要る:
-- (a) 迷路にセルを足す map 変更を許容する（→ 私が 17,16 通路化＋gate＋floor graph 再検証で実装）、
-- (b) D9 を「ungated shortcut のみ禁止」に精緻化し gated warp を許容する（map は壁のまま＝earned だが不可視、という妥協）、
-- (c) tl1f は近道なしのまま（D9 の現行スタンス、#8 撤去後は健全）。
-推奨は (a)（唯一 map-visible）だが可視マップが変わるため一言確認したい。
+**（空 — no active tasks.）** このセッションの playtest 項目 #14–#21 と #15、ブランチ整理、pre-push gate、BLK-1 は全て
+完了・全ゲート緑・commit 済み（未 push）。残るは user/Codex の目視サインオフのみで、backlog タスクではない。
 
 ### 完了（このセッション 2026-08-12、Archive 待ち）
+
+- [x] **#15 — tl1f「退避シャッター」近道（user 選択: 迷路にセルを足す map-visible 版）.** 壁セル 17,16 を通路セル化し
+  帰還(17,15)↔降り口(17,17) を **open 辺の見える縦通路**（列Q）で接続。両端に `flag.tl1f.signal-routed` の lock gate ＝
+  信号を通すまで locked、通すと双方向開通（~34歩→数歩）。**shortcut 辺を使わない**ので #8 の map-invisible warp では無く D9 も
+  適合。`verify_grid_transit` の連続性チェックは gated open 辺を考慮（全 requiredFlag を付与して開通状態で検証）に精緻化。
+  Gate: `tl1fShortcut.test.ts`（locked→open・両方向・通路セル存在・辺は open+gate、4本緑）。全 unit 910 緑・dungeon/stairs/
+  grid ゲート緑・floor map 実機で通路描画を確認。
 
 - [x] **#19 — アイテムのフレバーと効果を明瞭に分離（Gate 付き）.** 根因: React(357)/Godot(564) 共に「フレバーがあれば
   効果生成文を破棄」＝フレバー OR 効果。→ 両方を別行表示（フレバー=DIM、効果=「効果: …」INK）に。`describeConsumable` を

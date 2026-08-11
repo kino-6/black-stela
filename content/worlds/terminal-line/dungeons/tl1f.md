@@ -32,7 +32,7 @@ map: |
   #.#.#....T....#.#.#
   ###.#####.#.#####.#
   #.........#....C#R#
-  #.###.#############
+  #.###.###########.#
   #.#......P.......D#
   ###################
 symbols:
@@ -120,6 +120,16 @@ rooms:
     locales: { ja: { name: 非常電話前, description: へこんだ非常電話と、消えない退避灯が乗換広場へ戻る道を示している。 } }
     stairsToTown: true
     returnStyle: marker
+    # The evacuation shutter (the 17,16 passage down to the platform stairs) is a REAL cell on the map, not a
+    # shortcut warp — it just stays LOCKED until the midnight signal is routed (信号室 grants flag.tl1f.signal-
+    # routed), then a routed party can drop from 帰還 straight to 降り口, collapsing the ~34-step return trek.
+    gates:
+      - id: gate.tl1f.evac-shutter
+        kind: lock
+        direction: south
+        requiredFlag: flag.tl1f.signal-routed
+        clue: The routed signal releases the evacuation shutter down to the platform stairs.
+        locales: { ja: { clue: 通した信号が、ホーム階段へ下りる退避シャッターを解いた。 } }
   - id: room.tl1f.service-hatch
     name: Service Hatch
     description: A narrow service hatch off the lower corridor, its dry cabling still clipped to the wall.
@@ -128,6 +138,13 @@ rooms:
     name: Platform Service Stairs
     description: Steel steps descend beside the platform edge toward the flooded lower level. Nothing bars the way down.
     locales: { ja: { name: ホーム脇の保守階段, description: ホーム端の鋼階段が、浸水した下層へと降りている。下りること自体を止めるものはない。 } }
+    gates:
+      - id: gate.tl1f.platform-shutter
+        kind: lock
+        direction: north
+        requiredFlag: flag.tl1f.signal-routed
+        clue: The evacuation shutter to the emergency phone stands open once the signal is routed.
+        locales: { ja: { clue: 信号を通すと、非常電話へ抜ける退避シャッターが開いている。 } }
 ---
 
 # F1・改札外縁
