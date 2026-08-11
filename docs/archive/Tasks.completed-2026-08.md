@@ -503,3 +503,9 @@ These are DONE + gate-green + committed; see the named commits/gates in each ent
   F10 専用守護者）。装備帯＋装備アイコン帯（全 `equip.tl-*` に 256² RGBA icon）。鉄雨火器帯（自動小銃/短機関銃/散弾銃/
   指定射撃銃/軽機関銃、架空名）。制式火器更新系列（拳銃/長銃/短機関銃/散弾銃 各5段、長銃 F1＝三八式歩兵銃、計48装備）。
   補給・横選択拡充（全32装備・全17物資）。※実在銘は三八式のみ（user 明示指定）、未実装の弾薬/連射/騒音は数値・説明で偽装しない。
+
+## 2026-08-11 — Y/D playtest batch + Codex D-series 検品 — DONE（commit `a9a8dad`, feat/n-dungeons）
+- **Y1** depot F1 帰還階段2→1（`1b24c63`）· **Y2** 初期装備のシナリオ定義化（`e64e7b1`）· **D1** 銃基本攻撃=掃射+射撃ナレ（`57d9bc4`）· **D2** 早期フロア大群化（`7e3d823`）.
+- **Codex D-series（Claude 検品: named gate 緑, `a9a8dad`）:** D3 銃撃FXを射手カードから分離（verify_firearm_fx）· D4 敵群の残数で非リサイズ（verify_combat_geometry/numbers）· D5 全階段・帰還地点を実機可視化（verify_stairs_render）· D6 解錠成功率の帯域（verify_lockpicking_bands）· D7 成長一覧を一画面に（verify_front_controller）· D8 帰還で踏破記録保持（verify_played_loop）· D9 座標跳躍禁止（verify_grid_transit）· D10 F2浅水可視化（verify_flooded_platform_render）.
+- **X 自己検出:** X1 敵HPバー整理（`2bd52e7`）· X2 ギルド説明に立ち絵（`3bd1c5d`）· X3 町の下重みグラデ暗幕（`b00401f`）· X4 迷宮開幕ログ世界別化（`f25ecb3`）· X5 施設パネル空白を content 駆動高さ（`2fb3410`）.
+- **Claude 実機playtest（`a9a8dad`）:** オート=MP温存で攻撃"呪文"（特技は無変化ラウンド回避で通常攻撃）· 技/呪文 summary 生成強化· 在庫×0除外· 宝箱こじ開け（罠=代償）+罠 status 外部化· 階段光源+debug fixture terminal_line_down/up_stair· tl1f→F2 降下は上り階段に着地（戻り階段同所化, tests/hazardPlacementGate も追加）· 全体図 A1座標+マス目· 刃の床 1F禁止· tl1f 入口ワープ撤去· UI 明化+はみ出し修正+max_fps=60.

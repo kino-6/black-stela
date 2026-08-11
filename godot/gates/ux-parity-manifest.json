@@ -2737,6 +2737,10 @@
         {
           "key": "play.ascendStairs",
           "reason": "The dock's stairs label is directional (P10 parity). The at_stairs fixture stands the party at a DESCENT stair, so only play.descendStairs renders here; the ascent label needs an up-stair fixture these states do not include (the Godot dock is identical)."
+        },
+        {
+          "key": "play.memberStatus",
+          "reason": "React uses this only as the aria-label of the party-token stats container (DungeonCockpit). Godot has no accessibility tree, and the ported HUD dropped the visible caption — it rendered as a meaningless placeholder in front of the 威力/防御/速度 numbers (user-approved removal 2026-08-11). The stats themselves are ported; the label has no player-facing home (same rationale as play.dungeonView)."
         }
       ],
       "requiredKeys": [
@@ -2749,7 +2753,6 @@
         "play.dungeonCommands",
         "play.frontRow",
         "play.fullMap",
-        "play.memberStatus",
         "play.moveHint",
         "play.mpShort",
         "play.partyStatus",
