@@ -860,6 +860,10 @@ func _playback(before: Dictionary, events: Array, animated: bool) -> void:
 					if family.is_empty():
 						family = _gun_family(acting)
 					_spawn_gun_fx(gid, family)
+				elif not bool((beat as Dictionary).get("technique", false)) and dmg > 0:
+					# A basic melee swing gets a slash flash ON the struck creature — the React CombatEnemyStage
+					# slash was never ported to Godot, so guns flashed and swords/bars didn't (user 2026-08-12).
+					_spawn_melee_fx(gid, crit)
 				pb_groups = CombatHelpers.damage_group(pb_groups, gid, dmg)
 				_redraw_enemy_group(pb_groups, gid)
 				_set_log("%sに%dダメージ！" % [target_name, dmg])
@@ -1172,6 +1176,21 @@ func _gun_family(member: Dictionary) -> String:
 # itself firing. A shot now has only an arrival trace and impact, both positioned from the struck enemy's
 # bounds. Keep them inside the combat lane, fade them before the next beat, and never use a screen-space
 # flash.
+# A basic melee hit's slash: the shared fx-slash sprite flashed on the struck creature. `_asset` falls back
+# to default's ui/fx-slash.png for every world (WorldResources), so a bar/blade/claw all read as a struck
+# blow without per-world art. Positioned on the creature (never emitted from an ally card), like the gun fx.
+func _spawn_melee_fx(gid: String, crit: bool) -> void:
+	var mark: Variant = _enemy_marks.get(gid, null)
+	if not (mark is Control):
+		return
+	var r := (mark as Control).get_global_rect()
+	var centre := Vector2(r.position.x + r.size.x * 0.5, r.position.y + r.size.y * 0.42)
+	var slash_path := _asset("ui/fx-slash.png")
+	var slash := _texture(slash_path)
+	if slash:
+		var size := clampf(r.size.x * (0.9 if crit else 0.72), 150.0, 300.0)
+		_spawn_fx_texture(slash, centre, size, 0.26 if crit else 0.22, 0.0, "slash", slash_path)
+
 func _spawn_gun_fx(gid: String, family: String) -> void:
 	if family == "":
 		return
