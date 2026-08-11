@@ -58,18 +58,45 @@ static func build(ctx: Dictionary) -> Control:
 	var engine: Dictionary = ctx.get("engine", {})
 	var page: String = ctx.get("party_page", "status")
 	var tabs := UI.row()
+	# The tab strip is arrow-navigable, NOT Tab-only: left/right cycle the tabs (wrapping) and the active tab
+	# bridges down into the page / up out of it. Ported from PartyMenuPanel.tsx `moveMenuFocus` — a controller
+	# player must reach 装備 without pressing Tab ("Tab is not a gamepad button", user 2026-08-12 / #18).
+	var nav_buttons: Array = []
+	var active_tab: Control = null
 	for entry in [["status", "partyMenu.tabs.status"], ["formation", "partyMenu.tabs.formation"], ["spells", "partyMenu.tabs.spells"], ["equipment", "partyMenu.tabs.equipment"], ["items", "partyMenu.tabs.items"], ["valuables", "partyMenu.tabs.valuables"]]:
 		var key := String(entry[0])
 		var tb := UI.button(I18n.t(String(entry[1])), func(): ctx["set_party_page"].call(key), Vector2(130, 36), 15)
 		if key == page:
 			tb.add_theme_color_override("font_color", UI.GOLD)
+			active_tab = tb
 		tabs.add_child(tb)
+		nav_buttons.append(tb)
 	# コンフィグ from inside the camp menu — the classic "settings while you rest" slot. Only when the host
 	# offers it (the dungeon does; the town already has its own メニュー button), so it is not doubled in town.
 	if ctx.has("open_config"):
 		tabs.add_child(UI.grow(Control.new()))
-		tabs.add_child(UI.button(I18n.t("partyMenu.config"), func(): ctx["open_config"].call(), Vector2(130, 36), 15))
+		var config_tb := UI.button(I18n.t("partyMenu.config"), func(): ctx["open_config"].call(), Vector2(130, 36), 15)
+		tabs.add_child(config_tb)
+		nav_buttons.append(config_tb)
 	root.add_child(tabs)
+	# Wire left/right cycling across the whole strip (wrapping end-to-end).
+	var nav_count := nav_buttons.size()
+	for i in nav_count:
+		var tb: Control = nav_buttons[i]
+		var left: Control = nav_buttons[(i - 1 + nav_count) % nav_count]
+		var right: Control = nav_buttons[(i + 1) % nav_count]
+		tb.focus_neighbor_left = tb.get_path_to(left)
+		tb.focus_neighbor_right = tb.get_path_to(right)
+	if active_tab == null and nav_count > 0:
+		active_tab = nav_buttons[0]
+	# `land` replaces a bare focus_hint: it also bridges the cursor's landing spot UP to the active tab and
+	# the tab back DOWN to the landing spot, so ↑ leaves the page onto the tabs and ↓ returns. (Arrow keys and
+	# WASD both drive ui_up/ui_down, so this is what makes the strip reachable without Tab.)
+	var land := func(target):
+		if target != null and active_tab != null:
+			target.focus_neighbor_top = target.get_path_to(active_tab)
+			active_tab.focus_neighbor_bottom = active_tab.get_path_to(target)
+		ctx["focus_hint"].call(target)
 
 	if page == "items" or page == "valuables":
 		var built: Dictionary = _item_page(ctx, world, member, page)
@@ -81,7 +108,7 @@ static func build(ctx: Dictionary) -> Control:
 		# The cursor belongs on the CARRIED LIST — the thing the player opened this tab to act on — not
 		# on the tab strip it just came through. Gold must mean focus and nothing else, so the active tab
 		# is marked by its own state, never by borrowing the focus ring.
-		ctx["focus_hint"].call(built["focus"] if built["focus"] != null else item_back)
+		land.call(built["focus"] if built["focus"] != null else item_back)
 		return root
 
 	# 呪文/特技 — the classic camp "spells" page: a READ-ONLY reference of what the chosen adventurer knows,
@@ -109,7 +136,7 @@ static func build(ctx: Dictionary) -> Control:
 		var sback := UI.button(I18n.t("partyMenu.close"), ctx["close"], Vector2(180, 44), 18)
 		sfoot.add_child(sback)
 		root.add_child(sfoot)
-		ctx["focus_hint"].call(spell_page["focus"] if spell_page["focus"] != null else selected_sfocus if selected_sfocus != null else sfocus if sfocus != null else sback)
+		land.call(spell_page["focus"] if spell_page["focus"] != null else selected_sfocus if selected_sfocus != null else sfocus if sfocus != null else sback)
 		return root
 
 	# 編成 is its own decision surface. The status page is for reading one adventurer, not for six repeated
@@ -121,7 +148,7 @@ static func build(ctx: Dictionary) -> Control:
 		var formation_back := UI.button(I18n.t("partyMenu.close"), ctx["close"], Vector2(180, 44), 18)
 		formation_foot.add_child(formation_back)
 		root.add_child(formation_foot)
-		ctx["focus_hint"].call(formation["focus"] if formation["focus"] != null else formation_back)
+		land.call(formation["focus"] if formation["focus"] != null else formation_back)
 		return root
 
 	# 装備 is an action surface, not a read-only ledger. The player sees the six worn slots beside every
@@ -133,7 +160,7 @@ static func build(ctx: Dictionary) -> Control:
 		var equipment_back := UI.button(I18n.t("partyMenu.close"), ctx["close"], Vector2(180, 44), 18)
 		equipment_foot.add_child(equipment_back)
 		root.add_child(equipment_foot)
-		ctx["focus_hint"].call(equipment_page["focus"] if equipment_page["focus"] != null else equipment_back)
+		land.call(equipment_page["focus"] if equipment_page["focus"] != null else equipment_back)
 		return root
 
 	var body := UI.row()
@@ -236,7 +263,7 @@ static func build(ctx: Dictionary) -> Control:
 	root.add_child(foot)
 	# Browsing the roster is not an action. The highlighted adventurer is already the subject of the
 	# right-hand sheet, so the cursor starts there and an arrow move changes the sheet immediately.
-	ctx["focus_hint"].call(selected_roster_focus if selected_roster_focus != null else back)
+	land.call(selected_roster_focus if selected_roster_focus != null else back)
 	return root
 
 static func _condition(member: Dictionary) -> String:
