@@ -846,6 +846,7 @@ export const ja = {
     repeatRoundHint: "直前の指示をもう一度",
     repeatRoundUnavailable: "まだ指示を実行していません。",
     stop: "停止",
+    autoStopHint: "オート実行中 — Backspace で停止",
     autoCombat: "自動戦闘",
     autoMove: "自動探索",
     repeatUnavailable: "オートは迷宮内または戦闘中に開始できます。",

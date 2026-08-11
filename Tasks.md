@@ -64,6 +64,13 @@ ux-parity fix (`88cb96c`) · 玄室/W2/W4/W5 実装確認・active queue clear (
 
 ### 完了（このセッション 2026-08-12、Archive 待ち）
 
+- [x] **#21 — Auto戦闘中に停止方法を画面明記＋Backspace割り込みを実配線.** 判明: `auto_interrupt`(Backspace)は定義only・
+  未処理で、再生中(`_busy`)は全入力無視＝停止不能だった。上部中央に永続バナー「オート実行中 — Backspace で停止」（`_auto` 中のみ）
+  を追加し、Backspace を `_busy` ガード前で処理して次ラウンドで停止。i18n `tempo.autoStopHint`（ja/en）。React はドックの停止
+  ボタンが常時表示で parity 済（Godot だけが再生中にドックを隠す問題）。Gate: `verify_combat_controller.gd` に auto前=非表示/
+  auto後=表示 assert（**修正前 FAIL・修正後 PASS を確認**）。実機PNGで表示確認。
+- [x] **#18 — 装備タブの矢印操作（React moveMenuFocus parity）.** ←→でタブ巡回+wrap、↑↓でタブ↔ページ。`a8dff65`。
+  正直: headless では既定ナビで既に到達でき「Tab必須」をハード再現できず（regression guard 止まり・実機で要確認）。
 - [x] **BLK-1 — a9a8dad 半完成の class 状態を green に整合.** 判明: Swordmaster の trained は `unlock`（宝箱）のみで
   `disarm`（罠）は不変 → coverage の3問題(recovery/ward/traps)は無変化・balance判断不要。純テスト整合で解決:
   `classCapabilities.test.ts`（swordmaster unlock → "trained"）・`coverageSim.test.ts §9.4e`

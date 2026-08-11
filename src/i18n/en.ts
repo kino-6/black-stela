@@ -844,6 +844,7 @@ export const en = {
     repeatRoundHint: "Re-run the last orders",
     repeatRoundUnavailable: "No orders have been carried out yet.",
     stop: "Stop",
+    autoStopHint: "Auto-battle running — press Backspace to stop",
     autoCombat: "Auto combat",
     autoMove: "Auto explore",
     repeatUnavailable: "Auto starts in the dungeon or in combat.",

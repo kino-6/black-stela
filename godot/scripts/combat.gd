@@ -40,6 +40,7 @@ var _engine: Dictionary = {}
 # Live UI handles updated during playback.
 var _damage_layer: Control
 var _log_label: Label
+var _auto_hint_label: Label     # persistent "how to stop オート" banner, visible only while _auto (user #21)
 var _cmd_panel: PanelContainer
 var _strip_box: VBoxContainer = null
 var _party_slots: Dictionary = {}   # member id -> { "bar": ProgressBar, "label": Label }
@@ -143,6 +144,16 @@ func _build() -> void:
 	_log_label.offset_top = 578
 	add_child(_log_label)
 
+	# The auto-stop banner rides at the very top, CENTERED, so the interrupt key stays on screen even while
+	# the command dock is hidden through オート playback — the one moment a player wants out and the 停止 button
+	# is gone (user #21). Hidden until オート actually runs; _update_auto_hint drives its visibility.
+	_auto_hint_label = _label("", 18, GOLD)
+	_auto_hint_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_auto_hint_label.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE)
+	_auto_hint_label.offset_top = 20
+	_auto_hint_label.visible = false
+	add_child(_auto_hint_label)
+
 	# --- 3+3 formation band (rendered from the live party) ---
 	var strip := PanelContainer.new()
 	strip.position = Vector2(0, 640)
@@ -184,6 +195,14 @@ func _input(event: InputEvent) -> void:
 
 # focused Button fires its own `pressed` on ui_accept.
 func _unhandled_input(event: InputEvent) -> void:
+	# The auto-interrupt fires BEFORE the _busy guard: オート spends most of its time in _busy playback, and
+	# Backspace is the one key that must land THERE (the toggle buttons are hidden). It just clears _auto —
+	# _run_auto sees it after the current round and returns control (user #21).
+	if _auto and event.is_action_pressed("auto_interrupt"):
+		_auto = false
+		_update_auto_hint()
+		get_viewport().set_input_as_handled()
+		return
 	if _busy or _resolved:
 		return
 	if event.is_action_pressed("auto"):
@@ -225,6 +244,7 @@ func set_ui_state(ui: Dictionary) -> void:
 			if not actors.is_empty():
 				_pending = {"actorId": actors[_actor_index].get("id", ""), "action": "attack"}
 	# Any ui-state change must repaint — a seam that sets state without rebuilding proves nothing.
+	_update_auto_hint()
 	_rebuild_stage()
 	_rebuild_command_menu()
 
@@ -477,13 +497,23 @@ func _on_repeat() -> void:
 # taking real damage (tempo.autoStoppedDanger) — it never plays a losing fight out on the player.
 # Pressing a running auto (or the OTHER auto) stops it; otherwise start the loop in the requested
 # strategy. 攻撃オート presses the front line and bails at danger; 守備オート wards/heals and pushes through.
+# Keep the stop banner in sync with _auto — the ONE place both auto entry/exit route through so the hint is
+# never left stranded on a finished fight or missing during playback (user #21).
+func _update_auto_hint() -> void:
+	if _auto_hint_label == null:
+		return
+	_auto_hint_label.text = I18n.t("tempo.autoStopHint") if _auto else ""
+	_auto_hint_label.visible = _auto
+
 func _on_toggle_auto(strategy: String = "attack") -> void:
 	if _auto:
 		_auto = false
+		_update_auto_hint()
 		_rebuild_command_menu()
 		return
 	_auto_strategy = strategy
 	_auto = true
+	_update_auto_hint()
 	_rebuild_command_menu()
 	_run_auto()
 
@@ -504,6 +534,7 @@ func _run_auto() -> void:
 			break
 	if _state.get("phase", "") != "combat":
 		_auto = false
+	_update_auto_hint()
 	_rebuild_command_menu()
 	# オート kept the command panel HIDDEN during its rounds (playback shows it only when `not _auto`, so the
 	# menu never flashes between auto rounds). When オート STOPS on its own — danger detected — and the fight
