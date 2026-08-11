@@ -509,3 +509,9 @@ These are DONE + gate-green + committed; see the named commits/gates in each ent
 - **Codex D-series（Claude 検品: named gate 緑, `a9a8dad`）:** D3 銃撃FXを射手カードから分離（verify_firearm_fx）· D4 敵群の残数で非リサイズ（verify_combat_geometry/numbers）· D5 全階段・帰還地点を実機可視化（verify_stairs_render）· D6 解錠成功率の帯域（verify_lockpicking_bands）· D7 成長一覧を一画面に（verify_front_controller）· D8 帰還で踏破記録保持（verify_played_loop）· D9 座標跳躍禁止（verify_grid_transit）· D10 F2浅水可視化（verify_flooded_platform_render）.
 - **X 自己検出:** X1 敵HPバー整理（`2bd52e7`）· X2 ギルド説明に立ち絵（`3bd1c5d`）· X3 町の下重みグラデ暗幕（`b00401f`）· X4 迷宮開幕ログ世界別化（`f25ecb3`）· X5 施設パネル空白を content 駆動高さ（`2fb3410`）.
 - **Claude 実機playtest（`a9a8dad`）:** オート=MP温存で攻撃"呪文"（特技は無変化ラウンド回避で通常攻撃）· 技/呪文 summary 生成強化· 在庫×0除外· 宝箱こじ開け（罠=代償）+罠 status 外部化· 階段光源+debug fixture terminal_line_down/up_stair· tl1f→F2 降下は上り階段に着地（戻り階段同所化, tests/hazardPlacementGate も追加）· 全体図 A1座標+マス目· 刃の床 1F禁止· tl1f 入口ワープ撤去· UI 明化+はみ出し修正+max_fps=60.
+
+## 2026-08-12 — 玄室 landmark + W2/W4/W5 実装確認・gate緑（`88cb96c` baseline, Claude 検証）
+- **玄室 landmark:** NG#2/#3 修正は committed コードに実装済み（淡緑 cap/glow・謎の緑ディスク完全撤去、grand portal は jamb_h 2.86/2.62=~1.09倍＝「not a gate」、lintel は天井の下）。gate `verify_verdant_chambers` 緑。実機PNG（closed 接近＋inside）で淡緑オブジェクト無し・framed doorway を確認。最終審美サインオフは user/Codex（証拠提示済み）。
+- **W2/W4:** 構造/深層/火器アセット生成済み・配線済み。`export:godot` 全通（旧 B3F trace ブロッカー解消）、`gate:migration` 全緑（90 PASS、verify_stairs_render/flooded_platform/terminal_line_armory/firearm_fx 含む）。実機見え方の最終レビューは user/Codex。
+- **W5:** 実機仕上げの自動ゲート（gate:final e2e 緑・gate:migration 緑・clean boot・controller/selfplay）は全緑。独立レビュー（人）は user/Codex。
+- **W3a:** 廃案の後継（特殊弾頭 or 警戒度）は **未承認の将来アイデア**＝設計判断待ち。実装せず「将来メモ」へ退避（Tasks.md）。
