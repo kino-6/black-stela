@@ -39,13 +39,6 @@ ux-parity fix (`88cb96c`) · 玄室/W2/W4/W5 実装確認・active queue clear (
 
 ## Active queue (process top-down)
 
-- [ ] **#17 — 拠点（町）を WASD で操作可能に.** ダンジョンは WASD 移動できるのに拠点メニューは矢印のみで不便（user
-  2026-08-12）。町の各画面（ギルド/宿/店/酒場/隊列など）のカーソル移動・決定を WASD にもバインド（W=上/S=下/A=左/
-  D=右、既存の矢印・Enter は温存）。`controller-first-ui` skill 準拠。Gate: `verify_town_controller.gd` /
-  `verify_controller_coverage.gd` に WASD カバレッジ assert を追加（矢印のみでなく WASD でも到達できることを FAIL 可能に）。
-- [ ] **#18 — 「装備する」に矢印だけで到達できるように（Tab 必須を解消）.** パーティ/キャラ画面で「装備する」の選択が
-  Tab を押さないと到達できず不便（user 2026-08-12）。装備アクションを主フォーカス順（矢印/WASD の巡回）に含める。Tab は
-  補助として温存可。`controller-first-ui` skill 準拠。Gate: 該当 controller の verify に「Tab 無しで装備到達」assert 追加。
 - [ ] **#19 — アイテム/効果説明でフレバーと効果を明瞭に分離（Gate 必須）.** 例「外傷封止〜」の説明は何の状態異常を治すのか
   不明（user 2026-08-12）。cure/focus/heal 等の効果を持つアイテムは、**フレバーテキスト**（雰囲気）と**効果説明**（何を治す/
   上げるか＝対象の状態異常名・数値）を別フィールドとして明確に分離し、UI で別表示。世界データ（items.md）は copy を持てるが、
@@ -64,6 +57,10 @@ ux-parity fix (`88cb96c`) · 玄室/W2/W4/W5 実装確認・active queue clear (
 
 ### 完了（このセッション 2026-08-12、Archive 待ち）
 
+- [x] **#17 — 拠点/全メニューを WASD で操作可能に.** W/A/S/D を組み込み `ui_up/down/left/right` に append（矢印温存）。
+  ダンジョン移動と非競合: メニュー開時は `dungeon._input` が早期 return（キー未消費）→ GUI が ui_* 処理、閉時は移動を
+  `set_input_as_handled` で先に消費。Gate: `verify_town_controller.gd` に「物理 S キーで focus が ↓ 同様に動く」assert
+  （**修正前 FAIL・修正後 PASS 確認**）。dungeon/grid/front/combat controller 全緑（移動回帰なし）。
 - [x] **#21 — Auto戦闘中に停止方法を画面明記＋Backspace割り込みを実配線.** 判明: `auto_interrupt`(Backspace)は定義only・
   未処理で、再生中(`_busy`)は全入力無視＝停止不能だった。上部中央に永続バナー「オート実行中 — Backspace で停止」（`_auto` 中のみ）
   を追加し、Backspace を `_busy` ガード前で処理して次ラウンドで停止。i18n `tempo.autoStopHint`（ja/en）。React はドックの停止

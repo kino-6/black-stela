@@ -26,6 +26,18 @@ const ACTIONS := {
 	"auto_interrupt": [KEY_BACKSPACE],
 }
 
+# Menus navigate with the SAME WASD as the crawl. W/A/S/D are ADDED onto the built-in ui_* focus actions
+# (the arrow keys stay), so a controller/keyboard player drives town / party / combat menus without reaching
+# for the arrow cluster (user #17). No conflict with dungeon movement: when a menu is open dungeon._input
+# returns WITHOUT consuming the key, so it falls through to ui_* focus nav; when no menu is open the scene
+# consumes the move first (set_input_as_handled), so focus nav never double-fires.
+const UI_WASD := {
+	"ui_up": KEY_W,
+	"ui_down": KEY_S,
+	"ui_left": KEY_A,
+	"ui_right": KEY_D,
+}
+
 func _ready() -> void:
 	for action in ACTIONS:
 		if not InputMap.has_action(action):
@@ -34,3 +46,9 @@ func _ready() -> void:
 			var ev := InputEventKey.new()
 			ev.physical_keycode = keycode
 			InputMap.action_add_event(action, ev)
+	for ui_action in UI_WASD:
+		if not InputMap.has_action(ui_action):
+			InputMap.add_action(ui_action)
+		var ev := InputEventKey.new()
+		ev.physical_keycode = UI_WASD[ui_action]
+		InputMap.action_add_event(ui_action, ev)

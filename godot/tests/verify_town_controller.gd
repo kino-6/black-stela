@@ -125,6 +125,19 @@ func _initialize() -> void:
 					town.call("set_ui_state", {"service": "party", "party_page": "status"})
 					for i in 3:
 						await process_frame
+					# #17: menus navigate with WASD, not only the arrows. A physical S key must move focus the
+					# same as ↓ (W/A/S/D are bound onto the ui_* focus actions). RED if that binding is missing.
+					var before_wasd := _focused()
+					get_root().push_input(_key(KEY_S))
+					for i in 2:
+						await process_frame
+					if _focused() == before_wasd:
+						_fail("party: physical S did not move focus — WASD is not wired to menu nav (#17)")
+					else:
+						print("[town-controller] party: WASD (S) drives menu focus like ↓ (#17)")
+					town.call("set_ui_state", {"service": "party", "party_page": "status"})
+					for i in 3:
+						await process_frame
 					# T18: no page of the party menu may leak a RAW i18n key. First the plain tabs.
 					for menu_page in ["status", "formation", "spells", "equipment", "items", "valuables"]:
 						town.call("set_ui_state", {"service": "party", "party_page": String(menu_page)})
@@ -475,6 +488,13 @@ func _focused() -> Control:
 func _action(name: String) -> InputEventAction:
 	var event := InputEventAction.new()
 	event.action = name
+	event.pressed = true
+	return event
+
+# A physical key press (not a named action) — proves the WASD→ui_* binding exists end-to-end (#17).
+func _key(keycode: int) -> InputEventKey:
+	var event := InputEventKey.new()
+	event.physical_keycode = keycode
 	event.pressed = true
 	return event
 
