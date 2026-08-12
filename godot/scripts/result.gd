@@ -101,8 +101,10 @@ func _rebuild() -> void:
 	centre.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(centre)
 
-	var col := UI.col(16)
-	col.custom_minimum_size = Vector2(920, 0)
+	# Fill the 1920-wide screen rather than clustering a 920px column in the middle with black margins on all
+	# sides (user #22 — 画面無駄遣い). A wider column + roomier cards/rows use the space and read at a glance.
+	var col := UI.col(22)
+	col.custom_minimum_size = Vector2(1360, 0)
 	centre.add_child(col)
 
 	col.add_child(_centered(UI.label(I18n.t("result.title"), 46, UI.GOLD)))
@@ -133,7 +135,7 @@ func _rebuild() -> void:
 		if level_ups.size() > 6:
 			# Six is the normal party ceiling. Preserve the Continue command for exceptional bulk rewards
 			# by making only the records scroll, never the conclusion's main command surface.
-			growth.add_child(UI.scroller(records, Vector2(896, 286)))
+			growth.add_child(UI.scroller(records, Vector2(1336, 360)))
 		else:
 			growth.add_child(records)
 		col.add_child(UI.card(growth))
@@ -158,10 +160,10 @@ func _level_up_card(entry: Dictionary) -> Control:
 	var member := _find_member(entry)
 	var row := UI.row()
 	row.name = "GrowthRecord"
-	row.custom_minimum_size = Vector2(0, 74)
+	row.custom_minimum_size = Vector2(0, 96)
 
 	var portrait := TextureRect.new()
-	portrait.custom_minimum_size = Vector2(44, 56)
+	portrait.custom_minimum_size = Vector2(64, 82)
 	portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 	# face_path (not the bare portraits/<key>.png) so a body-only figure (a world.portraits key like chara-13,

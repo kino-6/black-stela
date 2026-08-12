@@ -30,6 +30,10 @@ func _all_text(node: Node) -> String:
 	return out
 
 func _initialize() -> void:
+	# Lay out at the SHIPPING design resolution. The game renders 1920×1080 and keep-aspect scales it
+	# uniformly to the window, so geometry-based focus nav at this size matches what the player sees — a
+	# reachability check at the wrong (default headless) size is false-green (user 2026-08-12).
+	get_root().size = Vector2i(1920, 1080)
 	var town := (load("res://scenes/town.tscn") as PackedScene).instantiate()
 	get_root().add_child(town)
 	for i in 8:
@@ -155,6 +159,30 @@ func _initialize() -> void:
 						_fail("party items: an item with an effect shows no 効果: line — flavour is hiding it (#19)")
 					else:
 						print("[town-controller] party items: flavour and the 効果: line are shown separately (#19)")
+					# #23/#25: KEYBOARD REACHABILITY. Every focusable control on every party-menu page must be
+					# reachable from the landing cursor using ONLY arrows — no mouse, no Tab. A dead spot (a member,
+					# a slot, a candidate the arrows never land on) fails here with the control named. This is the
+					# gate the old "a focus surface exists" checks were missing (false-green, user 2026-08-12).
+					# Every party-menu page is explicitly wired now — a dead spot on ANY of them fails the gate.
+					var party_scope: Node = town.get("_service_layer")
+					for reach_page in ["status", "formation", "spells", "equipment", "items", "valuables"]:
+						town.call("set_ui_state", {"service": "party", "party_page": String(reach_page)})
+						for i in 4:
+							await process_frame
+						var focusables: Array = []
+						_collect_focusable(party_scope, focusables)
+						var reachable := _reachable_from(_focused())
+						var dead: Array = []
+						for c in focusables:
+							if not reachable.has(c):
+								dead.append(_control_label(c as Control))
+						if dead.is_empty():
+							print("[town-controller] party %s: all %d focusables reachable by arrows (#23/#25)" % [reach_page, focusables.size()])
+						else:
+							_fail("party %s: %d control(s) UNREACHABLE by arrows — keyboard dead spots: %s" % [reach_page, dead.size(), ", ".join(PackedStringArray(dead))])
+					town.call("set_ui_state", {"service": "party", "party_page": "status"})
+					for i in 3:
+						await process_frame
 					# Then the 呪文/特技 CAST view — it once rendered a bare "partyMenu.back" as its back button.
 					# Find a member who knows a heal, drive their cast target list, and assert it is localized.
 					var heal_cast_seen := false
@@ -507,6 +535,42 @@ func _key(keycode: int) -> InputEventKey:
 	event.physical_keycode = keycode
 	event.pressed = true
 	return event
+
+# Every control a KEYBOARD could actually operate: focusable, on screen, not disabled. (#23/#25)
+func _collect_focusable(node: Node, out: Array) -> void:
+	if node is Control:
+		var c := node as Control
+		if c.focus_mode == Control.FOCUS_ALL and c.is_visible_in_tree() and not (c is Button and (c as Button).disabled):
+			out.append(c)
+	for child in node.get_children():
+		_collect_focusable(child, out)
+
+# The set of controls the cursor can REACH from `landing` through EXPLICIT focus_neighbor wiring only.
+# Geometry-based nav (find_valid_focus_neighbor's fallback) is deliberately NOT trusted here: it "reaches"
+# everything in headless AND at 1920×1080 yet navigates unusably in the real window (user 2026-08-12 —
+# 編成/装備で「まともに選択できない」). Only EXPLICIT `focus_neighbor_*` is deterministic and layout-
+# independent, so that is the standard: a focusable control not reachable through explicit arrows is a
+# keyboard DEAD SPOT the player cannot depend on landing the cursor on.
+func _reachable_from(landing: Control) -> Dictionary:
+	var seen := {}
+	if landing == null:
+		return seen
+	var stack: Array = [landing]
+	while not stack.is_empty():
+		var cur: Control = stack.pop_back()
+		if cur == null or seen.has(cur):
+			continue
+		seen[cur] = true
+		for prop in ["focus_neighbor_left", "focus_neighbor_top", "focus_neighbor_right", "focus_neighbor_bottom"]:
+			var path: NodePath = cur.get(prop)
+			if path != NodePath("") and cur.has_node(path):
+				var nb := cur.get_node(path)
+				if nb is Control and not seen.has(nb):
+					stack.append(nb as Control)
+	return seen
+
+func _control_label(c: Control) -> String:
+	return (c as Button).text if c is Button else String(c.name)
 
 func _party_member_named(party: Array, name: String) -> bool:
 	for member in party:

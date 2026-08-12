@@ -872,6 +872,18 @@ func _playback(before: Dictionary, events: Array, animated: bool) -> void:
 				# swing keeps its verb. Both then land the number and drain the bar below (playtest 2026-08-05).
 				var shot_index := int((beat as Dictionary).get("shotIndex", 0))
 				var is_gun := bool((beat as Dictionary).get("firearm", false))
+				# #26 C: each firearm family reads by its FIRING TEMPO — the stop after the hit and how deep the
+				# creature sinks. pistol short+hard · rifle a longer stop + strong sink · SMG small & rapid ·
+				# shotgun a wide close-range shove. Non-guns keep the default swing tempo.
+				var gun_family := String((beat as Dictionary).get("firearmFamily", "")) if is_gun else ""
+				var result_pause := 0.34
+				var sink_px := 6.0
+				if is_gun:
+					match gun_family:
+						"rifle": result_pause = 0.46; sink_px = 10.0
+						"pistol": result_pause = 0.30; sink_px = 6.0
+						"smg": result_pause = 0.20; sink_px = 4.0
+						"shotgun": result_pause = 0.40; sink_px = 12.0
 				if bool((beat as Dictionary).get("technique", false)):
 					_set_log("%sが%sを狙った。" % [actor, target_name])
 				elif is_gun:
@@ -881,9 +893,16 @@ func _playback(before: Dictionary, events: Array, animated: bool) -> void:
 						_set_log("%sが%sを撃った。" % [actor, target_name])
 				else:
 					_set_log("%sが%sに%s。" % [actor, target_name, _attack_verb(actor, crit)])
+				# #26 A①: mark the target BEFORE the hit — a short local brightness lift (~100ms), so the eye is
+				# on the creature about to be struck. Cursor/brightness only, never a big flash. First shot only.
+				if shot_index == 0:
+					var pre_mark: Variant = _enemy_marks.get(gid, null)
+					if pre_mark is Control:
+						var pm := pre_mark as Control
+						var hl := create_tween()
+						hl.tween_property(pm, "modulate", Color(1.2, 1.17, 1.1, 1.0), 0.05)
+						hl.tween_property(pm, "modulate", Color(1, 1, 1, 1), 0.09)
 				await get_tree().create_timer(0.24 if shot_index == 0 else 0.08).timeout
-				# 2) the damage: floating number ON the creature + its bar drains + a popup-style line with ！
-				_pop_enemy_damage(gid, dmg, crit)
 				if is_gun:
 					# A resolved beat is the authority for a technique's weapon family.  The equipment lookup is
 					# retained only for legacy/basic beats that predate the field.
@@ -897,8 +916,24 @@ func _playback(before: Dictionary, events: Array, animated: bool) -> void:
 					_spawn_melee_fx(gid, crit)
 				pb_groups = CombatHelpers.damage_group(pb_groups, gid, dmg)
 				_redraw_enemy_group(pb_groups, gid)
-				_set_log("%sに%dダメージ！" % [target_name, dmg])
-				await get_tree().create_timer(0.34 if shot_index == 0 else 0.16).timeout
+				# #26 B: the number is the RESULT — spawned AFTER the FX lands and the bar has begun to
+				# drain, at the target's lower body, never before the hit.
+				_pop_enemy_damage(gid, dmg, crit)
+				# #26 A②: the struck creature reacts with a short ~6px sink, so the hit reads as landing ON
+				# it rather than a number appearing in mid-air.
+				var struck_mark: Variant = _enemy_marks.get(gid, null)
+				if struck_mark is Control:
+					var sm := struck_mark as Control
+					var base_y := sm.position.y
+					var nudge := create_tween()
+					nudge.tween_property(sm, "position:y", base_y + sink_px, 0.06).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+					nudge.tween_property(sm, "position:y", base_y, 0.10)
+				# #26 D: no per-hit result line — the start line above is the one line for this action, and
+				# the number already shows the amount. Only a CRIT (and, below, a defeat) earns its own line,
+				# so a burst / all-out round reads as a few lines, not a spam of ダメージ per hit.
+				if crit:
+					_set_log("%sに %d ダメージ！会心！" % [target_name, dmg])
+				await get_tree().create_timer(result_pause if shot_index == 0 else 0.16).timeout
 		else:
 			# Fallback (no beats): per-GROUP reconstruction from before/after.
 			for hit in struck:
@@ -907,6 +942,23 @@ func _playback(before: Dictionary, events: Array, animated: bool) -> void:
 				_redraw_enemy_group(_combat().get("enemyGroups", []), String(hit["gid"]))   # drain from the REAL post-round state
 				_set_log("%s に %d ダメージ。" % [String(hit["name"]), int(hit["removed"])])
 				await get_tree().create_timer(0.32).timeout
+
+	# #26 A⑥: a defeated creature SINKS a little and FADES before it vanishes — not a pop-out, and not the
+	# faint lingering the rebuild used to leave. Runs on the marks still standing from the beat playback.
+	if animated:
+		var sinking := false
+		for hit in struck:
+			if _group_hp_by_id(String(hit["gid"])) <= 0:
+				var mk: Variant = _enemy_marks.get(String(hit["gid"]), null)
+				if mk is Control and (mk as Control).is_inside_tree():
+					var m := mk as Control
+					var tw := create_tween()
+					tw.set_parallel(true)
+					tw.tween_property(m, "position:y", m.position.y + 12.0, 0.26).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+					tw.tween_property(m, "modulate:a", 0.0, 0.26)
+					sinking = true
+		if sinking:
+			await get_tree().create_timer(0.28).timeout
 
 	# The bars drain to their post-round HP.
 	_rebuild_stage()
@@ -1182,7 +1234,7 @@ func _pop_enemy_damage(gid: String, amount: int, is_crit: bool) -> void:
 		CombatPlayback.damage_number(_damage_layer, _enemy_stage_rect, amount, 0.5, is_crit)
 		return
 	var r := (mark as Control).get_global_rect()
-	CombatPlayback.damage_number_at(_damage_layer, Vector2(r.position.x + r.size.x * 0.5, r.position.y + r.size.y * 0.26), amount, is_crit)
+	CombatPlayback.damage_number_at(_damage_layer, Vector2(r.position.x + r.size.x * 0.5, r.position.y + r.size.y * 0.72), amount, is_crit)
 
 # The firearm family the member wields ("pistol"/"rifle"/"smg"/"shotgun"), for the gun-fx overlay — "" for
 # a non-firearm. Read straight off the world equipment tags so a scenario tunes it by tagging its guns.
@@ -1219,7 +1271,9 @@ func _spawn_melee_fx(gid: String, crit: bool) -> void:
 	var slash_path := _asset("ui/fx-slash.png")
 	var slash := _texture(slash_path)
 	if slash:
-		var size := clampf(r.size.x * (0.9 if crit else 0.72), 150.0, 300.0)
+		# Scale the slash to the struck creature so it reads as a blow LANDING on it, not a tiny mark floating
+		# over a big sprite (user 2026-08-12: 斬撃が妙に小さい). ~95% of the mark width, crit a touch larger.
+		var size := clampf(r.size.x * (1.15 if crit else 0.95), 200.0, 460.0)
 		_spawn_fx_texture(slash, centre, size, 0.26 if crit else 0.22, 0.0, "slash", slash_path)
 
 func _spawn_gun_fx(gid: String, family: String) -> void:

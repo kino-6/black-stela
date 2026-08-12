@@ -400,7 +400,11 @@ static func _apply_technique(technique: Dictionary, actor: Dictionary, action: D
 				if typeof(target) != TYPE_DICTIONARY or int(target.get("count", 0)) <= 0:
 					continue
 				var spell_seed := "%d:%d:%s:%s:spell" % [turn, rnd, actor["id"], target["id"]]
-				var raw := CombatRng.roll_damage(spell_seed, int(effect.get("min", 0)), int(effect.get("max", 0)), 0)
+				# Techniques apply the target's armor like every other hit. They used to pass 0 — a blanket
+				# defence-ignore for ALL techniques the designer flagged as a corner-cut: normal damage must
+				# respect defence (user 2026-08-12). A technique that WANTS to pierce armour must say so.
+				var t_armor := maxi(0, int(target.get("armor", 0)) + CombatEffects.stat_modifier(effects, String(target["id"]), "armor"))
+				var raw := CombatRng.roll_damage(spell_seed, int(effect.get("min", 0)), int(effect.get("max", 0)), t_armor)
 				var weak := CombatRng.element_multiplier(target.get("weaknesses", {}), effect.get("element", "physical"))
 				# §7B: detonate / exploit — bonus damage against a pack already carrying a named status;
 				# `consume` strips it (a detonation cannot re-trigger on the same affliction).

@@ -89,6 +89,7 @@ static func build(ctx: Dictionary) -> Control:
 		tb.focus_neighbor_right = tb.get_path_to(right)
 	if active_tab == null and nav_count > 0:
 		active_tab = nav_buttons[0]
+	ctx["_nav_top"] = active_tab   # sub-pages wire their top row UP to the tab strip (#23/#25)
 	# `land` replaces a bare focus_hint: it also bridges the cursor's landing spot UP to the active tab and
 	# the tab back DOWN to the landing spot, so ↑ leaves the page onto the tabs and ↓ returns. (Arrow keys and
 	# WASD both drive ui_up/ui_down, so this is what makes the strip reachable without Tab.)
@@ -109,6 +110,7 @@ static func build(ctx: Dictionary) -> Control:
 		# on the tab strip it just came through. Gold must mean focus and nothing else, so the active tab
 		# is marked by its own state, never by borrowing the focus ring.
 		land.call(built["focus"] if built["focus"] != null else item_back)
+		_chain_tree_order(built["control"], active_tab, item_back)  # #23/#25: list + detail actions + 閉じる reachable
 		return root
 
 	# 呪文/特技 — the classic camp "spells" page: a READ-ONLY reference of what the chosen adventurer knows,
@@ -122,13 +124,17 @@ static func build(ctx: Dictionary) -> Control:
 		sroster.add_child(UI.label(I18n.t("partyMenu.members"), 19, UI.GOLD))
 		var sfocus: Control = null
 		var selected_sfocus: Control = null
+		var sroster_buttons: Array = []
 		for candidate in party:
 			var rr := _roster_row(ctx, candidate, member)
 			sroster.add_child(rr)
+			var srb := _first_button(rr)
+			if srb != null:
+				sroster_buttons.append(srb)
 			if sfocus == null:
-				sfocus = _first_button(rr)
+				sfocus = srb
 			if String(candidate.get("id", "")) == String(member.get("id", "")):
-				selected_sfocus = _first_button(rr)
+				selected_sfocus = srb
 		sbody.add_child(UI.card(sroster))
 		var spell_page := _spells_page(ctx, world, engine, member)
 		sbody.add_child(spell_page["control"])
@@ -137,6 +143,7 @@ static func build(ctx: Dictionary) -> Control:
 		sfoot.add_child(sback)
 		root.add_child(sfoot)
 		land.call(spell_page["focus"] if spell_page["focus"] != null else selected_sfocus if selected_sfocus != null else sfocus if sfocus != null else sback)
+		_chain_tree_order(sbody, active_tab, sback)  # #23/#25: members + spell/technique buttons + 閉じる reachable
 		return root
 
 	# 編成 is its own decision surface. The status page is for reading one adventurer, not for six repeated
@@ -149,6 +156,11 @@ static func build(ctx: Dictionary) -> Control:
 		formation_foot.add_child(formation_back)
 		root.add_child(formation_foot)
 		land.call(formation["focus"] if formation["focus"] != null else formation_back)
+		# Link the placement actions ↓ to 閉じる so it is reachable by arrows (#23/#25).
+		var f_bottom: Variant = formation.get("nav_bottom", null)
+		if f_bottom is Control:
+			(f_bottom as Control).focus_neighbor_bottom = (f_bottom as Control).get_path_to(formation_back)
+			formation_back.focus_neighbor_top = formation_back.get_path_to(f_bottom as Control)
 		return root
 
 	# 装備 is an action surface, not a read-only ledger. The player sees the six worn slots beside every
@@ -161,6 +173,11 @@ static func build(ctx: Dictionary) -> Control:
 		equipment_foot.add_child(equipment_back)
 		root.add_child(equipment_foot)
 		land.call(equipment_page["focus"] if equipment_page["focus"] != null else equipment_back)
+		# The roster's bottom ↓ to 閉じる so close is arrow-reachable (#23/#25).
+		var eq_bottom: Variant = equipment_page.get("nav_bottom", null)
+		if eq_bottom is Control:
+			(eq_bottom as Control).focus_neighbor_bottom = (eq_bottom as Control).get_path_to(equipment_back)
+			equipment_back.focus_neighbor_top = equipment_back.get_path_to(eq_bottom as Control)
 		return root
 
 	var body := UI.row()
@@ -172,15 +189,23 @@ static func build(ctx: Dictionary) -> Control:
 	roster.custom_minimum_size = Vector2(430, 0)
 	roster.add_child(UI.label(I18n.t("partyMenu.members"), 19, UI.GOLD))
 	var selected_roster_focus: Control = null
+	var roster_buttons: Array = []
 	for candidate in party:
 		var roster_row := _roster_row(ctx, candidate, member)
 		roster.add_child(roster_row)
+		var rb := _first_button(roster_row)
+		if rb != null:
+			roster_buttons.append(rb)
 		if String(candidate.get("id", "")) == String(member.get("id", "")):
-			selected_roster_focus = _first_button(roster_row)
+			selected_roster_focus = rb
 	if not reserve.is_empty():
 		roster.add_child(UI.label(I18n.t("town.reserve") if I18n.has("town.reserve") else I18n.t("partyMenu.members"), 16, UI.DIM))
 		for candidate in reserve:
-			roster.add_child(_roster_row(ctx, candidate, member))
+			var res_row := _roster_row(ctx, candidate, member)
+			roster.add_child(res_row)
+			var res_btn := _first_button(res_row)
+			if res_btn != null:
+				roster_buttons.append(res_btn)
 	body.add_child(UI.card(roster))
 
 	# RIGHT: the selected adventurer in full — condition, combat stats, resistances, aptitudes, gear.
@@ -264,6 +289,10 @@ static func build(ctx: Dictionary) -> Control:
 	# Browsing the roster is not an action. The highlighted adventurer is already the subject of the
 	# right-hand sheet, so the cursor starts there and an arrow move changes the sheet immediately.
 	land.call(selected_roster_focus if selected_roster_focus != null else back)
+	# Wire the roster ↑/↓ and bridge its ends to the tab strip and 閉じる, so every adventurer + close is
+	# reachable by arrows (not just the selected one via geometry) — #23/#25. AFTER land, so the column
+	# owns each member's up/down (land only bridges the tab strip down to the landing member).
+	_chain_column(roster_buttons, active_tab, back)
 	return root
 
 static func _condition(member: Dictionary) -> String:
@@ -327,6 +356,7 @@ static func _formation_page(ctx: Dictionary, party: Array, selected: Dictionary)
 	var rows := UI.row()
 	var focus: Button = null
 	var selected_focus: Button = null
+	var columns := {"front": [], "back": []}   # #23/#25: collect each column's buttons for explicit wiring
 	for row_id in ["front", "back"]:
 		var column := UI.col(6)
 		column.custom_minimum_size = Vector2(360, 0)
@@ -341,17 +371,36 @@ static func _formation_page(ctx: Dictionary, party: Array, selected: Dictionary)
 				selected_focus = b
 			if focus == null: focus = b
 			column.add_child(b)
+			(columns[row_id] as Array).append(b)
 		rows.add_child(UI.card(column))
 	root.add_child(rows)
 	var actions := UI.row()
+	var action_buttons: Array = []
 	for row_id in ["front", "back"]:
 		var label := I18n.t("partyMenu.placeFront") if row_id == "front" else I18n.t("partyMenu.placeBack")
 		var b := UI.button(label, func(): ctx["dispatch"].call({"type": "set_member_row", "characterId": selected.get("id", ""), "row": row_id}), Vector2(220, 44), 17)
 		b.disabled = String(selected.get("row", "front")) == row_id
 		actions.add_child(b)
+		if not b.disabled:
+			action_buttons.append(b)
 		if focus == null and not b.disabled: focus = b
 	root.add_child(actions)
-	return {"control": UI.card(root), "focus": selected_focus if selected_focus != null else focus}
+	# Explicit keyboard graph: each column ↑/↓ (top → the tab strip), the two columns bridged ←/→ per row,
+	# each column's bottom ↓ to the placement action, and the actions bridged ←/→. The footer 閉じる is
+	# linked by build() via the returned `nav_bottom`. (#23/#25 — no geometry-only dead spots.)
+	# NOTE: `above`/`below` are wired to null here, not to the tab strip — the tab lives in build()'s tree,
+	# which this sub-page's nodes are not attached to yet (get_path_to would have no common ancestor). land()
+	# bridges the landing member ↔ tab, and build() links the actions ↓ to 閉じる after attachment.
+	var below: Control = action_buttons[0] if not action_buttons.is_empty() else null
+	_chain_column(columns["front"], null, below)
+	_chain_column(columns["back"], null, below)
+	var front_col: Array = columns["front"]
+	var back_col: Array = columns["back"]
+	for i in mini(front_col.size(), back_col.size()):
+		_link_lr(front_col[i] as Control, back_col[i] as Control)
+	if action_buttons.size() >= 2:
+		_link_lr(action_buttons[0] as Control, action_buttons[1] as Control)
+	return {"control": UI.card(root), "focus": selected_focus if selected_focus != null else focus, "nav_bottom": below}
 
 static func _equipment_page(ctx: Dictionary, world: Dictionary, party: Array, member: Dictionary) -> Dictionary:
 	var state: Dictionary = ctx["state"]
@@ -505,8 +554,15 @@ static func _equipment_page(ctx: Dictionary, world: Dictionary, party: Array, me
 		if after_slots != null:
 			slot_buttons[slot_buttons.size() - 1].focus_neighbor_bottom = slot_buttons[slot_buttons.size() - 1].get_path_to(after_slots)
 
+	# T12 wired LEFT/RIGHT between the panes but left each column's ↑/↓ to geometry — so the arrows could
+	# cross panes yet never step to another member or slot (the #23/#25 dead spots). Chain each column's
+	# ↑/↓ explicitly (below=null preserves the last-slot→candidate bridge above); build() links 閉じる.
+	_chain_column(roster_buttons, null, null)
+	_chain_column(slot_buttons, null, null)
+	_chain_column(candidate_buttons, null, null)
+
 	var restore_member_focus: bool = String(ctx.get("party_focus_member_id", "")) != ""
-	return {"control": body, "focus": selected_roster_focus if restore_member_focus and selected_roster_focus != null else candidate_focus if candidate_focus != null else selected_slot_focus}
+	return {"control": body, "focus": selected_roster_focus if restore_member_focus and selected_roster_focus != null else candidate_focus if candidate_focus != null else selected_slot_focus, "nav_bottom": roster_buttons[roster_buttons.size() - 1] if not roster_buttons.is_empty() else null}
 
 
 const VALUABLE_KINDS := ["key", "treasure", "escape"]
@@ -858,3 +914,45 @@ static func _first_button(node: Node) -> Control:
 		if b != null:
 			return b
 	return null
+
+# EXPLICIT keyboard wiring — deterministic and layout-independent, unlike Godot's geometry focus nav which
+# "reaches" everything in a test yet navigates unusably in the real window (user 2026-08-12). Every list on
+# every party-menu page is wired so ↑/↓ steps through it and its ends bridge to the tab strip above and the
+# footer below; the reachability gate (verify_town_controller) fails if any control is left off this graph.
+static func _chain_column(buttons: Array, above: Control = null, below: Control = null) -> void:
+	var items: Array = []
+	for b in buttons:
+		if b is Control:
+			items.append(b)
+	for i in items.size():
+		var c: Control = items[i]
+		if i > 0:
+			c.focus_neighbor_top = c.get_path_to(items[i - 1])
+		elif above != null:
+			c.focus_neighbor_top = c.get_path_to(above)
+		if i < items.size() - 1:
+			c.focus_neighbor_bottom = c.get_path_to(items[i + 1])
+		elif below != null:
+			c.focus_neighbor_bottom = c.get_path_to(below)
+
+# Bridge two controls left↔right (e.g. the two formation columns), each pointing at the other.
+static func _link_lr(left_ctrl: Control, right_ctrl: Control) -> void:
+	if left_ctrl != null and right_ctrl != null:
+		left_ctrl.focus_neighbor_right = left_ctrl.get_path_to(right_ctrl)
+		right_ctrl.focus_neighbor_left = right_ctrl.get_path_to(left_ctrl)
+
+static func _collect_buttons_in_order(node: Node, out: Array) -> void:
+	if node is Button and (node as Button).focus_mode == Control.FOCUS_ALL and not (node as Button).disabled:
+		out.append(node)
+	for c in node.get_children():
+		_collect_buttons_in_order(c, out)
+
+# Fallback wiring for pages without a bespoke 2D graph (dynamic detail panes): chain EVERY enabled button
+# top-to-bottom in tree order — the tab strip (above) → content → the footer (tail). Flatter than a true 2D
+# layout, but it guarantees the arrows reach every control deterministically, with no dead spots (#23/#25).
+static func _chain_tree_order(scope: Node, above: Control, tail: Control) -> void:
+	var buttons: Array = []
+	_collect_buttons_in_order(scope, buttons)
+	if tail != null:
+		buttons.append(tail)
+	_chain_column(buttons, above, null)

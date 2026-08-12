@@ -27,11 +27,20 @@ const VERDANT_CHAMBER_FLOOR := "dungeon.verdant.g1f"
 # can be judged in one selection instead of walking the floor to find it (user 2026-08-11).
 const STAIR_FIXTURES := ["terminal_line_down_stair", "terminal_line_up_stair"]
 
+# A LIVE Terminal Line fight the reviewer drops straight into, with the front four each holding a different
+# firearm family — so 全員でかかる [F] fires pistol / rifle / SMG / shotgun in ONE round and the #26 combat
+# feel (quiet numbers, hit sink, per-gun tempo, defeat sink, log) is judged without walking to an encounter
+# (user 2026-08-12: 「StateLoad くらい用意しない？」). Attack normally for a hit/crit, keep firing for a defeat.
+const COMBAT_FIXTURES := ["terminal_line_combat"]
+const Encounter := preload("res://scripts/encounter.gd")
+const TL_GUNS := ["equip.tl-service-pistol", "equip.tl-platform-38-rifle", "equip.tl-drain-5-smg", "equip.tl-maintenance-10-shotgun"]
+
 ## The fixture names offered — used by the panel and validated by the boot flag.
 static func names() -> Array:
 	var all := TRACES.keys()
 	all.append_array(VERDANT_CHAMBER_FIXTURES)
 	all.append_array(STAIR_FIXTURES)
+	all.append_array(COMBAT_FIXTURES)
 	for n in range(2, 11):
 		all.append("floor_%d" % n)   # deep-floor review starts (IMP-062)
 	return all
@@ -46,6 +55,8 @@ static func load_into(run: Object, name: String) -> String:
 		return _load_verdant_chamber(run, name)
 	if name in STAIR_FIXTURES:
 		return _load_terminal_stair(run, name)
+	if name in COMBAT_FIXTURES:
+		return _load_terminal_combat(run)
 	if name.begins_with("floor_"):
 		return _load_deep_floor(run, name)
 	run.ensure_loaded()
@@ -72,6 +83,52 @@ static func _scene_for_phase(phase: String) -> String:
 			return "res://scenes/dungeon.tscn"
 		_:
 			return "res://scenes/town.tscn"
+
+## terminal_line_combat: a CLEAN 4-gun demo squad — the four martial members (casters don't fire a basic
+## gun, so they only muddied the picture), front-ranked, each with a different firearm, so 全員でかかる [F]
+## shows pistol → rifle → SMG → shotgun side by side with no stray melee slashes. A plain 攻撃 for a single
+## quiet number; keep firing for the defeat sink. The enemy is dummied below so the squad can fire forever.
+const MARTIAL_CLASSES := ["warrior", "thief", "knight", "swordmaster", "priest", "sellsword"]
+static func _load_terminal_combat(run: Object) -> String:
+	run.world_id = "terminal-line"
+	run.reset()
+	var state: Dictionary = run.state
+	# Keep only the members that actually FIRE a basic gun, front-rank them, and give each a distinct family.
+	var squad: Array = []
+	for m in (state.get("party", []) as Array):
+		if squad.size() >= TL_GUNS.size():
+			break
+		if String((m as Dictionary).get("classId", "")) in MARTIAL_CLASSES:
+			var member: Dictionary = m
+			member["row"] = "front"
+			var eq: Dictionary = ((member.get("equipment", {}) as Dictionary)).duplicate(true)
+			eq["weapon"] = {"id": TL_GUNS[squad.size()]}
+			member["equipment"] = eq
+			squad.append(member)
+	state["party"] = squad
+	run.state = state
+	var enemies: Array = run.world.get("enemies", [])
+	if enemies.is_empty():
+		return ""
+	Encounter.begin(run.state, run.world, "room.tl1f.entrance", String((enemies[0] as Dictionary).get("id", "")))
+	# Turn the encounter into a TRAINING DUMMY: one target with a huge HP pool and no bite, so the party can
+	# keep attacking round after round and watch every gun's tempo + the hit/defeat feel, instead of the fight
+	# ending in two swings against a fragile rat (user 2026-08-12: 敵が弱すぎて2回分しか見れない).
+	# One target with a huge HP pool and no bite — the reviewer keeps attacking round after round. (It keeps
+	# the drain-rat's id so it draws the real sprite/name; the display name resolves from the catalog by
+	# enemyId, so only its stats are dummied, not its label.)
+	var combat: Dictionary = (run.state.get("combat", {}) as Dictionary)
+	for g in (combat.get("enemyGroups", []) as Array):
+		var grp: Dictionary = g
+		grp["count"] = 1
+		grp["initialCount"] = 1
+		grp["hpEach"] = 800
+		grp["maxHpEach"] = 800
+		grp["attack"] = 0
+		grp["damageMin"] = 0
+		grp["damageMax"] = 0
+	run.state["combat"] = combat
+	return "res://scenes/combat.tscn"
 
 ## loot_delta: the party stands at the return stair carrying its descent supply PLUS one item picked up
 ## below. loot_baseline is set to the descent inventory, so the return ledger shows ONLY the gained item
