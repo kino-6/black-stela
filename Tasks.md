@@ -27,9 +27,13 @@ ideas (unapproved): `docs/design/ballistic-world-program.md`.
 
 ## Active queue (process top-down)
 
-**（空 — no active tasks.）** このセッションの #22 / #23・#25 / #24 / #26 と前バッチは完了・全ゲート緑・push 済み
-（`docs/archive/Tasks.completed-2026-08.md` の 2026-08-12 (3rd batch) を参照）。branch `feat/playtest-ux-2` は main 未マージ。
-残るのは #26 F（1280/1920 目視 capture 5種）と 銃種テンポの微調整＝実プレイでの user レビュー領域で、backlog タスクではない。
+- [ ] **#27 — W3a 再検討: 通常攻撃の弾薬管理は NG（user 2026-08-12）.** `docs/design/ballistic-world-program.md` の W3a は
+  「共有弾薬で通常攻撃の弾を管理し、撃つ/温存を選ぶ」を core loop としていたが、**user 判断: 通常攻撃での弾薬管理はしない**（「弾薬管理
+  しないと言ったはず」）。→ **① 共有弾薬（通常攻撃の弾消費）は廃案。** 設計 doc の資源管理 core が成立しないため W3a as-designed は不採用。
+  **残る検討余地（user 発言）:** (i) **特殊行動（技）へのコスト**は有り得るかも（必須ではない・MP と別軸にするか要相談）、(ii) **警戒度**
+  （発砲＝騒音でフロア危険度↑、弾薬非依存）を単独で入れるか。どちらも user 承認待ち＝現時点で着手しない。terminal-line 世界/アート/銃は
+  既に出荷済みなので、item 3 として**新規実装が必要なものは無い**（ammo 廃案・他は未承認アイデア）。ブランチ `feat/tl-w3a-ammo-alert` は
+  実装前なので破棄可。
 
 ## Backlog / ideas (no home yet)
 
