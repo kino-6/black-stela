@@ -68,16 +68,19 @@ and skip the rest — grep for a symbol before opening any big tree.
 When you learn something durable, it goes in memory or the right `docs/` file — not a new top-level doc.
 Completed plan/task docs get moved to `docs/archive/` (that convention already holds dozens).
 
-## Current state (2026-07-16)
+## Current state (2026-08-13)
 
-B3 (party menu + real aptitudes) is done. The 5-slice elemental balance is done — **a naive party
-wipes; a prepared one clears ~10 levels lower**; tune via the `world.md` `balance:` knobs, not per
-enemy. The growth/quest slices are done: **Q1 (growth items) and Q2 (the quest board)** — quests are
-authored data in `content/worlds/<id>/quests.md`. **Codex's IMP-018..020 (character presence) is
-merged**, and the **combat enemy-stage OVERLAY** is done — the HUD is translucent overlays floating
-over a full-frame stage (share 36%→71% at 720p; the command menu overlays only while choosing, the
-creatures own the screen during playback). Next pre-balance item: **combat FEEL**.
-`black-stela-open-work` has the detail.
+The 2026-08-11..13 terminal-line playtest batches are all done and **merged to main** (`9956bc6`):
+#14 melee FX · #15 tl1f map-visible gated shortcut · #17 WASD menus · #18 arrow-navigable equip tab ·
+#19 item flavour-vs-effect copy · #20/#22 readable & screen-filling victory screen · #21 auto-battle
+stop key · #23/#25 **a real keyboard-reachability gate** (explicit `focus_neighbor` only) + all six
+party-menu pages wired · #24 techniques deal normal (armour-respecting) damage · **#26 combat FEEL** —
+quiet still numbers (no floating `-12`), hit sequence (FX+bar → number at the target's feet), per-gun
+tempo, defeat sink, one-line log — **user-approved 2026-08-13**. Review it via `npm run play:combat`
+(training-dummy + 4 gun families). Infra: fast **pre-push gate** (typecheck+unit), `npm run play` folds
+in export, and the **Godot-native policy** — new work is Godot-only, no TS parity porting (`AGENTS.md`).
+**Decision:** the "封鎖線" gun-world = terminal-line (shipped); its W3a shared-ammo idea is **dropped**
+(no ammo management on normal attacks). No task is queued — `black-stela-open-work` has the live detail.
 
 ## How the two agents split work
 
