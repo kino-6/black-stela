@@ -882,8 +882,6 @@ func _playback(before: Dictionary, events: Array, animated: bool) -> void:
 				else:
 					_set_log("%sが%sに%s。" % [actor, target_name, _attack_verb(actor, crit)])
 				await get_tree().create_timer(0.24 if shot_index == 0 else 0.08).timeout
-				# 2) the damage: floating number ON the creature + its bar drains + a popup-style line with ！
-				_pop_enemy_damage(gid, dmg, crit)
 				if is_gun:
 					# A resolved beat is the authority for a technique's weapon family.  The equipment lookup is
 					# retained only for legacy/basic beats that predate the field.
@@ -897,6 +895,18 @@ func _playback(before: Dictionary, events: Array, animated: bool) -> void:
 					_spawn_melee_fx(gid, crit)
 				pb_groups = CombatHelpers.damage_group(pb_groups, gid, dmg)
 				_redraw_enemy_group(pb_groups, gid)
+				# #26 B: the number is the RESULT — spawned AFTER the FX lands and the bar has begun to
+				# drain, at the target's lower body, never before the hit.
+				_pop_enemy_damage(gid, dmg, crit)
+				# #26 A②: the struck creature reacts with a short ~6px sink, so the hit reads as landing ON
+				# it rather than a number appearing in mid-air.
+				var struck_mark: Variant = _enemy_marks.get(gid, null)
+				if struck_mark is Control:
+					var sm := struck_mark as Control
+					var base_y := sm.position.y
+					var nudge := create_tween()
+					nudge.tween_property(sm, "position:y", base_y + 6.0, 0.06).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+					nudge.tween_property(sm, "position:y", base_y, 0.10)
 				# #26 D: no per-hit result line — the start line above is the one line for this action, and
 				# the number already shows the amount. Only a CRIT (and, below, a defeat) earns its own line,
 				# so a burst / all-out round reads as a few lines, not a spam of ダメージ per hit.
@@ -1203,7 +1213,7 @@ func _pop_enemy_damage(gid: String, amount: int, is_crit: bool) -> void:
 		CombatPlayback.damage_number(_damage_layer, _enemy_stage_rect, amount, 0.5, is_crit)
 		return
 	var r := (mark as Control).get_global_rect()
-	CombatPlayback.damage_number_at(_damage_layer, Vector2(r.position.x + r.size.x * 0.5, r.position.y + r.size.y * 0.26), amount, is_crit)
+	CombatPlayback.damage_number_at(_damage_layer, Vector2(r.position.x + r.size.x * 0.5, r.position.y + r.size.y * 0.72), amount, is_crit)
 
 # The firearm family the member wields ("pistol"/"rifle"/"smg"/"shotgun"), for the gun-fx overlay — "" for
 # a non-firearm. Read straight off the world equipment tags so a scenario tunes it by tagging its guns.
