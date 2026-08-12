@@ -872,6 +872,18 @@ func _playback(before: Dictionary, events: Array, animated: bool) -> void:
 				# swing keeps its verb. Both then land the number and drain the bar below (playtest 2026-08-05).
 				var shot_index := int((beat as Dictionary).get("shotIndex", 0))
 				var is_gun := bool((beat as Dictionary).get("firearm", false))
+				# #26 C: each firearm family reads by its FIRING TEMPO — the stop after the hit and how deep the
+				# creature sinks. pistol short+hard · rifle a longer stop + strong sink · SMG small & rapid ·
+				# shotgun a wide close-range shove. Non-guns keep the default swing tempo.
+				var gun_family := String((beat as Dictionary).get("firearmFamily", "")) if is_gun else ""
+				var result_pause := 0.34
+				var sink_px := 6.0
+				if is_gun:
+					match gun_family:
+						"rifle": result_pause = 0.46; sink_px = 10.0
+						"pistol": result_pause = 0.30; sink_px = 6.0
+						"smg": result_pause = 0.20; sink_px = 4.0
+						"shotgun": result_pause = 0.40; sink_px = 12.0
 				if bool((beat as Dictionary).get("technique", false)):
 					_set_log("%sが%sを狙った。" % [actor, target_name])
 				elif is_gun:
@@ -914,14 +926,14 @@ func _playback(before: Dictionary, events: Array, animated: bool) -> void:
 					var sm := struck_mark as Control
 					var base_y := sm.position.y
 					var nudge := create_tween()
-					nudge.tween_property(sm, "position:y", base_y + 6.0, 0.06).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+					nudge.tween_property(sm, "position:y", base_y + sink_px, 0.06).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 					nudge.tween_property(sm, "position:y", base_y, 0.10)
 				# #26 D: no per-hit result line — the start line above is the one line for this action, and
 				# the number already shows the amount. Only a CRIT (and, below, a defeat) earns its own line,
 				# so a burst / all-out round reads as a few lines, not a spam of ダメージ per hit.
 				if crit:
 					_set_log("%sに %d ダメージ！会心！" % [target_name, dmg])
-				await get_tree().create_timer(0.34 if shot_index == 0 else 0.16).timeout
+				await get_tree().create_timer(result_pause if shot_index == 0 else 0.16).timeout
 		else:
 			# Fallback (no beats): per-GROUP reconstruction from before/after.
 			for hit in struck:
