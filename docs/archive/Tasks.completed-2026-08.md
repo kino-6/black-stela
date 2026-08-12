@@ -503,3 +503,20 @@ These are DONE + gate-green + committed; see the named commits/gates in each ent
   F10 専用守護者）。装備帯＋装備アイコン帯（全 `equip.tl-*` に 256² RGBA icon）。鉄雨火器帯（自動小銃/短機関銃/散弾銃/
   指定射撃銃/軽機関銃、架空名）。制式火器更新系列（拳銃/長銃/短機関銃/散弾銃 各5段、長銃 F1＝三八式歩兵銃、計48装備）。
   補給・横選択拡充（全32装備・全17物資）。※実在銘は三八式のみ（user 明示指定）、未実装の弾薬/連射/騒音は数値・説明で偽装しない。
+
+## 2026-08-11 — Y/D playtest batch + Codex D-series 検品 — DONE（commit `a9a8dad`, feat/n-dungeons）
+- **Y1** depot F1 帰還階段2→1（`1b24c63`）· **Y2** 初期装備のシナリオ定義化（`e64e7b1`）· **D1** 銃基本攻撃=掃射+射撃ナレ（`57d9bc4`）· **D2** 早期フロア大群化（`7e3d823`）.
+- **Codex D-series（Claude 検品: named gate 緑, `a9a8dad`）:** D3 銃撃FXを射手カードから分離（verify_firearm_fx）· D4 敵群の残数で非リサイズ（verify_combat_geometry/numbers）· D5 全階段・帰還地点を実機可視化（verify_stairs_render）· D6 解錠成功率の帯域（verify_lockpicking_bands）· D7 成長一覧を一画面に（verify_front_controller）· D8 帰還で踏破記録保持（verify_played_loop）· D9 座標跳躍禁止（verify_grid_transit）· D10 F2浅水可視化（verify_flooded_platform_render）.
+- **X 自己検出:** X1 敵HPバー整理（`2bd52e7`）· X2 ギルド説明に立ち絵（`3bd1c5d`）· X3 町の下重みグラデ暗幕（`b00401f`）· X4 迷宮開幕ログ世界別化（`f25ecb3`）· X5 施設パネル空白を content 駆動高さ（`2fb3410`）.
+- **Claude 実機playtest（`a9a8dad`）:** オート=MP温存で攻撃"呪文"（特技は無変化ラウンド回避で通常攻撃）· 技/呪文 summary 生成強化· 在庫×0除外· 宝箱こじ開け（罠=代償）+罠 status 外部化· 階段光源+debug fixture terminal_line_down/up_stair· tl1f→F2 降下は上り階段に着地（戻り階段同所化, tests/hazardPlacementGate も追加）· 全体図 A1座標+マス目· 刃の床 1F禁止· tl1f 入口ワープ撤去· UI 明化+はみ出し修正+max_fps=60.
+
+## 2026-08-12 — 玄室 landmark + W2/W4/W5 実装確認・gate緑（`88cb96c` baseline, Claude 検証）
+- **玄室 landmark:** NG#2/#3 修正は committed コードに実装済み（淡緑 cap/glow・謎の緑ディスク完全撤去、grand portal は jamb_h 2.86/2.62=~1.09倍＝「not a gate」、lintel は天井の下）。gate `verify_verdant_chambers` 緑。実機PNG（closed 接近＋inside）で淡緑オブジェクト無し・framed doorway を確認。最終審美サインオフは user/Codex（証拠提示済み）。
+- **W2/W4:** 構造/深層/火器アセット生成済み・配線済み。`export:godot` 全通（旧 B3F trace ブロッカー解消）、`gate:migration` 全緑（90 PASS、verify_stairs_render/flooded_platform/terminal_line_armory/firearm_fx 含む）。実機見え方の最終レビューは user/Codex。
+- **W5:** 実機仕上げの自動ゲート（gate:final e2e 緑・gate:migration 緑・clean boot・controller/selfplay）は全緑。独立レビュー（人）は user/Codex。
+- **W3a:** 廃案の後継（特殊弾頭 or 警戒度）は **未承認の将来アイデア**＝設計判断待ち。実装せず「将来メモ」へ退避（Tasks.md）。
+
+## 2026-08-12 — Tasks.md active queue CLEARED（残りは全て人の判断待ち＝設計メモ/deferred へ移設）
+Claude 実行可能な Tasks.md 作業は全完了・全ゲート緑・commit 済（`a9a8dad`/`88cb96c`/`30beb83`）。以下は backlog タスクではなく **deferred 設計メモ**として保管（着手には user 承認が必要、詳細は `docs/design/ballistic-world-program.md`）:
+- **W3a 弾薬/戦略の後継案（未承認）:** (a) 特殊弾頭＝戦略消耗品（既存 damage/status/debuff effect、Claude レーン完結、承認あれば即着手可）· (b) 警戒度＝世界樹風エンカウント率カラー表示（一部 Codex アート依存）。採否は設計判断。
+- **玄室 / W2 / W4 / W5 の最終審美サインオフ:** 実装・配線・ゲート緑・実機PNG提示は完了。残るは user/Codex の**目視サインオフ**（人）。NG が出たら該当項目を Tasks.md に再オープンする。fixture: `verdant_chamber_closed`/`cleared` / `terminal_line_down_stair`/`up_stair` / capture_deep_floors 等で一発確認可。

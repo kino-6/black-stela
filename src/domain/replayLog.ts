@@ -316,6 +316,10 @@ export function projectEventToLog(event: GameEvent, locale: Locale = "en", world
                 ? "play.trapSnare"
                 : "play.trapUnknown"
       );
+      if (event.status) {
+        const ailment = t(`partyMenu.status.${event.status}`);
+        return { text: t("events.chestTrapSprungAiled", { trap, damage: event.damage, ailment }), tags: ["dungeon", "chest", "trap"] };
+      }
       return { text: t("events.chestTrapSprung", { trap, damage: event.damage }), tags: ["dungeon", "chest", "trap"] };
     }
     // Opening is the state transition behind the loot event, not a separate player-facing beat. Keeping

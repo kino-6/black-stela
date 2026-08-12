@@ -111,7 +111,15 @@ Grid floors must be **explorable, not driven through**. Per Jaquays/Alexandrian:
   shortcut warps), so the descent isn't a single corridor.
 - **Shortcuts** — a sealed way that, once opened, collapses the trek. This is what makes
   push-vs-retreat affordable. **A shortcut must never run BACKWARD off-floor** (a
-  B5F→B2F warp once made the auto-explorer loop the party three floors up).
+  B5F→B2F warp once made the auto-explorer loop the party three floors up). **Nor may an
+  ungated shortcut sit ON or NEXT TO the entrance** — a tl1f shortcut edge two cells east
+  of the start flung the party across the floor and read as a "謎ワープ" (2026-08-10). A
+  shortcut opens from the FAR side as a gated collapse, not on the way in.
+- **Damage floors** (`room.damageTile` / 刃の床) are an OBSTACLE to reckon with on the
+  PROGRESSION route — never attrition the player eats while slipping through a bypass, and
+  **never on a first floor (1F)**, where a fresh party has no cushion (user, 2026-08-10).
+  The 1F ban is gated (`tests/hazardPlacementGate.test.ts`); the no-bypass-attrition half is
+  a review judgement. tl-depot1's on-route weighbridge is the correct shape.
 - **Secrets & reward dead-ends** — the map pays you for mastering it. (Gate:
   `rewardDeadEndRoomIds >= 1`.)
 - **A sole-approach choke** — the miniboss/toll sits on the *only* way deeper, so the

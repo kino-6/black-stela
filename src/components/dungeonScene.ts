@@ -112,7 +112,10 @@ export function buildDungeonScene(mount: HTMLDivElement, input: DungeonSceneInpu
     // Three.js scene here keeps its own look and reads only the colours.
     ambientEnergy: 0.55,
     fogDensity: 0.1,
-    torchRange: 8.5
+    torchRange: 8.5,
+    // The legacy web renderer does not yet draw floor water, but keeping the canonical palette contract
+    // total means scenario validation and renderer consumers agree on the default dry state.
+    standingWater: { depth: 0 }
   };
   const p: Required<ScenePalette> = { ...ASH, ...(input.palette ?? {}) };
 
@@ -462,6 +465,10 @@ export function buildDungeonScene(mount: HTMLDivElement, input: DungeonSceneInpu
 export function getDungeonBlockTextureUrls(floorId: string | null, pack: string = DEFAULT_ART_PACK) {
   const blocks = blockTextures(pack);
   const depth = Number(floorId?.match(/[a-z](\d+)f/i)?.[1] ?? 0);
+  if (depth >= 10) {
+    return blocks.block4;
+  }
+
   if (depth >= 7) {
     return blocks.block3;
   }

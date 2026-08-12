@@ -52,7 +52,6 @@ corridor:
   locales: { ja: { name: 雨水処理路, description: 汗をかくコンクリート天井の下、金属格子の奥で冷たい水が刻む。 } }
 edges:
   - { from: room.tl4f.rainworks-landing, direction: west, kind: stairs, to: room.tl3f.down-stair, targetFloorId: dungeon.tl3f }
-  - { from: room.tl4f.sluice-bypass, direction: north, kind: shortcut, to: room.tl4f.sluice-control }
   - { from: room.tl4f.down-stair, direction: north, kind: stairs, to: room.tl5f.ration-landing, targetFloorId: dungeon.tl5f }
 rooms:
   - id: room.tl4f.rainworks-landing
@@ -61,9 +60,9 @@ rooms:
     locales: { ja: { name: 処理区の踊り場, description: 中継階段は、処理水路より高い乾いた点検棚に着く。 } }
   - id: room.tl4f.sluice-bypass
     name: Sluice Bypass
-    description: A wheel valve can uncover a narrow maintenance bridge between two channels.
-    locales: { ja: { name: 水門の迂回路, description: 手輪を回せば、二本の水路を結ぶ細い保守橋が現れる。 } }
-    gates: [{ id: gate.tl4f.sluice, kind: shortcut, grantsFlag: flag.tl4f.sluice-open, clue: A wheel valve lowers the bypass bridge. }]
+    description: A wheel valve carries the designation of an old maintenance bridge between two channels.
+    locales: { ja: { name: 水門の迂回路, description: 手輪には、二本の水路を結んでいた保守橋の系統名が残る。 } }
+    gates: [{ id: gate.tl4f.sluice, kind: shortcut, grantsFlag: flag.tl4f.sluice-open, clue: A wheel valve logs the bypass clearance. }]
   - id: room.tl4f.pump-hall
     name: Pump Hall
     description: Idle pumps thump once whenever the zero line broadcasts.
@@ -97,7 +96,7 @@ rooms:
     name: Dry Filter Cache
     description: A high filter shelf preserves a supply tin above the cold water.
     locales: { ja: { name: 乾いたろ過棚, description: 高いろ過棚の上だけに、冷水を免れた補給缶が残る。 } }
-    chest: { treasureTable: treasure.tl4f.rainworks-cache, trap: { kind: snare, difficulty: 15, damage: 6 } }
+    chest: { treasureTable: treasure.tl4f.rainworks-cache, trap: { kind: needle, difficulty: 15, damage: 6, status: poison } }
   - id: room.tl4f.drainage-niche
     name: Drainage Niche
     description: A narrow end chamber holds a stamped pump badge and a reserve pack.

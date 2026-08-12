@@ -14,7 +14,7 @@ const contentRoot = join(here, "..", "content", "worlds");
 const godotRoot = join(here, "..", "godot", "assets", "worlds");
 
 // Per-world art the runtime loads at play time (Image.load_from_file), by subdirectory.
-const SUBDIRS = ["dungeon", "ui", "npc", "title", "portraits", "bodies", "characters", "icons", "minimap"];
+const SUBDIRS = ["dungeon", "ui", "npc", "title", "portraits", "bodies", "characters", "icons", "minimap", "effects"];
 
 let copied = 0;
 for (const worldId of readdirSync(contentRoot)) {

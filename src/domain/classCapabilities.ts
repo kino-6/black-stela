@@ -19,10 +19,9 @@ import { resolveClassId } from "./classIds";
  * No class is ever the ONLY way through (§2.3): the tiers change cost, risk and information, never
  * permission.
  *
- * BEHAVIOUR IS UNCHANGED BY THIS FILE. The proficiencies below are exactly the old `trap_handling` and
- * `mapping` tags restated: the three trap classes are specialists (the same +8), everyone else is
- * untrained (the same +0). `trained` is real in the model and deliberately unused until the class
- * consolidation authors it — a tier introduced here would silently re-balance every chest in the game.
+ * The proficiencies below preserve the old `trap_handling` and `mapping` specialists (+8).  The
+ * Swordmaster is deliberately trained (+4) at mechanical locks: precise field work gives a party a
+ * meaningful middle answer without displacing the Thief's specialist identity.
  */
 
 export type Proficiency = "untrained" | "trained" | "specialist";
@@ -108,7 +107,7 @@ export const CLASS_CAPABILITIES: Record<CharacterClassId, ClassCapabilities> = {
       { level: 7, techniqueId: "still-water" },
       { level: 9, techniqueId: "finishing-cut" }
     ],
-    exploration: {},
+    exploration: { unlock: "trained" },
     equipmentProfile: { slots: ["weapon", "hands"], tags: ["blade", "accuracy"] },
     rowPreference: "front",
     weakness: { en: "Thin armour: a round that goes wrong goes very wrong.", ja: "装甲が薄い。崩れた一手が致命になる。" }

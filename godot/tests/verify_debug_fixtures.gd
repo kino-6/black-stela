@@ -65,6 +65,11 @@ func _initialize() -> void:
 	run.reset()
 	scene = String(Fixtures.load_into(run, "floor_2"))
 	_check(scene.ends_with("dungeon.tscn") and String(run.state.get("map", {}).get("floorId", "")) == "dungeon.verdant.g2f", "floor_2 is world-parametrized (Verdant G2F when the world is Verdant)")
+	# T31: the true-clear floors must be reviewable through the same playable deep-floor fixture, not
+	# only via a hand-built state or a screenshot from somebody else's machine.
+	scene = String(Fixtures.load_into(run, "floor_10"))
+	_check(scene.ends_with("dungeon.tscn") and String(run.state.get("map", {}).get("floorId", "")) == "dungeon.verdant.g10f", "floor_10 lands on Verdant G10F")
+	_check(int((run.state.get("party", [])[0] as Dictionary).get("level", 1)) >= 10, "floor_10 supplies a depth-appropriate review party")
 
 	print("[fixtures] %s (%d failures)" % ["PASS" if _fail == 0 else "FAIL", _fail])
 	quit(_fail)

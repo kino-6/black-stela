@@ -9,6 +9,9 @@ config_version=5
 config/name="Black Stela"
 run/main_scene="res://scenes/boot.tscn"
 config/features=PackedStringArray("4.7", "GL Compatibility")
+; Cap the frame rate: this is a turn-based DRPG whose screens are static most of the time, so rendering at a
+; 120Hz ProMotion refresh burned CPU/GPU for no benefit. 60 is plenty for the menus and paced combat playback.
+run/max_fps=60
 
 [autoload]
 

@@ -98,17 +98,26 @@ describe("IMP-029 chest state machine (pure)", () => {
     expect(disarmed.damage).toBe(0);
 	});
 
-	it("a locked chest cannot open until the declared lockpicker succeeds, and spends only one attempt", () => {
+	it("a locked chest can be FORCED open (never a dead-end); forcing a locked+trapped chest springs the trap; picking the lock spends one attempt and avoids it", () => {
 		const lockpicker: Character = { ...createGuildCharacter({ name: "Nim", classId: "thief", seed: "lock" }), level: 20 };
-		let chest = makeChest(CHAMBER_CELL, CHAMBER_ROOM, locked);
-		expect(openChest(chest).blocked).toBe("locked");
+		// Forcing a locked, untrapped chest is not a dead-end: it opens, with no trap to spring.
+		const forced = openChest(makeChest(CHAMBER_CELL, CHAMBER_ROOM, locked));
+		expect(forced.chest.phase).toBe("opened");
+		expect(forced.trapSprung).toBe(false);
 
-		chest = unlockChest(chest, lockpicker, "locked-seed");
+		// Forcing a locked AND trapped chest springs the trap — that is the cost of not picking it cleanly.
+		const lockedTrapped: ScenarioChest = { treasureTable: "treasure.b1f.safe", lock: { difficulty: 8 }, trap: { kind: "gas", difficulty: 8, damage: 4 } };
+		const forcedTrapped = openChest(makeChest(CHAMBER_CELL, CHAMBER_ROOM, lockedTrapped));
+		expect(forcedTrapped.trapSprung).toBe(true);
+		expect(forcedTrapped.damage).toBe(4);
+
+		// Picking the lock cleanly spends exactly one attempt, then opens without forcing.
+		let chest = unlockChest(makeChest(CHAMBER_CELL, CHAMBER_ROOM, locked), lockpicker, "locked-seed");
 		expect(chest.unlockAttempted).toBe(true);
 		expect(chest.unlocked).toBe(true);
 		const spent = { ...chest };
 		expect(unlockChest(chest, lockpicker, "locked-seed")).toEqual(spent);
-		expect(openChest(chest).blocked).toBeUndefined();
+		expect(openChest(chest).chest.phase).toBe("opened");
 	});
 
   it("selectTrapHandler prefers a trap-handling vocation over a plain fighter", () => {
@@ -185,6 +194,23 @@ describe("IMP-029 integration (default world)", () => {
     expect(again.events).toContainEqual({ type: "command_blocked_chest", reason: "already_open" });
     expect(again.state.inventory.length).toBe(grantedCount); // unchanged — no duplicate claim
 	});
+
+  it("a trap with an authored status inflicts that ailment on the whole party when it springs", () => {
+    const won = chamberVictoryState();
+    // Author a status onto the chamber trap and unlock it, then open (springs the undisarmed trap).
+    const primed: GameState = {
+      ...won,
+      chests: (won.chests ?? []).map((chest) => ({
+        ...chest,
+        unlocked: true,
+        trap: chest.trap ? { ...chest.trap, status: "poison" as const } : chest.trap
+      }))
+    };
+    const opened = resolveCommand(primed, defaultWorld, { type: "open_chest" });
+    expect(opened.events).toContainEqual(expect.objectContaining({ type: "chest_trap_sprung", status: "poison" }));
+    // Every standing member carries the ailment now (a fresh chamber party has no injured member to spare).
+    expect(opened.state.party.every((member) => (member.status ?? []).includes("poison"))).toBe(true);
+  });
 
   it("opens and grants the reward as part of a successful disarm, with no redundant open command", () => {
     const won = chamberVictoryState();

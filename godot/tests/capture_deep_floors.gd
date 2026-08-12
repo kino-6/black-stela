@@ -6,12 +6,12 @@ extends SceneTree
 
 const Fixtures := preload("res://scripts/debug_fixtures.gd")
 
-# (world, floor_n, label) — representative mid and late floors of each world.
+# (world, floor_n, label) — deep floors including both true-clear layers.
 const SHOTS := [
 	["default", "floor_5", "default_b5f"],
-	["default", "floor_8", "default_b8f"],
+	["default", "floor_10", "default_b10f"],
 	["verdant", "floor_2", "verdant_g2f"],
-	["verdant", "floor_3", "verdant_g3f"],
+	["verdant", "floor_10", "verdant_g10f"],
 ]
 
 func _initialize() -> void:

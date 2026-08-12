@@ -15,7 +15,7 @@ const SliceRules := preload("res://scripts/rules/slice_rules.gd")
 const StateHash := preload("res://scripts/rules/state_hash.gd")
 const InputActionsScript := preload("res://scripts/input_actions.gd")
 
-const PROGRESS_VALUES := ["ready", "after_encounter", "return_ready", "floor_2", "floor_3", "floor_4", "floor_5", "floor_6", "floor_7", "floor_8"]
+const PROGRESS_VALUES := ["ready", "after_encounter", "return_ready", "floor_2", "floor_3", "floor_4", "floor_5", "floor_6", "floor_7", "floor_8", "floor_9", "floor_10"]
 
 var _open := false
 var _panel: PanelContainer = null

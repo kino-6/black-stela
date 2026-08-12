@@ -9,6 +9,13 @@ extends SceneTree
 
 var _failures := 0
 
+# T31: B10/G10 are true-clear bosses. Unlike ordinary enemies, both visible states are a release
+# contract; a missing hurt frame silently turns the hit reaction back into the generic fallback.
+const TRUE_BOSS_BASENAMES := {
+	"enemy.b10.dark-stela": "enemy-b10-dark-stela",
+	"enemy.verdant.g10.worldheart": "enemy-verdant-g10-worldheart",
+}
+
 func _initialize() -> void:
 	var worlds: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/worlds/index.json"))
 	var ids: Array = (worlds as Dictionary).get("worlds", []) if typeof(worlds) == TYPE_DICTIONARY else []
@@ -37,8 +44,8 @@ func _initialize() -> void:
 		for sub in ["ui/town-hub.jpg"]:
 			_require("res://assets/worlds/%s/%s" % [world_id, sub], "%s backdrop" % world_id)
 
-		# Dungeon block textures, per depth band (dungeon.gd picks by floor number).
-		for suffix in ["-block1", "-block2", "-block3"]:
+		# Dungeon block textures, per depth band. Block4 is the floor-10 true-clear layer.
+		for suffix in ["-block1", "-block2", "-block3", "-block4"]:
 			for kind in ["stone-wall", "stone-floor"]:
 				_require("res://assets/worlds/%s/dungeon/%s%s.jpg" % [world_id, kind, suffix], "%s maze texture" % world_id)
 
@@ -54,6 +61,10 @@ func _initialize() -> void:
 					break
 			if not found:
 				_fail("%s: no art for enemy %s — the stage would show an empty frame" % [world_id, full])
+			if TRUE_BOSS_BASENAMES.has(full):
+				var basename := String(TRUE_BOSS_BASENAMES[full])
+				_require("res://assets/worlds/%s/dungeon/%s.png" % [world_id, basename], "%s true-boss base" % world_id)
+				_require("res://assets/worlds/%s/dungeon/%s-hurt.png" % [world_id, basename], "%s true-boss hurt" % world_id)
 
 	print("")
 	if _failures == 0:

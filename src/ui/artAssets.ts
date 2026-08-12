@@ -153,7 +153,9 @@ export function blockTextures(pack: string = activePack) {
   return {
     block1: { wall: asset("stone-wall-block1", pack), floor: asset("stone-floor-block1", pack) },
     block2: { wall: asset("stone-wall-block2", pack), floor: asset("stone-floor-block2", pack) },
-    block3: { wall: asset("stone-wall-block3", pack), floor: asset("stone-floor-block3", pack) }
+    block3: { wall: asset("stone-wall-block3", pack), floor: asset("stone-floor-block3", pack) },
+    // Floor 10 is the true-clear layer, not merely the deepest three-floor band.
+    block4: { wall: asset("stone-wall-block4", pack), floor: asset("stone-floor-block4", pack) }
   };
 }
 

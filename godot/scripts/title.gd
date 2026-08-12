@@ -151,6 +151,19 @@ func _rebuild() -> void:
 
 	box.add_child(_centered(UI.label(I18n.t("play.menuHint"), 15, DIM)))
 	start.call_deferred("grab_focus")
+	# The plate is bottom-anchored on the assumption of a SHORT menu (size.y - 430). A taller menu — more save
+	# slots, or the larger readable fonts — ran off the bottom edge; nudge it back on-screen once it has measured.
+	call_deferred("_keep_plate_onscreen", plate)
+
+## Keep the menu plate fully on-screen after it has measured its content: it is bottom-anchored, so a menu
+## taller than the assumed height would otherwise run off the bottom edge (larger fonts, or many save slots).
+func _keep_plate_onscreen(plate: Control) -> void:
+	if not is_instance_valid(plate):
+		return
+	var margin := 28.0
+	var max_top := size.y - plate.size.y - margin
+	if plate.position.y > max_top:
+		plate.position.y = maxf(margin, max_top)
 
 func _toggle_config() -> void:
 	_config_open = not _config_open

@@ -50,7 +50,9 @@ import {
   removeInventoryItem,
   weaponReaches,
   weaponShots,
-  weaponIsFirearm
+  weaponIsFirearm,
+  weaponFirearmFamily,
+  firearmFamilyFromTags
 } from "./economy";
 import { EQUIPMENT_AFFIXES, equipmentInstanceKey } from "./affixes";
 import { getQuestProgress, recordQuestKills } from "./quests";
@@ -1264,6 +1266,8 @@ function declareRound(state: GameState, world: ScenarioWorld, actions: CombatAct
    * bindings and `beat`, so extraction changed no behaviour and no signatures.
    */
   const applyTechnique = (technique: Technique, actor: Character, action: CombatActionDeclaration): void => {
+    const firearm = technique.tags?.includes("firearm") ?? false;
+    const firearmFamily = firearm ? firearmFamilyFromTags(technique.tags ?? []) : undefined;
     // §9.4: WHO the technique reaches, derived from its declared scope rather than from which target
     // field the UI happened to fill in. `self`/`party`/`allEnemies` need no player choice at all, which
     // is why they were unreachable while the resolver keyed off `targetCharacterId`/`targetGroupId`.
@@ -1348,7 +1352,7 @@ function declareRound(state: GameState, world: ScenarioWorld, actions: CombatAct
           const verb = technique.kind === "skill" ? "strikes" : "scorches";
           beat(
             `${actor.name} ${verb} ${group.name} for ${damage}${weakness > 1 ? " (weak!)" : ""}. ${updated?.count ?? 0} remain.`,
-            { kind: technique.kind === "skill" ? "hit" : "cast", actorId: actor.id, actorName: actor.name, targetGroupId: group.id, targetEnemyId: group.enemyId, damage, remaining: updated?.count ?? 0, weak: weakness > 1, spellId: technique.id }
+            { kind: technique.kind === "skill" ? "hit" : "cast", actorId: actor.id, actorName: actor.name, targetGroupId: group.id, targetEnemyId: group.enemyId, damage, remaining: updated?.count ?? 0, weak: weakness > 1, spellId: technique.id, firearm, firearmFamily, shotIndex: firearm ? 0 : undefined }
           );
         }
       } else if (effect.kind === "status") {
@@ -1506,6 +1510,7 @@ function declareRound(state: GameState, world: ScenarioWorld, actions: CombatAct
     // only the follow-up rounds (shot > 0) are new, keyed by shot index.
     const shots = weaponShots(actor, world);
     const firearm = weaponIsFirearm(actor, world);
+    const firearmFamily = firearm ? weaponFirearmFamily(actor, world) : undefined;
     let sweepTargetId: string | undefined = group.id;
     for (let shot = 0; shot < shots; shot++) {
       const tgt =
@@ -1534,7 +1539,7 @@ function declareRound(state: GameState, world: ScenarioWorld, actions: CombatAct
       const updated = enemyGroups.find((candidate) => candidate.id === tgt.id);
       beat(
         `${actor.name} ${crit ? "crits" : "hits"} ${tgt.name} for ${damage}. ${updated?.count ?? 0} remain.`,
-        { kind: "hit", actorId: actor.id, actorName: actor.name, targetGroupId: tgt.id, targetEnemyId: tgt.enemyId, damage, remaining: updated?.count ?? 0, crit, firearm, shotIndex: shot }
+        { kind: "hit", actorId: actor.id, actorName: actor.name, targetGroupId: tgt.id, targetEnemyId: tgt.enemyId, damage, remaining: updated?.count ?? 0, crit, firearm, firearmFamily, shotIndex: shot }
       );
     }
   }
@@ -2712,16 +2717,22 @@ function openChestCommand(state: GameState, world: ScenarioWorld): CommandResult
  * whether the interaction consumes a turn; automatic opening after a successful disarm/unlock remains
  * one field action, while an explicit open is also one field action. */
 function resolveOpenedChest(state: GameState, world: ScenarioWorld, chest: ChestState): { state: GameState; events: GameEvent[] } {
-  const { chest: opened, trapSprung, damage, blocked } = openChest(chest);
-  if (blocked) return { state, events: [{ type: "command_blocked_chest", reason: blocked }] };
+  const { chest: opened, trapSprung, damage } = openChest(chest);
   let next = replaceChest(state, opened);
   const events: GameEvent[] = [];
   if (trapSprung) {
+    // The trap's HP hit, plus its world-authored ailment (poison/fear/silence/sleep) on the whole party —
+    // an already-injured member is spared both, and nobody is killed by a chest.
+    const ailment = chest.trap!.status;
     next = {
       ...next,
-      party: next.party.map((member) => (member.injury ? member : { ...member, hp: Math.max(1, member.hp - damage) }))
+      party: next.party.map((member) => {
+        if (member.injury) return member;
+        const hp = Math.max(1, member.hp - damage);
+        return ailment ? { ...member, hp, status: uniqueStatuses([...(member.status ?? []), ailment]) } : { ...member, hp };
+      })
     };
-    events.push({ type: "chest_trap_sprung", trapKind: chest.trap!.kind, damage });
+    events.push({ type: "chest_trap_sprung", trapKind: chest.trap!.kind, damage, ...(ailment ? { status: ailment } : {}) });
   }
   const item = state.floorClaimedTreasures.includes(chest.roomId)
     ? null

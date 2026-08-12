@@ -153,7 +153,7 @@ items:
     tier: 3
     price: 76
     sellValue: 25
-    explorationAid: { actions: [unlock], bonus: 8 }
+    explorationAid: { actions: [unlock], bonus: 7 }
     locales:
       ja:
         name: 破扉ウェッジ

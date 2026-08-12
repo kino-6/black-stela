@@ -42,6 +42,11 @@ Not stone. **Root/bark/moss surfaces**, wetter and more overgrown with depth:
   vein-like roots; floor of bone-pale rootmat. ✅ generated
 (The basenames are fixed by the renderer — the *content* is what changes.)
 
+### T31 — 真層（G10）
+
+- `stone-wall-block4.jpg` / `stone-floor-block4.jpg` — G10だけの淡い心材・暗い根・乾いた樹液のテクスチャ。generated / depth-10 wired。
+- `enemy-verdant-g10-worldheart.png` / `enemy-verdant-g10-worldheart-hurt.png` — 真ボス「世界樹の芯」の768² clean-alpha base/hurt。asset gate required。
+
 ### `dungeon/stair-down.png` — the descent (PNG RGBA, ~768², floor plane) ✅ generated and browser-verified
 **A vine ladder / hanging root-stair**, not steps: knotted vines and aerial roots dropping
 through a hole in the rootmat into green dark below. Must read instantly as "go down."

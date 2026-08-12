@@ -106,7 +106,7 @@ func _initialize() -> void:
 	# The class promise is written as player intent first, with the technique name only as a subtitle.
 	# Exact unlock levels are rules data, but are not useful as a fixed shopping list during recruitment.
 	var knight_copy := _all_text(guild)
-	for promise in ["敵を攻撃", "自分の守りを上げる", "味方への攻撃を引き受ける"]:
+	for promise in ["ダメージ", "自分の守りを上げる", "味方への攻撃を引き受ける"]:
 		if not knight_copy.contains(promise):
 			_fail("class promise: knight never explains %s" % promise)
 	if knight_copy.contains("Lv"):

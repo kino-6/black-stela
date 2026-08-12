@@ -94,6 +94,50 @@ func _initialize() -> void:
 						_fail("party 編成 tab lost its 前衛へ placement — row changes must remain reachable")
 					else:
 						print("[town-controller] party: 前後交代 gone from status; 編成 owns row placement (T17)")
+					# #18: the tab strip is reachable by ARROWS, not just Tab ("Tab is not a gamepad button").
+					# From the status page's landing focus, ↑ must reach the tab strip and → must walk it to
+					# 装備 — the whole path with no Tab press. This FAILS on the pre-fix panel (装備 needed Tab).
+					town.call("set_ui_state", {"service": "party", "party_page": "status"})
+					for i in 3:
+						await process_frame
+					get_root().push_input(_action("ui_up"))
+					for i in 2:
+						await process_frame
+					var on_tab := _focused()
+					var equip_label := I18n.t("partyMenu.tabs.equipment")
+					if not (on_tab is Button):
+						_fail("party: ↑ from the page did not reach the tab strip — 装備 still needs Tab (#18)")
+					else:
+						var reached_equip: bool = (on_tab as Button).text == equip_label
+						for _step in 6:
+							if reached_equip:
+								break
+							get_root().push_input(_action("ui_right"))
+							for i in 2:
+								await process_frame
+							var f2 := _focused()
+							if f2 is Button and (f2 as Button).text == equip_label:
+								reached_equip = true
+						if reached_equip:
+							print("[town-controller] party: 装備 tab reached by ↑/→ alone, no Tab (#18)")
+						else:
+							_fail("party: 装備 tab not reachable by arrows without Tab (#18)")
+					town.call("set_ui_state", {"service": "party", "party_page": "status"})
+					for i in 3:
+						await process_frame
+					# #17: menus navigate with WASD, not only the arrows. A physical S key must move focus the
+					# same as ↓ (W/A/S/D are bound onto the ui_* focus actions). RED if that binding is missing.
+					var before_wasd := _focused()
+					get_root().push_input(_key(KEY_S))
+					for i in 2:
+						await process_frame
+					if _focused() == before_wasd:
+						_fail("party: physical S did not move focus — WASD is not wired to menu nav (#17)")
+					else:
+						print("[town-controller] party: WASD (S) drives menu focus like ↓ (#17)")
+					town.call("set_ui_state", {"service": "party", "party_page": "status"})
+					for i in 3:
+						await process_frame
 					# T18: no page of the party menu may leak a RAW i18n key. First the plain tabs.
 					for menu_page in ["status", "formation", "spells", "equipment", "items", "valuables"]:
 						town.call("set_ui_state", {"service": "party", "party_page": String(menu_page)})
@@ -101,6 +145,16 @@ func _initialize() -> void:
 							await process_frame
 						if _all_text(town).contains("partyMenu."):
 							_fail("party %s tab leaked a raw partyMenu.* i18n key (T18)" % menu_page)
+					# #19: flavour must not HIDE the mechanical effect. The item detail shows a labelled 効果: line
+					# separately from the authored flavour. Pre-fix it showed flavour OR effect, so a flavoured
+					# heal/cure item stated its mood and never said what it does. (「今は効果なし」 has no colon.)
+					town.call("set_ui_state", {"service": "party", "party_page": "items"})
+					for i in 3:
+						await process_frame
+					if not _all_text(town).contains(I18n.t("partyMenu.effectLabel") + ":"):
+						_fail("party items: an item with an effect shows no 効果: line — flavour is hiding it (#19)")
+					else:
+						print("[town-controller] party items: flavour and the 効果: line are shown separately (#19)")
 					# Then the 呪文/特技 CAST view — it once rendered a bare "partyMenu.back" as its back button.
 					# Find a member who knows a heal, drive their cast target list, and assert it is localized.
 					var heal_cast_seen := false
@@ -444,6 +498,13 @@ func _focused() -> Control:
 func _action(name: String) -> InputEventAction:
 	var event := InputEventAction.new()
 	event.action = name
+	event.pressed = true
+	return event
+
+# A physical key press (not a named action) — proves the WASD→ui_* binding exists end-to-end (#17).
+func _key(keycode: int) -> InputEventKey:
+	var event := InputEventKey.new()
+	event.physical_keycode = keycode
 	event.pressed = true
 	return event
 

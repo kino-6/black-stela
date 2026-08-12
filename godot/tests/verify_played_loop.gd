@@ -11,6 +11,7 @@ extends SceneTree
 
 const DungeonEntry := preload("res://scripts/rules/dungeon_entry.gd")
 const Dungeon := preload("res://scripts/dungeon.gd")
+const SliceRules := preload("res://scripts/rules/slice_rules.gd")
 
 var _fail := 0
 
@@ -22,6 +23,8 @@ func _initialize() -> void:
 	_test_fresh_seeds_at_landing(world, landing)
 	_test_victory_resume_keeps_position_and_map(world)
 	_test_town_redescend_keeps_automap(world, landing)
+	_test_cross_floor_return_keeps_automap_records()
+	_test_return_never_rolls_back_durable_progress(world)
 	_test_continue_routes_by_phase()
 	_test_dungeon_script_delegates(world)
 	_test_null_position_is_safe(world)
@@ -59,6 +62,90 @@ func _test_town_redescend_keeps_automap(world: Dictionary, landing: String) -> v
 	var visited: Array = (plan["map"] as Dictionary).get("visitedCells", [])
 	_check(visited.has("cell.b1f.explored"), "re-descend: the explored automap is KEPT, not reset (#12)")
 	_check(visited.has(landing), "re-descend: the landing is marked too")
+
+# D8 — the earlier #12 lock covered only a B1F return. A map whose last active floor is F2+ used to take the
+# `different floor = seed fresh` branch and silently discard every deep-floor record when the town re-entry
+# naturally landed on F1. All authored worlds must retain their whole automap history across that transition.
+func _test_cross_floor_return_keeps_automap_records() -> void:
+	var engine: Dictionary = _read("res://data/engine-data.json")
+	for world_id in ["default", "verdant", "terminal-line"]:
+		var world: Dictionary = _read("res://data/worlds/%s.json" % world_id).get("world", {})
+		var floors: Array = world.get("dungeons", [])
+		if floors.size() < 2:
+			_check(false, "%s: requires a second floor for cross-floor return coverage" % world_id)
+			continue
+		var start_room := String(world.get("startRoom", ""))
+		var start_cell := String(DungeonEntry.cell_for_room(world, start_room).get("id", ""))
+		var return_point := _first_deep_return_point(floors)
+		if return_point.is_empty():
+			_check(false, "%s: requires an authored deep return point for rollback coverage" % world_id)
+			continue
+		var deep_floor: Dictionary = return_point.get("floor", {})
+		var deep_room := String(return_point.get("roomId", ""))
+		var deep_cell := String(DungeonEntry.cell_for_room(world, deep_room).get("id", ""))
+		var state := {
+			"phase": "dungeon",
+			"position": {"roomId": deep_room, "cellId": deep_cell, "facing": "north"},
+			"combat": null,
+			"party": [],
+			"turn": 8,
+			"map": {
+				"floorId": String(deep_floor.get("id", "")),
+				"visitedCells": [start_cell, deep_cell],
+				"visitedRooms": [start_room, deep_room],
+				"knownExits": {deep_room: ["north"]},
+				"blockedExits": {deep_room: ["south"]},
+				"secretCandidates": {deep_room: ["west"]},
+			},
+		}
+		var returned: Dictionary = SliceRules.resolve(state, {"type": "return_to_town"}, world, engine).get("state", {})
+		_check(String(returned.get("phase", "")) == "town", "%s: deep return point reaches town before re-entry" % world_id)
+		var plan: Dictionary = DungeonEntry.plan(returned, world)
+		var map: Dictionary = plan.get("map", {})
+		_check((map.get("visitedCells", []) as Array).has(deep_cell), "%s: deep visited cell survives marker return → F1 re-entry" % world_id)
+		_check((map.get("visitedRooms", []) as Array).has(deep_room), "%s: deep visited room survives marker return → F1 re-entry" % world_id)
+		_check((map.get("knownExits", {}) as Dictionary).has(deep_room), "%s: known deep exits survive marker return → F1 re-entry" % world_id)
+		_check((map.get("blockedExits", {}) as Dictionary).has(deep_room), "%s: blocked-exit record survives marker return → F1 re-entry" % world_id)
+		_check((map.get("secretCandidates", {}) as Dictionary).has(deep_room), "%s: secret-search record survives marker return → F1 re-entry" % world_id)
+
+func _first_deep_return_point(floors: Array) -> Dictionary:
+	for index in range(1, floors.size()):
+		var floor: Dictionary = floors[index]
+		for room in floor.get("rooms", []):
+			if bool((room as Dictionary).get("stairsToTown", false)) or bool((room as Dictionary).get("restPoint", false)):
+				return {"floor": floor, "roomId": String((room as Dictionary).get("id", ""))}
+	return {}
+
+# Normal return has no authored knowledge-loss cost. Assert the actual rules command preserves every durable
+# player record, rather than only checking the map shape after a later scene transition.
+func _test_return_never_rolls_back_durable_progress(world: Dictionary) -> void:
+	var engine: Dictionary = _read("res://data/engine-data.json")
+	var start_room := String(world.get("startRoom", ""))
+	var start_cell := String(DungeonEntry.cell_for_room(world, start_room).get("id", ""))
+	var state := {
+		"phase": "dungeon",
+		"position": {"roomId": start_room, "cellId": start_cell, "facing": "south"},
+		"combat": null,
+		"turn": 12,
+		"party": [],
+		"inventory": [{"id": "item.regression", "quantity": 1}],
+		"partyGold": 37,
+		"defeatedEnemies": ["enemy.recorded"],
+		"claimedTreasures": ["treasure.recorded"],
+		"discoveredSecrets": ["secret.recorded"],
+		"resolvedTraps": ["trap.recorded"],
+		"map": {
+			"floorId": world.get("startDungeon", ""), "currentRoomId": start_room, "currentCellId": start_cell, "currentFacing": "south",
+			"visitedCells": [start_cell, "cell.recorded"], "visitedRooms": [start_room, "room.recorded"],
+			"knownExits": {"room.recorded": ["north"]}, "blockedExits": {"room.recorded": ["east"]}, "secretCandidates": {"room.recorded": ["west"]},
+		},
+	}
+	var result: Dictionary = SliceRules.resolve(state, {"type": "return_to_town"}, world, engine)
+	var after: Dictionary = result.get("state", {})
+	for key in ["inventory", "partyGold", "defeatedEnemies", "claimedTreasures", "discoveredSecrets", "resolvedTraps"]:
+		_check(after.get(key) == state.get(key), "return: durable '%s' is never silently rolled back" % key)
+	for key in ["visitedCells", "visitedRooms", "knownExits", "blockedExits", "secretCandidates"]:
+		_check((after.get("map", {}) as Dictionary).get(key) == (state.get("map", {}) as Dictionary).get(key), "return: automap '%s' is never silently rolled back" % key)
 
 # #11 — the post-combat destination follows the phase: victory=dungeon (resume), otherwise town.
 func _test_continue_routes_by_phase() -> void:

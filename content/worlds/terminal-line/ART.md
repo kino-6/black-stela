@@ -24,6 +24,7 @@ and baked scene lighting.
 | F1/F2 chest state / reward | `dungeon/treasure-chest-closed.png`, `treasure-chest-open.png`, `treasure-reward-still.png` | PNG | generated / must show acquisition centrally |
 | F1 enemy catalog | `dungeon/enemy-tl1f-{drain-rat,baton-unit,breath-collector,unmanned-stationmaster}{,-hurt}.png` | 768² RGBA | generated / data bound |
 | F2 enemy catalog | `dungeon/enemy-tl2f-{cable-hound,rain-reclaimer}{,-hurt}.png` | 768² RGBA | generated / data bound |
+| firearm combat beat overlays | `effects/fx-tl-{pistol,rifle,smg,shotgun}-{muzzle,travel,impact}.png` | 512² RGBA | generated / stage wiring + runtime review pending |
 | `item.tl-*`, `equip.tl-*` | `icons/item-tl-*.png`, `icons/equip-tl-*.png` | 256² RGBA | generated / data bound (all 17 item IDs, all 48 equipment IDs) |
 | town / entrance / combat | `ui/town-hub.jpg`, `dungeon-entrance.png`, `combat-vignette.jpg` | 1600×900 opaque still | generated / needs runtime review |
 
@@ -60,3 +61,9 @@ and baked scene lighting.
   Fire-mode and ammunition mechanics remain W3a rules work, not art-only promises.
 - `item.tl-universal-round` has an icon and data now; shared-ammunition consumption and alert state remain
   W3a rules work, not a fake visual feature in this asset pack.
+- Firearm combat overlays are deliberately **local and short-lived**: each family has a muzzle, travel, and
+  impact/ricochet frame. Sidearms read as a small single spark, long guns as a thin precise tracer, SMGs as a
+  brief three-round suppression line, and shotguns as a close-range pellet fan. They are not yet bound to the
+  combat stage; when they are, the effect must sit inside the combat lane and never cover a selected enemy,
+  its condition bar, the command dock, or the whole display. No frame is permission to introduce reload,
+  ammunition, or alert mechanics that do not exist in the rules.

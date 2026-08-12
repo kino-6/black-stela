@@ -126,40 +126,59 @@ export function FloorMapView({ state, world, locale, t }: MapPanelProps) {
     return <p className="floor-map-empty">{t("map.noFloor")}</p>;
   }
 
+  // A1-style rulers (letters across the top, numbers down the left) on the floor's ABSOLUTE origin, and a
+  // faint grid via a 1px gap over a dark backing — the マス目 the player counts. Mirrors floor_map.gd.
+  const header: JSX.Element[] = [<span key="corner" className="floor-map-ruler corner" aria-hidden="true" />];
+  for (let cx = 0; cx < floorMap.width; cx += 1) {
+    header.push(
+      <span key={`col-${cx}`} className="floor-map-ruler" aria-hidden="true">
+        {columnLetter(floorMap.minX + cx - floorMap.floorMinX)}
+      </span>
+    );
+  }
+  const rows: JSX.Element[] = [];
+  for (let ry = 0; ry < floorMap.height; ry += 1) {
+    rows.push(
+      <span key={`row-${ry}`} className="floor-map-ruler" aria-hidden="true">
+        {floorMap.minY + ry - floorMap.floorMinY + 1}
+      </span>
+    );
+    for (let cx = 0; cx < floorMap.width; cx += 1) {
+      const cell = cellsByPosition.get(`${cx},${ry}`);
+      if (!cell) {
+        rows.push(<span key={`empty-${ry}-${cx}`} className="mini-map-cell empty" aria-hidden="true" />);
+        continue;
+      }
+      const edgeClasses = DIRECTIONS.map((direction) => `edge-${direction}-${cell.edges[direction]}`).join(" ");
+      const markerLabel = cell.marker ? `, ${t(`map.marker.${cell.marker}`)}` : "";
+      rows.push(
+        <span
+          aria-label={`${cell.label}: ${t(`map.${cell.status}`)}${markerLabel}`}
+          className={`mini-map-cell ${cell.status} ${edgeClasses}`}
+          data-testid={`floor-map-${cell.status}`}
+          key={cell.id}
+          title={cell.label}
+        >
+          {cell.marker && <i className={`mini-map-marker marker-${cell.marker}`} aria-hidden="true" />}
+          {cell.status === "current" && facing && (
+            <b aria-label={t(`direction.${facing}`)} className={`mini-map-facing facing-${facing}`} />
+          )}
+        </span>
+      );
+    }
+  }
+
   return (
     <div
       className="floor-map-grid"
       data-testid="floor-map-grid"
       style={{
-        gridTemplateColumns: `repeat(${floorMap.width}, 1.15rem)`,
-        gridTemplateRows: `repeat(${floorMap.height}, 1.15rem)`
+        gridTemplateColumns: `1.15rem repeat(${floorMap.width}, 1.15rem)`,
+        gridTemplateRows: `1.15rem repeat(${floorMap.height}, 1.15rem)`
       }}
     >
-      {Array.from({ length: floorMap.width * floorMap.height }).map((_, index) => {
-        const x = index % floorMap.width;
-        const y = Math.floor(index / floorMap.width);
-        const cell = cellsByPosition.get(`${x},${y}`);
-        if (!cell) {
-          return <span key={`empty-${index}`} className="mini-map-cell empty" aria-hidden="true" />;
-        }
-
-        const edgeClasses = DIRECTIONS.map((direction) => `edge-${direction}-${cell.edges[direction]}`).join(" ");
-        const markerLabel = cell.marker ? `, ${t(`map.marker.${cell.marker}`)}` : "";
-        return (
-          <span
-            aria-label={`${cell.label}: ${t(`map.${cell.status}`)}${markerLabel}`}
-            className={`mini-map-cell ${cell.status} ${edgeClasses}`}
-            data-testid={`floor-map-${cell.status}`}
-            key={cell.id}
-            title={cell.label}
-          >
-            {cell.marker && <i className={`mini-map-marker marker-${cell.marker}`} aria-hidden="true" />}
-            {cell.status === "current" && facing && (
-              <b aria-label={t(`direction.${facing}`)} className={`mini-map-facing facing-${facing}`} />
-            )}
-          </span>
-        );
-      })}
+      {header}
+      {rows}
     </div>
   );
 }
@@ -307,7 +326,7 @@ export function buildFloorMap(state: GameState, world: ScenarioWorld, locale: Lo
   }
   const shown = gridCells.filter((cell) => visited.has(cell.roomId));
   if (!currentRoomId || shown.length === 0) {
-    return { cells: [] as MiniMapCell[], width: 0, height: 0 };
+    return { cells: [] as MiniMapCell[], width: 0, height: 0, minX: 0, minY: 0, floorMinX: 0, floorMinY: 0 };
   }
 
   const minX = Math.min(...shown.map((cell) => cell.x));
@@ -315,8 +334,35 @@ export function buildFloorMap(state: GameState, world: ScenarioWorld, locale: Lo
   const width = Math.max(...shown.map((cell) => cell.x)) - minX + 1;
   const height = Math.max(...shown.map((cell) => cell.y)) - minY + 1;
   const cells = shown.map((cell) => buildMiniMapCell(cell, minX, minY, state, world, locale, currentRoomId));
+  // Coordinates are ABSOLUTE to the floor's own origin (min over ALL cells) so a cell's A1 label is stable no
+  // matter how much is explored — the Wizardry read. Mirrors floor_map.gd.
+  const floorMinX = Math.min(...gridCells.map((cell) => cell.x));
+  const floorMinY = Math.min(...gridCells.map((cell) => cell.y));
 
-  return { cells, width, height };
+  return { cells, width, height, minX, minY, floorMinX, floorMinY };
+}
+
+/** Column index → spreadsheet letters (0→A … 25→Z, 26→AA). Mirrors floor_map._col_letter. */
+export function columnLetter(index: number): string {
+  let out = "";
+  let n = index;
+  while (n >= 0) {
+    out = String.fromCharCode(65 + (n % 26)) + out;
+    n = Math.floor(n / 26) - 1;
+  }
+  return out;
+}
+
+/** The party's current cell as an A1 coordinate on the floor's absolute grid, or "" when off the floor. */
+export function floorCoordinate(state: GameState, world: ScenarioWorld): string {
+  const floor = world.dungeons.find((dungeon) => dungeon.id === state.map.floorId);
+  const cells = floor?.grid?.cells ?? [];
+  const currentId = state.map.currentCellId;
+  const here = currentId ? cells.find((cell) => cell.id === currentId) : undefined;
+  if (!here || cells.length === 0) return "";
+  const floorMinX = Math.min(...cells.map((cell) => cell.x));
+  const floorMinY = Math.min(...cells.map((cell) => cell.y));
+  return `${columnLetter(here.x - floorMinX)}${here.y - floorMinY + 1}`;
 }
 
 function buildGraphMiniMap(state: GameState, world: ScenarioWorld, locale: Locale, currentRoomId: string | null) {

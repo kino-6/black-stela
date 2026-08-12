@@ -123,21 +123,45 @@ func _rebuild() -> void:
 	var level_ups: Array = _result.get("levelUps", [])
 	if not level_ups.is_empty():
 		var growth := UI.col(8)
-		growth.add_child(UI.label(I18n.t("result.growth"), 20, UI.GOLD))
-		for entry in level_ups:
-			growth.add_child(_level_up_row(entry))
+		# `レベルアップ` used to sit on every record while its level was pushed to the far right of a
+		# 920px row. Six simultaneous levels therefore made an empty second column and shoved Continue
+		# below the viewport. Keep the parity term in the section heading, then make each growth record
+		# self-contained and pair records horizontally. A party-wide level-up now reads in the same
+		# compact scan as a six-person formation.
+		growth.add_child(UI.label("%s　%s" % [I18n.t("result.growth"), I18n.t("result.levelUp")], 20, UI.GOLD))
+		var records := _growth_records(level_ups)
+		if level_ups.size() > 6:
+			# Six is the normal party ceiling. Preserve the Continue command for exceptional bulk rewards
+			# by making only the records scroll, never the conclusion's main command surface.
+			growth.add_child(UI.scroller(records, Vector2(896, 286)))
+		else:
+			growth.add_child(records)
 		col.add_child(UI.card(growth))
 
 	var cont := UI.button(I18n.t("result.continue"), func(): _on_return(), Vector2(360, 56), 24)
 	col.add_child(_centered(cont))
 	cont.call_deferred("grab_focus")
 
-func _level_up_row(entry: Dictionary) -> Control:
+func _growth_records(level_ups: Array) -> Control:
+	var grid := UI.col(8)
+	grid.name = "GrowthRecords"
+	for index in range(0, level_ups.size(), 2):
+		var pair := UI.row()
+		pair.name = "GrowthRecordPair"
+		pair.add_child(UI.grow(_level_up_card(level_ups[index])))
+		if index + 1 < level_ups.size():
+			pair.add_child(UI.grow(_level_up_card(level_ups[index + 1])))
+		grid.add_child(pair)
+	return grid
+
+func _level_up_card(entry: Dictionary) -> Control:
 	var member := _find_member(entry)
 	var row := UI.row()
+	row.name = "GrowthRecord"
+	row.custom_minimum_size = Vector2(0, 74)
 
 	var portrait := TextureRect.new()
-	portrait.custom_minimum_size = Vector2(64, 76)
+	portrait.custom_minimum_size = Vector2(44, 56)
 	portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 	# face_path (not the bare portraits/<key>.png) so a body-only figure (a world.portraits key like chara-13,
@@ -146,21 +170,27 @@ func _level_up_row(entry: Dictionary) -> Control:
 	row.add_child(UI.card(portrait, Color(String(member.get("accentColor", "#c9a765")))))
 
 	var lvl := int(entry.get("level", 1))
-	var copy := UI.col(2)
-	copy.add_child(UI.label(String(entry.get("name", member.get("name", "?"))), 20, UI.INK))
-	copy.add_child(UI.label(I18n.t("result.levelUp"), 16, UI.OK))
+	var copy := UI.col(1)
+	var heading := UI.row()
+	heading.add_child(UI.grow(UI.label(String(entry.get("name", member.get("name", "?"))), 18, UI.INK)))
+	heading.add_child(UI.label(I18n.t("result.level", {"level": lvl}), 16, UI.GOLD))
+	copy.add_child(heading)
 	# What actually CHANGED at this level (playtest T5: "レベルアップ" alone said nothing): the stat gains,
-	# any newly-usable 特技/呪文, and the EXP to the next level.
+	# any newly-usable 特技/呪文, and the EXP to the next level. These stay adjacent to the reached level
+	# rather than becoming a duplicated right-hand column.
+	# Growth text was 14/13px and cramped on the result screen (user #20). Bump the stat-gain and 習得 lines to
+	# 16 and the EXP line to 15 — the readable answer to "何が変わったのか" — with the card taller to match.
 	var delta := _growth_delta_text(member, lvl)
 	if delta != "":
-		copy.add_child(UI.label(delta, 15, UI.INK))
+		copy.add_child(UI.label(delta, 16, UI.INK))
 	var learned := _new_techniques_text(member, lvl)
 	if learned != "":
-		copy.add_child(UI.label(learned, 15, UI.OK))
-	copy.add_child(UI.label("%s %d" % [I18n.t("partyMenu.xpToNext"), _xp_to_next(member, lvl)], 14, UI.DIM))
+		copy.add_child(UI.label(learned, 16, UI.OK))
+	copy.add_child(UI.label("%s %d" % [I18n.t("partyMenu.xpToNext"), _xp_to_next(member, lvl)], 15, UI.DIM))
 	row.add_child(UI.grow(copy))
-	row.add_child(UI.label(I18n.t("result.level", {"level": lvl}), 22, UI.GOLD))
-	return row
+	var card := UI.card(row, Color(String(member.get("accentColor", "#3a4326"))))
+	card.name = "GrowthRecord"
+	return card
 
 # The stat gain THIS level added, from the ported growth curve (deterministic from aptitude + level), shown
 # as "HP+4  攻撃+1  速度+1" for the fields that moved — the answer to "何が変わったのか".

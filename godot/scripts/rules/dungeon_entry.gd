@@ -14,8 +14,8 @@ extends RefCounted
 ##   - VICTORY RESUME: run_state.return_to_town() clears combat but LEAVES position on the fight cell.
 ##     A non-null position.cellId means "resume exactly where we were" (any floor) — keep both.
 ##   - FRESH LANDING: rules `returnToTown` nulled the position, so we place the party at the floor's
-##     stair landing. The visited automap is KEPT (unioned with the landing) when it belongs to this
-##     floor, and only reseeded when the persisted map is for a different floor / a brand-new run.
+##     stair landing. The visited automap is KEPT (unioned with the landing) across EVERY explored floor;
+##     `floorId` selects the floor currently displayed, not the lifetime of the player's map knowledge.
 
 const PASSAGE_KINDS := ["open", "door", "one_way"]
 
@@ -41,12 +41,14 @@ static func plan(state: Dictionary, world: Dictionary, entrance_room: String = "
 	var facing: String = String(open_dirs[0]) if not open_dirs.is_empty() else "south"
 
 	var persisted: Dictionary = state.get("map", {}) if typeof(state.get("map", null)) == TYPE_DICTIONARY else {}
-	var keep_automap: bool = String(persisted.get("floorId", "")) == start_dungeon \
-		and not (persisted.get("visitedCells", []) as Array).is_empty()
+	# `visitedCells` / `visitedRooms` are a cross-floor expedition record.  A return from F2+ necessarily
+	# re-enters at F1, so treating a different `floorId` as a fresh map silently destroyed the very knowledge
+	# the party had just earned. `floorId` is only the currently displayed floor, never a rollback boundary.
+	var keep_automap: bool = not (persisted.get("visitedCells", []) as Array).is_empty()
 
 	var map: Dictionary
 	if keep_automap:
-		# Re-descend to a floor we already mapped: keep the automap, just re-mark the landing + here.
+		# Re-descend: keep the entire automap record, then re-mark the current landing and its known exits.
 		map = persisted.duplicate(true)
 		map["visitedCells"] = _with(map.get("visitedCells", []), cell_id)
 		map["visitedRooms"] = _with(map.get("visitedRooms", []), start_room)
@@ -54,7 +56,7 @@ static func plan(state: Dictionary, world: Dictionary, entrance_room: String = "
 		exits[start_room] = open_dirs
 		map["knownExits"] = exits
 	else:
-		# Brand-new expedition, or a different floor than the automap holds: seed fresh.
+		# A truly brand-new expedition seeds fresh. Normal floor/scene transitions never erase map knowledge.
 		map = {
 			"visitedCells": [cell_id] if cell_id != "" else [],
 			"visitedRooms": [start_room],

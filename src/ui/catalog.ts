@@ -3,9 +3,28 @@ import { findBackground, findClass } from "../domain/characterCreation";
 import { localizedVocationName } from "../domain/vocations";
 import { getEffectiveCharacterStats } from "../domain/economy";
 import { techniqueLabel } from "../domain/combatBeatText";
-import type { Character, CombatActionDeclaration, EquippedItem, GameState, ScenarioEquipment, ScenarioShop } from "../domain/types";
+import type { Character, CombatActionDeclaration, EquippedItem, GameState, InventoryItem, ScenarioEquipment, ScenarioShop } from "../domain/types";
 import type { Locale, TranslationKey, Translator } from "../i18n";
 import { formatCombatAction, formatCombatRow } from "./format";
+
+/**
+ * The MECHANICAL effect of a consumable, generated from its fields so the answer to "結局何が起きるのか"
+ * (especially WHICH status a cure removes) is never buried in flavour prose. Returns "" when there is no
+ * effect to state — the caller decides the fallback — so the authored flavour and the generated effect show
+ * as DISTINCT lines (user #19). Godot mirrors this in party_panel.gd `_describe_consumable`.
+ */
+export function describeConsumable(item: InventoryItem, t: Translator) {
+  const effects = [
+    item.healAmount ? t("partyMenu.restoreHp", { amount: item.healAmount }) : "",
+    item.restoreMp ? t("partyMenu.restoreMp", { amount: item.restoreMp }) : "",
+    item.curesStatuses?.length
+      ? t("partyMenu.cures", {
+          statuses: item.curesStatuses.map((status) => t(`partyMenu.status.${status}` as TranslationKey)).join("・")
+        })
+      : ""
+  ].filter(Boolean);
+  return effects.join(" / ");
+}
 
 /**
  * Catalog lookups against the loaded world: localized item/equipment/enemy

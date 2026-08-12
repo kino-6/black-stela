@@ -374,7 +374,10 @@ const encounterTableSchema = z.object({
 const chestTrapSchema = z.object({
   kind: z.enum(["needle", "gas", "rune", "snare"]),
   difficulty: z.number().int().positive(),
-  damage: z.number().int().nonnegative()
+  damage: z.number().int().nonnegative(),
+  // The world-authored ailment a sprung trap inflicts on the whole party; the engine no longer hardcodes an
+  // effect per kind. Only the four AILMENTS (never `ward`, a buff). Omit for a plain HP-only trap.
+  status: z.enum(["poison", "fear", "silence", "sleep"]).optional()
 });
 
 const chestLockSchema = z.object({ difficulty: z.number().int().positive() });
@@ -510,7 +513,15 @@ export const scenePaletteSchema = z.object({
   chamberAccent: z.string().min(1).optional(),
   ambientEnergy: z.number().min(0).optional(),
   fogDensity: z.number().min(0).optional(),
-  torchRange: z.number().min(0).optional()
+  torchRange: z.number().min(0).optional(),
+  // Presentation-only shallow flooding. Movement stays governed by the authored grid; this exists so an
+  // explicitly flooded route never renders as a dry ordinary corridor.
+  standingWater: z.object({
+    depth: z.number().min(0.01).max(0.12),
+    tint: z.string().min(1).optional(),
+    waterline: z.number().min(0.01).max(0.5).optional(),
+    reflection: z.string().min(1).optional()
+  }).optional()
 });
 
 export const dungeonFloorSchema = z.object({

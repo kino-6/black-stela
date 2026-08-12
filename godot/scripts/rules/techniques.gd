@@ -97,9 +97,13 @@ static func _effect_summary(effect: Dictionary, target: String) -> String:
 	var target_label := _target_label(target)
 	match String(effect.get("kind", "")):
 		"damage":
-			return I18n.t("party.techniqueSummary.attack", {"target": target_label})
+			return I18n.t("party.techniqueSummary.attack", {
+				"target": target_label, "mag": _damage_magnitude(effect)
+			})
 		"heal":
-			return I18n.t("party.techniqueSummary.heal", {"target": target_label})
+			return I18n.t("party.techniqueSummary.heal", {
+				"target": target_label, "mag": _heal_magnitude(effect)
+			})
 		"buff":
 			return I18n.t("party.techniqueSummary.buff", {
 				"target": target_label, "stat": _stat_label(String(effect.get("stat", "")))
@@ -126,7 +130,27 @@ static func _target_label(target: String) -> String:
 		"self": return I18n.t("party.techniqueSummary.targetSelf")
 		"ally": return I18n.t("party.techniqueSummary.targetAlly")
 		"party": return I18n.t("party.techniqueSummary.targetParty")
+		"allEnemies": return I18n.t("party.techniqueSummary.targetAllEnemies")
 		_: return I18n.t("party.techniqueSummary.targetEnemy")
+
+## Damage/heal potency, as a 小/中/大 tier off the authored base values (thresholds calibrated to the
+## spread across all worlds' techniques). The base scales with spell power in play, so a coarse tier reads
+## truer than a raw number that the resolver will inflate.
+static func _damage_magnitude(effect: Dictionary) -> String:
+	var mid := (float(effect.get("min", 0)) + float(effect.get("max", 0))) / 2.0
+	if mid < 8.0:
+		return I18n.t("party.techniqueSummary.magSmall")
+	if mid < 14.0:
+		return I18n.t("party.techniqueSummary.magMedium")
+	return I18n.t("party.techniqueSummary.magLarge")
+
+static func _heal_magnitude(effect: Dictionary) -> String:
+	var amount := float(effect.get("amount", 0))
+	if amount < 10.0:
+		return I18n.t("party.techniqueSummary.magSmall")
+	if amount < 18.0:
+		return I18n.t("party.techniqueSummary.magMedium")
+	return I18n.t("party.techniqueSummary.magLarge")
 
 static func _stat_label(stat: String) -> String:
 	var keys := {

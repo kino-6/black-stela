@@ -53,14 +53,13 @@ corridor:
   locales: { ja: { name: 零番線の通路, description: 最後のホームは放棄された年月にしては清潔すぎる。案内板はすべて内側を指す。 } }
 edges:
   - { from: room.tl10f.terminus-landing, direction: west, kind: stairs, to: room.tl9f.down-stair, targetFloorId: dungeon.tl9f }
-  - { from: room.tl10f.service-bypass, direction: north, kind: shortcut, to: room.tl10f.bypass-control }
 rooms:
   - { id: room.tl10f.terminus-landing, name: Terminus Landing, description: The steel stair arrives at the final platform under a working evacuation lamp., locales: { ja: { name: 終端の踊り場, description: 鋼階段は、働いたままの退避灯が照らす最後のホームへ着く。 } } }
   - id: room.tl10f.service-bypass
     name: Service Bypass
-    description: A final service hatch opens a loop back around the platform ring.
-    locales: { ja: { name: 最終保守口, description: 最後の保守口は、ホーム環を回る抜け道を開ける。 } }
-    gates: [{ id: gate.tl10f.bypass, kind: shortcut, grantsFlag: flag.tl10f.bypass-open, clue: The final service hatch opens a route around the platform. }]
+    description: A final service hatch keeps the clearance for the platform ring's maintenance route.
+    locales: { ja: { name: 最終保守口, description: 最後の保守口には、ホーム環の保守経路の許可が残る。 } }
+    gates: [{ id: gate.tl10f.bypass, kind: shortcut, grantsFlag: flag.tl10f.bypass-open, clue: The final service hatch logs a platform-route clearance. }]
   - { id: room.tl10f.arrival-hall, name: Arrival Hall, description: Empty benches face a train door that is painted onto concrete., locales: { ja: { name: 到着広間, description: 空のベンチが、コンクリートに描かれた列車扉へ向いている。 } }, encounterTable: encounters.tl10f.terminus }
   - id: room.tl10f.terminal-console
     name: Terminal Console
@@ -76,7 +75,7 @@ rooms:
     chamberGuardian: true
   - { id: room.tl10f.bypass-control, name: Bypass Control, description: A dry relay rack maintains the loop around the core., locales: { ja: { name: 迂回制御盤, description: 乾いたリレー架台が、中枢を回る環状路を保っている。 } } }
   - { id: room.tl10f.final-cache, name: Final Cache, description: A dead-end service box contains equipment meant for a last repair., locales: { ja: { name: 最終保守箱, description: 行き止まりの保守箱には、最後の修理用具が入っている。 } }, treasureTable: treasure.tl10f.terminus-cache }
-  - { id: room.tl10f.signal-coffer, name: Signal Coffer, description: A sealed coffer holds the original route plate., locales: { ja: { name: 信号金庫, description: 封じた金庫に、最初の運行板が残されている。 } }, chest: { treasureTable: treasure.tl10f.terminus-cache, lock: { difficulty: 28 }, trap: { kind: gas, difficulty: 28, damage: 12 } } }
+  - { id: room.tl10f.signal-coffer, name: Signal Coffer, description: A sealed coffer holds the original route plate., locales: { ja: { name: 信号金庫, description: 封じた金庫に、最初の運行板が残されている。 } }, chest: { treasureTable: treasure.tl10f.terminus-cache, lock: { difficulty: 28 }, trap: { kind: gas, difficulty: 28, damage: 12, status: fear } } }
   - { id: room.tl10f.last-locker, name: Last Locker, description: The final outer locker rewards a complete sweep before the core., locales: { ja: { name: 最後のロッカー, description: 外周の最後のロッカーは、中枢前に全体を巡る価値を返す。 } }, treasureTable: treasure.tl10f.terminus-cache }
   - { id: room.tl10f.return-winch, name: Return Winch, description: The emergency winch still reaches the Interchange Square; the ending never deletes the choice to return., locales: { ja: { name: 帰還巻上げ機, description: 非常巻上げ機はまだ乗換広場へ届く。終幕でも戻る選択を消さない。 } }, stairsToTown: true, returnStyle: marker }
   - { id: room.tl10f.end-marker, name: End Marker, description: A final platform marker waits beside the core for the line's new order., locales: { ja: { name: 終端標, description: 最終ホーム標が、中枢の脇で新しい運行命令を待つ。 } } }

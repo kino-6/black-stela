@@ -40,6 +40,7 @@ var _engine: Dictionary = {}
 # Live UI handles updated during playback.
 var _damage_layer: Control
 var _log_label: Label
+var _auto_hint_label: Label     # persistent "how to stop オート" banner, visible only while _auto (user #21)
 var _cmd_panel: PanelContainer
 var _strip_box: VBoxContainer = null
 var _party_slots: Dictionary = {}   # member id -> { "bar": ProgressBar, "label": Label }
@@ -143,6 +144,16 @@ func _build() -> void:
 	_log_label.offset_top = 578
 	add_child(_log_label)
 
+	# The auto-stop banner rides at the very top, CENTERED, so the interrupt key stays on screen even while
+	# the command dock is hidden through オート playback — the one moment a player wants out and the 停止 button
+	# is gone (user #21). Hidden until オート actually runs; _update_auto_hint drives its visibility.
+	_auto_hint_label = _label("", 18, GOLD)
+	_auto_hint_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_auto_hint_label.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE)
+	_auto_hint_label.offset_top = 20
+	_auto_hint_label.visible = false
+	add_child(_auto_hint_label)
+
 	# --- 3+3 formation band (rendered from the live party) ---
 	var strip := PanelContainer.new()
 	strip.position = Vector2(0, 640)
@@ -184,6 +195,14 @@ func _input(event: InputEvent) -> void:
 
 # focused Button fires its own `pressed` on ui_accept.
 func _unhandled_input(event: InputEvent) -> void:
+	# The auto-interrupt fires BEFORE the _busy guard: オート spends most of its time in _busy playback, and
+	# Backspace is the one key that must land THERE (the toggle buttons are hidden). It just clears _auto —
+	# _run_auto sees it after the current round and returns control (user #21).
+	if _auto and event.is_action_pressed("auto_interrupt"):
+		_auto = false
+		_update_auto_hint()
+		get_viewport().set_input_as_handled()
+		return
 	if _busy or _resolved:
 		return
 	if event.is_action_pressed("auto"):
@@ -225,6 +244,7 @@ func set_ui_state(ui: Dictionary) -> void:
 			if not actors.is_empty():
 				_pending = {"actorId": actors[_actor_index].get("id", ""), "action": "attack"}
 	# Any ui-state change must repaint — a seam that sets state without rebuilding proves nothing.
+	_update_auto_hint()
 	_rebuild_stage()
 	_rebuild_command_menu()
 
@@ -477,13 +497,23 @@ func _on_repeat() -> void:
 # taking real damage (tempo.autoStoppedDanger) — it never plays a losing fight out on the player.
 # Pressing a running auto (or the OTHER auto) stops it; otherwise start the loop in the requested
 # strategy. 攻撃オート presses the front line and bails at danger; 守備オート wards/heals and pushes through.
+# Keep the stop banner in sync with _auto — the ONE place both auto entry/exit route through so the hint is
+# never left stranded on a finished fight or missing during playback (user #21).
+func _update_auto_hint() -> void:
+	if _auto_hint_label == null:
+		return
+	_auto_hint_label.text = I18n.t("tempo.autoStopHint") if _auto else ""
+	_auto_hint_label.visible = _auto
+
 func _on_toggle_auto(strategy: String = "attack") -> void:
 	if _auto:
 		_auto = false
+		_update_auto_hint()
 		_rebuild_command_menu()
 		return
 	_auto_strategy = strategy
 	_auto = true
+	_update_auto_hint()
 	_rebuild_command_menu()
 	_run_auto()
 
@@ -504,6 +534,7 @@ func _run_auto() -> void:
 			break
 	if _state.get("phase", "") != "combat":
 		_auto = false
+	_update_auto_hint()
 	_rebuild_command_menu()
 	# オート kept the command panel HIDDEN during its rounds (playback shows it only when `not _auto`, so the
 	# menu never flashes between auto rounds). When オート STOPS on its own — danger detected — and the fight
@@ -602,20 +633,66 @@ func _attack_verb(actor: String, crit: bool) -> String:
 		return "攻撃した"
 	return _ATTACK_VERBS[abs(actor.hash()) % _ATTACK_VERBS.size()]
 
-# Build one attack per living member at the first living enemy group (the slice's all-out round).
+# Auto spends only the top half of a pool on offensive arts; below this reserve fraction of max MP it
+# falls back to basic attacks, so it never drains a caster dry. Mirrors tempo.AUTO_MP_RESERVE.
+const AUTO_MP_RESERVE := 0.5
+
+# 攻撃オート: each living member throws its strongest affordable offensive art while MP stays above the
+# reserve, else a basic attack at the first living enemy group. Mirrors tempo.chooseAutoRoundActions.
 func _all_out_actions() -> Array:
 	var group_id := _first_living_group_id()
 	if group_id == "":
 		return []
+	var catalog: Dictionary = Techniques._resolve_technique_catalog(_engine, _world)
 	var actions := []
 	for member in _state.get("party", []):
-		if int(member.get("hp", 0)) > 0:
+		if int(member.get("hp", 0)) <= 0:
+			continue
+		var offensive_id := _auto_offensive_id(member, catalog)
+		if offensive_id != "":
+			var order := {"action": "cast", "actorId": member.get("id", ""), "spellId": offensive_id}
+			# enemyGroup arts pick the reachable group; allEnemies lets the resolver derive its subjects.
+			if Techniques.targeting(offensive_id, _engine, _world) == "group":
+				order["targetGroupId"] = group_id
+			actions.append(order)
+		else:
 			actions.append({
 				"action": "attack",
 				"actorId": member.get("id", ""),
 				"targetGroupId": group_id,
 			})
 	return actions
+
+# The strongest offensive art the member can afford WITHOUT dipping below the MP reserve — "" to fall
+# back to a basic attack. Casting needs no melee reach, so a walled-off back-row caster contributes too.
+func _auto_offensive_id(member: Dictionary, catalog: Dictionary) -> String:
+	var mp := int(member.get("mp", 0))
+	var reserve := ceili(float(int(member.get("maxMp", 0))) * AUTO_MP_RESERVE)
+	var best_id := ""
+	var best_mid := -1.0
+	for id in _loadout_for(member):
+		var definition: Dictionary = catalog.get(String(id), {})
+		if definition.is_empty():
+			continue
+		# Only 呪文 (spells): a martial 特技 auto-cast can resolve to a no-op round that never ends the fight,
+		# so skills stay on the reliable basic attack. Mirrors tempo.pickAutoOffensive.
+		if String(definition.get("kind", "")) != "spell":
+			continue
+		var target := String(definition.get("target", ""))
+		if target != "enemyGroup" and target != "allEnemies":
+			continue
+		var cost := int((definition.get("cost", {}) as Dictionary).get("mp", 0))
+		if cost <= 0 or mp - cost < reserve:
+			continue
+		var mid := -1.0
+		for effect in definition.get("effects", []):
+			if String((effect as Dictionary).get("kind", "")) == "damage":
+				mid = (float((effect as Dictionary).get("min", 0)) + float((effect as Dictionary).get("max", 0))) / 2.0
+				break
+		if mid > best_mid:
+			best_mid = mid
+			best_id = String(id)
+	return best_id
 
 # 守備オート: the GDScript mirror of tempo.chooseDefensiveRoundActions. Per able member (alive, not
 # injured, not asleep), in priority order — ward, cure an ally's affliction, heal the worst-hurt
@@ -808,7 +885,16 @@ func _playback(before: Dictionary, events: Array, animated: bool) -> void:
 				# 2) the damage: floating number ON the creature + its bar drains + a popup-style line with ！
 				_pop_enemy_damage(gid, dmg, crit)
 				if is_gun:
-					_spawn_gun_fx(gid, _gun_family(acting))
+					# A resolved beat is the authority for a technique's weapon family.  The equipment lookup is
+					# retained only for legacy/basic beats that predate the field.
+					var family := String((beat as Dictionary).get("firearmFamily", _gun_family(acting)))
+					if family.is_empty():
+						family = _gun_family(acting)
+					_spawn_gun_fx(gid, family)
+				elif not bool((beat as Dictionary).get("technique", false)) and dmg > 0:
+					# A basic melee swing gets a slash flash ON the struck creature — the React CombatEnemyStage
+					# slash was never ported to Godot, so guns flashed and swords/bars didn't (user 2026-08-12).
+					_spawn_melee_fx(gid, crit)
 				pb_groups = CombatHelpers.damage_group(pb_groups, gid, dmg)
 				_redraw_enemy_group(pb_groups, gid)
 				_set_log("%sに%dダメージ！" % [target_name, dmg])
@@ -1116,24 +1202,49 @@ func _gun_family(member: Dictionary) -> String:
 			return "pistol"
 	return ""
 
-# A brief muzzle flash on the shooter + an impact on the struck creature, from the scenario's own gun-fx
-# (assets/effects/fx-tl-<family>-<kind>.png). Small, high on the body, faded fast — never covers the HP bar
-# below the feet or the whole silhouette, and never a full-screen flash (Codex fx contract, D3).
+# Brief enemy-field gun overlays from the scenario's own gun-fx. The old wiring used a muzzle on the
+# active actor figure, which made the effect depend on a portrait/card's composition and read as the UI
+# itself firing. A shot now has only an arrival trace and impact, both positioned from the struck enemy's
+# bounds. Keep them inside the combat lane, fade them before the next beat, and never use a screen-space
+# flash.
+# A basic melee hit's slash: the shared fx-slash sprite flashed on the struck creature. `_asset` falls back
+# to default's ui/fx-slash.png for every world (WorldResources), so a bar/blade/claw all read as a struck
+# blow without per-world art. Positioned on the creature (never emitted from an ally card), like the gun fx.
+func _spawn_melee_fx(gid: String, crit: bool) -> void:
+	var mark: Variant = _enemy_marks.get(gid, null)
+	if not (mark is Control):
+		return
+	var r := (mark as Control).get_global_rect()
+	var centre := Vector2(r.position.x + r.size.x * 0.5, r.position.y + r.size.y * 0.42)
+	var slash_path := _asset("ui/fx-slash.png")
+	var slash := _texture(slash_path)
+	if slash:
+		var size := clampf(r.size.x * (0.9 if crit else 0.72), 150.0, 300.0)
+		_spawn_fx_texture(slash, centre, size, 0.26 if crit else 0.22, 0.0, "slash", slash_path)
+
 func _spawn_gun_fx(gid: String, family: String) -> void:
 	if family == "":
 		return
 	var mark: Variant = _enemy_marks.get(gid, null)
+	var impact_centre := Vector2.ZERO
 	if mark is Control:
 		var r := (mark as Control).get_global_rect()
-		var impact := _texture(_asset("effects/fx-tl-%s-impact.png" % family))
+		impact_centre = Vector2(r.position.x + r.size.x * 0.5, r.position.y + r.size.y * 0.32)
+		var impact_path := _asset("effects/fx-tl-%s-impact.png" % family)
+		var impact := _texture(impact_path)
 		if impact:
-			_spawn_fx_texture(impact, Vector2(r.position.x + r.size.x * 0.5, r.position.y + r.size.y * 0.32), minf(r.size.x * 0.5, 260.0), 0.26)
-	var muzzle := _texture(_asset("effects/fx-tl-%s-muzzle.png" % family))
-	if muzzle and _actor_figure is Control:
-		var fr := (_actor_figure as Control).get_global_rect()
-		_spawn_fx_texture(muzzle, Vector2(fr.position.x + fr.size.x * 0.82, fr.position.y + fr.size.y * 0.42), 150.0, 0.16)
+			_spawn_fx_texture(impact, impact_centre, clampf(r.size.x * 0.72, 150.0, 280.0), 0.30, 0.055, "impact", impact_path)
+		# The trace is deliberately a short tail into the target, not a projectile emitted by an ally card
+		# or standing portrait. This makes all firearm families readable with any party art (or no party
+		# art) and keeps the action's visual truth on the struck creature.
+		var tail_length := clampf(r.size.x * 0.55, 105.0, 190.0)
+		var arrival_origin := impact_centre - Vector2(tail_length, -clampf(r.size.y * 0.08, 12.0, 32.0))
+		var travel_path := _asset("effects/fx-tl-%s-travel.png" % family)
+		var travel := _texture(travel_path)
+		if travel:
+			_spawn_travel_fx_texture(travel, arrival_origin, impact_centre, 0.19, 0.018, travel_path)
 
-func _spawn_fx_texture(tex: Texture2D, centre: Vector2, size: float, life: float) -> void:
+func _spawn_fx_texture(tex: Texture2D, centre: Vector2, size: float, life: float, delay: float = 0.0, kind: String = "", asset_path: String = "") -> void:
 	var fx := TextureRect.new()
 	fx.texture = tex
 	fx.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
@@ -1142,8 +1253,44 @@ func _spawn_fx_texture(tex: Texture2D, centre: Vector2, size: float, life: float
 	fx.size = Vector2(size, size)
 	fx.position = centre - Vector2(size, size) * 0.5
 	fx.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	fx.set_meta("firearm_fx_kind", kind)
+	fx.set_meta("firearm_fx_asset", asset_path)
 	_damage_layer.add_child(fx)
 	var tw := create_tween()
+	if delay > 0.0:
+		fx.modulate.a = 0.0
+		tw.tween_interval(delay)
+		tw.tween_property(fx, "modulate:a", 1.0, 0.025)
+	tw.tween_property(fx, "modulate:a", 0.0, life).from(1.0)
+	tw.tween_callback(fx.queue_free)
+
+# The source travel art is a square RGBA frame with a diagonally-authored tracer.  Rotate that authored
+# axis toward the actual shooter→target vector, scale it to the lane distance, and leave its transparent
+# padding intact.  The effect is therefore a thin line in the world, not a UI beam or a panel-sized flash.
+func _spawn_travel_fx_texture(tex: Texture2D, source: Vector2, target: Vector2, life: float, delay: float = 0.0, asset_path: String = "") -> void:
+	var delta := target - source
+	var distance := delta.length()
+	if distance < 8.0:
+		return
+	var span := clampf(distance * 1.45, 250.0, 680.0)
+	var fx := TextureRect.new()
+	fx.texture = tex
+	fx.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	fx.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	fx.size = Vector2(span, span)
+	fx.pivot_offset = fx.size * 0.5
+	fx.position = (source + target) * 0.5 - fx.pivot_offset
+	# The generated frame's visible tracer runs bottom-left → top-right (about -26° in screen space).
+	fx.rotation = delta.angle() + 0.46
+	fx.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	fx.set_meta("firearm_fx_kind", "travel")
+	fx.set_meta("firearm_fx_asset", asset_path)
+	_damage_layer.add_child(fx)
+	var tw := create_tween()
+	fx.modulate.a = 0.0
+	if delay > 0.0:
+		tw.tween_interval(delay)
+	tw.tween_property(fx, "modulate:a", 1.0, 0.018)
 	tw.tween_property(fx, "modulate:a", 0.0, life).from(1.0)
 	tw.tween_callback(fx.queue_free)
 

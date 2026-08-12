@@ -24,8 +24,15 @@ shipping product until a Godot milestone actually replaces its surface.
 
 ## 1. Invariants (do not break during the migration)
 
-1. **TypeScript stays the ORACLE.** Every ported command is proven against a TS golden trace
-   (initial state + commands → per-step events + canonical state hash). No gameplay truth forks.
+> **POST-CUTOVER AMENDMENT (user 2026-08-12):** the migration (M0–M7) is DONE, so invariant #1 binds the
+> ALREADY-MIGRATED CORE only. **New work is Godot-native and does NOT require a TS port or a parity trace**
+> (see AGENTS.md "New work is Godot-native"). The oracle + parity gates remain as the frozen regression
+> record of the migrated core and the runtime-data pipeline; changing a migrated rule Godot-only means
+> deliberately RETIRING that rule's golden trace, never a silently red gate.
+
+1. **TypeScript stays the ORACLE (for the migrated core).** Every ALREADY-ported command is proven against
+   a TS golden trace (initial state + commands → per-step events + canonical state hash). No gameplay truth
+   forks within the migrated core; new features do not add a fork because they have no TS counterpart.
 2. **TypeScript stays the TOOLING.** Content authoring (`content/worlds/<id>/`), the deterministic
    simulators (descentSim/contentSim), content validation, and balance reports remain TS. Godot
    consumes the exported JSON; it never re-parses Markdown/YAML.

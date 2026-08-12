@@ -63,6 +63,13 @@ static func _build_geometry(parent: Node, world: Dictionary, state: Dictionary, 
 	var pal: Dictionary = _floor_palette(world, state)
 	var wall_mat := _textured_mat(block["wall"], Color(String(pal.get("wall", "8a8074"))))
 	var floor_mat := _textured_mat(block["floor"], Color(String(pal.get("floor", "6e675c"))))
+	# A flooded floor is authored in the scenario palette rather than inferred from its name.  It remains a
+	# walkable grid cell — this local geometry is the visible, shallow water and never changes rules or costs.
+	var standing_water: Dictionary = pal.get("standingWater", {}) as Dictionary
+	var has_standing_water := not standing_water.is_empty() and float(standing_water.get("depth", 0.0)) > 0.0
+	var water_mat: Material = _standing_water_mat(standing_water) if has_standing_water else null
+	var water_reflection_mat: Material = _standing_water_reflection_mat(standing_water) if has_standing_water else null
+	var waterline_mat: Material = _standing_waterline_mat(standing_water) if has_standing_water else null
 	# The ceiling is part of the world-owned readability composition, not a fixed near-black mass: a scenario
 	# that authors a `ceiling` tone lifts the overhead plane off pure black so depth and corners read from the
 	# first-person frame (IMP-055). Falls back to the old dark tint for worlds that omit it.
@@ -138,6 +145,7 @@ static func _build_geometry(parent: Node, world: Dictionary, state: Dictionary, 
 			var cy := int(cell.get("y", 0))
 			var base := Vector3(cx * CELL, 0, cy * CELL)
 			var edges: Dictionary = cell.get("edges", {})
+			var room: Dictionary = rooms_by_id.get(String(cell.get("roomId", "")), {})
 			var coord_key := "%d,%d" % [cx, cy]
 			# Authored worlds (Verdant marks its 玄室 in data) decorate the ANCHOR's whole 2×2 block and put the
 			# single landmark on the anchor; legacy worlds without a chamber palette keep the old shape-derived
@@ -152,6 +160,8 @@ static func _build_geometry(parent: Node, world: Dictionary, state: Dictionary, 
 			# 閉扉で封じよ), so the floor stays the ordinary stone; the closed entrance carries the "a room to
 			# breach" read on its own.
 			_add_plane(parent, floor_mat, base, Vector3(0, 0, 0))
+			if has_standing_water:
+				_add_standing_water(parent, water_mat, water_reflection_mat, base, cx, cy, standing_water)
 			_add_plane(parent, ceil_mat, base + Vector3(0, wall_height, 0), Vector3(PI, 0, 0))
 			for dir in ["north", "south", "east", "west"]:
 				var edge: Variant = edges.get(dir, null)
@@ -163,6 +173,8 @@ static func _build_geometry(parent: Node, world: Dictionary, state: Dictionary, 
 				# illustration look like it had grown out of stone.
 				if not _is_passage(edge) and not stair_edge and not _is_open_secret(edge, state, String(cell.get("roomId", "")), dir):
 					_add_wall(parent, chamber_wall_mat if chamber_deco else wall_mat, base, dir, wall_height)
+					if has_standing_water:
+						_add_standing_waterline(parent, waterline_mat, base, dir, float(standing_water.get("waterline", 0.18)))
 				elif _is_door(edge):
 					var door_key := _door_key(cx, cy, dir)
 					if not rendered_doors.has(door_key):
@@ -190,7 +202,7 @@ static func _build_geometry(parent: Node, world: Dictionary, state: Dictionary, 
 			# The pack ships stair-up/stair-down art; draw it so a stair cell is VISIBLE in the first-person
 			# view instead of a plain dead-end the 階段を使う command only hints at (playtest: asset delivered,
 			# never rendered).
-			var stair := _stairs_info(cell, floor_dungeon, rooms_by_id.get(String(cell.get("roomId", "")), {}))
+			var stair := _stairs_info(cell, floor_dungeon, room)
 			if not stair.is_empty():
 				_add_stairs(
 					parent,
@@ -198,6 +210,18 @@ static func _build_geometry(parent: Node, world: Dictionary, state: Dictionary, 
 					_asset(world, run, "dungeon/stair-%s.png" % String(stair.get("kind", ""))),
 					String(stair.get("kind", "")),
 					String(stair.get("direction", "north")),
+					chamber_wall_mat if chamber_deco else wall_mat,
+				)
+			# A marker-style return is deliberately not an up-stair: Terminal Line uses an emergency phone/call
+			# point as its authored way home.  It still needs a visible object in the first-person world.  Leaving
+			# it to the minimap made the approach read as an unexplained ordinary dead-end (playtest 2026-08-11).
+			var return_marker := _return_marker_info(cell, room)
+			if not return_marker.is_empty():
+				_add_return_marker(
+					parent,
+					base,
+					_asset(world, run, "dungeon/return-marker.png"),
+					String(return_marker.get("direction", "north")),
 					chamber_wall_mat if chamber_deco else wall_mat,
 				)
 
@@ -230,9 +254,32 @@ static func _stairs_info(cell: Dictionary, floor_id: String, room: Dictionary = 
 		return {"kind": "up", "direction": _first_wall_dir(cell), "target": ""}
 	return {}
 
+# `returnStyle: marker` is an authored object such as Terminal Line's emergency phone, rather than a stair.
+# Mount it on the wall opposite the approach corridor whenever possible.  That gives the player a clear
+# destination after entering the one-cell cul-de-sac, while preserving the rules distinction from a staircase.
+static func _return_marker_info(cell: Dictionary, room: Dictionary = {}) -> Dictionary:
+	if not bool(room.get("stairsToTown", false)) or String(room.get("returnStyle", "stairs")) != "marker":
+		return {}
+	var edges: Dictionary = cell.get("edges", {})
+	for direction in ["north", "south", "east", "west"]:
+		if not _is_passage(edges.get(direction, null)):
+			continue
+		var facing := _opposite_direction(direction)
+		if not _is_passage(edges.get(facing, null)):
+			return {"direction": facing}
+	return {"direction": _first_wall_dir(cell)}
+
+static func _opposite_direction(direction: String) -> String:
+	return {
+		"north": "south",
+		"south": "north",
+		"east": "west",
+		"west": "east",
+	}.get(direction, "south")
+
 # The wall an edgeless town-return staircase embeds into: the first solid (non-passage) side, preferring the
-# SOUTH wall (entrances face south by convention, so the way home reads as behind the party). The U6 cell-
-# centre stairhead marker makes it visible from any facing regardless of which wall the shaft art sits on.
+# SOUTH wall (entrances face south by convention, so the way home reads as behind the party). The shaft is
+# deliberately an edge structure: no centre-cell placard may detach the staircase from this opening.
 static func _first_wall_dir(cell: Dictionary) -> String:
 	var edges: Dictionary = cell.get("edges", {})
 	for dir in ["south", "north", "east", "west"]:
@@ -276,51 +323,17 @@ static func _add_stairs(parent: Node, base: Vector3, tex_path: String, kind: Str
 		_add_downshaft_art(root, art_material)
 	else:
 		_add_ladder_shaft_art(root, art_material)
-	# U6: a stair is a CURRENT-CELL action, so it must read from ANY facing — the edge geometry above is
-	# only seen when the party happens to look at the stair edge (playtest: standing on the cell facing
-	# away shows a plain corridor). Add a stairhead marker at the cell centre so the way down/up is always
-	# visible under the party's feet, whichever way they turn.
-	_add_stair_floor_marker(parent, base, kind, art_material, wall_material)
-
-# The always-visible stairhead for a stair cell (U6). A flat floor plate is HIDDEN by the party HUD (the
-# near floor sits behind it), so the marker needs VERTICAL presence: a railed stairwell at the cell
-# centre — four corner posts joined by top rails, with a small stair PLACARD hung high — whose upper part
-# rises above the HUD line and reads as "stairs here" from ANY facing, complementing the edge descent view.
-static func _add_stair_floor_marker(parent: Node, base: Vector3, kind: String, art_material: Material, wall_material: Material) -> void:
-	var size := CELL * 0.62
-	var half := size / 2.0
-	# Tall enough that the frame's upper rails rise ABOVE the party HUD (which hides the near floor) and
-	# above eye level, so the stairhead reads from any facing — an open frame, not a solid box.
-	var rail_h := 2.05 if kind == "down" else 2.25 # an up-stair reads as a taller landing/ladder head
-	var root := Node3D.new()
-	root.name = "StairFloor_%s" % kind
-	root.position = base
-	parent.add_child(root)
-
-	# A small stair PLACARD hung HIGH in the frame, on TWO perpendicular quads (a cross): movement is
-	# cardinal, so one face is always head-on whichever way the party turns — no billboard, never edge-on.
-	# High and small so it clears the HUD as an always-visible "stairs here" sign WITHOUT dominating the
-	# real edge descent seen when facing it.
-	var sign := 0.9
-	for rot_y in [0.0, PI / 2.0]:
-		var art := MeshInstance3D.new()
-		var quad := QuadMesh.new()
-		quad.size = Vector2(sign, sign)
-		art.mesh = quad
-		art.material_override = art_material
-		art.position = Vector3(0, rail_h - sign / 2.0, 0)
-		art.rotation.y = rot_y
-		root.add_child(art)
-
-	# Four corner posts + top rails: a guard railing around the stairwell mouth, tall enough to clear the HUD.
-	for sx in [-1.0, 1.0]:
-		for sz in [-1.0, 1.0]:
-			_add_box(root, Vector3(0.12, rail_h, 0.12), wall_material, Vector3(sx * half, rail_h / 2.0, sz * half))
-	for sz in [-1.0, 1.0]:
-		_add_box(root, Vector3(size, 0.1, 0.1), wall_material, Vector3(0, rail_h, sz * half))
-	for sx in [-1.0, 1.0]:
-		_add_box(root, Vector3(0.1, 0.1, size), wall_material, Vector3(sx * half, rail_h, 0))
-
+	# A lamp INSIDE the well (both descent and ascent): without it the recess sits beyond torch reach and the
+	# opening renders as a flat black rectangle at any distance (the recurring「黒い板」). Lighting it turns the
+	# void into a visibly-lit passage — the treads/ladder and the stair art read as stairs from down the corridor.
+	var glow := OmniLight3D.new()
+	glow.name = "StairWellLight"
+	glow.position = Vector3(0, WALL_H * (0.28 if kind == "down" else 0.5), -CELL * 0.28)
+	glow.omni_range = CELL * 1.35
+	glow.omni_attenuation = 1.4
+	glow.light_energy = 1.6
+	glow.light_color = Color("ffe9c2")
+	root.add_child(glow)
 static func _add_stair_well(root: Node3D, wall_material: Material) -> void:
 	# Local -Z goes through the active stair edge for every `_edge_rotation` direction. The outer wall strips,
 	# jambs, lintel and dark rear face turn the opening into a shallow, readable shaft instead of a black void.
@@ -331,7 +344,11 @@ static func _add_stair_well(root: Node3D, wall_material: Material) -> void:
 		_add_box(root, Vector3(strip, WALL_H, 0.16), wall_material, Vector3(side * (opening / 2.0 + strip / 2.0), WALL_H / 2.0, 0))
 		_add_box(root, Vector3(0.18, WALL_H, depth), wall_material, Vector3(side * (opening / 2.0 + 0.09), WALL_H / 2.0, -depth / 2.0))
 	_add_box(root, Vector3(opening, 0.18, depth), wall_material, Vector3(0, WALL_H - 0.09, -depth / 2.0))
-	_add_box(root, Vector3(opening, WALL_H, 0.14), _mat(Color("11150d")), Vector3(0, WALL_H / 2.0, -depth))
+	# The rear wall is deliberately a dim continuation of the dungeon material. Pure black made an ordinary
+	# stair landing read as a missing render surface, especially in Terminal Line's light tile corridors.
+	var rear_material := wall_material.duplicate() as StandardMaterial3D
+	rear_material.albedo_color *= Color("565a58")
+	_add_box(root, Vector3(opening, WALL_H, 0.14), rear_material, Vector3(0, WALL_H / 2.0, -depth))
 
 static func _add_descending_steps(root: Node3D, wall_material: Material) -> void:
 	# Five shallow, physical treads run away from the party and below the floor line. The resulting parallax is
@@ -350,16 +367,18 @@ static func _add_descending_steps(root: Node3D, wall_material: Material) -> void
 		root.add_child(tread)
 
 static func _add_downshaft_art(root: Node3D, material: Material) -> void:
-	# A descent is seen from above: lay the supplied shaft art across the lowered landing. The picture is not a
-	# decal on the front wall; the real treads continue underneath its transparent foliage and give the mouth
-	# depth when the player looks down.
+	# The supplied descent art is a view down a stairwell.  It is an inset at the opening's floor level: the
+	# threshold and physical treads give it a real frame, while the artwork supplies the close, readable depth.
+	# A tilted version was still occluded by the lip from the normal first-person eye level.
 	var art := MeshInstance3D.new()
 	art.name = "StairArtwork_Downshaft"
 	var plane := PlaneMesh.new()
-	plane.size = Vector2(CELL * 0.47, CELL * 0.47)
+	plane.size = Vector2(CELL * 0.42, CELL * 0.48)
 	art.mesh = plane
 	art.material_override = material
-	art.position = Vector3(0, -0.055, -CELL * 0.30)
+	# This local depth is measured in metres, not cells.  Multiplying by CELL placed the inset beyond the
+	# rear wall — the precise cause of the apparent empty black shaft in Terminal Line.
+	art.position = Vector3(0, 0.025, -0.62)
 	root.add_child(art)
 
 static func _add_ladder_shaft_art(root: Node3D, material: Material) -> void:
@@ -378,6 +397,53 @@ static func _add_ladder_shaft_art(root: Node3D, material: Material) -> void:
 	# correct direction at a glance: the party climbs up through this root-bound hatch.
 	art.position = Vector3(0, WALL_H * 0.58, -CELL * 0.39)
 	root.add_child(art)
+
+# Build a shallow, wall-mounted call point instead of a 2D card in the centre of the cell.  The terminal-line
+# source art has a chroma-green generation backdrop; the dedicated material keys only that backdrop while
+# retaining clean-alpha source assets used by the other worlds.
+static func _add_return_marker(parent: Node, base: Vector3, tex_path: String, direction: String, _wall_material: Material) -> void:
+	var root := Node3D.new()
+	root.name = "ReturnMarker_%s" % direction
+	root.set_meta("return_marker", true)
+	root.set_meta("return_marker_direction", direction)
+	var forward := _direction_vector(direction)
+	root.position = base + forward * (CELL / 2.0 - 0.035)
+	root.rotation.y = _edge_rotation(direction)
+	parent.add_child(root)
+
+	var artwork := MeshInstance3D.new()
+	artwork.name = "ReturnMarkerArtwork"
+	var quad := QuadMesh.new()
+	quad.size = Vector2(CELL * 0.56, WALL_H * 0.82)
+	artwork.mesh = quad
+	artwork.material_override = _return_marker_art_mat(tex_path)
+	# The supplied object already includes a bolted mounting plate and a floor base.  Do not add a full dark
+	# rectangle behind it: in bright Terminal Line corridors that read as a new black panel, not installed gear.
+	# Local +Z faces the party; local -Z sits against the end wall.
+	artwork.position = Vector3(0, WALL_H * 0.41, 0.012)
+	root.add_child(artwork)
+
+static func _return_marker_art_mat(tex_path: String) -> Material:
+	var texture := _texture(tex_path)
+	var shader := Shader.new()
+	shader.code = """
+shader_type spatial;
+render_mode unshaded, cull_disabled, depth_prepass_alpha;
+uniform sampler2D marker_texture : source_color;
+void fragment() {
+	vec4 sampled = texture(marker_texture, UV);
+	// Only remove the saturated green chroma backdrop present in the Terminal Line source image.  Existing
+	// transparent PNGs retain their original alpha because their dark/neutral pixels do not satisfy this key.
+	float chroma_green = step(sampled.r * 1.25 + 0.08, sampled.g) * step(sampled.b * 1.25 + 0.08, sampled.g);
+	ALBEDO = sampled.rgb;
+	ALPHA = sampled.a * (1.0 - chroma_green);
+}
+"""
+	var material := ShaderMaterial.new()
+	material.shader = shader
+	if texture:
+		material.set_shader_parameter("marker_texture", texture)
+	return material
 
 static func _stair_art_mat(tex_path: String) -> Material:
 	var material := StandardMaterial3D.new()
@@ -414,6 +480,90 @@ static func _add_plane(parent: Node, mat: Material, pos: Vector3, rot: Vector3) 
 	m.material_override = mat
 	m.position = pos
 	m.rotation = rot
+	parent.add_child(m)
+
+# `standingWater` is deliberately static, local geometry: a subdued sheet over an authored floor, a few
+# dim lamp streaks, and a wall-base stain.  It is not a simulation, never ticks, and never creates a bright
+# fullscreen effect.  That keeps a flooded platform legible without turning its ambience into a CPU cost.
+static func _standing_water_mat(water: Dictionary) -> StandardMaterial3D:
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = Color(String(water.get("tint", "183942")), 0.78)
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.metallic = 0.34
+	mat.roughness = 0.22
+	mat.emission_enabled = true
+	mat.emission = Color(String(water.get("tint", "183942")))
+	mat.emission_energy_multiplier = 0.05
+	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	return mat
+
+static func _standing_water_reflection_mat(water: Dictionary) -> StandardMaterial3D:
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = Color(String(water.get("reflection", "9db8b2")), 0.13)
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.emission_enabled = true
+	mat.emission = Color(String(water.get("reflection", "9db8b2")))
+	mat.emission_energy_multiplier = 0.12
+	mat.roughness = 0.16
+	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	return mat
+
+static func _standing_waterline_mat(water: Dictionary) -> StandardMaterial3D:
+	var mat := StandardMaterial3D.new()
+	var base := Color(String(water.get("tint", "183942")))
+	mat.albedo_color = Color(base.r * 0.72, base.g * 0.82, base.b * 0.86, 0.56)
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.roughness = 0.9
+	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	return mat
+
+static func _add_standing_water(parent: Node, material: Material, reflection_material: Material, base: Vector3, cx: int, cy: int, water: Dictionary) -> void:
+	var depth := clampf(float(water.get("depth", 0.035)), 0.01, 0.12)
+	var surface := MeshInstance3D.new()
+	surface.name = "FloodSurface_%d_%d" % [cx, cy]
+	var plane := PlaneMesh.new()
+	# Leave a hairline at the tile joints.  The player still reads construction beneath the water rather than
+	# an opaque coloured slab pasted across the maze.
+	plane.size = Vector2(CELL * 0.985, CELL * 0.985)
+	surface.mesh = plane
+	surface.material_override = material
+	surface.position = base + Vector3(0, depth, 0)
+	parent.add_child(surface)
+
+	# A single, low-luminance broken reflection per second tile makes the extinguished platform lamps read on
+	# water without a moving shader, a broad HUD-crossing beam, or hundreds of particles.  Offset by cell
+	# parity so it does not form a marching regular grid.
+	if posmod(cx * 3 + cy * 5, 2) == 0:
+		var reflection := MeshInstance3D.new()
+		reflection.name = "FloodReflection_%d_%d" % [cx, cy]
+		var streak := PlaneMesh.new()
+		streak.size = Vector2(0.10, CELL * (0.54 if posmod(cx + cy, 3) == 0 else 0.36))
+		reflection.mesh = streak
+		reflection.material_override = reflection_material
+		reflection.position = base + Vector3((0.46 if posmod(cx, 2) == 0 else -0.36), depth + 0.003, 0.06)
+		reflection.rotation.y = 0.09 if posmod(cy, 2) == 0 else -0.06
+		parent.add_child(reflection)
+
+static func _add_standing_waterline(parent: Node, material: Material, base: Vector3, dir: String, height: float) -> void:
+	var line_height := clampf(height, 0.05, 0.5)
+	var m := MeshInstance3D.new()
+	m.name = "FloodWaterline_%d_%d_%s" % [int(base.x / CELL), int(base.z / CELL), dir]
+	var quad := QuadMesh.new()
+	quad.size = Vector2(CELL, line_height)
+	m.mesh = quad
+	m.material_override = material
+	var off: Vector3 = {
+		"north": Vector3(0, line_height / 2.0 + 0.008, -CELL / 2.0 - 0.006),
+		"south": Vector3(0, line_height / 2.0 + 0.008, CELL / 2.0 + 0.006),
+		"east": Vector3(CELL / 2.0 + 0.006, line_height / 2.0 + 0.008, 0),
+		"west": Vector3(-CELL / 2.0 - 0.006, line_height / 2.0 + 0.008, 0),
+	}[dir]
+	m.position = base + off
+	match dir:
+		"north": m.rotation.y = 0
+		"south": m.rotation.y = PI
+		"east": m.rotation.y = -PI / 2.0
+		"west": m.rotation.y = PI / 2.0
 	parent.add_child(m)
 
 static func _add_wall(parent: Node, mat: Material, base: Vector3, dir: String, height: float = WALL_H) -> void:
@@ -602,7 +752,8 @@ static func _add_box(parent: Node, dimensions: Vector3, material: Material, pos:
 	box.size = dimensions
 	_add_mesh(parent, box, material, pos)
 
-# Deeper floors use a heavier block set (React: depth >= 7 -> block3, >= 4 -> block2, >= 1 -> block1).
+# Floor 10 is the true-clear layer; it owns block4 rather than reusing the Act III block3 set.
+# React uses the same depth map: >=10 -> block4, >=7 -> block3, >=4 -> block2, >=1 -> block1.
 static func _block_textures(state: Dictionary, world: Dictionary, run: Object) -> Dictionary:
 	var floor_id: Variant = (state.get("map", {}) as Dictionary).get("floorId", null)
 	var depth := 0
@@ -613,7 +764,9 @@ static func _block_textures(state: Dictionary, world: Dictionary, run: Object) -
 		if m:
 			depth = int(m.get_string(1))
 	var suffix := "-block1"
-	if depth >= 7:
+	if depth >= 10:
+		suffix = "-block4"
+	elif depth >= 7:
 		suffix = "-block3"
 	elif depth >= 4:
 		suffix = "-block2"
