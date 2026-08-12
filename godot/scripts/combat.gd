@@ -908,6 +908,23 @@ func _playback(before: Dictionary, events: Array, animated: bool) -> void:
 				_set_log("%s に %d ダメージ。" % [String(hit["name"]), int(hit["removed"])])
 				await get_tree().create_timer(0.32).timeout
 
+	# #26 A⑥: a defeated creature SINKS a little and FADES before it vanishes — not a pop-out, and not the
+	# faint lingering the rebuild used to leave. Runs on the marks still standing from the beat playback.
+	if animated:
+		var sinking := false
+		for hit in struck:
+			if _group_hp_by_id(String(hit["gid"])) <= 0:
+				var mk: Variant = _enemy_marks.get(String(hit["gid"]), null)
+				if mk is Control and (mk as Control).is_inside_tree():
+					var m := mk as Control
+					var tw := create_tween()
+					tw.set_parallel(true)
+					tw.tween_property(m, "position:y", m.position.y + 12.0, 0.26).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+					tw.tween_property(m, "modulate:a", 0.0, 0.26)
+					sinking = true
+		if sinking:
+			await get_tree().create_timer(0.28).timeout
+
 	# The bars drain to their post-round HP.
 	_rebuild_stage()
 

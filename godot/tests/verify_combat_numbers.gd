@@ -36,13 +36,14 @@ func _initialize() -> void:
 	var normal: Label = null
 	var crit: Label = null
 	for l in labels:
-		if (l as Label).text == "-12":
+		if (l as Label).text == "12":
 			normal = l
-		elif (l as Label).text == "-30!":
+		elif (l as Label).text == "30!":
 			crit = l
 
-	_check(normal != null, "the normal hit renders its amount '-12' (same convention as React .hit-number)")
-	_check(crit != null, "the crit renders '-30!' (amount + emphasis)")
+	# #26: a number is the RESULT of a hit — the bare amount, no app-style minus. Crit keeps the ! emphasis.
+	_check(normal != null, "the normal hit renders its amount '12' (no minus — #26)")
+	_check(crit != null, "the crit renders '30!' (amount + emphasis)")
 
 	if normal != null and crit != null:
 		# Positioned by x_frac: the 0.2 hit sits LEFT of the 0.85 hit.
