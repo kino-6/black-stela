@@ -881,6 +881,15 @@ func _playback(before: Dictionary, events: Array, animated: bool) -> void:
 						_set_log("%sが%sを撃った。" % [actor, target_name])
 				else:
 					_set_log("%sが%sに%s。" % [actor, target_name, _attack_verb(actor, crit)])
+				# #26 A①: mark the target BEFORE the hit — a short local brightness lift (~100ms), so the eye is
+				# on the creature about to be struck. Cursor/brightness only, never a big flash. First shot only.
+				if shot_index == 0:
+					var pre_mark: Variant = _enemy_marks.get(gid, null)
+					if pre_mark is Control:
+						var pm := pre_mark as Control
+						var hl := create_tween()
+						hl.tween_property(pm, "modulate", Color(1.2, 1.17, 1.1, 1.0), 0.05)
+						hl.tween_property(pm, "modulate", Color(1, 1, 1, 1), 0.09)
 				await get_tree().create_timer(0.24 if shot_index == 0 else 0.08).timeout
 				if is_gun:
 					# A resolved beat is the authority for a technique's weapon family.  The equipment lookup is
