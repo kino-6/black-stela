@@ -1271,7 +1271,9 @@ func _spawn_melee_fx(gid: String, crit: bool) -> void:
 	var slash_path := _asset("ui/fx-slash.png")
 	var slash := _texture(slash_path)
 	if slash:
-		var size := clampf(r.size.x * (0.9 if crit else 0.72), 150.0, 300.0)
+		# Scale the slash to the struck creature so it reads as a blow LANDING on it, not a tiny mark floating
+		# over a big sprite (user 2026-08-12: 斬撃が妙に小さい). ~95% of the mark width, crit a touch larger.
+		var size := clampf(r.size.x * (1.15 if crit else 0.95), 200.0, 460.0)
 		_spawn_fx_texture(slash, centre, size, 0.26 if crit else 0.22, 0.0, "slash", slash_path)
 
 func _spawn_gun_fx(gid: String, family: String) -> void:
