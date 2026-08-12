@@ -27,11 +27,20 @@ const VERDANT_CHAMBER_FLOOR := "dungeon.verdant.g1f"
 # can be judged in one selection instead of walking the floor to find it (user 2026-08-11).
 const STAIR_FIXTURES := ["terminal_line_down_stair", "terminal_line_up_stair"]
 
+# A LIVE Terminal Line fight the reviewer drops straight into, with the front four each holding a different
+# firearm family — so 全員でかかる [F] fires pistol / rifle / SMG / shotgun in ONE round and the #26 combat
+# feel (quiet numbers, hit sink, per-gun tempo, defeat sink, log) is judged without walking to an encounter
+# (user 2026-08-12: 「StateLoad くらい用意しない？」). Attack normally for a hit/crit, keep firing for a defeat.
+const COMBAT_FIXTURES := ["terminal_line_combat"]
+const Encounter := preload("res://scripts/encounter.gd")
+const TL_GUNS := ["equip.tl-service-pistol", "equip.tl-platform-38-rifle", "equip.tl-drain-5-smg", "equip.tl-maintenance-10-shotgun"]
+
 ## The fixture names offered — used by the panel and validated by the boot flag.
 static func names() -> Array:
 	var all := TRACES.keys()
 	all.append_array(VERDANT_CHAMBER_FIXTURES)
 	all.append_array(STAIR_FIXTURES)
+	all.append_array(COMBAT_FIXTURES)
 	for n in range(2, 11):
 		all.append("floor_%d" % n)   # deep-floor review starts (IMP-062)
 	return all
@@ -46,6 +55,8 @@ static func load_into(run: Object, name: String) -> String:
 		return _load_verdant_chamber(run, name)
 	if name in STAIR_FIXTURES:
 		return _load_terminal_stair(run, name)
+	if name in COMBAT_FIXTURES:
+		return _load_terminal_combat(run)
 	if name.begins_with("floor_"):
 		return _load_deep_floor(run, name)
 	run.ensure_loaded()
@@ -72,6 +83,28 @@ static func _scene_for_phase(phase: String) -> String:
 			return "res://scenes/dungeon.tscn"
 		_:
 			return "res://scenes/town.tscn"
+
+## terminal_line_combat: arm the front four with one of each firearm family, then begin a REAL Terminal Line
+## encounter — the reviewer lands in combat and can judge the #26 feel live (全員でかかる [F] to see every
+## gun's tempo in one round; a plain 攻撃 for a single quiet number; keep firing for the defeat sink).
+static func _load_terminal_combat(run: Object) -> String:
+	run.world_id = "terminal-line"
+	run.reset()
+	var state: Dictionary = run.state
+	var party: Array = (state.get("party", []) as Array)
+	for i in mini(party.size(), TL_GUNS.size()):
+		var m: Dictionary = (party[i] as Dictionary)
+		var eq: Dictionary = ((m.get("equipment", {}) as Dictionary)).duplicate(true)
+		eq["weapon"] = {"id": TL_GUNS[i]}
+		m["equipment"] = eq
+		party[i] = m
+	state["party"] = party
+	run.state = state
+	var enemies: Array = run.world.get("enemies", [])
+	if enemies.is_empty():
+		return ""
+	Encounter.begin(run.state, run.world, "room.tl1f.entrance", String((enemies[0] as Dictionary).get("id", "")))
+	return "res://scenes/combat.tscn"
 
 ## loot_delta: the party stands at the return stair carrying its descent supply PLUS one item picked up
 ## below. loot_baseline is set to the descent inventory, so the return ledger shows ONLY the gained item
