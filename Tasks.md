@@ -36,12 +36,14 @@ ideas (unapproved): `docs/design/ballistic-world-program.md`.
   BFS し、ページ内 enabled+可視 Button と突合、到達不能を実名列挙。ヘルパ `_chain_column`/`_link_lr`/`_chain_tree_order`。
   **全6ページ（能力/編成/呪文/装備/所持品/貴重品）配線＝全 HARD FAIL 保護で緑**。dungeon/grid 回帰なし。
 
-- [ ] **#24 — 「つまらんダメージのみ」特技を Gate で排除し、名前に見合う効果を持たせる.** 例: 焼夷弾/徹甲弾 が共に「敵に小
-  ダメージ」だけ（user 2026-08-12, スクショ）。焼夷弾→**炎上(burn)状態異常付与**、徹甲弾→**防御無視**、のように名前が示す
-  固有効果を持たせる。まず (1) 効果システムが burn(継続ダメージ)/防御無視 を持つか調査（無ければ最小実装）、(2) terminal-line
-  の該当特技を authored 効果へ、(3) **Gate**（user 提案）: ダメージを持つのに固有効果（status/scope/mechanic）が一切無い
-  「フラットダメージのみ」特技を FAIL させる content-quality テスト（名前倒れを赤にする）。閾値は要検討（全特技に必須にするか、
-  一部の素朴な通常攻撃系は許容するか）。content 中心（terminal-line techniques）＋効果システム調査。
+- [ ] **#24 — 「つまらんダメージのみ」特技に固有効果＋Gate で排除（design+engine 判断要）.** 焼夷弾/徹甲弾 が共に「敵に小
+  ダメージ」だけ（user 2026-08-12）。焼夷弾→炎上(burn)、徹甲弾→防御無視 が望み。**調査結果（2026-08-12）**: 技は content
+  定義（`terminal-line/techniques.md`, 焼夷弾=`tl-incendiary-round`/徹甲弾=`tl-slug-round`、共に `kind:damage` のみ）。
+  `CombatStatus = poison|fear|silence|sleep|ward` で **炎上(burn/DoT) も 防御無視 も未実装** → **core-combat エンジン拡張が必要**:
+  (a) burn＝継続ダメージ状態（poison が DoT なら fire 版として流用可か要確認）、(b) 防御無視＝ダメージ計算に armor-bypass 修飾子。
+  加えて **Gate**（user 提案）: ダメージ持ちで固有効果（status/inflicts/scope 等）ゼロの「フラットダメージのみ」技を FAIL させる
+  content-quality テスト＋**閾値の design 判断**（全攻撃技に効果必須か、素朴な通常攻撃系は allow-tag で許容か）。Godot-native で
+  可（core ルール変更＝parity 維持か Godot 正のどちらか選択）。クイックではなく次の集中スライス。
 
 ## Backlog / ideas (no home yet)
 
