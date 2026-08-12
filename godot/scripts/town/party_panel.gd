@@ -110,6 +110,7 @@ static func build(ctx: Dictionary) -> Control:
 		# on the tab strip it just came through. Gold must mean focus and nothing else, so the active tab
 		# is marked by its own state, never by borrowing the focus ring.
 		land.call(built["focus"] if built["focus"] != null else item_back)
+		_chain_tree_order(built["control"], active_tab, item_back)  # #23/#25: list + detail actions + 閉じる reachable
 		return root
 
 	# 呪文/特技 — the classic camp "spells" page: a READ-ONLY reference of what the chosen adventurer knows,
@@ -142,7 +143,7 @@ static func build(ctx: Dictionary) -> Control:
 		sfoot.add_child(sback)
 		root.add_child(sfoot)
 		land.call(spell_page["focus"] if spell_page["focus"] != null else selected_sfocus if selected_sfocus != null else sfocus if sfocus != null else sback)
-		_chain_column(sroster_buttons, active_tab, sback)  # #23/#25: members + 閉じる reachable by arrows
+		_chain_tree_order(sbody, active_tab, sback)  # #23/#25: members + spell/technique buttons + 閉じる reachable
 		return root
 
 	# 編成 is its own decision surface. The status page is for reading one adventurer, not for six repeated
@@ -172,6 +173,11 @@ static func build(ctx: Dictionary) -> Control:
 		equipment_foot.add_child(equipment_back)
 		root.add_child(equipment_foot)
 		land.call(equipment_page["focus"] if equipment_page["focus"] != null else equipment_back)
+		# The roster's bottom ↓ to 閉じる so close is arrow-reachable (#23/#25).
+		var eq_bottom: Variant = equipment_page.get("nav_bottom", null)
+		if eq_bottom is Control:
+			(eq_bottom as Control).focus_neighbor_bottom = (eq_bottom as Control).get_path_to(equipment_back)
+			equipment_back.focus_neighbor_top = equipment_back.get_path_to(eq_bottom as Control)
 		return root
 
 	var body := UI.row()
@@ -548,8 +554,15 @@ static func _equipment_page(ctx: Dictionary, world: Dictionary, party: Array, me
 		if after_slots != null:
 			slot_buttons[slot_buttons.size() - 1].focus_neighbor_bottom = slot_buttons[slot_buttons.size() - 1].get_path_to(after_slots)
 
+	# T12 wired LEFT/RIGHT between the panes but left each column's ↑/↓ to geometry — so the arrows could
+	# cross panes yet never step to another member or slot (the #23/#25 dead spots). Chain each column's
+	# ↑/↓ explicitly (below=null preserves the last-slot→candidate bridge above); build() links 閉じる.
+	_chain_column(roster_buttons, null, null)
+	_chain_column(slot_buttons, null, null)
+	_chain_column(candidate_buttons, null, null)
+
 	var restore_member_focus: bool = String(ctx.get("party_focus_member_id", "")) != ""
-	return {"control": body, "focus": selected_roster_focus if restore_member_focus and selected_roster_focus != null else candidate_focus if candidate_focus != null else selected_slot_focus}
+	return {"control": body, "focus": selected_roster_focus if restore_member_focus and selected_roster_focus != null else candidate_focus if candidate_focus != null else selected_slot_focus, "nav_bottom": roster_buttons[roster_buttons.size() - 1] if not roster_buttons.is_empty() else null}
 
 
 const VALUABLE_KINDS := ["key", "treasure", "escape"]
@@ -927,3 +940,19 @@ static func _link_lr(left_ctrl: Control, right_ctrl: Control) -> void:
 	if left_ctrl != null and right_ctrl != null:
 		left_ctrl.focus_neighbor_right = left_ctrl.get_path_to(right_ctrl)
 		right_ctrl.focus_neighbor_left = right_ctrl.get_path_to(left_ctrl)
+
+static func _collect_buttons_in_order(node: Node, out: Array) -> void:
+	if node is Button and (node as Button).focus_mode == Control.FOCUS_ALL and not (node as Button).disabled:
+		out.append(node)
+	for c in node.get_children():
+		_collect_buttons_in_order(c, out)
+
+# Fallback wiring for pages without a bespoke 2D graph (dynamic detail panes): chain EVERY enabled button
+# top-to-bottom in tree order — the tab strip (above) → content → the footer (tail). Flatter than a true 2D
+# layout, but it guarantees the arrows reach every control deterministically, with no dead spots (#23/#25).
+static func _chain_tree_order(scope: Node, above: Control, tail: Control) -> void:
+	var buttons: Array = []
+	_collect_buttons_in_order(scope, buttons)
+	if tail != null:
+		buttons.append(tail)
+	_chain_column(buttons, above, null)

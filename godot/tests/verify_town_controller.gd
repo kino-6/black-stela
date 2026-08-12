@@ -163,10 +163,7 @@ func _initialize() -> void:
 					# reachable from the landing cursor using ONLY arrows — no mouse, no Tab. A dead spot (a member,
 					# a slot, a candidate the arrows never land on) fails here with the control named. This is the
 					# gate the old "a focus surface exists" checks were missing (false-green, user 2026-08-12).
-					# Pages whose explicit keyboard wiring is DONE are guarded hard — a regression fails the gate.
-					# The rest are 2-pane pages still being wired (#23/#25 in Tasks.md); their dead spots are
-					# printed LOUDLY (not hidden) so the gap is tracked, never silently green.
-					var wired_pages := {"status": true, "formation": true, "valuables": true}
+					# Every party-menu page is explicitly wired now — a dead spot on ANY of them fails the gate.
 					var party_scope: Node = town.get("_service_layer")
 					for reach_page in ["status", "formation", "spells", "equipment", "items", "valuables"]:
 						town.call("set_ui_state", {"service": "party", "party_page": String(reach_page)})
@@ -181,10 +178,8 @@ func _initialize() -> void:
 								dead.append(_control_label(c as Control))
 						if dead.is_empty():
 							print("[town-controller] party %s: all %d focusables reachable by arrows (#23/#25)" % [reach_page, focusables.size()])
-						elif wired_pages.has(reach_page):
-							_fail("party %s REGRESSED: %d control(s) UNREACHABLE by arrows — keyboard dead spots: %s" % [reach_page, dead.size(), ", ".join(PackedStringArray(dead))])
 						else:
-							print("[town-controller] TODO(#23/#25): party %s not yet keyboard-wired — %d dead spot(s): %s" % [reach_page, dead.size(), ", ".join(PackedStringArray(dead))])
+							_fail("party %s: %d control(s) UNREACHABLE by arrows — keyboard dead spots: %s" % [reach_page, dead.size(), ", ".join(PackedStringArray(dead))])
 					town.call("set_ui_state", {"service": "party", "party_page": "status"})
 					for i in 3:
 						await process_frame
