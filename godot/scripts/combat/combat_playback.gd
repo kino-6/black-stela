@@ -8,6 +8,7 @@ const HURT := Color("f2b077")
 const CRIT := Color("ffd76a")
 const GOLD := Color("c9a765")
 const OUTLINE := Color("1a120a")
+const NUMBER := Color("e4d6c8")   # normal damage number: small, near-white / dull red-grey (user #26)
 
 ## A juicy floating damage number (T19): a scale-POP on spawn (overshoot then settle), a rising arc with a
 ## little sideways drift, a dark outline so it reads on any creature, and a hotter/bigger CRIT variant with
@@ -24,28 +25,23 @@ static func damage_number(damage_layer: CanvasItem, stage_rect: Rect2, amount: i
 static func damage_number_at(damage_layer: CanvasItem, top_centre: Vector2, amount: int, is_crit: bool = false, colour: Color = Color(0, 0, 0, 0)) -> void:
 	if amount <= 0:
 		return
-	var size := 74 if is_crit else 54
-	var tint := colour if colour.a > 0.0 else (CRIT if is_crit else HURT)
-	# Same text convention as React's .hit-number (`-N`, crit adds `!`), so the two engines read identically.
-	var dmg := _label(("-%d!" % amount) if is_crit else ("-%d" % amount), size, tint)
+	# A number is the RESULT of a hit — read at the target, small and STILL. No minus sign, no rise, no
+	# sideways drift, no scale overshoot (user 2026-08-12: それらは通知アプリ的で命中感を殺す). Normal is small
+	# and near-white; a crit may be gold with a trailing !, but never a bounce, a flash, or a pop.
+	var size := 44 if is_crit else 30
+	var tint := colour if colour.a > 0.0 else (CRIT if is_crit else NUMBER)
+	var dmg := _label(("%d!" % amount) if is_crit else ("%d" % amount), size, tint)
 	dmg.add_theme_color_override("font_outline_color", OUTLINE)
-	dmg.add_theme_constant_override("outline_size", 10 if is_crit else 8)
-	dmg.pivot_offset = Vector2(size * 0.5, size * 0.6)
-	var base_x := top_centre.x - size * 0.5
-	dmg.position = Vector2(base_x, top_centre.y)
-	dmg.scale = Vector2(0.4, 0.4)
+	dmg.add_theme_constant_override("outline_size", 6 if is_crit else 4)
+	dmg.position = Vector2(top_centre.x - size * 0.5, top_centre.y)
+	dmg.modulate.a = 0.0
 	damage_layer.add_child(dmg)
-	var drift := (18.0 if int(base_x) % 2 == 0 else -18.0)  # a small deterministic sideways arc
+	# Appear at once, hold briefly, fade over 180–240ms. ONLY modulate is tweened — position and scale never
+	# change, so a normal hit stays quiet.
 	var tw := damage_layer.create_tween()
-	# POP: overshoot then settle (the "juice").
-	tw.tween_property(dmg, "scale", Vector2(1.18, 1.18) if is_crit else Vector2(1.1, 1.1), 0.12).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	tw.tween_property(dmg, "scale", Vector2.ONE, 0.08)
-	# RISE + drift + ease-out fade, in parallel.
-	tw.set_parallel(true)
-	tw.tween_property(dmg, "position:y", dmg.position.y - 96, 0.62).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	tw.tween_property(dmg, "position:x", dmg.position.x + drift, 0.62)
-	tw.tween_property(dmg, "modulate:a", 0.0, 0.5).set_delay(0.34)
-	tw.set_parallel(false)
+	tw.tween_property(dmg, "modulate:a", 1.0, 0.04)
+	tw.tween_interval(0.10 if not is_crit else 0.20)
+	tw.tween_property(dmg, "modulate:a", 0.0, 0.22 if not is_crit else 0.30)
 	tw.tween_callback(dmg.queue_free)
 
 ## The 撃破 defeat flourish over the enemy stage.
