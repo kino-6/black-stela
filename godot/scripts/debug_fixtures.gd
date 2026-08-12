@@ -104,6 +104,23 @@ static func _load_terminal_combat(run: Object) -> String:
 	if enemies.is_empty():
 		return ""
 	Encounter.begin(run.state, run.world, "room.tl1f.entrance", String((enemies[0] as Dictionary).get("id", "")))
+	# Turn the encounter into a TRAINING DUMMY: one target with a huge HP pool and no bite, so the party can
+	# keep attacking round after round and watch every gun's tempo + the hit/defeat feel, instead of the fight
+	# ending in two swings against a fragile rat (user 2026-08-12: 敵が弱すぎて2回分しか見れない).
+	# One target with a huge HP pool and no bite — the reviewer keeps attacking round after round. (It keeps
+	# the drain-rat's id so it draws the real sprite/name; the display name resolves from the catalog by
+	# enemyId, so only its stats are dummied, not its label.)
+	var combat: Dictionary = (run.state.get("combat", {}) as Dictionary)
+	for g in (combat.get("enemyGroups", []) as Array):
+		var grp: Dictionary = g
+		grp["count"] = 1
+		grp["initialCount"] = 1
+		grp["hpEach"] = 800
+		grp["maxHpEach"] = 800
+		grp["attack"] = 0
+		grp["damageMin"] = 0
+		grp["damageMax"] = 0
+	run.state["combat"] = combat
 	return "res://scenes/combat.tscn"
 
 ## loot_delta: the party stands at the return stair carrying its descent supply PLUS one item picked up

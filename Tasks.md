@@ -38,8 +38,8 @@ ideas (unapproved): `docs/design/ballistic-world-program.md`.
 ## 目視サインオフ用 ONE-SHOT 確認手段（デバッグパネルから選ぶだけ / 歩かない）
 
 - **#26 Combat feel（銃テンポ含む）:** **`npm run play:combat`**（＝`--fixture terminal_line_combat`）で terminal-line 戦闘に直接着地。
-  前衛4人が pistol/rifle/SMG/shotgun 装備 → **全員でかかる[F]** で全銃種のテンポ・静かな数字・命中沈み・撃破沈み・ログを一度に確認。
-  単発は 攻撃、撃破は同じ敵を撃ち続ける。（fixture `terminal_line_combat`、debug パネルからも選択可。）
+  前衛4人が pistol/rifle/SMG/shotgun 装備・敵は**訓練ダミー化（HP800・攻撃0＝12ラウンド以上戦え、味方は無傷）**。**全員でかかる[F]**
+  で全銃種のテンポ・静かな数字・命中沈み・ログを一度に、繰り返し確認。撃破沈みは撃ち切る。（fixture `terminal_line_combat`、debug パネル可。）
 - **玄室（closed portal / 室内）:** fixture `verdant_chamber_closed` · `verdant_chamber_cleared`
 - **Terminal Line 階段:** fixture `terminal_line_down_stair` · `terminal_line_up_stair`
 - **深層フロアの見え方:** world=terminal-line で fixture `floor_2`…`floor_10`（`capture_deep_floors.gd` も可）
