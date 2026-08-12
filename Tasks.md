@@ -27,9 +27,18 @@ ideas (unapproved): `docs/design/ballistic-world-program.md`.
 
 ## Active queue (process top-down)
 
-**（空 — no active tasks.）** このセッションの #22 / #23・#25 / #24 / #26 と前バッチは完了・全ゲート緑・push 済み
-（`docs/archive/Tasks.completed-2026-08.md` の 2026-08-12 (3rd batch) を参照）。branch `feat/playtest-ux-2` は main 未マージ。
-残るのは #26 F（1280/1920 目視 capture 5種）と 銃種テンポの微調整＝実プレイでの user レビュー領域で、backlog タスクではない。
+- [-] **#27 — W3a: terminal-line の最小固有ルール「共有弾薬＋警戒度」（design doc 承認済み・user 2026-08-12「3」）.**
+  `docs/design/ballistic-world-program.md` の W3a。terminal-line は世界/アート/銃は出荷済みで、未実装はこの資源管理2点のみ。
+  **銃は最強の通常攻撃ではなく「弾を払って事故率と探索時間を下げる」選択にする**のが狙い。**Godot-native**（新規ルール＝TS parity
+  移植不要、[[black-stela-godot-native-policy]]）。W0 の3判断は既定で進める（名称=terminal-line の 封鎖線/零番線 既存のまま／警戒度名
+  =**静穏/注意/警報**／終幕の3択は F10 の話で W3a には不要）—異論あれば差し替え。
+  - **① 共有弾薬:** party 所持品に「汎用弾」item。**銃タグの基本攻撃は1発消費、0発なら銃攻撃を選べない**（近接/道具/技へ）。迷宮 HUD に
+    **残弾**を常時表示。キャラ別弾倉・手動リロード・銃種別弾薬は**やらない**（最小仕様）。Gate: 銃攻撃で弾-1・0発で銃不可の unit/combat テスト。
+  - **② 警戒度:** フロアごと **0–3**。**戦闘でその階で最初に銃を撃った時だけ +1**。遭遇テーブルの重みを段階的に危険側へ寄せる（即時スポーン/
+    強制戦闘/隠し数値はやらない）。**補給ロッカー/保守端末/帰還で1段階↓**（端末は資源or探索成功を要求）。HUD に **静穏/注意/警報** を常時表示、
+    上昇直後に一行「発砲音が通路へ響いた。注意が向いている。」。Gate: 初弾で警戒+1・遭遇重みシフト・ロッカー/帰還で↓の unit テスト＋HUD 表示 assert。
+  - 実装順（各 failing-first gate）: (a) 汎用弾データ＋銃攻撃の弾消費＋0発ガード → (b) 残弾 HUD → (c) 警戒度 state＋初弾+1＋一行通知 → (d) 警戒度→
+    遭遇重み → (e) ロッカー/端末/帰還で↓ → (f) 警戒 HUD（静穏/注意/警報）。content（`content/worlds/terminal-line/**`）＋ Godot rules/HUD。
 
 ## Backlog / ideas (no home yet)
 
