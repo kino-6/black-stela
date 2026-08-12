@@ -532,3 +532,13 @@ Claude 実行可能な Tasks.md 作業は全完了・全ゲート緑・commit �
 - **#21 Auto停止ヒント＋Backspace割り込み** (`cf2ad69`): `auto_interrupt` 未処理を `_busy` ガード前で実配線＋永続バナー。Gate: auto前非表示/後表示。
 - **BLK-1 D6 テスト整合** (`762e98a`): pre-push gate が a9a8dad の赤放置を検知。Swordmaster trained は unlock のみ→純テスト整合。
 - **インフラ**: ブランチ整理（merged 47本削除）· pre-push gate 新設（`1d0f9fe`、typecheck+unit 並列、CI赤放置NG）· `npm run play` を export込み一発化＋`play:only`（`7713341`）· **Godot-native ポリシー**（新規は parity 移植不要、`4364c68`／AGENTS.md）· Tasks.md/AGENTS.md 整理（durable ルールを AGENTS.md へ移設、routing ルール明記）。
+
+## 2026-08-12 (3rd batch) — UX+combat feel（branch `feat/playtest-ux-2`、main 未マージ）
+- **#22** 勝利/レベルアップ画面の画面充填（col 920→1360・カード拡大、`6fcacf4`）。
+- **#23/#25** パーティメニュー全ページのキーボード完全到達＋**本物の reachability ゲート**（明示 focus_neighbor のみ BFS・1920×1080）。
+  従来ゲートが false-green だった核心を証明し、`_chain_column`/`_link_lr`/`_chain_tree_order` で全6ページ配線・全 HARD FAIL 保護（`fb29e00`/`0dad20b`）。
+- **#24** 特技ダメージを「通常（防御適用）」に修正（技は全て armor 無視の手抜き仕様だった、`bf5126f`）。
+- **#26** Combat feel 改修: 静かな数字`12`（rise/drift/overshoot 撤廃）・A①被弾前明示・A②④/B 数字は結果・A⑥撃破沈み・C銃種テンポ・
+  D ログ1手番1行。gate `verify_combat_feel`＋`verify_combat_numbers` 更新（`8b4925d`/`1ec26e2`/`4e7e42e`/`899ec7a`/`bbf64aa`/`b280061`）。
+  F の 1280/1920 目視 capture 5種は実プレイ・レビュー領域。
+- **インフラ:** Tasks.md をタスクキュー専用化＋durable ルールを AGENTS.md へ移設＋routing ルール明記（`8259c84`）。
