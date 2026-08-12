@@ -84,21 +84,28 @@ static func _scene_for_phase(phase: String) -> String:
 		_:
 			return "res://scenes/town.tscn"
 
-## terminal_line_combat: arm the front four with one of each firearm family, then begin a REAL Terminal Line
-## encounter — the reviewer lands in combat and can judge the #26 feel live (全員でかかる [F] to see every
-## gun's tempo in one round; a plain 攻撃 for a single quiet number; keep firing for the defeat sink).
+## terminal_line_combat: a CLEAN 4-gun demo squad — the four martial members (casters don't fire a basic
+## gun, so they only muddied the picture), front-ranked, each with a different firearm, so 全員でかかる [F]
+## shows pistol → rifle → SMG → shotgun side by side with no stray melee slashes. A plain 攻撃 for a single
+## quiet number; keep firing for the defeat sink. The enemy is dummied below so the squad can fire forever.
+const MARTIAL_CLASSES := ["warrior", "thief", "knight", "swordmaster", "priest", "sellsword"]
 static func _load_terminal_combat(run: Object) -> String:
 	run.world_id = "terminal-line"
 	run.reset()
 	var state: Dictionary = run.state
-	var party: Array = (state.get("party", []) as Array)
-	for i in mini(party.size(), TL_GUNS.size()):
-		var m: Dictionary = (party[i] as Dictionary)
-		var eq: Dictionary = ((m.get("equipment", {}) as Dictionary)).duplicate(true)
-		eq["weapon"] = {"id": TL_GUNS[i]}
-		m["equipment"] = eq
-		party[i] = m
-	state["party"] = party
+	# Keep only the members that actually FIRE a basic gun, front-rank them, and give each a distinct family.
+	var squad: Array = []
+	for m in (state.get("party", []) as Array):
+		if squad.size() >= TL_GUNS.size():
+			break
+		if String((m as Dictionary).get("classId", "")) in MARTIAL_CLASSES:
+			var member: Dictionary = m
+			member["row"] = "front"
+			var eq: Dictionary = ((member.get("equipment", {}) as Dictionary)).duplicate(true)
+			eq["weapon"] = {"id": TL_GUNS[squad.size()]}
+			member["equipment"] = eq
+			squad.append(member)
+	state["party"] = squad
 	run.state = state
 	var enemies: Array = run.world.get("enemies", [])
 	if enemies.is_empty():
