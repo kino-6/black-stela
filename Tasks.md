@@ -44,6 +44,16 @@ ideas (unapproved): `docs/design/ballistic-world-program.md`.
   加えて **Gate**（user 提案）: ダメージ持ちで固有効果（status/inflicts/scope 等）ゼロの「フラットダメージのみ」技を FAIL させる
   content-quality テスト＋**閾値の design 判断**（全攻撃技に効果必須か、素朴な通常攻撃系は allow-tag で許容か）。Godot-native で
   可（core ルール変更＝parity 維持か Godot 正のどちらか選択）。クイックではなく次の集中スライス。
+  **実装プラン（調査で確定・次セッションで着手）:**
+  - **⚠ 徹甲弾=防御無視は不可（既に全技のデフォルト）:** プレイヤー技ダメージは combat_round.gd 403 で既に `roll_damage(...,0)`＝
+    **全技が armor 無視**（基本攻撃のみ 159 で armor 適用）。よって「徹甲弾 防御無視」は差別化にならない。徹甲弾には**別の固有効果を
+    デザイン要**（例: 装甲持ち敵に bonus / crit 上昇 / 一時的 armor-shred など）＝user と相談。
+  - **焼夷弾=炎上(burn)〔新規で妥当〕:** poison が既に DoT（combat_round.gd 251「ROUND END: poison bites」、`_tick_status_list`→`poisonDamage`）。
+    `CombatStatus` に `"burn"` 追加（types.ts＋zod）、`_tick_status_list`/`STATUS_WEAR_OFF` に burn を DoT として追加（poison 同型・
+    fire フレーバー）、i18n ラベル＋status pip、`tl-incendiary-round` に `inflicts:{status:burn}`。React 側は archived なので
+    Godot-native（parity トレースが該当技を使わなければ verify_parity 影響なし＝要確認、使えば retire）。
+  - **Gate:** `kind:damage` を持ち `status`/`inflicts`/`allEnemies`/`ignoreDefense` 等の固有性ゼロの攻撃技を列挙して FAIL。
+    素朴な通常攻撃系を許すなら `tags:[basic]` を allow に。閾値は着手時に user 確認。
 
 ## Backlog / ideas (no home yet)
 
