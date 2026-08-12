@@ -7,8 +7,27 @@ Before Godot migration work, read `docs/architecture.md` and
 `docs/design/godot-full-migration-plan.md`. If the change touches scenario AI,
 narration, canonical events, records, or saves, also read
 `docs/design/ai-godot-migration-contract.md`. TypeScript remains the rules and
-content-schema oracle; Godot consumes normalized exports and must not parse
-scenario source or call an AI provider from scene scripts.
+content-schema oracle FOR THE ALREADY-MIGRATED CORE; Godot consumes normalized
+exports and must not parse scenario source or call an AI provider from scene scripts.
+
+## New work is Godot-native — parity porting is NOT required (policy, user 2026-08-12)
+
+The Godot migration (M0–M7) is DONE and Godot is the shipping player runtime, so **"port everything to
+TS and keep parity" is NG for NEW work.** Build new features where they ship:
+
+- **New presentation / UX / input / screens / effects / NEW rules → Godot only** (`godot/scripts/**`),
+  proven by the Godot gates (`verify_*.gd`). Do NOT add a TS counterpart or a parity trace for these.
+- **Authored once, both runtimes read it — no porting:** content (`content/worlds/**`) and copy/i18n
+  (`ja.ts` / `en.ts` via `export:i18n`). This is the bulk of gameplay/scenario work.
+- **The TS oracle + parity gates (`gate:migration` / `verify_parity`) + Playwright specs stay as the
+  FROZEN regression record** of the migrated core, and TS still generates the runtime lookup tables
+  Godot reads (`rng`/`stat`/`combat-helper`/`engine`/`packs`). They keep running in CI as a safety net;
+  they stay green because the migrated core is unchanged. Do not delete them (that removes the standard,
+  the regression gate, AND the data pipeline — a separate product decision, not a per-change step).
+- **Only when you CHANGE a migrated CORE rule that already has a golden trace** do you have a parity
+  choice: (a) keep it parity-clean (edit TS + Godot + the trace) if you want the oracle's protection, OR
+  (b) make Godot authoritative and RETIRE that rule's golden trace so `verify_parity` does not go red.
+  Divergence must be deliberate (retire the trace), never an accidental red gate.
 
 Before any player-facing UI, gameplay, dungeon, prose, asset, character,
 combat, automation, or save/debug change, read:
