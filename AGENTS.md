@@ -29,6 +29,37 @@ TS and keep parity" is NG for NEW work.** Build new features where they ship:
   (b) make Godot authoritative and RETIRE that rule's golden trace so `verify_parity` does not go red.
   Divergence must be deliberate (retire the trace), never an accidental red gate.
 
+## Where rules and improvements go (user 2026-08-12)
+
+**`Tasks.md` is the TASK QUEUE, not a rulebook.** Durable rules kept piling up in its Conventions; they
+belong here.
+
+- **A durable rule / convention / policy → `AGENTS.md`** (this file), or the relevant `.claude/skills/**`
+  or `docs/design/**`, or auto-memory. Never grow `Tasks.md`'s conventions with product/engineering rules.
+- **An improvement / idea / follow-up with no home specified → append it to the fitting section of
+  `Tasks.md`** (the active queue, or a "backlog / ideas" heading) so it is captured, not lost — and not
+  dumped at the top as if it were a rule. If the user names a destination, use that instead.
+- `Tasks.md` keeps only: the queue, the status/groom mechanics for the queue, and pointers to where the
+  rules live.
+
+### Working rules (moved out of Tasks.md — canonical here)
+
+- **Never commit/push with a red gate, and never rationalise a red as "無関係/WIP".** A red unit/build/gate
+  is a STOP. If you believe it is pre-existing, PROVE it (does it fail on `main`?) before proceeding. CI
+  going red is a defect to fix, not noise. The `pre-push` gate enforces this locally.
+- **Pre-push gate:** `git push` runs `npm run gate:prepush` → typecheck + unit **in parallel** (~10–20s);
+  a red push is BLOCKED. `git push --no-verify` bypasses once for deliberate WIP; `GATE_FULL=1 git push`
+  escalates to the full `gate:ci`. e2e + Godot parity stay in CI (too slow per push).
+- **Lanes:** Codex owns art / assets / **visual sign-off** (the primary implementer does NOT self-approve
+  player-facing visual/controller completion; that handoff is the other agent's). Claude owns rules / data
+  / renderer wiring / parity / gates.
+- **Codex delivery flow:** Codex leaves finished work UNCOMMITTED; 検品 (run the named gate + READ the PNG)
+  and commit are Claude's job. `M`/`??` on Codex files usually means done-not-committed, not mid-edit.
+- **Verify it YOURSELF before handing a check to the user.** Before you ever hand a check back: (1) can you
+  verify it yourself? — render the real screen to PNG and READ it / run the gate / probe the value; do it.
+  (2) did you give a ONE-SHOT way to see it in the real game (a `debug_fixtures.gd` fixture / boot flag)?
+  Pointing at a `godot/tests/*.png` or "walk there" is not that. (See auto-memory: self-verify-before-asking.)
+
 Before any player-facing UI, gameplay, dungeon, prose, asset, character,
 combat, automation, or save/debug change, read:
 
