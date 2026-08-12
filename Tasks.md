@@ -31,11 +31,13 @@ ideas (unapproved): `docs/design/ballistic-world-program.md`.
   小さく固まり画面を活かせていない（user 2026-08-12, スクショ）。#20 でフォントは上げたが、今回は**画面全体の構成**を見直す:
   余白配分・カード寸法/2×3配置・戦果と成長のバランス・情報密度を、1920×1080 と最小 1280×720 の両方で「無駄な黒余白を減らし
   読みやすく」。Godot-native（`result.gd` のみ）。実機PNG 前後比較必須＋既存の 6人フィットガード維持。
-- [ ] **#23 — 編成タブでメンバーを WASD/矢印でまともに選択できない.** 編成(formation)タブは 前衛/後衛の2列＋配置ボタンだが、
-  WASD/矢印で列間・列内メンバーへ思うように移動できない（user 2026-08-12, スクショ）。#17 は WASD を ui_* に足しただけで、
-  formation ページの focus_neighbor が未配線の疑い（#18 のタブ配線と同型の問題）。`party_panel.gd _formation_page` の各メンバー
-  ボタン＋前衛へ/後衛へ配置ボタンの focus_neighbor を配線（列内=上下、列間=左右、下=配置ボタン）。Gate: `verify_town_controller.gd`
-  に「編成で物理 WASD により 前衛↔後衛・列内の別メンバーへ focus が移る」assert（**修正前 FAIL・修正後 PASS**）。Godot-native。
+- [-] **#23/#25 — パーティメニュー全ページのキーボード完全到達＋本物の REACHABILITY ゲート.** 編成・装備で矢印/WASD で全
+  メンバー/スロット/候補にまともに到達できない（user 2026-08-12）。**判明した核心: 従来ゲートは false-green** — geometry ナビは
+  headless でも 1920×1080 でも“全到達”するのに実機では不安定。→ **信用できる基準は明示 `focus_neighbor` 配線だけ**（決定的・
+  レイアウト非依存）。**新ゲート**: landing から**明示 focus_neighbor のみ**を BFS し、ページ内 enabled+可視 Button と突合、到達
+  不能を列挙（`verify_town_controller.gd`、viewport=1920×1080）。**進捗**: 配線ヘルパ `_chain_column`/`_link_lr` 追加、
+  **status/formation/valuables を配線＝HARD FAIL で保護（緑）**。**残: spells/equipment/items**（2ペイン＝spell/スロット/候補一覧と
+  roster の橋渡しが必要）は gate が **TODO で dead-spot を大きく明示**（隠さない）。次段でこの3ページを配線し全 HARD FAIL 化。
 
 - [ ] **#24 — 「つまらんダメージのみ」特技を Gate で排除し、名前に見合う効果を持たせる.** 例: 焼夷弾/徹甲弾 が共に「敵に小
   ダメージ」だけ（user 2026-08-12, スクショ）。焼夷弾→**炎上(burn)状態異常付与**、徹甲弾→**防御無視**、のように名前が示す
