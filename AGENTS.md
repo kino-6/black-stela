@@ -37,9 +37,11 @@ them), run the relevant Godot gates (`gate:migration` or the specific
 `verify_*.gd`), and do a clean headless boot smoke
 (`godot --headless --path godot/ --quit-after 90`, expect no SCRIPT/Parse
 errors). Only then hand over, and ALWAYS state the exact command the user runs to
-see it: `npm run export:godot && npm run play` (`npm run play` = `godot --path
-godot/`). A build hash shown in-app that predates your change is a sign the user
-is on a stale build because you did not give them the rebuild step.
+see it: **`npm run play`** — it now runs `export:godot` (≈5s) THEN launches Godot, so
+one command always plays a fresh build. (`npm run play:only` skips the export for
+pure .gd iteration when the data is already current.) A build hash shown in-app that
+predates your change is a sign the user is on a stale build because you did not give
+them the rebuild step.
 
 Normal play must not expose debug/admin/product controls, AI provider setup,
 arbitrary save/load, raw route ids, or implementation terms. Dungeon work must

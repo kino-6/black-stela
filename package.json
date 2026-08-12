@@ -4,7 +4,8 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "play": "godot --path godot/",
+    "play": "npm run export:godot && godot --path godot/",
+    "play:only": "godot --path godot/",
     "package:web": "godot --headless --path godot/ --export-release \"Web\" ../build/web/index.html",
     "package:macos": "godot --headless --path godot/ --export-release \"macOS\" ../build/macos/BlackStela.zip",
     "package": "npm run export:godot && npm run package:web && npm run package:macos",

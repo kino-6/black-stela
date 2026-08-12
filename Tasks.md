@@ -14,7 +14,7 @@
   to PNG and READ it / run the gate / probe the value — do it. (2) **Did I give a ONE-SHOT way to see it in the
   real game?** Pointing at a `godot/tests/*.png` file or "walk there" is NOT that — add/name a `debug_fixtures.gd`
   fixture or boot flag that jumps straight to the exact screen, so the user confirms in one action.
-- **Build / verify:** `npm run export:godot && npm run play`. Truth gate `npm run gate:final` (e2e); unit
+- **Build / verify:** `npm run play` (now runs export:godot ≈5s THEN launches; `play:only` = launch without export). Truth gate `npm run gate:final` (e2e); unit
   `npm run test`; Godot gates `npm run gate:migration` / `gate:godot`; runtime-error gate `gate:godot-runtime`.
 - **Codex delivery flow:** Codex leaves finished work UNCOMMITTED; 検品 (named gate + read the PNG) + commit is Claude's job.
 - **Lanes:** Codex owns art / assets / **visual sign-off** (primary implementer does NOT self-approve visual
