@@ -41,9 +41,14 @@ ideas (unapproved): `docs/design/ballistic-world-program.md`.
   対象の armor を適用（`t_armor`）に修正。基本攻撃・敵ability と一貫。parity・combat-numbers・combat-controller 緑（golden
   trace は技×装甲を使わず無影響）。特殊効果（焼夷弾 burn 等）と排除 Gate は user がドロップ（通常ダメージで可）。
  焼夷弾/徹甲弾 が共に「敵に小
-- [ ] **#26 — Combat feel 改修: 通知UI連打 → 抑制の効いた DRPG の命中感.** 現状は 浮遊数字・PNG エフェクト・ログ更新が
+- [-] **#26 — Combat feel 改修: 通知UI連打 → 抑制の効いた DRPG の命中感.** 現状は 浮遊数字・PNG エフェクト・ログ更新が
   バラバラに動き「命中した」より通知連打に見える（user 2026-08-12, 詳細仕様提示）。通常攻撃を「敵が局所被弾 → その結果 HP と
   小さな数字が読める」重量感のある表現へ。**Godot-native**（`combat.gd` の playback／FX／数字／ログ／`combat_playback.gd`）。
+  **進捗（pushed）:** ✅ **数字**=静止する`12`（マイナス廃止・rise/drift/scale-overshoot 撤廃・180–240ms 薄消え、`8b4925d`、
+  gate `verify_combat_feel`）・✅ **撃破沈み/退色**（A⑥, `1ec26e2`）・✅ **ログ規律**=1手番1行、crit/撃破のみ独立行（D, `4e7e42e`）・
+  ✅ **数字は結果**=FX着弾＋バー後に対象足元へ、命中で対象を6px沈める（A②④/B, `899ec7a`）・実機PNGで静かな`12`確認。
+  **残:** A①（被弾前の対象明示 80–120ms＝カーソル/局所明度）・C（銃種別の命中テンポ pistol/rifle/SMG/shotgun・弾道/汎用PNG禁止）・
+  B の多段Hit直列化を自動 gate 化・F（通常/クリ/撃破/SMG連射/散弾銃を 1280・1920 で capture 目視＋位置Tween/overshoot無しの自動検査）。
 
   **A. 必須の演出順序（1手番ごと）:** ①対象を 80–120ms 明示（カーソル／局所的明度のみ）→ ②命中フレームで対象 sprite を
   4–8px 短く沈める or 横振り → ③**同じ瞬間に対象 HP バーが減り始める** → ④ダメージ数字は対象の足元〜胴下に短く固定表示 →
