@@ -36,24 +36,31 @@ ideas (unapproved): `docs/design/ballistic-world-program.md`.
   BFS し、ページ内 enabled+可視 Button と突合、到達不能を実名列挙。ヘルパ `_chain_column`/`_link_lr`/`_chain_tree_order`。
   **全6ページ（能力/編成/呪文/装備/所持品/貴重品）配線＝全 HARD FAIL 保護で緑**。dungeon/grid 回帰なし。
 
-- [ ] **#24 — 「つまらんダメージのみ」特技に固有効果＋Gate で排除（design+engine 判断要）.** 焼夷弾/徹甲弾 が共に「敵に小
-  ダメージ」だけ（user 2026-08-12）。焼夷弾→炎上(burn)、徹甲弾→防御無視 が望み。**調査結果（2026-08-12）**: 技は content
-  定義（`terminal-line/techniques.md`, 焼夷弾=`tl-incendiary-round`/徹甲弾=`tl-slug-round`、共に `kind:damage` のみ）。
-  `CombatStatus = poison|fear|silence|sleep|ward` で **炎上(burn/DoT) も 防御無視 も未実装** → **core-combat エンジン拡張が必要**:
-  (a) burn＝継続ダメージ状態（poison が DoT なら fire 版として流用可か要確認）、(b) 防御無視＝ダメージ計算に armor-bypass 修飾子。
-  加えて **Gate**（user 提案）: ダメージ持ちで固有効果（status/inflicts/scope 等）ゼロの「フラットダメージのみ」技を FAIL させる
-  content-quality テスト＋**閾値の design 判断**（全攻撃技に効果必須か、素朴な通常攻撃系は allow-tag で許容か）。Godot-native で
-  可（core ルール変更＝parity 維持か Godot 正のどちらか選択）。クイックではなく次の集中スライス。
-  **実装プラン（調査で確定・次セッションで着手）:**
-  - **⚠ 徹甲弾=防御無視は不可（既に全技のデフォルト）:** プレイヤー技ダメージは combat_round.gd 403 で既に `roll_damage(...,0)`＝
-    **全技が armor 無視**（基本攻撃のみ 159 で armor 適用）。よって「徹甲弾 防御無視」は差別化にならない。徹甲弾には**別の固有効果を
-    デザイン要**（例: 装甲持ち敵に bonus / crit 上昇 / 一時的 armor-shred など）＝user と相談。
-  - **焼夷弾=炎上(burn)〔新規で妥当〕:** poison が既に DoT（combat_round.gd 251「ROUND END: poison bites」、`_tick_status_list`→`poisonDamage`）。
-    `CombatStatus` に `"burn"` 追加（types.ts＋zod）、`_tick_status_list`/`STATUS_WEAR_OFF` に burn を DoT として追加（poison 同型・
-    fire フレーバー）、i18n ラベル＋status pip、`tl-incendiary-round` に `inflicts:{status:burn}`。React 側は archived なので
-    Godot-native（parity トレースが該当技を使わなければ verify_parity 影響なし＝要確認、使えば retire）。
-  - **Gate:** `kind:damage` を持ち `status`/`inflicts`/`allEnemies`/`ignoreDefense` 等の固有性ゼロの攻撃技を列挙して FAIL。
-    素朴な通常攻撃系を許すなら `tags:[basic]` を allow に。閾値は着手時に user 確認。
+- [x] **#24 — 特技のダメージを「通常（防御適用）」に修正（Archive 待ち）.** 調査で判明: プレイヤー技は全て armor を無視して
+  いた（combat_round.gd:403 が `roll_damage(...,0)`）＝設計上の手抜き。user 判断「では通常ダメージでいい」に従い、技ダメージも
+  対象の armor を適用（`t_armor`）に修正。基本攻撃・敵ability と一貫。parity・combat-numbers・combat-controller 緑（golden
+  trace は技×装甲を使わず無影響）。特殊効果（焼夷弾 burn 等）と排除 Gate は user がドロップ（通常ダメージで可）。
+ 焼夷弾/徹甲弾 が共に「敵に小
+- [ ] **#26 — Combat feel 改修: 通知UI連打 → 抑制の効いた DRPG の命中感.** 現状は 浮遊数字・PNG エフェクト・ログ更新が
+  バラバラに動き「命中した」より通知連打に見える（user 2026-08-12, 詳細仕様提示）。通常攻撃を「敵が局所被弾 → その結果 HP と
+  小さな数字が読める」重量感のある表現へ。**Godot-native**（`combat.gd` の playback／FX／数字／ログ／`combat_playback.gd`）。
+
+  **A. 必須の演出順序（1手番ごと）:** ①対象を 80–120ms 明示（カーソル／局所的明度のみ）→ ②命中フレームで対象 sprite を
+  4–8px 短く沈める or 横振り → ③**同じ瞬間に対象 HP バーが減り始める** → ④ダメージ数字は対象の足元〜胴下に短く固定表示 →
+  ⑤通常数字は 180–240ms で薄く消える（上昇・横流れ・バウンド禁止）→ ⑥撃破時のみ、消失前に短い沈み／退色。
+  **B. 数字ルール:** 通常=小さめ・白〜鈍い赤灰・`-12` のアプリ風記号を廃し `12` 表記。クリティカル=金色可（大バウンド／爆発拡縮／
+  画面フラッシュ禁止）。同一敵の複数Hitは**同時に積まない**＝80–110ms 間隔で同じ着弾点に直列。数字は「結果」＝**敵sprite・HPバー・
+  着弾より先に出してはならない**。
+  **C. 銃撃:** 味方カード／立ち絵／portrait から弾を出さない。長い弾道・UI 横断ビーム禁止。銃種差は主に**命中テンポ**で:
+  pistol=一発短く硬い / rifle=一発やや長い停止＋強い沈み / SMG=短い2〜3連（数字もHPも小刻み同期）/ shotgun=近距離の広い局所衝撃・
+  合算1数字。銃撃PNGは「着弾直前の小さな痕跡」と「局所着弾」だけ（敵全体を覆う汎用スタンプ禁止）。
+  **D. ログ:** 通常Hitごとに更新しない。1キャラ1行動につき**開始か結果のどちらか1行**。クリティカル・撃破・状態異常だけ独立行可。
+  ログ更新で固定UI・操作位置を動かさない。
+  **E. 禁止:** 全画面フラッシュ／浮遊数字の上昇・横流れ・バウンド／被弾より先の数字／敵全体を覆う巨大PNG／味方カード発射／
+  通常Hitごとのログ連打／UIレイヤー上の報酬通知風ポップアップ。
+  **F. Gate・証跡（受入条件）:** 通常・クリティカル・撃破・SMG連射・散弾銃を capture。1280/1920 PNG で目視: (1)数字が敵に紐づく
+  (2)数字より先に HP減少・被弾が始まる (3)HUD 横断弾道が無い (4)通常攻撃が騒がしくない。**自動 Gate**: 通常数値に位置Tween・
+  scale overshoot・横ドリフトが**無い**こと、同一対象の複数Hitが**時系列に直列化**されることを検査（FAIL 可能に）。
 
 ## Backlog / ideas (no home yet)
 
