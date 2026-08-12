@@ -897,7 +897,11 @@ func _playback(before: Dictionary, events: Array, animated: bool) -> void:
 					_spawn_melee_fx(gid, crit)
 				pb_groups = CombatHelpers.damage_group(pb_groups, gid, dmg)
 				_redraw_enemy_group(pb_groups, gid)
-				_set_log("%sに%dダメージ！" % [target_name, dmg])
+				# #26 D: no per-hit result line — the start line above is the one line for this action, and
+				# the number already shows the amount. Only a CRIT (and, below, a defeat) earns its own line,
+				# so a burst / all-out round reads as a few lines, not a spam of ダメージ per hit.
+				if crit:
+					_set_log("%sに %d ダメージ！会心！" % [target_name, dmg])
 				await get_tree().create_timer(0.34 if shot_index == 0 else 0.16).timeout
 		else:
 			# Fallback (no beats): per-GROUP reconstruction from before/after.
