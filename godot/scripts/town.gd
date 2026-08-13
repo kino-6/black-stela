@@ -26,6 +26,7 @@ const LootPanel := preload("res://scripts/town/loot_panel.gd")
 const WorkshopPanel := preload("res://scripts/town/workshop_panel.gd")
 const BlacksmithPanel := preload("res://scripts/town/blacksmith_panel.gd")
 const QuestPanel := preload("res://scripts/town/quest_panel.gd")
+const FacilityPanel := preload("res://scripts/town/facility_panel.gd")
 const CareerPanel := preload("res://scripts/town/career_panel.gd")
 const RecordsPanel := preload("res://scripts/town/records_panel.gd")
 const PartyPanel := preload("res://scripts/town/party_panel.gd")
@@ -35,14 +36,15 @@ const BG := Color("0b0d09")
 # The square's destinations, and which services each holds (mirrors TownEntryPanel's `services`).
 const LOCATIONS := {
 	"hall": ["guild", "party", "career"],
-	"market": ["shop", "loot", "workshop", "blacksmith"],
+	"market": ["shop", "loot", "workshop", "blacksmith", "facility"],
 	"archive": ["records", "quests"]
 }
 const LOCATION_LABEL := {"hall": "town.locGuildHall", "market": "town.locMarket", "archive": "town.locArchive"}
 const SERVICE_LABEL := {
 	"guild": "town.guild", "party": "partyMenu.title", "career": "town.career",
 	"shop": "town.shop", "loot": "town.reliquary", "workshop": "town.workshop", "blacksmith": "town.blacksmith",
-	"records": "town.records", "quests": "town.quests", "recovery": "town.recovery"
+	"records": "town.records", "quests": "town.quests", "recovery": "town.recovery",
+	"facility": "town.facility"
 }
 
 var _run: Node = null
@@ -408,6 +410,10 @@ func _build_square() -> void:
 		menu.add_child(UI.button(I18n.t("town.backToHub"), func(): _go_location(""), Vector2(160, 56), 18))
 		for key in LOCATIONS[_location]:
 			var svc := String(key)
+			# The base counter only exists in worlds that author facilities — hide it entirely elsewhere
+			# rather than show a permanently-greyed button (#33).
+			if svc == "facility" and (_world.get("facilities", []) as Array).is_empty():
+				continue
 			var b := UI.button(I18n.t(String(SERVICE_LABEL[svc])), func(): _open_service(svc), Vector2(200, 56), 18)
 			b.disabled = _service_disabled(svc, party_empty)
 			menu.add_child(b)
@@ -427,6 +433,8 @@ func _service_disabled(service: String, party_empty: bool) -> bool:
 			return (_world.get("shops", []) as Array).is_empty()
 		"quests":
 			return (_world.get("quests", []) as Array).is_empty()
+		"facility":
+			return (_world.get("facilities", []) as Array).is_empty()
 	return false
 
 func _ledger_row(host: VBoxContainer, term: String, value: String) -> void:
@@ -708,6 +716,7 @@ func _build_service() -> void:
 		"workshop": body = WorkshopPanel.build(ctx)
 		"blacksmith": body = BlacksmithPanel.build(ctx)
 		"quests": body = QuestPanel.build(ctx)
+		"facility": body = FacilityPanel.build(ctx)
 		"career": body = CareerPanel.build(ctx)
 		"records": body = RecordsPanel.build(ctx)
 		"party", "guild": body = PartyPanel.build(ctx)

@@ -11,6 +11,7 @@ const CombatRound := preload("res://scripts/rules/combat_round.gd")
 const Economy := preload("res://scripts/rules/economy.gd")
 const Quests := preload("res://scripts/rules/quests.gd")
 const Loot := preload("res://scripts/rules/loot.gd")
+const Facilities := preload("res://scripts/rules/facilities.gd")
 const Vocations := preload("res://scripts/rules/vocations.gd")
 const CharacterCreation := preload("res://scripts/rules/character_creation.gd")
 const Encounters := preload("res://scripts/rules/encounters.gd")
@@ -137,6 +138,8 @@ static func resolve(state: Dictionary, command: Dictionary, world: Dictionary = 
 			return Loot.forge(state, world, command.get("characterId", ""), command.get("slot", ""))
 		"bulk_convert":
 			return Loot.bulk_convert(state, command.get("mode", ""), command.get("rarities", null))
+		"upgrade_facility":
+			return Facilities.upgrade(state, world, String(command.get("facilityId", "")))
 		"change_vocation":
 			return Vocations.change_vocation(state, world, engine, command.get("characterId", ""), command.get("vocationId", ""))
 		"set_loadout":

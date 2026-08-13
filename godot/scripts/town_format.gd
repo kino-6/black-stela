@@ -183,6 +183,14 @@ static func localized_quest_description(quest: Dictionary) -> String:
 	var ja: Dictionary = (quest.get("locales", {}) as Dictionary).get("ja", {})
 	return String(ja.get("description", quest.get("description", "")))
 
+static func localized_facility_name(facility: Dictionary) -> String:
+	var ja: Dictionary = (facility.get("locales", {}) as Dictionary).get("ja", {})
+	return String(ja.get("name", facility.get("name", facility.get("id", ""))))
+
+static func localized_facility_description(facility: Dictionary) -> String:
+	var ja: Dictionary = (facility.get("locales", {}) as Dictionary).get("ja", {})
+	return String(ja.get("description", facility.get("description", "")))
+
 static func localized_vocation_name(world: Dictionary, vocation: Dictionary) -> String:
 	var ja: Dictionary = (vocation.get("locales", {}) as Dictionary).get("ja", {})
 	return String(ja.get("name", vocation.get("name", vocation.get("id", ""))))

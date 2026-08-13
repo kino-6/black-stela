@@ -578,6 +578,7 @@ export const en = {
     recovery: "Recovery",
     records: "Records",
     quests: "Quest board",
+    facility: "Base",
     career: "Reclass",
     reliquary: "Appraiser",
     workshop: "Forge",
@@ -808,6 +809,19 @@ export const en = {
     noGold: "Not enough gold — earn some in the dungeon and come back.",
     nothingWorn: "Nothing equipped to temper.",
     back: "Back"
+  },
+  facility: {
+    title: "Base facilities",
+    intro: "Spend salvaged materials to upgrade the station. Every level you buy stays for good.",
+    materials: "Materials: {materials}",
+    empty: "This scenario has no base to build.",
+    level: "Lv {level}/{max}",
+    current: "Now: {effect}",
+    next: "Next: {effect} — {cost} materials",
+    upgrade: "Upgrade ({cost})",
+    maxed: "Fully upgraded.",
+    locked: "Locked until you descend further.",
+    tooPoor: "Needs {cost} materials."
   },
   questBoard: {
     title: "Quest board",

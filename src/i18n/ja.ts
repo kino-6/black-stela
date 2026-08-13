@@ -580,6 +580,7 @@ export const ja = {
     recovery: "施療院",
     records: "記録",
     quests: "依頼掲示板",
+    facility: "基地",
     career: "転職",
     reliquary: "鑑定所",
     workshop: "錬成所",
@@ -810,6 +811,19 @@ export const ja = {
     noGold: "ゴールドが足りません。迷宮で稼いでから出直すといい。",
     nothingWorn: "鍛えられる装備がない。",
     back: "戻る"
+  },
+  facility: {
+    title: "基地整備",
+    intro: "回収した素材を投じて基地を強化する。買った段階は永続する。",
+    materials: "素材: {materials}",
+    empty: "このシナリオに整備できる基地はない。",
+    level: "Lv {level}/{max}",
+    current: "現在: {effect}",
+    next: "次: {effect} — 素材{cost}",
+    upgrade: "強化する（{cost}）",
+    maxed: "強化済み。",
+    locked: "さらに深く潜ると解禁。",
+    tooPoor: "素材が{cost}必要。"
   },
   questBoard: {
     title: "依頼掲示板",
