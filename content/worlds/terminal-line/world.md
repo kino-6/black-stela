@@ -60,13 +60,11 @@ portraits:
   - chara-32
 copy:
   en:
-    town.premise: "The line was sealed with people still below. Every midnight the zero-line service still calls the platforms — and the network answers. Ride the report down, reach Platform Zero, and find who is still pulling the lever."
     town.departureHeading: "Before the last platform closes"
     town.departureCopy: "Check the radio, count your supplies, and go before the midnight service passes."
     town.firstDescend: "The shutter is up. Rainwater runs down into the old station."
     town.firstNeedParty: "Nobody goes beneath the shutter alone."
   ja:
-    town.premise: "封鎖のとき、まだ人が下に残っていた。零番線は今も夜ごと定刻にホームを呼び、路線はそれに応える。その報せを追って零番線まで降り、いまも制御盤を握る“誰か”を見つけ出せ。"
     town.departureHeading: "終電の扉が閉じる前に"
     town.departureCopy: "無線を確かめ、持ち出すものを数えろ。零番線が通り過ぎる前に。"
     town.firstDescend: "防火扉が上がった。雨水が古い駅へ流れ落ちている。"

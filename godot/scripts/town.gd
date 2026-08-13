@@ -342,14 +342,6 @@ func _build_square() -> void:
 	head.add_child(menu_btn)
 	_menu_host.add_child(head)
 
-	# --- the scenario's standing proclamation (#30): WHY the party descends (Wizardry's castle notice).
-	# Authored per world via `copy.<lc>.town.premise` (read directly from the world copy, like _descent_line);
-	# worlds that say nothing show no line. Kept subtle so it reads as ambient lore, not a tutorial nag. ---
-	var world_copy: Dictionary = (_world.get("copy", {}) as Dictionary).get(I18n.locale(), {})
-	var premise := String(world_copy.get("town.premise", ""))
-	if premise.strip_edges() != "":
-		_menu_host.add_child(UI.prose(premise, 15, UI.DIM, 1500))
-
 	# The town art breathes in the middle; the party + destinations sit along the bottom (like the crawl HUD).
 	var spacer := Control.new()
 	spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
