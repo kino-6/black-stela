@@ -99,11 +99,14 @@ func _check_service(svc: String, press_label: String) -> void:
 			_check(false, "%s: D-pad escapes the panel to 「%s」 (focus leak)" % [svc, _label_of(c)])
 			break
 
-	# (2) COVERAGE: every enabled focusable control in the panel must be reachable by the D-pad.
+	# (2) COVERAGE: every enabled focusable control in the panel must be reachable by the D-pad. Report the
+	# entry cursor and EVERY unreachable island (not just the first) so a failure is diagnosable.
+	var missed: Array = []
 	for c in _focusables(layer):
 		if not reachable.has(c):
-			_check(false, "%s: 「%s」 is not reachable by the D-pad (mouse-only island)" % [svc, _label_of(c)])
-			break
+			missed.append(_label_of(c))
+	if not missed.is_empty():
+		_check(false, "%s: %d control(s) unreachable by the D-pad from entry 「%s」: %s" % [svc, missed.size(), _label_of(entry), "; ".join(PackedStringArray(missed))])
 
 func _inside(c: Control, root: Control) -> bool:
 	var n: Node = c

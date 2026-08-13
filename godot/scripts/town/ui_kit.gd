@@ -73,6 +73,34 @@ static func gap(px: int) -> Control:
 	c.custom_minimum_size = Vector2(0, px)
 	return c
 
+# --- controller focus wiring (controller-first-ui) -----------------------------------------------
+# Chain a vertical list of controls with EXPLICIT top/bottom focus_neighbors so the D-pad walks it in
+# order. Geometry focus nav is unreliable across scrollers and columns (the recurring focus-island bug —
+# a shop's 詳しく見る rows were mutually unreachable), so any list the cursor must traverse is wired here.
+# The ends optionally link to a control above / below the list. Every control must share a common ancestor
+# with its neighbour (attached or not) so get_path_to resolves.
+static func chain_column(controls: Array, above: Control = null, below: Control = null) -> void:
+	var items: Array = []
+	for c in controls:
+		if c is Control:
+			items.append(c)
+	for i in items.size():
+		var c: Control = items[i]
+		if i > 0:
+			c.focus_neighbor_top = c.get_path_to(items[i - 1])
+		elif above != null:
+			c.focus_neighbor_top = c.get_path_to(above)
+		if i < items.size() - 1:
+			c.focus_neighbor_bottom = c.get_path_to(items[i + 1])
+		elif below != null:
+			c.focus_neighbor_bottom = c.get_path_to(below)
+
+# Link two controls left↔right (left.right → right, right.left → left).
+static func link_lr(left_ctrl: Control, right_ctrl: Control) -> void:
+	if left_ctrl != null and right_ctrl != null:
+		left_ctrl.focus_neighbor_right = left_ctrl.get_path_to(right_ctrl)
+		right_ctrl.focus_neighbor_left = right_ctrl.get_path_to(left_ctrl)
+
 ## A service heading: title on the left, the purse on the right (every React service shows the gold
 ## it is about to spend, so the player never has to leave to check affordability).
 static func service_heading(title: String, gold_text: String) -> Control:

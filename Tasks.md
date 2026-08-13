@@ -30,18 +30,18 @@ design ideas (unapproved): `docs/design/ballistic-world-program.md`.
 
 2026-08-13 実プレイ playtest（terminal-line）で挙がった指摘。優先度順:
 
-- [-] **#34 — UI focus の EXHAUSTIVE verifier（構築済み・1件残）.** `godot/tests/verify_focus_trap.gd` 作成。
-  **プレイヤーの矢印キーと同じ `find_valid_focus_neighbor`（explicit＋幾何）で BFS** し、各 town サービスで (1) TRAP=
-  focus がパネル外（街 chrome）へ漏れない、(2) COVERAGE=パネル内の全 focusable に到達、(3) 状態変化（鍛える/買う）後の
-  rebuild でも維持、を検証。※旧 gate が漏らした理由＝「explicit neighbor のみ BFS」で**幾何漏れを検出できなかった**。
-  現行で全サービス漏れを検出（RED 実証済み）。**残: shop「詳しく見る」到達漏れ（下記 #36-b）を潰したら `gate:migration`
-  へ登録**（今はまだ1件 FAIL するので未登録）。次段: 全画面（guild/combat/character-creation 等）へ拡張。
+- [x] **#34 — UI focus の EXHAUSTIVE verifier（done・gate 登録済み）.** `godot/tests/verify_focus_trap.gd` — 各 town
+  サービスで、プレイヤーの矢印キーと同じ `find_valid_focus_neighbor`（explicit＋幾何）で BFS し (1) TRAP=focus がパネル外へ
+  漏れない、(2) COVERAGE=パネル内 focusable 全到達、(3) 鍛える/買う 後の rebuild でも維持、を検証。旧 gate が漏らした理由＝
+  explicit neighbor のみ BFS で幾何漏れを見れなかった点。**全緑・`gate:migration` 登録済み**。診断出力は未到達の全列挙＋entry
+  表示に強化。次段（別タスク化可）: guild/combat/character-creation 等 全画面へ拡張、shop 売るモード等の縦リストも確認。
 - [x] **#35 — 鍛冶屋 focus 漏れ 修正済み.** 根本原因: `town.gd:_rebuild` がサービス表示中に `_menu_host`（party rail＋
   街施設バー）を隠しておらず、パネル背後の施設ボタンが focusable のまま → 幾何 nav でパネル外へ漏れていた（全サービス
   共通の欠陥）。**修正: サービス表示中は `_menu_host.visible = false`**（invisible は focus nav から除外＝全パネル一括で
   トラップ）。verify_focus_trap の全 TRAP チェック緑・town-controller 回帰なし。
-- [ ] **#36-b — shop「詳しく見る」が D-pad 到達不能（verifier が検出した実バグ）.** shop_panel の focus_neighbor 配線漏れ。
-  修正後、#34 verifier が全緑になるので `gate:migration` に登録すること。
+- [x] **#36-b — shop「詳しく見る」D-pad 到達不能 修正済み.** 原因: 買うモードの在庫行（スクロール内）＋別列の買うボタンが
+  幾何 nav で繋がらず、entry の1行以外の全 詳しく見る＋買うが孤立。**修正: `UI.chain_column`/`link_lr` を ui_kit に公開ヘルパ化し、
+  在庫 inspect を縦チェーン＋各行→買うを explicit 配線**。verify_focus_trap 全緑・town-controller 回帰なし。
 - [ ] **#36 — 街広場の可読性.** (a)「威力」→「攻撃」に改称（`party.damage` ラベル、= ダメージ幅表示）、(b) 依頼通知を
   枠付きカード（Window）で囲う、(c) 前衛/後衛が一列で入り乱れて見える → 区切り/見出しで明確化、(d) 全体的にフォントが
   小さい（共有トークン font は combat/crawl にも影響するので要検証）。

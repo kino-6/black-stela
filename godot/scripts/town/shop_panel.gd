@@ -114,13 +114,15 @@ static func _buy_mode(ctx: Dictionary, root: VBoxContainer, world: Dictionary, s
 
 	var stock_list := UI.col(6)
 	var focus_target: Button = null
+	var inspect_buttons: Array = []
 	for entry in visible_stock:
 		var item_id := String((entry as Dictionary).get("itemId", ""))
 		var built := _stock_row(ctx, world, entry, item_id, item_id == selected_item_id)
 		stock_list.add_child(built)
-		if focus_target == null:
-			var candidate := UI.first_focusable(built)
-			if candidate:
+		var candidate := UI.first_focusable(built)
+		if candidate:
+			inspect_buttons.append(candidate)
+			if focus_target == null:
 				focus_target = candidate
 	if stock_list.get_child_count() == 0:
 		stock_list.add_child(UI.label(I18n.t("town.inventoryEmpty"), 15, UI.DIM))
@@ -131,10 +133,22 @@ static func _buy_mode(ctx: Dictionary, root: VBoxContainer, world: Dictionary, s
 	cols.add_child(right)
 	right.add_child(UI.prose(I18n.t("town.shopGuideShared"), 15, UI.DIM, 700))
 	right.add_child(UI.label(I18n.t("town.selectedItem"), 20, UI.GOLD))
+	var buy_btn: Button = null
 	if selected_entry.is_empty():
 		right.add_child(UI.label(I18n.t("town.inventoryEmpty"), 16, UI.DIM))
 	else:
-		right.add_child(_selected_item_board(ctx, world, selected_entry, party, party_gold))
+		var board := _selected_item_board(ctx, world, selected_entry, party, party_gold)
+		right.add_child(board["board"])
+		buy_btn = board.get("buy", null)
+
+	# Explicit focus wiring: geometry nav cannot cross the scroller or reach the other column, so walk the
+	# 詳しく見る rows with an explicit vertical chain and link every row to the 買う board (#36-b — the rows
+	# and the purchase were D-pad-unreachable islands). Row-0's top stays unset so it reaches the tabs above.
+	UI.chain_column(inspect_buttons)
+	if buy_btn != null and not inspect_buttons.is_empty():
+		for ib in inspect_buttons:
+			(ib as Control).focus_neighbor_right = (ib as Control).get_path_to(buy_btn)
+		buy_btn.focus_neighbor_left = buy_btn.get_path_to(inspect_buttons[0] as Control)
 	return focus_target
 
 static func _stock_row(ctx: Dictionary, world: Dictionary, entry: Dictionary, item_id: String, is_selected: bool) -> Control:
@@ -160,7 +174,7 @@ static func _stock_row(ctx: Dictionary, world: Dictionary, entry: Dictionary, it
 	line.add_child(inspect)
 	return UI.card(line, UI.GOLD if is_selected else Color("3a4326"))
 
-static func _selected_item_board(ctx: Dictionary, world: Dictionary, entry: Dictionary, party: Array, party_gold: int) -> Control:
+static func _selected_item_board(ctx: Dictionary, world: Dictionary, entry: Dictionary, party: Array, party_gold: int) -> Dictionary:
 	var item_id := String(entry.get("itemId", ""))
 	var price := int(entry.get("price", 0))
 	var afford := party_gold >= price
@@ -190,7 +204,7 @@ static func _selected_item_board(ctx: Dictionary, world: Dictionary, entry: Dict
 	var buy := UI.button(I18n.t("town.buy"), func(): ctx["dispatch"].call({"type": "buy_item", "shopId": String(entry.get("shopId", "")), "itemId": item_id}), Vector2(130, 46), 17)
 	buy.disabled = not afford
 	line.add_child(buy)
-	return UI.card(line, UI.GOLD)
+	return {"board": UI.card(line, UI.GOLD), "buy": buy}
 
 # --- 売る ------------------------------------------------------------------------------------------
 static func _sell_mode(ctx: Dictionary, root: VBoxContainer, world: Dictionary, state: Dictionary) -> Control:
