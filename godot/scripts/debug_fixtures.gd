@@ -32,6 +32,9 @@ const STAIR_FIXTURES := ["terminal_line_down_stair", "terminal_line_up_stair"]
 # feel (quiet numbers, hit sink, per-gun tempo, defeat sink, log) is judged without walking to an encounter
 # (user 2026-08-12: 「StateLoad くらい用意しない？」). Attack normally for a hit/crit, keep firing for a defeat.
 const COMBAT_FIXTURES := ["terminal_line_combat"]
+# Land in the Terminal Line town with salvage in hand, so the reviewer can open 市場通り → 基地 and try the
+# facility upgrades (#33) at once without grinding materials first.
+const BASE_FIXTURES := ["terminal_line_base"]
 const Encounter := preload("res://scripts/encounter.gd")
 const TL_GUNS := ["equip.tl-service-pistol", "equip.tl-platform-38-rifle", "equip.tl-drain-5-smg", "equip.tl-maintenance-10-shotgun"]
 
@@ -41,6 +44,7 @@ static func names() -> Array:
 	all.append_array(VERDANT_CHAMBER_FIXTURES)
 	all.append_array(STAIR_FIXTURES)
 	all.append_array(COMBAT_FIXTURES)
+	all.append_array(BASE_FIXTURES)
 	for n in range(2, 11):
 		all.append("floor_%d" % n)   # deep-floor review starts (IMP-062)
 	return all
@@ -57,6 +61,8 @@ static func load_into(run: Object, name: String) -> String:
 		return _load_terminal_stair(run, name)
 	if name in COMBAT_FIXTURES:
 		return _load_terminal_combat(run)
+	if name in BASE_FIXTURES:
+		return _load_terminal_base(run)
 	if name.begins_with("floor_"):
 		return _load_deep_floor(run, name)
 	run.ensure_loaded()
@@ -129,6 +135,18 @@ static func _load_terminal_combat(run: Object) -> String:
 		grp["damageMax"] = 0
 	run.state["combat"] = combat
 	return "res://scenes/combat.tscn"
+
+## terminal_line_base: land in the Terminal Line town with 60 salvage materials so the reviewer can open
+## 市場通り → 基地 and exercise the facility upgrades (#33) — spend, watch levels rise, read the effects —
+## without first grinding loot to dismantle.
+static func _load_terminal_base(run: Object) -> String:
+	run.world_id = "terminal-line"
+	run.reset()
+	var state: Dictionary = run.state
+	state["phase"] = "town"
+	state["materials"] = 60
+	run.state = state
+	return "res://scenes/town.tscn"
 
 ## loot_delta: the party stands at the return stair carrying its descent supply PLUS one item picked up
 ## below. loot_baseline is set to the descent inventory, so the return ledger shows ONLY the gained item

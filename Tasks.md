@@ -49,8 +49,21 @@ groom 時の調査結論（既存を作り直さないための現状把握。�
   最終 terminus(tl10f) だけ単一エントリのランダム表依存。→ tl1f ボスが導線上か検証＋signpost、terminus を確定配置化。
 - [ ] **#32 — 迷宮ランダムイベント（外部シナリオ記述, 中〜大）.** 現状は room `event:` 固定文字列のみ（決定的・選択肢なし、
   `scenario.ts:485-508`）。ランダム/対話イベント系は**未実装**。→ シナリオ記述可能な random event table ＋選択肢の新規システム。
-- [-] **#33 — 拠点整備（base / materials sink, 大）← 着手（user 2026-08-13 選択）.** **未実装**。salvage `materials` 通貨は貯まるが消費先ゼロ
-  (`types.ts:744`、sink なし)。→ materials を原資に拠点/設備アップグレードのメタ進行。terminal-line depot 側ダンジョンと接続可。
+- [-] **#33 — 拠点整備（base / materials sink, 大）← 進行中（user 2026-08-13 選択）.** salvage `materials`
+  を原資に、シナリオ記述の設備を Lv↑してメタ進行。v1 設備＝医務室(休息/maxHP)・補給所(店割引)・通信室(探索補正)、
+  各 Lv1-3 コスト 8/16/32。設備はどの世界でも `world.md facilities:` に著述可（汎用機能／terminal-line が自世界分）。
+  実装は Godot ネイティブ（機能ロジックは Godot、content は一度だけ記述→export で Godot へ）。スライス:
+  - [x] **slice 1（土台）done・commit 112354c** — `ScenarioFacility/FacilityLevel` 型＋zod schema（`world.md facilities:`）
+    ＋terminal-line 3設備著述。parse/typecheck/912ユニット緑、export で `godot/data/worlds/terminal-line.json` に露出確認。
+    Gate: `terminalLinePrepack` が設備セット・コスト・効果フィールドを固定。
+  - [x] **slice 2a（アップグレードループ）done・commit daf3df4** — Godot: `rules/facilities.gd`（`upgrade`/
+    `active_effects`）、街サービス「基地」パネル（`town/facility_panel.gd`、市場通り／基地なし世界では非表示）、
+    state `facilities`{id:level} 遅延生成で永続（parity 不変）。Gate `verify_facility.gd`。town-controller/armory 緑。
+  - [x] **slice 2b（効果の実適用）done・commit 247e35c** — 医務室=帰還回復(HP→+MP→+負傷解消)／補給所=店割引／
+    通信室=探索補正 を各単一 hook で実装。医務室は maxHp 案から回復段階強化へ再設計（表示一貫）。**parity/played-loop/
+    dungeon/town 全緑、912ユニット緑、実画面PNG確認済み**（基地整備パネル・日本語・現在/次/コスト表示良好）。
+  - [ ] **slice 3（任意ポリッシュ）** — 上位Lvの降下フラグ解禁（schema `unlockFlag` は実装済み・未著述）＋整備場4つ目＋
+    帰還回復のログ1行。v1 は 2a/2b で機能完成なので着手は user 判断。
 
 ## Backlog / ideas (no home yet)
 
@@ -61,6 +74,9 @@ groom 時の調査結論（既存を作り直さないための現状把握。�
 - **#26 Combat feel（銃テンポ含む）:** **`npm run play:combat`**（＝`--fixture terminal_line_combat`）で terminal-line 戦闘に直接着地。
   前衛4人が pistol/rifle/SMG/shotgun 装備・敵は**訓練ダミー化（HP800・攻撃0＝12ラウンド以上戦え、味方は無傷）**。**全員でかかる[F]**
   で全銃種のテンポ・静かな数字・命中沈み・ログを一度に、繰り返し確認。撃破沈みは撃ち切る。（fixture `terminal_line_combat`、debug パネル可。）
+- **#33 拠点整備（基地）:** **`npm run play:base`**（＝`--fixture terminal_line_base`）で terminal-line 町に素材60で着地。
+  **市場通り → 基地** を開き、医務室/補給所/通信室を強化（素材消費→Lv↑→効果は現在/次で表示）。効果: 医務室=帰還で全快、
+  補給所=店割引、通信室=探索判定+。（fixture `terminal_line_base`、debug パネル可。）
 - **玄室（closed portal / 室内）:** fixture `verdant_chamber_closed` · `verdant_chamber_cleared`
 - **Terminal Line 階段:** fixture `terminal_line_down_stair` · `terminal_line_up_stair`
 - **深層フロアの見え方:** world=terminal-line で fixture `floor_2`…`floor_10`（`capture_deep_floors.gd` も可）
