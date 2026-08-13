@@ -32,6 +32,7 @@ balance:
   counterplayBoost: 1.1
   wanderingEncounterPct: 12
   wanderingCooldownSteps: 6
+  dungeonEventPct: 10
 assetPack: terminal-line
 # Extra selectable figures offered at creation, beyond the twelve shared background faces. Each names a
 # full-body standing figure at assets/bodies/<key>.png (no matching square face — the picker/token
@@ -128,6 +129,38 @@ facilities:
       - cost: 32
         explorationBonus: 8
         locales: { en: { effect: "+8 to search, disarm, and unlock attempts." }, ja: { effect: "探索・解除・解錠の判定 +8。" } }
+# Random dungeon events (#32): weighted flavour beats rolled while walking, some carrying a small one-shot
+# effect. Salvage found here feeds the base-facility economy (#33). Rolled at balance.dungeonEventPct per
+# eligible step; a world that authors none rolls nothing.
+dungeonEvents:
+  - id: event.tl-distant-service
+    weight: 10
+    text: Far down the tunnel, a train you never see keeps its schedule — the rails hum and fall quiet.
+    locales: { ja: { text: トンネルの奥で、見えない列車が定刻を守っている。レールが低く鳴り、また静まった。 } }
+  - id: event.tl-pa-fragment
+    weight: 8
+    text: A dead speaker coughs out half an announcement, then only rain.
+    locales: { ja: { text: 死んだスピーカーが放送を半分だけ吐き出し、あとは雨の音だけになった。 } }
+  - id: event.tl-scavenge-wreck
+    weight: 7
+    text: A collapsed maintenance cart yields usable parts to anyone willing to strip it.
+    findMaterials: 3
+    locales: { ja: { text: 崩れた保守カートから、ばらせば使える部品が手に入った。 } }
+  - id: event.tl-fare-spill
+    weight: 6
+    text: A cracked fare gate has spilled a drawer of old tokens across the tiles.
+    findGold: 15
+    locales: { ja: { text: 割れた改札機が、古い運賃トークンの引き出しをタイルにぶちまけている。 } }
+  - id: event.tl-first-aid
+    weight: 5
+    text: A wall first-aid cabinet still holds sealed dressings — enough to patch the worst of it.
+    heal: 6
+    locales: { ja: { text: 壁の救急箱に未開封の包帯が残っていた。ひどいところは手当てできる。 } }
+  - id: event.tl-live-rail
+    weight: 5
+    text: A live rail arcs without warning; the nearest boots take the sting of it.
+    damage: 5
+    locales: { ja: { text: 通電したレールが不意に放電した。近い者が痺れを受ける。 } }
 palette:
   fog: "#111719"
   ambient: "#a5a89a"

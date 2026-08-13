@@ -296,6 +296,26 @@ describe("Terminal Line F1–F10 canonical pack", () => {
     expect(entrance?.event, "the entrance signposts the floor-1 miniboss").toBeTruthy();
   });
 
+  // #32 random dungeon events: weighted flavour beats authored as world data, some carrying a small
+  // one-shot effect (salvage found feeds the base economy). Locks the roll chance and the effect surface.
+  it("authors random dungeon events with a roll chance", () => {
+    const result = loadScenarioPack(packFiles());
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    const events = result.world.dungeonEvents ?? [];
+    expect(events.length).toBeGreaterThanOrEqual(5);
+    expect(result.world.balance?.dungeonEventPct).toBeGreaterThan(0);
+    // Every event has a weight and flavour; effects are optional but at least one of each kind is authored.
+    for (const e of events) {
+      expect(e.weight, e.id).toBeGreaterThan(0);
+      expect(e.text.length, e.id).toBeGreaterThan(0);
+    }
+    expect(events.some((e) => (e.findMaterials ?? 0) > 0), "an event finds salvage materials").toBe(true);
+    expect(events.some((e) => (e.heal ?? 0) > 0), "an event heals").toBe(true);
+    expect(events.some((e) => (e.damage ?? 0) > 0), "an event chips the party").toBe(true);
+  });
+
   it("binds ten real active techniques to each firearm family and six automatic firearm passives", () => {
     const result = loadScenarioPack(packFiles());
     expect(result.ok).toBe(true);

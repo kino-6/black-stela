@@ -921,6 +921,24 @@ export interface ScenarioFacility {
   levels: FacilityLevel[];
 }
 
+/** A scenario-authored random dungeon event: a weighted flavour beat that may fire while the party walks
+ *  the dungeon (piggybacking the wandering-encounter cadence), optionally carrying one small one-shot
+ *  effect. Pure data so a world adds its own texture without engine changes. */
+export interface DungeonEvent {
+  id: string;
+  /** Relative weight in the roll against the world's other events. */
+  weight: number;
+  /** Flavour line shown in the crawl log when the event fires (localized via `locales`). */
+  text: string;
+  locales?: Partial<Record<string, { text?: string }>>;
+  /** Optional one-shot effects (any combination). Salvage found feeds the base-facility economy. */
+  findMaterials?: number;
+  findGold?: number;
+  /** Small party heal / hazard chip, floored so it can never wipe the party. */
+  heal?: number;
+  damage?: number;
+}
+
 export interface ScenarioWorld {
   id: string;
   title: string;
@@ -946,6 +964,8 @@ export interface ScenarioWorld {
      *  (WANDERING_ENCOUNTER_PCT / WANDERING_COOLDOWN_STEPS). */
     wanderingEncounterPct?: number;
     wanderingCooldownSteps?: number;
+    /** Random dungeon-event chance per eligible step (#32); omitted / no authored events ⇒ none roll. */
+    dungeonEventPct?: number;
     /** Resource-scarcity / economy design (docs/design/difficulty-design.md). EO-leaning: a finite carry
      *  budget + affordability turn consumables into a RATIONED kit, so attrition actually bites. Per-act
      *  arrays are indexed by act (0 = Act I …), the last entry held for deeper acts; scalars default to 1,
@@ -994,6 +1014,9 @@ export interface ScenarioWorld {
   /** Base facilities this world offers (see {@link ScenarioFacility}) — the salvage-`materials` sink that
    *  drives meta-progression. Absent/empty ⇒ the world has no base to upgrade. */
   facilities?: ScenarioFacility[];
+  /** Random dungeon events this world may roll while the party explores (see {@link DungeonEvent}).
+   *  Absent/empty ⇒ the world rolls no events (the roll is a strict no-op). */
+  dungeonEvents?: DungeonEvent[];
   /** Authored advanced vocations (+ optional basic re-skins). Built-in classes are merged in by
    *  resolveVocationCatalog; this holds only what the world adds. */
   vocations: ScenarioVocation[];

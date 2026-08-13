@@ -455,6 +455,19 @@ const scenarioFacilitySchema = z.object({
   levels: z.array(facilityLevelSchema).min(1)
 });
 
+// A random dungeon event (#32): a weighted flavour beat, optionally carrying one small one-shot effect,
+// rolled while the party walks the dungeon. Pure data — mirrors DungeonEvent.
+const dungeonEventSchema = z.object({
+  id: z.string().min(1),
+  weight: z.number().int().positive(),
+  text: z.string().min(1),
+  locales: z.record(z.string(), z.object({ text: z.string().min(1).optional() })).optional(),
+  findMaterials: z.number().int().positive().optional(),
+  findGold: z.number().int().positive().optional(),
+  heal: z.number().int().positive().optional(),
+  damage: z.number().int().positive().optional()
+});
+
 const explorationGateSchema = z.object({
   id: z.string().min(1),
   direction: directionSchema.optional(),
@@ -603,6 +616,9 @@ export const scenarioWorldSchema = z.object({
       // Wandering-encounter density, scenario-authored (IMP-041); omitted ⇒ engine defaults.
       wanderingEncounterPct: z.number().int().positive().optional(),
       wanderingCooldownSteps: z.number().int().nonnegative().optional(),
+      // Random dungeon-event chance per eligible step (#32), independent of wandering encounters. Omitted
+      // (or no authored dungeonEvents) ⇒ no events ever roll.
+      dungeonEventPct: z.number().int().positive().optional(),
       // Resource-scarcity / economy (docs/design/difficulty-design.md). Per-act arrays index by act
       // (0 = Act I …); omitted ⇒ modern no-scarcity behaviour. Data receptacle — see difficulty-design.
       economy: z
@@ -657,6 +673,7 @@ export const scenarioWorldSchema = z.object({
   progressionFlags: z.array(progressionFlagSchema).default([]),
   quests: z.array(scenarioQuestSchema).default([]),
   facilities: z.array(scenarioFacilitySchema).default([]),
+  dungeonEvents: z.array(dungeonEventSchema).default([]),
   vocations: z.array(scenarioVocationSchema).default([]),
   affixes: z.array(scenarioAffixSchema).default([]),
   techniques: z.array(scenarioTechniqueSchema).default([]),
