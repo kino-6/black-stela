@@ -520,6 +520,8 @@ const roomSchema = z.object({
   teleportTo: z.string().optional(),
   damageTile: z.number().int().positive().optional(),
   gatherItem: z.string().optional(),
+  gatherTable: z.string().min(1).optional(),
+  gatherMaxPulls: z.number().int().positive().optional(),
   trap: trapSchema.optional(),
   encounter: enemySchema.optional(),
   encounterSquad: z.array(z.string().min(1)).min(2).optional(),

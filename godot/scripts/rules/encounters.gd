@@ -176,7 +176,7 @@ static func resolve_encounter_table(world: Dictionary, table_id: String, seed_va
 
 # The corridor itself ambushes you. Authored rooms own their own fight; landings and rest points are
 # safe ground; and a cooldown window since the last fight keeps it from chaining.
-static func begin_wandering_encounter(world: Dictionary, room: Variant, state: Dictionary) -> Variant:
+static func begin_wandering_encounter(world: Dictionary, room: Variant, state: Dictionary, force: bool = false) -> Variant:
 	if typeof(room) != TYPE_DICTIONARY:
 		return null
 	if room.get("encounter", null) != null or room.get("encounterTable", null) != null or room.get("encounterSquad", null) != null:
@@ -195,10 +195,13 @@ static func begin_wandering_encounter(world: Dictionary, room: Variant, state: D
 	var wander_off := int(Facilities.active_effects(state, world).get("wanderingReductionPct", 0))
 	if wander_off > 0:
 		encounter_pct = int(round(float(encounter_pct) * (100.0 - float(wander_off)) / 100.0))
-	if int(state.get("stepsSinceEncounter", 0)) < cooldown:
-		return null
-	if CombatRng.roll_percent("%d:%s:wander" % [int(state.get("turn", 0)), String(room.get("id", ""))]) >= encounter_pct:
-		return null
+	# `force` (a gather-node greed ambush, #gather) skips the per-step cooldown/pct — the caller has already
+	# decided an ambush happens and just wants a floor-appropriate pack. The normal crawl roll keeps both.
+	if not force:
+		if int(state.get("stepsSinceEncounter", 0)) < cooldown:
+			return null
+		if CombatRng.roll_percent("%d:%s:wander" % [int(state.get("turn", 0)), String(room.get("id", ""))]) >= encounter_pct:
+			return null
 
 	var table: Variant = null
 	for candidate in world.get("encounterTables", []):

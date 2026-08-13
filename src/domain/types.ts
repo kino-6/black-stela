@@ -1117,6 +1117,13 @@ export interface DungeonRoom {
   teleportTo?: string;
   damageTile?: number;
   gatherItem?: string;
+  /** Repeatable gather node: a treasureTable id the party can SEARCH over and over. Each pull rolls a drop
+   *  (rarity/affix, so rare enchanted gear is possible) and raises the ambush chance, until the node is
+   *  exhausted. Items only — materials come from dismantling what you gather, so the risk buys rare gear, not
+   *  a low-risk point grind. */
+  gatherTable?: string;
+  /** Pulls this node yields per descent before it is exhausted (default 4). */
+  gatherMaxPulls?: number;
   trap?: Trap;
   encounter?: Enemy;
   /** A fixed multi-group fight, by enemy id: the first is the front line, the rest

@@ -13,6 +13,7 @@ const Exploration := preload("res://scripts/rules/exploration.gd")
 const RulesUtil := preload("res://scripts/rules/rules_util.gd")
 const Facilities := preload("res://scripts/rules/facilities.gd")
 const DungeonEvents := preload("res://scripts/rules/dungeon_events.gd")
+const CombatRng := preload("res://scripts/rules/combat_rng.gd")
 
 const LEFT_OF := {"north": "west", "west": "south", "south": "east", "east": "north"}
 
@@ -119,6 +120,42 @@ static func _search(state: Dictionary, world: Dictionary, engine: Dictionary = {
 			(picked["discoveredSecrets"] as Array).append(gather_key)
 			picked["turn"] = int(picked.get("turn", 0)) + 1
 			return {"state": picked, "events": [{"type": "inventory_item_gained", "itemId": gathered.get("id", ""), "itemName": gathered.get("name", ""), "quantity": 1, "source": "reward"}]}
+
+	# 2b. Repeatable gather node (#gather): search a resource node again and again — each pull rolls a drop
+	# (rarity/affix via the treasure table, so rare enchanted gear is possible) and raises the ambush chance,
+	# until the node is exhausted. ITEMS ONLY: materials come from dismantling what you gather, so the risk
+	# buys rare gear, not a low-risk point grind. Godot-only + gated on gatherTable, so worlds — and every
+	# parity trace — that author none are byte-identical (state["gatherPulls"] is materialized lazily).
+	if typeof(room) == TYPE_DICTIONARY and typeof(room.get("gatherTable", null)) == TYPE_STRING:
+		var max_pulls := int(room.get("gatherMaxPulls", 4))
+		var pulls := int((state.get("gatherPulls", {}) as Dictionary).get(room_id, 0))
+		if pulls >= max_pulls:
+			return RulesUtil.log_only(state, {"type": "search_completed", "result": "gather_exhausted"})
+		var g_turn := int(state.get("turn", 0))
+		var drop: Variant = Chests.roll_treasure_item(world, engine, room_id, room["gatherTable"], g_turn + pulls)
+		var picked: Dictionary = state.duplicate(true)
+		var new_pulls: Dictionary = (picked.get("gatherPulls", {}) as Dictionary).duplicate(true)
+		new_pulls[room_id] = pulls + 1
+		picked["gatherPulls"] = new_pulls
+		picked["turn"] = g_turn + 1
+		var g_events: Array = []
+		if typeof(drop) == TYPE_DICTIONARY:
+			picked["inventory"] = Economy.add_inventory_item(picked.get("inventory", []), drop)
+			g_events.append({"type": "inventory_item_gained", "itemId": drop.get("id", ""), "itemName": drop.get("name", ""), "quantity": 1, "source": "gather"})
+		# Greed is punished: each pull past the first raises the ambush chance; a 管制室 facility quiets it.
+		# On a hit the node's noise pulls a floor-appropriate pack (forced past the normal per-step cooldown).
+		var ambush_pct := pulls * 20
+		var quiet := int(Facilities.active_effects(state, world).get("wanderingReductionPct", 0))
+		if quiet > 0:
+			ambush_pct = int(round(float(ambush_pct) * (100.0 - float(quiet)) / 100.0))
+		if ambush_pct > 0 and CombatRng.roll_percent("%s:%d:gatherambush" % [room_id, pulls]) < ambush_pct:
+			var started: Variant = Encounters.begin_wandering_encounter(world, room, picked, true)
+			if typeof(started) == TYPE_DICTIONARY:
+				picked["phase"] = "combat"
+				picked["combat"] = started["combat"]
+				picked["stepsSinceEncounter"] = 0
+				g_events.append(started["event"])
+		return {"state": picked, "events": g_events}
 
 	# 3. Trap detection, else nothing found.
 	var trap: Variant = room.get("trap", null) if typeof(room) == TYPE_DICTIONARY else null

@@ -55,6 +55,14 @@ design ideas (unapproved): `docs/design/ballistic-world-program.md`.
   - [ ] **slice 2（動力炉＝恒久 maxHP%）.** `character_stats.effective()` が state 非受領＋combat state への反映が要る。
     parity 安全（facility 未著述で pct=0）に effective へ facility maxHpPct を貫通させる。要慎重実装。
   - [ ] slice 3（任意）: 深い設備のロック/伸びしろ表示強化、実画面 PNG 確認。
+- [-] **#38 — 採取ポイント（EO 式・繰り返し＋乱獲リスク, slice 1 済み）.** user 設計: **materials 直接付与は NG →
+  装備/アイテムを渡す**（materials は低リスクで繰り返せる"ポイント"、貴重なエンチャント品はリスクを取ってこそ）。
+  - [x] **slice 1 done.** room に `gatherTable`(treasureTable)＋`gatherMaxPulls`(既定4)。`_search` に繰り返し採取ブランチ:
+    1回ごとに treasure ロール（rarity/affix＝エンチャント品可）で**アイテム1個**、pull ごとに乱入確率↑（pull×20%、管制室で低減）、
+    max で枯渇。`begin_wandering_encounter(force)` 追加でオンデマンド乱入。Godot-native・gatherTable 未著述で no-op＝**parity 緑**。
+    state.gatherPulls 遅延生成。terminal-line tl1f 保守端末を採取ノード化（W3a 廃案 event も差し替え）。Gate `verify_gather.gd`。
+  - [ ] **slice 2（任意refinement）**: 乱獲で rarity 段階上昇（今は同テーブル＝pull を重ねるほど rare 機会が増える形）、
+    採取ログの文言、枯渇の見せ方、実画面 PNG 確認。TS 側 gather 拡張は Godot-native 方針で不要（content schema のみ）。
 
 ## Backlog / ideas (no home yet)
 

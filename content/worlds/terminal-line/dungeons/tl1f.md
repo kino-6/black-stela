@@ -106,9 +106,11 @@ rooms:
     chest: { treasureTable: treasure.tl1f.station-office, lock: { difficulty: 8 } }
   - id: room.tl1f.maintenance-terminal
     name: Maintenance Terminal
-    description: A dark terminal waits beside a dry service hatch. Its ceramic fuse socket is intact.
-    locales: { ja: { name: 保守端末, description: 乾いた保守口の脇で、暗い端末が待っている。陶製ヒューズの差込口だけは無事だ。 } }
-    event: A terminal fuse can be installed here when the alert-state rule is connected in W3a.
+    description: A dark terminal beside a dry service hatch; the parts bins around it are still half-stocked with salvage.
+    event: The parts bins here can be stripped for gear — but the more you rummage, the more noise you make.
+    gatherTable: treasure.tl1f.station-office
+    gatherMaxPulls: 4
+    locales: { ja: { name: 保守端末, description: 乾いた保守口の脇の暗い端末。周りの部品箱には、まだ回収できる部品が半分ほど残っている。, event: 部品箱は漁れば使える装備が出る——が、掻き回すほど物音が響く。 } }
   - id: room.tl1f.concourse-cache
     name: Lost Property Cache
     description: A sealed lost-property box rests above the tide mark, heavy with forgotten work gear.
