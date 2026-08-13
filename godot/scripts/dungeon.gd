@@ -1289,6 +1289,9 @@ func _event_line(e: Dictionary) -> String:
 		"inspection_made":
 			return "耳をすます……乾いた風の音だけだ。"
 		"search_completed":
+			# A gather node that has been picked clean reads as exhausted, not empty (#gather).
+			if String(e.get("result", "")) == "gather_exhausted":
+				return "ここはもう漁り尽くした。"
 			# "何も見つからない" is misleading on a cell whose hidden passage is ALREADY open (playtest T7).
 			return "この場所の隠し通路はもう開いている。" if _has_opened_secret_here() else "あたりを探ったが、何も見つからない。"
 		"secret_found":
