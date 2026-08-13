@@ -51,10 +51,12 @@ func _initialize() -> void:
 
 	# Effect resolution: a run with all three facilities at level 1 reports each one's level-1 effect.
 	var tl_world: Dictionary = town.get("_world")
-	var built := {"facilities": {"facility.tl-infirmary": 1, "facility.tl-supply": 1, "facility.tl-signals": 1}}
+	var built := {"facilities": {"facility.tl-infirmary": 1, "facility.tl-supply": 1, "facility.tl-signals": 1, "facility.tl-armory-works": 1, "facility.tl-control-room": 1}}
 	var eff := Facilities.active_effects(built, tl_world)
 	_check(int(eff.get("shopDiscountPct", 0)) == 5, "supply level 1 → 5%% shop discount (got %d)" % int(eff.get("shopDiscountPct", 0)))
 	_check(int(eff.get("explorationBonus", 0)) == 3, "signals level 1 → +3 exploration (got %d)" % int(eff.get("explorationBonus", 0)))
+	_check(int(eff.get("reinforceDiscountPct", 0)) == 15, "armory-works level 1 → 15%% reinforce discount (got %d)" % int(eff.get("reinforceDiscountPct", 0)))
+	_check(int(eff.get("wanderingReductionPct", 0)) == 30, "control-room level 1 → 30%% fewer wandering encounters (got %d)" % int(eff.get("wanderingReductionPct", 0)))
 
 	# The infirmary actually heals: a wounded party is restored to full HP on return when it is built.
 	var wounded := {"facilities": {"facility.tl-infirmary": 1}, "party": [{"id": "x", "hp": 1, "maxHp": 30, "mp": 0, "maxMp": 10, "equipment": {}, "status": []}]}

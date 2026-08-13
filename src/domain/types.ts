@@ -896,12 +896,16 @@ export interface FacilityLevel {
   restMp?: boolean;
   /** Also clear lasting injuries on return (layers over restOnReturn). */
   clearInjury?: boolean;
-  /** +N% party max HP. Reserved for a future stat-facility; not applied by the v1 base resolver. */
-  maxHpPct?: number;
   /** N% off shop buy prices. */
   shopDiscountPct?: number;
   /** +N to exploration attempts (detect-secret / disarm / unlock). */
   explorationBonus?: number;
+  /** N% off equipment reinforcement / forge costs (the 兵装工廠 deep facility). */
+  reinforceDiscountPct?: number;
+  /** N% fewer wandering encounters — the run stays quieter (the 管制室 deep facility). */
+  wanderingReductionPct?: number;
+  /** +N% party max HP (the 動力炉 deep facility). Applied via getEffectiveCharacterStats. */
+  maxHpPct?: number;
   /** Shop stock ids this level makes available (mirrors an `unlocked` stock flag). */
   unlockShopItems?: string[];
   /** Localized one-line effect blurb for the base UI. */

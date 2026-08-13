@@ -127,6 +127,39 @@ facilities:
       - cost: 32
         explorationBonus: 8
         locales: { en: { effect: "+8 to search, disarm, and unlock attempts." }, ja: { effect: "探索・解除・解錠の判定 +8。" } }
+  # Deep facilities (#37): mid-to-endgame meta-progression, gated by materials cost alone (no descent flag).
+  # They cost far more than the early QoL trio, so they read as aspirational depth — visible but unaffordable
+  # until a party has dismantled its way through several descents.
+  - id: facility.tl-armory-works
+    name: Armory Works
+    kind: armory
+    description: A recovered permanent-way workshop — the reforging bench and the forge run off one line.
+    locales:
+      ja:
+        name: 兵装工廠
+        description: 旧保線区の工作機械を復旧した整備工場。錬成台と鍛冶炉がひと繋ぎになっている。
+    levels:
+      - cost: 60
+        reinforceDiscountPct: 15
+        locales: { en: { effect: "Reinforcement and forge costs are 15% cheaper." }, ja: { effect: "錬成・鍛冶のコストが15%引き。" } }
+      - cost: 120
+        reinforceDiscountPct: 30
+        locales: { en: { effect: "Reinforcement and forge costs are 30% cheaper." }, ja: { effect: "錬成・鍛冶のコストが30%引き。" } }
+  - id: facility.tl-control-room
+    name: Control Room
+    kind: control
+    description: The dispatch desk, rebuilt from wreckage; it reads the line's mood before the party does.
+    locales:
+      ja:
+        name: 管制室
+        description: 運行管制の残骸を組み直した指令室。線路の気配を先に読み、無用な鉢合わせを避ける。
+    levels:
+      - cost: 80
+        wanderingReductionPct: 30
+        locales: { en: { effect: "30% fewer wandering ambushes on the crawl." }, ja: { effect: "徘徊する敵との遭遇が30%減る。" } }
+      - cost: 160
+        wanderingReductionPct: 50
+        locales: { en: { effect: "50% fewer wandering ambushes on the crawl." }, ja: { effect: "徘徊する敵との遭遇が50%減る。" } }
 # Random dungeon events (#32): weighted flavour beats rolled while walking, some carrying a small one-shot
 # effect. Salvage found here feeds the base-facility economy (#33). Rolled at balance.dungeonEventPct per
 # eligible step; a world that authors none rolls nothing.

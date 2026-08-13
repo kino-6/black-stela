@@ -252,28 +252,36 @@ describe("Terminal Line F1–F10 canonical pack", () => {
     }
   });
 
-  // #33 base building: the salvage-`materials` sink is scenario-authored world data. This locks the v1
-  // facility set (医務室/補給所/通信室), their level costs, and the effect fields the Godot base resolver reads.
-  it("authors the three base facilities (materials sink) as world data", () => {
+  // #33/#37 base building: the salvage-`materials` sink is scenario-authored world data. Locks the early
+  // QoL trio (医務室/補給所/通信室, cheap) AND the mid/end deep facilities (兵装工廠/管制室, materials-gated by a
+  // much higher cost), plus the effect fields the Godot base resolver reads.
+  it("authors the base facilities (early QoL + deep mid/end sinks) as world data", () => {
     const result = loadScenarioPack(packFiles());
     expect(result.ok).toBe(true);
     if (!result.ok) return;
 
     const facilities = result.world.facilities ?? [];
     expect(facilities.map((f) => f.id)).toEqual([
-      "facility.tl-infirmary", "facility.tl-supply", "facility.tl-signals"
+      "facility.tl-infirmary", "facility.tl-supply", "facility.tl-signals",
+      "facility.tl-armory-works", "facility.tl-control-room"
     ]);
-    for (const f of facilities) {
-      expect(f.levels.map((l) => l.cost), f.id).toEqual([8, 16, 32]);
+    // Early QoL trio: cheap 8/16/32.
+    for (const id of ["facility.tl-infirmary", "facility.tl-supply", "facility.tl-signals"]) {
+      expect(facilities.find((f) => f.id === id)!.levels.map((l) => l.cost), id).toEqual([8, 16, 32]);
     }
     const infirmary = facilities.find((f) => f.id === "facility.tl-infirmary")!;
     expect(infirmary.levels[0].restOnReturn).toBe(true);
     expect(infirmary.levels[1].restMp).toBe(true);
     expect(infirmary.levels[2].clearInjury).toBe(true);
-    const supply = facilities.find((f) => f.id === "facility.tl-supply")!;
-    expect(supply.levels.map((l) => l.shopDiscountPct)).toEqual([5, 10, 15]);
-    const signals = facilities.find((f) => f.id === "facility.tl-signals")!;
-    expect(signals.levels.map((l) => l.explorationBonus)).toEqual([3, 5, 8]);
+    expect(facilities.find((f) => f.id === "facility.tl-supply")!.levels.map((l) => l.shopDiscountPct)).toEqual([5, 10, 15]);
+    expect(facilities.find((f) => f.id === "facility.tl-signals")!.levels.map((l) => l.explorationBonus)).toEqual([3, 5, 8]);
+    // Deep facilities cost far more (mid/end, materials-gated) and carry their own effects.
+    const armory = facilities.find((f) => f.id === "facility.tl-armory-works")!;
+    expect(armory.levels.map((l) => l.cost)).toEqual([60, 120]);
+    expect(armory.levels.map((l) => l.reinforceDiscountPct)).toEqual([15, 30]);
+    const control = facilities.find((f) => f.id === "facility.tl-control-room")!;
+    expect(control.levels.map((l) => l.cost)).toEqual([80, 160]);
+    expect(control.levels.map((l) => l.wanderingReductionPct)).toEqual([30, 50]);
   });
 
   // #31 boss reachability: a run must have GUARANTEED bosses at its bookends — a 玄室 guardian on the

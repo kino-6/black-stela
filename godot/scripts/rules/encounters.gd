@@ -8,6 +8,7 @@ extends RefCounted
 ## fight at all on its own.
 
 const CombatRng := preload("res://scripts/rules/combat_rng.gd")
+const Facilities := preload("res://scripts/rules/facilities.gd")
 
 const WANDERING_ENCOUNTER_PCT := 4
 const WANDERING_COOLDOWN_STEPS := 8
@@ -189,6 +190,11 @@ static func begin_wandering_encounter(world: Dictionary, room: Variant, state: D
 	var balance: Dictionary = world.get("balance", {}) if typeof(world.get("balance", null)) == TYPE_DICTIONARY else {}
 	var cooldown := int(balance.get("wanderingCooldownSteps", WANDERING_COOLDOWN_STEPS))
 	var encounter_pct := int(balance.get("wanderingEncounterPct", WANDERING_ENCOUNTER_PCT))
+	# #37 管制室: a base control-room facility quiets the line — fewer wandering ambushes. No-op (0%) for any
+	# world without the facility, so the wandering roll stays byte-identical on every parity trace.
+	var wander_off := int(Facilities.active_effects(state, world).get("wanderingReductionPct", 0))
+	if wander_off > 0:
+		encounter_pct = int(round(float(encounter_pct) * (100.0 - float(wander_off)) / 100.0))
 	if int(state.get("stepsSinceEncounter", 0)) < cooldown:
 		return null
 	if CombatRng.roll_percent("%d:%s:wander" % [int(state.get("turn", 0)), String(room.get("id", ""))]) >= encounter_pct:

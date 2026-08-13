@@ -443,6 +443,8 @@ const facilityLevelSchema = z.object({
   maxHpPct: z.number().int().optional(),
   shopDiscountPct: z.number().int().optional(),
   explorationBonus: z.number().int().optional(),
+  reinforceDiscountPct: z.number().int().optional(),
+  wanderingReductionPct: z.number().int().optional(),
   unlockShopItems: z.array(z.string().min(1)).optional(),
   locales: z.record(z.string(), z.object({ effect: z.string().min(1).optional() })).optional()
 });

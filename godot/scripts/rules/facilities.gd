@@ -22,7 +22,7 @@ static func _find_facility(world: Dictionary, facility_id: String) -> Variant:
 # declared at levels 1..N — booleans stay ON once granted, numeric fields take the strongest value. This
 # is the single source of truth read by the panel AND by the effect hooks (maxHp/exploration/shop/return).
 static func active_effects(state: Dictionary, world: Dictionary) -> Dictionary:
-	var out := {"restOnReturn": false, "restMp": false, "clearInjury": false, "maxHpPct": 0, "shopDiscountPct": 0, "explorationBonus": 0}
+	var out := {"restOnReturn": false, "restMp": false, "clearInjury": false, "maxHpPct": 0, "shopDiscountPct": 0, "explorationBonus": 0, "reinforceDiscountPct": 0, "wanderingReductionPct": 0}
 	for f in world.get("facilities", []):
 		var level := facility_level(state, String(f.get("id", "")))
 		var levels: Array = f.get("levels", [])
@@ -37,6 +37,8 @@ static func active_effects(state: Dictionary, world: Dictionary) -> Dictionary:
 			out["maxHpPct"] = maxi(int(out["maxHpPct"]), int(eff.get("maxHpPct", 0)))
 			out["shopDiscountPct"] = maxi(int(out["shopDiscountPct"]), int(eff.get("shopDiscountPct", 0)))
 			out["explorationBonus"] = maxi(int(out["explorationBonus"]), int(eff.get("explorationBonus", 0)))
+			out["reinforceDiscountPct"] = maxi(int(out["reinforceDiscountPct"]), int(eff.get("reinforceDiscountPct", 0)))
+			out["wanderingReductionPct"] = maxi(int(out["wanderingReductionPct"]), int(eff.get("wanderingReductionPct", 0)))
 	return out
 
 # The infirmary's return-to-town effect: when restOnReturn is active, restore every member's HP (and

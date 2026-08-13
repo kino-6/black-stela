@@ -6,6 +6,15 @@ extends RefCounted
 ## unidentified-rare are spared). The toggle flags carry no turn cost; the others advance the turn.
 
 const Economy := preload("res://scripts/rules/economy.gd")
+const Facilities := preload("res://scripts/rules/facilities.gd")
+
+# #37 兵装工廠: a base armory-works facility discounts reinforcement / forge costs. No-op (unchanged cost)
+# for any world without the facility, so parity traces are unaffected.
+static func _facility_discount(cost: int, state: Dictionary, world: Dictionary) -> int:
+	var pct := int(Facilities.active_effects(state, world).get("reinforceDiscountPct", 0))
+	if pct <= 0:
+		return cost
+	return maxi(0, int(round(float(cost) * (100.0 - float(pct)) / 100.0)))
 
 const MAX_REINFORCE := 5
 const RARITY_ORDER := ["common", "rare", "epic"]
@@ -99,7 +108,7 @@ static func reinforce(state: Dictionary, world: Dictionary, character_id: String
 	if typeof(equipped) != TYPE_DICTIONARY:
 		return {"state": state, "events": []}
 	var current_plus := int(equipped.get("plus", 0))
-	var cost := reinforce_cost(current_plus)
+	var cost := _facility_discount(reinforce_cost(current_plus), state, world)
 	if current_plus >= MAX_REINFORCE or int(state.get("materials", 0)) < cost:
 		return {"state": state, "events": []}
 	var next_plus := current_plus + 1
@@ -144,7 +153,7 @@ static func forge(state: Dictionary, world: Dictionary, character_id: String, sl
 	if typeof(equipped) != TYPE_DICTIONARY:
 		return {"state": state, "events": []}
 	var current_plus := int(equipped.get("plus", 0))
-	var cost := forge_cost(current_plus)
+	var cost := _facility_discount(forge_cost(current_plus), state, world)
 	if current_plus >= MAX_REINFORCE or int(state.get("partyGold", 0)) < cost:
 		return {"state": state, "events": []}
 	var next_plus := current_plus + 1

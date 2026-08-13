@@ -47,9 +47,14 @@ design ideas (unapproved): `docs/design/ballistic-world-program.md`.
   （前衛/後衛）＋広い gap で分離。実画面PNG確認済み・914ユニット/i18n parity 緑。**残 (d) フォント拡大**: `dungeon_hud`
   の party_token stat が 12px と小さいが combat/crawl 共有＝blanket 拡大は固定レイアウトを壊す（ui_kit `_sz` 注記）。
   密度を下げつつ局所的に上げる方針で別途。
-- [ ] **#37 — 基地整備の深さ再設計（中〜大）.** user: 設備3つは「少ない」、Lv上限（Lv0/3）が見えて「オマケ」感。
-  **中盤〜エンドコンテンツ想定**の深いメタ進行に。**ただし便利系（医務室=休息/補給所=割引/通信室=探索）は序盤開放**の塩梅。
-  → 設備数を増やし、序盤 QoL 設備 vs mid/end の重い設備（降下フラグ/大量 materials で解禁）に階層化。設計案を提示して確認。
+- [-] **#37 — 基地整備 v2: 深さ再設計（slice 1 済み・slice 2 残）.** user 設計確定: 序盤 QoL 3つはそのまま＋深い設備追加、
+  解禁は**大量 materials のみ**（フラグ無し＝高コストで「伸びしろ」表現）。
+  - [x] **slice 1（兵装工廠＋管制室）done.** schema に `reinforceDiscountPct`/`wanderingReductionPct` 追加。terminal-line に
+    **兵装工廠**（錬成/鍛冶コスト減 15/30%、cost 60/120）＋**管制室**（徘徊エンカウント減 30/50%、cost 80/160）。効果配線:
+    `loot.gd`(reinforce/forge)＋`encounters.gd`(wandering pct)、facility 未著述で no-op＝**parity 緑**。prepack＋verify_facility 検証・914緑。
+  - [ ] **slice 2（動力炉＝恒久 maxHP%）.** `character_stats.effective()` が state 非受領＋combat state への反映が要る。
+    parity 安全（facility 未著述で pct=0）に effective へ facility maxHpPct を貫通させる。要慎重実装。
+  - [ ] slice 3（任意）: 深い設備のロック/伸びしろ表示強化、実画面 PNG 確認。
 
 ## Backlog / ideas (no home yet)
 
