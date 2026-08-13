@@ -276,6 +276,26 @@ describe("Terminal Line F1–F10 canonical pack", () => {
     expect(signals.levels.map((l) => l.explorationBonus)).toEqual([3, 5, 8]);
   });
 
+  // #31 boss reachability: a run must have GUARANTEED bosses at its bookends — a 玄室 guardian on the
+  // first floor and the terminus core on the last — never left to a random-table roll the player may miss.
+  // The entrance also signposts the floor-1 miniboss so an early party is drawn to it, not past it.
+  it("guarantees bookend chamber bosses and signposts the first-floor miniboss", () => {
+    const result = loadScenarioPack(packFiles());
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    const rooms = result.world.dungeons.flatMap((d) => d.rooms);
+    const first = rooms.find((r) => r.id === "room.tl1f.stationmaster-hall");
+    expect(first?.chamberGuardian, "tl1f miniboss is a guaranteed chamber guardian").toBe(true);
+    expect(first?.encounter ?? first?.encounterTable, "tl1f miniboss room places a boss").toBeTruthy();
+    const last = rooms.find((r) => r.id === "room.tl10f.zero-core");
+    expect(last?.chamberGuardian, "tl10f terminus core is a guaranteed chamber guardian").toBe(true);
+    expect(last?.encounter ?? last?.encounterTable, "tl10f terminus core places a boss").toBeTruthy();
+
+    const entrance = rooms.find((r) => r.id === "room.tl1f.entrance");
+    expect(entrance?.event, "the entrance signposts the floor-1 miniboss").toBeTruthy();
+  });
+
   it("binds ten real active techniques to each firearm family and six automatic firearm passives", () => {
     const result = loadScenarioPack(packFiles());
     expect(result.ok).toBe(true);

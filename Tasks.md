@@ -43,9 +43,11 @@ groom 時の調査結論（既存を作り直さないための現状把握。�
 - [x] **#30 — 導入/御触れをシナリオ記述可能に（premise, done）.** `copy.<lc>.town.premise` を追加（空デフォルト＝任意）、
   terminal-line が「なぜ零番線へ潜るか」を著述、街広場のタイトル下に常時表示（`_world.copy[locale]` 直読み＋DIM prose、
   未著述の世界は非表示）。Gate `verify_town_premise.gd`、実画面PNG確認済み。
-- [ ] **#31 — ボス到達性（bosses, 小）.** ボス機構は実装済み・到達可（tl1f stationmaster が `encounter`＋
-  `chamberGuardian` の**確定配置**、`rulesEngine.ts:2295-2327`）。だが user は一度も相対経験なし＝経路/signpost 問題。
-  最終 terminus(tl10f) だけ単一エントリのランダム表依存。→ tl1f ボスが導線上か検証＋signpost、terminus を確定配置化。
+- [x] **#31 — ボス到達性（bosses, done）.** 調査結論: 両端ボスは既に確定玄室（tl1f stationmaster / tl10f zero-core は
+  chamberGuardian）。tl1f ボスは設計上「descent を塞がない任意 dead-end 玄室」なので、**入口に signpost（奥から響く
+  閉鎖チャイム＝stationmaster）を追加**して早期パーティを誘導。terminus は catalog 本体を chamberGuardian＋単一表で
+  確定済み（inline 化は art/弱点を失うため不可）。#30 premise も terminus ボスへ物語的に誘導。**Gate**: prepack に
+  「両端の確定玄室ボス＋入口 signpost」invariant（913 ユニット緑）。※中ボス（transfer-warden 等）はランダム flavor のまま。
 - [ ] **#32 — 迷宮ランダムイベント（外部シナリオ記述, 中〜大）.** 現状は room `event:` 固定文字列のみ（決定的・選択肢なし、
   `scenario.ts:485-508`）。ランダム/対話イベント系は**未実装**。→ シナリオ記述可能な random event table ＋選択肢の新規システム。
 - [-] **#33 — 拠点整備（base / materials sink, 大）← 進行中（user 2026-08-13 選択）.** salvage `materials`

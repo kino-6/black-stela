@@ -60,7 +60,8 @@ rooms:
   - id: room.tl1f.entrance
     name: Raised Fire Shutter
     description: A half-raised fire shutter leaves a gap into the station. The Interchange Square is still behind the rain.
-    locales: { ja: { name: 上がった防火シャッター, description: 半ば上がった防火シャッターの下に、駅へ入る隙間がある。雨の向こうには、まだ乗換広場の灯が残っている。 } }
+    event: A closing chime keeps steady time from somewhere deeper in the station — an empty platform, still being worked by someone.
+    locales: { ja: { name: 上がった防火シャッター, description: 半ば上がった防火シャッターの下に、駅へ入る隙間がある。雨の向こうには、まだ乗換広場の灯が残っている。, event: 奥のどこかから、閉鎖チャイムが規則正しく鳴っている。無人のホームで、誰かがまだ働いているらしい。 } }
     stairsToTown: true
     returnStyle: stairs
   - id: room.tl1f.security-corridor
