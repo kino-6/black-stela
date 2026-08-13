@@ -52,11 +52,17 @@ design ideas (unapproved): `docs/design/ballistic-world-program.md`.
   - [x] **slice 1（兵装工廠＋管制室）done.** schema に `reinforceDiscountPct`/`wanderingReductionPct` 追加。terminal-line に
     **兵装工廠**（錬成/鍛冶コスト減 15/30%、cost 60/120）＋**管制室**（徘徊エンカウント減 30/50%、cost 80/160）。効果配線:
     `loot.gd`(reinforce/forge)＋`encounters.gd`(wandering pct)、facility 未著述で no-op＝**parity 緑**。prepack＋verify_facility 検証・914緑。
-  - [ ] **slice 2（動力炉＝恒久 maxHP%）← 意図的に defer（専用ターン推奨）.** 難所: `character_stats.effective()` が
-    (a) Facilities を preload すると**循環参照**（facilities→character_stats）＝pct を state でなく引数で渡す必要、(b) combat/HUD/
-    各表示 ~10 呼び出し元へ pct を貫通させないと**表示不整合**（HUD と party menu で maxHP が食い違う）。parity は facility 未著述で
-    pct=0＝安全。→ effective に `facility_max_hp_pct` 引数を足し、combat_round/dungeon_hud(party_token)/recovery/party_panel 等へ
-    Facilities.active_effects から算出して渡す＋**HUD==combat の一貫性 Gate**。長大ターンの末尾で急がず、専用ターンで実装する。
+  - [ ] **slice 2（動力炉＝恒久 maxHP%）← 意図的に defer（専用ターン推奨）.** 2026-08-13 に着手→調査で cross-cutting と確定し
+    revert。**確定した実装ポイント（次ターンはここから）:**
+    (a) `effective()` は Facilities を preload 不可（facilities→character_stats の循環）＝pct は**引数**で渡す。`Facilities.max_hp_pct(state,world)`
+    ヘルパを足すのが楽（`active_effects().maxHpPct`）。
+    (b) **combat の HP バーは `effective()` でなく格納 `member.maxHp` を表示**（`combat.gd:554/1207/1461`）、一方 town の party_token は
+    `effective()`＝**そのまま足すと combat と town で maxHP が食い違う**。→ 選択肢A: combat 突入時に member.maxHp へ %をベイク（表示も
+    heal cap も一致）／選択肢B: combat 表示を effective+pct に変え、heal ヘルパ `_heal_member`(combat_round:984)・`_apply_healing_item`(997)
+    が **state を持たない**ので caller(declare_round) から pct を貫通。
+    (c) 他の cap/表示: `economy.recover:135`・`camp_techniques:65`・`facilities.apply_return_heal`・`dungeon_events._apply`・`party_panel:214`・
+    `dungeon_hud.party_token`(+呼び出し元 town.gd:395/dungeon.gd:482) に pct を渡す。
+    (d) parity は facility 未著述で pct=0＝安全。**HUD==combat の一貫性 Gate 必須**。content 動力炉 は未著述。
   - [ ] slice 3（任意）: 深い設備のロック/伸びしろ表示強化、実画面 PNG 確認。
 - [-] **#38 — 採取ポイント（EO 式・繰り返し＋乱獲リスク, slice 1 済み）.** user 設計: **materials 直接付与は NG →
   装備/アイテムを渡す**（materials は低リスクで繰り返せる"ポイント"、貴重なエンチャント品はリスクを取ってこそ）。
