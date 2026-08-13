@@ -578,6 +578,10 @@ export const en = {
     recovery: "Recovery",
     records: "Records",
     quests: "Quest board",
+    // A scenario's standing proclamation — WHY the party descends (Wizardry's castle notice). A world
+    // states its own via `copy: { <lc>: { town.premise: "…" } }`; empty here so worlds that say nothing
+    // show no line rather than a bland default.
+    premise: "",
     questsAvailable: "The records hall board has {count} contract(s) to take.",
     questsReady: "{count} finished contract(s) waiting to be turned in at the records hall.",
     facility: "Base",

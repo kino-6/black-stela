@@ -40,9 +40,9 @@ groom 時の調査結論（既存を作り直さないための現状把握。�
 - [x] **#29 — 依頼の露出（discoverability, done）.** 依頼板は実装済みだが記録の間の奥で気づかれず。→ 街広場に
   actionable 通知を追加（`Quests.board_counts` → 受注可能 N 件 / 受領可能 M 件、記録の間へ誘導、依頼なし世界は非表示）。
   Gate `verify_quest_notice.gd`、実画面PNG確認済み。導入(御触れ)は #30、余白/場所再編は必要なら別途。
-- [ ] **#30 — 導入/御触れをシナリオ記述可能に（premise/prologue, 中）.** 現状 `world.md` `tagline:`＋`copy:` の
-  短文のみで専用の proclamation/prologue 面は無い（`src/domain/scenario.ts:554,560`）。→ シナリオが「なぜ潜るか」の
-  導入(Wiz の御触れ相当)を書ける schema＋提示面。#29 と結合可。
+- [x] **#30 — 導入/御触れをシナリオ記述可能に（premise, done）.** `copy.<lc>.town.premise` を追加（空デフォルト＝任意）、
+  terminal-line が「なぜ零番線へ潜るか」を著述、街広場のタイトル下に常時表示（`_world.copy[locale]` 直読み＋DIM prose、
+  未著述の世界は非表示）。Gate `verify_town_premise.gd`、実画面PNG確認済み。
 - [ ] **#31 — ボス到達性（bosses, 小）.** ボス機構は実装済み・到達可（tl1f stationmaster が `encounter`＋
   `chamberGuardian` の**確定配置**、`rulesEngine.ts:2295-2327`）。だが user は一度も相対経験なし＝経路/signpost 問題。
   最終 terminus(tl10f) だけ単一エントリのランダム表依存。→ tl1f ボスが導線上か検証＋signpost、terminus を確定配置化。
