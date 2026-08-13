@@ -308,8 +308,14 @@ func _rebuild() -> void:
 				break
 		_backdrop.texture = still
 	if _service != "":
+		# A service is MODAL: hide the square's chrome (party rail + destination bar) so the D-pad cannot
+		# geometry-hop out of the panel into the street buttons underneath it (#34/#35 — 鍛冶屋 focus escaped
+		# to 鑑定所). Invisible controls are skipped by find_valid_focus_neighbor, so this traps focus in the
+		# open panel for every service at once. Restored when the square rebuilds.
+		_menu_host.visible = false
 		_build_service()
 	else:
+		_menu_host.visible = true
 		_service_layer.visible = false
 		_build_square()
 	if _pending_focus:
