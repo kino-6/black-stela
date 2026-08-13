@@ -32,9 +32,11 @@ const STAIR_FIXTURES := ["terminal_line_down_stair", "terminal_line_up_stair"]
 # feel (quiet numbers, hit sink, per-gun tempo, defeat sink, log) is judged without walking to an encounter
 # (user 2026-08-12: 「StateLoad くらい用意しない？」). Attack normally for a hit/crit, keep firing for a defeat.
 const COMBAT_FIXTURES := ["terminal_line_combat"]
-# Land in the Terminal Line town with salvage in hand, so the reviewer can open 市場通り → 基地 and try the
-# facility upgrades (#33) at once without grinding materials first.
-const BASE_FIXTURES := ["terminal_line_base"]
+# Terminal Line TOWN starts. `terminal_line_base`: a fresh party + a little salvage for the early base.
+# `terminal_line_late`: a MID/END-game start — a GROWN party (levelled, full), a deep purse and the descent
+# flags set — so base v2's deep facilities, the unlocked market, and the late floors can be reviewed with a
+# party that is actually developed (user: "パーティ育成状況含めてのコマンド"), not a fresh Lv1 squad.
+const BASE_FIXTURES := ["terminal_line_base", "terminal_line_late"]
 const Encounter := preload("res://scripts/encounter.gd")
 const TL_GUNS := ["equip.tl-service-pistol", "equip.tl-platform-38-rifle", "equip.tl-drain-5-smg", "equip.tl-maintenance-10-shotgun"]
 
@@ -62,7 +64,7 @@ static func load_into(run: Object, name: String) -> String:
 	if name in COMBAT_FIXTURES:
 		return _load_terminal_combat(run)
 	if name in BASE_FIXTURES:
-		return _load_terminal_base(run)
+		return _load_terminal_late(run) if name == "terminal_line_late" else _load_terminal_base(run)
 	if name.begins_with("floor_"):
 		return _load_deep_floor(run, name)
 	run.ensure_loaded()
@@ -145,6 +147,35 @@ static func _load_terminal_base(run: Object) -> String:
 	var state: Dictionary = run.state
 	state["phase"] = "town"
 	state["materials"] = 60
+	run.state = state
+	return "res://scenes/town.tscn"
+
+## terminal_line_late: the MID/END-game Terminal Line town — a GROWN party (levelled ~9, at full), a deep
+## purse (materials for the deep facilities, gold for the market) and the descent flags set, so base v2's
+## 兵装工廠/管制室/動力炉, the unlocked shop stock, and the late floors are all reviewable with a developed
+## party — then descend from town, or open 基地 straight away.
+static func _load_terminal_late(run: Object) -> String:
+	run.world_id = "terminal-line"
+	run.reset()
+	var state: Dictionary = run.state
+	state["phase"] = "town"
+	state["materials"] = 400
+	state["partyGold"] = 3000
+	# The descent flags a mid/end party would have set — unlocks the deeper market stock and shortcuts.
+	state["discoveredSecrets"] = [
+		"flag.tl3f.bypass-open", "flag.tl4f.sluice-open", "flag.tl5f.loading-open",
+		"flag.tl6f.lift-online", "flag.tl7f.archive-open", "flag.tl8f.switch-open"
+	]
+	# Level every member to ~9 through the ported curve so their stats/skills are actually developed.
+	var party := []
+	for m in state.get("party", []):
+		var lm: Dictionary = (m as Dictionary).duplicate(true)
+		lm["xp"] = Leveling.xp_for_level(9)
+		lm = Leveling.apply_level_ups(lm)["character"]
+		lm["hp"] = int(lm.get("maxHp", 1))
+		lm["mp"] = int(lm.get("maxMp", 0))
+		party.append(lm)
+	state["party"] = party
 	run.state = state
 	return "res://scenes/town.tscn"
 

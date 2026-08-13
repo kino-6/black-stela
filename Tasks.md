@@ -84,6 +84,9 @@ design ideas (unapproved): `docs/design/ballistic-world-program.md`.
 - **#26 Combat feel（銃テンポ含む）:** **`npm run play:combat`**（＝`--fixture terminal_line_combat`）で terminal-line 戦闘に直接着地。
   前衛4人が pistol/rifle/SMG/shotgun 装備・敵は**訓練ダミー化（HP800・攻撃0＝12ラウンド以上戦え、味方は無傷）**。**全員でかかる[F]**
   で全銃種のテンポ・静かな数字・命中沈み・ログを一度に、繰り返し確認。撃破沈みは撃ち切る。（fixture `terminal_line_combat`、debug パネル可。）
+- **中盤・終盤スタート（育成済み）:** **`npm run play:late`**（＝`--fixture terminal_line_late`）で terminal-line 町に
+  **Lv9 育成済みパーティ＋素材400＋資金3000＋降下フラグ済み**で着地。base v2 の深い設備（兵装工廠/管制室/動力炉）・解禁後の
+  市場・終盤フロアを、育ったパーティで実プレイ確認できる。ダンジョン側の中盤・終盤は world=terminal-line で fixture `floor_2`…`floor_10`。
 - **#33 拠点整備（基地）:** **`npm run play:base`**（＝`--fixture terminal_line_base`）で terminal-line 町に素材60で着地。
   **市場通り → 基地** を開き、医務室/補給所/通信室を強化（素材消費→Lv↑→効果は現在/次で表示）。効果: 医務室=帰還で全快、
   補給所=店割引、通信室=探索判定+。（fixture `terminal_line_base`、debug パネル可。）
