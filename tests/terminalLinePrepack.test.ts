@@ -3,7 +3,7 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { loadScenarioPack } from "../src/services/scenarioPackLoader";
 import { createGuildCharacter } from "../src/domain/characterCreation";
-import { getEffectiveCharacterStats } from "../src/domain/economy";
+import { getEffectiveCharacterStats, weaponShots } from "../src/domain/economy";
 import { resolveTechniqueCatalog } from "../src/domain/techniques";
 import { CLASS_CAPABILITIES, resolveClassCapabilities } from "../src/domain/classCapabilities";
 import { combatLoadout, resolveVocationCatalog } from "../src/domain/vocations";
@@ -233,6 +233,23 @@ describe("Terminal Line F1–F10 canonical pack", () => {
       expect(ids.every((id) => firearms.get(id)?.tags?.includes("firearm"))).toBe(true);
     }
     expect(firearms.get("equip.tl-platform-38-rifle")?.locales?.ja?.name).toBe("三八式歩兵銃");
+  });
+
+  // Terminal Line's whole concept is MOWING DOWN hordes with automatic fire. The horde spawns and the
+  // spray mechanic (weaponShots > 1) both exist — but the concept only reaches the player if the DEFAULT
+  // party actually fields automatic weapons. Every basic vocation must start on a gun that sprays (SMG 3 /
+  // shotgun 2), or a normal party walks into the swarms holding single-shot sidearms and clubs and the
+  // mow-down never happens (playtest 2026-08-13: "コンセプト未達").
+  it("starts every basic vocation on an automatic firearm so the default party mows the hordes", () => {
+    const result = loadScenarioPack(packFiles());
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    const basicClassIds = ["warrior", "knight", "swordmaster", "thief", "priest", "chanter", "mage", "occultist"] as const;
+    for (const classId of basicClassIds) {
+      const member = createGuildCharacter({ name: "配備", classId, backgroundId: "watch", traitIds: ["steady"] }, result.world);
+      expect(weaponShots(member, result.world), `${classId} starting weapon must spray`).toBeGreaterThan(1);
+    }
   });
 
   it("binds ten real active techniques to each firearm family and six automatic firearm passives", () => {

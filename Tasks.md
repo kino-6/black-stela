@@ -27,17 +27,34 @@ ideas (unapproved): `docs/design/ballistic-world-program.md`.
 
 ## Active queue (process top-down)
 
-- [ ] **#27 — W3a 再検討: 通常攻撃の弾薬管理は NG（user 2026-08-12）.** `docs/design/ballistic-world-program.md` の W3a は
-  「共有弾薬で通常攻撃の弾を管理し、撃つ/温存を選ぶ」を core loop としていたが、**user 判断: 通常攻撃での弾薬管理はしない**（「弾薬管理
-  しないと言ったはず」）。→ **① 共有弾薬（通常攻撃の弾消費）は廃案。** 設計 doc の資源管理 core が成立しないため W3a as-designed は不採用。
-  **残る検討余地（user 発言）:** (i) **特殊行動（技）へのコスト**は有り得るかも（必須ではない・MP と別軸にするか要相談）、(ii) **警戒度**
-  （発砲＝騒音でフロア危険度↑、弾薬非依存）を単独で入れるか。どちらも user 承認待ち＝現時点で着手しない。terminal-line 世界/アート/銃は
-  既に出荷済みなので、item 3 として**新規実装が必要なものは無い**（ammo 廃案・他は未承認アイデア）。ブランチ `feat/tl-w3a-ammo-alert` は
-  実装前なので破棄可。
+- [-] **#28 — terminal-line 全員自動火器スタート（薙ぎ倒しコンセプトの既定化）.** DONE・コミット待ち。
+  8 basic vocation すべてを連射武器スタートに（ショットガン2発: 保安隊員/制圧隊/爆破技師 · SMG3発:
+  特務員/潜行員/衛生兵/通信員/攪乱員）。`content/worlds/terminal-line/vocations.md` 変更 ＋
+  Gate 先付け: `tests/terminalLinePrepack.test.ts`「全 basic vocation の初期武器は weaponShots>1」
+  （修正前 warrior=1 で RED → 後 GREEN）。全 911 ユニット GREEN・回帰なし。**残: 実画面 PNG 確認 → コミット。**
+
+### terminal-line「戦闘の外側」スキャフォールディング（2026-08-13 playtest / 要優先度決定）
+
+groom 時の調査結論（既存を作り直さないための現状把握。詳細は本セッションの Explore サーベイ）:
+
+- [ ] **#29 — 街UI改修＋依頼/導入の露出（discoverability, 中）.** 依頼板は**既に実装・Godot 到達可**
+  (`godot/scripts/town/quest_panel.gd`、terminal-line `quests.md`=2件) なのに**何度潜っても気づかれていない**
+  ＝街UIの導線・空きスペース問題。導入(なぜ潜る)も copy(`town.departureCopy` 等)はあるが一行タグライン止まり。
+  → 街を再構成し依頼板を前面に、導入(御触れ)を提示、余白を埋める。新規システムより既存の露出が主。#30/#31 の受け皿。
+- [ ] **#30 — 導入/御触れをシナリオ記述可能に（premise/prologue, 中）.** 現状 `world.md` `tagline:`＋`copy:` の
+  短文のみで専用の proclamation/prologue 面は無い（`src/domain/scenario.ts:554,560`）。→ シナリオが「なぜ潜るか」の
+  導入(Wiz の御触れ相当)を書ける schema＋提示面。#29 と結合可。
+- [ ] **#31 — ボス到達性（bosses, 小）.** ボス機構は実装済み・到達可（tl1f stationmaster が `encounter`＋
+  `chamberGuardian` の**確定配置**、`rulesEngine.ts:2295-2327`）。だが user は一度も相対経験なし＝経路/signpost 問題。
+  最終 terminus(tl10f) だけ単一エントリのランダム表依存。→ tl1f ボスが導線上か検証＋signpost、terminus を確定配置化。
+- [ ] **#32 — 迷宮ランダムイベント（外部シナリオ記述, 中〜大）.** 現状は room `event:` 固定文字列のみ（決定的・選択肢なし、
+  `scenario.ts:485-508`）。ランダム/対話イベント系は**未実装**。→ シナリオ記述可能な random event table ＋選択肢の新規システム。
+- [-] **#33 — 拠点整備（base / materials sink, 大）← 着手（user 2026-08-13 選択）.** **未実装**。salvage `materials` 通貨は貯まるが消費先ゼロ
+  (`types.ts:744`、sink なし)。→ materials を原資に拠点/設備アップグレードのメタ進行。terminal-line depot 側ダンジョンと接続可。
 
 ## Backlog / ideas (no home yet)
 
-（なし）
+（なし。旧 #27 = W3a 共有弾薬は user 判断で廃案 → `docs/design/ballistic-world-program.md` に記録済み。）
 
 ## 目視サインオフ用 ONE-SHOT 確認手段（デバッグパネルから選ぶだけ / 歩かない）
 
