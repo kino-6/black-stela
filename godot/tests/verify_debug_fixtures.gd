@@ -71,6 +71,20 @@ func _initialize() -> void:
 	_check(scene.ends_with("dungeon.tscn") and String(run.state.get("map", {}).get("floorId", "")) == "dungeon.verdant.g10f", "floor_10 lands on Verdant G10F")
 	_check(int((run.state.get("party", [])[0] as Dictionary).get("level", 1)) >= 10, "floor_10 supplies a depth-appropriate review party")
 
+	# TOWN starts must be descent-ready: reset() seeds a b1f DUNGEON position/map, so a town fixture that
+	# forgets to clear them resumes at a stale b1f cell on descent — a blank dungeon in the terminal-line
+	# world (playtest 2026-08-14「lateで始めるとダンジョンが消失」). Assert the late start clears the cell AND is a
+	# genuinely grown, well-supplied party.
+	run.world_id = "terminal-line"
+	run.reset()
+	scene = String(Fixtures.load_into(run, "terminal_line_late"))
+	var late_pos: Variant = run.state.get("position", null)
+	var late_has_cell := typeof(late_pos) == TYPE_DICTIONARY and String((late_pos as Dictionary).get("cellId", "")) != ""
+	_check(scene.ends_with("town.tscn"), "terminal_line_late lands in town")
+	_check(not late_has_cell, "terminal_line_late clears the stale dungeon cell (descent seeds a fresh landing, not a blank b1f resume)")
+	_check(int((run.state.get("party", [])[0] as Dictionary).get("level", 1)) >= 9, "terminal_line_late supplies a grown party")
+	_check(int(run.state.get("materials", 0)) >= 100, "terminal_line_late has materials for the deep facilities")
+
 	print("[fixtures] %s (%d failures)" % ["PASS" if _fail == 0 else "FAIL", _fail])
 	quit(_fail)
 

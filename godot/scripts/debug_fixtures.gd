@@ -146,6 +146,10 @@ static func _load_terminal_base(run: Object) -> String:
 	run.reset()
 	var state: Dictionary = run.state
 	state["phase"] = "town"
+	# reset() seeds a b1f DUNGEON state (position + map from the exploration trace); a town start must clear
+	# them, or descending resumes at a stale b1f cell that terminal-line has no geometry for (blank dungeon).
+	state["position"] = null
+	state["map"] = {}
 	state["materials"] = 60
 	run.state = state
 	return "res://scenes/town.tscn"
@@ -159,6 +163,10 @@ static func _load_terminal_late(run: Object) -> String:
 	run.reset()
 	var state: Dictionary = run.state
 	state["phase"] = "town"
+	# Clear the b1f dungeon position/map reset() seeds, so descending seeds a FRESH terminal-line landing
+	# instead of resuming at a stale b1f cell (which renders as a blank dungeon).
+	state["position"] = null
+	state["map"] = {}
 	state["materials"] = 400
 	state["partyGold"] = 3000
 	# The descent flags a mid/end party would have set — unlocks the deeper market stock and shortcuts.
