@@ -17,8 +17,8 @@ const OK := Color("9db06a")
 ## the conditions the player must act on.
 ## `class_label` is optional: the crawl HUD leaves it empty (row + name is enough mid-move), the town square
 ## passes the 職業 so the party can be planned by calling at a glance. Same card either way.
-static func party_token(member: Dictionary, world: Dictionary, portrait_tex: Texture2D, class_label: String = "") -> Control:
-	var stats: Dictionary = CharacterStats.effective(member, world)
+static func party_token(member: Dictionary, world: Dictionary, portrait_tex: Texture2D, class_label: String = "", facility_hp_pct: int = 0) -> Control:
+	var stats: Dictionary = CharacterStats.effective(member, world, [], facility_hp_pct)
 	var max_hp: int = maxi(1, int(stats.get("maxHp", member.get("maxHp", 1))))
 	# A DOWNED member is stored at hp:1 + injury; show 0 while wounded so it never reads as barely-alive.
 	var down: bool = member.get("injury", null) != null or int(member.get("hp", 0)) <= 0

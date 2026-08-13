@@ -19,6 +19,7 @@ const PartyPanel := preload("res://scripts/town/party_panel.gd")
 const ConfigPanel := preload("res://scripts/config_panel.gd")
 const CharacterStats := preload("res://scripts/rules/character_stats.gd")
 const Chests := preload("res://scripts/rules/chests.gd")
+const FacilityRules := preload("res://scripts/rules/facilities.gd")
 const Fmt := preload("res://scripts/town_format.gd")
 const FloorMap := preload("res://scripts/dungeon/floor_map.gd")
 const DungeonEntry := preload("res://scripts/rules/dungeon_entry.gd")
@@ -479,7 +480,7 @@ func _rebuild_party_hud() -> void:
 			if String(member.get("row", "front")) == row:
 				members.append(member)
 	for member in members:
-		_party_hud.add_child(DungeonHud.party_token(member, _world, WorldResources.portrait_texture(String(member.get("portraitRef", "")), _portrait_path(member))))
+		_party_hud.add_child(DungeonHud.party_token(member, _world, WorldResources.portrait_texture(String(member.get("portraitRef", "")), _portrait_path(member)), "", FacilityRules.attack_pct(_state, _world)))
 
 var _backgrounds_cache: Array = []
 func _backgrounds() -> Array:

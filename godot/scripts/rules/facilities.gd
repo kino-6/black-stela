@@ -8,6 +8,11 @@ extends RefCounted
 
 const CharacterStats := preload("res://scripts/rules/character_stats.gd")
 
+# Convenience for the CharacterStats.effective() call sites that need the 動力炉 attack boost (#37):
+# the party-wide ATTACK (damage) percentage the base grants, or 0 when nothing is built.
+static func attack_pct(state: Dictionary, world: Dictionary) -> int:
+	return int(active_effects(state, world).get("attackPct", 0))
+
 static func facility_level(state: Dictionary, facility_id: String) -> int:
 	var map: Dictionary = state.get("facilities", {})
 	return int(map.get(facility_id, 0))
@@ -22,7 +27,7 @@ static func _find_facility(world: Dictionary, facility_id: String) -> Variant:
 # declared at levels 1..N — booleans stay ON once granted, numeric fields take the strongest value. This
 # is the single source of truth read by the panel AND by the effect hooks (maxHp/exploration/shop/return).
 static func active_effects(state: Dictionary, world: Dictionary) -> Dictionary:
-	var out := {"restOnReturn": false, "restMp": false, "clearInjury": false, "maxHpPct": 0, "shopDiscountPct": 0, "explorationBonus": 0, "reinforceDiscountPct": 0, "wanderingReductionPct": 0}
+	var out := {"restOnReturn": false, "restMp": false, "clearInjury": false, "maxHpPct": 0, "attackPct": 0, "shopDiscountPct": 0, "explorationBonus": 0, "reinforceDiscountPct": 0, "wanderingReductionPct": 0}
 	for f in world.get("facilities", []):
 		var level := facility_level(state, String(f.get("id", "")))
 		var levels: Array = f.get("levels", [])
@@ -35,6 +40,7 @@ static func active_effects(state: Dictionary, world: Dictionary) -> Dictionary:
 			if bool(eff.get("clearInjury", false)):
 				out["clearInjury"] = true
 			out["maxHpPct"] = maxi(int(out["maxHpPct"]), int(eff.get("maxHpPct", 0)))
+			out["attackPct"] = maxi(int(out["attackPct"]), int(eff.get("attackPct", 0)))
 			out["shopDiscountPct"] = maxi(int(out["shopDiscountPct"]), int(eff.get("shopDiscountPct", 0)))
 			out["explorationBonus"] = maxi(int(out["explorationBonus"]), int(eff.get("explorationBonus", 0)))
 			out["reinforceDiscountPct"] = maxi(int(out["reinforceDiscountPct"]), int(eff.get("reinforceDiscountPct", 0)))

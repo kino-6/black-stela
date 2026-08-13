@@ -904,8 +904,11 @@ export interface FacilityLevel {
   reinforceDiscountPct?: number;
   /** N% fewer wandering encounters — the run stays quieter (the 管制室 deep facility). */
   wanderingReductionPct?: number;
-  /** +N% party max HP (the 動力炉 deep facility). Applied via getEffectiveCharacterStats. */
+  /** +N% party max HP (reserved; not applied by the v1 resolver — see 動力炉 which uses attackPct). */
   maxHpPct?: number;
+  /** +N% party ATTACK/damage (the 動力炉 deep facility) — flows through effective() into both the combat
+   *  roll and the town display, so it stays consistent (max-HP% would desync the combat HP bar). */
+  attackPct?: number;
   /** Shop stock ids this level makes available (mirrors an `unlocked` stock flag). */
   unlockShopItems?: string[];
   /** Localized one-line effect blurb for the base UI. */

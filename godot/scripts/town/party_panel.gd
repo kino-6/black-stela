@@ -8,6 +8,7 @@ extends RefCounted
 const I18n := preload("res://scripts/i18n.gd")
 const Fmt := preload("res://scripts/town_format.gd")
 const UI := preload("res://scripts/town/ui_kit.gd")
+const FacilityRules := preload("res://scripts/rules/facilities.gd")
 const CharacterStats := preload("res://scripts/rules/character_stats.gd")
 const Leveling := preload("res://scripts/rules/leveling.gd")
 const Helpers := preload("res://scripts/rules/combat_helpers.gd")
@@ -211,7 +212,8 @@ static func build(ctx: Dictionary) -> Control:
 	# RIGHT: the selected adventurer in full — condition, combat stats, resistances, aptitudes, gear.
 	var detail := UI.col(6)
 	detail.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	var stats: Dictionary = CharacterStats.effective(member, world)
+	# #37 動力炉: show the facility-boosted 攻撃 so the party menu matches the HUD token and the combat roll.
+	var stats: Dictionary = CharacterStats.effective(member, world, [], FacilityRules.attack_pct(ctx["state"], world))
 
 	# Name then level, adjacent on the LEFT — the level used to be grow-pushed to the far right edge, where
 	# it sat under the scroll bar and a two-digit level would have been hidden behind it (playtest).

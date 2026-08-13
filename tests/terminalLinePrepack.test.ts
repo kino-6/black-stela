@@ -263,7 +263,7 @@ describe("Terminal Line F1–F10 canonical pack", () => {
     const facilities = result.world.facilities ?? [];
     expect(facilities.map((f) => f.id)).toEqual([
       "facility.tl-infirmary", "facility.tl-supply", "facility.tl-signals",
-      "facility.tl-armory-works", "facility.tl-control-room"
+      "facility.tl-armory-works", "facility.tl-control-room", "facility.tl-power-plant"
     ]);
     // Early QoL trio: cheap 8/16/32.
     for (const id of ["facility.tl-infirmary", "facility.tl-supply", "facility.tl-signals"]) {
@@ -282,6 +282,9 @@ describe("Terminal Line F1–F10 canonical pack", () => {
     const control = facilities.find((f) => f.id === "facility.tl-control-room")!;
     expect(control.levels.map((l) => l.cost)).toEqual([80, 160]);
     expect(control.levels.map((l) => l.wanderingReductionPct)).toEqual([30, 50]);
+    const power = facilities.find((f) => f.id === "facility.tl-power-plant")!;
+    expect(power.levels.map((l) => l.cost)).toEqual([100, 200]);
+    expect(power.levels.map((l) => l.attackPct)).toEqual([10, 20]);
   });
 
   // #31 boss reachability: a run must have GUARANTEED bosses at its bookends — a 玄室 guardian on the

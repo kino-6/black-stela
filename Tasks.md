@@ -52,17 +52,13 @@ design ideas (unapproved): `docs/design/ballistic-world-program.md`.
   - [x] **slice 1（兵装工廠＋管制室）done.** schema に `reinforceDiscountPct`/`wanderingReductionPct` 追加。terminal-line に
     **兵装工廠**（錬成/鍛冶コスト減 15/30%、cost 60/120）＋**管制室**（徘徊エンカウント減 30/50%、cost 80/160）。効果配線:
     `loot.gd`(reinforce/forge)＋`encounters.gd`(wandering pct)、facility 未著述で no-op＝**parity 緑**。prepack＋verify_facility 検証・914緑。
-  - [ ] **slice 2（動力炉＝恒久 maxHP%）← 意図的に defer（専用ターン推奨）.** 2026-08-13 に着手→調査で cross-cutting と確定し
-    revert。**確定した実装ポイント（次ターンはここから）:**
-    (a) `effective()` は Facilities を preload 不可（facilities→character_stats の循環）＝pct は**引数**で渡す。`Facilities.max_hp_pct(state,world)`
-    ヘルパを足すのが楽（`active_effects().maxHpPct`）。
-    (b) **combat の HP バーは `effective()` でなく格納 `member.maxHp` を表示**（`combat.gd:554/1207/1461`）、一方 town の party_token は
-    `effective()`＝**そのまま足すと combat と town で maxHP が食い違う**。→ 選択肢A: combat 突入時に member.maxHp へ %をベイク（表示も
-    heal cap も一致）／選択肢B: combat 表示を effective+pct に変え、heal ヘルパ `_heal_member`(combat_round:984)・`_apply_healing_item`(997)
-    が **state を持たない**ので caller(declare_round) から pct を貫通。
-    (c) 他の cap/表示: `economy.recover:135`・`camp_techniques:65`・`facilities.apply_return_heal`・`dungeon_events._apply`・`party_panel:214`・
-    `dungeon_hud.party_token`(+呼び出し元 town.gd:395/dungeon.gd:482) に pct を渡す。
-    (d) parity は facility 未著述で pct=0＝安全。**HUD==combat の一貫性 Gate 必須**。content 動力炉 は未著述。
+  - [x] **slice 2（動力炉）done — 恒久ステータス＝攻撃%（maxHP% から変更）.** maxHP% は combat が格納 `member.maxHp` を表示する
+    ため cross-cutting（表示ベイク or heal ヘルパ貫通＋オーバーフルバーのリスク）と確定。**攻撃%（damage%）は combat ダメージも
+    町表示も同じ `effective()` 経由で一貫**するため採用（同じ「恒久ステータス強化」意図・安全）。実装: `effective()` に `facility_atk_pct`
+    引数（循環回避で state でなく引数）→ damageMin/Max に適用。`Facilities.attack_pct(state,world)` を combat_round(ダメージロール)・
+    party_token(HUD/crawl/town rail、town.gd/dungeon.gd 呼び出し元)・party_panel(攻撃表示) に渡す。terminal-line **動力炉**（攻撃 +10/20%、
+    cost 100/200）著述。facility 未著述で pct=0＝**parity 緑**。verify_facility に攻撃%＋一貫性（effective ダメージ増）アサート、914 ユニット・
+    combat/town/played/dungeon 回帰緑、実画面 PNG 確認。→ **base v2 の深い設備3つ（兵装工廠/管制室/動力炉）完了**。
   - [ ] slice 3（任意）: 深い設備のロック/伸びしろ表示強化、実画面 PNG 確認。
 - [-] **#38 — 採取ポイント（EO 式・繰り返し＋乱獲リスク, slice 1 済み）.** user 設計: **materials 直接付与は NG →
   装備/アイテムを渡す**（materials は低リスクで繰り返せる"ポイント"、貴重なエンチャント品はリスクを取ってこそ）。

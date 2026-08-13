@@ -11,7 +11,11 @@ class_name CharacterStats
 ## (combat_effects.gd). Optional and defaulting to none, so every out-of-combat caller keeps reading the
 ## character's own numbers while combat passes the fight's effect list. One stat pipeline, not two.
 const CombatEffects := preload("res://scripts/rules/combat_effects.gd")
-static func effective(character: Dictionary, world: Dictionary, effects: Array = []) -> Dictionary:
+# `facility_atk_pct` (#37 動力炉): a base power-plant facility raises the whole party's ATTACK (damage) by
+# N%. Chosen over max-HP% because damage flows through effective() in BOTH the combat roll and the town
+# display, so one arg keeps them consistent — max-HP would desync the combat HP bar (it reads stored maxHp).
+# Passed as an ARG (not state) to avoid a circular preload; callers compute it via Facilities.attack_pct().
+static func effective(character: Dictionary, world: Dictionary, effects: Array = [], facility_atk_pct: int = 0) -> Dictionary:
 	var attack_bonus := 0
 	var defense_bonus := 0
 	var accuracy_bonus := 0
@@ -110,8 +114,8 @@ static func effective(character: Dictionary, world: Dictionary, effects: Array =
 
 	return {
 		"attack": int(character.get("attack", 0)) + attack_bonus + _voc(voc, "attack") + buff_attack,
-		"damageMin": int(character.get("damageMin", 0)) + attack_bonus + _voc_or(voc, "damageMin", "attack") + buff_damage,
-		"damageMax": int(character.get("damageMax", 0)) + attack_bonus + _voc_or(voc, "damageMax", "attack") + buff_damage,
+		"damageMin": int(round(float(int(character.get("damageMin", 0)) + attack_bonus + _voc_or(voc, "damageMin", "attack") + buff_damage) * (1.0 + float(maxi(0, facility_atk_pct)) / 100.0))),
+		"damageMax": int(round(float(int(character.get("damageMax", 0)) + attack_bonus + _voc_or(voc, "damageMax", "attack") + buff_damage) * (1.0 + float(maxi(0, facility_atk_pct)) / 100.0))),
 		"accuracy": clampi(int(character.get("accuracy", 0)) + accuracy_bonus + _voc(voc, "accuracy") + buff_accuracy, 0, 100),
 		"armor": int(character.get("armor", 0)) + defense_bonus + _voc(voc, "armor") + buff_armor,
 		"speed": maxi(0, int(character.get("speed", 0)) + speed_bonus + _voc(voc, "speed") + buff_speed),

@@ -8,6 +8,7 @@ class_name CombatRound
 const CombatRng := preload("res://scripts/rules/combat_rng.gd")
 const CombatHelpers := preload("res://scripts/rules/combat_helpers.gd")
 const CharacterStats := preload("res://scripts/rules/character_stats.gd")
+const Facilities := preload("res://scripts/rules/facilities.gd")
 const Economy := preload("res://scripts/rules/economy.gd")
 const Leveling := preload("res://scripts/rules/leveling.gd")
 const CombatEffects := preload("res://scripts/rules/combat_effects.gd")
@@ -133,7 +134,9 @@ static func declare_round(state: Dictionary, world: Dictionary, actions: Array, 
 		if typeof(group) != TYPE_DICTIONARY:
 			continue
 
-		var stats := CharacterStats.effective(actor, world, effects)
+		# #37 動力炉: a base power-plant raises the PARTY's attack — pass the facility % so basic-attack damage
+		# scales with it. Facility-gated (0 when none), so parity traces roll identical damage.
+		var stats := CharacterStats.effective(actor, world, effects, Facilities.attack_pct(state, world))
 		# The attacker's own accuracy is already buffed inside stats; what the TARGET contributes is
 		# evasion. A group's `accuracy` debuff belongs to the rolls that group itself makes.
 		var eff_acc := int(stats["accuracy"]) - (FEAR_ACCURACY_PENALTY if _has_status(actor, "fear") else 0) - CombatEffects.stat_modifier(effects, String(group["id"]), "evasion")

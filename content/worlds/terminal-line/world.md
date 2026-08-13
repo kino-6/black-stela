@@ -160,6 +160,21 @@ facilities:
       - cost: 160
         wanderingReductionPct: 50
         locales: { en: { effect: "50% fewer wandering ambushes on the crawl." }, ja: { effect: "徘徊する敵との遭遇が50%減る。" } }
+  - id: facility.tl-power-plant
+    name: Power Plant
+    kind: power
+    description: A relit traction substation; the whole team's weapons run hotter off its bus.
+    locales:
+      ja:
+        name: 動力炉
+        description: 火を入れ直した き電変電所。母線から電を取り、隊全員の得物が一段と強く鳴る。
+    levels:
+      - cost: 100
+        attackPct: 10
+        locales: { en: { effect: "+10% attack to the whole party." }, ja: { effect: "隊全員の攻撃 +10%。" } }
+      - cost: 200
+        attackPct: 20
+        locales: { en: { effect: "+20% attack to the whole party." }, ja: { effect: "隊全員の攻撃 +20%。" } }
 # Random dungeon events (#32): weighted flavour beats rolled while walking, some carrying a small one-shot
 # effect. Salvage found here feeds the base-facility economy (#33). Rolled at balance.dungeonEventPct per
 # eligible step; a world that authors none rolls nothing.
