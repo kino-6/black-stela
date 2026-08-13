@@ -48,8 +48,12 @@ groom 時の調査結論（既存を作り直さないための現状把握。�
   閉鎖チャイム＝stationmaster）を追加**して早期パーティを誘導。terminus は catalog 本体を chamberGuardian＋単一表で
   確定済み（inline 化は art/弱点を失うため不可）。#30 premise も terminus ボスへ物語的に誘導。**Gate**: prepack に
   「両端の確定玄室ボス＋入口 signpost」invariant（913 ユニット緑）。※中ボス（transfer-warden 等）はランダム flavor のまま。
-- [ ] **#32 — 迷宮ランダムイベント（外部シナリオ記述, 中〜大）.** 現状は room `event:` 固定文字列のみ（決定的・選択肢なし、
-  `scenario.ts:485-508`）。ランダム/対話イベント系は**未実装**。→ シナリオ記述可能な random event table ＋選択肢の新規システム。
+- [x] **#32 — 迷宮ランダムイベント（外部シナリオ記述, done v1）.** 世界レベル `dungeonEvents`（重み付き flavor＋簡易効果
+  findMaterials/findGold/heal/damage）＋`balance.dungeonEventPct`。歩行中に決定的 seed(turn+room) で roll（`dungeon_events.gd`、
+  `_move_forward` 末尾に挿入）。**dungeonEvents 未著述の世界では完全 no-op → parity 緑（default/verdant トレースで検証済み、
+  TS ミラー不要＝Godot-native）**。ログは `room_event_triggered` 経路（`_event_line` にケース追加＝静的 room event/#31 signpost も
+  初めて Godot 表示）。terminal-line が6イベント著述。Gate `verify_dungeon_events.gd`（発火＋効果＋hazard 下限1＋no-op）＋prepack。
+  **選択肢付き対話イベントは v2 未実装**（今回は flavor＋簡易効果の v1）。
 - [-] **#33 — 拠点整備（base / materials sink, 大）← 進行中（user 2026-08-13 選択）.** salvage `materials`
   を原資に、シナリオ記述の設備を Lv↑してメタ進行。v1 設備＝医務室(休息/maxHP)・補給所(店割引)・通信室(探索補正)、
   各 Lv1-3 コスト 8/16/32。設備はどの世界でも `world.md facilities:` に著述可（汎用機能／terminal-line が自世界分）。

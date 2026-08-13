@@ -12,6 +12,7 @@ const Chests := preload("res://scripts/rules/chests.gd")
 const Exploration := preload("res://scripts/rules/exploration.gd")
 const RulesUtil := preload("res://scripts/rules/rules_util.gd")
 const Facilities := preload("res://scripts/rules/facilities.gd")
+const DungeonEvents := preload("res://scripts/rules/dungeon_events.gd")
 
 const LEFT_OF := {"north": "west", "west": "south", "south": "east", "east": "north"}
 
@@ -332,6 +333,15 @@ static func _move_forward(state: Dictionary, world: Dictionary, engine: Dictiona
 		next["stepsSinceEncounter"] = 0
 		next["enemyRecord"] = Encounters.record_encounters(next.get("enemyRecord", null), encountered_ids)
 		events.append(started["event"])
+
+	# #32 random dungeon events: only when no fight started and the party can act. Gated on an authored
+	# dungeonEvents list, so this is a strict no-op (no RNG, no state write) for every world — and every
+	# parity trace — that authors none; the migrated move stays byte-identical to the TS oracle.
+	if typeof(started) != TYPE_DICTIONARY and can_fight and not (world.get("dungeonEvents", []) as Array).is_empty():
+		var rolled: Variant = DungeonEvents.maybe_roll(next, world)
+		if typeof(rolled) == TYPE_DICTIONARY:
+			next = rolled["state"]
+			events.append(rolled["event"])
 
 	return {"state": next, "events": events}
 

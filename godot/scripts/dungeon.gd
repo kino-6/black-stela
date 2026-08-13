@@ -1259,6 +1259,9 @@ func _log_events(events: Array) -> void:
 
 func _event_line(e: Dictionary) -> String:
 	match e.get("type", ""):
+		"room_event_triggered":
+			# Authored room flavour AND the #32 random dungeon events ride this same log line.
+			return String(e.get("text", ""))
 		"party_turned":
 			return "%sを向く。" % _dir_ja(e.get("facing", ""))
 		"room_entered":
