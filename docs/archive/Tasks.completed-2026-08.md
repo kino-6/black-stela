@@ -5,6 +5,39 @@ These are DONE + gate-green + committed; see the named commits/gates in each ent
 
 ---
 
+### 2026-08-13 playtest batch — terminal-line「戦闘の外側」＋薙ぎ倒し（merged to main `5cdc787`）
+
+- [x] **#33 — 拠点整備（base / materials sink）v1** — DONE (`112354c` schema+content · `daf3df4` パネル/state ·
+  `247e35c` 効果 · `1a0ab6b` fixture): salvage `materials` を原資にした汎用の設備アップグレード。どの世界でも
+  `world.md facilities:` に著述可（terminal-line=医務室/補給所/通信室、各 Lv1-3 コスト 8/16/32）。Godot-native
+  （機能=Godot、content 一度記述→export で Godot へ）。効果: 医務室=帰還回復(HP→+MP→+負傷解消)・補給所=店割引・
+  通信室=探索補正。state.facilities は遅延生成で parity 不変。Gate `verify_facility.gd`＋prepack、実画面PNG確認。
+  ONE-SHOT `npm run play:base`。※slice3（上位Lv降下フラグ解禁の著述・整備場4つ目・帰還回復ログ）は任意ポリッシュ未着手。
+- [x] **#32 — 迷宮ランダムイベント（外部シナリオ記述）v1** — DONE (`2ed639f` schema+content · `5cdc787` roll):
+  世界レベル `dungeonEvents`（重み付き flavor＋findMaterials/findGold/heal/damage）＋`balance.dungeonEventPct`。
+  歩行中に決定的 seed(turn+room) で roll（`dungeon_events.gd` → `_move_forward` 末尾）。dungeonEvents 未著述の世界で
+  完全 no-op → parity 緑・TS ミラー不要（Godot-native、default/verdant トレースで検証）。`_event_line` に
+  `room_event_triggered` ケース追加＝静的 room event/#31 signpost も初めて Godot 表示。terminal-line 6イベント。
+  Gate `verify_dungeon_events.gd`（発火＋効果＋hazard 下限1＋no-op）＋prepack。※選択肢付き対話イベント(v2)未実装。
+- [x] **#31 — ボス到達性（bosses）** — DONE (`c07e679`): 両端の確定玄室ボス（tl1f stationmaster / tl10f zero-core =
+  chamberGuardian）を invariant 化＋tl1f 入口に signpost（奥から響く閉鎖チャイム＝stationmaster）で早期誘導。
+  terminus は catalog 本体を chamberGuardian＋単一表で確定（inline 化は art/弱点を失うため不可）。Gate: prepack
+  「両端玄室ボス＋入口 signpost」。※中ボス（transfer-warden 等）はランダム flavor のまま。
+- [x] **#30 — 導入/御触れをシナリオ記述可能に（premise）** — DONE (`8a2e997`): `copy.<lc>.town.premise`（空デフォルト
+  ＝任意）。街広場タイトル下に常時表示（`_world.copy[locale]` 直読み＋DIM prose、未著述の世界は非表示）。terminal-line が
+  零番線の導入を著述。Gate `verify_town_premise.gd`、実画面PNG確認。
+- [x] **#29 — 依頼の露出（discoverability）** — DONE (`a291076`): 依頼板は実装済みだが記録の間の奥で気づかれず。街広場に
+  actionable 通知（`Quests.board_counts` → 受注可能 N 件 / 受領可能 M 件、記録の間へ誘導、依頼なし世界は非表示）。
+  Gate `verify_quest_notice.gd`、実画面PNG確認。
+- [x] **#28 — terminal-line 全員自動火器スタート（薙ぎ倒しコンセプトの既定化）** — DONE (`06db476`): 8 basic vocation を
+  連射武器スタートに（ショットガン2: 保安隊員/制圧隊/爆破技師 · SMG3: 特務員/潜行員/衛生兵/通信員/攪乱員）。群れ湧き
+  ＋連射 spill-over は既存、初期武装だけが欠けていた。Gate: prepack「全 basic vocation 初期武器 weaponShots>1」
+  （warrior=1 で RED → 修正後 GREEN）。
+- [x] **#27 — W3a 共有弾薬** — 廃案 (user 2026-08-12「通常攻撃での弾薬管理はしない」)。設計 doc に記録
+  `docs/design/ballistic-world-program.md`。実装なし。
+
+---
+
 - [x] **T20 — 戦闘の敵HPバーが重なっている** — DONE (`1f99089`): 各ユニットのバー幅を隊列の spacing に
   クランプ（6px間隔）。verify_combat_numbers 緑。(Godot) — 実機戦闘で、敵グループの足元に置くHPバーが隣の
   グループのバーと重なって表示される（胞子蝿×3 と 苔虫 の2グループで、バーが横に重複）。各グループのバーが
