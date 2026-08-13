@@ -364,26 +364,37 @@ func _build_square() -> void:
 	# to do (rewards to claim, or contracts to take), pointing at where (記録の間). ---
 	if not party_empty:
 		var qc := Quests.board_counts(s, _world)
+		# Boxed like the wounds ledger so the notice reads as its own actionable card, not a floating line.
 		if int(qc.get("ready", 0)) > 0:
-			_menu_host.add_child(UI.label(I18n.t("town.questsReady", {"count": int(qc["ready"])}), 16, UI.OK))
+			_menu_host.add_child(UI.card(UI.label(I18n.t("town.questsReady", {"count": int(qc["ready"])}), 17, UI.OK), UI.OK))
 		elif int(qc.get("available", 0)) > 0:
-			_menu_host.add_child(UI.label(I18n.t("town.questsAvailable", {"count": int(qc["available"])}), 15, UI.GOLD))
+			_menu_host.add_child(UI.card(UI.label(I18n.t("town.questsAvailable", {"count": int(qc["available"])}), 17, UI.GOLD), UI.GOLD))
 
 	# --- PARTY FORMATION — the SAME card the crawl/combat HUD uses (portrait, 前衛/後衛, 職/Lv, HP·MP bars,
 	# the judged damage/armor/speed, conditions), so "who is ready and where they stand" reads at a glance and
 	# the party can actually be PREPARED here (playtest: the old name·HP·MP list was too thin to plan from). ---
 	if not party_empty:
 		_menu_host.add_child(UI.label(I18n.t("town.partyStatus"), 15, UI.GOLD))
+		# 前衛 and 後衛 are grouped under their own heading with a wide gap between, so the two ranks read at a
+		# glance instead of six tokens running together (playtest 2026-08-13「前衛・後衛が入り乱れて視認性が悪い」).
 		var rail := UI.row()
-		rail.add_theme_constant_override("separation", 8)
-		var ordered := []
+		rail.add_theme_constant_override("separation", 28)
 		for row in ["front", "back"]:
+			var group_members := []
 			for member in party:
 				if String(member.get("row", "front")) == row:
-					ordered.append(member)
-		for member in ordered:
-			var tex := WorldResources.portrait_texture(String(member.get("portraitRef", "")), _portrait_path(member))
-			rail.add_child(DungeonHud.party_token(member, _world, tex, _class_label(String(member.get("classId", "")))))
+					group_members.append(member)
+			if group_members.is_empty():
+				continue
+			var group_box := UI.col(4)
+			group_box.add_child(UI.label(I18n.t("play.frontRow" if row == "front" else "play.backRow"), 15, UI.GOLD if row == "front" else UI.DIM))
+			var group_row := UI.row()
+			group_row.add_theme_constant_override("separation", 8)
+			for member in group_members:
+				var tex := WorldResources.portrait_texture(String(member.get("portraitRef", "")), _portrait_path(member))
+				group_row.add_child(DungeonHud.party_token(member, _world, tex, _class_label(String(member.get("classId", "")))))
+			group_box.add_child(group_row)
+			rail.add_child(group_box)
 		_menu_host.add_child(rail)
 
 	# --- the way back down to a rest point already reached ---

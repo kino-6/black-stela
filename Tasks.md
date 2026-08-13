@@ -42,9 +42,11 @@ design ideas (unapproved): `docs/design/ballistic-world-program.md`.
 - [x] **#36-b — shop「詳しく見る」D-pad 到達不能 修正済み.** 原因: 買うモードの在庫行（スクロール内）＋別列の買うボタンが
   幾何 nav で繋がらず、entry の1行以外の全 詳しく見る＋買うが孤立。**修正: `UI.chain_column`/`link_lr` を ui_kit に公開ヘルパ化し、
   在庫 inspect を縦チェーン＋各行→買うを explicit 配線**。verify_focus_trap 全緑・town-controller 回帰なし。
-- [ ] **#36 — 街広場の可読性.** (a)「威力」→「攻撃」に改称（`party.damage` ラベル、= ダメージ幅表示）、(b) 依頼通知を
-  枠付きカード（Window）で囲う、(c) 前衛/後衛が一列で入り乱れて見える → 区切り/見出しで明確化、(d) 全体的にフォントが
-  小さい（共有トークン font は combat/crawl にも影響するので要検証）。
+- [-] **#36 — 街広場の可読性（a/b/c 済み・d 残）.** (a) done「威力」→「攻撃」（`party.damage`=ダメージ幅を攻撃に、
+  衝突する raw `partyMenu.attack` は「攻撃力」へ改称）、(b) done 依頼通知を枠付きカード化、(c) done 前衛/後衛を見出し
+  （前衛/後衛）＋広い gap で分離。実画面PNG確認済み・914ユニット/i18n parity 緑。**残 (d) フォント拡大**: `dungeon_hud`
+  の party_token stat が 12px と小さいが combat/crawl 共有＝blanket 拡大は固定レイアウトを壊す（ui_kit `_sz` 注記）。
+  密度を下げつつ局所的に上げる方針で別途。
 - [ ] **#37 — 基地整備の深さ再設計（中〜大）.** user: 設備3つは「少ない」、Lv上限（Lv0/3）が見えて「オマケ」感。
   **中盤〜エンドコンテンツ想定**の深いメタ進行に。**ただし便利系（医務室=休息/補給所=割引/通信室=探索）は序盤開放**の塩梅。
   → 設備数を増やし、序盤 QoL 設備 vs mid/end の重い設備（降下フラグ/大量 materials で解禁）に階層化。設計案を提示して確認。
