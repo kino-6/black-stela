@@ -35,6 +35,20 @@ static func _current_objective_count(state: Dictionary, quest: Dictionary, progr
 static func _is_ready(state: Dictionary, quest: Dictionary, progress: Variant) -> bool:
 	return typeof(progress) == TYPE_DICTIONARY and progress.get("status", "") == "active" and _current_objective_count(state, quest, progress) >= int(quest.get("requiredCount", 1))
 
+# Town-square discoverability (#29): how many quests can be ACCEPTED (never taken) and how many are READY
+# to claim right now. Drives the square's actionable quest notice so the board is not invisible behind the
+# 記録の間 counter.
+static func board_counts(state: Dictionary, world: Dictionary) -> Dictionary:
+	var available := 0
+	var ready := 0
+	for q in world.get("quests", []):
+		var progress: Variant = get_quest_progress(state, String(q.get("id", "")))
+		if typeof(progress) != TYPE_DICTIONARY:
+			available += 1
+		elif _is_ready(state, q, progress):
+			ready += 1
+	return {"available": available, "ready": ready}
+
 static func accept(state: Dictionary, world: Dictionary, quest_id: String) -> Dictionary:
 	if state.get("phase", "") != "town":
 		return {"state": state, "events": []}

@@ -37,10 +37,9 @@ ideas (unapproved): `docs/design/ballistic-world-program.md`.
 
 groom 時の調査結論（既存を作り直さないための現状把握。詳細は本セッションの Explore サーベイ）:
 
-- [ ] **#29 — 街UI改修＋依頼/導入の露出（discoverability, 中）.** 依頼板は**既に実装・Godot 到達可**
-  (`godot/scripts/town/quest_panel.gd`、terminal-line `quests.md`=2件) なのに**何度潜っても気づかれていない**
-  ＝街UIの導線・空きスペース問題。導入(なぜ潜る)も copy(`town.departureCopy` 等)はあるが一行タグライン止まり。
-  → 街を再構成し依頼板を前面に、導入(御触れ)を提示、余白を埋める。新規システムより既存の露出が主。#30/#31 の受け皿。
+- [x] **#29 — 依頼の露出（discoverability, done）.** 依頼板は実装済みだが記録の間の奥で気づかれず。→ 街広場に
+  actionable 通知を追加（`Quests.board_counts` → 受注可能 N 件 / 受領可能 M 件、記録の間へ誘導、依頼なし世界は非表示）。
+  Gate `verify_quest_notice.gd`、実画面PNG確認済み。導入(御触れ)は #30、余白/場所再編は必要なら別途。
 - [ ] **#30 — 導入/御触れをシナリオ記述可能に（premise/prologue, 中）.** 現状 `world.md` `tagline:`＋`copy:` の
   短文のみで専用の proclamation/prologue 面は無い（`src/domain/scenario.ts:554,560`）。→ シナリオが「なぜ潜るか」の
   導入(Wiz の御触れ相当)を書ける schema＋提示面。#29 と結合可。

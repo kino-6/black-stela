@@ -27,6 +27,7 @@ const WorkshopPanel := preload("res://scripts/town/workshop_panel.gd")
 const BlacksmithPanel := preload("res://scripts/town/blacksmith_panel.gd")
 const QuestPanel := preload("res://scripts/town/quest_panel.gd")
 const FacilityPanel := preload("res://scripts/town/facility_panel.gd")
+const Quests := preload("res://scripts/rules/quests.gd")
 const CareerPanel := preload("res://scripts/town/career_panel.gd")
 const RecordsPanel := preload("res://scripts/town/records_panel.gd")
 const PartyPanel := preload("res://scripts/town/party_panel.gd")
@@ -351,6 +352,16 @@ func _build_square() -> void:
 		var ledger := UI.col(4)
 		_ledger_row(ledger, I18n.t("town.wounds"), _wounds_summary(party))
 		_menu_host.add_child(UI.card(ledger, UI.BAD))
+
+	# --- quest notice (#29): the board sat invisible behind 記録の間, so a party could descend for hours
+	# without ever noticing a bounty was on offer. Surface it on the square — only when there is something
+	# to do (rewards to claim, or contracts to take), pointing at where (記録の間). ---
+	if not party_empty:
+		var qc := Quests.board_counts(s, _world)
+		if int(qc.get("ready", 0)) > 0:
+			_menu_host.add_child(UI.label(I18n.t("town.questsReady", {"count": int(qc["ready"])}), 16, UI.OK))
+		elif int(qc.get("available", 0)) > 0:
+			_menu_host.add_child(UI.label(I18n.t("town.questsAvailable", {"count": int(qc["available"])}), 15, UI.GOLD))
 
 	# --- PARTY FORMATION — the SAME card the crawl/combat HUD uses (portrait, 前衛/後衛, 職/Lv, HP·MP bars,
 	# the judged damage/armor/speed, conditions), so "who is ready and where they stand" reads at a glance and

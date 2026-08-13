@@ -578,6 +578,8 @@ export const en = {
     recovery: "Recovery",
     records: "Records",
     quests: "Quest board",
+    questsAvailable: "The records hall board has {count} contract(s) to take.",
+    questsReady: "{count} finished contract(s) waiting to be turned in at the records hall.",
     facility: "Base",
     career: "Reclass",
     reliquary: "Appraiser",

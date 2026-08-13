@@ -580,6 +580,8 @@ export const ja = {
     recovery: "施療院",
     records: "記録",
     quests: "依頼掲示板",
+    questsAvailable: "記録の間の掲示板に、受注できる依頼が {count} 件ある。",
+    questsReady: "達成した依頼が {count} 件。記録の間で報酬を受け取れる。",
     facility: "基地",
     career: "転職",
     reliquary: "鑑定所",
