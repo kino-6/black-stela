@@ -53,7 +53,10 @@ static func party_token(member: Dictionary, world: Dictionary, portrait_tex: Tex
 	var numbers := UIKit.row()
 	# (play.memberStatus was a screen-reader-only aria-label in the React HUD; ported here it rendered as a
 	# meaningless visible caption in front of the stats, so it is dropped — the numbers speak for themselves.)
-	numbers.add_child(UIKit.label("%s %d-%d" % [I18n.t("party.damage"), int(stats.get("damageMin", 0)), int(stats.get("damageMax", 0))], 12, DIM))
+	# The compact token shows 攻撃 as ONE number — the typical (average) damage per hit — because a
+	# min-max range on a stat-labelled line read as confusing (playtest 2026-08-13「攻撃6-12という表記がわからん」).
+	# The full damage RANGE stays in the party-menu detail. The 動力炉 attack% is already baked into these.
+	numbers.add_child(UIKit.label("%s %d" % [I18n.t("party.damage"), int(round((int(stats.get("damageMin", 0)) + int(stats.get("damageMax", 0))) / 2.0))], 12, DIM))
 	numbers.add_child(UIKit.label("%s %d" % [I18n.t("party.armor"), int(stats.get("armor", 0))], 12, DIM))
 	numbers.add_child(UIKit.label("%s %d" % [I18n.t("party.speed"), int(stats.get("speed", 0))], 12, DIM))
 	body.add_child(numbers)
