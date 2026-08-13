@@ -13,6 +13,7 @@ const LEGACY_CLASS_MAPPING := {
 ## so create_inventory_item copies an optional field only when the catalog entry has it.
 
 const CharacterStats := preload("res://scripts/rules/character_stats.gd")
+const Facilities := preload("res://scripts/rules/facilities.gd")
 
 const RECOVERY_HP_COST := 1
 const RECOVERY_INJURY_COST := 8
@@ -158,6 +159,10 @@ static func buy(state: Dictionary, world: Dictionary, shop_id: String, item_id: 
 	if typeof(stock) != TYPE_DICTIONARY or not is_stock_available(stock, state):
 		return {"state": state, "events": []}
 	var price := int(stock.get("price", 0))
+	# #33 補給所: a base supply-cache facility discounts every purchase.
+	var discount := int(Facilities.active_effects(state, world).get("shopDiscountPct", 0))
+	if discount > 0:
+		price = maxi(0, int(round(float(price) * (1.0 - float(discount) / 100.0))))
 	if int(state.get("partyGold", 0)) < price:
 		return {"state": state, "events": []}
 	var item: Variant = create_inventory_item(world, item_id, 1)

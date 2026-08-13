@@ -268,7 +268,8 @@ describe("Terminal Line F1–F10 canonical pack", () => {
     }
     const infirmary = facilities.find((f) => f.id === "facility.tl-infirmary")!;
     expect(infirmary.levels[0].restOnReturn).toBe(true);
-    expect(infirmary.levels[2].maxHpPct).toBe(10);
+    expect(infirmary.levels[1].restMp).toBe(true);
+    expect(infirmary.levels[2].clearInjury).toBe(true);
     const supply = facilities.find((f) => f.id === "facility.tl-supply")!;
     expect(supply.levels.map((l) => l.shopDiscountPct)).toEqual([5, 10, 15]);
     const signals = facilities.find((f) => f.id === "facility.tl-signals")!;

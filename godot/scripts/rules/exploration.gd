@@ -1,4 +1,5 @@
 extends RefCounted
+const Facilities := preload("res://scripts/rules/facilities.gd")
 ## Port of src/domain/exploration.ts — WHO made an exploration attempt, and with what.
 ##
 ## The chest commands used to scan the party, pick the best score and act, so the player could not send
@@ -114,7 +115,9 @@ static func resolve_attempt(state: Dictionary, world: Dictionary, engine: Dictio
 		inventory = _consume(inventory, consumed)
 
 	var proficiency := proficiency_for(actor, engine, action) if typeof(actor) == TYPE_DICTIONARY else "untrained"
-	var skill := (attempt_skill(actor, engine, action) if typeof(actor) == TYPE_DICTIONARY else 0) + int(aid.get("bonus", 0))
+	# #33 通信室: a base signals-room facility adds a flat bonus to every exploration attempt.
+	var facility_bonus := int(Facilities.active_effects(state, world).get("explorationBonus", 0))
+	var skill := (attempt_skill(actor, engine, action) if typeof(actor) == TYPE_DICTIONARY else 0) + int(aid.get("bonus", 0)) + facility_bonus
 	return {
 		"action": action,
 		"actor": actor,

@@ -438,6 +438,8 @@ const facilityLevelSchema = z.object({
   cost: z.number().int().nonnegative(),
   unlockFlag: z.string().min(1).optional(),
   restOnReturn: z.boolean().optional(),
+  restMp: z.boolean().optional(),
+  clearInjury: z.boolean().optional(),
   maxHpPct: z.number().int().optional(),
   shopDiscountPct: z.number().int().optional(),
   explorationBonus: z.number().int().optional(),

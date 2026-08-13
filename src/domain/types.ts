@@ -890,9 +890,13 @@ export interface FacilityLevel {
   cost: number;
   /** Discovered-secret flag that must be set before this level can be bought (deeper tiers gate on descent). */
   unlockFlag?: string;
-  /** Full-heal the whole party on every return to town while this level is active. */
+  /** Restore every party member's HP (and revive the downed) on each return to town. */
   restOnReturn?: boolean;
-  /** +N% party max HP. */
+  /** Also restore MP on return (layers over restOnReturn). */
+  restMp?: boolean;
+  /** Also clear lasting injuries on return (layers over restOnReturn). */
+  clearInjury?: boolean;
+  /** +N% party max HP. Reserved for a future stat-facility; not applied by the v1 base resolver. */
   maxHpPct?: number;
   /** N% off shop buy prices. */
   shopDiscountPct?: number;

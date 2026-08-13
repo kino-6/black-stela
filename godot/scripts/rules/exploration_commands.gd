@@ -11,6 +11,7 @@ const Encounters := preload("res://scripts/rules/encounters.gd")
 const Chests := preload("res://scripts/rules/chests.gd")
 const Exploration := preload("res://scripts/rules/exploration.gd")
 const RulesUtil := preload("res://scripts/rules/rules_util.gd")
+const Facilities := preload("res://scripts/rules/facilities.gd")
 
 const LEFT_OF := {"north": "west", "west": "south", "south": "east", "east": "north"}
 
@@ -623,6 +624,8 @@ static func _return_to_town(state: Dictionary, world: Dictionary) -> Dictionary:
 	next["map"]["currentCellId"] = null
 	next["map"]["currentFacing"] = null
 	next["turn"] = int(next.get("turn", 0)) + 1
+	# #33: the infirmary treats the party for free on a deliberate return (not on a wipe-evacuation).
+	next = Facilities.apply_return_heal(next, world)
 	return {"state": next, "events": [{"type": "returned_to_town"}]}
 
 

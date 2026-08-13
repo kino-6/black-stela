@@ -49,6 +49,19 @@ func _initialize() -> void:
 		var effects := Facilities.active_effects(after, world)
 		_check(bool(effects.get("restOnReturn", false)), "infirmary level 1 activates the restOnReturn effect")
 
+	# Effect resolution: a run with all three facilities at level 1 reports each one's level-1 effect.
+	var tl_world: Dictionary = town.get("_world")
+	var built := {"facilities": {"facility.tl-infirmary": 1, "facility.tl-supply": 1, "facility.tl-signals": 1}}
+	var eff := Facilities.active_effects(built, tl_world)
+	_check(int(eff.get("shopDiscountPct", 0)) == 5, "supply level 1 → 5%% shop discount (got %d)" % int(eff.get("shopDiscountPct", 0)))
+	_check(int(eff.get("explorationBonus", 0)) == 3, "signals level 1 → +3 exploration (got %d)" % int(eff.get("explorationBonus", 0)))
+
+	# The infirmary actually heals: a wounded party is restored to full HP on return when it is built.
+	var wounded := {"facilities": {"facility.tl-infirmary": 1}, "party": [{"id": "x", "hp": 1, "maxHp": 30, "mp": 0, "maxMp": 10, "equipment": {}, "status": []}]}
+	var healed := Facilities.apply_return_heal(wounded, tl_world)
+	var hp := int((healed["party"][0] as Dictionary).get("hp", 0))
+	_check(hp == 30, "infirmary restores a wounded member to full HP on return (got %d)" % hp)
+
 	# A world with no authored facilities must not surface the base counter at all.
 	town.call("set_world_override", "default")
 	town.call("set_ui_state", {"service": ""})

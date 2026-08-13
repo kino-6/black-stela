@@ -83,13 +83,13 @@ facilities:
     levels:
       - cost: 8
         restOnReturn: true
-        locales: { en: { effect: "The party is fully treated on every return to town." }, ja: { effect: "帰還のたび、隊はすべて手当てされる。" } }
+        locales: { en: { effect: "The party's wounds are dressed free on every return to town." }, ja: { effect: "帰還のたび、隊の負傷が無料で手当てされる（HP全快）。" } }
       - cost: 16
-        maxHpPct: 5
-        locales: { en: { effect: "+5% max HP to the whole party." }, ja: { effect: "隊全員の最大HP +5%。" } }
+        restMp: true
+        locales: { en: { effect: "Also restores spent focus (MP) on return." }, ja: { effect: "帰還時、消耗した集中(MP)も回復する。" } }
       - cost: 32
-        maxHpPct: 10
-        locales: { en: { effect: "+10% max HP to the whole party." }, ja: { effect: "隊全員の最大HP +10%。" } }
+        clearInjury: true
+        locales: { en: { effect: "Also mends lasting injuries on return — a full free recovery." }, ja: { effect: "帰還時、残った負傷も治す——無料の完全回復。" } }
   - id: facility.tl-supply
     name: Supply Cache
     kind: supply
