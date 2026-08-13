@@ -166,12 +166,21 @@ static func _load_terminal_late(run: Object) -> String:
 		"flag.tl3f.bypass-open", "flag.tl4f.sluice-open", "flag.tl5f.loading-open",
 		"flag.tl6f.lift-online", "flag.tl7f.archive-open", "flag.tl8f.switch-open"
 	]
-	# Level every member to ~9 through the ported curve so their stats/skills are actually developed.
+	# Level every member to ~9 through the ported curve AND re-arm them with mid/late gear — a developed party
+	# carries tier-4 firearms reinforced +3, not the tier-1 starting guns (user: "攻撃6-9って？装備は初期装備なの？").
+	# Shotgun for the frontline breachers / demolition, SMG for the skirmishers and support.
+	var late_shotgun := "equip.tl-floodgate-12-shotgun"
+	var late_smg := "equip.tl-bureau-17-smg"
+	var shotgun_classes := ["warrior", "knight", "mage"]
 	var party := []
 	for m in state.get("party", []):
 		var lm: Dictionary = (m as Dictionary).duplicate(true)
 		lm["xp"] = Leveling.xp_for_level(9)
 		lm = Leveling.apply_level_ups(lm)["character"]
+		var gun := late_shotgun if String(lm.get("classId", "")) in shotgun_classes else late_smg
+		var eq: Dictionary = ((lm.get("equipment", {}) as Dictionary)).duplicate(true)
+		eq["weapon"] = {"id": gun, "plus": 3}
+		lm["equipment"] = eq
 		lm["hp"] = int(lm.get("maxHp", 1))
 		lm["mp"] = int(lm.get("maxMp", 0))
 		party.append(lm)
