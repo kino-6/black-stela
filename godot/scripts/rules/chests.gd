@@ -397,7 +397,7 @@ static func _to_base36(value: int) -> String:
 		n /= 36
 	return out
 
-static func roll_treasure_item(world: Dictionary, engine: Dictionary, room_id: String, table_id: Variant, turn: int) -> Variant:
+static func roll_treasure_item(world: Dictionary, engine: Dictionary, room_id: String, table_id: Variant, turn: int, luck: int = 0) -> Variant:
 	if typeof(table_id) != TYPE_STRING:
 		return null
 	var seed_text := "%s:%d" % [room_id, turn]
@@ -412,7 +412,10 @@ static func roll_treasure_item(world: Dictionary, engine: Dictionary, room_id: S
 	if item.get("kind", "") == "equipment":
 		var equipment: Variant = Economy.find_equipment(world, String(entry.get("itemId", "")))
 		if typeof(equipment) == TYPE_DICTIONARY:
-			var floor_number := _floor_number_for_room(world, room_id)
+			# `luck` biases the rarity/affix rolls as if the drop came from `luck` floors deeper — a gather
+			# node uses the pull count here, so the greedier the party is, the rarer (and more likely
+			# enchanted) the drop, while a plain chest passes 0 and is unchanged.
+			var floor_number := _floor_number_for_room(world, room_id) + maxi(0, luck)
 			var instance := _roll_equipment_instance(world, engine, String(equipment.get("slot", "")), floor_number, seed_text)
 			if instance.has("plus"):
 				item["plus"] = instance["plus"]

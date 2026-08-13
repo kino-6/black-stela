@@ -132,7 +132,9 @@ static func _search(state: Dictionary, world: Dictionary, engine: Dictionary = {
 		if pulls >= max_pulls:
 			return RulesUtil.log_only(state, {"type": "search_completed", "result": "gather_exhausted"})
 		var g_turn := int(state.get("turn", 0))
-		var drop: Variant = Chests.roll_treasure_item(world, engine, room_id, room["gatherTable"], g_turn + pulls)
+		# `luck = pulls`: each successive pull rolls as if from a deeper floor, so greed buys rarity — the
+		# rare enchanted gear sits behind the pulls that also carry the highest ambush risk.
+		var drop: Variant = Chests.roll_treasure_item(world, engine, room_id, room["gatherTable"], g_turn + pulls, pulls)
 		var picked: Dictionary = state.duplicate(true)
 		var new_pulls: Dictionary = (picked.get("gatherPulls", {}) as Dictionary).duplicate(true)
 		new_pulls[room_id] = pulls + 1

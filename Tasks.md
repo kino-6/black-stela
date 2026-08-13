@@ -52,8 +52,11 @@ design ideas (unapproved): `docs/design/ballistic-world-program.md`.
   - [x] **slice 1（兵装工廠＋管制室）done.** schema に `reinforceDiscountPct`/`wanderingReductionPct` 追加。terminal-line に
     **兵装工廠**（錬成/鍛冶コスト減 15/30%、cost 60/120）＋**管制室**（徘徊エンカウント減 30/50%、cost 80/160）。効果配線:
     `loot.gd`(reinforce/forge)＋`encounters.gd`(wandering pct)、facility 未著述で no-op＝**parity 緑**。prepack＋verify_facility 検証・914緑。
-  - [ ] **slice 2（動力炉＝恒久 maxHP%）.** `character_stats.effective()` が state 非受領＋combat state への反映が要る。
-    parity 安全（facility 未著述で pct=0）に effective へ facility maxHpPct を貫通させる。要慎重実装。
+  - [ ] **slice 2（動力炉＝恒久 maxHP%）← 意図的に defer（専用ターン推奨）.** 難所: `character_stats.effective()` が
+    (a) Facilities を preload すると**循環参照**（facilities→character_stats）＝pct を state でなく引数で渡す必要、(b) combat/HUD/
+    各表示 ~10 呼び出し元へ pct を貫通させないと**表示不整合**（HUD と party menu で maxHP が食い違う）。parity は facility 未著述で
+    pct=0＝安全。→ effective に `facility_max_hp_pct` 引数を足し、combat_round/dungeon_hud(party_token)/recovery/party_panel 等へ
+    Facilities.active_effects から算出して渡す＋**HUD==combat の一貫性 Gate**。長大ターンの末尾で急がず、専用ターンで実装する。
   - [ ] slice 3（任意）: 深い設備のロック/伸びしろ表示強化、実画面 PNG 確認。
 - [-] **#38 — 採取ポイント（EO 式・繰り返し＋乱獲リスク, slice 1 済み）.** user 設計: **materials 直接付与は NG →
   装備/アイテムを渡す**（materials は低リスクで繰り返せる"ポイント"、貴重なエンチャント品はリスクを取ってこそ）。
@@ -61,8 +64,10 @@ design ideas (unapproved): `docs/design/ballistic-world-program.md`.
     1回ごとに treasure ロール（rarity/affix＝エンチャント品可）で**アイテム1個**、pull ごとに乱入確率↑（pull×20%、管制室で低減）、
     max で枯渇。`begin_wandering_encounter(force)` 追加でオンデマンド乱入。Godot-native・gatherTable 未著述で no-op＝**parity 緑**。
     state.gatherPulls 遅延生成。terminal-line tl1f 保守端末を採取ノード化（W3a 廃案 event も差し替え）。Gate `verify_gather.gd`。
-  - [ ] **slice 2（任意refinement）**: 乱獲で rarity 段階上昇（今は同テーブル＝pull を重ねるほど rare 機会が増える形）、
-    採取ログの文言、枯渇の見せ方、実画面 PNG 確認。TS 側 gather 拡張は Godot-native 方針で不要（content schema のみ）。
+  - [x] **slice 2（乱獲→rarity 上昇）done.** `roll_treasure_item` に `luck` 引数を追加（rarity/affix を `luck` フロア分
+    深く引く）、gather は `luck = pulls` を渡す＝**乱獲するほど深フロア相当の rarity＝貴重なエンチャント品はリスクの先**に。
+    chest は luck=0 で不変・parity 緑。verify_gather/chest 緑。
+  - [ ] **slice 3（任意）**: 採取ログの文言、枯渇の見せ方、実画面 PNG 確認。
 
 ## Backlog / ideas (no home yet)
 
