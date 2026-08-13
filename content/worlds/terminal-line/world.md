@@ -68,6 +68,64 @@ copy:
     town.departureCopy: "無線を確かめ、持ち出すものを数えろ。零番線が通り過ぎる前に。"
     town.firstDescend: "防火扉が上がった。雨水が古い駅へ流れ落ちている。"
     town.firstNeedParty: "シャッターの下へ、ひとりで入る者はいない。"
+# Base facilities — the salvage-`materials` sink. Each level's `cost` is paid in materials (dismantled loot).
+# A facility at level N applies the effects declared at levels 1..N (booleans stay on, numbers take the
+# strongest). Costs 8/16/32 are calibrated against per-run materials income (common 1 / rare 2 / epic 4).
+facilities:
+  - id: facility.tl-infirmary
+    name: Infirmary
+    kind: infirmary
+    description: A curtained triage bay off the concourse — beds, saline, and a working autoclave.
+    locales:
+      ja:
+        name: 医務室
+        description: 改札脇の仕切られた処置室。寝台と点滴、まだ動く滅菌器。
+    levels:
+      - cost: 8
+        restOnReturn: true
+        locales: { en: { effect: "The party is fully treated on every return to town." }, ja: { effect: "帰還のたび、隊はすべて手当てされる。" } }
+      - cost: 16
+        maxHpPct: 5
+        locales: { en: { effect: "+5% max HP to the whole party." }, ja: { effect: "隊全員の最大HP +5%。" } }
+      - cost: 32
+        maxHpPct: 10
+        locales: { en: { effect: "+10% max HP to the whole party." }, ja: { effect: "隊全員の最大HP +10%。" } }
+  - id: facility.tl-supply
+    name: Supply Cache
+    kind: supply
+    description: A reclaimed left-luggage office, restocked off the freight depots.
+    locales:
+      ja:
+        name: 補給所
+        description: 遺失物室を接収し、貨物基地から補充した物資棚。
+    levels:
+      - cost: 8
+        shopDiscountPct: 5
+        locales: { en: { effect: "5% off everything the market sells." }, ja: { effect: "店の売値がすべて5%引き。" } }
+      - cost: 16
+        shopDiscountPct: 10
+        locales: { en: { effect: "10% off market prices." }, ja: { effect: "店の売値 10%引き。" } }
+      - cost: 32
+        shopDiscountPct: 15
+        locales: { en: { effect: "15% off market prices." }, ja: { effect: "店の売値 15%引き。" } }
+  - id: facility.tl-signals
+    name: Signals Room
+    kind: signals
+    description: A patched-in wiretap on the old dispatch grid; it hears what the platforms hide.
+    locales:
+      ja:
+        name: 通信室
+        description: 旧指令網に割り込ませた盗聴設備。ホームの隠しごとを拾う。
+    levels:
+      - cost: 8
+        explorationBonus: 3
+        locales: { en: { effect: "+3 to search, disarm, and unlock attempts." }, ja: { effect: "探索・解除・解錠の判定 +3。" } }
+      - cost: 16
+        explorationBonus: 5
+        locales: { en: { effect: "+5 to search, disarm, and unlock attempts." }, ja: { effect: "探索・解除・解錠の判定 +5。" } }
+      - cost: 32
+        explorationBonus: 8
+        locales: { en: { effect: "+8 to search, disarm, and unlock attempts." }, ja: { effect: "探索・解除・解錠の判定 +8。" } }
 palette:
   fog: "#111719"
   ambient: "#a5a89a"

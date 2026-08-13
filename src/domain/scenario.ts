@@ -431,6 +431,28 @@ const scenarioQuestSchema = z.object({
   locales: localizedNameDescriptionSchema.optional()
 });
 
+// A base facility: a scenario-authored, levelled station upgrade paid for in salvage `materials`. Each
+// level carries optional effect fields the base's resolver understands (rest/maxHp/discount/exploration/
+// stock), and may gate behind a descent flag. `kind` is only a UI grouping hint. Mirrors ScenarioFacility.
+const facilityLevelSchema = z.object({
+  cost: z.number().int().nonnegative(),
+  unlockFlag: z.string().min(1).optional(),
+  restOnReturn: z.boolean().optional(),
+  maxHpPct: z.number().int().optional(),
+  shopDiscountPct: z.number().int().optional(),
+  explorationBonus: z.number().int().optional(),
+  unlockShopItems: z.array(z.string().min(1)).optional(),
+  locales: z.record(z.string(), z.object({ effect: z.string().min(1).optional() })).optional()
+});
+const scenarioFacilitySchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  kind: z.string().min(1).optional(),
+  description: z.string().min(1).optional(),
+  locales: localizedNameDescriptionSchema.optional(),
+  levels: z.array(facilityLevelSchema).min(1)
+});
+
 const explorationGateSchema = z.object({
   id: z.string().min(1),
   direction: directionSchema.optional(),
@@ -632,6 +654,7 @@ export const scenarioWorldSchema = z.object({
   treasureTables: z.array(treasureTableSchema).default([]),
   progressionFlags: z.array(progressionFlagSchema).default([]),
   quests: z.array(scenarioQuestSchema).default([]),
+  facilities: z.array(scenarioFacilitySchema).default([]),
   vocations: z.array(scenarioVocationSchema).default([]),
   affixes: z.array(scenarioAffixSchema).default([]),
   techniques: z.array(scenarioTechniqueSchema).default([]),

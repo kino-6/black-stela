@@ -881,6 +881,42 @@ export interface ScenePalette {
   };
 }
 
+/** One purchasable level of a base facility. Its `cost` is paid in salvage `materials`; the optional
+ *  effect fields are additive/idempotent per facility and applied by the base's effect resolver. A level
+ *  may be gated behind a descent flag (`unlockFlag` ∈ `state.discoveredSecrets`). Authored per world so the
+ *  base is scenario-owned data, not engine code. */
+export interface FacilityLevel {
+  /** Salvage `materials` spent to reach this level from the previous one. */
+  cost: number;
+  /** Discovered-secret flag that must be set before this level can be bought (deeper tiers gate on descent). */
+  unlockFlag?: string;
+  /** Full-heal the whole party on every return to town while this level is active. */
+  restOnReturn?: boolean;
+  /** +N% party max HP. */
+  maxHpPct?: number;
+  /** N% off shop buy prices. */
+  shopDiscountPct?: number;
+  /** +N to exploration attempts (detect-secret / disarm / unlock). */
+  explorationBonus?: number;
+  /** Shop stock ids this level makes available (mirrors an `unlocked` stock flag). */
+  unlockShopItems?: string[];
+  /** Localized one-line effect blurb for the base UI. */
+  locales?: Partial<Record<string, { effect?: string }>>;
+}
+
+/** A base facility a scenario authors: a named, levelled station upgrade paid for in salvage materials.
+ *  The engine understands the effect fields on each {@link FacilityLevel}; `kind` is only a UI grouping hint. */
+export interface ScenarioFacility {
+  id: string;
+  name: string;
+  /** UI grouping / icon hint (e.g. "infirmary" | "supply" | "signals"); not interpreted by the rules. */
+  kind?: string;
+  description?: string;
+  locales?: Partial<Record<string, { name?: string; description?: string }>>;
+  /** Ordered levels, cheapest first; index 0 is the first purchasable upgrade above the un-built base. */
+  levels: FacilityLevel[];
+}
+
 export interface ScenarioWorld {
   id: string;
   title: string;
@@ -951,6 +987,9 @@ export interface ScenarioWorld {
   treasureTables: TreasureTable[];
   progressionFlags: ProgressionFlag[];
   quests: ScenarioQuest[];
+  /** Base facilities this world offers (see {@link ScenarioFacility}) — the salvage-`materials` sink that
+   *  drives meta-progression. Absent/empty ⇒ the world has no base to upgrade. */
+  facilities?: ScenarioFacility[];
   /** Authored advanced vocations (+ optional basic re-skins). Built-in classes are merged in by
    *  resolveVocationCatalog; this holds only what the world adds. */
   vocations: ScenarioVocation[];

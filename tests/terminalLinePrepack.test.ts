@@ -252,6 +252,29 @@ describe("Terminal Line F1–F10 canonical pack", () => {
     }
   });
 
+  // #33 base building: the salvage-`materials` sink is scenario-authored world data. This locks the v1
+  // facility set (医務室/補給所/通信室), their level costs, and the effect fields the Godot base resolver reads.
+  it("authors the three base facilities (materials sink) as world data", () => {
+    const result = loadScenarioPack(packFiles());
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    const facilities = result.world.facilities ?? [];
+    expect(facilities.map((f) => f.id)).toEqual([
+      "facility.tl-infirmary", "facility.tl-supply", "facility.tl-signals"
+    ]);
+    for (const f of facilities) {
+      expect(f.levels.map((l) => l.cost), f.id).toEqual([8, 16, 32]);
+    }
+    const infirmary = facilities.find((f) => f.id === "facility.tl-infirmary")!;
+    expect(infirmary.levels[0].restOnReturn).toBe(true);
+    expect(infirmary.levels[2].maxHpPct).toBe(10);
+    const supply = facilities.find((f) => f.id === "facility.tl-supply")!;
+    expect(supply.levels.map((l) => l.shopDiscountPct)).toEqual([5, 10, 15]);
+    const signals = facilities.find((f) => f.id === "facility.tl-signals")!;
+    expect(signals.levels.map((l) => l.explorationBonus)).toEqual([3, 5, 8]);
+  });
+
   it("binds ten real active techniques to each firearm family and six automatic firearm passives", () => {
     const result = loadScenarioPack(packFiles());
     expect(result.ok).toBe(true);
