@@ -15,8 +15,7 @@ func _initialize() -> void:
 		return
 
 	var fires := 0
-	var saw_materials := false
-	var saw_hp_change := false
+	var no_state_change := true
 	var saw_text := true
 	for turn in range(0, 600):
 		var state := _walk_state(turn)
@@ -27,9 +26,12 @@ func _initialize() -> void:
 		var ev: Dictionary = r["event"]
 		if String(ev.get("type", "")) != "room_event_triggered" or String(ev.get("text", "")).strip_edges() == "":
 			saw_text = false
+		# FLAVOUR-ONLY: a roaming event must NOT change HP or materials — otherwise pacing back and forth
+		# farms/oscillates them (playtest 2026-08-14「往復するとHPが減ったり増えたり」). Effects belong to
+		# deliberate actions (gather nodes, chests, combat), never a per-step roll.
 		var ns: Dictionary = r["state"]
-		if int(ns.get("materials", 0)) > int(state.get("materials", 0)):
-			saw_materials = true
+		if int(ns.get("materials", 0)) != int(state.get("materials", 0)):
+			no_state_change = false
 		var before_hp := 0
 		var after_hp := 0
 		for m in state.get("party", []):
@@ -37,24 +39,11 @@ func _initialize() -> void:
 		for m in ns.get("party", []):
 			after_hp += int((m as Dictionary).get("hp", 0))
 		if after_hp != before_hp:
-			saw_hp_change = true
+			no_state_change = false
 
 	_check(fires > 0, "terminal-line rolls dungeon events over a walk (fired %d times)" % fires)
 	_check(saw_text, "every fired event carries a room_event_triggered log line")
-	_check(saw_materials, "a fired event added salvage materials (feeds the base economy)")
-	_check(saw_hp_change, "a fired event healed or chipped the party")
-
-	# A hazard event must never drop a member below 1 HP (floored so an ambient event can't wipe the party).
-	var frail := _walk_state(0)
-	for m in frail.get("party", []):
-		(m as Dictionary)["hp"] = 1
-	for turn in range(0, 600):
-		frail["turn"] = turn
-		var r2: Variant = DungeonEvents.maybe_roll(frail, tl)
-		if typeof(r2) == TYPE_DICTIONARY:
-			for m in (r2["state"] as Dictionary).get("party", []):
-				if int((m as Dictionary).get("hp", 0)) < 1:
-					_check(false, "a hazard event floored a member below 1 HP")
+	_check(no_state_change, "roaming events are flavour-only — they never change HP or materials (no pacing farm)")
 
 	# The parity guarantee: a world that authors no dungeonEvents never rolls (null every step).
 	var default_world: Dictionary = _world("default")

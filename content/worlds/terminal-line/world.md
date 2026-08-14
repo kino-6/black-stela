@@ -175,9 +175,10 @@ facilities:
       - cost: 200
         attackPct: 20
         locales: { en: { effect: "+20% attack to the whole party." }, ja: { effect: "隊全員の攻撃 +20%。" } }
-# Random dungeon events (#32): weighted flavour beats rolled while walking, some carrying a small one-shot
-# effect. Salvage found here feeds the base-facility economy (#33). Rolled at balance.dungeonEventPct per
-# eligible step; a world that authors none rolls nothing.
+# Random dungeon events (#32): weighted FLAVOUR-ONLY beats rolled while walking — atmosphere, never state.
+# Effects (loot / heal / damage) belong to DELIBERATE actions (gather nodes, chests, combat), never to a
+# per-step roll, or pacing back and forth would farm/oscillate HP (playtest 2026-08-14). Rolled at
+# balance.dungeonEventPct per eligible step; a world that authors none rolls nothing.
 dungeonEvents:
   - id: event.tl-distant-service
     weight: 10
@@ -187,26 +188,22 @@ dungeonEvents:
     weight: 8
     text: A dead speaker coughs out half an announcement, then only rain.
     locales: { ja: { text: 死んだスピーカーが放送を半分だけ吐き出し、あとは雨の音だけになった。 } }
-  - id: event.tl-scavenge-wreck
+  - id: event.tl-dripping-dark
     weight: 7
-    text: A collapsed maintenance cart yields usable parts to anyone willing to strip it.
-    findMaterials: 3
-    locales: { ja: { text: 崩れた保守カートから、ばらせば使える部品が手に入った。 } }
-  - id: event.tl-fare-spill
+    text: Water finds a seam overhead and counts the seconds onto the tiles.
+    locales: { ja: { text: 天井の継ぎ目から落ちる水滴が、タイルの上で秒を数えている。 } }
+  - id: event.tl-flicker
     weight: 6
-    text: A cracked fare gate has spilled a drawer of old tokens across the tiles.
-    findGold: 15
-    locales: { ja: { text: 割れた改札機が、古い運賃トークンの引き出しをタイルにぶちまけている。 } }
-  - id: event.tl-first-aid
+    text: The strip lights stutter, throw the corridor into brief negative, then steady.
+    locales: { ja: { text: 蛍光灯が明滅し、回廊が一瞬だけ陰画になって、また戻った。 } }
+  - id: event.tl-cold-draft
     weight: 5
-    text: A wall first-aid cabinet still holds sealed dressings — enough to patch the worst of it.
-    heal: 6
-    locales: { ja: { text: 壁の救急箱に未開封の包帯が残っていた。ひどいところは手当てできる。 } }
-  - id: event.tl-live-rail
+    text: A cold draft pushes up from somewhere lower, carrying the smell of standing water.
+    locales: { ja: { text: どこか下の方から冷たい風が上がってきて、淀んだ水の匂いを運ぶ。 } }
+  - id: event.tl-far-arc
     weight: 5
-    text: A live rail arcs without warning; the nearest boots take the sting of it.
-    damage: 5
-    locales: { ja: { text: 通電したレールが不意に放電した。近い者が痺れを受ける。 } }
+    text: Somewhere a live rail arcs once, a blue-white spark, and the dark closes back in.
+    locales: { ja: { text: どこかでレールが一度放電し、青白い火花が走って、また闇が閉じた。 } }
 palette:
   fog: "#111719"
   ambient: "#a5a89a"

@@ -322,9 +322,14 @@ describe("Terminal Line F1–F10 canonical pack", () => {
       expect(e.weight, e.id).toBeGreaterThan(0);
       expect(e.text.length, e.id).toBeGreaterThan(0);
     }
-    expect(events.some((e) => (e.findMaterials ?? 0) > 0), "an event finds salvage materials").toBe(true);
-    expect(events.some((e) => (e.heal ?? 0) > 0), "an event heals").toBe(true);
-    expect(events.some((e) => (e.damage ?? 0) > 0), "an event chips the party").toBe(true);
+    // Flavour-only: roaming events must carry NO state effect (loot/heal/damage), or pacing back and forth
+    // would farm/oscillate them. Effects belong to deliberate actions (gather nodes, chests, combat).
+    for (const e of events) {
+      expect(e.findMaterials ?? 0, e.id).toBe(0);
+      expect(e.findGold ?? 0, e.id).toBe(0);
+      expect(e.heal ?? 0, e.id).toBe(0);
+      expect(e.damage ?? 0, e.id).toBe(0);
+    }
   });
 
   it("binds ten real active techniques to each firearm family and six automatic firearm passives", () => {
