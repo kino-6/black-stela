@@ -35,8 +35,12 @@ trips on un-imported JPEGs — the `.import` sidecars are generated).
 - **(c) Full-map doors/gates** — mirror the minimap door/lock drawing in floor_map.gd.
 - **(d, #39e-3) Event variety** — per-type presentation, now that events are visible.
 - **(e) Flat phone art** — pasted flat on the wall (Codex/art handoff).
-- **(open) 「天井が壊れている？」** — the 濡れた改札回廊 ceiling; needs a 3D render investigation (bug or
-  intended). Not yet triaged.
+
+## ✅ 「天井が壊れている？」 — RESOLVED (`47275a1`)
+
+It was a render bug, not staging: a 玄室 raises its walls/ceiling to 1.65×WALL_H, leaving an
+unroofed clerestory strip over its normal-height neighbours that rendered as a black band. Closed
+with a bulkhead (`_add_wall_band`) at the chamber's open boundaries. Gate: `verify_chamber_ceiling.gd`.
 
 ## Shipped this session (main)
 
