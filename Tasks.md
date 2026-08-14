@@ -41,7 +41,15 @@ design ideas (unapproved): `docs/design/ballistic-world-program.md`.
 - [ ] **#40g 治療院で状態異常が治らない（image#36）** — 施療院は HP＋injury のみ。恐怖等 status を治さない。`recovery_panel`/`recover_party` rule で status も治療（要 price+clear）or 帰還時 clear。
 - [ ] **#40h 鑑定所「合わせる相手」選択が効かない（image#38）** — 上部セレクタで別キャラを選んでも item 行の対象/装備ボタンが変わらない。state 配線バグ。用語も不親切。
 - [ ] **#40i サービスパネルが無駄に狭い（images#37/#39）** — scroller が 460px 等の固定小サイズで画面下に無駄な暗部。パネル/scroller の縦を画面高に追従。
-- [ ] **#40j 英文が残っている（image#42「回収ロッカー」の event）** — room event の ja locale 欠落 → `_room_event_text` が英語 fallback。terminal-line 全 room の event/description に ja 有無を洗い出し。
+- [x] **#40j 英文が残っている（検出器＋全15件翻訳、`2442acd`）** — **DETECTION**: `verify_content_localization.gd`（gate:migration）が shipped world の全 room/gate 文字列の ja 欠落を検出＝15件発見（見えていない先の漏れ含む）を全翻訳。英文漏れクラスは恒久ブロック。
+
+**検出戦略（user「遊べば分かる不具合、検出できないの？」への回答 — "played-build gate" の穴を埋める）:**
+現行ゲートは**構造**（ノード在/フォーカス到達）しか見ず、**描画/遊んだ体験**を見ない。play-only クラス別の検出器を作る:
+- [x] **未翻訳（英文漏れ）** → verify_content_localization（済）。
+- [ ] **階段/ランドマークが FP で見えない**（#40f）→ 着地セルから実カメラを向けて stair/return ノードが**画面に映る**（frustum/pixel）ことをアサート。verify_stairs_render は「ノード在」だけ見ている＝穴。
+- [ ] **Focus がスクロールで見えない**（#40i）→ focus_trap を拡張し、各フォーカス制御の rect が scroller の可視 rect 内にあることをアサート。
+- [ ] **進行不能**（#40a 類）→ fixture で各階の降段/帰還が実際に使える（context=stairs/return）ことをアサート。
+- [ ] **重複ラベル**（#40d 類）→ パネルが同一ラベルの stat 行を2つ出さないことをアサート。
 - [ ] **#40k 電話が壁に平面ベタ貼り（image#32）** — Codex/art 領域。mounting（筐体/凹み）の改善は Claude 可。
 
 ### 2026-08-14 terminal-line `play:late` playtest バグ（b1f偏重で tl1f が手薄＝露出。#32 が静的 room event を可視化した副作用も）
