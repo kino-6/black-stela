@@ -1,32 +1,40 @@
-# Handoff — 2026-08-13/14 terminal-line playtest
+# Handoff — 2026-08-13/14 terminal-line playtest → #39g design-first pass (slices 1–2 shipped)
 
-All committed + pushed to `main` (HEAD `4cac2df`; verify `git ls-remote origin main`).
-Pre-push gate green throughout; verify_parity green. Tree clean. Read `Tasks.md` for the queue.
+All committed + pushed to `main` (HEAD `ce88c0e`; verify `git ls-remote origin main`).
+gate:migration + unit (914) green. Tree clean. Design doc: `docs/design/dungeon-interaction-model.md`.
 
-## ⏭️ RESUME HERE (next session): #39g — dungeon-interaction UX pass, DESIGN-FIRST
+## ✅ #39g — dungeon-interaction UX pass (DESIGN-FIRST) — slices 1–2 DONE
 
-The user is (rightly) frustrated that reactive one-off patches aren't raising UX quality. The
-terminal-line dungeon interaction/presentation layer is under-designed (surfaced now that play:late
-lets a grown party actually explore tl1f, which b1f-focused testing skipped). **Do NOT keep patching
-one symptom at a time.** Agreed plan:
+The user was (rightly) frustrated that reactive one-off patches weren't raising UX quality, so we
+wrote the model as a design doc, the user locked the forks (A1 facing-decides / generic 「町へ戻る」 +
+optional returnStyle / centred surface REPLACES the top-right panel), and it's shipping in slices:
 
-1. **Write the "dungeon interaction model" as one design doc first** — what the party can interact with,
-   how the target is chosen when several share a cell/direction (door vs emergency phone vs stair vs
-   object), how return/descend is confirmed, and how outcomes are presented. Put it in `docs/design/`.
-2. **User reviews the design before implementing** (lock direction first).
-3. **Then implement with real-playtest verification** — like verify_focus_trap catches focus bugs, add
-   checks that actually fail on the UX defects.
+- **Slice 1 (`3ca9786`)** — confirm-before-return (centred Wiz modal, cursor on いいえ; `_show_confirm`),
+  generic 帰還 label (`_return_label`; only returnStyle:stairs says 階段で), A1 facing-aware 決定
+  (`_context_command` sees the faced door/locked edge first → advance).
+- **Slice 2 (`493ee2e`)** — minimap draws gate-sealed ways as a red LOCK bar + doors as a blue leaf
+  (`_gate_closed` reads room.gates like the rules), and 決定 facing a sealed gate inspects it
+  (`_faced_gate_closed`). Resolves terminal-line's "扉を調べる際に電話へ" (its doors are room-gates).
+- **Diegetic clue (`c30e1a5`)** — tl1f shutter clue rewritten from the omniscient "信号を通すと…" to what
+  the party sees (#39e part 2).
+- **Focus-trap fix (`c7f6cb1`)** — a PRE-EXISTING facility/quest D-pad gap (verify_focus_trap is
+  gate:migration-only, so pre-push missed it): the deep 兵装工廠 「強化する（60）」 was unreachable.
 
-Concrete defects to resolve in that pass (all in Tasks #39c/#39e/#39g):
-- **Interaction targeting** — investigating a door triggers the emergency-phone interaction instead.
-- **Confirm before return/descend** — the emergency phone returns to town with NO confirmation (misclick).
-  "結果が先に分かる" presentation also needs review.
-- **Return label** — the phone says "階段で町へ戻る" but it is not a stair; label per point type.
-- **Event presentation (#39e)** — important beats should be a CENTRED Wizardry-style message, not stuck
-  in the top-right panel; and DIEGETIC (no omniscient "signal" info the characters don't perceive).
-- **Minimap/3D doors (#39c)** — doors / locked edges aren't drawn, so a corridor looks open but is
-  "固く閉ざされている". Draw doors + locked edges on the minimap and in 3D.
-- **Flat phone art** — pasted flat on the wall (Codex/art; handoff to the art agent).
+Gate: `verify_dungeon_interaction.gd` (label · confirm-not-silent · A1 · faced-gate · minimap truth).
+
+## ⏭️ RESUME HERE — remaining #39g slices (infra now in place)
+
+- **(a, #39e-1) Centred message SURFACE replacing the top-right hint panel** — the biggest remaining
+  piece: route important beats (locked-way discovery, key/shortcut opening, room/boss reveal) to a
+  centred Wiz modal; keep ambient flavor in the bottom one-liner. The modal infra already exists
+  (`dungeon.gd _show_confirm` — generalise it into a message/confirm surface).
+- **(b, #39c) 3D barrier on a locked/gated edge** — minimap now shows it; the 3D view still renders a
+  gated way as open corridor. Draw a shutter/barrier mesh (DungeonRenderer).
+- **(c) Full-map doors/gates** — mirror the minimap door/lock drawing in floor_map.gd.
+- **(d, #39e-3) Event variety** — per-type presentation, now that events are visible.
+- **(e) Flat phone art** — pasted flat on the wall (Codex/art handoff).
+- **(open) 「天井が壊れている？」** — the 濡れた改札回廊 ceiling; needs a 3D render investigation (bug or
+  intended). Not yet triaged.
 
 ## Shipped this session (main)
 
