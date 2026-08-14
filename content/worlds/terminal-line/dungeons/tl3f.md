@@ -71,7 +71,7 @@ rooms:
   - id: room.tl3f.dispatch-terminal
     name: Dispatch Terminal
     description: A terminal displays an evacuation order that returns every passenger to isolation.
-    locales: { ja: { name: 指令端末, description: 端末は、避難民を全員ふたたび隔離区画へ送る命令を表示している。 } }
+    locales: { ja: { name: 指令端末, description: 端末は、避難民を全員ふたたび隔離区画へ送る命令を表示している。, event: 再隔離命令を記録し、零番線が人を救うのではなく集めていると知る。 } }
     event: The party records the re-isolation order and learns that the zero line is collecting people, not rescuing them.
   - id: room.tl3f.water-clock
     name: Water Clock

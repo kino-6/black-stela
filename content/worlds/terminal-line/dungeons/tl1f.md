@@ -72,13 +72,13 @@ rooms:
   - id: room.tl1f.flooded-concourse
     name: Flooded Concourse
     description: An ankle-deep detour beneath dark timetable boards. The way is slower, but old lockers remain above the waterline.
-    locales: { ja: { name: 浸水コンコース, description: 消えた時刻表の下を、くるぶしまで水に浸かって回り込む。遅い道だが、古いロッカーはまだ水面より高い。 } }
+    locales: { ja: { name: 浸水コンコース, description: 消えた時刻表の下を、くるぶしまで水に浸かって回り込む。遅い道だが、古いロッカーはまだ水面より高い。, event: 浸水した道は、保安通路を通らずに時間と引き換えで補給を拾える。 } }
     treasureTable: treasure.tl1f.locker
     event: The flooded route trades time for supplies without forcing the security corridor.
   - id: room.tl1f.signal-office
     name: Signal Office
     description: A cracked platform display repeats a destination with no train number. A maintenance line answers from below.
-    locales: { ja: { name: 信号室, description: 割れた案内表示が、列車番号のない行先だけを繰り返す。保守回線は、さらに下から応答している。 } }
+    locales: { ja: { name: 信号室, description: 割れた案内表示が、列車番号のない行先だけを繰り返す。保守回線は、さらに下から応答している。, event: 一行は深夜の信号を記録し、下のホームにまだ電力が残っていることを知る。 } }
     event: The party records the midnight signal and learns that the lower platform still has power.
     gates:
       - id: gate.tl1f.route-signal

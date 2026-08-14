@@ -64,7 +64,7 @@ rooms:
   - id: room.tl10f.terminal-console
     name: Terminal Console
     description: The console offers no explanation, only three final rail commands waiting for a hand.
-    locales: { ja: { name: 終端操作卓, description: 操作卓は説明をせず、手を待つ三つの最終運行命令だけを示す。 } }
+    locales: { ja: { name: 終端操作卓, description: 操作卓は説明をせず、手を待つ三つの最終運行命令だけを示す。, event: 三つの道が明らかになる——収容を止める、新たな管理下で路線を続ける、地上リフトを開く。 } }
     event: "The three routes are now explicit: stop collection, continue the line under new custody, or open the surface lift."
   - { id: room.tl10f.platform-ring, name: Platform Ring, description: The final platform has several approaches to the core and no forced single-file boss lane., locales: { ja: { name: ホーム環, description: 最終ホームには中枢への複数の近づき方があり、一列のボス通路ではない。 } }, encounterTable: encounters.tl10f.terminus }
   - id: room.tl10f.zero-core

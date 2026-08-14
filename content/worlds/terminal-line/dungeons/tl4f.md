@@ -71,7 +71,7 @@ rooms:
   - id: room.tl4f.treatment-terminal
     name: Treatment Terminal
     description: A treatment log says the water was diverted away from a sealed population below.
-    locales: { ja: { name: 処理端末, description: 処理記録には、封鎖区画の人々から水を逸らしたと残されている。 } }
+    locales: { ja: { name: 処理端末, description: 処理記録には、封鎖区画の人々から水を逸らしたと残されている。, event: 浸水は事故ではない。最初の封鎖で、下層区画は意図的に水を奪われていた。 } }
     event: The water was not an accident; the lower wards were deliberately deprived during the first closure.
   - id: room.tl4f.sediment-basin
     name: Sediment Basin

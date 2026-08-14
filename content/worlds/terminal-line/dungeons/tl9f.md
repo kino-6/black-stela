@@ -64,7 +64,7 @@ rooms:
   - id: room.tl9f.surface-terminal
     name: Surface Terminal
     description: The lift was kept from the surface so that recovered people could not leave.
-    locales: { ja: { name: 地上端末, description: 回収された人々を出さないため、昇降機は地上側から止められていた。 } }
+    locales: { ja: { name: 地上端末, description: 回収された人々を出さないため、昇降機は地上側から止められていた。, event: 封鎖線が災害に耐えるためではなく、帰還を阻むために造られた最終の証拠を見つける。 } }
     event: The party finds the final proof that the sealed line was built to prevent return, not to endure a disaster.
   - { id: room.tl9f.counterweight-bay, name: Counterweight Bay, description: Open counterweights create several routes through the machinery., locales: { ja: { name: 釣合い錘の区画, description: 露出した釣合い錘が、機械の間に複数の経路を作る。 } }, encounterTable: encounters.tl9f.liftworks }
   - { id: room.tl9f.operator-booth, name: Operator Booth, description: The final operator notes point down to Platform Zero's actual terminus., locales: { ja: { name: 運転員ブース, description: 最後の運転員メモは、零番線の本当の終点がさらに下だと示す。 } }, encounterTable: encounters.tl9f.operator-guard, chamberGuardian: true }

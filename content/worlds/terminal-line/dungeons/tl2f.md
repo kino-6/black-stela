@@ -84,7 +84,7 @@ rooms:
   - id: room.tl2f.maintenance-locker
     name: Maintenance Locker
     description: A row of sealed metal lockers stands above the water. One still holds a fuse and emergency dressings.
-    locales: { ja: { name: 保守ロッカー, description: 水位より高いところに、封をされた金属ロッカーが並ぶ。一つだけにヒューズと応急用品が残っている。 } }
+    locales: { ja: { name: 保守ロッカー, description: 水位より高いところに、封をされた金属ロッカーが並ぶ。一つだけにヒューズと応急用品が残っている。, event: 手入れされたロッカーは、確かな補給地点になる。 } }
     treasureTable: treasure.tl2f.platform-cache
     event: A maintained locker is an authored supply point; alert reduction connects when W3a is complete.
   - id: room.tl2f.sealed-platform-office

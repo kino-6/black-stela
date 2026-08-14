@@ -63,7 +63,7 @@ rooms:
   - id: room.tl5f.allocation-terminal
     name: Allocation Terminal
     description: The terminal records that the last convoy left with guards and no civilians.
-    locales: { ja: { name: 割当端末, description: 最後の輸送隊は、民間人を乗せず警備だけを連れて出たと端末に残る。 } }
+    locales: { ja: { name: 割当端末, description: 最後の輸送隊は、民間人を乗せず警備だけを連れて出たと端末に残る。, event: 公共の配給が、一方通行の収容列に作り替えられていたと知る。 } }
     event: The party learns that the public ration system was converted into a one-way collection queue.
   - { id: room.tl5f.cold-store, name: Cold Store, description: Frost remains on a sealed room despite the failed power., locales: { ja: { name: 冷蔵保管室, description: 電力が落ちた後も、封じられた部屋には霜が残る。 } }, encounterTable: encounters.tl5f.depot }
   - { id: room.tl5f.vacant-locker, name: Vacant Locker, description: A dry staff locker holds a wrapped reserve., locales: { ja: { name: 空の職員ロッカー, description: 乾いた職員ロッカーに、包まれた予備品が残る。 } }, treasureTable: treasure.tl5f.depot-cache }

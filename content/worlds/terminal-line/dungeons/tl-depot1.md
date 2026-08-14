@@ -64,7 +64,7 @@ rooms:
   - id: room.tl-depot1.salvage-locker
     name: Salvage Locker
     description: A crew locker the yard never cleared out. Sellable gear, if the latch gives.
-    locales: { ja: { name: 回収ロッカー, description: 基地が片づけ損ねた作業員ロッカー。掛け金が外れれば、売れる装備が眠っている。 } }
+    locales: { ja: { name: 回収ロッカー, description: 基地が片づけ損ねた作業員ロッカー。掛け金が外れれば、売れる装備が眠っている。, event: 詰まった作業員ロッカーから、ヤードが償却した工具と装備が出てくる——運び出して売れる。 } }
     treasureTable: treasure.tl-depot.salvage
     event: A jammed crew locker yields tools and gear the yard wrote off — worth carrying out to sell.
   - id: room.tl-depot1.weighbridge
@@ -90,7 +90,7 @@ rooms:
   - id: room.tl-depot1.foreman-office
     name: Foreman's Office
     description: The yard foreman's post. A porter crew still runs the shift that never ended.
-    locales: { ja: { name: 班長詰所, description: ヤード班長の詰所。終わらないシフトを、運搬人の組がまだ回している。 } }
+    locales: { ja: { name: 班長詰所, description: ヤード班長の詰所。終わらないシフトを、運搬人の組がまだ回している。, event: 班長の金庫には、まだ一勤務分の売上が残っている。 } }
     encounterTable: encounters.tl-depot1.foreman
     treasureTable: treasure.tl-depot.office
     event: The foreman's safe still holds a shift's takings.

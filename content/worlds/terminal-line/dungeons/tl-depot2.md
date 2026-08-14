@@ -79,7 +79,7 @@ rooms:
   - id: room.tl-depot2.maintenance-bay
     name: Maintenance Bay
     description: A powered-down repair bay. Safe enough to catch a breath and re-lamp before the vault.
-    locales: { ja: { name: 整備ベイ, description: 電源の落ちた修理ベイ。金庫室の前に、一息ついて灯を替えるくらいは安全だ。 } }
+    locales: { ja: { name: 整備ベイ, description: 電源の落ちた修理ベイ。金庫室の前に、一息ついて灯を替えるくらいは安全だ。, event: 電源の落ちた整備ベイで一息つき、ここを退避点として記す。 } }
     restPoint: true
     event: The party rests in the dead maintenance bay and marks it as a fallback point.
   - id: room.tl-depot2.weigh-office

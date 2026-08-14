@@ -70,7 +70,7 @@ rooms:
   - id: room.tl-depot3.vault
     name: Bonded Vault
     description: The strongroom proper. A pallbearer stands its shift over the richest cache in the yard.
-    locales: { ja: { name: 保税金庫, description: 金庫室の本体。運び手が、ヤードで最も豊かな蓄えの前で見張りを続ける。 } }
+    locales: { ja: { name: 保税金庫, description: 金庫室の本体。運び手が、ヤードで最も豊かな蓄えの前で見張りを続ける。, event: 保税金庫には、ヤードが溜め込んだ売上——この探索の本当の稼ぎが眠る。 } }
     encounterTable: encounters.tl-depot3.vault
     treasureTable: treasure.tl-depot.vault
     event: The bonded vault holds the yard's kept takings — the run's real payoff.

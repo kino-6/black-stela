@@ -64,7 +64,7 @@ rooms:
   - id: room.tl8f.train-terminal
     name: Train Terminal
     description: The zero line is automatically dispatched whenever a recovered group is logged below.
-    locales: { ja: { name: 列車端末, description: 下層で回収集団が記録されるたび、零番線は自動で発車する。 } }
+    locales: { ja: { name: 列車端末, description: 下層で回収集団が記録されるたび、零番線は自動で発車する。, event: あの放送は生きた指令員ではなく、自動の収容プロトコルだと知る。 } }
     event: The party learns the broadcast is an automated collection protocol, not a living dispatcher.
   - { id: room.tl8f.console-ring, name: Console Ring, description: A ring of dead consoles makes multiple approaches to the dispatch room., locales: { ja: { name: 操作卓の環, description: 死んだ操作卓が、指令室へ複数の近づき方を作っている。 } }, encounterTable: encounters.tl8f.control }
   - { id: room.tl8f.switch-control, name: Switch Control, description: The bypass control overlooks the lower lift route., locales: { ja: { name: 分岐制御卓, description: 迂回路の制御卓から、下の昇降路が見下ろせる。 } } }

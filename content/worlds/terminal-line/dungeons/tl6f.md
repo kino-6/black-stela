@@ -64,7 +64,7 @@ rooms:
   - id: room.tl6f.case-terminal
     name: Case Terminal
     description: The final medical records call every recovered passenger medically unfit for release.
-    locales: { ja: { name: 症例端末, description: 最終記録は、回収された乗客全員を「解放不適」としている。 } }
+    locales: { ja: { name: 症例端末, description: 最終記録は、回収された乗客全員を「解放不適」としている。, event: 隔離線が、地上への帰還を医療許可の名目で阻んでいたと分かる。 } }
     event: The party finds that the isolation line used medical clearance to prevent anyone from returning to the surface.
   - { id: room.tl6f.quarantine-shelves, name: Quarantine Shelves, description: High shelves turn the old ward into an echoing maze., locales: { ja: { name: 隔離書架, description: 高い書架が、元病棟を反響する迷路に変えている。 } }, encounterTable: encounters.tl6f.records }
   - { id: room.tl6f.sealed-case, name: Sealed Case File, description: A sealed cabinet holds a protected personnel record., locales: { ja: { name: 封印症例箱, description: 封じられた保管箱に、保護対象の職員記録がある。 } }, chest: { treasureTable: treasure.tl6f.records-cache, trap: { kind: gas, difficulty: 18, damage: 7, status: poison } } }

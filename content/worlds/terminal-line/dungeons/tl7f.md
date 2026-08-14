@@ -64,7 +64,7 @@ rooms:
   - id: room.tl7f.clearance-terminal
     name: Clearance Terminal
     description: The bureau has been approving collection orders in place of escape permits.
-    locales: { ja: { name: 許可端末, description: 中央局は脱出許可の代わりに、回収命令だけを承認してきた。 } }
+    locales: { ja: { name: 許可端末, description: 中央局は脱出許可の代わりに、回収命令だけを承認してきた。, event: 検疫許可を収容命令に変えた、署名の連なりを見つける。 } }
     event: The party finds the signature chain that turned quarantine clearance into a collection mandate.
   - { id: room.tl7f.badge-archive, name: Badge Archive, description: A wall of expired badges leads to a guarded inner route., locales: { ja: { name: 身分証書庫, description: 失効した身分証の壁が、警備された内側の道へ続く。 } }, encounterTable: encounters.tl7f.bureau }
   - { id: room.tl7f.perimeter-boardroom, name: Perimeter Boardroom, description: The closure committee left its final meeting arranged around an empty chair., locales: { ja: { name: 封鎖委員会室, description: 封鎖委員会の最後の会議は、空席を囲んだまま残されている。 } }, encounterTable: encounters.tl7f.boardroom, chamberGuardian: true }
