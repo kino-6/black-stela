@@ -28,6 +28,32 @@ design ideas (unapproved): `docs/design/ballistic-world-program.md`.
 
 ## Active queue (process top-down)
 
+### 2026-08-14 terminal-line `play:late` playtest バグ（b1f偏重で tl1f が手薄＝露出。#32 が静的 room event を可視化した副作用も）
+
+- [x] **#39a — `play:late` 降下でダンジョン真っ黒** — 修正済み（`172b710`）。`run.reset()` が b1f ダンジョン state を seed し、
+  town fixture が stale な position を消していなかった → 降下時 plan が存在しない b1f セルへ resume。town fixture で position=null/map={}。
+- [x] **#39b — 部屋イベントの英文漏れ** — 修正済み（`c1845f5`）。静的 room event を roomId から ja locale で表示（ランダムは別扱い）。
+- [ ] **#39c — minimap（周辺）に扉/locked 辺が出ない.** ナビ不便。かつ「北が開いて見えるのに『固く閉ざされている』」（画像23）＝
+  **locked/gated 辺が 3D でも minimap でも描画されず開通路に見える**。→ minimap に扉/locked を描画＋3D でも locked 辺に扉/バリア表示。
+- [x] **#39f — 徘徊イベントで往復すると HP 増減（farm/exploit）** — 修正済み（`d228ca4`）。#32 の heal/damage/loot を per-step で
+  発火させていた → roaming イベントを flavor-only に。効果は採取/宝箱/戦闘のみ。gate で「往復で state 不変」を固定。
+- [ ] **#39g — 【要・腰を据えたパス】ダンジョン相互作用 UX の設計し直し（reactive patch では質が上がらない、user 2026-08-14）.**
+  症状が電話/扉/階段で連発。まとめて設計する:
+  - **インタラクション対象の決定**: 扉/電話/階段/オブジェクトが同セル・同方向にある時、「扉を調べようとして電話に吸われる」等が起きる。
+    → 対象選択（明示 or 優先度ルール）を設計。
+  - **帰還/降下に確認**: 非常電話/階段の帰還が**確認なしで即町へ**＝誤操作。→ 確認ダイアログ。「結果が先に分かる」出し方も見直し。
+  - **非常電話ラベル**: 「階段で町へ戻る」なのに階段でない → ポイント種別（電話/階段/退避）でラベル出し分け or 汎用化。
+  - **アート**: 電話が壁に平面ベタ貼りで雑（Codex 領域、handoff）。
+  - 関連: #39c(minimap/3D 扉描画) ・ #39e(イベント演出 Wiz式＋diegetic) と束ねて一つの「dungeon interaction UX」パスにする。**専用ターン・実プレイ検証込みで。**
+- [ ] **#39e — room event 演出の再設計（設計タスク・要腰を据えて）.** user 2026-08-14 の本質的指摘:
+  (1) **重要情報は画面中央のイベントメッセージ（Wiz 式モーダル）で出す** — 今は右上の迷宮コマンド欄に小さく貼り付き埋もれる。
+  重要度で出し分け（中央モーダル vs 下部ログ vs 常時パネル）。
+  (2) **diegetic 化必須**: 「信号を通すと退避シャッターが開いている」等、**主人公が認知していない全知的メタ情報は雑で UX を損ねる**。
+  キャラが実際に知覚する範囲の描写に書き換える（＝既存 #15 の signal/shutter clue 文の framing 見直し。仕組み自体は残してよいが、
+  手がかりの出し方をキャラ視点に）。
+  (3) **イベントが全部同じ**問題（種別ごとの演出差・バリエーション）もここで。#32 で静的 room event を可視化した今、
+  「どこに・どう・何を」出すかを一から設計する。**専用ターン推奨。**
+
 2026-08-13 実プレイ playtest（terminal-line）で挙がった指摘。優先度順:
 
 - [x] **#34 — UI focus の EXHAUSTIVE verifier（done・gate 登録済み）.** `godot/tests/verify_focus_trap.gd` — 各 town
