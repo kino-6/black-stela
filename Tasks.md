@@ -33,26 +33,27 @@ design ideas (unapproved): `docs/design/ballistic-world-program.md`.
 - [x] **#39a — `play:late` 降下でダンジョン真っ黒** — 修正済み（`172b710`）。`run.reset()` が b1f ダンジョン state を seed し、
   town fixture が stale な position を消していなかった → 降下時 plan が存在しない b1f セルへ resume。town fixture で position=null/map={}。
 - [x] **#39b — 部屋イベントの英文漏れ** — 修正済み（`c1845f5`）。静的 room event を roomId から ja locale で表示（ランダムは別扱い）。
-- [ ] **#39c — minimap（周辺）に扉/locked 辺が出ない.** ナビ不便。かつ「北が開いて見えるのに『固く閉ざされている』」（画像23）＝
-  **locked/gated 辺が 3D でも minimap でも描画されず開通路に見える**。→ minimap に扉/locked を描画＋3D でも locked 辺に扉/バリア表示。
+- [x] **#39c — minimap に扉/locked 辺（済・`493ee2e`）.** minimap: gate で塞がれた passable 辺を赤 LOCK バー、door を青リーフで
+  描画（`room.gates` を rules と同じ predicate `_find_gate/_is_gate_open` で読む）。「北が開いて見えるのに固く閉ざされている」
+  ＝tl1f 退避シャッター（kind open, flag 封鎖）を赤バーで表現、実画面で確認。gate: verify_dungeon_interaction。
+  **残**: 3D 側の locked 辺バリア描画（minimap で可視化済みなので優先度は下がった）／ full-map の扉・gate 描画も同様に。
 - [x] **#39f — 徘徊イベントで往復すると HP 増減（farm/exploit）** — 修正済み（`d228ca4`）。#32 の heal/damage/loot を per-step で
   発火させていた → roaming イベントを flavor-only に。効果は採取/宝箱/戦闘のみ。gate で「往復で state 不変」を固定。
-- [ ] **#39g — 【要・腰を据えたパス】ダンジョン相互作用 UX の設計し直し（reactive patch では質が上がらない、user 2026-08-14）.**
-  症状が電話/扉/階段で連発。まとめて設計する:
-  - **インタラクション対象の決定**: 扉/電話/階段/オブジェクトが同セル・同方向にある時、「扉を調べようとして電話に吸われる」等が起きる。
-    → 対象選択（明示 or 優先度ルール）を設計。
-  - **帰還/降下に確認**: 非常電話/階段の帰還が**確認なしで即町へ**＝誤操作。→ 確認ダイアログ。「結果が先に分かる」出し方も見直し。
-  - **非常電話ラベル**: 「階段で町へ戻る」なのに階段でない → ポイント種別（電話/階段/退避）でラベル出し分け or 汎用化。
-  - **アート**: 電話が壁に平面ベタ貼りで雑（Codex 領域、handoff）。
-  - 関連: #39c(minimap/3D 扉描画) ・ #39e(イベント演出 Wiz式＋diegetic) と束ねて一つの「dungeon interaction UX」パスにする。**専用ターン・実プレイ検証込みで。**
-- [ ] **#39e — room event 演出の再設計（設計タスク・要腰を据えて）.** user 2026-08-14 の本質的指摘:
-  (1) **重要情報は画面中央のイベントメッセージ（Wiz 式モーダル）で出す** — 今は右上の迷宮コマンド欄に小さく貼り付き埋もれる。
-  重要度で出し分け（中央モーダル vs 下部ログ vs 常時パネル）。
-  (2) **diegetic 化必須**: 「信号を通すと退避シャッターが開いている」等、**主人公が認知していない全知的メタ情報は雑で UX を損ねる**。
-  キャラが実際に知覚する範囲の描写に書き換える（＝既存 #15 の signal/shutter clue 文の framing 見直し。仕組み自体は残してよいが、
-  手がかりの出し方をキャラ視点に）。
-  (3) **イベントが全部同じ**問題（種別ごとの演出差・バリエーション）もここで。#32 で静的 room event を可視化した今、
-  「どこに・どう・何を」出すかを一から設計する。**専用ターン推奨。**
+- [~] **#39g — ダンジョン相互作用 UX の設計し直し（DESIGN-FIRST, user 2026-08-14）.** 設計 doc:
+  `docs/design/dungeon-interaction-model.md`（fork は user 確定: A1 向きで決める／汎用「町へ戻る」＋任意上書き／
+  中央面は右上パネルを置換）。実装済みスライス:
+  - [x] **Slice 1（`3ca9786`）**: 帰還/割符に**中央 Wiz 式確認モーダル**（cursor=いいえ、誤操作で即町へ戻らない）／
+    帰還ラベルは汎用「町へ戻る」（returnStyle:stairs のみ「階段で」）／**A1 向き優先の決定**（faced door/locked → advance、
+    帰還点に吸われない）。gate: verify_dungeon_interaction、実画面 PNG 確認。
+  - [x] **Slice 2（`493ee2e`）**: minimap 真実化（#39c 参照）＋**faced gate を 決定=調べる**（tl1f 退避シャッターの
+    「扉を調べる際に電話へ」を terminal-line 側で解消 — その扉は edge でなく room-gate）。
+  - **残（次スライス）**: (a) **中央メッセージ面**を右上ヒントパネルの置換として実装し重要 beat を集約（infra は
+    `dungeon.gd _show_confirm` で確立済み）＝#39e(1)。(b) 3D の locked 辺バリア。(c) full-map の扉/gate 描画。
+    (d) 電話の平面ベタ貼りアート（Codex handoff）。
+- [~] **#39e — room event 演出の再設計.**
+  - [x] **(2) diegetic 化（`c30e1a5`）**: tl1f 退避シャッター clue の全知メタ（「信号を通すと…」）を、キャラが見える
+    シャッターの描写へ書き換え。signal 経路は「やって学ぶ」（表示板 grant clue）に一本化。
+  - **残**: (1) **重要情報を中央モーダルへ**（#39g 残(a) と同一作業）／(3) イベント種別ごとの演出差・バリエーション。
 
 2026-08-13 実プレイ playtest（terminal-line）で挙がった指摘。優先度順:
 
