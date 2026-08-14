@@ -131,8 +131,11 @@ rooms:
         kind: lock
         direction: south
         requiredFlag: flag.tl1f.signal-routed
-        clue: The routed signal releases the evacuation shutter down to the platform stairs.
-        locales: { ja: { clue: 通した信号が、ホーム階段へ下りる退避シャッターを解いた。 } }
+        # Diegetic: describe the sealed shutter the party can SEE, not the omniscient solution. Naming the
+        # "signal" mechanism they haven't found yet reads as the game talking past the characters (playtest
+        # 2026-08-14「主人公たちが認知してない信号がどうとか雑」). The routing itself is learned by DOING.
+        clue: A steel evacuation shutter is bolted down over the way to the platform stairs.
+        locales: { ja: { clue: 鋼の退避シャッターが固く下りて、ホーム階段への道を塞いでいる。 } }
   - id: room.tl1f.service-hatch
     name: Service Hatch
     description: A narrow service hatch off the lower corridor, its dry cabling still clipped to the wall.
@@ -146,8 +149,8 @@ rooms:
         kind: lock
         direction: north
         requiredFlag: flag.tl1f.signal-routed
-        clue: The evacuation shutter to the emergency phone stands open once the signal is routed.
-        locales: { ja: { clue: 信号を通すと、非常電話へ抜ける退避シャッターが開いている。 } }
+        clue: The evacuation shutter toward the emergency phone is bolted from the far side.
+        locales: { ja: { clue: 非常電話側へ抜ける退避シャッターは、固く下りたままだ。 } }
 ---
 
 # F1・改札外縁
