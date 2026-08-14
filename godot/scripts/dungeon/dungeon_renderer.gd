@@ -188,6 +188,17 @@ static func _build_geometry(parent: Node, world: Dictionary, state: Dictionary, 
 						var neighbor_key := "%d,%d" % [cx + ndelta.x, cy + ndelta.y]
 						var grand_door := use_authored_chambers and (chamber_block.has(coord_key) or chamber_block.has(neighbor_key))
 						_add_door(parent, door_mat, chamber_frame_mat, chamber_wall_mat, chamber_accent, base, dir, opened, grand_door)
+				# Close the clerestory over a chamber's OPEN boundaries: the raised ceiling leaves an unroofed
+				# strip above a normal-height neighbour that rendered as black void (playtest 2026-08-14「天井が
+				# 真っ黒」). A bulkhead from the neighbour height up to the chamber's seals it; the passage below
+				# stays open. Skip boundaries to ANOTHER chamber cell (same height — a bulkhead there would wall
+				# the room's interior in two).
+				if chamber_deco and wall_height > WALL_H:
+					var passable := _is_passage(edge) or stair_edge or _is_open_secret(edge, state, String(cell.get("roomId", "")), dir)
+					if passable:
+						var bd: Vector2i = {"north": Vector2i(0, -1), "south": Vector2i(0, 1), "east": Vector2i(1, 0), "west": Vector2i(-1, 0)}[dir]
+						if not chamber_block.has("%d,%d" % [cx + bd.x, cy + bd.y]):
+							_add_wall_band(parent, chamber_wall_mat if chamber_deco else wall_mat, base, dir, WALL_H, wall_height)
 			if landmark_chamber:
 				# A CLEARED 玄室 (its guarded chest is out, or already claimed) calms its landmark so victory reads
 				# at a glance (playtest: the room looked unchanged after the fight).
@@ -564,6 +575,34 @@ static func _add_standing_waterline(parent: Node, material: Material, base: Vect
 		"south": m.rotation.y = PI
 		"east": m.rotation.y = -PI / 2.0
 		"west": m.rotation.y = PI / 2.0
+	parent.add_child(m)
+
+## A CLERESTORY bulkhead — a wall segment spanning only y_from→y_to, used to close the vertical gap a
+## raised 玄室 ceiling opens over a normal-height neighbour (the floor-level passage stays open below it).
+## Without it the strip above the neighbour's ceiling rendered as a black void overhead (playtest 2026-08-14).
+static func _add_wall_band(parent: Node, mat: Material, base: Vector3, dir: String, y_from: float, y_to: float) -> void:
+	var band := y_to - y_from
+	if band <= 0.001:
+		return
+	var m := MeshInstance3D.new()
+	m.name = "ClerestoryBulkhead_%s" % dir
+	var quad := QuadMesh.new()
+	quad.size = Vector2(CELL, band)
+	m.mesh = quad
+	m.material_override = mat
+	var mid := (y_from + y_to) / 2.0
+	var off: Vector3 = {
+		"north": Vector3(0, mid, -CELL / 2),
+		"south": Vector3(0, mid, CELL / 2),
+		"east": Vector3(CELL / 2, mid, 0),
+		"west": Vector3(-CELL / 2, mid, 0),
+	}[dir]
+	m.position = base + off
+	match dir:
+		"north": m.rotation.y = 0
+		"south": m.rotation.y = PI
+		"east": m.rotation.y = -PI / 2
+		"west": m.rotation.y = PI / 2
 	parent.add_child(m)
 
 static func _add_wall(parent: Node, mat: Material, base: Vector3, dir: String, height: float = WALL_H) -> void:
