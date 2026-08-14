@@ -28,13 +28,17 @@ Gate: `verify_dungeon_interaction.gd` (label · confirm-not-silent · A1 · face
 centred message). Full `gate:migration` EXIT=0 (run `npm run import:assets` first, or verify_title_asset
 trips on un-imported JPEGs — the `.import` sidecars are generated).
 
-## ⏭️ RESUME HERE — remaining #39g slices (infra now in place)
+## ✅ #39g COMPLETE on the Claude-Code side
 
-- **(b, #39c) 3D barrier on a locked/gated edge** — minimap now shows it; the 3D view still renders a
-  gated way as open corridor. Draw a shutter/barrier mesh (DungeonRenderer).
-- **(c) Full-map doors/gates** — mirror the minimap door/lock drawing in floor_map.gd.
-- **(d, #39e-3) Event variety** — per-type presentation, now that events are visible.
-- **(e) Flat phone art** — pasted flat on the wall (Codex/art handoff).
+- **(b, `023fcf0`) 3D sealed barrier** — a gated way draws Terminal Line's `sealed-door.jpg` shutter
+  across the opening (gone once routed). 3D + minimap + centred message + dock all agree now.
+- **(c, `ea5a099`) Full-map lock bar** — the planning map draws a red lock bar on sealed gates,
+  mirroring the minimap (overlay only, so the wall-agreement gate stays valid).
+- **(d, `c2a3cd9`) Presentation by importance** — a discovery (secret) pops centred; routine beats
+  stay the bottom one-liner.
+
+Only remaining piece is art: the flat phone texture (Codex handoff). Everything else in the
+dungeon-interaction pass is shipped and gated (`verify_dungeon_interaction`, `verify_chamber_ceiling`).
 
 ## ✅ 「天井が壊れている？」 — RESOLVED (`47275a1`)
 

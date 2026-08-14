@@ -51,12 +51,14 @@ design ideas (unapproved): `docs/design/ballistic-world-program.md`.
     行く手を向くと authored clue を画面中央に diegetic 表示、背けると消える。右上ドックの clue 行は撤去し操作キー参照のみに。
     ＝#39e(1) 完了。**ついでに Slice 1 が ux-parity(dungeon-dock) を割っていたのを検知・修正**（汎用ラベルで useReturnMarker
     非露出 → manifest exclude＋returnToTown require。verify_ux_parity は私が回した gate 群に含まれず見落としていた）。
-  - **残（次スライス）**: (b) 3D の locked 辺バリア。(c) full-map の扉/gate 描画。(d) 電話の平面ベタ貼りアート（Codex handoff）。
-- [~] **#39e — room event 演出の再設計.**
-  - [x] **(1) 重要情報を画面中央へ（`b3a4d8d`）** — #39g Slice 3 で完了（封鎖された行く手の clue を中央 Wiz 面へ）。
-  - [x] **(2) diegetic 化（`c30e1a5`）**: tl1f 退避シャッター clue の全知メタ（「信号を通すと…」）を、キャラが見える
-    シャッターの描写へ書き換え。signal 経路は「やって学ぶ」（表示板 grant clue）に一本化。
-  - **残**: (3) イベント種別ごとの演出差・バリエーション（secret/door/room-reveal 等を中央 vs 下部で出し分け）。
+  - [x] **(b) 3D の封鎖バリア（`023fcf0`）**: gated 辺に sealed-door.jpg（退避シャッター）を描画、開通で消える。3D+minimap+中央+dock が全一致。
+  - [x] **(c) full-map の lock 描画（`ea5a099`）**: 全体図の gated 辺に赤ロックバー（minimap と同型 overlay、`_is_passage` 不変で agreement gate 維持）。
+  - **残**: (e) 電話の平面ベタ貼りアート（**Codex/art 領域** — Claude 側の #39g 実装は完了）。
+- [x] **#39e — room event 演出の再設計 — 完了.**
+  - [x] **(1) 重要情報を画面中央へ（`b3a4d8d`）** — #39g Slice 3（封鎖された行く手の clue を中央 Wiz 面へ）。
+  - [x] **(2) diegetic 化（`c30e1a5`）**: tl1f 退避シャッター clue の全知メタ（「信号を通すと…」）をキャラ視点へ書換。
+  - [x] **(3) 種別ごとの演出差（`c2a3cd9`）**: 発見（secret_found）は中央にポップ、routine（旋回/足音/何もなし）は下部1行。faced-gate clue が最優先。
+- [x] **天井真っ黒（`47275a1`）**: 演出でなく render bug（玄室 raised ceiling の clerestory 隙間）。bulkhead で解消、gate `verify_chamber_ceiling`。
 
 2026-08-13 実プレイ playtest（terminal-line）で挙がった指摘。優先度順:
 

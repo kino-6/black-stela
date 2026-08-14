@@ -1,11 +1,12 @@
 # Dungeon interaction & presentation model — redesign (#39g)
 
-Status: **IMPLEMENTING (2026-08-14).** Shipped: **Slice 1** (`3ca9786`) confirm-before-return +
-generic 帰還 label + A1 facing-aware 決定; **Slice 2** (`493ee2e`) minimap door/lock truth + faced-gate
-inspect; **diegetic clue** (`c30e1a5`); **Slice 3** (`b3a4d8d`) the centred Wizardry message surface
-(§3.4) replacing the top-right clue line — facing a sealed way shows its diegetic clue centred.
-Remaining: the 3D barrier on locked edges (§3.5), full-map doors/gates, and event variety (§3.4 for
-non-sealed-way beats). Forks resolved by the user:
+Status: **COMPLETE on the Claude-Code side (2026-08-14).** Shipped: **Slice 1** (`3ca9786`)
+confirm-before-return + generic 帰還 label + A1 facing-aware 決定; **Slice 2** (`493ee2e`) minimap
+door/lock truth + faced-gate inspect; **diegetic clue** (`c30e1a5`); **Slice 3** (`b3a4d8d`) the centred
+Wizardry message surface (§3.4) replacing the top-right clue line; **3D sealed-shutter barrier**
+(`023fcf0`, §3.5); **full-map lock bar** (`ea5a099`); **discovery-vs-ambient presentation** (`c2a3cd9`,
+§3.4). Also fixed the raised-chamber ceiling void (`47275a1`). Remaining is art only: the flat phone
+texture (Codex). Forks resolved by the user:
 **FORK A → A1 (facing decides)** · **FORK B → generic 「町へ戻る」 default + optional `returnKind` override**
 · **presentation → the centred surface REPLACES the top-right hint panel** (ambient flavor stays the
 bottom one-liner). Written after the 2026-08-14 `play:late`
