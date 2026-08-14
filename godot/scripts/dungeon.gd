@@ -44,6 +44,9 @@ var _party_hud: HBoxContainer = null
 var _log_label: Label
 var _center_panel: PanelContainer = null   # the centred Wiz-style message for the way the party FACES
 var _center_label: Label = null
+# A one-shot DISCOVERY beat (a secret opening) shown centred until the next action; distinct from the
+# facing-driven sealed-way clue, which takes precedence while the party faces a barred way.
+var _pending_center_event: String = ""
 var _header: Label
 var _busy: bool = false
 # The risky chest operation currently awaiting a party member (investigate / disarm / unlock).
@@ -860,6 +863,9 @@ func _apply(result: Dictionary) -> void:
 	if _run:
 		_run.state = _state
 	var events: Array = result.get("events", [])
+	# Each action starts a fresh beat: a discovery from THIS result may claim the centred surface, but a
+	# stale one from the last action never lingers past the next move.
+	_pending_center_event = ""
 	_log_events(events)
 	if _state.get("phase", "") == "combat":
 		_busy = true
@@ -1320,8 +1326,12 @@ func _update_view(animate: bool) -> void:
 # the middle of the screen (the important "why won't this open" the top-right panel used to bury); facing
 # anything else clears it. Event-driven beats (a secret opening) may override it for the moment they fire.
 func _refresh_context_message() -> void:
+	# A barred way the party is looking at wins the surface (persistent context). Otherwise a discovery beat
+	# from the current action shows until the next move. Nothing to say → clear.
 	if _faced_gate_closed():
 		_show_center_message(_faced_gate_clue())
+	elif _pending_center_event != "":
+		_show_center_message(_pending_center_event)
 	else:
 		_clear_center_message()
 
@@ -1419,8 +1429,20 @@ func _is_passage(edge: Variant) -> bool:
 func _log_events(events: Array) -> void:
 	for e in events:
 		var line := _event_line(e)
-		if line != "":
+		if line == "":
+			continue
+		# Presentation by importance (#39e-3): a real DISCOVERY pops CENTRED (Wiz-style), everything else —
+		# turns, footsteps, ambient flavour, "nothing found" — stays the quiet bottom one-liner. Same surface
+		# the sealed-way clue uses, so beats read as beats and atmosphere reads as atmosphere.
+		if _is_centred_event(e):
+			_pending_center_event = line
+		else:
 			_log_label.text = line
+
+# Which event types deserve the centred surface — a genuine discovery the player should stop and notice,
+# not a routine step or ambient line (those would just flicker the middle of the screen).
+func _is_centred_event(e: Dictionary) -> bool:
+	return String(e.get("type", "")) == "secret_found"
 
 func _event_line(e: Dictionary) -> String:
 	match e.get("type", ""):

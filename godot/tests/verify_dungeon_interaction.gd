@@ -79,6 +79,26 @@ func _run_checks() -> void:
 	for i in 3:
 		await process_frame
 
+	# (6) — presentation by importance (#39e-3): a DISCOVERY pops centred; an ambient beat stays bottom.
+	var d4 := await _boot("terminal-line", "cell.tl1f.entrance", "north")
+	_check(d4._is_centred_event({"type": "secret_found"}), "a secret discovery is a centred beat")
+	_check(not d4._is_centred_event({"type": "party_turned"}), "a routine turn is NOT a centred beat (stays the bottom log)")
+	d4._pending_center_event = ""
+	d4._log_events([{"type": "secret_found"}])
+	d4._refresh_context_message()
+	for i in 3:
+		await process_frame
+	_check(d4._center_panel.visible and String(d4._center_label.text).find("隠された") != -1, "finding a secret shows it CENTRED")
+	d4._pending_center_event = ""
+	d4._log_events([{"type": "party_turned", "facing": "east"}])
+	d4._refresh_context_message()
+	for i in 3:
+		await process_frame
+	_check(not d4._center_panel.visible, "an ambient turn does NOT hijack the centred surface")
+	d4.queue_free()
+	for i in 3:
+		await process_frame
+
 func _count_prefixed(node: Node, prefix: String) -> int:
 	if node == null:
 		return 0
