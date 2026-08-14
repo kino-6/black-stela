@@ -34,6 +34,9 @@ static func build(ctx: Dictionary) -> Control:
 
 	var quests: Array = world.get("quests", [])
 	var focus_target: Button = null
+	# Same explicit chain the facility board needs: a scroller of tall quest cards can push a lower
+	# accept/claim button past 戻る's screen position, so geometry would skip it. Deterministic ↑↓ stops.
+	var actions: Array = []
 	if quests.is_empty():
 		root.add_child(UI.label(I18n.t("questBoard.empty"), 16, UI.DIM))
 	else:
@@ -41,14 +44,19 @@ static func build(ctx: Dictionary) -> Control:
 		for quest in quests:
 			var result := _quest_row(ctx, world, state, quest, progress_by_id)
 			list.add_child(result["control"])
-			if focus_target == null and result["action"] != null:
-				focus_target = result["action"]
+			if result["action"] != null:
+				actions.append(result["action"])
+				if focus_target == null:
+					focus_target = result["action"]
 		root.add_child(UI.scroller(list, Vector2(1080, 460)))
 
 	var back := UI.button(I18n.t("town.serviceCancel"), ctx["close"], Vector2(180, 44), 18)
 	var foot := UI.row()
 	foot.add_child(back)
 	root.add_child(foot)
+	UI.chain_column(actions, null, back)
+	if not actions.is_empty():
+		back.focus_neighbor_top = back.get_path_to(actions.back())
 	ctx["focus_hint"].call(focus_target if focus_target else back)
 	return root
 

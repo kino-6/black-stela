@@ -21,6 +21,11 @@ static func build(ctx: Dictionary) -> Control:
 
 	var facilities: Array = world.get("facilities", [])
 	var focus_target: Button = null
+	# The upgrade buttons must be chained EXPLICITLY: with several tall facility cards the scroller pushes
+	# a lower button (e.g. 兵装工廠 強化する（60）) below the 戻る button's screen position, so the D-pad's
+	# geometry resolution jumps 強化（8）→戻る and never reaches the deeper button (focus-trap gate: "強化
+	# する（60）unreachable"). An explicit column makes every upgrade a deterministic ↑↓ stop.
+	var actions: Array = []
 	if facilities.is_empty():
 		root.add_child(UI.label(I18n.t("facility.empty"), 16, UI.DIM))
 	else:
@@ -28,14 +33,20 @@ static func build(ctx: Dictionary) -> Control:
 		for facility in facilities:
 			var result := _facility_row(ctx, state, facility)
 			list.add_child(result["control"])
-			if focus_target == null and result["action"] != null:
-				focus_target = result["action"]
+			if result["action"] != null:
+				actions.append(result["action"])
+				if focus_target == null:
+					focus_target = result["action"]
 		root.add_child(UI.scroller(list, Vector2(1080, 460)))
 
 	var back := UI.button(I18n.t("town.serviceCancel"), ctx["close"], Vector2(180, 44), 18)
 	var foot := UI.row()
 	foot.add_child(back)
 	root.add_child(foot)
+	# Chain the upgrade buttons top-to-bottom and hand off to 戻る; 戻る climbs back to the last upgrade.
+	UI.chain_column(actions, null, back)
+	if not actions.is_empty():
+		back.focus_neighbor_top = back.get_path_to(actions.back())
 	ctx["focus_hint"].call(focus_target if focus_target else back)
 	return root
 
