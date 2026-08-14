@@ -47,13 +47,16 @@ design ideas (unapproved): `docs/design/ballistic-world-program.md`.
     帰還点に吸われない）。gate: verify_dungeon_interaction、実画面 PNG 確認。
   - [x] **Slice 2（`493ee2e`）**: minimap 真実化（#39c 参照）＋**faced gate を 決定=調べる**（tl1f 退避シャッターの
     「扉を調べる際に電話へ」を terminal-line 側で解消 — その扉は edge でなく room-gate）。
-  - **残（次スライス）**: (a) **中央メッセージ面**を右上ヒントパネルの置換として実装し重要 beat を集約（infra は
-    `dungeon.gd _show_confirm` で確立済み）＝#39e(1)。(b) 3D の locked 辺バリア。(c) full-map の扉/gate 描画。
-    (d) 電話の平面ベタ貼りアート（Codex handoff）。
+  - [x] **Slice 3（`b3a4d8d`）**: **中央 Wiz 式メッセージ面**（`_center_panel`/`_refresh_context_message`）＝封鎖された
+    行く手を向くと authored clue を画面中央に diegetic 表示、背けると消える。右上ドックの clue 行は撤去し操作キー参照のみに。
+    ＝#39e(1) 完了。**ついでに Slice 1 が ux-parity(dungeon-dock) を割っていたのを検知・修正**（汎用ラベルで useReturnMarker
+    非露出 → manifest exclude＋returnToTown require。verify_ux_parity は私が回した gate 群に含まれず見落としていた）。
+  - **残（次スライス）**: (b) 3D の locked 辺バリア。(c) full-map の扉/gate 描画。(d) 電話の平面ベタ貼りアート（Codex handoff）。
 - [~] **#39e — room event 演出の再設計.**
+  - [x] **(1) 重要情報を画面中央へ（`b3a4d8d`）** — #39g Slice 3 で完了（封鎖された行く手の clue を中央 Wiz 面へ）。
   - [x] **(2) diegetic 化（`c30e1a5`）**: tl1f 退避シャッター clue の全知メタ（「信号を通すと…」）を、キャラが見える
     シャッターの描写へ書き換え。signal 経路は「やって学ぶ」（表示板 grant clue）に一本化。
-  - **残**: (1) **重要情報を中央モーダルへ**（#39g 残(a) と同一作業）／(3) イベント種別ごとの演出差・バリエーション。
+  - **残**: (3) イベント種別ごとの演出差・バリエーション（secret/door/room-reveal 等を中央 vs 下部で出し分け）。
 
 2026-08-13 実プレイ playtest（terminal-line）で挙がった指摘。優先度順:
 
