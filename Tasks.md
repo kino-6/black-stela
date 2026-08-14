@@ -28,6 +28,22 @@ design ideas (unapproved): `docs/design/ballistic-world-program.md`.
 
 ## Active queue (process top-down)
 
+### 2026-08-14 play:late 集中 playtest バッチ #40〜（images #29–#43） — 15件
+**修正済み・push 済み（このバッチ）:**
+- [x] **#40a 進行不能: 保守階段が降りられない（`a389c50`）** — 部屋の別方向の閉ゲート（北シャッター）が東の降段までブロック。`_blocking_stair_gate` を stairs 方向照合に。**最重要**。
+- [x] **#40b clue 全知漏れ（`a389c50`）** — 「ホーム階段/非常電話側」＝主人公が見ていない先を名指し → 見えるシャッターの描写に統一。
+- [x] **#40c Focus時スクロールされない（`a1478fb`）** — `UI.scroller` に `follow_focus`。鑑定所/基地整備/依頼掲示板 全 scroller パネル共通で解消。
+- [x] **#40d ステータスに攻撃2つ（`f042c3f`）** — 攻撃(stat)と damage range が両方「攻撃」ラベル → 単一「攻撃」に（JRPG標準）。
+- [x] **#40e 天井真っ黒（`47275a1`、確認済 image#30）** — 玄室 clerestory bulkhead。
+
+**未対応（優先順）:**
+- [ ] **#40f 【最優先・再発4回】階段/ハシゴが 3D で見えない・消失（images #29/#35/#41/#43）** — user「登り下り階段はもう3Dにして。リテイクしても治らない」。現状は平面アート billboard を `_first_wall_dir` 壁に貼るだけ→(1)フラットで安っぽい (2)入口/帰還点/降下着地で party の向きの裏に置かれ見えない。**要: 実 3D ジオメトリ（ハシゴ=縦レール＋横桟、階段=実段）＋ party が着地時に見える面へ配置**。`dungeon_renderer._add_ladder_shaft_art`/`_add_stairs`。gate: 実画面 PNG。
+- [ ] **#40g 治療院で状態異常が治らない（image#36）** — 施療院は HP＋injury のみ。恐怖等 status を治さない。`recovery_panel`/`recover_party` rule で status も治療（要 price+clear）or 帰還時 clear。
+- [ ] **#40h 鑑定所「合わせる相手」選択が効かない（image#38）** — 上部セレクタで別キャラを選んでも item 行の対象/装備ボタンが変わらない。state 配線バグ。用語も不親切。
+- [ ] **#40i サービスパネルが無駄に狭い（images#37/#39）** — scroller が 460px 等の固定小サイズで画面下に無駄な暗部。パネル/scroller の縦を画面高に追従。
+- [ ] **#40j 英文が残っている（image#42「回収ロッカー」の event）** — room event の ja locale 欠落 → `_room_event_text` が英語 fallback。terminal-line 全 room の event/description に ja 有無を洗い出し。
+- [ ] **#40k 電話が壁に平面ベタ貼り（image#32）** — Codex/art 領域。mounting（筐体/凹み）の改善は Claude 可。
+
 ### 2026-08-14 terminal-line `play:late` playtest バグ（b1f偏重で tl1f が手薄＝露出。#32 が静的 room event を可視化した副作用も）
 
 - [x] **#39a — `play:late` 降下でダンジョン真っ黒** — 修正済み（`172b710`）。`run.reset()` が b1f ダンジョン state を seed し、
