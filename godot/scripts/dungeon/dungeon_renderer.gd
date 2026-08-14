@@ -94,6 +94,11 @@ static func _build_geometry(parent: Node, world: Dictionary, state: Dictionary, 
 	# structural surround reads distinct from the lighter leaves, natural, and NEVER glowing; still a broad
 	# framed threshold so a closed 玄室 announces a room. A scenario can override the tint via `chamberFrame`.
 	var chamber_frame_mat := _textured_mat(_asset(world, run, "dungeon/wood-door.jpg"), Color(String(pal.get("chamberFrame", "8f6f45"))))
+	# A sealed GATE (a key/flag-locked way that stays kind "open" in the rules) needs a visible barrier in
+	# the first-person view — otherwise the corridor reads as walkable while the party is blocked (#39g; the
+	# minimap and the centred message already flag it, the main view must agree). Terminal Line ships a
+	# `sealed-door.jpg` (its 退避シャッター); a world without one falls back to a flat metal tint.
+	var barrier_mat := _textured_mat(_asset(world, run, "dungeon/sealed-door.jpg"), Color(String(pal.get("barrier", "6b6f74"))))
 	var rendered_doors := {}
 
 	var floor_dungeon := _current_floor_id(state, world)
@@ -199,6 +204,10 @@ static func _build_geometry(parent: Node, world: Dictionary, state: Dictionary, 
 						var bd: Vector2i = {"north": Vector2i(0, -1), "south": Vector2i(0, 1), "east": Vector2i(1, 0), "west": Vector2i(-1, 0)}[dir]
 						if not chamber_block.has("%d,%d" % [cx + bd.x, cy + bd.y]):
 							_add_wall_band(parent, chamber_wall_mat if chamber_deco else wall_mat, base, dir, WALL_H, wall_height)
+				# A sealed gate on a walkable edge draws a barrier across the opening so the 3D view stops
+				# reading as an open corridor (#39g「開いて見えるのに固く閉ざされている」).
+				if _is_passage(edge) and _gate_closed(room, dir, state):
+					_add_barrier(parent, barrier_mat, base, dir, wall_height)
 			if landmark_chamber:
 				# A CLEARED 玄室 (its guarded chest is out, or already claimed) calms its landmark so victory reads
 				# at a glance (playtest: the room looked unchanged after the fight).
@@ -604,6 +613,52 @@ static func _add_wall_band(parent: Node, mat: Material, base: Vector3, dir: Stri
 		"east": m.rotation.y = -PI / 2
 		"west": m.rotation.y = PI / 2
 	parent.add_child(m)
+
+## A barrier across a sealed gate's opening — a wall-height panel set slightly INTO the cell so it never
+## z-fights a reciprocal gate's panel on the shared boundary. Named so a gate can prove the way is drawn shut.
+static func _add_barrier(parent: Node, mat: Material, base: Vector3, dir: String, height: float = WALL_H) -> void:
+	var m := MeshInstance3D.new()
+	m.name = "SealedBarrier_%s" % dir
+	var quad := QuadMesh.new()
+	quad.size = Vector2(CELL, height)
+	m.mesh = quad
+	m.material_override = mat
+	var inset := 0.06
+	var off: Vector3 = {
+		"north": Vector3(0, height / 2, -CELL / 2 + inset),
+		"south": Vector3(0, height / 2, CELL / 2 - inset),
+		"east": Vector3(CELL / 2 - inset, height / 2, 0),
+		"west": Vector3(-CELL / 2 + inset, height / 2, 0),
+	}[dir]
+	m.position = base + off
+	match dir:
+		"north": m.rotation.y = 0
+		"south": m.rotation.y = PI
+		"east": m.rotation.y = -PI / 2
+		"west": m.rotation.y = PI / 2
+	parent.add_child(m)
+
+## A sealed gate on `dir` (a key/flag not yet met) — the same predicate the rules block on
+## (exploration_commands._find_gate / _is_gate_open) and the minimap draws its lock bar from.
+static func _gate_closed(room: Dictionary, dir: String, state: Dictionary) -> bool:
+	for gate in room.get("gates", []):
+		if typeof(gate) != TYPE_DICTIONARY or String(gate.get("direction", "")) != dir:
+			continue
+		if String(gate.get("kind", "")) == "shortcut":
+			continue
+		var key_id: Variant = gate.get("requiredKeyId", null)
+		if typeof(key_id) == TYPE_STRING and key_id != "":
+			var held := false
+			for item in state.get("inventory", []):
+				if String(item.get("id", "")) == key_id and int(item.get("quantity", 0)) > 0:
+					held = true
+					break
+			if not held:
+				return true
+		var flag: Variant = gate.get("requiredFlag", null)
+		if typeof(flag) == TYPE_STRING and flag != "" and not (state.get("discoveredSecrets", []) as Array).has(flag):
+			return true
+	return false
 
 static func _add_wall(parent: Node, mat: Material, base: Vector3, dir: String, height: float = WALL_H) -> void:
 	var m := MeshInstance3D.new()

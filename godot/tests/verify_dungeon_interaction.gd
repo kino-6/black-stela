@@ -60,9 +60,28 @@ func _run_checks() -> void:
 	mm.refresh(opened)
 	_check(not mm._gate_closed(room, "south"), "once the flag is routed, the shutter reads as open (the map keeps up)")
 	mm.free()
+
+	# (5) — the 3D view must AGREE: a sealed gate draws a barrier across the opening, gone once routed.
+	var DungeonRenderer := preload("res://scripts/dungeon/dungeon_renderer.gd")
+	var sealed_state := {"phase": "dungeon", "combat": null, "position": {"cellId": "cell.tl1f.return-marker", "roomId": "room.tl1f.return-marker", "facing": "south"}, "map": {"floorId": "dungeon.tl1f"}, "party": [], "chests": []}
+	var built_sealed: Dictionary = DungeonRenderer.build(run.world, sealed_state, null, Vector2(1280, 720))
+	_check(_count_prefixed(built_sealed.get("container", null), "SealedBarrier_") > 0, "3D view draws a barrier across the sealed shutter (not an open corridor)")
+	var open_state := sealed_state.duplicate(true)
+	open_state["discoveredSecrets"] = ["flag.tl1f.signal-routed"]
+	var built_open: Dictionary = DungeonRenderer.build(run.world, open_state, null, Vector2(1280, 720))
+	_check(_count_prefixed(built_open.get("container", null), "SealedBarrier_") == 0, "once routed, the 3D barrier is gone (the way is truly open)")
+
 	d3.queue_free()
 	for i in 3:
 		await process_frame
+
+func _count_prefixed(node: Node, prefix: String) -> int:
+	if node == null:
+		return 0
+	var n := 1 if String(node.name).begins_with(prefix) else 0
+	for c in node.get_children():
+		n += _count_prefixed(c, prefix)
+	return n
 
 func I18n_generic() -> String:
 	var I18n := preload("res://scripts/i18n.gd")
