@@ -675,13 +675,37 @@ func _blocking_stair_gate() -> Variant:
 	var room: Variant = _current_room()
 	if typeof(room) != TYPE_DICTIONARY or not _has_stairs_here():
 		return null
+	var stair_dir := _stairs_edge_dir()
 	for gate in room.get("gates", []):
 		if typeof(gate) != TYPE_DICTIONARY:
+			continue
+		# A gate blocks the STAIRS only if it sits on the stairs' own way (no direction = a crank/floor-map
+		# gate on the descent itself, or a direction that matches). A gate naming a DIFFERENT direction seals
+		# some OTHER passage in this room — e.g. the tl1f 保守階段 also has a north evacuation shutter — and
+		# must not make the (east) descent read as blocked, which stranded the party「階段を降りられない」
+		# (playtest 2026-08-14).
+		var gdir := String(gate.get("direction", ""))
+		if gdir != "" and stair_dir != "" and gdir != stair_dir:
 			continue
 		if _is_gate_open(gate):
 			continue
 		return gate
 	return null
+
+# The direction of the stairs edge on the current cell ("" if none) — so a gate on a different side of the
+# room is not mistaken for a seal on the descent.
+func _stairs_edge_dir() -> String:
+	if _state.get("position", null) == null:
+		return ""
+	var room_id: String = _state["position"]["roomId"]
+	for dungeon in _world.get("dungeons", []):
+		for cell in (dungeon.get("grid", {}) as Dictionary).get("cells", []):
+			if cell.get("roomId", "") == room_id:
+				for dir in (cell.get("edges", {}) as Dictionary):
+					var edge: Variant = (cell["edges"] as Dictionary)[dir]
+					if typeof(edge) == TYPE_DICTIONARY and String(edge.get("kind", "")) == "stairs":
+						return String(dir)
+	return ""
 
 func _is_gate_open(gate: Dictionary) -> bool:
 	var key_id: Variant = gate.get("requiredKeyId", null)
