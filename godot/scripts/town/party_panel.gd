@@ -239,8 +239,10 @@ static func build(ctx: Dictionary) -> Control:
 
 	detail.add_child(UI.label(I18n.t("partyMenu.combatStats"), 18, UI.GOLD))
 	var combat := UI.col(2)
+	# ONE 攻撃 line (JRPG-standard single value, user 2026-08-14) — both rows were labelled 攻撃, so the
+	# separate damageMin-damageMax range read as a duplicate stat. The single 攻撃 matches the party token
+	# and the combat roll; the range is derivable and no longer shown here.
 	_stat_row(combat, I18n.t("partyMenu.attack"), str(int(stats.get("attack", 0))))
-	_stat_row(combat, I18n.t("party.damage"), "%d-%d" % [int(stats.get("damageMin", 0)), int(stats.get("damageMax", 0))])
 	_stat_row(combat, I18n.t("party.accuracy"), str(int(stats.get("accuracy", 0))))
 	_stat_row(combat, I18n.t("party.armor"), str(int(stats.get("armor", 0))))
 	_stat_row(combat, I18n.t("party.speed"), str(int(stats.get("speed", 0))))
