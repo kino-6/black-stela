@@ -1261,8 +1261,13 @@ func _log_events(events: Array) -> void:
 func _event_line(e: Dictionary) -> String:
 	match e.get("type", ""):
 		"room_event_triggered":
-			# Authored room flavour AND the #32 random dungeon events ride this same log line.
-			return String(e.get("text", ""))
+			# A random dungeon event (#32) carries its own already-localized text; a STATIC room event carries
+			# only the rules' raw English `event`, so localize it here from the room's ja copy (playtest
+			# 2026-08-14「英文が漏れている」). Both ride this one log line.
+			if bool(e.get("random", false)):
+				return String(e.get("text", ""))
+			var localized := _room_event_text(String(e.get("roomId", "")))
+			return localized if localized != "" else String(e.get("text", ""))
 		"party_turned":
 			return "%sを向く。" % _dir_ja(e.get("facing", ""))
 		"room_entered":
@@ -1331,6 +1336,16 @@ func _room_name_for(rid: String) -> String:
 				var ja: Dictionary = room.get("locales", {}).get("ja", {}) if typeof(room.get("locales", {})) == TYPE_DICTIONARY else {}
 				return ja.get("name", room.get("name", rid))
 	return rid
+
+# A room's LOCALIZED authored `event` flavour (the rules emit only the raw English string, so localization
+# belongs here). "" when the room has no event. Falls back to the base `event` for a world with no ja copy.
+func _room_event_text(rid: String) -> String:
+	for dungeon in _world.get("dungeons", []):
+		for room in dungeon.get("rooms", []):
+			if String(room.get("id", "")) == rid:
+				var ja: Dictionary = (room.get("locales", {}) as Dictionary).get("ja", {}) if typeof(room.get("locales", {})) == TYPE_DICTIONARY else {}
+				return String(ja.get("event", room.get("event", "")))
+	return ""
 
 func _dir_ja(facing: String) -> String:
 	return {"north": "北", "south": "南", "east": "東", "west": "西"}.get(facing, facing)

@@ -37,7 +37,9 @@ static func maybe_roll(state: Dictionary, world: Dictionary) -> Variant:
 
 	var next: Dictionary = state.duplicate(true)
 	_apply(next, world, chosen)
-	return {"state": next, "event": {"type": "room_event_triggered", "roomId": room_id, "text": _text(chosen)}}
+	# `random: true` marks this as a rolled dungeon event so the log localizes it from the carried text, not
+	# from the room's own authored `event`.
+	return {"state": next, "event": {"type": "room_event_triggered", "roomId": room_id, "text": _text(chosen), "random": true}}
 
 static func _text(ev: Dictionary) -> String:
 	var ja: Dictionary = (ev.get("locales", {}) as Dictionary).get("ja", {})
