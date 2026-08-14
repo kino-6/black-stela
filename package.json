@@ -45,6 +45,7 @@
     "gate:controller": "godot --headless --path godot/ --script res://tests/verify_controller_coverage.gd",
     "gate:debug-start": "godot --headless --path godot/ --script res://tests/verify_debug_start.gd -- --debug-mode",
     "gate:title-asset": "godot --headless --path godot/ --script res://tests/verify_title_asset.gd",
+    "gate:landmark-vis": "godot --path godot/ --script res://tests/verify_landmark_visibility.gd",
     "gate:font": "godot --headless --path godot/ --script res://tests/verify_font.gd",
     "gate:i18n": "npm run export:i18n && godot --headless --path godot/ --script res://tests/verify_i18n_locale.gd",
     "export:build": "node scripts/export-build-stamp.mjs",
