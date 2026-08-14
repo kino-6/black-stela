@@ -46,7 +46,7 @@ design ideas (unapproved): `docs/design/ballistic-world-program.md`.
 **検出戦略（user「遊べば分かる不具合、検出できないの？」への回答 — "played-build gate" の穴を埋める）:**
 現行ゲートは**構造**（ノード在/フォーカス到達）しか見ず、**描画/遊んだ体験**を見ない。play-only クラス別の検出器を作る:
 - [x] **未翻訳（英文漏れ）** → verify_content_localization（済）。
-- [ ] **階段/ランドマークが FP で見えない**（#40f）→ 着地セルから実カメラを向けて stair/return ノードが**画面に映る**（frustum/pixel）ことをアサート。verify_stairs_render は「ノード在」だけ見ている＝穴。
+- [x] **階段/ランドマークが FP で見えない**（`c3ee703`）→ `verify_landmark_visibility.gd`（`gate:landmark-vis`、非headless）＝全stair/return セルでカメラをランドマークへ向け、ノードが画面中央帯に映るかアサート。**発見: 全54件が「向けば見える」＝PASS**。よって #40f の正体は「配置ミス」でなく **(a) 着地時にその方向を向いていない (b) 平面アートが視認できない**。→ #40f を「着地facing＋実3Dジオメトリ」に scope。**残 detector**: pixel 版（アートが実際に見えるか）は未（frustum では透明/暗い art を見逃す）。
 - [ ] **Focus がスクロールで見えない**（#40i）→ focus_trap を拡張し、各フォーカス制御の rect が scroller の可視 rect 内にあることをアサート。
 - [ ] **進行不能**（#40a 類）→ fixture で各階の降段/帰還が実際に使える（context=stairs/return）ことをアサート。
 - [ ] **重複ラベル**（#40d 類）→ パネルが同一ラベルの stat 行を2つ出さないことをアサート。
