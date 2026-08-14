@@ -15,19 +15,21 @@ optional returnStyle / centred surface REPLACES the top-right panel), and it's s
 - **Slice 2 (`493ee2e`)** — minimap draws gate-sealed ways as a red LOCK bar + doors as a blue leaf
   (`_gate_closed` reads room.gates like the rules), and 決定 facing a sealed gate inspects it
   (`_faced_gate_closed`). Resolves terminal-line's "扉を調べる際に電話へ" (its doors are room-gates).
+- **Slice 3 (`b3a4d8d`)** — the **centred Wizardry message surface** (`_center_panel` /
+  `_refresh_context_message`): facing a sealed way shows its authored diegetic clue centred; the
+  top-right dock drops the clue line (#39e-1). NB it also repaired a ux-parity regression Slice 1 had
+  quietly introduced — **run `gate:ux-parity` after any dock/screen-UI change.**
 - **Diegetic clue (`c30e1a5`)** — tl1f shutter clue rewritten from the omniscient "信号を通すと…" to what
   the party sees (#39e part 2).
 - **Focus-trap fix (`c7f6cb1`)** — a PRE-EXISTING facility/quest D-pad gap (verify_focus_trap is
   gate:migration-only, so pre-push missed it): the deep 兵装工廠 「強化する（60）」 was unreachable.
 
-Gate: `verify_dungeon_interaction.gd` (label · confirm-not-silent · A1 · faced-gate · minimap truth).
+Gate: `verify_dungeon_interaction.gd` (label · confirm-not-silent · A1 · faced-gate · minimap truth ·
+centred message). Full `gate:migration` EXIT=0 (run `npm run import:assets` first, or verify_title_asset
+trips on un-imported JPEGs — the `.import` sidecars are generated).
 
 ## ⏭️ RESUME HERE — remaining #39g slices (infra now in place)
 
-- **(a, #39e-1) Centred message SURFACE replacing the top-right hint panel** — the biggest remaining
-  piece: route important beats (locked-way discovery, key/shortcut opening, room/boss reveal) to a
-  centred Wiz modal; keep ambient flavor in the bottom one-liner. The modal infra already exists
-  (`dungeon.gd _show_confirm` — generalise it into a message/confirm surface).
 - **(b, #39c) 3D barrier on a locked/gated edge** — minimap now shows it; the 3D view still renders a
   gated way as open corridor. Draw a shutter/barrier mesh (DungeonRenderer).
 - **(c) Full-map doors/gates** — mirror the minimap door/lock drawing in floor_map.gd.
