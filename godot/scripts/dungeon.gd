@@ -52,6 +52,7 @@ var _full_map: Control = null
 var _party_menu: Control = null
 var _config_overlay: Control = null
 var _chest_overlay: Control = null
+var _confirm_overlay: Control = null
 # The opened chest stays in canonical state/map history. This transient value only holds its result on
 # screen until the player has read the acquired item.
 var _chest_result: Dictionary = {}
@@ -229,6 +230,13 @@ func _input(event: InputEvent) -> void:
 			_close_config_overlay()
 			get_viewport().set_input_as_handled()
 		return
+	# The confirm prompt (帰還) is modal: Cancel backs out, everything else is left for the buttons' own
+	# focus navigation — but never leaks to the maze beneath, so the party can't walk while it is up.
+	if _confirm_overlay and is_instance_valid(_confirm_overlay):
+		if event.is_action_pressed("cancel"):
+			_hide_confirm()
+			get_viewport().set_input_as_handled()
+		return
 	# The full-floor map is a MODAL overlay: Cancel (Esc) or M closes it, and it swallows every other key
 	# so the party never walks while the player is reading the map. Esc did nothing here before —
 	# `_close_overlays_or` was defined but never wired, so the map could only be dismissed by its button.
@@ -308,6 +316,7 @@ func _input(event: InputEvent) -> void:
 # command dispatcher.
 func _process(delta: float) -> void:
 	var blocked: bool = _busy or not _chest_result.is_empty() or (_full_map and is_instance_valid(_full_map)) or (_party_menu and is_instance_valid(_party_menu)) \
+			or (_confirm_overlay and is_instance_valid(_confirm_overlay)) \
 			or String(_state.get("phase", "")) != "dungeon" or not current_chest().is_empty()
 	_hold.tick(delta, blocked, _do_move)
 
@@ -543,6 +552,12 @@ func _hint_row(key: String, action: String) -> Control:
 # reacts to). Charm/return-marker and the rest live in the メニュー; this is the one press-to-act.
 func _context_command() -> String:
 	var room: Variant = _current_room()
+	# #39g A1 — address the FACED way first. A door you are looking at, or a way barred in front of you,
+	# takes the decide, so a return point sharing this cell (the 非常電話) can no longer shadow it: 決定
+	# used to be swallowed by 帰還 the moment you tried to open a door (playtest 2026-08-14). Face away
+	# from the door — into the room — and 決定 falls through to 帰還/探索 as before.
+	if typeof(_faced_interactable_edge()) == TYPE_DICTIONARY:
+		return "advance"
 	if _has_stairs_here() and typeof(_blocking_stair_gate()) != TYPE_DICTIONARY:
 		return "stairs"
 	if typeof(room) == TYPE_DICTIONARY and (bool(room.get("stairsToTown", false)) or bool(room.get("restPoint", false))):
@@ -551,21 +566,46 @@ func _context_command() -> String:
 		return "disarm"
 	return "search"
 
+# The interactable edge the party is FACING — a closed door to open, or a barred way to look over. Open
+# passage and plain walls are not interactables (you walk corridors with the arrows; a blank wall says
+# nothing), so those fall through and 決定 keeps its cell meaning. Stairs are handled by their own branch.
+func _faced_interactable_edge() -> Variant:
+	var cell := _current_cell()
+	if cell.is_empty():
+		return null
+	var facing := String(_position().get("facing", "north"))
+	var edge: Variant = (cell.get("edges", {}) as Dictionary).get(facing, null)
+	if typeof(edge) != TYPE_DICTIONARY:
+		return null
+	return edge if String((edge as Dictionary).get("kind", "")) in ["door", "locked"] else null
+
 # The label 決定 carries right now — mirrors _context_command so the hint reads what pressing it will do.
 func _context_label() -> String:
 	match _context_command():
+		"advance":
+			var edge: Variant = _faced_interactable_edge()
+			var kind := String((edge as Dictionary).get("kind", "")) if typeof(edge) == TYPE_DICTIONARY else ""
+			return I18n.t("play.openDoor" if kind == "door" else "play.inspectWay")
 		"stairs":
 			# 下り(次の階へ) と 上り(前の階へ戻る) は両方 stairs だが向きが逆 — 同じ「階段」表示だと降り口が
 			# 探せない(playtest 2026-08-03「階段が消えている」)。目的階の順序で降下/上昇を出し分ける。
 			return I18n.t("play.descendStairs" if _stairs_is_descent(_stairs_target_floor_id()) else "play.ascendStairs")
 		"return":
-			var room: Variant = _current_room()
-			var via_stairs := typeof(room) == TYPE_DICTIONARY and bool(room.get("stairsToTown", false))
-			return I18n.t("play.useReturnStairs" if via_stairs else "play.useReturnMarker")
+			return _return_label()
 		"disarm":
 			return I18n.t("play.chestDisarm")
 		_:
 			return I18n.t("play.search")
+
+# The 帰還 label (FORK B): a plain "町へ戻る" that is never wrong. Only a point AUTHORED as a real
+# staircase (`returnStyle: stairs`) says "階段で" — the old code hardcoded that for EVERY stairsToTown
+# point, so a 非常電話 (returnStyle: marker) mislabelled itself as a stair (playtest 2026-08-14).
+func _return_label() -> String:
+	var room: Variant = _current_room()
+	var style := String((room as Dictionary).get("returnStyle", "")) if typeof(room) == TYPE_DICTIONARY else ""
+	if style == "stairs":
+		return I18n.t("play.useReturnStairs")
+	return I18n.t("play.returnToTown")
 
 # The dock is CONTEXTUAL: stairs and the way home only appear where they actually answer.
 func _dock_commands() -> Array:
@@ -580,10 +620,7 @@ func _dock_commands() -> Array:
 		# clue is shown as its own line under the commands instead.
 		out.append({"kind": "locked", "label": I18n.t("play.descentLockedShort"), "disabled": true})
 	if typeof(room) == TYPE_DICTIONARY and (bool(room.get("stairsToTown", false)) or bool(room.get("restPoint", false))):
-		# The way home reads differently depending on what it IS: a staircase back up, or the marker the
-		# party planted at a rest point.
-		var via_stairs := bool(room.get("stairsToTown", false))
-		out.append({"kind": "return", "label": I18n.t("play.useReturnStairs" if via_stairs else "play.useReturnMarker")})
+		out.append({"kind": "return", "label": _return_label()})
 	if _escape_item() != "":
 		out.append({"kind": "charm", "label": I18n.t("play.useReturnCharm")})
 	if typeof(room) == TYPE_DICTIONARY and typeof(room.get("trap", null)) == TYPE_DICTIONARY and not (_state.get("resolvedTraps", []) as Array).has(room["trap"].get("id", "")):
@@ -717,6 +754,10 @@ func _on_command(kind: String) -> void:
 	if _busy:
 		return
 	match kind:
+		"advance":
+			# 決定 on a faced door/barred way = walk into it: an open door opens and the party steps through,
+			# a barred way reports WHY in the log (same path as the forward arrow, so combat/chest hand off).
+			_do_move("move_forward")
 		"search":
 			_apply(SliceRules.resolve(_state, {"type": "search"}, _world, _engine))
 		"listen":
@@ -734,16 +775,20 @@ func _on_command(kind: String) -> void:
 		"party":
 			_toggle_party_menu()
 		"return":
-			_apply(SliceRules.resolve(_state, {"type": "return_to_town"}, _world, _engine))
-			if _state.get("phase", "") == "town":
-				get_tree().change_scene_to_file("res://scenes/town.tscn")
+			# #39g — leaving the dungeon is consequential and used to fire on a single 決定 with no warning
+			# (playtest 2026-08-14「非常電話が確認なしに戻る」). Ask first, centred, cursor on いいえ.
+			_show_confirm(I18n.t("play.confirmReturnTitle"), func():
+				_apply(SliceRules.resolve(_state, {"type": "return_to_town"}, _world, _engine))
+				if _state.get("phase", "") == "town":
+					get_tree().change_scene_to_file("res://scenes/town.tscn"))
 		"charm":
 			var charm := _escape_item()
 			if charm != "":
-				var target: String = String((_state.get("party", []) as Array)[0].get("id", "")) if not (_state.get("party", []) as Array).is_empty() else ""
-				_apply(SliceRules.resolve(_state, {"type": "use_item", "itemId": charm, "targetCharacterId": target}, _world, _engine))
-				if _state.get("phase", "") == "town":
-					get_tree().change_scene_to_file("res://scenes/town.tscn")
+				_show_confirm(I18n.t("play.confirmReturnTitle"), func():
+					var target: String = String((_state.get("party", []) as Array)[0].get("id", "")) if not (_state.get("party", []) as Array).is_empty() else ""
+					_apply(SliceRules.resolve(_state, {"type": "use_item", "itemId": charm, "targetCharacterId": target}, _world, _engine))
+					if _state.get("phase", "") == "town":
+						get_tree().change_scene_to_file("res://scenes/town.tscn"))
 
 # --- auto-explore ---------------------------------------------------------------------------------
 ## Walk the party forward on a timer until something asks for a decision — an encounter, a chest, or a
@@ -885,6 +930,50 @@ func _show_chest_overlay(chest: Dictionary) -> void:
 	_chest_overlay = layer
 	if built["focus"] != null:
 		call_deferred("_grab_focus_safe", built["focus"])
+
+# A centred Wizardry-style yes/no prompt over a dimming scrim (#39g). Used for the consequential
+# transition — leaving the dungeon — that must not fire on a single stray 決定. The cursor starts on
+# いいえ so a mis-press backs out, never exits; はい runs `on_yes`. Cancel (Esc) also backs out.
+func _show_confirm(message: String, on_yes: Callable) -> void:
+	if _confirm_overlay and is_instance_valid(_confirm_overlay):
+		_confirm_overlay.queue_free()
+	var layer := Control.new()
+	layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	var scrim := ColorRect.new()
+	scrim.color = Color(0, 0, 0, 0.62)
+	scrim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	layer.add_child(scrim)
+	var center := CenterContainer.new()
+	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	layer.add_child(center)
+	var panel := PanelContainer.new()
+	panel.add_theme_stylebox_override("panel", _panel_style(Color("14180df9"), GOLD))
+	panel.custom_minimum_size = Vector2(760, 0)
+	var col := UIKit.col(22)
+	col.add_theme_constant_override("separation", 22)
+	var msg := UIKit.prose(message, 26, INK, 680)
+	msg.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	col.add_child(msg)
+	var row := UIKit.row()
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.add_theme_constant_override("separation", 24)
+	var no_btn := UIKit.button(I18n.t("play.confirmNo"), func(): _hide_confirm(), Vector2(220, 56), 22)
+	var yes_btn := UIKit.button(I18n.t("play.confirmYes"), func(): _hide_confirm(); on_yes.call(), Vector2(220, 56), 22)
+	row.add_child(no_btn)
+	row.add_child(yes_btn)
+	col.add_child(row)
+	panel.add_child(col)
+	center.add_child(panel)
+	add_child(layer)
+	_confirm_overlay = layer
+	UIKit.link_lr(no_btn, yes_btn)
+	call_deferred("_grab_focus_safe", no_btn)
+
+func _hide_confirm() -> void:
+	if _confirm_overlay and is_instance_valid(_confirm_overlay):
+		_confirm_overlay.queue_free()
+	_confirm_overlay = null
+	_rebuild_dock()
 
 func _hide_chest_overlay() -> void:
 	if _chest_overlay and is_instance_valid(_chest_overlay):

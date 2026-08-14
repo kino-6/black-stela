@@ -529,6 +529,17 @@ export const ja = {
     useReturnMarker: "帰還標を使う",
     useReturnStairs: "階段で町へ戻る",
     useReturnCharm: "帰還の割符を使う",
+    // #39g: the plain "leave the dungeon" label. Point-specific overrides (returnKind) layer on top,
+    // but the generic line is never wrong — it stopped a phone reading "階段で町へ戻る" (playtest 2026-08-14).
+    returnToTown: "町へ戻る",
+    returnViaPhone: "非常電話で通報して戻る",
+    // #39g: 決定 addresses the FACED way (A1) — a door you open, a barred way you look over.
+    openDoor: "扉を開ける",
+    inspectWay: "行く手を調べる",
+    // #39g: leaving the dungeon is consequential, so it asks first (centred, Wizardry-style).
+    confirmReturnTitle: "地上へ戻りますか？　この探索はここで切り上げます。",
+    confirmYes: "はい",
+    confirmNo: "いいえ",
     camp: "野営",
     campTitle: "野営",
     campSubtitle: "隊列を組み直し、手持ちの品を分け合えます。",
