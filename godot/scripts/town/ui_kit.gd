@@ -129,6 +129,10 @@ static func scroller(child: Control, min_size: Vector2) -> ScrollContainer:
 	s.custom_minimum_size = min_size
 	s.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	s.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	# The D-pad must SCROLL the list to whatever it focuses — without this, focusing a row below the fold
+	# left it clipped and unreachable-looking (playtest 2026-08-14「Focus時スクロールされない」, hit on the
+	# 鑑定所 and 基地整備). One flag fixes every panel that scrolls through UI.scroller.
+	s.follow_focus = true
 	s.add_child(child)
 	child.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	return s
