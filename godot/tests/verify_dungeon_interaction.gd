@@ -46,6 +46,9 @@ func _run_checks() -> void:
 	#       and the minimap draws that direction as BLOCKED (not open corridor) — "map tells the truth".
 	var d3 := await _boot("terminal-line", "cell.tl1f.return-marker", "south")
 	_check(String(d3._context_command()) == "advance", "facing a sealed gate (shutter), 決定 inspects it — the 帰還 point no longer shadows it")
+	# #39e-1: the sealed-way reason shows CENTRED (Wiz-style), not buried in the top-right dock.
+	_check(d3._center_panel != null and d3._center_panel.visible, "facing a sealed way raises the CENTRED message")
+	_check(String(d3._center_label.text).find("シャッター") != -1, "the centred message carries the diegetic gate clue")
 	var run := d3.get_node("/root/Run")
 	var mm := preload("res://scripts/minimap.gd").new()
 	mm.setup(run.world, run.state)

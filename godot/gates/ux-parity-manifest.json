@@ -2732,7 +2732,11 @@
         },
         {
           "key": "play.descentLockedShort",
-          "reason": "Dungeon-UX redesign 2026-07-29: the DISABLED 階段封鎖 button is replaced by the always-shown clue line (_stair_gate_clue / play.descentLocked), which is more informative for a controller player."
+          "reason": "Dungeon-UX redesign 2026-07-29: the DISABLED 階段封鎖 button carries the sealed-way meaning; its authored clue is no longer a dock line — #39g moved it to a CENTRED Wizardry message shown when the party FACES the sealed way (_refresh_context_message), so 'important info' is not buried in the corner (playtest 2026-08-14). React reconciliation queued."
+        },
+        {
+          "key": "play.useReturnMarker",
+          "reason": "#39g FORK B (user-locked 2026-08-14): the 帰還 label is the generic play.returnToTown, which is never wrong — the old point-specific labels mislabelled a 非常電話 (returnStyle: marker) as '階段で町へ戻る'. Only a point AUTHORED as returnStyle:stairs keeps play.useReturnStairs. React still branches useReturnStairs/useReturnMarker (dev-reference); the Godot dock intentionally uses the generic line."
         },
         {
           "key": "play.ascendStairs",
@@ -2757,11 +2761,11 @@
         "play.mpShort",
         "play.partyStatus",
         "play.search",
-        "play.useReturnMarker",
+        "play.returnToTown",
         "play.useReturnStairs",
         "play.descendStairs"
       ],
-      "notes": "The contextual dock: 探索/耳をすます always, the stair only where one is (and a DISABLED 階段封鎖 with its clue where the way down will not open yet), the way home as stairs or the planted marker, a charm when one is carried, and the auto-explore STATUS at the end. Each is driven, because 'contextual' means the screen is different in each place.",
+      "notes": "The contextual dock: 探索/耳をすます always, the stair only where one is (a DISABLED 階段封鎖 where the way down will not open yet — its clue is now shown CENTRED, Wizardry-style, when the party faces the sealed way, #39g), the way home as the generic 町へ戻る (returnStyle:stairs keeps 階段で町へ戻る), a charm when one is carried, and the auto-explore STATUS at the end. Each is driven, because 'contextual' means the screen is different in each place.",
       "states": [
         {
           "uiState": {}

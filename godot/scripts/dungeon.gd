@@ -42,6 +42,8 @@ var _torch: OmniLight3D
 var _minimap: Control
 var _party_hud: HBoxContainer = null
 var _log_label: Label
+var _center_panel: PanelContainer = null   # the centred Wiz-style message for the way the party FACES
+var _center_label: Label = null
 var _header: Label
 var _busy: bool = false
 # The risky chest operation currently awaiting a party member (investigate / disarm / unlock).
@@ -194,6 +196,28 @@ func _build_overlays() -> void:
 	_log_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	log_panel.add_child(_log_label)
 	add_child(log_panel)
+
+	# CENTRED message (#39g/#39e) — important info the party is looking at RIGHT NOW (a sealed way and the
+	# reason it will not open) belongs in the middle of the screen, Wizardry-style, not buried as a faint
+	# line in the top-right command panel (playtest 2026-08-14「こういう大事な情報は画面中央に、Wizのように」).
+	# Upper-centre so it never covers the party formation, non-interactive, hidden until a beat needs it.
+	_center_panel = PanelContainer.new()
+	_center_panel.add_theme_stylebox_override("panel", _panel_style(Color("14180df2"), GOLD))
+	_center_panel.custom_minimum_size = Vector2(760, 0)
+	_center_panel.size = Vector2(760, 0)
+	_center_panel.position = Vector2(size.x / 2.0 - 380, size.y * 0.30)
+	_center_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var center_margin := MarginContainer.new()
+	for side in ["left", "right", "top", "bottom"]:
+		center_margin.add_theme_constant_override("margin_%s" % side, 20)
+	_center_label = _label("", 24, INK)
+	_center_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_center_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_center_label.custom_minimum_size = Vector2(720, 0)
+	center_margin.add_child(_center_label)
+	_center_panel.add_child(center_margin)
+	_center_panel.visible = false
+	add_child(_center_panel)
 
 	# The command region is a FIXED area (AGENTS.md: logs and messages must never push commands around).
 	# It is rebuilt in place, because a chest on this cell takes the region over.
@@ -527,14 +551,9 @@ func _rebuild_dock() -> void:
 	root.add_child(_hint_row(I18n.t("play.keyConfirm"), _context_label()))
 	root.add_child(_hint_row(I18n.t("play.keyCancel"), I18n.t("partyMenu.title")))
 	root.add_child(_hint_row(I18n.t("play.keyMap"), I18n.t("play.fullMap")))
-
-	# The reason a way down will not open, in the player's own language. React hides it in a tooltip; a
-	# controller player has no pointer to hover with.
-	var clue := _stair_gate_clue()
-	if clue != "":
-		# Wrap to the dock width — a plain label ran the clue off the panel's right edge (playtest 2026-07-31:
-		# "竪坑の落とし戸は閂で塞がれている。それ…" was clipped). The dock is 260px with ~16px content margins.
-		root.add_child(UIKit.prose(clue, 15, DIM, 228))
+	# The reason a sealed way won't open no longer lives here as a faint dock line — it is now shown CENTRED,
+	# Wizardry-style, when the party faces that way (_refresh_context_message). The dock keeps only the
+	# controller key reference, so "大事な情報" isn't buried in the corner (#39g/#39e).
 
 	_dock_host.add_child(root)
 
@@ -1295,6 +1314,44 @@ func _update_view(animate: bool) -> void:
 	if _minimap:
 		_minimap.refresh(_state)
 	_header.text = _room_name()
+	_refresh_context_message()
+
+# Drive the centred Wiz message from what the party FACES. A sealed way ahead shows its authored clue in
+# the middle of the screen (the important "why won't this open" the top-right panel used to bury); facing
+# anything else clears it. Event-driven beats (a secret opening) may override it for the moment they fire.
+func _refresh_context_message() -> void:
+	if _faced_gate_closed():
+		_show_center_message(_faced_gate_clue())
+	else:
+		_clear_center_message()
+
+func _show_center_message(text: String) -> void:
+	if _center_panel == null or text.strip_edges() == "":
+		return
+	_center_label.text = text
+	_center_panel.visible = true
+
+func _clear_center_message() -> void:
+	if _center_panel != null:
+		_center_panel.visible = false
+
+# The localized clue of the closed gate the party is facing — the diegetic description of the sealed way
+# (gate.locales.ja.clue), falling back to the base clue, then a generic "this way is sealed" line.
+func _faced_gate_clue() -> String:
+	var room: Variant = _current_room()
+	if typeof(room) != TYPE_DICTIONARY:
+		return ""
+	var facing := String(_position().get("facing", "north"))
+	for gate in (room as Dictionary).get("gates", []):
+		if typeof(gate) != TYPE_DICTIONARY or String(gate.get("direction", "")) != facing:
+			continue
+		if String(gate.get("kind", "")) == "shortcut" or _is_gate_open(gate):
+			continue
+		var locales: Variant = gate.get("locales", {})
+		var ja: Dictionary = (locales as Dictionary).get("ja", {}) if typeof(locales) == TYPE_DICTIONARY else {}
+		var clue := String(ja.get("clue", gate.get("clue", "")))
+		return clue if clue.strip_edges() != "" else I18n.t("play.descentLocked")
+	return ""
 
 # --- helpers --------------------------------------------------------------------------------------
 # position is a Dictionary while exploring but NULL once a return-to-town command fires. Dictionary.get
