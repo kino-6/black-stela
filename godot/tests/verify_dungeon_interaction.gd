@@ -42,6 +42,25 @@ func _run_checks() -> void:
 	for i in 3:
 		await process_frame
 
+	# (4) — A1 facing a ROOM-GATED way (the tl1f shutter: kind "open", sealed by flag): 決定 inspects it,
+	#       and the minimap draws that direction as BLOCKED (not open corridor) — "map tells the truth".
+	var d3 := await _boot("terminal-line", "cell.tl1f.return-marker", "south")
+	_check(String(d3._context_command()) == "advance", "facing a sealed gate (shutter), 決定 inspects it — the 帰還 point no longer shadows it")
+	var run := d3.get_node("/root/Run")
+	var mm := preload("res://scripts/minimap.gd").new()
+	mm.setup(run.world, run.state)
+	var room: Variant = mm._room("room.tl1f.return-marker")
+	_check(mm._gate_closed(room, "south"), "minimap reads the sealed shutter as a BLOCKED direction (not open passage)")
+	# route the signal → the same direction is now open on the map (no false red bar once passable).
+	var opened: Dictionary = (run.state as Dictionary).duplicate(true)
+	opened["discoveredSecrets"] = ["flag.tl1f.signal-routed"]
+	mm.refresh(opened)
+	_check(not mm._gate_closed(room, "south"), "once the flag is routed, the shutter reads as open (the map keeps up)")
+	mm.free()
+	d3.queue_free()
+	for i in 3:
+		await process_frame
+
 func I18n_generic() -> String:
 	var I18n := preload("res://scripts/i18n.gd")
 	return I18n.t("play.returnToTown")

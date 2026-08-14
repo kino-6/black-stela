@@ -556,7 +556,7 @@ func _context_command() -> String:
 	# takes the decide, so a return point sharing this cell (the 非常電話) can no longer shadow it: 決定
 	# used to be swallowed by 帰還 the moment you tried to open a door (playtest 2026-08-14). Face away
 	# from the door — into the room — and 決定 falls through to 帰還/探索 as before.
-	if typeof(_faced_interactable_edge()) == TYPE_DICTIONARY:
+	if typeof(_faced_interactable_edge()) == TYPE_DICTIONARY or _faced_gate_closed():
 		return "advance"
 	if _has_stairs_here() and typeof(_blocking_stair_gate()) != TYPE_DICTIONARY:
 		return "stairs"
@@ -578,6 +578,24 @@ func _faced_interactable_edge() -> Variant:
 	if typeof(edge) != TYPE_DICTIONARY:
 		return null
 	return edge if String((edge as Dictionary).get("kind", "")) in ["door", "locked"] else null
+
+# The party is FACING a way barred by a closed gate (a passable edge sealed by a key/flag — e.g. the tl1f
+# evacuation shutter, kind "open" but gated). 決定 then inspects it (reports 固く閉ざされている) instead of
+# being swallowed by a 帰還 point on the same cell (playtest「扉を調べる際に非常電話へ」). Shortcuts open
+# from the far side, so they are not a barred way here.
+func _faced_gate_closed() -> bool:
+	var room: Variant = _current_room()
+	if typeof(room) != TYPE_DICTIONARY:
+		return false
+	var facing := String(_position().get("facing", "north"))
+	for gate in (room as Dictionary).get("gates", []):
+		if typeof(gate) != TYPE_DICTIONARY or String(gate.get("direction", "")) != facing:
+			continue
+		if String(gate.get("kind", "")) == "shortcut":
+			continue
+		if not _is_gate_open(gate):
+			return true
+	return false
 
 # The label 決定 carries right now — mirrors _context_command so the hint reads what pressing it will do.
 func _context_label() -> String:

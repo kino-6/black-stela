@@ -8,6 +8,8 @@ const CELL := 22.0
 const RADIUS := 5   # cells shown each way around the party
 const FLOOR_COL := Color("2a3320")
 const WALL_COL := Color("c9a765")
+const DOOR_COL := Color("8fb8d8")   # a passable door — a blue-grey leaf set into the opening
+const LOCK_COL := Color("d07a6a")   # a way that EXISTS but is shut (a gate: key/flag), not a solid wall
 const PARTY_COL := Color("e6e2d4")
 const STAIR_COL := Color("7fb0d8")
 const BG_COL := Color("0c0e08ee")
@@ -114,7 +116,7 @@ func _draw() -> void:
 			continue
 		var top_left := origin + Vector2(dx, dy) * CELL
 		draw_rect(Rect2(top_left, Vector2(CELL, CELL) - Vector2(2, 2)), FLOOR_COL, true)
-		_draw_walls(cell, top_left)
+		_draw_walls(cell, top_left, _room(String(cell.get("roomId", ""))))
 		var marker := String(FloorMap._marker(cell, _world, _state))
 		if marker != "":
 			draw_circle(top_left + (Vector2(CELL, CELL) - Vector2(2, 2)) / 2.0, 3.5, MARKER_COL.get(marker, PARTY_COL))
@@ -123,7 +125,7 @@ func _draw() -> void:
 	var centre := origin + Vector2(CELL, CELL) / 2.0
 	_draw_facing(centre, pos.get("facing", "north"))
 
-func _draw_walls(cell: Dictionary, top_left: Vector2) -> void:
+func _draw_walls(cell: Dictionary, top_left: Vector2, room: Variant) -> void:
 	var edges: Dictionary = cell.get("edges", {})
 	var w := CELL - 2.0
 	# a side is a WALL unless it has a walkable edge (open/door/one_way)
@@ -134,9 +136,46 @@ func _draw_walls(cell: Dictionary, top_left: Vector2) -> void:
 		"east": [top_left + Vector2(w, 0), top_left + Vector2(w, w)],
 	}
 	for dir in sides:
-		if not _is_passage(edges.get(dir, null)):
-			var seg: Array = sides[dir]
+		var edge: Variant = edges.get(dir, null)
+		var seg: Array = sides[dir]
+		if not _is_passage(edge):
 			draw_line(seg[0], seg[1], WALL_COL, 2.0)
+			continue
+		# A passable side, but the map must tell the truth about it (#39c):
+		#   * a way shut by a GATE (key/flag not yet met) reads as BLOCKED (red bar), not open corridor —
+		#     the playtest hit "北が開いて見えるのに固く閉ざされている" on the tl1f evacuation shutter.
+		#   * a DOOR reads as a door (a short leaf across the opening), not as blank open floor.
+		if _gate_closed(room, dir):
+			draw_line(seg[0], seg[1], LOCK_COL, 3.0)
+		elif typeof(edge) == TYPE_DICTIONARY and String((edge as Dictionary).get("kind", "")) == "door":
+			# the middle third of the opening, drawn as a door leaf set into the wall line
+			var a: Vector2 = seg[0].lerp(seg[1], 0.33)
+			var b: Vector2 = seg[0].lerp(seg[1], 0.67)
+			draw_line(a, b, DOOR_COL, 3.0)
+
+# A passable direction whose GATE is not yet open (a required key/flag), so the party cannot actually go
+# that way. Mirrors exploration_commands._find_gate / _is_gate_open — the same predicate the rules block on.
+func _gate_closed(room: Variant, dir: String) -> bool:
+	if typeof(room) != TYPE_DICTIONARY:
+		return false
+	for gate in (room as Dictionary).get("gates", []):
+		if typeof(gate) != TYPE_DICTIONARY or String(gate.get("direction", "")) != dir:
+			continue
+		if String(gate.get("kind", "")) == "shortcut":
+			continue   # a one-way shortcut is not a barred way; it opens FROM the far side
+		var key_id: Variant = gate.get("requiredKeyId", null)
+		if typeof(key_id) == TYPE_STRING and key_id != "":
+			var has_key := false
+			for item in _state.get("inventory", []):
+				if String(item.get("id", "")) == key_id and int(item.get("quantity", 0)) > 0:
+					has_key = true
+					break
+			if not has_key:
+				return true
+		var flag: Variant = gate.get("requiredFlag", null)
+		if typeof(flag) == TYPE_STRING and flag != "" and not (_state.get("discoveredSecrets", []) as Array).has(flag):
+			return true
+	return false
 
 func _draw_facing(centre: Vector2, facing: String) -> void:
 	var dir: Vector2 = {
