@@ -27,6 +27,7 @@ const VISITED_BG := Color("1c2314")
 const CURRENT_BG := Color("3a4a22")
 const UNSEEN_BG := Color("0e1009")
 const WALL := Color("6d7a4a")
+const LOCK := Color("d07a6a")   # a way SEALED by a gate — the same lock colour the minimap draws (#39g)
 const GRID_LINE := Color("39421f")   # the faint マス目 seen between cells (1px separation reveals it)
 const COORD_COL := Color("8a9a5a")    # the A1 ruler letters/numbers down the edges
 
@@ -218,7 +219,65 @@ static func _cell(cell: Dictionary, is_current: bool, world: Dictionary, state: 
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	panel.add_child(label)
-	return panel
+
+	# A way SEALED by a gate draws a lock bar on that side — the planning map must not show it as an open
+	# gap either (#39g, same as the minimap/3D). Mirrors the rules gate predicate. Only wrap cells that need it.
+	var locked_sides: Array = []
+	for dir in ["north", "east", "south", "west"]:
+		if _gate_closed(world, rid, dir, state):
+			locked_sides.append(dir)
+	if locked_sides.is_empty():
+		return panel
+	var root := Control.new()
+	root.custom_minimum_size = Vector2(CELL_PX, CELL_PX)
+	panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	root.add_child(panel)
+	for dir in locked_sides:
+		root.add_child(_lock_bar(dir))
+	return root
+
+# A thin LOCK-coloured bar hugging one side of a cell, for a sealed gate on that boundary.
+static func _lock_bar(dir: String) -> ColorRect:
+	var bar := ColorRect.new()
+	bar.color = LOCK
+	bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var t := 3.0
+	match dir:
+		"north":
+			bar.anchor_left = 0; bar.anchor_right = 1; bar.anchor_top = 0; bar.anchor_bottom = 0
+			bar.offset_bottom = t
+		"south":
+			bar.anchor_left = 0; bar.anchor_right = 1; bar.anchor_top = 1; bar.anchor_bottom = 1
+			bar.offset_top = -t
+		"west":
+			bar.anchor_left = 0; bar.anchor_right = 0; bar.anchor_top = 0; bar.anchor_bottom = 1
+			bar.offset_right = t
+		"east":
+			bar.anchor_left = 1; bar.anchor_right = 1; bar.anchor_top = 0; bar.anchor_bottom = 1
+			bar.offset_left = -t
+	return bar
+
+# A sealed gate on `dir` (key/flag unmet) — the rules' _find_gate/_is_gate_open predicate, shared with
+# the minimap and the 3D barrier so all three views agree.
+static func _gate_closed(world: Dictionary, room_id: String, dir: String, state: Dictionary) -> bool:
+	for gate in _room(world, room_id).get("gates", []):
+		if typeof(gate) != TYPE_DICTIONARY or String(gate.get("direction", "")) != dir:
+			continue
+		if String(gate.get("kind", "")) == "shortcut":
+			continue
+		var key_id: Variant = gate.get("requiredKeyId", null)
+		if typeof(key_id) == TYPE_STRING and key_id != "":
+			var held := false
+			for item in state.get("inventory", []):
+				if String(item.get("id", "")) == key_id and int(item.get("quantity", 0)) > 0:
+					held = true
+					break
+			if not held:
+				return true
+		var flag: Variant = gate.get("requiredFlag", null)
+		if typeof(flag) == TYPE_STRING and flag != "" and not (state.get("discoveredSecrets", []) as Array).has(flag):
+			return true
+	return false
 
 static func _blank() -> Control:
 	# A dark square (not transparent) so an unseen cell reads as a void with only the faint マス目 around it,

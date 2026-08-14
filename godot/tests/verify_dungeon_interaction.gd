@@ -60,6 +60,10 @@ func _run_checks() -> void:
 	mm.refresh(opened)
 	_check(not mm._gate_closed(room, "south"), "once the flag is routed, the shutter reads as open (the map keeps up)")
 	mm.free()
+	# the FULL (planning) map agrees — a sealed gate draws its lock bar, gone once routed.
+	var FloorMap := preload("res://scripts/dungeon/floor_map.gd")
+	_check(FloorMap._gate_closed(run.world, "room.tl1f.return-marker", "south", run.state), "full map reads the sealed shutter as blocked")
+	_check(not FloorMap._gate_closed(run.world, "room.tl1f.return-marker", "south", opened), "full map clears the lock once the flag routes")
 
 	# (5) — the 3D view must AGREE: a sealed gate draws a barrier across the opening, gone once routed.
 	var DungeonRenderer := preload("res://scripts/dungeon/dungeon_renderer.gd")
