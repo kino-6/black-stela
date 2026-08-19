@@ -55,6 +55,15 @@ belong here.
   / renderer wiring / parity / gates.
 - **Codex delivery flow:** Codex leaves finished work UNCOMMITTED; 検品 (run the named gate + READ the PNG)
   and commit are Claude's job. `M`/`??` on Codex files usually means done-not-committed, not mid-edit.
+- **An automated run must never take the user's screen or keyboard focus** (user 2026-08-20). Every
+  windowed harness — captures, `gate:landmark-vis`, anything that needs real pixels — passes
+  `-- --background`, which the `HarnessWindow` autoload turns into a no-focus, un-maximized, edge-parked
+  window. Rendering and PNG evidence are unaffected (verified). Only the human's own `./run.sh play`
+  window may come to the front. A new windowed harness inherits this for free; do not remove the flag.
+- **The PlayLog records itself** (user 2026-08-20: 「開発中は貴重な人間のプレイ」). Any developer-build
+  play session writes one JSONL record per expedition — result, elapsed, command families and the step
+  trail — to `.tmp/playtest/records.jsonl` (`./run.sh log` to read). Gates and captures never write to it.
+  If you add a new command path, route it through `PlaytestRecord.observe` like town/dungeon/combat do.
 - **Verify it YOURSELF before handing a check to the user.** Before you ever hand a check back: (1) can you
   verify it yourself? — render the real screen to PNG and READ it / run the gate / probe the value; do it.
   (2) did you give a ONE-SHOT way to see it in the real game (a `debug_fixtures.gd` fixture / boot flag)?

@@ -22,6 +22,12 @@ re-read conversation history.
 npm run gate:final        # 367+ unit + 109+ e2e. NOT `npm run test:e2e`.
 ```
 
+Everything else is reachable through the launcher, so no command list has to be memorised:
+`./run.sh` (menu) · `./run.sh play [fixture]` · `./run.sh gate [name]` · `./run.sh check` (pre-push) ·
+`./run.sh verify|capture [name]` · `./run.sh list` · `./run.sh doctor`. It auto-installs deps and
+re-exports `godot/data` only when `src/`, `content/`, or `scripts/` changed (`--fast` skips the check),
+and it derives every fixture / gate / test name from the code, so it can never list a stale one.
+
 `gate:final` (`FINAL_GATE=1`) strips any `test.fail()` marker, so a known gap cannot hide behind
 Playwright reporting an expected failure as a pass. A green `test:e2e` is **not** a green gate.
 Also: `npm run build` (tsc -b) is the real typecheck; `npm run test` is the unit suite.

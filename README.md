@@ -5,6 +5,16 @@
 > surface. See [ADR 0001](docs/adr/0001-godot-gdscript-as-the-player-runtime.md).
 >
 > ```sh
+> ./run.sh                       # 覚えるのはこれだけ — メニューから遊ぶ / 検証する
+> ./run.sh play combat           # 名前つきの開始地点から起動（`./run.sh list` で一覧）
+> ./run.sh gate migration        # ゲートを実行（名前なしなら一覧から選ぶ）
+> ```
+>
+> `run.sh` is the launcher: it checks Godot/Node, installs deps, re-exports the data bridge only when
+> the TypeScript side actually changed, and derives its fixture / gate / verify / capture lists from the
+> code, so it cannot go stale. The raw commands it wraps still work:
+>
+> ```sh
 > godot --path godot/            # play
 > npm run gate:migration         # the migration gate (UX parity + controller + saves + rules parity)
 > npm run export:godot           # rebuild the data bridge Godot reads
