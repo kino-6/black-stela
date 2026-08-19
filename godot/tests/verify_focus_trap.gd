@@ -16,6 +16,9 @@ const SIDES := [SIDE_LEFT, SIDE_TOP, SIDE_RIGHT, SIDE_BOTTOM]
 
 # Every service reachable from the square (guild launches its own scene, so it is covered separately).
 const SERVICES := ["party", "career", "shop", "loot", "workshop", "blacksmith", "records", "quests", "facility", "recovery"]
+# At the shipping 1080p layout these services are built around a long list. A 300–460px viewport left a
+# second, empty dark half of the counter while clipping the very decisions the player came to inspect.
+const TALL_SCROLLER_SERVICES := ["shop", "loot", "workshop", "blacksmith", "quests", "facility"]
 
 var _problems: Array[String] = []
 var _town: Node = null
@@ -63,6 +66,10 @@ func _check_service(svc: String, press_label: String) -> void:
 	if layer == null or not layer.visible:
 		_check(false, "%s: service layer did not open" % svc)
 		return
+	if TALL_SCROLLER_SERVICES.has(svc):
+		var largest_scroll := _largest_scroller(layer)
+		if largest_scroll == null or largest_scroll.size.y < 520.0:
+			_check(false, "%s: list viewport is only %dpx tall at 1080p — it must use the available service height (#40i)" % [svc, int(largest_scroll.size.y) if largest_scroll != null else 0])
 	if press_label != "":
 		var btn := _button_with_text(layer, press_label)
 		if btn == null or btn.disabled:
@@ -108,6 +115,20 @@ func _check_service(svc: String, press_label: String) -> void:
 	if not missed.is_empty():
 		_check(false, "%s: %d control(s) unreachable by the D-pad from entry 「%s」: %s" % [svc, missed.size(), _label_of(entry), "; ".join(PackedStringArray(missed))])
 
+	# Reachability is not sufficient: a control below the fold used to receive focus while remaining clipped.
+	# Visit every scrolled D-pad stop and require its full rect to be inside every ancestor viewport. This
+	# mechanically proves ScrollContainer.follow_focus instead of merely asserting that the property exists.
+	for control_v in reachable.keys():
+		var control: Control = control_v
+		if not _has_scroll_ancestor(control):
+			continue
+		control.grab_focus()
+		await process_frame
+		await process_frame
+		if not _visible_in_scrollers(control):
+			_check(false, "%s: focused control 「%s」 is clipped by its scroller (#40i)" % [svc, _label_of(control)])
+			break
+
 func _inside(c: Control, root: Control) -> bool:
 	var n: Node = c
 	while n != null:
@@ -125,6 +146,33 @@ func _focusables(root: Node) -> Array:
 	for child in root.get_children():
 		out.append_array(_focusables(child))
 	return out
+
+func _largest_scroller(root: Node) -> ScrollContainer:
+	var largest: ScrollContainer = root if root is ScrollContainer else null
+	for child in root.get_children():
+		var nested := _largest_scroller(child)
+		if nested != null and (largest == null or nested.size.y > largest.size.y):
+			largest = nested
+	return largest
+
+func _has_scroll_ancestor(control: Control) -> bool:
+	var node: Node = control.get_parent()
+	while node != null:
+		if node is ScrollContainer:
+			return true
+		node = node.get_parent()
+	return false
+
+func _visible_in_scrollers(control: Control) -> bool:
+	var node: Node = control.get_parent()
+	var rect := control.get_global_rect()
+	while node != null:
+		if node is ScrollContainer:
+			var viewport_rect := (node as ScrollContainer).get_global_rect()
+			if rect.position.y < viewport_rect.position.y - 1.0 or rect.end.y > viewport_rect.end.y + 1.0:
+				return false
+		node = node.get_parent()
+	return true
 
 func _button_with_text(node: Node, label: String) -> Button:
 	if node is Button and (node as Button).text == label:

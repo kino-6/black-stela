@@ -201,6 +201,7 @@
         {
           "fixture": {
             "__woundParty": 6,
+            "__afflictParty": true,
             "partyGold": 300
           }
         },

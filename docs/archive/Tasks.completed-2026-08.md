@@ -566,6 +566,17 @@ Claude 実行可能な Tasks.md 作業は全完了・全ゲート緑・commit �
 - **BLK-1 D6 テスト整合** (`762e98a`): pre-push gate が a9a8dad の赤放置を検知。Swordmaster trained は unlock のみ→純テスト整合。
 - **インフラ**: ブランチ整理（merged 47本削除）· pre-push gate 新設（`1d0f9fe`、typecheck+unit 並列、CI赤放置NG）· `npm run play` を export込み一発化＋`play:only`（`7713341`）· **Godot-native ポリシー**（新規は parity 移植不要、`4364c68`／AGENTS.md）· Tasks.md/AGENTS.md 整理（durable ルールを AGENTS.md へ移設、routing ルール明記）。
 
+## 2026-08-14〜16 — #34–#41 playtest / Improve 実装バッチ（2026-08-16 groom）
+
+Active queue に残っていた完了記録を移設。個別の既存 gate・evidence は各実装とコミット記録に残す。
+
+- **#34–#36-b:** town の exhaustive focus verifier、サービス表示時の focus trap、shop「詳しく見る」への D-pad 到達、および広場／party rail の可読性を完了。
+- **#37–#38:** terminal-line の深い基地設備（兵装工廠・管制室・動力炉）と、反復採取（報酬上昇と乱獲リスク）を完了。追加の見せ方・コピーは Backlog に残した。
+- **#39a–g:** `play:late` の降下状態、room event の和文化、扉／封鎖の minimap・3D・全体図の一致、往復 farm 防止、向き優先の dungeon interaction を完了。
+- **#40a–k:** 階段方向の進行不能、全知 clue、scroller focus、能力値ラベル、玄室 ceiling、治療院の状態異常、鑑定対象、サービス高さ、英文漏れ、return marker の物理 mount を完了。
+- **階段／帰還ランドマークの画素検出（#40f follow-up）:** `verify_landmark_visibility.gd` を default / terminal-line / verdant の全 stair・return セルへ拡張し、投影だけでなく landmark node を隠した前後の SubViewport 画素差分を要求。room-authored town-return stair の通常壁による被覆を修正し、default B1F の北向き実画面で階段を検品。`capture_stairs.gd` にその one-shot capture を追加。
+- **#41a–h / IMP-064–071:** 深層視認性、入力駆動の一周目遠征、default 戦闘舞台、導入縦スライス、帰還コックピット、第一階密度監査、日本語見本隊、明示 opt-in playtest record を完了。
+
 ## 2026-08-12 (3rd batch) — UX+combat feel（branch `feat/playtest-ux-2`、main 未マージ）
 - **#22** 勝利/レベルアップ画面の画面充填（col 920→1360・カード拡大、`6fcacf4`）。
 - **#23/#25** パーティメニュー全ページのキーボード完全到達＋**本物の reachability ゲート**（明示 focus_neighbor のみ BFS・1920×1080）。

@@ -55,17 +55,23 @@ describe("injury, recovery, and combat choices", () => {
     expect(next.log.map((entry) => entry.text)).toContain("Mira is wounded but remains in the party.");
   });
 
-  it("recovers HP and clears injuries in town", () => {
+  it("recovers HP and clears injuries and statuses in town", () => {
     const state = {
       ...combatState(),
       phase: "town" as const,
       combat: null,
-      party: combatState().party.map((member) => ({ ...member, hp: 1, injury: "wounded" as const }))
+      party: combatState().party.map((member) => ({
+        ...member,
+        hp: 1,
+        injury: "wounded" as const,
+        status: ["poison", "fear"] as ("poison" | "fear")[]
+      }))
     };
 
     const recovered = executeCommand(state, defaultWorld, { type: "recover_party" });
 
-    expect(recovered.party[0]).toMatchObject({ hp: 12, injury: undefined });
+    expect(recovered.party[0]).toMatchObject({ hp: 12, injury: undefined, status: [] });
+    expect(recovered.partyGold).toBe(state.partyGold - 27);
     expect(recovered.log.at(-1)?.text).toMatch(/rests in town/i);
   });
 

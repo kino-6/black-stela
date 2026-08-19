@@ -6,7 +6,7 @@ import { withDeterministicIds } from "../domain/ids";
 import { MASTERED_RANK } from "../domain/vocations";
 import { runTrace, hashState } from "../headless/traceFixture";
 import { canonicalize } from "./packExport";
-import type { Command, CombatStatus, GameState, ScenarioWorld } from "../domain/types";
+import type { Character, Command, CombatStatus, GameState, ScenarioWorld } from "../domain/types";
 
 // S1 of the Godot migration: emit golden trace fixtures — the parity targets a GDScript port must
 // reproduce. Each fixture is a serialized initial state, a command sequence, and the per-step events
@@ -315,11 +315,11 @@ function economyRoute(): { initial: GameState; commands: Command[] } {
   return { initial, commands };
 }
 
-// M3 recovery (infirmary): a wounded party is healed for gold, then a no-cost re-heal, then a blocked
-// heal when the purse is empty. Exercises recover_party (cost, injury clear, block).
+// M3 recovery (infirmary): a wounded and afflicted party is healed for gold, then a no-cost re-heal,
+// then a blocked heal when the purse is empty. Exercises recover_party (cost, injury/status clear, block).
 function recoveryRoute(): { initial: GameState; commands: Command[] } {
-  const hurt = { ...createGuildCharacter({ name: "Rook", classId: "warrior", seed: "rec" }), hp: 5, injury: "wounded" as const };
-  const mender = { ...createGuildCharacter({ name: "Sella", classId: "priest", seed: "rec" }), hp: 4 };
+	const hurt: Character = { ...createGuildCharacter({ name: "Rook", classId: "warrior", seed: "rec" }), hp: 5, injury: "wounded", status: ["poison"] };
+	const mender: Character = { ...createGuildCharacter({ name: "Sella", classId: "priest", seed: "rec" }), hp: 4, status: ["fear", "silence"] };
   const base = createInitialGameState();
   const initial: GameState = { ...base, phase: "town", party: [hurt, mender], partyGold: 100 };
   const commands: Command[] = [

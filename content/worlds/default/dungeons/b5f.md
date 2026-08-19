@@ -4,6 +4,20 @@ name: B5F - The Cinder Gate
 level: 5
 role: deep_route
 recommendedPartyLevel: 3
+# IMP-064: B5 is a deeper, cold ash layer, not an unreadable black screen. Keep the character of the
+# descent in material colour and low, local light while reserving enough floor/wall separation to read a
+# route, a threshold and a landmark at ordinary walking distance.
+palette:
+  ambient: "#3d3328"
+  ambientEnergy: 0.82
+  fog: "#20160f"
+  fogDensity: 0.032
+  torch: "#ffd4a0"
+  torchRange: 10.5
+  materialEmission: 0.22
+  wall: "#8e7657"
+  floor: "#695744"
+  ceiling: "#4d4034"
 tags:
   - block-2
   - shortcut

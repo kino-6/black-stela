@@ -10,12 +10,13 @@ const DR := preload("res://scripts/dungeon/dungeon_renderer.gd")
 
 var _fail := 0
 var _checked := 0
+var _pixel_checked := 0
 
 func _initialize() -> void:
 	get_root().size = Vector2i(1280, 720)
-	for world_id in ["terminal-line", "verdant"]:
+	for world_id in ["default", "terminal-line", "verdant"]:
 		await _check_world(world_id)
-	print("[landmark-vis] %s — %d landmark(s) checked, %d not visible" % ["PASS" if _fail == 0 else "FAIL", _checked, _fail])
+	print("[landmark-vis] %s — %d landmark(s) projected, %d pixel-checked, %d not visible" % ["PASS" if _fail == 0 else "FAIL", _checked, _pixel_checked, _fail])
 	quit(1 if _fail > 0 else 0)
 
 func _check_world(world_id: String) -> void:
@@ -84,9 +85,64 @@ func _check_landmark(run: Node, world_id: String, dungeon: Dictionary, cell: Dic
 			if sp.x < vp.x * 0.12 or sp.x > vp.x * 0.88 or sp.y < 0.0 or sp.y > vp.y:
 				_fail += 1
 				push_error("[landmark-vis] landmark projects OFF-SCREEN (%.0f,%.0f in %.0fx%.0f): %s" % [sp.x, sp.y, vp.x, vp.y, label])
+			else:
+				# Projection catches a node placed behind/away from the camera, but not a fully dark or transparent
+				# landmark. Render the same first-person frame once with the landmark, once without it, and require
+				# visible pixels to change in the projected neighbourhood. This is a delta, not a brightness rule:
+				# a dark steel stair may be correct, but it must still be distinguishable from its own absence.
+				await _check_pixel_presence(cam, node, sp, label)
 	d.queue_free()
 	for _i in 3:
 		await process_frame
+
+func _check_pixel_presence(cam: Camera3D, node: Node3D, logical_point: Vector2, label: String) -> void:
+	var viewport := cam.get_viewport()
+	# get_image can share the render texture's backing storage on Compatibility. Snapshot it before hiding
+	# the node, otherwise both variables may observe the later frame and every real landmark compares equal.
+	var shown_image := viewport.get_texture().get_image()
+	var shown := shown_image.duplicate() if shown_image != null else null
+	if shown == null:
+		_fail += 1
+		push_error("[landmark-vis] no rendered viewport image: %s" % label)
+		return
+	# The SubViewport may be supersampled independently of the logical control canvas.
+	var logical_size := viewport.get_visible_rect().size
+	var point := Vector2(
+		logical_point.x * float(shown.get_width()) / maxf(1.0, logical_size.x),
+		logical_point.y * float(shown.get_height()) / maxf(1.0, logical_size.y)
+	)
+	node.visible = false
+	for _i in 3:
+		await process_frame
+	var hidden_image := viewport.get_texture().get_image()
+	var hidden := hidden_image.duplicate() if hidden_image != null else null
+	node.visible = true
+	for _i in 2:
+		await process_frame
+	if hidden == null:
+		_fail += 1
+		push_error("[landmark-vis] no hidden comparison image: %s" % label)
+		return
+	var changed := _changed_pixels(shown, hidden, point, 180)
+	_pixel_checked += 1
+	# 80 pixels is far above temporal antialias/noise yet well below the smallest physical return marker.
+	if changed < 80:
+		_fail += 1
+		push_error("[landmark-vis] landmark has no readable pixel presence (%d changed px): %s" % [changed, label])
+
+func _changed_pixels(shown: Image, hidden: Image, centre: Vector2, radius: int) -> int:
+	var changed := 0
+	var x0 := maxi(0, int(centre.x) - radius)
+	var x1 := mini(shown.get_width(), int(centre.x) + radius)
+	var y0 := maxi(0, int(centre.y) - radius)
+	var y1 := mini(shown.get_height(), int(centre.y) + radius)
+	for y in range(y0, y1, 2):
+		for x in range(x0, x1, 2):
+			var a := shown.get_pixel(x, y)
+			var b := hidden.get_pixel(x, y)
+			if absf(a.r - b.r) + absf(a.g - b.g) + absf(a.b - b.b) > 0.08:
+				changed += 4 # sampled at 2×2 density; report approximate physical pixels
+	return changed
 
 # The landmark node closest to `near` (the party cell), within one cell — so multi-landmark floors match
 # the right one instead of the first in the tree.

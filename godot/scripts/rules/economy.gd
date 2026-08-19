@@ -17,6 +17,7 @@ const Facilities := preload("res://scripts/rules/facilities.gd")
 
 const RECOVERY_HP_COST := 1
 const RECOVERY_INJURY_COST := 8
+const RECOVERY_STATUS_COST := 4
 
 const ITEM_OPTIONAL := ["healAmount", "restoreMp", "curesStatuses", "grants", "sellValue"]
 const EQUIP_OPTIONAL := ["attackBonus", "defenseBonus", "accuracyBonus", "speedBonus", "sellValue"]
@@ -114,12 +115,15 @@ static func is_stock_available(stock: Dictionary, state: Dictionary) -> bool:
 	return stock.get("availability", "") != "unlocked"
 
 # --- recovery (infirmary) -------------------------------------------------------------------------
+static func recovery_member_cost(member: Dictionary) -> int:
+	var missing_hp := maxi(0, int(member.get("maxHp", 0)) - int(member.get("hp", 0)))
+	var status_count := (member.get("status", []) as Array).size()
+	return missing_hp * RECOVERY_HP_COST + (RECOVERY_INJURY_COST if member.get("injury", null) != null else 0) + status_count * RECOVERY_STATUS_COST
+
 static func recovery_cost(party: Array, world: Dictionary) -> int:
 	var total := 0
 	for member in party:
-		total += maxi(0, int(member.get("maxHp", 0)) - int(member.get("hp", 0))) * RECOVERY_HP_COST
-		if member.get("injury", null) != null:
-			total += RECOVERY_INJURY_COST
+		total += recovery_member_cost(member)
 	return total
 
 static func recover(state: Dictionary, world: Dictionary) -> Dictionary:
@@ -136,6 +140,8 @@ static func recover(state: Dictionary, world: Dictionary) -> Dictionary:
 		member["hp"] = int(stats.get("maxHp", member.get("maxHp", 0)))
 		member["mp"] = int(stats.get("maxMp", member.get("maxMp", 0)))
 		member.erase("injury")
+		if not (member.get("status", []) as Array).is_empty():
+			member["status"] = []
 	next["partyGold"] = int(next.get("partyGold", 0)) - cost
 	next["turn"] = int(next.get("turn", 0)) + 1
 	return {"state": next, "events": [{"type": "party_recovered", "gold": cost}]}

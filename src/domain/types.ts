@@ -867,6 +867,9 @@ export interface ScenePalette {
   ambientEnergy?: number;
   fogDensity?: number;
   torchRange?: number;
+  /** A restrained self-light multiplier for nearby wall/floor texture. Used only where a dark material would
+   * otherwise erase the route; it is local material readability, never a screen-wide flash or glow. */
+  materialEmission?: number;
   /** Optional, authored shallow standing water for a floor. This is presentation only: it makes a flooded
    * route legible in the first-person scene without silently changing movement, combat, or save rules. */
   standingWater?: {

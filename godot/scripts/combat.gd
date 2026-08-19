@@ -564,6 +564,7 @@ func _on_retreat() -> void:
 	_state = result.get("state", _state)
 	if _run:
 		_run.state = _state
+	_record_playtest({"type": "retreat"}, result.get("events", []))
 	get_tree().change_scene_to_file("res://scenes/dungeon.tscn")
 
 func _on_attack_pressed() -> void:
@@ -587,6 +588,7 @@ func _resolve_round_with(orders: Array, animated: bool) -> void:
 	_state = result.get("state", _state)
 	if _run:
 		_run.state = _state
+	_record_playtest({"type": "combat_round"}, events)
 	await _playback(before, events, animated)
 	_busy = false
 	_actor_index = 0
@@ -617,9 +619,15 @@ func _resolve_round(animated: bool) -> void:
 	_state = result.get("state", _state)
 	if _run:
 		_run.state = _state   # persist the resolved state back to the shared run
+	_record_playtest({"type": "combat_round"}, events)
 
 	await _playback(before, events, animated)
 	_busy = false
+
+func _record_playtest(command: Dictionary, events: Array) -> void:
+	var recorder := get_node_or_null("/root/PlaytestRecord")
+	if recorder and recorder.has_method("observe"):
+		recorder.call("observe", command, _state, events, String(_run.world_id) if _run else String(_world.get("id", "")))
 
 # Past-tense action verb for a member's blow, narrated a beat before its damage lands. Stable per actor
 # (a hash of the name) so a given adventurer always swings the same way — it reads as their style, not

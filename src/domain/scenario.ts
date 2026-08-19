@@ -556,6 +556,7 @@ export const scenePaletteSchema = z.object({
   ambientEnergy: z.number().min(0).optional(),
   fogDensity: z.number().min(0).optional(),
   torchRange: z.number().min(0).optional(),
+  materialEmission: z.number().min(0).max(0.5).optional(),
   // Presentation-only shallow flooding. Movement stays governed by the authored grid; this exists so an
   // explicitly flooded route never renders as a dry ordinary corridor.
   standingWater: z.object({

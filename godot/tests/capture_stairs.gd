@@ -13,6 +13,10 @@ func _initialize() -> void:
 	get_root().add_child(dungeon)
 	for i in 8:
 		await process_frame
+	# The ordinary world returns home through a room-authored stair rather than a `stairs` edge.  Capture it
+	# explicitly: this is the regression where a projected stair node was completely covered by the ordinary
+	# wall, so the player saw only masonry.
+	await _capture(dungeon, "dungeon.b1f", "cell.b1f.001", "room.b1f.001", "_ux_default_return_stairs.png", "north")
 
 	var world := _read_world()
 	if world.is_empty():
@@ -33,13 +37,13 @@ func _initialize() -> void:
 	dungeon.queue_free()
 	quit(0)
 
-func _capture(dungeon: Node, floor_id: String, cell_id: String, room_id: String, output: String) -> void:
+func _capture(dungeon: Node, floor_id: String, cell_id: String, room_id: String, output: String, facing: String = "west") -> void:
 	var state: Dictionary = (dungeon.get("_state") as Dictionary).duplicate(true)
 	state["phase"] = "dungeon"
 	state["combat"] = null
-	state["position"] = {"cellId": cell_id, "roomId": room_id, "facing": "west"}
+	state["position"] = {"cellId": cell_id, "roomId": room_id, "facing": facing}
 	state["map"] = {
-		"floorId": floor_id, "currentCellId": cell_id, "currentRoomId": room_id, "currentFacing": "west",
+		"floorId": floor_id, "currentCellId": cell_id, "currentRoomId": room_id, "currentFacing": facing,
 		"visitedCells": [cell_id], "visitedRooms": [room_id], "knownExits": {}, "secretCandidates": {}, "blockedExits": {},
 	}
 	dungeon.set("_state", state)

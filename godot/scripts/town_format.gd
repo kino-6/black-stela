@@ -11,10 +11,9 @@ const Economy := preload("res://scripts/rules/economy.gd")
 const EQUIPMENT_SLOT_ORDER := ["weapon", "offhand", "body", "head", "hands", "accessory"]
 const SHOP_CATEGORY_ORDER := ["weapon", "armor", "offhand", "trinket", "tool", "consumable"]
 
-# max(0, maxHp-hp) + 8 if injured — the per-member price the infirmary quotes.
+# Missing HP, wounds, and each active status — the per-member price the infirmary quotes.
 static func member_recovery_cost(member: Dictionary) -> int:
-	var missing := maxi(0, int(member.get("maxHp", 0)) - int(member.get("hp", 0)))
-	return missing + (8 if member.get("injury", null) != null else 0)
+	return Economy.recovery_member_cost(member)
 
 static func party_recovery_cost(party: Array) -> int:
 	var total := 0

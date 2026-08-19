@@ -737,7 +737,7 @@ export const ja = {
     confirmDismantle: "{count}個を素材{materials}に分解する？",
     confirm: "実行",
     cancel: "やめる",
-    compareFor: "合わせる相手",
+    compareFor: "装備先の冒険者",
     compareSlotEmpty: "この部位には何も装備していない",
     equipOn: "{member}に装備",
     equipReplaces: "{name}と入れ替え",

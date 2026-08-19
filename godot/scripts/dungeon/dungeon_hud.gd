@@ -35,16 +35,16 @@ static func party_token(member: Dictionary, world: Dictionary, portrait_tex: Tex
 	portrait.custom_minimum_size = Vector2(48, 76)
 	head.add_child(portrait)
 	var row_text := I18n.t("play.frontRow" if String(member.get("row", "front")) == "front" else "play.backRow")
-	head.add_child(UIKit.label(row_text if class_label == "" else "%s · %s" % [row_text, class_label], 11, DIM))
-	head.add_child(UIKit.grow(UIKit.label(String(member.get("name", "?")), 16, BAD if down else INK)))
-	head.add_child(UIKit.label("Lv %d" % int(member.get("level", 1)), 12, DIM))
+	head.add_child(UIKit.label(row_text if class_label == "" else "%s · %s" % [row_text, class_label], 12, DIM))
+	head.add_child(UIKit.grow(UIKit.label(String(member.get("name", "?")), 17, BAD if down else INK)))
+	head.add_child(UIKit.label("Lv %d" % int(member.get("level", 1)), 13, DIM))
 	body.add_child(head)
 
 	var vitals := UIKit.row()
-	vitals.add_child(UIKit.label("HP %d/%d" % [hp, max_hp], 12, BAD if danger else INK))
+	vitals.add_child(UIKit.label("HP %d/%d" % [hp, max_hp], 13, BAD if danger else INK))
 	var max_mp := int(stats.get("maxMp", member.get("maxMp", 0)))
 	if max_mp > 0:
-		vitals.add_child(UIKit.label("%s %d/%d" % [I18n.t("play.mpShort"), int(member.get("mp", 0)), max_mp], 12, INK))
+		vitals.add_child(UIKit.label("%s %d/%d" % [I18n.t("play.mpShort"), int(member.get("mp", 0)), max_mp], 13, INK))
 	body.add_child(vitals)
 	body.add_child(_gauge(float(hp) / float(max_hp), BAD if danger else OK))
 	if max_mp > 0:
@@ -56,9 +56,9 @@ static func party_token(member: Dictionary, world: Dictionary, portrait_tex: Tex
 	# The compact token shows 攻撃 as ONE number — the typical (average) damage per hit — because a
 	# min-max range on a stat-labelled line read as confusing (playtest 2026-08-13「攻撃6-12という表記がわからん」).
 	# The full damage RANGE stays in the party-menu detail. The 動力炉 attack% is already baked into these.
-	numbers.add_child(UIKit.label("%s %d" % [I18n.t("party.damage"), int(round((int(stats.get("damageMin", 0)) + int(stats.get("damageMax", 0))) / 2.0))], 12, DIM))
-	numbers.add_child(UIKit.label("%s %d" % [I18n.t("party.armor"), int(stats.get("armor", 0))], 12, DIM))
-	numbers.add_child(UIKit.label("%s %d" % [I18n.t("party.speed"), int(stats.get("speed", 0))], 12, DIM))
+	numbers.add_child(UIKit.label("%s %d" % [I18n.t("party.damage"), int(round((int(stats.get("damageMin", 0)) + int(stats.get("damageMax", 0))) / 2.0))], 13, DIM))
+	numbers.add_child(UIKit.label("%s %d" % [I18n.t("party.armor"), int(stats.get("armor", 0))], 13, DIM))
+	numbers.add_child(UIKit.label("%s %d" % [I18n.t("party.speed"), int(stats.get("speed", 0))], 13, DIM))
 	body.add_child(numbers)
 
 	var pips := []
@@ -68,10 +68,12 @@ static func party_token(member: Dictionary, world: Dictionary, portrait_tex: Tex
 	if member.get("injury", null) != null:
 		pips.append(I18n.t("partyMenu.wounded"))
 	if not pips.is_empty():
-		body.add_child(UIKit.label(" · ".join(PackedStringArray(pips)), 12, BAD))
+		body.add_child(UIKit.label(" · ".join(PackedStringArray(pips)), 13, BAD))
 
 	var card := PanelContainer.new()
-	card.custom_minimum_size = Vector2(120, 128)
+	# Six cards still fit between the current viewport margins and minimap at 1280px.  The extra width
+	# buys readable vitals/stat numerals instead of a global UI scale-up that would displace the crawl HUD.
+	card.custom_minimum_size = Vector2(136, 132)
 	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var style := UIKit.panel_style(UIKit.ROW_BG, BAD if down else (GOLD if danger else Color("3a4326")))
 	style.set_content_margin_all(6)

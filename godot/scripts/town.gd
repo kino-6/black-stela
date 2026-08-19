@@ -413,6 +413,24 @@ func _build_square() -> void:
 			resume.add_child(b)
 		_menu_host.add_child(resume)
 
+	# A return gets one compact preparation cockpit beside the next commands.  It is intentionally absent
+	# before the first descent: an empty “expedition result” is an administrative lie.  Once the party has
+	# come back, however, the player should not have to reconstruct wounds, new loot, purse, and the next
+	# concern from scattered panels before choosing where to go next.
+	if not first_departure:
+		var cockpit := UI.col(3)
+		var cockpit_head := UI.row()
+		cockpit_head.add_child(UI.grow(UI.label(I18n.t("town.statusHeading"), 17, UI.GOLD)))
+		cockpit_head.add_child(UI.label(I18n.t("town.gold", {"gold": int(s.get("partyGold", 0))}), 16, UI.INK))
+		cockpit.add_child(cockpit_head)
+		cockpit.add_child(UI.label("%s　%s" % [I18n.t("town.expeditionResult"), _latest_log_text(s)], 15, UI.DIM))
+		cockpit.add_child(UI.label("%s　%s　　%s　%s" % [
+			I18n.t("town.wounds"), _wounds_summary(party),
+			I18n.t("town.loot"), _loot_summary(s, "town.noLoot", true)
+		], 15, UI.INK))
+		cockpit.add_child(UI.label("%s　%s" % [I18n.t("town.nextPreparation"), _next_preparation(s, party)], 16, UI.OK))
+		_menu_host.add_child(UI.card(cockpit, UI.GOLD))
+
 	# --- the destinations ---
 	_menu_host.add_child(UI.label(I18n.t("town.servicesHeading"), 16, UI.DIM))
 	var menu := UI.row()
@@ -672,6 +690,7 @@ func _service_ctx() -> Dictionary:
 		"selected_member": func(): return selected_member(),
 		# Keep party inspection separate from the shared service-selection callback: roster selection retains
 		# its current row, while shop/workshop/career selections retain their own intended focus.
+		"set_selected": func(id): _select_party_member(String(id), false),
 		"select_party_member": func(id): _select_party_member(String(id), true),
 		"focus_selected": func(id): _select_party_member(String(id), true),
 		"party_focus_member_id": _party_focus_member_id,
@@ -721,10 +740,9 @@ func _build_service() -> void:
 	scrim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_service_layer.add_child(scrim)
 
-	# A CenterContainer + a CONTENT-HEIGHT panel: the panel used to be a fixed 1740×960 for EVERY service, so
-	# a short counter (施療院/記録/依頼) left most of the screen an empty black void (playtest 2026-08-07). Keeping
-	# the width (the counters lay out two columns across it) but letting the height fit the content, then
-	# centring it, turns a short service into a compact centred card while a full one (shop/party) still fills.
+	# Fit the counter to the AVAILABLE viewport, not to a list's arbitrary 300–460px minimum. Content-height
+	# panels made long services look like a narrow strip floating over a useless dark lower half; this gives
+	# their scrollers room while preserving the 40px safety margin at every window height (#40i).
 	var center := CenterContainer.new()
 	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	center.offset_top = 40
@@ -733,7 +751,7 @@ func _build_service() -> void:
 	var panel := PanelContainer.new()
 	var panel_bg := Color("14180f66") if blacksmith_backdrop else UI.PANEL_BG
 	panel.add_theme_stylebox_override("panel", UI.panel_style(panel_bg, UI.GOLD))
-	panel.custom_minimum_size = Vector2(1740, 0)
+	panel.custom_minimum_size = Vector2(1740, maxf(0.0, get_viewport_rect().size.y - 80.0))
 	center.add_child(panel)
 
 	var ctx := _service_ctx()
@@ -752,6 +770,7 @@ func _build_service() -> void:
 	_party_focus_member_id = ""
 	if body == null:
 		body = UI.label("(未実装)", 18, UI.DIM)
+	body.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	panel.add_child(body)
 	_service_layer.visible = true
 

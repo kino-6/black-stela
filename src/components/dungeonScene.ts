@@ -113,6 +113,7 @@ export function buildDungeonScene(mount: HTMLDivElement, input: DungeonSceneInpu
     ambientEnergy: 0.55,
     fogDensity: 0.1,
     torchRange: 8.5,
+    materialEmission: 0,
     // The legacy web renderer does not yet draw floor water, but keeping the canonical palette contract
     // total means scenario validation and renderer consumers agree on the default dry state.
     standingWater: { depth: 0 }

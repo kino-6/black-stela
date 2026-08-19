@@ -46,6 +46,7 @@ static func build(world: Dictionary, state: Dictionary, run: Object, view_size: 
 	vp.add_child(camera)
 
 	var torch := OmniLight3D.new()
+	torch.name = "Torch"
 	torch.light_color = Color(String(pal.get("torch", "ffd9a0")))
 	torch.light_energy = 4.4 if intro_ash else 3.2
 	torch.omni_range = maxf(11.0, float(pal.get("torchRange", 8.5))) if intro_ash else float(pal.get("torchRange", 8.5))
@@ -63,6 +64,17 @@ static func _build_geometry(parent: Node, world: Dictionary, state: Dictionary, 
 	var pal: Dictionary = _floor_palette(world, state)
 	var wall_mat := _textured_mat(block["wall"], Color(String(pal.get("wall", "8a8074"))))
 	var floor_mat := _textured_mat(block["floor"], Color(String(pal.get("floor", "6e675c"))))
+	# A deep floor may author a tiny material emission. This is not a screen flash or a new light source: it
+	# merely preserves the nearby stone's texture and the floor/wall split after the torch falls off, so a
+	# black texture never erases the route it is supposed to describe (IMP-064).
+	var material_emission := float(pal.get("materialEmission", 0.0))
+	if material_emission > 0.0:
+		wall_mat.emission_enabled = true
+		wall_mat.emission = Color(String(pal.get("wall", "8a8074")))
+		wall_mat.emission_energy_multiplier = material_emission
+		floor_mat.emission_enabled = true
+		floor_mat.emission = Color(String(pal.get("floor", "6e675c")))
+		floor_mat.emission_energy_multiplier = material_emission
 	# A flooded floor is authored in the scenario palette rather than inferred from its name.  It remains a
 	# walkable grid cell — this local geometry is the visible, shallow water and never changes rules or costs.
 	var standing_water: Dictionary = pal.get("standingWater", {}) as Dictionary
@@ -114,16 +126,21 @@ static func _build_geometry(parent: Node, world: Dictionary, state: Dictionary, 
 		# the entire room reads as the 玄室. The map already carves the 2×2 — this makes the render honour it.
 		var walkable := {}
 		var all_cells: Array = (dungeon.get("grid", {}) as Dictionary).get("cells", [])
-		# A stairs edge belongs to one physical boundary, even when the reciprocal cell still describes that
-		# boundary as a wall.  Rendering cell-local walls independently was what sealed the 3D stair well from
-		# the opposite side and made the prop appear pasted onto a wall.
+		# A staircase belongs to one physical boundary, even when the reciprocal cell still describes that
+		# boundary as a wall.  This includes a town-return stair: it has no `stairs` edge in the rules, but its
+		# authored room flag still needs a real opening.  Rendering cell-local walls independently otherwise
+		# seals the ladder behind a full wall; its node projects correctly yet no stair pixels reach the player.
 		var stair_boundaries := {}
 		for cell in all_cells:
 			walkable["%d,%d" % [int(cell.get("x", 0)), int(cell.get("y", 0))]] = true
-			var edge_map: Dictionary = cell.get("edges", {})
-			for dir in ["north", "south", "east", "west"]:
-				if _is_stairs(edge_map.get(dir, null)):
-					stair_boundaries[_door_key(int(cell.get("x", 0)), int(cell.get("y", 0)), dir)] = true
+			var stair_room: Dictionary = rooms_by_id.get(String(cell.get("roomId", "")), {})
+			var stair_info := _stairs_info(cell, floor_dungeon, stair_room)
+			if not stair_info.is_empty():
+				stair_boundaries[_door_key(
+					int(cell.get("x", 0)),
+					int(cell.get("y", 0)),
+					String(stair_info.get("direction", "north")),
+				)] = true
 		var chamber_block := {}
 		var chamber_anchor := {}
 		for cell in all_cells:
@@ -411,11 +428,11 @@ static func _add_ladder_shaft_art(root: Node3D, material: Material) -> void:
 	quad.size = Vector2(CELL * 0.48, WALL_H * 0.88)
 	art.mesh = quad
 	art.material_override = material
-	# Keep the transparent ladder card in FRONT of the dark backer. At the same depth it was z-fighting with
-	# the back wall, which made the shaft appear empty on some Compatibility renderers.
-	# Its crown meets the lintel/ceiling instead of floating halfway down the back wall. This establishes the
-	# correct direction at a glance: the party climbs up through this root-bound hatch.
-	art.position = Vector3(0, WALL_H * 0.58, -CELL * 0.39)
+	# Keep the ladder card at the mouth of the well, slightly toward the party from the masonry frame.  A deep
+	# inset was behind the cell's physical end wall on Compatibility, so the player saw only stone even though
+	# the stair node itself projected on-screen.  The shallow placement remains wall-bound (not a centre-cell
+	# placard) while making the route survive both the frame and any reciprocal boundary wall.
+	art.position = Vector3(0, WALL_H * 0.58, 0.08)
 	root.add_child(art)
 
 # Build a shallow, wall-mounted call point instead of a 2D card in the centre of the cell.  The terminal-line
@@ -431,15 +448,31 @@ static func _add_return_marker(parent: Node, base: Vector3, tex_path: String, di
 	root.rotation.y = _edge_rotation(direction)
 	parent.add_child(root)
 
+	# The picture supplies the handset and signage, but cannot supply parallax. A recessed backing, metal side
+	# rails, and a shelf that projects into the corridor make this a maintained emergency call point rather than
+	# a phone texture pasted directly onto the wall (#40k). Keep the casing dark and low-gloss: it frames the
+	# interactive object without turning a return marker into a luminous UI panel.
+	var mount := Node3D.new()
+	mount.name = "ReturnMarkerMount"
+	root.add_child(mount)
+	var casing := StandardMaterial3D.new()
+	casing.albedo_color = Color("293035")
+	casing.metallic = 0.62
+	casing.roughness = 0.52
+	_add_box(mount, Vector3(CELL * 0.66, WALL_H * 0.90, 0.07), casing, Vector3(0, WALL_H * 0.43, -0.045))
+	for side in [-1.0, 1.0]:
+		_add_box(mount, Vector3(0.06, WALL_H * 0.86, 0.12), casing, Vector3(side * CELL * 0.35, WALL_H * 0.43, 0.015))
+	_add_box(mount, Vector3(CELL * 0.72, 0.08, 0.20), casing, Vector3(0, 0.075, 0.075))
+	_add_box(mount, Vector3(CELL * 0.72, 0.06, 0.12), casing, Vector3(0, WALL_H * 0.86, 0.02))
+
 	var artwork := MeshInstance3D.new()
 	artwork.name = "ReturnMarkerArtwork"
 	var quad := QuadMesh.new()
 	quad.size = Vector2(CELL * 0.56, WALL_H * 0.82)
 	artwork.mesh = quad
 	artwork.material_override = _return_marker_art_mat(tex_path)
-	# The supplied object already includes a bolted mounting plate and a floor base.  Do not add a full dark
-	# rectangle behind it: in bright Terminal Line corridors that read as a new black panel, not installed gear.
-	# Local +Z faces the party; local -Z sits against the end wall.
+	# Local +Z faces the party; local -Z sits against the end wall. The real casing stays slightly behind this
+	# alpha card, so transparent parts reveal depth instead of a void.
 	artwork.position = Vector3(0, WALL_H * 0.41, 0.012)
 	root.add_child(artwork)
 

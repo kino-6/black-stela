@@ -61,6 +61,7 @@ func _cell_renders_landmark(world: Dictionary, world_id: String, dungeon: Dictio
 		expected_art = "ReturnMarkerArtwork"
 	var edge_landmark := _find_node_named(container, landmark_name)
 	var landmark_art := _find_node_named(container, expected_art) if expected_art != "" else null
+	var marker_mount := _find_node_named(container, "ReturnMarkerMount") if expected_art != "" else null
 	container.queue_free()
 	if marker != null:
 		print("[stairs-render] %s: stair cell %s rendered forbidden floating centre marker %s" % [world_id, cell.get("id", ""), marker.name])
@@ -70,6 +71,9 @@ func _cell_renders_landmark(world: Dictionary, world_id: String, dungeon: Dictio
 		return false
 	if expected_art != "" and landmark_art == null:
 		print("[stairs-render] %s: marker cell %s rendered no visible marker art" % [world_id, cell.get("id", "")])
+		return false
+	if expected_art != "" and marker_mount == null:
+		print("[stairs-render] %s: marker cell %s rendered no physical mount/casing" % [world_id, cell.get("id", "")])
 		return false
 	if expected_art != "":
 		var art_material := landmark_art.material_override as ShaderMaterial

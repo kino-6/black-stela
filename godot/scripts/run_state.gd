@@ -67,7 +67,11 @@ func dispatch(command: Dictionary) -> Array:
 	ensure_loaded()
 	var result: Dictionary = SliceRules.resolve(state, command, world, engine)
 	state = result.get("state", state)
-	return result.get("events", [])
+	var events: Array = result.get("events", [])
+	var recorder := get_node_or_null("/root/PlaytestRecord")
+	if recorder and recorder.has_method("observe"):
+		recorder.call("observe", command, state, events, world_id)
+	return events
 
 # A unique-within-the-run character id (production ids need only in-run uniqueness for the slice).
 func mint_id() -> String:

@@ -9,6 +9,7 @@ import { resolveTechniqueCatalog } from "./techniques";
 export const STARTING_PARTY_GOLD = 75;
 const RECOVERY_HP_COST = 1;
 const RECOVERY_INJURY_COST = 8;
+const RECOVERY_STATUS_COST = 4;
 
 export interface EffectiveCharacterStats {
   attack: number;
@@ -381,6 +382,7 @@ export function isEquipmentUsableBy(equipment: ScenarioEquipment, character: Cha
 export function calculateRecoveryCost(party: Character[]) {
   return party.reduce((total, member) => {
     const missingHp = Math.max(0, member.maxHp - member.hp);
-    return total + missingHp * RECOVERY_HP_COST + (member.injury ? RECOVERY_INJURY_COST : 0);
+    const statusCost = (member.status?.length ?? 0) * RECOVERY_STATUS_COST;
+    return total + missingHp * RECOVERY_HP_COST + (member.injury ? RECOVERY_INJURY_COST : 0) + statusCost;
   }, 0);
 }

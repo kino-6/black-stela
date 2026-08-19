@@ -3138,7 +3138,13 @@ function recoverParty(state: GameState, world: ScenarioWorld): CommandResult {
 
   const next: GameState = {
     ...state,
-    party: state.party.map((member) => ({ ...member, hp: effectiveMaxHp(member, world), mp: effectiveMaxMp(member, world), injury: undefined })),
+    party: state.party.map((member) => ({
+      ...member,
+      hp: effectiveMaxHp(member, world),
+      mp: effectiveMaxMp(member, world),
+      injury: undefined,
+      ...(member.status?.length ? { status: [] } : {})
+    })),
     partyGold: state.partyGold - cost,
     turn: state.turn + 1
   };

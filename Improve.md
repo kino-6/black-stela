@@ -56,6 +56,79 @@ Passing the route is not visual acceptance. Current tests prove that surfaces
 fit and accept controller input, but they do not yet prove that the screen reads
 like a DRPG rather than a web service.
 
+## 2026-08-16 — Native build review: release-quality audit
+
+**Verdict: do not move toward release yet.** The project now has a credible
+rules base, authored art, a six-person formation, a grid map, and controller
+semantics. The remaining gap is not feature count; it is that the repeated
+player loop still reads as a collection of well-made screens rather than one
+confident expedition. In particular, darkness/legibility, information
+hierarchy, and the reason to make a decision on a given turn need another
+quality pass before more breadth is added.
+
+### Scope and evidence
+
+- Re-exported the current Godot data with `npm run export:godot`.
+- Reviewed the real-render captures for title, scenario picker, guild class,
+  town square, dungeon entry, default and terminal-line combat, default B5/B10,
+  Verdant G2/G10, and a terminal-line full map. Key captures are
+  `godot/tests/_ux_title.png`, `_ux_scenario-picker.png`, `_ux_town-square.png`,
+  `_ux_dungeon-dock.png`, `_ux_combat-command.png`, `_deep_default_b5f.png`,
+  `_deep_default_b10f.png`, `_deep_verdant_g2f.png`,
+  `_deep_verdant_g10f.png`, `_terminal_line_f1_contiguous_walk.png`, and
+  `_firearm_fx_pistol.png`.
+- Mechanical checks on this build passed: `npm run gate:play`,
+  `npm run gate:controller`, and `godot --headless --path godot/ --quit-after 90`.
+  An initial sandboxed run crashed while opening `user://logs`; the same commands
+  passed with normal filesystem access, so this is environment evidence, not a
+  game regression.
+- This is a rendered-build and gate review, not a substitute for a fresh human
+  first-play. The capture fixtures prove pixels in representative states; they
+  do not measure confusion, pacing, or whether a new player chooses the right
+  command unaided.
+
+### What already works
+
+- The core DRPG contract is visible: six-member front/back formation, first-person
+  grid view, explored-only map, contextual stairs/return, and party-order combat.
+- The authored art direction has real range. Terminal Line's combat frame makes
+  the enemy, floor plane, and gun-hit read immediately; Verdant's roots have a
+  distinct material language from the ash ruins.
+- Town is the strongest composed screen: it gives the party a place in a world,
+  preserves a clear departure command, and does not expose developer controls.
+
+### Confirmed player-experience problems
+
+| ID | Priority | Player problem | Evidence and modern-DRPG direction | Smallest useful slice / proof |
+| --- | --- | --- | --- | --- |
+| `IMP-064` | P0 | **Deep exploration becomes unreadable before it becomes tense.** In default B5 and especially B10, the central play space loses wall, floor, depth, and interactable readability; the UI remains visible while the dungeon disappears. Darkness is atmosphere only while the player can still parse a safe route, a threat, and a landmark in one glance. | `_deep_default_b5f.png` and `_deep_default_b10f.png`. Verdant proves that a strong biome palette can retain legibility. Give every floor a visibility budget: readable near floor/walls, a distinct far-depth silhouette, and one authored landmark or threat cue. Do not solve this with a global brightening or a full-screen flash. | Recompose one default deep-floor corridor and one event/encounter state. Add fixed render checks for foreground contrast, wall/floor separation, and a reviewer-read screenshot at normal play size. |
+| `IMP-065` | P0 | **The shipping-player proof is still thinner than the rules proof.** `gate:play` proves state continuity and `gate:controller` reports scene coverage, but neither is a fresh player operating the window through title → party → dungeon → fight → town. Captures are mostly seeded states. This leaves onboarding, focus loss, pacing, and "what do I do now?" failures able to survive green checks. | Current green output and fixture capture approach. Modern DRPG quality comes from a dependable repeated loop, not a menu set that works in isolation. | Add one native Godot input-driven “first expedition” route (no direct scene calls after boot), recording focus, inputs, screenshots, and jam reason. It must create/accept a legal party, move, fight, return, enter one service, and depart again. Run it against every shipping world. |
+| `IMP-066` | P1 | **The first five minutes spend too much of their visual budget on empty frames and explanatory text.** The scenario picker is a black page with three text cards; the guild class state has a large blank lower half and an anonymous `?` preview; title save rows are dense, long, and immediately expose delete controls. None is broken, but together they make the opening feel like a test harness rather than an invitation to an expedition. | `_ux_title.png`, `_ux_scenario-picker.png`, `_ux_guild-class.png`. Preserve controller-first lists, but give each choice a compact visual identity, a short player-facing promise, and a visibly decisive default. Put destructive save management behind a secondary confirmation surface. | Recompose the title → scenario → first guild decision as one 1280×720 vertical slice. Verify a new player can identify the selected action, the world’s tone, and how to continue without reading more than one short line of help. |
+| `IMP-067` | P1 | **Combat has the right structure but inconsistent scene conviction.** Terminal Line proves the intended bar: grounded enemy, readable combat lane, strong backdrop, and local hit cue. The default combat capture instead presents the enemy against a nearly empty black field, while the command pane repeats several automation/round concepts beneath the main four commands. It makes a well-formed round feel like a QA control panel. | `_firearm_fx_pistol.png` versus `_ux_combat-command.png`. Keep formation-order entry and no exact enemy HP. Make the battlefield and immediate command the first read; place repeat/auto as one compact, interruptible tempo control, not a competing second command menu. | Bring the default world to the Terminal Line framing baseline, then capture manual command → target → hit → next actor and auto interrupt. Verify that command, target, consequence, and return to command are readable without logs. |
+| `IMP-068` | P1 | **Town looks atmospheric but has not yet earned its preparation loop on the first read.** The background and party rail are strong, but the five destinations form a flat strip beneath a very large empty centre. At return, a player needs one concise answer to “what changed, what is urgent, and what should I prepare?” before choosing a counter. | `_ux_town-square.png`; this is a hierarchy/readability finding, not a claim that the existing services lack rules. Modern DRPG town is a recovery-and-preparation rhythm, not a menu hallway. | Recompose the return state with a small expedition delta (wounds, loot, currency, new concern) adjacent to the focused next action. Keep normal idle town quieter. Prove cancel/confirm flow and desktop Japanese reading order in a real return capture. |
+| `IMP-069` | P1 | **The expedition's tactical texture is not yet obvious from the play surface.** In the reviewed dungeon states, most of the screen reads as corridor + party ledger + a generic command legend. A current-cell choice must visibly change the risk model—route, information, resource, enemy posture, or reward—not merely add log text. Without that cadence, ten floors read as longer corridors even when their data differs. | `_ux_dungeon-dock.png`, deep-floor captures, and the map capture. This is a product hypothesis, not a claim that authored cell events do not exist; it needs a focused content/route audit. | Audit one floor per world for a 10-minute route: at least one visible route choice, one information action with a decision consequence, one resource trade, one combat or avoidance decision, and one memorable landmark. Capture the before/after state of each choice. |
+| `IMP-070` | P2 | **Japanese normal play loses authored specificity in default sample identity.** Screens that otherwise use Japanese show default party names such as Rook, Vale, Bran, Mira, Sei, and Lio. Player-authored names may of course be any language, but sample/fixture names establish the game’s default voice and currently look imported. | Town, dungeon, and combat captures. This is separate from the existing enemy/item localization checks. | Localize the built-in sample roster (or clearly present it as an optional imported roster) and add a rendered-JA assertion for the default new-game party. |
+| `IMP-071` | P2 | **Balance and retention decisions lack player-facing telemetry.** Gates establish deterministic correctness, but the project cannot yet answer where first runs stop, how often a party returns wounded, whether players use skills/items instead of basic attack/auto, or whether a world’s first meaningful choice arrives soon enough. | No contradiction with current simulations; this is a missing product measurement layer. Keep telemetry local/opt-in and never expose it as normal-play diagnostics. | Define a privacy-safe local playtest record: elapsed time, floor/cell progress, outcome, return reason, command family used, and last visible state. Pair it with a fixed 10-run test plan before economy or content expansion. |
+
+### Sequencing recommendation
+
+1. **`IMP-064` + `IMP-067`: make the two repeated moment-to-moment views readable and dramatic.** A deep default corridor and default combat are the visual floor for every later feature.
+2. **`IMP-065`: install native first-expedition proof.** It prevents an impressive fixture gallery from hiding a broken player route again.
+3. **`IMP-066` + `IMP-068`: turn the opening and return into an actual expedition rhythm.** These should be tested together as one short fresh run, not as unrelated UI redesigns.
+4. **`IMP-069` + `IMP-071`: tune the repeatable decision cadence with real playtest evidence before adding floors, classes, or loot breadth.**
+
+### Past trouble checked
+
+- Could recur: treating headless/fixture success as player-visible quality; dark
+  dungeon landmarks being present in data but not readable; combat and town
+  becoming command dashboards; controller routes proving reachability but not
+  player comprehension.
+- Gates used: exported Godot data; `gate:play`; `gate:controller`; clean
+  headless boot. These establish continuity, coverage, and boot only.
+- Remaining UX risk: no unaided, fresh-player, window-input recording has been
+  reviewed in this pass. The first-expedition slice above is the required next
+  evidence, not a claim that it already passes.
+
 ## Active Status
 
 | Item | Priority | State | Player-visible problem |

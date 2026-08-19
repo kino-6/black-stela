@@ -352,13 +352,15 @@ func _begin_move(action: String) -> void:
 	_hold.begin(action, _do_move)
 
 func _do_move(action: String) -> void:
-	_apply(SliceRules.resolve(_state, {"type": String(MOVE_COMMANDS[action])}, _world, _engine))
+	var command := {"type": String(MOVE_COMMANDS[action])}
+	_apply(SliceRules.resolve(_state, command, _world, _engine), command)
 
 # Public entry for the headless flow-capture harness: take one step forward through the ported rules
 # (which, at the landing, walks into the authored ash-slime room and hands off to combat).
 func step_forward() -> void:
 	if not _busy:
-		await _apply(SliceRules.resolve(_state, {"type": "move_forward"}, _world))
+		var command := {"type": "move_forward"}
+		await _apply(SliceRules.resolve(_state, command, _world, _engine), command)
 
 ## Test seam: drive the crawl from a specific state, so what the party CARRIES (a way-out charm, a key)
 ## reaches the contextual dock.
@@ -823,17 +825,21 @@ func _on_command(kind: String) -> void:
 			# a barred way reports WHY in the log (same path as the forward arrow, so combat/chest hand off).
 			_do_move("move_forward")
 		"search":
-			_apply(SliceRules.resolve(_state, {"type": "search"}, _world, _engine))
+			var command := {"type": "search"}
+			_apply(SliceRules.resolve(_state, command, _world, _engine), command)
 		"listen":
-			_apply(SliceRules.resolve(_state, {"type": "listen"}, _world, _engine))
+			var command := {"type": "listen"}
+			_apply(SliceRules.resolve(_state, command, _world, _engine), command)
 		"stairs":
-			_apply(SliceRules.resolve(_state, {"type": "use_stairs"}, _world, _engine))
+			var command := {"type": "use_stairs"}
+			_apply(SliceRules.resolve(_state, command, _world, _engine), command)
 			# Autosave 2 — on stairs up/down (playtest). Only when we stayed in the dungeon (a floor change);
 			# a stair that returns to town saves via the town's own autosave.
 			if _run and String(_state.get("phase", "")) == "dungeon":
 				_run.save_autosave()
 		"disarm":
-			_apply(SliceRules.resolve(_state, {"type": "disarm_trap"}, _world, _engine))
+			var command := {"type": "disarm_trap"}
+			_apply(SliceRules.resolve(_state, command, _world, _engine), command)
 		"map":
 			_toggle_full_map()
 		"party":
@@ -842,7 +848,8 @@ func _on_command(kind: String) -> void:
 			# #39g — leaving the dungeon is consequential and used to fire on a single 決定 with no warning
 			# (playtest 2026-08-14「非常電話が確認なしに戻る」). Ask first, centred, cursor on いいえ.
 			_show_confirm(I18n.t("play.confirmReturnTitle"), func():
-				_apply(SliceRules.resolve(_state, {"type": "return_to_town"}, _world, _engine))
+				var command := {"type": "return_to_town"}
+				_apply(SliceRules.resolve(_state, command, _world, _engine), command)
 				if _state.get("phase", "") == "town":
 					get_tree().change_scene_to_file("res://scenes/town.tscn"))
 		"charm":
@@ -850,7 +857,8 @@ func _on_command(kind: String) -> void:
 			if charm != "":
 				_show_confirm(I18n.t("play.confirmReturnTitle"), func():
 					var target: String = String((_state.get("party", []) as Array)[0].get("id", "")) if not (_state.get("party", []) as Array).is_empty() else ""
-					_apply(SliceRules.resolve(_state, {"type": "use_item", "itemId": charm, "targetCharacterId": target}, _world, _engine))
+					var command := {"type": "use_item", "itemId": charm, "targetCharacterId": target}
+					_apply(SliceRules.resolve(_state, command, _world, _engine), command)
 					if _state.get("phase", "") == "town":
 						get_tree().change_scene_to_file("res://scenes/town.tscn"))
 
@@ -882,11 +890,14 @@ func _auto_loop() -> void:
 var _auto_running: bool = false
 
 # Apply a rules result: persist to the run, log it, and either descend into combat or refresh the view.
-func _apply(result: Dictionary) -> void:
+func _apply(result: Dictionary, command: Dictionary = {}) -> void:
 	_state = result.get("state", _state)
 	if _run:
 		_run.state = _state
 	var events: Array = result.get("events", [])
+	var recorder := get_node_or_null("/root/PlaytestRecord")
+	if recorder and recorder.has_method("observe"):
+		recorder.call("observe", command, _state, events, String(_run.world_id) if _run else String(_world.get("id", "")))
 	# Each action starts a fresh beat: a discovery from THIS result may claim the centred surface, but a
 	# stale one from the last action never lingers past the next move.
 	_pending_center_event = ""
@@ -926,7 +937,7 @@ func _menu_dispatch(command: Dictionary) -> void:
 			_party_equipment_candidate = ""
 		if String((event as Dictionary).get("type", "")) == "item_used":
 			_party_item_target_id = ""
-	_apply(result)
+	_apply(result, command)
 	if String(_state.get("phase", "")) == "town":
 		get_tree().change_scene_to_file("res://scenes/town.tscn")
 	elif _party_menu and is_instance_valid(_party_menu):
@@ -988,7 +999,7 @@ func _show_chest_overlay(chest: Dictionary) -> void:
 	var built: Dictionary = ChestPanel.build(
 		chest, _state.get("party", []), _state.get("inventory", []), _world, _engine, _chest_pending_action,
 		func(action): _chest_pending_action = String(action); _show_chest_overlay(chest),
-		func(cmd): _chest_pending_action = ""; _apply(SliceRules.resolve(_state, cmd, _world, _engine)),
+		func(cmd): _chest_pending_action = ""; _apply(SliceRules.resolve(_state, cmd, _world, _engine), cmd),
 		func(): _chest_pending_action = ""; _rebuild_dock(),
 		func(): _leave_chest(), _texture(_asset("dungeon/treasure-chest-closed.png"))
 	)

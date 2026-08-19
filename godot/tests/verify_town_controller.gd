@@ -29,6 +29,13 @@ func _all_text(node: Node) -> String:
 		out += _all_text(child)
 	return out
 
+func _exact_line_count(rendered: String, label: String) -> int:
+	var count := 0
+	for line in rendered.split("\n"):
+		if line.strip_edges() == label:
+			count += 1
+	return count
+
 func _initialize() -> void:
 	# Lay out at the SHIPPING design resolution. The game renders 1920×1080 and keep-aspect scales it
 	# uniformly to the window, so geometry-based focus nav at this size matches what the player sees — a
@@ -91,6 +98,17 @@ func _initialize() -> void:
 						await process_frame
 					if _all_text(town).contains("前後を交代"):
 						_fail("party status page still shows a 前後交代 command (T17 — it belongs to 編成)")
+					else:
+						print("[town-controller] party: 前後交代 absent from status (#40d)")
+					# #40d: a status sheet communicates a stat once. Duplicate rows make the numbers look
+					# inconsistent, particularly when the same translated label is separated by other copy.
+					var status_text := _all_text(town)
+					for stat_key in ["partyMenu.attack", "party.accuracy", "party.armor", "party.speed"]:
+						var stat_label := I18n.t(String(stat_key))
+						var occurrences := _exact_line_count(status_text, stat_label)
+						if occurrences != 1:
+							_fail("party status: '%s' appears %d times; each stat row must have one label (#40d)" % [stat_label, occurrences])
+					print("[town-controller] party: status stat labels appear exactly once (#40d)")
 					town.call("set_ui_state", {"service": "party", "party_page": "formation"})
 					for i in 3:
 						await process_frame
@@ -314,6 +332,77 @@ func _initialize() -> void:
 	for i in 3:
 		await process_frame
 
+	# #40h: the appraiser's comparison target is a real selection, not decorative character tabs. Changing
+	# it must rebuild both the comparison header and the explicit equip command for that adventurer.
+	var EconomyRules := preload("res://scripts/rules/economy.gd")
+	var pre_appraisal_state: Dictionary = (town.call("state") as Dictionary).duplicate(true)
+	var appraisal_state: Dictionary = pre_appraisal_state.duplicate(true)
+	var appraisal_party: Array = appraisal_state.get("party", []).duplicate(true)
+	for index in appraisal_party.size():
+		var unarmed: Dictionary = (appraisal_party[index] as Dictionary).duplicate(true)
+		unarmed["equipment"] = {}
+		appraisal_party[index] = unarmed
+	appraisal_state["party"] = appraisal_party
+	var appraisal_first: Dictionary = {}
+	var appraisal_second: Dictionary = {}
+	var appraisal_equipment: Dictionary = {}
+	for definition_v in town.get("_world").get("equipment", []):
+		var definition: Dictionary = definition_v
+		for first_v in appraisal_state.get("party", []):
+			var first: Dictionary = first_v
+			if not EconomyRules.is_equipment_usable_by(definition, first):
+				continue
+			for second_v in appraisal_state.get("party", []):
+				var second: Dictionary = second_v
+				if String(second.get("id", "")) != String(first.get("id", "")) and EconomyRules.is_equipment_usable_by(definition, second):
+					appraisal_first = first
+					appraisal_second = second
+					appraisal_equipment = definition
+					break
+			if not appraisal_equipment.is_empty():
+				break
+		if not appraisal_equipment.is_empty():
+			break
+	if appraisal_equipment.is_empty():
+		_fail("appraiser: fixture has no piece two adventurers can both wear (#40h)")
+	else:
+		var appraisal_item: Variant = EconomyRules.create_inventory_item(town.get("_world"), appraisal_equipment.get("id", ""), 1)
+		appraisal_state["inventory"] = [appraisal_item]
+		appraisal_state["partyGold"] = 9999
+		var appraisal_run: Node = town.get("_run")
+		if appraisal_run != null:
+			appraisal_run.state = appraisal_state
+		else:
+			town.set("_fallback_state", appraisal_state)
+		town.set("_selected_id", String(appraisal_first.get("id", "")))
+		town.call("set_ui_state", {"service": "loot"})
+		for i in 4:
+			await process_frame
+		var second_name := String(appraisal_second.get("name", ""))
+		var comparison_before := "%s: %s" % [I18n.t("loot.compareFor"), String(appraisal_first.get("name", ""))]
+		var target_button := _button_with_text(town, second_name)
+		if target_button == null:
+			_fail("appraiser: comparison-target selector is not controller-visible (#40h)")
+		elif not _all_text(town).contains(comparison_before):
+			_fail("appraiser: initial comparison target is not named (#40h)")
+		else:
+			target_button.emit_signal("pressed")
+			for i in 4:
+				await process_frame
+			var comparison_after := "%s: %s" % [I18n.t("loot.compareFor"), second_name]
+			var equip_after := I18n.t("loot.equipOn", {"member": second_name})
+			if not _all_text(town).contains(comparison_after) or _button_with_text(town, equip_after) == null:
+				_fail("appraiser: selecting another adventurer did not update comparison and equip target (#40h)")
+			else:
+				print("[town-controller] appraiser: comparison target updates with the selected adventurer (#40h)")
+		_press_cancel(town)
+		for i in 3:
+			await process_frame
+		if appraisal_run != null:
+			appraisal_run.state = pre_appraisal_state
+		else:
+			town.set("_fallback_state", pre_appraisal_state)
+
 	# T9: the 鍛冶屋 (blacksmith) tempers a WORN piece for GOLD — 鍛える raises its +level and spends gold.
 	var forge_state: Dictionary = (town.call("state") as Dictionary).duplicate(true)
 	forge_state["partyGold"] = 9999
@@ -338,6 +427,55 @@ func _initialize() -> void:
 			_fail("blacksmith: 鍛える did not spend gold from the shared purse (T9)")
 		else:
 			print("[town-controller] blacksmith: 鍛える tempers a worn piece for gold (%d->%d)" % [gold_before, gold_after])
+	_press_cancel(town)
+	for i in 3:
+		await process_frame
+
+	# #40g: the infirmary must quote and clear persistent statuses as well as missing HP/injury. The whole
+	# route is a controller command: open counter → read the ailment → confirm treatment → inspect result.
+	var recovery_state: Dictionary = (town.call("state") as Dictionary).duplicate(true)
+	var recovery_party: Array = recovery_state.get("party", []).duplicate(true)
+	var afflicted_id := ""
+	for index in recovery_party.size():
+		var patched: Dictionary = (recovery_party[index] as Dictionary).duplicate(true)
+		if index == 0:
+			patched["hp"] = maxi(1, int(patched.get("maxHp", 10)) - 3)
+			patched["status"] = ["poison", "fear"]
+			afflicted_id = String(patched.get("id", ""))
+		recovery_party[index] = patched
+	recovery_state["party"] = recovery_party
+	recovery_state["partyGold"] = 9999
+	var recovery_run: Node = town.get("_run")
+	if recovery_run != null:
+		recovery_run.state = recovery_state
+	else:
+		town.set("_fallback_state", recovery_state)
+	var recovery_gold_before := int(recovery_state.get("partyGold", 0))
+	town.call("set_ui_state", {"service": "recovery"})
+	for i in 4:
+		await process_frame
+	var recovery_text := _all_text(town)
+	var treat_button := _button_with_text(town, I18n.t("town.recoverParty"))
+	if treat_button == null or treat_button.disabled:
+		_fail("infirmary: an afflicted party has no usable controller treatment command (#40g)")
+	elif not recovery_text.contains(I18n.t("partyMenu.status.poison")) or not recovery_text.contains(I18n.t("partyMenu.status.fear")):
+		_fail("infirmary: quoted treatment does not name the active statuses (#40g)")
+	else:
+		treat_button.emit_signal("pressed")
+		for i in 4:
+			await process_frame
+		var treated: Dictionary = {}
+		for member_v in (town.call("state") as Dictionary).get("party", []):
+			var member: Dictionary = member_v
+			if String(member.get("id", "")) == afflicted_id:
+				treated = member
+				break
+		if not (treated.get("status", []) as Array).is_empty():
+			_fail("infirmary: treatment left an active status on the adventurer (#40g)")
+		elif int((town.call("state") as Dictionary).get("partyGold", 0)) >= recovery_gold_before:
+			_fail("infirmary: treatment did not charge the quoted status recovery cost (#40g)")
+		else:
+			print("[town-controller] infirmary: status treatment is visible, controller-confirmed, and charged (#40g)")
 	_press_cancel(town)
 	for i in 3:
 		await process_frame

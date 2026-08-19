@@ -50,7 +50,10 @@ static func build(ctx: Dictionary) -> Control:
 			line.add_child(UI.label("→", 17, UI.DIM))
 			line.add_child(UI.label(str(int(member.get("maxHp", 0))), 17, UI.OK))
 			if member.get("injury", null) != null:
-				line.add_child(UI.label(I18n.t("status.%s" % String(member.get("injury"))), 15, UI.BAD))
+				line.add_child(UI.label(I18n.t("partyMenu.wounded"), 15, UI.BAD))
+			for status in member.get("status", []):
+				var status_key := "partyMenu.status.%s" % String(status)
+				line.add_child(UI.label(I18n.t(status_key) if I18n.has(status_key) else String(status), 15, UI.BAD))
 			line.add_child(UI.label(I18n.t("town.gold", {"gold": int(entry["cost"])}), 17, UI.INK))
 			plan.add_child(UI.card(line))
 		root.add_child(plan)

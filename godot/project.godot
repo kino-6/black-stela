@@ -21,6 +21,7 @@ WorldLoader="*res://scripts/world_loader.gd"
 Run="*res://scripts/run_state.gd"
 StatusOverlay="*res://scripts/status_overlay.gd"
 Sfx="*res://scripts/sfx.gd"
+PlaytestRecord="*res://scripts/playtest_record.gd"
 
 [display]
 
