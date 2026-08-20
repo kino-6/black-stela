@@ -71,7 +71,7 @@ test("guild registration supports quick and detailed recruits without roster sco
     }
     await witPlus.click();
   }
-  await expect(page.getByTestId("stat-preview")).toContainText("Damage");
+  await expect(page.getByTestId("stat-preview")).toContainText("Attack");
   await page.getByTestId("guild-step-bonus").getByRole("button", { name: "Next" }).click();
   await expect(page.getByRole("button", { name: "Randomize all" })).toBeVisible();
   const generatedName = await page.getByLabel("Name").inputValue();

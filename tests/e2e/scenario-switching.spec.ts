@@ -24,7 +24,7 @@ test("picking the verdant scenario loads its own world, not the default", async 
   await expect(page.getByText("Ash Slime")).toHaveCount(0);
   // The standard party still has resolvable, statted starter gear (shared base
   // catalog merged into verdant, which ships no items of its own).
-  await expect(page.getByTestId("party-hud")).toContainText(/Damage \d+-\d+/);
+  await expect(page.getByTestId("party-hud")).toContainText(/Attack \d+-\d+/);
 });
 
 test("the verdant grove shop is stocked (its own economy, not an empty panel)", async ({ page }) => {

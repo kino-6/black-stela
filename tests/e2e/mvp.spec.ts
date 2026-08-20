@@ -23,7 +23,7 @@ test("create party, import portrait, enter dungeon, fight, use stairs, and view 
   await expect(page.getByTestId("character-profile")).toHaveCount(0);
   await expect(page.getByTestId("party-hud")).toContainText("Mira");
   await expect(page.getByTestId("party-hud").getByTestId("party-hud-portrait")).toBeVisible();
-  await expect(page.getByTestId("party-hud")).toContainText(/Damage \d+-\d+/);
+  await expect(page.getByTestId("party-hud")).toContainText(/Attack \d+-\d+/);
   await expect(page.getByTestId("party-hud")).toContainText(/Armor \d+/);
   await expect(page.getByTestId("party-hud")).toContainText(/Speed \d+/);
   await expect(page.getByTestId("party-front-row")).toBeVisible();
