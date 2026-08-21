@@ -831,7 +831,7 @@ func _playback(before: Dictionary, events: Array, animated: bool) -> void:
 
 	var played_party_beat := false   # P7: did the beats drain the ally bars per-beat? (then don't re-animate after)
 	if animated:
-		var beats := _round_beats(events)
+		var beats := _expand_firearm_beats(_round_beats(events))
 		if not beats.is_empty():
 			# Per-MEMBER beats (誰が→何に→どれだけ): narrate the actor's completed blow, THEN land the number
 			# on the struck creature and drain that group's bar. Two steps, in that order, so the past-tense
@@ -922,8 +922,14 @@ func _playback(before: Dictionary, events: Array, animated: bool) -> void:
 					# A basic melee swing gets a slash flash ON the struck creature — the React CombatEnemyStage
 					# slash was never ported to Godot, so guns flashed and swords/bars didn't (user 2026-08-12).
 					_spawn_melee_fx(gid, crit)
-				pb_groups = CombatHelpers.damage_group(pb_groups, gid, dmg)
-				_redraw_enemy_group(pb_groups, gid)
+				# A burst's chunks are PRESENTATION. The bar drains once, with the beat's FULL damage, on the
+				# last impact: draining chunk-by-chunk would kill MORE pack members than the round actually
+				# did (damage_group wastes overkill per call), and the stage would diverge from the state.
+				var burst_final := bool((beat as Dictionary).get("burstFinal", true))
+				var burst_total := int((beat as Dictionary).get("burstTotal", dmg))
+				if burst_final:
+					pb_groups = CombatHelpers.damage_group(pb_groups, gid, burst_total)
+					_redraw_enemy_group(pb_groups, gid)
 				# #26 B: the number is the RESULT — spawned AFTER the FX lands and the bar has begun to
 				# drain, at the target's lower body, never before the hit.
 				_pop_enemy_damage(gid, dmg, crit)
@@ -940,8 +946,14 @@ func _playback(before: Dictionary, events: Array, animated: bool) -> void:
 				# the number already shows the amount. Only a CRIT (and, below, a defeat) earns its own line,
 				# so a burst / all-out round reads as a few lines, not a spam of ダメージ per hit.
 				if crit:
-					_set_log("%sに %d ダメージ！会心！" % [target_name, dmg])
-				await get_tree().create_timer(result_pause if shot_index == 0 else 0.16).timeout
+					_set_log("%sに %d ダメージ！会心！" % [target_name, burst_total])
+				# Inside a burst the rounds come fast; the family's own stop belongs to the LAST one.
+				var tail_pause := 0.16
+				if not burst_final:
+					tail_pause = 0.09 if gun_family == "smg" else 0.12
+				elif shot_index == 0:
+					tail_pause = result_pause
+				await get_tree().create_timer(tail_pause).timeout
 		else:
 			# Fallback (no beats): per-GROUP reconstruction from before/after.
 			for hit in struck:
@@ -1375,6 +1387,51 @@ func _round_beats(events: Array) -> Array:
 			var b: Variant = (e as Dictionary).get("beats", [])
 			return b if typeof(b) == TYPE_ARRAY else []
 	return []
+
+# 銃撃は「数発撃ち込んで、このダメージ」と読ませる（user 2026-08-20: 現状は単発に見える）。
+# ルールは引き金 1 回につき 1 つの数字を解決する — その数字を N 発の弾着に割るのは PRESENTATION
+# だけの仕事で、シードもロールも状態も一切触らない（Sim は不変、合計は必ず一致する）。
+# 家族ごとの発数は「その銃がどう鳴るか」で決める: ピストルは速射の三連、ライフルは重い二射、
+# SMG はルール側が既に 3 ビート撃つのでビートあたり 2 発（＝6 発のばら撒き）、ショットガンは
+# 引き金 1 回＝着弾 1 回（散弾を分割すると 1 発の重さが消える）。
+const FIREARM_DISPLAY_SHOTS := {"pistol": 3, "rifle": 2, "smg": 2, "shotgun": 1}
+
+## Split `total` into `parts` positive chunks that sum EXACTLY to it (the remainder rides on the first
+## chunks, so an early round never reads as the weak one).
+static func _split_damage(total: int, parts: int) -> Array:
+	var out := []
+	var base := total / parts
+	var rest := total % parts
+	for i in range(parts):
+		out.append(base + (1 if i < rest else 0))
+	return out
+
+## Expand each resolved firearm beat into its display impacts. Non-guns, 0/1 damage, and families with a
+## single impact pass straight through untouched, so melee and the parity traces are unaffected.
+func _expand_firearm_beats(beats: Array) -> Array:
+	var out := []
+	for beat in beats:
+		var b: Dictionary = (beat as Dictionary)
+		var dmg := int(b.get("damage", 0))
+		var shots := 1
+		if bool(b.get("firearm", false)) and dmg > 1:
+			shots = int(FIREARM_DISPLAY_SHOTS.get(String(b.get("firearmFamily", "")), 1))
+			shots = mini(shots, dmg)   # never show a 0-damage impact
+		if shots <= 1:
+			out.append(b)
+			continue
+		var chunks := _split_damage(dmg, shots)
+		for i in range(shots):
+			var sub := b.duplicate(true)
+			sub["damage"] = int(chunks[i])
+			# Only the very first impact of the actor's action prints the verb line (shotIndex 0).
+			sub["shotIndex"] = int(b.get("shotIndex", 0)) + i
+			sub["burstFinal"] = i == shots - 1
+			sub["burstTotal"] = dmg
+			# A crit belongs to the blow, not to a chunk: mark the last impact so ONE 会心 line prints.
+			sub["crit"] = bool(b.get("crit", false)) and i == shots - 1
+			out.append(sub)
+	return out
 
 # combat is cleared to null on victory — read it null-safe everywhere.
 func _combat() -> Dictionary:

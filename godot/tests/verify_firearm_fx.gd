@@ -36,6 +36,30 @@ func _initialize() -> void:
 	var basic_beat := _first_party_beat(basic.get("events", []))
 	_check(bool(basic_beat.get("firearm", false)) and String(basic_beat.get("firearmFamily", "")) == "pistol", "a pistol basic attack emits a firearm beat with its family")
 
+	# 演出としての連射（user 2026-08-20: 「銃撃が実際には単発攻撃になっている」）. The rules resolve ONE
+	# number per trigger pull; the screen shows it arriving as several rounds. The split is presentation
+	# only, so the invariant that matters is that the chunks still sum to the resolved damage.
+	var expanded: Array = scene._expand_firearm_beats([{"actorName": "T", "targetGroupId": group_id, "damage": 10, "crit": true, "firearm": true, "firearmFamily": "pistol", "shotIndex": 0}])
+	var total := 0
+	var verb_beats := 0
+	var crit_beats := 0
+	for b in expanded:
+		total += int((b as Dictionary).get("damage", 0))
+		if int((b as Dictionary).get("shotIndex", 0)) == 0:
+			verb_beats += 1
+		if bool((b as Dictionary).get("crit", false)):
+			crit_beats += 1
+	_check(expanded.size() == 3, "a pistol blow reads as three rounds landing (%d)" % expanded.size())
+	_check(total == 10, "the display chunks sum to the resolved damage, never more or less (%d)" % total)
+	_check(verb_beats == 1 and crit_beats == 1, "one verb line and one 会心 line per blow, not one per round")
+	_check(bool((expanded[expanded.size() - 1] as Dictionary).get("burstFinal", false)) and int((expanded[expanded.size() - 1] as Dictionary).get("burstTotal", 0)) == 10, "the last round carries the authoritative total for the bar drain")
+	var melee: Array = scene._expand_firearm_beats([{"damage": 9, "firearm": false, "shotIndex": 0}])
+	_check(melee.size() == 1 and int((melee[0] as Dictionary).get("damage", 0)) == 9, "a melee blow is never split")
+	var chip: Array = scene._expand_firearm_beats([{"damage": 1, "firearm": true, "firearmFamily": "pistol", "shotIndex": 0}])
+	_check(chip.size() == 1, "a 1-damage graze stays one impact rather than showing 0-damage rounds")
+	var blast: Array = scene._expand_firearm_beats([{"damage": 12, "firearm": true, "firearmFamily": "shotgun", "shotIndex": 0}])
+	_check(blast.size() == 1, "a shotgun blast stays one impact — splitting it would erase the weight of the shell")
+
 	# Start a fresh group for the technique proof, so the first basic attack cannot end the only fight.
 	Encounter.begin(run.state, run.world, "room.tl1f.entrance", String(enemy.get("id", "")))
 	group_id = String(((run.state.get("combat", {}) as Dictionary).get("enemyGroups", []) as Array)[0].get("id", ""))
