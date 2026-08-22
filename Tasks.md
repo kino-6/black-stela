@@ -23,60 +23,68 @@ groom for #34–#41) · `Tasks.completed-2026-07.md` · `Improve.md`.
 
 ## Active queue (process top-down)
 
-### #42 終端隔離線が「スカスカで、非常にヌルい」（user 2026-08-20）
+### #42 コンセプトのループを content に通す（終端隔離線）— user 2026-08-20
 
-**計測した事実**（推測ではなく、今日の実測。再現は `npm run sim:balance -- --world terminal-line --level 1`
-と `content/worlds/terminal-line/dungeons/*.md` のカウント）:
+**位置づけ:** `AIPlan.md` の **First concept slice**（123-147行）が要求するループ —— 現在セルの可視イベントが
+シーンを開く → 確立された称号 / 来歴 / 状態 / 武勲で 1 人を名指す → **2〜3 の著述された intent** を出す →
+プレイヤーが選ぶ → **ルールが判定して typed event を出す**（AI は成否を決めない）→ **帰還時に NPC か記録が
+その選択と結末を思い出す** —— が、content に**一つも存在しない**。M3 はこのための event / export の seam を
+保持しただけで、載せる中身はまだ書かれていない。
 
-| 観点 | 終端隔離線 | 比較（黒碑 / 翠碑） |
+**計測した事実**（`npm run sim:balance -- --world terminal-line --level 1` ＋ 著述カウント ＋ スキーマ確認）:
+
+| 観点 | 現状 | 基準 / 比較 |
 | --- | --- | --- |
-| 難度ノブ | `threatScalar 1.35` / `counterplayBoost 1.1` | 2.5 / 2.0 ・ 2.2 / 3.0 |
-| 準備の価値 | prepared clear **@Lv17**、levelsSaved 8 | prepared @Lv3 ・ @Lv1（目標は「入場レベル近傍」） |
-| 携行品の価値 | **PROVISION levelsSaved = 0**（キットを積んでも何も買えていない） | — |
-| 資源経済 | **`balance.economy` 未著述**＝枯渇なし | — |
-| act カーブ | tl1f 27%（目標 85–65%）… tl7–9f 1–2%（目標 38–28%）＝band外・非単調 | — |
-| フロア密度 | **tl2f–tl10f が全て 12室 / イベント2 / 宝7 / 遭遇6 / 施錠0 の同一テンプレ** | tl1f だけ イベント8・宝13 |
+| storylet | room の `event:` は**1 行の flavor 文字列**のみ。`DungeonEvent` も weighted flavour beat（types.ts 934/1029）。intent / check / consequence / memory のスキーマが**無い** | concept slice 4–8 |
+| 分量 | 10 階あるが substantial なのは F1 だけ（F2–F10 は 12室 / イベント2 / 宝7 / 遭遇6 / 施錠0 の同一テンプレ） | publishable は **6–8 substantial floors** |
+| 難度ノブ | `threatScalar 1.35` / `counterplayBoost 1.1` | 黒碑 2.5/2.0 ・ 翠碑 2.2/3.0 |
+| 準備の価値 | prepared clear **@Lv17**、**PROVISION levelsSaved = 0**（キットが何も買えない） | 黒碑 @Lv3 ・ 翠碑 @Lv1 |
+| 資源経済 | `balance.economy` **未著述**＝枯渇なし＝attrition が無い | — |
+| act カーブ | band 外かつ非単調（tl1f 27% / tl7–9f 1–2%） | I:85-65% II:60-42% III:38-28% |
 
-**読み解き:** 「ヌルい」の実体は敵の強さ以前に **attrition が存在しないこと**（資源が枯れない・携行品に価値がない・
-枯渇しないので押し引きの判断が生まれない）。「スカスカ」の実体は **2階以降が同一テンプレの反復**で、階ごとの固有の
-判断（ルート選択・情報行動・資源交換・脅威・ランドマーク）が tl1f にしか著述されていないこと。施錠が全階ゼロ＝
-鍵・近道・迂回という迷宮の骨格が無い。方針は `.claude/skills/drpg-balance`（attrition が難度・資源で上限を作る・
-危険は必ず予告する・押すか退くかが本体・FOE・act 構造）に従う。**Sim を先に動かしてから著述する。**
+**読み解き:**「スカスカ」の本体は部屋数ではなく **storylet の不在**（選択・判定・帰結・記憶が無いので、部屋は
+通過点にしかならない）。「ヌルい」の本体は **attrition の不在**（枯れないので準備も撤退も意思決定にならない）。
+順序は **コンセプトのループを 1 階に通す → その選択が効くように圧力を作る → 残りの階へ展開**。圧力を先に上げても、
+選ぶものが無ければ「ただ固い迷宮」にしかならない。
 
-- [ ] **#42a 目標値の確定とベースライン固定（小）** — 上表を `docs/design/difficulty-design.md` に終端隔離線の節として
-  記録し、目標を数値で置く（prepared clear ≒ 入場レベル+2 以内 / levelsSaved ≒10 / act band 内 / PROVISION >0）。
-  以後のスライスはこの数値に対して測る。**Gate:** `npm run sim:balance -- --world terminal-line`（出力を doc と一致させる）。
-- [ ] **#42b 資源経済を入れる＝attrition の土台（中）** — `balance.economy` を著述し、回復・弾・携行枠が遠征中に枯れる
-  ようにする。目的は「あと1部屋 vs 引き返す」を成立させること。**受け入れ:** PROVISION levelsSaved > 0（キットが生存を
-  買う）かつ 携行品だけで無双できない（大きすぎない）。**Gate:** `sim:balance` の PROVISION 行＋`npm run test`（descentSim）。
-- [ ] **#42c 難度カーブの再配置（中）** — `threatScalar` / `hpScalar` / `counterplayBoost` と深層の per-floor 敵著述で、
-  Act I を緩く・Act III を張り詰めた形に直す。今は Act I が Lv1 で 27%、Act III が 1–2% ＝ 入口が理不尽で終盤が致死。
-  **受け入れ:** prepared clear が入場レベル近傍に降り、act band 内で単調に締まる。**Gate:** `sim:balance` の TROUGH 表＋
-  `npm run test`（descentSim / 該当 world のバランステスト）。
-- [ ] **#42d フロアの脱テンプレ化（大・本丸）** — tl2f–tl10f に階ごとの固有性を著述する。各階に最低 1 つずつ:
-  見えるルート選択 / 結果を伴う情報行動 / 資源交換 / 戦闘か回避の判断 / 記憶に残るランドマーク。
-  **Gate:** `verify_first_floor_density.gd` を全階へ拡張（下の #42h）。**注意:** 密度を変えると first-contact の
-  遭遇数が変わる＝バランス変更。必ず `sim:balance` を再実行する。
-- [ ] **#42e 施錠・鍵・近道（中）** — 現状 locked=0。施錠扉と鍵、2–3 階ごとの一方通行ショートカットを入れ、
-  戻りの税を下げつつ「押すか退くか」を残す。**Gate:** `gate:dungeon-interaction` ＋ 実画面 PNG。
-- [ ] **#42f 回避可能な過強敵（FOE 相当）（中）** — act ごとに 1 体、序盤は逃げ・後で狩れる相手を配置。既存の
-  front-blocker / back-caster squad が種。**必ず予告する**（見える・鳴る・記述される）。**Gate:** encounter 側の
-  headless 検出器＋`sim:balance`（FOE を避けた場合のカーブが崩れないこと）。
-- [ ] **#42g act 終端のスパイク（中）** — 3 階ごとの締めに mini-boss か通行料（資源を要求する関門）を置き、
-  緊張→解放のリズムを作る。**Gate:** `sim:balance` の該当フロア trough が band の下端に触れること。
-- [ ] **#42h 検出器の拡張（小・#42d と対）** — `verify_first_floor_density.gd` を「全フロア密度」検出器に拡張し、
-  同一テンプレの反復（今回の見落とし）を機械が落とせるようにする。act band と PROVISION>0 も headless で固定。
-  **Gate:** 新 `gate:floor-density` を `gate:migration` に接続し、拡張前のデータで**赤くなることを確認してから**入れる。
+- [ ] **#42a storylet スキーマ（旧 #32-b を「任意ポリッシュ」から昇格）（大）** — 現在セルの可視イベントが
+  **2〜3 の authored intent**（id は固定・文言は差し替え可）を出し、ルールが判定して typed event を返す構造を
+  content スキーマに入れる。**provider 不在でも同じルートが完走できること**（concept slice 9）が受け入れ条件。
+  **Gate:** スキーマ検証＋headless で intent→check→typed event が回ること＋実画面 PNG。
+  **注意:** 著述は content/、検証と export は TS 側（Zod＋export:packs）、実行は Godot。Godot-native ポリシーの
+  「TS へ機能を parity 移植しない」には抵触しない（オーサリング経路であって機能の二重実装ではない）。
+- [ ] **#42b 世界が覚える（中）** — 受諾した intent と結末を canonical event に載せ、**帰還時に NPC か記録が
+  想起する**（concept slice 8）。GmMemory の決定論側だけを作る。**Gate:** 潜行→選択→帰還で記録に出ることを
+  headless で固定＋実画面。
+- [ ] **#42c 名指し＝rule-selected adventurer（中）** — シーンが称号・来歴・状態・武勲で 1 人を選ぶ（slice 5）。
+  選択は決定論、AI はその人物の感情を作らない。**Gate:** 同じ状態から同じ人物が選ばれることの検出器。
+- [ ] **#42d F2 を substantial にする実証（大・判断ポイント）** — #42a–c を使って F2・浸水ホームを 15–20 分ルートに
+  作り直し、**コンセプトが実際に面白いかを見る**。ここで面白くなければ、残り階へ展開する前に設計へ戻る。
+  **Gate:** 実プレイ（PlayLog `./run.sh log` の step trail）＋密度検出器。
+- [ ] **#42e attrition＝資源経済（中）** — `balance.economy` を著述し、回復・弾・携行枠が遠征中に枯れるように
+  する。選択に重みを与える圧力。**受け入れ:** PROVISION levelsSaved > 0 かつ携行品だけで無双できない。
+  **Gate:** `sim:balance` の PROVISION 行＋`npm run test`。
+- [ ] **#42f 難度カーブの再配置（中）** — ノブ＋深層の per-floor 敵著述で Act I を緩く・Act III を張り詰めた形に。
+  **受け入れ:** prepared clear が入場レベル近傍、act band 内で単調。**Gate:** `sim:balance` TROUGH 表＋`npm run test`。
+- [ ] **#42g 残り階を substantial に（大・本丸）** — 6–8 階が基準。各階に最低 1 つの storylet ＋ 見えるルート選択 /
+  結果を伴う情報行動 / 資源交換 / 戦闘か回避 / ランドマーク。**注意:** 密度を変えると first-contact の遭遇数が
+  変わる＝バランス変更。都度 `sim:balance` を再実行。**Gate:** 全階密度検出器（#42i）。
+- [ ] **#42h 迷宮の骨格（中）** — 施錠と鍵（現状 locked=0）、2–3 階ごとの一方通行ショートカット、act ごとに 1 体の
+  回避可能な過強敵（必ず予告する）、act 終端のスパイク（mini-boss か通行料）。**Gate:** `gate:dungeon-interaction`
+  ＋`sim:balance`（FOE を避けたカーブが崩れないこと）。
+- [ ] **#42i 検出器の拡張（小・#42g と対）** — `verify_first_floor_density.gd` を全フロア密度検出器に拡張し、
+  「同一テンプレの反復」と「storylet ゼロの階」を機械が落とせるようにする。act band と PROVISION>0 も headless で
+  固定。**Gate:** 新 `gate:floor-density` を `gate:migration` に接続。**拡張前のデータで赤くなることを確認してから**入れる。
 
-**進め方:** #42a → #42b/#42c（ヌルさの是正・数値で即効） → #42d/#42e（スカスカの是正・著述が本体） → #42f/#42g
-（起伏） → #42h（再発防止）。各スライスは AGENTS.md の完了規約どおり、gate 緑＋実画面確認まで含めて 1 つずつ。
+**進め方:** #42a → #42b → #42c → **#42d（ここでコンセプトの当否を判断）** → #42e/#42f（圧力）→ #42g（展開）
+→ #42h → #42i。各スライスは gate 緑＋実画面確認まで含めて 1 つずつ。
 
 ## Backlog / ideas (no home yet; user decision required)
 
 - **#33-b 拠点整備 slice3（任意ポリッシュ, 小）** — 上位 Lv を降下フラグで解禁（schema `unlockFlag` は実装済み・未著述）
   ＋整備場（materials 収量/錬成コスト減）を4つ目に＋帰還回復のログ1行。v1 は機能完成済みなので着手は任意・user 判断。
-- **#32-b 迷宮イベント v2（選択肢付き対話, 中）** — 現状 v1 は flavor＋簡易効果のみ。分岐選択（受ける/去る、判定つき）を
-  シナリオ記述できる対話イベントへ拡張する余地。未承認・要相談。
+- **#32-b 迷宮イベント v2（選択肢付き対話）** → **#42a へ昇格**（2026-08-20）。コンセプト（AIPlan.md First
+  concept slice）の中核であり「任意ポリッシュ」ではなかった、という判断。ここでは扱わない。
 - **#37-slice3 深い設備の見せ方（任意）** — 新設備の解禁／伸びしろをどう示すかは、追加の進行設計を伴うため未決定。
 - **#38-slice3 採取の文言・枯渇ポリッシュ（任意）** — 繰り返し採取の実装は完了。ログと枯渇演出の新規コピー方針が決まった時に扱う。
 - 旧 #27 = W3a 共有弾薬は user 判断で廃案 → `docs/design/ballistic-world-program.md` に記録済み。
